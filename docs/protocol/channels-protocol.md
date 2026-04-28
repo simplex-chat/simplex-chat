@@ -23,7 +23,7 @@ For architecture, design rationale, security properties, and threat model, see [
 
 This document describes the channel protocol as currently implemented. It builds on the [SimpleX Chat Protocol](./simplex-chat.md), using the same message format and connection model, with extensions for relay-mediated distribution and cryptographic message signing.
 
-#### Channel creation
+### Channel creation
 
 Creating a channel involves generating cryptographic material, creating the channel link, and connecting relay members:
 
@@ -39,7 +39,7 @@ Creating a channel involves generating cryptographic material, creating the chan
 
 6. **Local record.** The channel is stored on the owner's device as a group with `useRelays = True`, `groupKeys` containing the root private key and member private key, and a `PublicGroupProfile` in its profile. This local record is the authoritative state of the channel.
 
-#### Relay addition
+### Relay addition
 
 The relay addition protocol ensures that relays are cryptographically bound to the correct channel:
 
@@ -57,7 +57,7 @@ The relay addition protocol ensures that relays are cryptographically bound to t
 
 Once active, the relay periodically retrieves the channel link data to verify that its relay link is still listed, as a monitoring mechanism to detect removal.
 
-#### Subscriber connection
+### Subscriber connection
 
 A subscriber joins a channel through the following flow:
 
@@ -75,7 +75,7 @@ A subscriber joins a channel through the following flow:
 
 The subscriber is functional (can receive messages) as soon as at least one relay connection succeeds. Additional relay connections provide redundancy and cross-relay consistency checking.
 
-#### Message signing
+### Message signing
 
 Messages that alter the channel's roster, profile, or administrative state are cryptographically signed by the sending owner. Content messages are not signed by default; see [Signing scope](#signing-scope-roster-only-content-optional) for the rationale.
 
@@ -119,7 +119,7 @@ When a subscriber receives a signed message:
 
 If verification fails for a message that requires a signature, the message is rejected and a `RGEMsgBadSignature` event is shown to the user.
 
-#### Message forwarding
+### Message forwarding
 
 Content originates on the owner's device and flows through relays to subscribers. The forwarding mechanism preserves the original message bytes, including any signature, without re-encoding:
 
@@ -141,7 +141,7 @@ forwardEnvelope = ">" <> smpEncode(GrpMsgForward) <> encodeBatchElement(signedMs
 
 This preserves the original message's signature bytes verbatim.
 
-#### Binary batch format
+### Binary batch format
 
 Channels use a binary batch format that preserves exact message bytes for signature verification. This is distinct from the JSON array batching used by regular groups.
 
@@ -182,7 +182,7 @@ Forward elements contain the original message bytes verbatim. The relay does not
 
 Nested forwarding (`>` inside `>`) is explicitly rejected by the parser.
 
-#### Delivery pipeline
+### Delivery pipeline
 
 The relay's delivery pipeline has two stages, both backed by persistent database tables for delivery reliability (not for authoritative storage - the relay's database is a delivery queue, not a content database):
 
@@ -212,7 +212,7 @@ A **job worker** reads the body and delivers it to subscribers in paginated batc
 
 For subsequent subscribers in a batch, the agent uses `VRRef` (value reference) to reference the first subscriber's message body, avoiding redundant data transmission to the SMP server.
 
-#### Message deduplication
+### Message deduplication
 
 When multiple relays serve the same channel, each subscriber receives the same message from each relay independently. Deduplication is performed at the subscriber's client level using the message's `SharedMsgId`:
 
@@ -222,7 +222,7 @@ When multiple relays serve the same channel, each subscriber receives the same m
 
 This is essentially cache coherence verification - comparing what was received from one cache node against another. TODO: Currently, deduplication only detects the presence of duplicates. The protocol design includes provisions for detecting differences between relay-delivered copies of the same message (hash comparison, UI indicators for discrepancies). This is described in the [channels forwarding RFC](../rfcs/2025-08-11-channels-forwarding.md) and is not yet implemented.
 
-#### Channel-as-sender messages
+### Channel-as-sender messages
 
 Owners can send messages attributed to the channel rather than to themselves. When `asGroup = True` is set in the message container, the relay forwards the message with `FwdChannel` instead of `FwdMember memberId memberName`. On the subscriber side, such messages are displayed as coming from the channel (using the channel's profile image and name) rather than from a specific owner.
 
@@ -234,7 +234,7 @@ The forwarding binding prefix for channel-as-sender messages uses `CBChannel` in
 channelBinding = smpEncode(CBChannel) <> smpEncode(publicGroupId)
 ```
 
-#### Member support scope
+### Member support scope
 
 Channels support a **member support scope** - a private side-channel between a subscriber and the channel's moderators/owners. Messages sent in the support scope are delivered only to moderators and the scoped subscriber, not to all subscribers.
 
