@@ -13,11 +13,15 @@ import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.awt.Container
 import java.awt.FileDialog
+import java.awt.event.ActionListener
 import java.io.File
+import javax.swing.JButton
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileFilter
 import javax.swing.filechooser.FileNameExtensionFilter
+import javax.swing.plaf.basic.BasicFileChooserUI
 
 @Composable
 actual fun DefaultDialog(
@@ -77,6 +81,9 @@ fun FrameWindowScope.FileDialogChooserMultiple(
       fileChooser.dialogTitle = title
       fileChooser.isMultiSelectionEnabled = allowMultiple && isLoad
       fileChooser.isAcceptAllFileFilterUsed = fileFilter == null
+      if (!isLoad && desktopPlatform.isLinux()) {
+        installUnixSaveGlobBypass(fileChooser)
+      }
       if (fileFilter != null && fileFilterDescription != null) {
         fileChooser.addChoosableFileFilter(object: FileFilter() {
           override fun accept(file: File?): Boolean = fileFilter(file)
@@ -118,6 +125,38 @@ fun FrameWindowScope.FileDialogChooserMultiple(
       job.cancel()
     }
   }
+}
+
+// Wrap the Save button's ApproveSelectionAction to bypass the BasicFileChooserUI glob branch
+// that rejects '[', '*', '?' in filenames on Unix; non-glob names delegate to the original action.
+private fun installUnixSaveGlobBypass(fc: JFileChooser) {
+  val ui = fc.ui as? BasicFileChooserUI ?: return
+  val original: ActionListener = ui.approveSelectionAction
+  val btn = findButtonWithListener(fc, original) ?: return
+  btn.removeActionListener(original)
+  btn.addActionListener { e ->
+    val name = ui.fileName.orEmpty()
+    if (name.none { it == '[' || it == '*' || it == '?' }) {
+      original.actionPerformed(e)
+      return@addActionListener
+    }
+    val typed = File(name)
+    val target = if (typed.isAbsolute) typed else File(fc.currentDirectory, name)
+    if (target.isDirectory && fc.isTraversable(target)) {
+      fc.currentDirectory = target
+    } else {
+      fc.selectedFile = target
+      fc.approveSelection()
+    }
+  }
+}
+
+private fun findButtonWithListener(c: Container, listener: ActionListener): JButton? {
+  for (comp in c.components) {
+    if (comp is JButton && comp.actionListeners.any { it === listener }) return comp
+    if (comp is Container) findButtonWithListener(comp, listener)?.let { return it }
+  }
+  return null
 }
 
 /*
