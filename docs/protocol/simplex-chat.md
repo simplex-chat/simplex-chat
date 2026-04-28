@@ -289,8 +289,8 @@ Channels use a binary batch format (`=` prefix) instead of the JSON array format
 
 Each batch element is length-prefixed and tagged:
 
-- `'/'` prefix: signed message — contains chat binding tag, signatures, and the JSON message body. The signature covers the message body with a channel-specific binding prefix.
-- `'>'` prefix: forwarded message — contains relay forwarding metadata (sender identity, broker timestamp) followed by the original message element (signed or plain). The original bytes are preserved verbatim.
+- `'/'` prefix: signed message, contains chat binding tag, signatures, and the JSON message body. The signature covers the message body with a channel-specific binding prefix.
+- `'>'` prefix: forwarded message, contains relay forwarding metadata (sender identity, broker timestamp) followed by the original message element (signed or plain). The original bytes are preserved verbatim.
 - `'{'` prefix: plain JSON message.
 - `'F'` prefix: binary file chunk.
 
@@ -306,7 +306,7 @@ See [message signing](./simplex-channels.md#message-signing) for the full specif
 
 #### Asynchronous delivery pipeline
 
-Relay forwarding uses a persistent two-stage pipeline (delivery tasks → delivery jobs) rather than synchronous forwarding. This makes forwarding resumable across relay restarts and supports paginated delivery to large subscriber sets without loading all members into memory.
+Relay forwarding uses a persistent two-stage pipeline (delivery tasks -> delivery jobs) rather than synchronous forwarding. This makes forwarding resumable across relay restarts and supports paginated delivery to large subscriber sets without loading all members into memory.
 
 ## Sub-protocol for WebRTC audio/video calls
 
@@ -394,7 +394,7 @@ For the full channel threat model, see [SimpleX Channels: threat model](./simple
 
 - send arbitrary unsigned content messages to subscribers, effectively fabricating the content stream while the channel identity and signed profile remain intact.
 
-- selectively drop any messages — both content and signed administrative events — for some or all subscribers.
+- selectively drop any messages, both content and signed administrative events, for some or all subscribers.
 
 - ignore the "message from channel" directive, revealing which specific owner sent a message.
 
@@ -402,10 +402,10 @@ For the full channel threat model, see [SimpleX Channels: threat model](./simple
 
 *cannot:*
 
-- impersonate an owner — administrative messages (roster changes, profile updates, channel deletion) require valid cryptographic signatures that the relay cannot produce.
+- impersonate an owner - administrative messages (roster changes, profile updates, channel deletion) require valid cryptographic signatures that the relay cannot produce.
 
-- substitute the channel profile — profile changes require a valid owner signature.
+- substitute the channel profile - profile changes require a valid owner signature.
 
-- redirect joining subscribers to a different channel — the channel's entity ID is baked into both the channel link and the relay link's immutable data.
+- redirect joining subscribers to a different channel - the channel's entity ID is baked into both the channel link and the relay link's immutable data.
 
-- determine the real-world identity of subscribers — subscriber connections carry no persistent identity.
+- determine the real-world identity of subscribers - subscriber connections carry no persistent identity.
