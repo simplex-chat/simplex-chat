@@ -2795,7 +2795,7 @@
     <string name="a_link_for_one_person">Ein Link für eine einzelne Person zum Verbinden.</string>
     <string name="chat_list_channels">Kanäle</string>
     <string name="connect_via_link_or_qr_code">Über einen Link oder QR-Code verbinden</string>
-    <string name="connect_with_someone">Mit Jemandem verbinden</string>
+    <string name="connect_with_someone">Mit jemandem verbinden</string>
     <string name="create_your_public_address">Erstellen Sie Ihre öffentliche Adresse</string>
     <string name="v6_5_invite_friends">Freunde einladen – jetzt noch einfacher 👋</string>
     <string name="for_anyone_to_reach_you">Damit Sie jeder erreichen kann</string>
@@ -2813,7 +2813,7 @@
     <string name="v6_5_safe_web_links">Sichere Web-Links</string>
     <string name="v6_5_security">Sicherheit: Eigentümer besitzen die Kanalschlüssel.</string>
     <string name="onboarding_send_1_time_link">Den Link über einen beliebigen Messenger versenden – es ist sicher. Bitte in SimpleX einfügen.</string>
-    <string name="talk_to_someone">Mit Jemandem sprechen</string>
+    <string name="talk_to_someone">Mit jemandem sprechen</string>
     <string name="v6_5_non_profit_governance_descr">Für ein dauerhaftes SimpleX-Netzwerk.</string>
     <string name="onboarding_post_address">Diese Adresse in Ihrem Social‑Media‑Profil, auf Ihrer Webseite oder in Ihrer E‑Mail‑Signatur verwenden.</string>
     <string name="v6_5_invite_friends_descr">Wir haben das Verbinden für neue Nutzer vereinfacht.</string>

@@ -3427,7 +3427,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable chats with admins?" xml:space="preserve">
         <source>Enable chats with admins?</source>
-        <target>¿Activar chat con administradres?</target>
+        <target>¿Activar chat con administradores?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
@@ -5990,7 +5990,7 @@ quién se comunica con quién</target>
       <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve">
         <source>No account. No phone. No email. No ID.
 The most secure encryption.</source>
-        <target>Sin cuenta. Sin teléfono, Sin email, Sin ID.
+        <target>Sin cuenta. Sin teléfono. Sin email. Sin ID.
 El cifrado más seguro.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6854,7 +6854,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Privacy: for owners and subscribers." xml:space="preserve">
         <source>Privacy: for owners and subscribers.</source>
-        <target>Privacidad: para propietarioes y suscriptores.</target>
+        <target>Privacidad: para propietarios y suscriptores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private and secure messaging." xml:space="preserve">

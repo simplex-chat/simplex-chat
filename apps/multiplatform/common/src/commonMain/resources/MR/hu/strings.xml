@@ -2752,7 +2752,7 @@
     <string name="e2ee_info_no_e2ee"><![CDATA[Ebben a csatornában az üzenetek <b>nem rendelkeznek végpontok közötti titkosítással</b>. A csevegési átjátszók láthatják ezeket az üzeneteket.]]></string>
     <string name="migrate">Átköltöztetés</string>
     <string name="onboarding_network_commitments">Hálózati kötelezettségvállalások</string>
-    <string name="onboarding_network_routers_cannot_know">A hálózati útválasztók nem tudhatják,,\nhogy ki kivel beszélget</string>
+    <string name="onboarding_network_routers_cannot_know">A hálózati útválasztók nem tudhatják,\nhogy ki kivel beszélget</string>
     <string name="onboarding_no_account">Nincs fiók. Nincs telefonszám. Nincs e-mail-cím. Nincs személyazonosító.\nA legbiztonságosabb titkosítás.</string>
     <string name="onboarding_on_your_phone">Az Ön eszközén, nem pedig a kiszolgálókon.</string>
     <string name="open_external_link_title">Megnyitja a külső hivatkozást?</string>

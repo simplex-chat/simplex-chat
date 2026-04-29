@@ -2272,7 +2272,7 @@ chat item action */
 "Enable camera access" = "Permitir acceso a la cámara";
 
 /* alert title */
-"Enable chats with admins?" = "¿Activar chat con administradres?";
+"Enable chats with admins?" = "¿Activar chat con administradores?";
 
 /* No comment provided by engineer. */
 "Enable disappearing messages by default." = "Activa por defecto los mensajes temporales.";
@@ -3984,7 +3984,7 @@ servers warning */
 "No" = "No";
 
 /* No comment provided by engineer. */
-"No account. No phone. No email. No ID.\nThe most secure encryption." = "Sin cuenta. Sin teléfono, Sin email, Sin ID.\nEl cifrado más seguro.";
+"No account. No phone. No email. No ID.\nThe most secure encryption." = "Sin cuenta. Sin teléfono. Sin email. Sin ID.\nEl cifrado más seguro.";
 
 /* No comment provided by engineer. */
 "No active relays" = "Sin servidores activos";
@@ -4545,7 +4545,7 @@ alert button */
 "Privacy policy and conditions of use." = "Política de privacidad y condiciones de uso.";
 
 /* No comment provided by engineer. */
-"Privacy: for owners and subscribers." = "Privacidad: para propietarioes y suscriptores.";
+"Privacy: for owners and subscribers." = "Privacidad: para propietarios y suscriptores.";
 
 /* No comment provided by engineer. */
 "Private and secure messaging." = "Mensajería segura y privada.";

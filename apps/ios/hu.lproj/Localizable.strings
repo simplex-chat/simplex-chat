@@ -3897,7 +3897,7 @@ servers warning */
 "Network operator" = "Hálózatüzemeltető";
 
 /* No comment provided by engineer. */
-"Network routers cannot know\nwho talks to whom" = "A hálózati útválasztók nem tudhatják,,\nhogy ki kivel beszélget";
+"Network routers cannot know\nwho talks to whom" = "A hálózati útválasztók nem tudhatják,\nhogy ki kivel beszélget";
 
 /* No comment provided by engineer. */
 "Network settings" = "Hálózati beállítások";

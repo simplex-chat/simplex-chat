@@ -5863,7 +5863,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       <trans-unit id="Network routers cannot know&#10;who talks to whom" xml:space="preserve">
         <source>Network routers cannot know
 who talks to whom</source>
-        <target>A hálózati útválasztók nem tudhatják,,
+        <target>A hálózati útválasztók nem tudhatják,
 hogy ki kivel beszélget</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

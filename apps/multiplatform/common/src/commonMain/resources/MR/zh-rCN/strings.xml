@@ -2760,7 +2760,7 @@
     <string name="migrate">迁移</string>
     <string name="onboarding_network_commitments">网络承诺</string>
     <string name="onboarding_network_routers_cannot_know">网络路由器无法\n知道谁和谁交谈</string>
-    <string name="onboarding_no_account">无账户。无手机号。无电子邮箱。无 ID。.\n最安全的加密。</string>
+    <string name="onboarding_no_account">无账户。无手机号。无电子邮箱。无 ID。\n最安全的加密。</string>
     <string name="onboarding_on_your_phone">在您的手机上，不在服务器上。</string>
     <string name="open_external_link_title">打开外部链接？</string>
     <string name="onboarding_private_and_secure">私密和安全的消息收发。</string>
