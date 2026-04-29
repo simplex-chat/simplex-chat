@@ -105,9 +105,9 @@ fun SimpleXInfoLayout(
   user: User?,
   onboardingStage: SharedPreference<OnboardingStage>?
 ) {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val topAppBarInset = if (onboardingStage == null && !oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
-  Column(Modifier.fillMaxSize().systemBarsPadding().padding(top = topAppBarInset).padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
+  val topBar = onboardingStage == null && !appPrefs.oneHandUI.state.value
+  val modifier = Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
+  Column(if (topBar) modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier) else modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     Box(Modifier.padding(top = DEFAULT_PADDING * 2).widthIn(max = if (appPlatform.isAndroid) 185.dp else 160.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
