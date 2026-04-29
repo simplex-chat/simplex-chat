@@ -48,7 +48,6 @@ private val previewMutex = Mutex()
 suspend fun getLinkPreview(url: String): LinkPreview? {
   return withContext(Dispatchers.IO) {
     previewMutex.withLock {
-      val previousAuthenticator = Authenticator.getDefault()
       try {
         try {
           val title: String?
@@ -121,6 +120,8 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
             imageUri = normalizeImageUri(u, imageUri)
             try {
               val conn = URL(imageUri).openConnection(proxy ?: Proxy.NO_PROXY)
+              conn.connectTimeout = 20_000
+              conn.readTimeout = 20_000
               val stream = conn.getInputStream()
               val image = resizeImageToStrSize(stream.use(::loadImageBitmap), maxDataSize = 14000)
               //          TODO add once supported in iOS
@@ -139,7 +140,7 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
         }
         return@withLock null
       } finally {
-        Authenticator.setDefault(previousAuthenticator)
+        Authenticator.setDefault(null)
       }
     }
   }
