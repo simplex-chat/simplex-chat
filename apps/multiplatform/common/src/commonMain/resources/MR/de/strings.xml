@@ -2803,7 +2803,7 @@
     <string name="let_someone_connect_to_you">Jemand mit Ihnen verbinden lassen</string>
     <string name="new_1_time_link">Neuer Einmal-Link</string>
     <string name="v6_5_non_profit_governance">Non‑Profit‑Governance</string>
-    <string name="v6_5_safe_web_links_descr">- Opt‑in zum Senden von Linkvorschauen.\n- Hyperlink‑Phishing verhindern.\n- Link‑Tracking entfernen.</string>
+    <string name="v6_5_safe_web_links_descr">- Opt‑in zum Senden von Linkvorschauen.\n- SOCKS-Proxy verwenden, falls aktiviert.\n- Hyperlink‑Phishing verhindern.\n- Link‑Tracking entfernen.</string>
     <string name="onboarding_or_show_qr_code">Oder den QR‑Code persönlich oder per Videoanruf zeigen.</string>
     <string name="onboarding_or_use_qr_code">Oder diesen QR‑Code verwenden – ausgedruckt oder online.</string>
     <string name="v6_5_ownership">Volle Kontrolle: Sie können Ihre eigenen Relais betreiben.</string>

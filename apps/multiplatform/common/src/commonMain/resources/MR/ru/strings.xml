@@ -1431,7 +1431,7 @@
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранён в настройках.</string>
     <string name="v5_3_encrypt_local_files">Шифруйте сохранённые файлы и медиа</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS-прокси. Звонки и превью ссылок используют прямое соединение.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS-прокси. Звонки используют прямое соединение.]]></string>
     <string name="encrypt_local_files">Шифровать локальные файлы</string>
     <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
     <string name="v5_3_new_interface_languages">6 новых языков интерфейса</string>
@@ -2839,7 +2839,7 @@
     <string name="v6_5_invite_friends">Проще пригласить друзей 👋</string>
     <string name="v6_5_invite_friends_descr">Мы упростили подключение для новых пользователей.</string>
     <string name="v6_5_safe_web_links">Безопасные веб-ссылки</string>
-    <string name="v6_5_safe_web_links_descr">- включение картинок ссылок.\n- защита от фишинга.\n- удаление трекинга ссылок.</string>
+    <string name="v6_5_safe_web_links_descr">- включение картинок ссылок.\n- использовать SOCKS прокси, если включен\n- защита от фишинга.\n- удаление трекинга ссылок.</string>
     <string name="v6_5_non_profit_governance">Некоммерческое управление</string>
     <string name="v6_5_non_profit_governance_descr">Чтобы сохранить сеть SimpleX для всех.</string>
     <string name="channel_member_you">Вы</string>
@@ -2873,4 +2873,7 @@
     <string name="wait_verb">Подождать</string>
     <string name="connect_plan_this_is_your_link_for_channel">Ваш канал</string>
     <string name="unblock_subscriber_for_all_question">Разблокировать подписчика для всех?</string>
+    <string name="one_hand_ui_bottom_bar">Нижнее меню</string>
+    <string name="link_previews_alert_desc_socks">Картинка ссылки будет загружена через SOCKS прокси. DNS запрос может быть локальным через Ваш резолвер.</string>
+    <string name="one_hand_ui_top_bar">Верхнее меню</string>
 </resources>
