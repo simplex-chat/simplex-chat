@@ -192,40 +192,35 @@ APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
     _ -> throwCmdError "group link data not available"
 ```
 
-**Extract shared relay connection logic** from `connectToRelay` in `APIConnectPreparedGroup` (Commands.hs:2165-2181). The inner body (lines 2170-2178, inside `tryAllErrors`) is identical to what subscriber sync needs. Extract it into a shared function in `processChatCommand`'s scope:
+**Parameterize `connectToRelay`** — move from `APIConnectPreparedGroup`'s `where` block to `processChatCommand`'s `where` block so both `APIConnectPreparedGroup` and subscriber sync can use it. The captured closure variables become explicit parameters or are derived internally:
 
 ```
--- Shared: fetch relay link data, update relay member profile, and connect.
--- Requires relay member already created via getCreateRelayForMember.
--- connectViaContact handles incognito internally for relay groups (Commands.hs:3545-3546).
-connectRelayMember :: User -> GroupInfo -> GroupMember -> ShortLinkContact -> CM ()
-connectRelayMember user gInfo relayMember relayLink = do
-  (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <-
-    getShortLinkConnReq nm user relayLink
-  relayLinkData_ <- liftIO $ decodeLinkUserData cData
-  case (relayLinkData_, linkEntityId) of
-    (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
-      withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
-    _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
-  let cReq = linkConnReq fd
-      relayLinkToConnect = CCLink cReq (Just relayLink)
-  void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) False relayLinkToConnect Nothing Nothing
-```
-
-**Refactor `connectToRelay`** in `APIConnectPreparedGroup` to call `connectRelayMember`:
-
-```
-connectToRelay gInfo' relayLink = do
+-- In processChatCommand's where block (for connectViaContact access).
+-- connectViaContact ignores incognito param for relay groups (Commands.hs:3545-3546),
+-- using incognitoMembershipProfile gInfo instead.
+connectToRelay :: User -> GroupInfo -> ShortLinkContact -> CM (ShortLinkContact, GroupMember, Either ChatError ())
+connectToRelay user gInfo relayLink = do
+  vr <- chatVersionRange
   gVar <- asks random
-  relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
-  r <- tryAllErrors $ connectRelayMember user gInfo' relayMember relayLink
-  relayMember' <- withFastStore $ \db -> getGroupMember db vr user groupId (groupMemberId' relayMember)
+  relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink
+  r <- tryAllErrors $ do
+    (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <-
+      getShortLinkConnReq nm user relayLink
+    relayLinkData_ <- liftIO $ decodeLinkUserData cData
+    case (relayLinkData_, linkEntityId) of
+      (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
+        withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
+      _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
+    let cReq = linkConnReq fd
+        relayLinkToConnect = CCLink cReq (Just relayLink)
+    void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) False relayLinkToConnect Nothing Nothing
+  relayMember' <- withFastStore $ \db -> getGroupMember db vr user (groupId' gInfo) (groupMemberId' relayMember)
   pure (relayLink, relayMember', r)
 ```
 
-`getCreateRelayForMember` stays outside `tryAllErrors` — the member must be available for re-read even on failure (for `RelayConnectionResult` reporting).
+`getCreateRelayForMember` stays outside `tryAllErrors` — the member must be available for re-read even on failure (for `RelayConnectionResult` reporting). `APIConnectPreparedGroup` calls `mapConcurrently (connectToRelay user gInfo') relays` as before.
 
-**New function** `syncSubscriberRelays` in `processChatCommand`'s scope (for `connectRelayMember` and `connectViaContact` access):
+**New function** `syncSubscriberRelays` in `processChatCommand`'s scope (reuses `connectToRelay`):
 
 ```
 syncSubscriberRelays :: NetworkRequestMode -> User -> GroupInfo -> [ShortLinkContact] -> CM ()
@@ -240,10 +235,8 @@ syncSubscriberRelays nm user gInfo currentRelayLinks = tryAllErrors $ do
 
   -- Discover new relays (in link data but not among active local relay members)
   let newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
-  forM_ newRelayLinks $ \rlnk -> tryAllErrors $ do
-    gVar <- asks random
-    relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo rlnk
-    connectRelayMember user gInfo relayMember rlnk
+  forM_ newRelayLinks $ \rlnk -> tryAllErrors $
+    void $ connectToRelay user gInfo rlnk
 
   -- Discover removed relays (active local relay member whose link is absent from link data)
   forM_ activeRelayMembers $ \m ->
@@ -364,8 +357,8 @@ getRelayOwnGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
      GroupData)                          APIGetUpdated
                                         GroupLinkData)
     Triggers:          Triggers:          Triggers:
-    - Add relay        - Periodic         - Opening channel
-    - Remove member    - On subscription    (existing UI flow)
+    - Add relay        - Periodic check   - Opening channel
+    - Remove member                         (existing UI flow)
     - Profile update
 ```
 
@@ -387,7 +380,7 @@ getRelayOwnGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
 
 5. **Relay goes offline permanently**: Owner removes it via `APIRemoveMembers`. New subscribers won't see it in link data. Existing subscribers with connections to this relay will experience connection failures. On next channel open, `syncSubscriberRelays` discovers the relay link is gone and marks it removed locally.
 
-6. **Subscriber discovers new relay via link data**: `syncSubscriberRelays` calls `getCreateRelayForMember` (idempotent) + `connectRelayMember` (shared with `connectToRelay`).
+6. **Subscriber discovers new relay via link data**: `syncSubscriberRelays` calls `connectToRelay` (same function used by `APIConnectPreparedGroup`).
 
 ---
 
@@ -406,7 +399,7 @@ getRelayOwnGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
 |------|--------|
 | `src/Simplex/Chat/Controller.hs` | Add `APIAddGroupRelays` command; add `CRGroupRelaysAdded`, `CRGroupRelaysAddFailed` responses |
 | `src/Simplex/Chat/Library/Internal.hs` | Add `deactivateRelayIfNeeded` helper; extend `deleteOrUpdateMemberRecordIO` and `updateMemberRecordDeleted` to call it |
-| `src/Simplex/Chat/Library/Commands.hs` | Extract `connectRelayMember` from `connectToRelay`; refactor `connectToRelay` to use it; implement `APIAddGroupRelays` handler; implement `runRelayGroupLinkChecks`; extend `APIGetUpdatedGroupLinkData`; add `syncSubscriberRelays` (all in `processChatCommand` scope for `connectViaContact` access) |
+| `src/Simplex/Chat/Library/Commands.hs` | Parameterize and move `connectToRelay` to `processChatCommand` scope; implement `APIAddGroupRelays` handler; implement `runRelayGroupLinkChecks`; extend `APIGetUpdatedGroupLinkData`; add `syncSubscriberRelays` (all in `processChatCommand` scope for `connectViaContact` access) |
 | `src/Simplex/Chat/Library/Subscriber.hs` | Fix LINK handler relay removal detection; remove redundant relay deactivation from `xGrpLeave` |
 | `src/Simplex/Chat/Store/Groups.hs` | Add `getRelayOwnGroups` |
 
