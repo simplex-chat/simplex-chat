@@ -2605,7 +2605,7 @@
     <string name="creating_channel">Creando canal</string>
     <string name="rcv_channel_events_count">%d eventos del canal</string>
     <string name="button_delete_channel">Eliminar canal</string>
-    <string name="delete_channel_question">¿Eliminar canal?</string>
+    <string name="delete_channel_question">¿Eliminar el canal?</string>
     <string name="rcv_channel_event_channel_deleted">canal eliminado</string>
     <string name="rcv_msg_error_dropped">caído (%1$d intentos)</string>
     <string name="button_edit_channel_profile">Editar perfil del canal</string>
@@ -2644,7 +2644,7 @@
     <string name="info_row_relay_link">Enlace servidor</string>
     <string name="button_remove_subscriber">Eliminar suscriptor</string>
     <string name="button_remove_subscriber_question">¿Eliminar suscriptor?</string>
-    <string name="save_and_notify_channel_subscribers">Guardar y notificar suscriptores del canal</string>
+    <string name="save_and_notify_channel_subscribers">Guardar y notificar suscriptores</string>
     <string name="save_channel_profile">Guardar perfil del canal</string>
     <string name="error_relay_test_server_auth">El servidor requiere autorización para conectar con el servidor, comprueba la contraseña.</string>
     <string name="server_warning">Alerta del servidor</string>
@@ -2711,7 +2711,7 @@
     <string name="relay_bar_relays_not_active">%1$d servidores inactivos</string>
     <string name="relay_bar_relays_removed">%1$d servidores eliminados</string>
     <string name="relay_bar_owner_no_delivery">Añadir servidores estará disponible en una versión posterior.</string>
-    <string name="a_link_for_one_person">Enlace para una persona</string>
+    <string name="a_link_for_one_person">Enlace para un solo contacto</string>
     <string name="allow_chat_with_admins">Permitir que los miembros chateen con administradores.</string>
     <string name="allow_chat_with_admins_channel">Permitir que los suscriptores chateen con administradores.</string>
     <string name="relay_bar_all_relays_failed">Todos los servidores han fallado</string>
@@ -2728,7 +2728,7 @@
     <string name="chat_with_admins_relay_note">El chat con administradores en el canal público no dispone de cifrado E2E. Úsalo sólo con servidores de confianza.</string>
     <string name="support_chats_disabled">Chats con miembros desactivado</string>
     <string name="chat_with_admins">Chat con administradores</string>
-    <string name="connect_via_link_or_qr_code">Conecta con enlace o QR</string>
+    <string name="connect_via_link_or_qr_code">Conecta vía enlace o QR</string>
     <string name="connect_with_someone">Crea tu enlace</string>
     <string name="chat_link_contact_address">Dirección de contacto</string>
     <string name="create_your_public_address">Crea tu dirección pública</string>
@@ -2747,7 +2747,7 @@
     <string name="chat_link_group">Enlace de grupo</string>
     <string name="relay_status_inactive">inactivo</string>
     <string name="invite_someone_privately">Invitación privada</string>
-    <string name="let_someone_connect_to_you">Conéctate con alguien</string>
+    <string name="let_someone_connect_to_you">Conecta con alguien</string>
     <string name="owner_verification_passed">Firma del enlace verificada</string>
     <string name="members_can_chat_with_admins">Los miembros pueden chatear con los administradores</string>
     <string name="migrate">Migrar</string>
@@ -2761,7 +2761,7 @@
     <string name="onboarding_on_your_phone">En tu teléfono, no en el servidor.</string>
     <string name="open_external_link_title">¿Abrir enlace externo?</string>
     <string name="onboarding_or_show_qr_code">O muestra el código QR en persona o por videollamada.</string>
-    <string name="onboarding_or_use_qr_code">O usa este QR - imprímelo o muestralo en línea.</string>
+    <string name="onboarding_or_use_qr_code">O usa el QR, imprímelo o muestralo en línea.</string>
     <string name="v6_5_ownership">En propiedad: puedes poner en marcha tus propios servidores.</string>
     <string name="v6_5_privacy">Privacidad: para propietarios y suscriptores.</string>
     <string name="onboarding_private_and_secure">Mensajería segura y privada.</string>
@@ -2786,7 +2786,7 @@
     <string name="connection_reached_limit_of_undelivered_messages">La conexión ha alcanzado al límite de mensajes no entregados</string>
     <string name="onboarding_first_network">La primera red donde los grupos\ny los contactos son tuyos.</string>
     <string name="v6_5_non_profit_governance_descr">Para que la Red SimpleX perdure.</string>
-    <string name="onboarding_post_address">Usa esta dirección en el perfil de tus redes sociales, página web o firma para email.</string>
+    <string name="onboarding_post_address">Usa esta dirección en el perfil de tus redes sociales, página web o firma email.</string>
     <string name="relay_bar_subscriber_waiting">Esperando a que el propietario del canal añada servidores.</string>
     <string name="v6_5_invite_friends_descr">Hemos simplificado la conexión para los usuarios nuevos.</string>
     <string name="why_simplex_is_built">Por qué fue creado SimpleX.</string>
@@ -2796,7 +2796,7 @@
     <string name="e2ee_info_no_e2ee"><![CDATA[Los mensajes en este canal <b>no están cifrados de extremo a extremo</b>. Los servidores pueden ver estos mensajes.]]></string>
     <string name="onboarding_network_commitments">Compromisos en la red</string>
     <string name="v6_5_non_profit_governance">Gobernanza no lucrativa</string>
-    <string name="v6_5_safe_web_links_descr">- aceptar el envío de vistas previas de los enlaces. \n- prevenir el phishing mediante hipervínculos. \n- eliminar el seguimiento de los enlaces.</string>
+    <string name="v6_5_safe_web_links_descr">- aceptar el envío de vistas previas de los enlaces. \n- usar proxy SOCKS si está hablilitado.\n- prevenir el phishing mediante hipervínculos. \n- eliminar el seguimiento de los enlaces.</string>
     <string name="one_hand_ui_bottom_bar">Menú inferior</string>
     <string name="link_previews_alert_desc_socks">Las previsualizaciones de enlaces se solicitan a través del proxy SOCKS. Las peticiónes DNS aún pueden usar el DNS local del sistema.</string>
     <string name="one_hand_ui_top_bar">Menú superior</string>
