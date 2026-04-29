@@ -158,7 +158,9 @@ fun SimpleXInfoLayout(
             ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
           })
         }
-      } else Spacer(Modifier)
+      } else {
+        Spacer(Modifier)
+      }
     }
   )
   }
