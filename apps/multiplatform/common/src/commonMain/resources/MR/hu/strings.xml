@@ -45,7 +45,7 @@
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják – lehetővé teszi az értesítési szolgáltatás működését.</string>
     <string name="alert_title_msg_bad_hash">Hibás az üzenet kivonata</string>
     <string name="color_background">Háttér</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és a fájlátjátszók SOCKS proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének küldése közvetlen kapcsolatot használ.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és a fájlátjátszók SOCKS proxyn keresztül kapcsolódnak. A hívások pedig közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Az összes partnerével továbbra is kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.</string>
@@ -2689,12 +2689,12 @@
     <string name="new_1_time_link">Új egyszer használható meghívó</string>
     <string name="chat_list_channels">Csatornák</string>
     <string name="create_your_public_address">Saját nyilvános cím létrehozása</string>
-    <string name="connect_via_link_or_qr_code">Kapcsolódás hivatkozáson vagy QR-kódon keresztül</string>
+    <string name="connect_via_link_or_qr_code">Hivatkozás vagy QR-kód használata</string>
     <string name="a_link_for_one_person">Egy hivatkozás, ami egyetlen partnerrel való kapcsolat létrehozására szolgál</string>
-    <string name="connect_with_someone">Kapcsolatba lépés valakivel</string>
+    <string name="connect_with_someone">Saját hivatkozás létrehozása</string>
     <string name="for_anyone_to_reach_you">Bárki számára, aki el szeretné érni Önt</string>
     <string name="invite_someone_privately">Partner meghívása privátban</string>
-    <string name="let_someone_connect_to_you">Hagyja, hogy valaki kapcsolatba lépjen Önnel</string>
+    <string name="let_someone_connect_to_you">Hagyja, hogy valaki elérje Önt</string>
     <string name="onboarding_or_show_qr_code">Vagy mutassa meg a QR-kódot személyesen vagy videóhíváson keresztül.</string>
     <string name="onboarding_or_use_qr_code">Vagy használja ezt a QR-kódot – nyomtassa ki vagy mutassa meg online.</string>
     <string name="onboarding_send_1_time_link">Küldje el a hivatkozást bármilyen üzenetváltó alkalmazáson keresztül – ez egy biztonságos módszer – és kérje meg a partnerét, hogy illessze be a SimpleX alkalmazásba.</string>
@@ -2765,4 +2765,7 @@
     <string name="onboarding_your_network">Saját hálózat</string>
     <string name="onboarding_your_profile">Saját profil</string>
     <string name="onboarding_first_network">Az első hálózat, ahol Ön birtokolja\na saját kapcsolatait és csoportjait.</string>
+    <string name="one_hand_ui_bottom_bar">Alsó sáv</string>
+    <string name="link_previews_alert_desc_socks">A hivatkozások előnézetét SOCKS proxyn keresztül kéri le a kliens. A DNS-lekérdezés viszont továbbra is történhet helyi szinten, a saját DNS-kiszolgálón keresztül.</string>
+    <string name="one_hand_ui_top_bar">Felső sáv</string>
 </resources>
