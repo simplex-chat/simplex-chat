@@ -2554,13 +2554,13 @@
     <string name="info_row_connection_failed">Połączenie nie powiodło się</string>
     <string name="member_info_member_failed">niepowodzenie</string>
     <string name="down_migration_warning_chat_relays">Jeśli dołączyłeś do kanałów lub je utworzyłeś, przestaną one działać na stałe.</string>
-  <string name="why_built_heading">Urodziłeś się bez konta.</string>
-  <string name="why_built_p1">Nikt nie śledził twoich rozmów. Nikt nie rysował mapy miejsc, w których byłeś. Prywatność nigdy nie była funkcją - była sposobem na życie.</string>
-  <string name="why_built_p2">Następnie przenieśliśmy się do sieci, a każda platforma prosiła o podanie danych osobowych - imienia i nazwiska, numeru telefonu, znajomych. Zaakceptowaliśmy fakt, że ceną za możliwość komunikowania się z innymi jest ujawnienie komuś, z kim rozmawiamy. Tak było w przypadku każdego pokolenia, ludzi i technologii - telefonu, poczty elektronicznej, komunikatorów, mediów społecznościowych. Wydawało się to jedyną możliwą opcją.</string>
-  <string name="why_built_p3">Jest jeszcze inny sposób. Sieć bez numerów telefonów. Bez nazw użytkowników. Bez kont. Bez jakichkolwiek tożsamości użytkowników. Sieć, która łączy ludzi i przesyła zaszyfrowane wiadomości, nie wiedząc, kto jest podłączony.</string>
-  <string name="why_built_p4">Nie chodzi o lepszy zamek w drzwiach kogoś innego. Nie chodzi o milszego właściciela, który szanuje twoją prywatność, ale nadal prowadzi rejestr wszystkich odwiedzających. Nie jesteś gościem. Jesteś w domu. Żaden król nie może do niego wejść - jesteś suwerenem.</string>
-  <string name="why_built_p5">Twoje rozmowy należą do Ciebie, tak jak zawsze było przed pojawieniem się Internetu. Sieć nie jest miejscem, które odwiedzasz. Jest miejscem, które tworzysz i które należy do Ciebie. Nikt nie może Ci tego odebrać, niezależnie od tego, czy jest to miejsce prywatne, czy publiczne.</string>
-  <string name="why_built_p6">Najstarsza ludzka wolność - możliwość rozmowy z inną osobą bez bycia obserwowanym - opiera się na infrastrukturze, która nie może jej zdradzić.</string>
-  <string name="why_built_p7">Ponieważ zniszczyliśmy moc pozwalającą poznać, kim jesteś. Więc twoja moc nigdy nie będzie Ci odebrana.</string>
-  <string name="why_built_tagline">Ciesz się swobodą w swojej sieci.</string>
+    <string name="why_built_heading">Urodziłeś się bez konta.</string>
+    <string name="why_built_p1">Nikt nie śledził twoich rozmów. Nikt nie rysował mapy miejsc, w których byłeś. Prywatność nigdy nie była funkcją - była sposobem na życie.</string>
+    <string name="why_built_p2">Następnie przenieśliśmy się do sieci, a każda platforma prosiła o podanie danych osobowych - imienia i nazwiska, numeru telefonu, znajomych. Zaakceptowaliśmy fakt, że ceną za możliwość komunikowania się z innymi jest ujawnienie komuś, z kim rozmawiamy. Tak było w przypadku każdego pokolenia, ludzi i technologii - telefonu, poczty elektronicznej, komunikatorów, mediów społecznościowych. Wydawało się to jedyną możliwą opcją.</string>
+    <string name="why_built_p3">Jest jeszcze inny sposób. Sieć bez numerów telefonów. Bez nazw użytkowników. Bez kont. Bez jakichkolwiek tożsamości użytkowników. Sieć, która łączy ludzi i przesyła zaszyfrowane wiadomości, nie wiedząc, kto jest podłączony.</string>
+    <string name="why_built_p4">Nie chodzi o lepszy zamek w drzwiach kogoś innego. Nie chodzi o milszego właściciela, który szanuje twoją prywatność, ale nadal prowadzi rejestr wszystkich odwiedzających. Nie jesteś gościem. Jesteś w domu. Żaden król nie może do niego wejść - jesteś suwerenem.</string>
+    <string name="why_built_p5">Twoje rozmowy należą do Ciebie, tak jak zawsze było przed pojawieniem się Internetu. Sieć nie jest miejscem, które odwiedzasz. Jest miejscem, które tworzysz i które należy do Ciebie. Nikt nie może Ci tego odebrać, niezależnie od tego, czy jest to miejsce prywatne, czy publiczne.</string>
+    <string name="why_built_p6">Najstarsza ludzka wolność - możliwość rozmowy z inną osobą bez bycia obserwowanym - opiera się na infrastrukturze, która nie może jej zdradzić.</string>
+    <string name="why_built_p7">Ponieważ zniszczyliśmy moc pozwalającą poznać, kim jesteś. Więc twoja moc nigdy nie będzie Ci odebrana.</string>
+    <string name="why_built_tagline">Ciesz się swobodą w swojej sieci.</string>
 </resources>

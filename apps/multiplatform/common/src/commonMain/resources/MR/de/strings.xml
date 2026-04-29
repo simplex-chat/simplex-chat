@@ -28,7 +28,7 @@
     <string name="connection_local_display_name">verbindung %1$d</string>
     <string name="display_name_connection_established">verbindung hergestellt</string>
     <string name="display_name_invited_to_connect">für eine Verbindung eingeladen</string>
-    <string name="display_name_connecting">verbinde…</string>
+    <string name="display_name_connecting">Verbinde…</string>
     <string name="description_you_shared_one_time_link">sie haben einen Einmal-Link geteilt</string>
     <string name="description_you_shared_one_time_link_incognito">sie haben einen Einmal-Link inkognito geteilt</string>
     <string name="description_via_group_link">über einen Gruppen-Link</string>
@@ -172,10 +172,10 @@
     <string name="welcome">Willkommen!</string>
     <string name="this_text_is_available_in_settings">Dieser Text ist in den Einstellungen verfügbar.</string>
     <string name="your_chats">Chats</string>
-    <string name="contact_connection_pending">verbinde …</string>
+    <string name="contact_connection_pending">Verbinde…</string>
     <string name="group_preview_you_are_invited">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_preview_join_as">Beitreten als %s</string>
-    <string name="group_connection_pending">verbinde …</string>
+    <string name="group_connection_pending">Verbinde…</string>
     <string name="tap_to_start_new_chat">Tippen, um einen neuen Chat zu starten</string>
     <string name="chat_with_developers">Chatten Sie mit den Entwicklern</string>
     <string name="you_have_no_chats">Sie haben keine Chats</string>
@@ -694,7 +694,7 @@
     <string name="group_invitation_expired">Die Gruppeneinladung ist abgelaufen</string>
     <!-- Group event chat items -->
     <string name="rcv_group_event_member_added">hat %1$s eingeladen.</string>
-    <string name="rcv_group_event_member_connected">verbunden</string>
+    <string name="rcv_group_event_member_connected">Verbunden</string>
     <string name="rcv_group_event_member_left">hat die Gruppe verlassen</string>
     <string name="rcv_group_event_changed_member_role">änderte die Rolle von %s auf %s</string>
     <string name="rcv_group_event_changed_your_role">änderte Ihre Rolle auf %s</string>
@@ -725,13 +725,13 @@
     <string name="group_member_status_group_deleted">Gruppe gelöscht</string>
     <string name="group_member_status_invited">Eingeladen</string>
     <string name="group_member_status_introduced">Verbindung (erstellt)</string>
-    <string name="group_member_status_intro_invitation">Verbinde (nach einer Einladung)</string>
+    <string name="group_member_status_intro_invitation">Verbindung (nach einer Einladung)</string>
     <string name="group_member_status_accepted">Verbindung (angenommen)</string>
     <string name="group_member_status_announced">Verbindung (angekündigt)</string>
     <string name="group_member_status_connected">Verbunden</string>
     <string name="group_member_status_complete">Vollständig</string>
     <string name="group_member_status_creator">Ersteller</string>
-    <string name="group_member_status_connecting">verbinden</string>
+    <string name="group_member_status_connecting">Verbinde</string>
     <!-- AddGroupMembersView.kt -->
     <string name="no_contacts_to_add">Keine Kontakte zum Hinzufügen</string>
     <string name="new_member_role">Neue Mitgliedsrolle</string>
@@ -1397,7 +1397,7 @@
     <string name="receipts_groups_override_disabled">Das Senden von Bestätigungen ist für %d Gruppen deaktiviert</string>
     <string name="receipts_groups_override_enabled">Das Senden von Bestätigungen ist für %d Gruppen aktiviert</string>
     <string name="receipts_groups_disable_for_all">Für alle Gruppen deaktivieren</string>
-    <string name="send_receipts_disabled">deaktiviert</string>
+    <string name="send_receipts_disabled">Deaktiviert</string>
     <string name="send_receipts_disabled_alert_title">Bestätigungen sind deaktiviert</string>
     <string name="no_info_on_delivery">Keine Information über die Zustellung</string>
     <string name="delivery">Zustellung</string>
@@ -1989,7 +1989,7 @@
     <string name="chunks_downloaded">Daten-Pakete heruntergeladen</string>
     <string name="servers_info_connected_servers_section_header">Verbundene Server</string>
     <string name="deleted">Gelöscht</string>
-    <string name="member_info_member_disabled">deaktiviert</string>
+    <string name="member_info_member_disabled">Deaktiviert</string>
     <string name="servers_info_reconnect_server_error">Fehler beim Wiederherstellen der Verbindung zum Server</string>
     <string name="message_forwarded_title">Nachricht weitergeleitet</string>
     <string name="servers_info_files_tab">Dateien</string>
@@ -2445,10 +2445,10 @@
     <string name="feature_roles_moderators">Moderatoren</string>
     <string name="block_members_for_all_question">Mitglieder für Alle blockieren?</string>
     <string name="block_members_desc">Alle neuen Nachrichten dieser Mitglieder werden nicht angezeigt!</string>
-    <string name="onboarding_conditions_by_using_you_agree">Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden.\n- andere Nutzer zu respektieren - kein Spam.</string>
+    <string name="onboarding_conditions_by_using_you_agree">Sie verpflichten sich dazu:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden.\n- andere Nutzer zu respektieren - kein Spam.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Datenschutz- und Nutzungsbedingungen.</string>
     <string name="onboarding_conditions_accept">Annehmen</string>
-    <string name="onboarding_conditions_private_chats_not_accessible">Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Betreiber verpflichten sich:\n- Unabhängig zu bleiben\n- Metadaten auf ein Minimum zu reduzieren\n- Geprüften Open‑Source‑Code einzusetzen</string>
     <string name="unsupported_connection_link">Verbindungs-Link wird nicht unterstützt</string>
     <string name="short_link_button_text">Verkürzter Link</string>
     <string name="full_link_button_text">Vollständiger Link</string>
@@ -2662,8 +2662,8 @@
     <string name="check_relay_name">Relais-Name überprüfen und erneut versuchen.</string>
     <string name="configure_relays">Relais konfigurieren</string>
     <string name="relay_test_step_connect">Verbinden</string>
-    <string name="relay_conn_status_connected">verbunden</string>
-    <string name="relay_conn_status_connecting">verbinden</string>
+    <string name="relay_conn_status_connected">Verbunden</string>
+    <string name="relay_conn_status_connecting">Verbinde</string>
     <string name="create_channel_title">Öffentlichen Kanal erstellen</string>
     <string name="create_channel_button">Öffentlichen Kanal erstellen</string>
     <string name="create_channel_beta_button">Öffentlichen Kanal erstellen (BETA)</string>
@@ -2779,7 +2779,7 @@
     <string name="error_sharing_channel">Fehler beim Teilen des Kanals</string>
     <string name="chat_link_from_owner">(vom Eigentümer)</string>
     <string name="chat_link_group">Gruppen-Link</string>
-    <string name="owner_verification_passed">Linksignatur erfolgreich verifiziert.</string>
+    <string name="owner_verification_passed">Linksignatur erfolgreich überprüft.</string>
     <string name="network_error">Netzwerk-Fehler</string>
     <string name="chat_link_one_time">Einmal-Link</string>
     <string name="relay_results">Relay‑Status:</string>
@@ -2808,7 +2808,7 @@
     <string name="onboarding_or_use_qr_code">Oder diesen QR‑Code verwenden – ausgedruckt oder online.</string>
     <string name="v6_5_ownership">Volle Kontrolle: Sie können Ihre eigenen Relais betreiben.</string>
     <string name="v6_5_privacy">Privatsphäre: für Besitzer und Abonnenten.</string>
-    <string name="v6_5_public_channels">Öffentliche Kanäle – freies Kommunizieren 🚀</string>
+    <string name="v6_5_public_channels">Öffentliche Kanäle – frei sprechen 🚀</string>
     <string name="v6_5_reliability">Zuverlässigkeit: mehrere Relais pro Kanal.</string>
     <string name="v6_5_safe_web_links">Sichere Web-Links</string>
     <string name="v6_5_security">Sicherheit: Eigentümer besitzen die Kanalschlüssel.</string>
@@ -2827,7 +2827,6 @@
     <string name="why_built_p6">Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.</string>
     <string name="why_built_p7">Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.</string>
     <string name="why_built_tagline">Genießen Sie die Freiheit in Ihrem Netzwerk.</string>
-
     <!-- channel preferences (subscribers) -->
     <string name="group_reports_subscriber_reports">Abonnenten-Meldungen</string>
     <string name="allow_direct_messages_channel">Das Senden von Direktnachrichten an Abonnenten erlauben.</string>
@@ -2845,4 +2844,32 @@
     <string name="group_members_can_send_reports_channel">Abonnenten können Nachrichten an Moderatoren melden.</string>
     <string name="recent_history_is_sent_to_new_members_channel">Bis zu 100 der letzten Nachrichten werden an neue Abonnenten gesendet.</string>
     <string name="recent_history_is_not_sent_to_new_members_channel">Der Nachrichtenverlauf wird nicht an neue Abonnenten gesendet.</string>
+    <string name="allow_chat_with_admins">Mitgliedern den Chat mit Administratoren erlauben.</string>
+    <string name="allow_chat_with_admins_channel">Abonnenten den Chat mit Administratoren erlauben.</string>
+    <string name="onboarding_be_free">Seien Sie frei\nin Ihrem Netzwerk</string>
+    <string name="chat_with_admins_is_prohibited">Chats mit Administratoren sind nicht erlaubt.</string>
+    <string name="chat_with_admins_relay_note">Chats mit Administratoren in öffentlichen Kanälen sind nicht Ende‑zu‑Ende‑verschlüsselt – bitte nur über vertrauenswürdige Chat‑Relais nutzen.</string>
+    <string name="support_chats_disabled">Chats mit Mitgliedern sind deaktiviert</string>
+    <string name="chat_with_admins">Chat mit Administratoren</string>
+    <string name="enable_chats_with_admins">Aktivieren</string>
+    <string name="enable_chats_with_admins_question">Chats mit Administratoren aktivieren?</string>
+    <string name="enter_profile_name">Geben Sie einen Profilnamen ein…</string>
+    <string name="get_started">Jetzt starten</string>
+    <string name="members_can_chat_with_admins">Mitglieder können mit Administratoren chatten.</string>
+    <string name="e2ee_info_no_e2ee"><![CDATA[Nachrichten in diesem Kanal sind <b>nicht Ende‑zu‑Ende‑verschlüsselt</b>. Chat‑Relais können sie einsehen.]]></string>
+    <string name="migrate">Migrieren</string>
+    <string name="onboarding_network_commitments">Netzwerk‑Verpflichtungen</string>
+    <string name="onboarding_network_routers_cannot_know">Netzwerk‑Router können nicht erkennen,\nwer mit wem kommuniziert</string>
+    <string name="onboarding_no_account">Kein Account. Keine Telefonnummer. Keine E‑Mail. Keine ID.\nDie sicherste Verschlüsselung.</string>
+    <string name="onboarding_on_your_phone">Auf Ihrem Gerät, nicht auf Servern.</string>
+    <string name="open_external_link_title">Externen Link öffnen?</string>
+    <string name="onboarding_private_and_secure">Private und sichere Kommunikation.</string>
+    <string name="prohibit_chat_with_admins">Chat mit Administratoren nicht erlauben.</string>
+    <string name="onboarding_configure_notifications">Benachrichtigungen einrichten</string>
+    <string name="onboarding_configure_routers">Router einrichten</string>
+    <string name="members_can_chat_with_admins_channel">Abonnenten können mit Administratoren chatten.</string>
+    <string name="onboarding_first_network">Das erste Netzwerk,\nin dem Sie Ihre Kontakte und Gruppen besitzen.</string>
+    <string name="why_simplex_is_built">Warum SimpleX entwickelt wurde.</string>
+    <string name="onboarding_your_network">Ihr Netzwerk</string>
+    <string name="onboarding_your_profile">Ihr Profil</string>
 </resources>

@@ -1944,9 +1944,6 @@ chat item action */
 "Enable lock" = "Activer le verrouillage";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "Activer les notifications";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "Activer les notifications périodiques ?";
 
 /* No comment provided by engineer. */
@@ -4962,9 +4959,6 @@ server test failure */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.";
 
 /* No comment provided by engineer. */
-"Toggle chat list:" = "Afficher la liste des conversations :";
-
-/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Basculer en mode incognito lors de la connexion.";
 
 /* No comment provided by engineer. */
@@ -5128,9 +5122,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use %@" = "Utiliser %@";
-
-/* No comment provided by engineer. */
-"Use chat" = "Utiliser le chat";
 
 /* new chat action */
 "Use current profile" = "Utiliser le profil actuel";

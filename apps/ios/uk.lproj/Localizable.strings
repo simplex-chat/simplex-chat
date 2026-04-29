@@ -2011,9 +2011,6 @@ chat item action */
 "Enable lock" = "Увімкнути блокування";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "Увімкнути сповіщення";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "Увімкнути періодичні сповіщення?";
 
 /* No comment provided by engineer. */
@@ -5435,9 +5432,6 @@ server test failure */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Щоб перевірити наскрізне шифрування з вашим контактом, порівняйте (або відскануйте) код на ваших пристроях.";
 
 /* No comment provided by engineer. */
-"Toggle chat list:" = "Перемикання списку чату:";
-
-/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Увімкніть інкогніто при підключенні.";
 
 /* token status */
@@ -5628,9 +5622,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use %@" = "Використовуйте %@";
-
-/* No comment provided by engineer. */
-"Use chat" = "Використовуйте чат";
 
 /* new chat action */
 "Use current profile" = "Використовувати поточний профіль";
