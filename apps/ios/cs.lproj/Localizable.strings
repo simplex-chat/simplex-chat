@@ -1426,9 +1426,6 @@ alert button */
 "Enable lock" = "Povolit zámek";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "Povolit upozornění";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "Povolit pravidelná oznámení?";
 
 /* No comment provided by engineer. */
@@ -3385,9 +3382,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Použít hostitele .onion";
-
-/* No comment provided by engineer. */
-"Use chat" = "Použijte chat";
 
 /* new chat action */
 "Use current profile" = "Použít aktuální profil";

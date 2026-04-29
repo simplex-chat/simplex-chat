@@ -2246,7 +2246,6 @@
     <string name="chat_theme_set_default_theme">Nastavit výchozí téma</string>
     <string name="servers_info_uploaded">Nahráno</string>
     <string name="privacy_chat_list_open_links_yes">Ano</string>
-    <string name="one_hand_ui_card_title">Přepnout chat seznam:</string>
     <string name="change_automatic_chat_deletion_message">Tuto akci nelze zrušit - zprávy odeslané a přijaté v tomto chatu dříve než vybraná, budou smazány.</string>
     <string name="servers_info_reset_stats_alert_message">Statistiky serverů budou obnoveny - nemůže být vráceno!</string>
     <string name="v6_3_reports">Odešlete soukromý report</string>
@@ -2549,13 +2548,13 @@
     <string name="down_migration_warning_chat_relays">Pokud jste se připojili k nějakým kanálům nebo je vytvořili, přestanou trvale fungovat.</string>
     <string name="relay_status_active">aktivní</string>
     <string name="cancel_creating_channel_confirm">Zrušit</string>
-  <string name="why_built_heading">Narodili jste se bez účtu.</string>
-  <string name="why_built_p1">Nikdo nesledoval vaše konverzace. Nikdo nevytvořil mapu, kde jste byli. Soukromí nikdy nebylo funkcí - byl to způsob života.</string>
-  <string name="why_built_p2">Pak jsme se přesunuli na internet a každá platforma chtěla o vás něco vědět - vaše jméno, vaše číslo, vaše přátele. Smířili jsme se s tím, že cenou za komunikaci s ostatními je dát někomu vědět, s kým mluvíme. Každá generace, lidská i technická, to tak měla - telefon, e-mail, komunikátory, sociální sítě. Zdálo se, že je to jediný možný způsob.</string>
-  <string name="why_built_p3">Existuje i jiný způsob. Síť bez telefonních čísel. Bez uživatelských jmen. Bez účtů. Bez jakékoli uživatelské identity. Síť, která spojuje lidi a přenáší šifrované zprávy, aniž by bylo známo, kdo je připojen.</string>
-  <string name="why_built_p4">Nejde o to mít lepší zámek na dveřích někoho jiného. Ani o to mít nájemce, který respektuje vaše soukromí, ale vede evidenci všech vašich návštěvníků. Nejste host. Jste doma. Ani král k vám nemůže vstoupit - jste suverén.</string>
-  <string name="why_built_p5">Vaše konverzace patří vám, jako tomu bylo vždy před internetem. Síť není místo, které navštěvujete. Je to místo, které vytváříte a vlastníte. A nikdo vám ho nemůže vzít, ať už je soukromé, nebo veřejné.</string>
-  <string name="why_built_p6">Nejstarší lidská svoboda - mluvit s druhým člověkem, aniž by byl sledován - postavena na infrastruktuře, která ji nemůže zradit.</string>
-  <string name="why_built_p7">Protože jsme zničili sílu vědět, kdo jste. Aby vám vaši moc nikdo nemohl vzít.</string>
-  <string name="why_built_tagline">Buďte svobodní ve své síti.</string>
+    <string name="why_built_heading">Narodili jste se bez účtu.</string>
+    <string name="why_built_p1">Nikdo nesledoval vaše konverzace. Nikdo nevytvořil mapu, kde jste byli. Soukromí nikdy nebylo funkcí - byl to způsob života.</string>
+    <string name="why_built_p2">Pak jsme se přesunuli na internet a každá platforma chtěla o vás něco vědět - vaše jméno, vaše číslo, vaše přátele. Smířili jsme se s tím, že cenou za komunikaci s ostatními je dát někomu vědět, s kým mluvíme. Každá generace, lidská i technická, to tak měla - telefon, e-mail, komunikátory, sociální sítě. Zdálo se, že je to jediný možný způsob.</string>
+    <string name="why_built_p3">Existuje i jiný způsob. Síť bez telefonních čísel. Bez uživatelských jmen. Bez účtů. Bez jakékoli uživatelské identity. Síť, která spojuje lidi a přenáší šifrované zprávy, aniž by bylo známo, kdo je připojen.</string>
+    <string name="why_built_p4">Nejde o to mít lepší zámek na dveřích někoho jiného. Ani o to mít nájemce, který respektuje vaše soukromí, ale vede evidenci všech vašich návštěvníků. Nejste host. Jste doma. Ani král k vám nemůže vstoupit - jste suverén.</string>
+    <string name="why_built_p5">Vaše konverzace patří vám, jako tomu bylo vždy před internetem. Síť není místo, které navštěvujete. Je to místo, které vytváříte a vlastníte. A nikdo vám ho nemůže vzít, ať už je soukromé, nebo veřejné.</string>
+    <string name="why_built_p6">Nejstarší lidská svoboda - mluvit s druhým člověkem, aniž by byl sledován - postavena na infrastruktuře, která ji nemůže zradit.</string>
+    <string name="why_built_p7">Protože jsme zničili sílu vědět, kdo jste. Aby vám vaši moc nikdo nemohl vzít.</string>
+    <string name="why_built_tagline">Buďte svobodní ve své síti.</string>
 </resources>

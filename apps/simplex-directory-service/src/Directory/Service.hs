@@ -1395,7 +1395,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                     r -> contErr r
             r -> contErr r
           where
-            alreadyMember = isJust . find ((Just ctId ==) . memberContactId)
+            alreadyMember = any (\m -> memberContactId m == Just ctId && memberCurrent m)
             contErr r = do
               let err = "error inviting contact ID " <> tshow ctId <> " to owners' group: " <> tshow r
               putStrLn $ T.unpack err

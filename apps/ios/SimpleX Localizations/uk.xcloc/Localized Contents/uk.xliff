@@ -1479,6 +1479,10 @@ in your network</source>
         <target>Надсилати голосові повідомлення можете як ви, так і ваш контакт.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bottom bar" xml:space="preserve">
+        <source>Bottom bar</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
         <source>Broadcast</source>
         <note>compose placeholder for channel owner</note>
@@ -9162,11 +9166,6 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Щоб перевірити наскрізне шифрування з вашим контактом, порівняйте (або відскануйте) код на ваших пристроях.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle chat list:" xml:space="preserve">
-        <source>Toggle chat list:</source>
-        <target>Перемикання списку чату:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>Увімкніть інкогніто при підключенні.</target>
@@ -9180,6 +9179,10 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
         <target>Непрозорість панелі інструментів</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Top bar" xml:space="preserve">
+        <source>Top bar</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
