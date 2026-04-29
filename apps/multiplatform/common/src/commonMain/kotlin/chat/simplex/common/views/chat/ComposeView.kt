@@ -419,9 +419,9 @@ fun ComposeView(
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
         if (pendingLinkUrl.value != url) return@withLongRunningApi
-        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()
-            && !chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
-          showLinkPreviewsConfirmAlert { enable ->
+        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()) {
+          val socksEnabled = chatModel.controller.appPrefs.networkUseSocksProxy.get()
+          showLinkPreviewsConfirmAlert(socksEnabled) { enable ->
             if (enable != null) {
               chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
               chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
@@ -1703,10 +1703,15 @@ fun ComposeView(
   }
 }
 
-private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
+private fun showLinkPreviewsConfirmAlert(socksEnabled: Boolean, onChoice: (Boolean?) -> Unit) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.link_previews_alert_title),
-    text = AnnotatedString(generalGetString(MR.strings.link_previews_alert_desc)),
+    text = AnnotatedString(
+      if (socksEnabled)
+        generalGetString(MR.strings.link_previews_alert_desc) + "\n\n" + generalGetString(MR.strings.link_previews_alert_desc_socks)
+      else
+        generalGetString(MR.strings.link_previews_alert_desc)
+    ),
     onDismissRequest = { onChoice(null) },
     buttons = {
       Column {
@@ -1714,13 +1719,13 @@ private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
           AlertManager.shared.hideAlert()
           onChoice(false)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
           onChoice(true)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = if (socksEnabled) MaterialTheme.colors.primary else Color.Red)
         }
 //        SectionItemView({
 //          AlertManager.shared.hideAlert()
