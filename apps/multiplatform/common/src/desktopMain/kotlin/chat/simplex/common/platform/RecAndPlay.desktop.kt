@@ -70,11 +70,11 @@ actual class RecorderNative: RecorderInterface {
     RecorderInterface.stopRecording = null
     runCatching { player?.controls()?.stop() }
     runCatching { player?.release() }
-    runBlocking { progressJob?.cancelAndJoin() }
+    progressJob?.cancel()
     progressJob = null
     filePath = null
     player = null
-    return (realDuration(path) ?: 0).also { recStartedAt = null }
+    return (progress() ?: 0).also { recStartedAt = null }
   }
 
   private fun progress(): Int? = recStartedAt?.let { (System.currentTimeMillis() - it).toInt() }

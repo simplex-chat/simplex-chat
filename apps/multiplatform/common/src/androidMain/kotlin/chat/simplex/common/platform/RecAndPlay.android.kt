@@ -78,15 +78,12 @@ actual class RecorderNative: RecorderInterface {
     runCatching {
       recorder?.release()
     }
-    // Await coroutine finishes in order to send real duration to it's listener
-    runBlocking {
-      progressJob?.cancelAndJoin()
-    }
+    progressJob?.cancel()
     progressJob = null
     filePath = null
     recorder = null
     keepScreenOn(false)
-    return (realDuration(path) ?: 0).also { recStartedAt = null }
+    return (progress() ?: 0).also { recStartedAt = null }
   }
 
   private fun progress(): Int? = recStartedAt?.let { (System.currentTimeMillis() - it).toInt() }
