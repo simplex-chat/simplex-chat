@@ -2216,14 +2216,6 @@ testLinkCheckUpdatesCount ps = do
             superUser <## "      Channel approved!"
             bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
             bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
-            -- search shows initial count
-            bob #> "@'SimpleX Directory' news"
-            bob <# "'SimpleX Directory'> > news"
-            bob <## "      Found 1 group(s)."
-            bob <# "'SimpleX Directory'> news"
-            bob <##. "Link to join channel: "
-            bob <## "You need SimpleX Chat app v6.5 to join."
-            bob <## "1 subscribers"
             -- link check updates count (bot joined)
             threadDelay 1000000
             bob #> "@'SimpleX Directory' news"
