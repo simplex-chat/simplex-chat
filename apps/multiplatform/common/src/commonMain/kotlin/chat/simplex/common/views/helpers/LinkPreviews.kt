@@ -48,7 +48,6 @@ private val previewMutex = Mutex()
 suspend fun getLinkPreview(url: String): LinkPreview? {
   return withContext(Dispatchers.IO) {
     previewMutex.withLock {
-      val previousAuthenticator = Authenticator.getDefault()
       try {
         try {
           val title: String?
@@ -139,7 +138,7 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
         }
         return@withLock null
       } finally {
-        Authenticator.setDefault(previousAuthenticator)
+        Authenticator.setDefault(null)
       }
     }
   }
