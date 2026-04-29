@@ -498,11 +498,11 @@ channel relay bar</note>
 - és még sok más!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- opt-in to send link previews.&#10;- prevent hyperlink phishing.&#10;- remove link tracking." xml:space="preserve" approved="no">
+      <trans-unit id="- opt-in to send link previews.&#10;- prevent hyperlink phishing.&#10;- remove link tracking." xml:space="preserve">
         <source>- opt-in to send link previews.
 - prevent hyperlink phishing.
 - remove link tracking.</source>
-        <target state="translated">- Hivatkozások előnézetének küldése.
+        <target>- Hivatkozások előnézetének küldése.
 - Hiperhivatkozásokon keresztüli adathalászat megakadályozása.
 - Hivatkozások nyomonkövetési paramétereinek eltávolítása.</target>
         <note>No comment provided by engineer.</note>
@@ -1518,9 +1518,9 @@ a saját hálózatában</target>
         <target>Mindkét fél küldhet hangüzeneteket.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bottom bar" xml:space="preserve" approved="no">
+      <trans-unit id="Bottom bar" xml:space="preserve">
         <source>Bottom bar</source>
-        <target state="translated">Alsó sáv</target>
+        <target>Alsó sáv</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
@@ -2218,9 +2218,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Kapcsolódás egy hivatkozáson keresztül</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="Connect via link or QR code" xml:space="preserve" approved="no">
+      <trans-unit id="Connect via link or QR code" xml:space="preserve">
         <source>Connect via link or QR code</source>
-        <target state="translated">Hivatkozás vagy QR-kód használata</target>
+        <target>Hivatkozás vagy QR-kód használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
@@ -2540,9 +2540,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Saját cím létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create your link" xml:space="preserve" approved="no">
+      <trans-unit id="Create your link" xml:space="preserve">
         <source>Create your link</source>
-        <target state="translated">Saját hivatkozás létrehozása</target>
+        <target>Saját hivatkozás létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -5271,9 +5271,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Kevesebb adatforgalom a mobilhálózatokon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Let someone connect to you" xml:space="preserve" approved="no">
+      <trans-unit id="Let someone connect to you" xml:space="preserve">
         <source>Let someone connect to you</source>
-        <target state="translated">Hagyja, hogy valaki elérje Önt</target>
+        <target>Hagyja, hogy valaki elérje Önt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -6256,9 +6256,9 @@ new chat action</note>
         <target>Régi adatbázis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="On your phone, not on servers." xml:space="preserve" approved="no">
+      <trans-unit id="On your phone, not on servers." xml:space="preserve">
         <source>On your phone, not on servers.</source>
-        <target state="translated">Az eszközön, nem pedig kiszolgálókon.</target>
+        <target>Az eszközön, nem pedig kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -9421,9 +9421,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Eszköztár átlátszatlansága</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Top bar" xml:space="preserve" approved="no">
+      <trans-unit id="Top bar" xml:space="preserve">
         <source>Top bar</source>
-        <target state="translated">Felső sáv</target>
+        <target>Felső sáv</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">

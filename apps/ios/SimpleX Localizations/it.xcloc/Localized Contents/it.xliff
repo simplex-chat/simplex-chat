@@ -1518,9 +1518,9 @@ nella tua rete</target>
         <target>Sia tu che il tuo contatto potete inviare messaggi vocali.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bottom bar" xml:space="preserve" approved="no">
+      <trans-unit id="Bottom bar" xml:space="preserve">
         <source>Bottom bar</source>
-        <target state="translated">Barra inferiore</target>
+        <target>Barra inferiore</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
@@ -9421,9 +9421,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Opacità barra degli strumenti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Top bar" xml:space="preserve" approved="no">
+      <trans-unit id="Top bar" xml:space="preserve">
         <source>Top bar</source>
-        <target state="translated">Barra superiore</target>
+        <target>Barra superiore</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
@@ -10345,11 +10345,11 @@ Ripetere la richiesta di ingresso?</target>
         <target>Non puoi inviare messaggi!</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="You commit to:&#10;- Only legal content in public groups&#10;- Respect other users - no spam" xml:space="preserve" approved="no">
+      <trans-unit id="You commit to:&#10;- Only legal content in public groups&#10;- Respect other users - no spam" xml:space="preserve">
         <source>You commit to:
 - Only legal content in public groups
 - Respect other users - no spam</source>
-        <target state="translated">Tu ti impegni a:
+        <target>Tu ti impegni a:
 - Pubblicare solo contenuto legale nei gruppi pubblici
 - Rispettare gli altri utenti. Niente spam</target>
         <note>No comment provided by engineer.</note>
