@@ -2646,7 +2646,7 @@
   <string name="v6_5_invite_friends">Easier to invite your friends 👋</string>
   <string name="v6_5_invite_friends_descr">We made connecting simpler for new users.</string>
   <string name="v6_5_safe_web_links">Safe web links</string>
-  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
+  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- use SOCKS proxy if enabled.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
   <string name="view_updated_conditions">View updated conditions</string>
