@@ -1714,13 +1714,13 @@ private fun showLinkPreviewsConfirmAlert(socksEnabled: Boolean, onChoice: (Boole
           AlertManager.shared.hideAlert()
           onChoice(false)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = if (socksEnabled) MaterialTheme.colors.primary else Color.Red)
+          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
           onChoice(true)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = if (socksEnabled) MaterialTheme.colors.primary else Color.Red)
         }
 //        SectionItemView({
 //          AlertManager.shared.hideAlert()
