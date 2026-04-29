@@ -80,7 +80,7 @@
     <string name="error_smp_test_server_auth">Der Server erfordert zum Erstellen von Warteschlangen eine Autorisierung. Bitte überprüfen Sie das Passwort.</string>
     <string name="error_smp_test_certificate">Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein.</string>
     <string name="smp_server_test_connect">Verbinde</string>
-    <string name="smp_server_test_create_queue">Erzeuge Warteschlange</string>
+    <string name="smp_server_test_create_queue">Warteschlange erstellen</string>
     <string name="smp_server_test_secure_queue">Sichere Warteschlange</string>
     <string name="smp_server_test_delete_queue">Lösche Warteschlange</string>
     <string name="smp_server_test_disconnect">Trenne Verbindung</string>
@@ -469,7 +469,7 @@
     <string name="people_can_connect_only_via_links_you_share">Sie entscheiden, wer sich mit Ihnen verbinden kann.</string>
     <string name="decentralized">Dezentral</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Jeder kann seine eigenen Server aufsetzen.</string>
-    <string name="create_your_profile">Erstellen Sie Ihr Profil</string>
+    <string name="create_your_profile">Ihr Profil erstellen</string>
     <string name="make_private_connection">Stellen Sie eine private Verbindung her</string>
     <string name="how_it_works">Wie es funktioniert</string>
     <!-- How SimpleX Works -->
@@ -756,7 +756,7 @@
     <string name="button_leave_group">Gruppe verlassen</string>
     <string name="button_edit_group_profile">Gruppenprofil bearbeiten</string>
     <string name="group_link">Gruppen-Link</string>
-    <string name="button_create_group_link">Link erzeugen</string>
+    <string name="button_create_group_link">Link erstellen</string>
     <string name="delete_link_question">Link löschen?</string>
     <string name="delete_link">Link löschen</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Sie können diesen Link oder QR-Code teilen – damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
@@ -943,7 +943,7 @@
     <string name="v4_2_security_assessment">Sicherheits-Gutachten</string>
     <string name="v4_2_security_assessment_desc">Die Sicherheit von SimpleX Chat wurde von Trail of Bits überprüft.</string>
     <string name="whats_new">Was ist neu</string>
-    <string name="v4_2_group_links_desc">Administratoren können Links für den Beitritt zu Gruppen erzeugen.</string>
+    <string name="v4_2_group_links_desc">Administratoren können Links für den Beitritt zu Gruppen erstellen.</string>
     <string name="v4_2_auto_accept_contact_requests">Kontaktanfragen automatisch annehmen</string>
     <string name="v4_4_verify_connection_security_desc">Vergleichen Sie die Sicherheitscodes mit Ihren Kontakten.</string>
     <string name="v4_3_improved_privacy_and_security_desc">App-Bildschirm in aktuellen Anwendungen verbergen.</string>
@@ -1437,7 +1437,7 @@
     <string name="open_database_folder">Datenbank-Ordner öffnen</string>
     <string name="passphrase_will_be_saved_in_settings">Das Passwort wird in Klartext in den Einstellungen gespeichert, nachdem Sie es geändert oder die App neu gestartet haben.</string>
     <string name="settings_is_storing_in_clear_text">Das Passwort wurde in Klartext in den Einstellungen gespeichert.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Relais sind per SOCKS-Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Relais sind per SOCKS-Proxy verbunden. Anrufe nutzen eine direkte Verbindung.]]></string>
     <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
     <string name="rcv_group_event_open_chat">Öffnen</string>
     <string name="v5_3_encrypt_local_files">Gespeicherte Dateien &amp; Medien verschlüsseln</string>
@@ -1510,7 +1510,7 @@
     <string name="encryption_renegotiation_error">Fehler bei der Neuverhandlung der Verschlüsselung</string>
     <string name="alert_text_encryption_renegotiation_failed">Neuverhandlung der Verschlüsselung fehlgeschlagen</string>
     <string name="v5_4_block_group_members">Gruppenmitglieder blockieren</string>
-    <string name="v5_4_incognito_groups_descr">Erstellen Sie eine Gruppe mit einem zufälligen Profil.</string>
+    <string name="v5_4_incognito_groups_descr">Gruppe mit einem zufälligen Profil erstellen.</string>
     <string name="connected_desktop">Verbundener Desktop</string>
     <string name="desktop_address">Desktop-Adresse</string>
     <string name="v5_4_better_groups">Bessere Gruppen</string>
@@ -2792,15 +2792,15 @@
     <string name="connection_reached_limit_of_undelivered_messages">Die Verbindung hat das Limit für nicht zugestellte Nachrichten erreicht</string>
     <string name="channel_preferences">Kanal-Präferenzen</string>
     <string name="only_channel_owners_can_change_prefs">Kanal-Präferenzen können nur von Kanal-Eigentümern geändert werden.</string>
-    <string name="a_link_for_one_person">Ein Link für eine einzelne Person zum Verbinden.</string>
+    <string name="a_link_for_one_person">Verbindungs-Link für eine Person</string>
     <string name="chat_list_channels">Kanäle</string>
     <string name="connect_via_link_or_qr_code">Über einen Link oder QR-Code verbinden</string>
-    <string name="connect_with_someone">Mit jemandem verbinden</string>
-    <string name="create_your_public_address">Erstellen Sie Ihre öffentliche Adresse</string>
+    <string name="connect_with_someone">Ihren Link erstellen</string>
+    <string name="create_your_public_address">Ihre öffentliche Adresse erstellen</string>
     <string name="v6_5_invite_friends">Freunde einladen – jetzt noch einfacher 👋</string>
     <string name="for_anyone_to_reach_you">Damit Sie jeder erreichen kann</string>
-    <string name="invite_someone_privately">Jemanden privat einladen</string>
-    <string name="let_someone_connect_to_you">Damit sich jemand mit Ihnen verbinden kann</string>
+    <string name="invite_someone_privately">Für privaten Chat einladen</string>
+    <string name="let_someone_connect_to_you">Jemand mit Ihnen verbinden lassen</string>
     <string name="new_1_time_link">Neuer Einmal-Link</string>
     <string name="v6_5_non_profit_governance">Non‑Profit‑Governance</string>
     <string name="v6_5_safe_web_links_descr">- Opt‑in zum Senden von Linkvorschauen.\n- Hyperlink‑Phishing verhindern.\n- Link‑Tracking entfernen.</string>
@@ -2813,7 +2813,7 @@
     <string name="v6_5_safe_web_links">Sichere Web-Links</string>
     <string name="v6_5_security">Sicherheit: Eigentümer besitzen die Kanalschlüssel.</string>
     <string name="onboarding_send_1_time_link">Den Link über einen beliebigen Messenger versenden – es ist sicher. Bitte in SimpleX einfügen.</string>
-    <string name="talk_to_someone">Mit jemandem sprechen</string>
+    <string name="talk_to_someone">Mit Jemandem sprechen</string>
     <string name="v6_5_non_profit_governance_descr">Für ein dauerhaftes SimpleX-Netzwerk.</string>
     <string name="onboarding_post_address">Diese Adresse in Ihrem Social‑Media‑Profil, auf Ihrer Webseite oder in Ihrer E‑Mail‑Signatur verwenden.</string>
     <string name="v6_5_invite_friends_descr">Wir haben das Verbinden für neue Nutzer vereinfacht.</string>
@@ -2872,4 +2872,7 @@
     <string name="why_simplex_is_built">Warum SimpleX entwickelt wurde.</string>
     <string name="onboarding_your_network">Ihr Netzwerk</string>
     <string name="onboarding_your_profile">Ihr Profil</string>
+    <string name="one_hand_ui_bottom_bar">Untere Leiste</string>
+    <string name="link_previews_alert_desc_socks">Die Linkvorschau wird über einen SOCKS-Proxy angefordert. DNS-Abfragen können dennoch lokal über Ihren DNS-Resolver erfolgen.</string>
+    <string name="one_hand_ui_top_bar">Obere Leiste</string>
 </resources>
