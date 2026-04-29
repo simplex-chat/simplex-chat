@@ -1518,6 +1518,11 @@ in your network</target>
         <target>Both you and your contact can send voice messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bottom bar" xml:space="preserve">
+        <source>Bottom bar</source>
+        <target>Bottom bar</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
         <source>Broadcast</source>
         <target>Broadcast</target>
@@ -9401,11 +9406,6 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle chat list:" xml:space="preserve">
-        <source>Toggle chat list:</source>
-        <target>Toggle chat list:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>Toggle incognito when connecting.</target>
@@ -9419,6 +9419,11 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
         <target>Toolbar opacity</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Top bar" xml:space="preserve">
+        <source>Top bar</source>
+        <target>Top bar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">

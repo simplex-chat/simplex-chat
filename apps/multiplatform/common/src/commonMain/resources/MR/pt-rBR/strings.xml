@@ -1870,7 +1870,6 @@
     <string name="migrate_from_device_to_another_device">Migrar para outro dispositivo</string>
     <string name="migrate_from_device_verify_passphrase">Verificar palavra-passe</string>
     <string name="network_type_network_wifi">WiFi</string>
-    <string name="one_hand_ui_card_title">Alternar lista de conversa:</string>
     <string name="one_hand_ui_change_instruction">Você pode mudar isso em configurações de Aparência.</string>
     <string name="member_info_member_disabled">desativado</string>
     <string name="message_queue_info_none">nenhum</string>

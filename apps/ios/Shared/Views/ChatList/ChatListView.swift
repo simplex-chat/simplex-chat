@@ -401,6 +401,13 @@ struct ChatListView: View {
                         .padding(.top, oneHandUI ? 8 : 0)
                         .id("searchBar")
                     }
+                    if !oneHandUICardShown {
+                        OneHandUICard()
+                            .padding(.vertical, 6)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
                     if #available(iOS 16.0, *) {
                         ForEach(cs, id: \.viewId) { chat in
                             ChatListNavLink(chat: chat, parentSheet: $sheet)
@@ -419,13 +426,6 @@ struct ChatListView: View {
                             .background { theme.colors.background } // Hides default list selection colour
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
-                    }
-                    if !oneHandUICardShown {
-                        OneHandUICard()
-                            .padding(.vertical, 6)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
                     }
                     if !addressCreationCardShown && hasConversations {
                         ConnectBannerCard()

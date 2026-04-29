@@ -1385,7 +1385,6 @@
     <string name="app_check_for_updates_notice_desc">Για να λαμβάνεις ειδοποιήσεις σχετικά με τις νέες εκδόσεις, ενεργοποίησε τον περιοδικό έλεγχο για σταθερές ή δοκιμαστικές εκδόσεις.</string>
     <string name="to_connect_via_link_title">Για να συνδεθείς μέσω συνδέσμου</string>
     <string name="scan_qr_to_connect_to_contact">Για να συνδεθείς, η επαφή σου μπορεί να σαρώσει τον κωδικό QR ή να χρησιμοποιήσει τον σύνδεσμο στην εφαρμογή.</string>
-    <string name="one_hand_ui_card_title">Εναλλαγή λίστας συνομιλιών:</string>
     <string name="v5_3_simpler_incognito_mode_descr">Ενεργοποίηση ανώνυμης λειτουργίας κατά τη σύνδεση.</string>
     <string name="v5_4_block_group_members_descr">Για απόκρυψη ανεπιθύμητων μηνυμάτων.</string>
     <string name="call_desktop_permission_denied_title">Για να πραγματοποιήσεις κλήσεις, επέτρεψε τη χρήση του μικροφώνου σου. Τερμάτισε την κλήση και προσπάθησε να καλέσεις ξανά.</string>

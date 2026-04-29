@@ -1487,6 +1487,10 @@ in your network</source>
         <target>Zarówno Ty, jak i Twój kontakt możecie wysyłać wiadomości głosowe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bottom bar" xml:space="preserve">
+        <source>Bottom bar</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
         <source>Broadcast</source>
         <note>compose placeholder for channel owner</note>
@@ -9210,11 +9214,6 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
         <target>Aby zweryfikować szyfrowanie end-to-end z Twoim kontaktem porównaj (lub zeskanuj) kod na waszych urządzeniach.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle chat list:" xml:space="preserve">
-        <source>Toggle chat list:</source>
-        <target>Przełącz listę czatów:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>Przełącz incognito przy połączeniu.</target>
@@ -9228,6 +9227,10 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
         <target>Nieprzezroczystość paska narzędzi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Top bar" xml:space="preserve">
+        <source>Top bar</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">

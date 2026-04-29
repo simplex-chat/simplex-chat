@@ -1497,6 +1497,10 @@ in your network</source>
         <target>Tanto tú como tu contacto podéis enviar mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bottom bar" xml:space="preserve">
+        <source>Bottom bar</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
         <source>Broadcast</source>
         <target>Emisión</target>
@@ -9308,11 +9312,6 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle chat list:" xml:space="preserve">
-        <source>Toggle chat list:</source>
-        <target>Alternar lista de chats:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>Activa incógnito al conectar.</target>
@@ -9326,6 +9325,10 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
         <target>Opacidad barra</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Top bar" xml:space="preserve">
+        <source>Top bar</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
