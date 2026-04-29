@@ -605,9 +605,9 @@ time interval</note>
         <target>Algunas cosas más</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A link for one person to connect" xml:space="preserve">
+      <trans-unit id="A link for one person to connect" xml:space="preserve" approved="no">
         <source>A link for one person to connect</source>
-        <target>Enlace para una persona</target>
+        <target state="translated">Enlace para un solo contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -2218,9 +2218,9 @@ This is your own one-time link!</source>
         <target>Conectar mediante enlace</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="Connect via link or QR code" xml:space="preserve">
+      <trans-unit id="Connect via link or QR code" xml:space="preserve" approved="no">
         <source>Connect via link or QR code</source>
-        <target>Conecta con enlace o QR</target>
+        <target state="translated">Conecta vía enlace o QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
@@ -2540,9 +2540,9 @@ This is your own one-time link!</source>
         <target>Crea tu dirección</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create your link" xml:space="preserve">
+      <trans-unit id="Create your link" xml:space="preserve" approved="no">
         <source>Create your link</source>
-        <target>Conecta con alguien</target>
+        <target state="translated">Crea tu enlace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -2794,9 +2794,9 @@ swipe action</note>
         <target>Eliminar canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete channel?" xml:space="preserve">
+      <trans-unit id="Delete channel?" xml:space="preserve" approved="no">
         <source>Delete channel?</source>
-        <target>¿Eliminar canal?</target>
+        <target state="translated">¿Eliminar el canal?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat" xml:space="preserve">
@@ -5271,9 +5271,9 @@ This is your link for group %@!</source>
         <target>Menos tráfico en redes móviles.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Let someone connect to you" xml:space="preserve">
+      <trans-unit id="Let someone connect to you" xml:space="preserve" approved="no">
         <source>Let someone connect to you</source>
-        <target>Conéctate con alguien</target>
+        <target state="translated">Conecta con alguien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -6557,9 +6557,9 @@ alert button</note>
         <target>O para compartir en privado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Or use this QR - print or show online." xml:space="preserve">
+      <trans-unit id="Or use this QR - print or show online." xml:space="preserve" approved="no">
         <source>Or use this QR - print or show online.</source>
-        <target>O usa este QR - imprímelo o muestralo en línea.</target>
+        <target state="translated">O usa el QR, imprímelo o muestralo en línea.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Organize chats into lists" xml:space="preserve">
@@ -9818,9 +9818,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Usa la aplicación con una sola mano.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use this address in your social media profile, website, or email signature." xml:space="preserve">
+      <trans-unit id="Use this address in your social media profile, website, or email signature." xml:space="preserve" approved="no">
         <source>Use this address in your social media profile, website, or email signature.</source>
-        <target>Usa esta dirección en tu perfil de redes sociales, página web o firma para email.</target>
+        <target state="translated">Usa esta dirección en tu perfil de redes sociales, página web o firma email.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use web port" xml:space="preserve">
