@@ -2541,7 +2541,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Create your link" xml:space="preserve">
         <source>Create your link</source>
-        <target>Mit Jemandem verbinden</target>
+        <target>Mit jemandem verbinden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -8895,7 +8895,7 @@ Die Relais-Adresse wurde zur Einrichtung dieses Relais für diesen Kanal verwend
       </trans-unit>
       <trans-unit id="Talk to someone" xml:space="preserve">
         <source>Talk to someone</source>
-        <target>Mit Jemandem sprechen</target>
+        <target>Mit jemandem sprechen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">
