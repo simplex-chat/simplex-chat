@@ -7,13 +7,13 @@ Channel owners currently can only add relays during channel creation (`APINewPub
 2. Remove a relay from an existing channel.
 3. Have relays and subscribers automatically detect and synchronize relay state changes.
 
-Several TODO markers in the codebase (`[relays]`) confirm these are planned but unimplemented. The `runRelayGroupLinkChecks` function (Commands.hs:4729) is a stub. The LINK event handler (Subscriber.hs:1308-1309) has a TODO for relay deletion detection. No `APIAddGroupRelay` command exists.
+Several TODO markers in the codebase (`[relays]`) confirm these are planned but unimplemented. The `runRelayGroupLinkChecks` function (Commands.hs:4729) is a stub. The LINK event handler (Subscriber.hs:1308-1309) has a TODO for relay deletion detection. No `APIAddGroupRelays` command exists.
 
 ## Solution Summary
 
 ### Add relay to existing channel
 
-New `APIAddGroupRelay` command that reuses the existing `addRelays` function (Commands.hs:3887, in `processChatCommand`'s `where` block). The `addRelays` flow is asynchronous: after the invitation is sent (RSNew→RSInvited), the relay responds with its relay link (→RSAccepted), and the CON event handler (Subscriber.hs:861-864) calls `setGroupLinkDataAsync` to publish the new relay link. The LINK callback then promotes RSAccepted→RSActive.
+New `APIAddGroupRelays` command that reuses the existing `addRelays` function (Commands.hs:3887, in `processChatCommand`'s `where` block). The `addRelays` flow is asynchronous: after the invitation is sent (RSNew→RSInvited), the relay responds with its relay link (→RSAccepted), and the CON event handler (Subscriber.hs:861-864) calls `setGroupLinkDataAsync` to publish the new relay link. The LINK callback then promotes RSAccepted→RSActive.
 
 ### Remove relay from existing channel
 
@@ -33,46 +33,94 @@ Three actors synchronize via the group link data on the SMP server:
 
 ## Detailed Technical Design
 
-### 1. Extend `APIRemoveMembers` for Relay Removal
+### 1. Relay Deactivation on Member Removal
 
-**File**: `src/Simplex/Chat/Library/Commands.hs` (lines 2804-2900)
+**File**: `src/Simplex/Chat/Library/Internal.hs` (lines 1804-1821)
 
-`APIRemoveMembers` already handles relay members correctly for message delivery:
-- `deleteMemsSend` sends `XGrpMemDel` via `sendGroupMessages` (line 2870)
-- `memberSendAction` (Internal.hs:2161-2170) routes the message to relay members only (in channels)
-- Other relays forward the `XGrpMemDel` to all subscribers
-- `deleteOrUpdateMemberRecordIO` sets `GSMemRemoved` on the member (line 2896)
-- `updatePublicGroupData` updates link data (line 2828-2829), which excludes the removed relay because `getConnectedGroupRelays` requires `member_status = GSMemConnected`
+Two member-removal primitives exist: `deleteOrUpdateMemberRecordIO` (IO, line 1808) and `updateMemberRecordDeleted` (CM, line 1816). Both run in DB context. Relay deactivation belongs inside these functions so it runs in the same transaction as the member status change.
 
-**What needs to be added**: after `deleteOrUpdateMemberRecordIO` removes the member, also update the `GroupRelay.relay_status` to `RSInactive`. This mirrors the existing pattern in `xGrpLeave` (Subscriber.hs:3169-3172) where a relay leaving sets its relay status to RSInactive.
-
-The change is in the `delMember` helper (line 2891-2897):
+**New helper** in Internal.hs:
 
 ```haskell
-delMember db m = do
-  void $ deleteOrUpdateMemberRecordIO db user gInfo m
-  -- When removing a relay member, also set GroupRelay status to RSInactive
+deactivateRelayIfNeeded :: DB.Connection -> GroupMember -> IO ()
+deactivateRelayIfNeeded db m =
   when (isRelay m) $ do
     relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
     forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
-  pure m {memberStatus = GSMemRemoved}
 ```
 
-This uses existing `RSInactive` status (no new enum values needed) and follows the same pattern as `xGrpLeave`. The `getConnectedGroupRelays` query filters by both `member_status = GSMemConnected` and `relay_status IN (RSAccepted, RSActive)`, so either status update alone would suffice, but setting both keeps state consistent and aligns with the leave-relay pattern.
+**Extend `deleteOrUpdateMemberRecordIO`** (line 1808):
 
-**iOS UI**: the relay removal is triggered by calling the existing `apiRemoveMembers` from `ChannelRelaysView` (new swipe-to-delete action on relay rows). No new API command needed for removal.
+```haskell
+deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
+  (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
+  checkGroupMemberHasItems db user m' >>= \case
+    Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
+    Nothing -> deleteGroupMember db user m'
+  deactivateRelayIfNeeded db m
+  pure gInfo'
+```
 
-### 2. New `APIAddGroupRelay` Command
+**Extend `updateMemberRecordDeleted`** (line 1816):
+
+```haskell
+updateMemberRecordDeleted user@User {userId} gInfo m newStatus =
+  withStore' $ \db -> do
+    (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
+    updateGroupMemberStatus db userId m' newStatus
+    deactivateRelayIfNeeded db m
+    pure gInfo'
+```
+
+This covers all four call sites:
+- `delMember` in `deleteMemsSend` (Commands.hs:2896) — owner removing relay via `APIRemoveMembers`
+- `deleteOrUpdateMemberRecord` in `xGrpMemDel` (Subscriber.hs:3123) — receiving relay deletion notification
+- `updateMemberRecordDeleted` in `xGrpMemDel` (Subscriber.hs:3121) — relay deletion with forwarding
+- `updateMemberRecordDeleted` in `xGrpLeave` (Subscriber.hs:3168) — relay leaves voluntarily
+
+For subscribers who have no `GroupRelay` records, `getGroupRelayByGMId` returns `Left`, `forM_` on `Left` is a no-op — safe.
+
+**Cleanup**: remove the now-redundant separate relay deactivation in `xGrpLeave` (Subscriber.hs:3169-3172):
+
+```haskell
+-- Before:
+gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
+when (isRelay m) $
+  withStore' $ \db -> do
+    relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
+    forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
+gInfo'' <- updatePublicGroupData user gInfo'
+
+-- After:
+gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
+gInfo'' <- updatePublicGroupData user gInfo'
+```
+
+**`APIRemoveMembers` requires no changes** — `delMember` (line 2891) already calls `deleteOrUpdateMemberRecordIO` which now handles relay deactivation internally. The `getConnectedGroupRelays` query filters by both `member_status = GSMemConnected` and `relay_status IN (RSAccepted, RSActive)`, so the removed relay is excluded from link data when `updatePublicGroupData` runs (line 2828-2829).
+
+**iOS UI**: The remove button is currently hidden on the relay member info page by an explicit guard in `adminDestructiveSection` (GroupMemberInfoView.swift:646: `mem.memberRole != .relay`). Changes needed:
+
+1. **Remove the relay guard** — change the condition to allow relay members to be removed. The `canBeRemoved()` permission check (ChatTypes.swift:2868) already validates that the user has sufficient role.
+
+2. **Relay-specific button text** — the `removeMemberButton` (line 708) currently shows `"Remove subscriber"` for channels (`groupInfo.useRelays`). Add a relay branch: when `mem.memberRole == .relay`, show `"Remove relay"` instead.
+
+3. **Relay-specific alert text** — `showRemoveMemberAlert` (GroupChatInfoView.swift:926) currently shows `"Remove subscriber?"` / `"Subscriber will be removed from channel"` for channels. Add a relay branch: `"Remove relay?"` / `"Relay will be removed from channel"`.
+
+4. **Last active relay warning** — when removing a relay, check if it's the last active relay (count relay members with `memberCurrent` status in `chatModel.groupMembers`). If so, show a warning: `"This is the last active relay. Removing it will prevent message delivery to subscribers."` The count is available client-side from `chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay && $0.wrapped.memberCurrent }`.
+
+No new API command needed for removal — the existing `apiRemoveMembers` is used.
+
+### 2. New `APIAddGroupRelays` Command
 
 **File**: `src/Simplex/Chat/Controller.hs`
 
 ```haskell
 -- New command
-| APIAddGroupRelay GroupId (NonEmpty Int64)     -- group ID, chat_relay_ids
+| APIAddGroupRelays GroupId (NonEmpty Int64)     -- group ID, chat_relay_ids
 
 -- New responses
-| CRGroupRelayAdded { user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay] }
-| CRGroupRelayAddFailed { user :: User, addRelayResults :: [AddRelayResult] }
+| CRGroupRelaysAdded { user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay] }
+| CRGroupRelaysAddFailed { user :: User, addRelayResults :: [AddRelayResult] }
 ```
 
 **File**: `src/Simplex/Chat/Library/Commands.hs`
@@ -80,7 +128,7 @@ This uses existing `RSInactive` status (no new enum values needed) and follows t
 New handler:
 
 ```
-APIAddGroupRelay groupId relayIds -> withUser $ \user -> withGroupLock "addGroupRelay" groupId $ do
+APIAddGroupRelays groupId relayIds -> withUser $ \user -> withGroupLock "addGroupRelays" groupId $ do
   -- 1. Validate: user is owner, group uses relays
   gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
   assertUserGroupRole gInfo GROwner
@@ -106,11 +154,11 @@ APIAddGroupRelay groupId relayIds -> withUser $ \user -> withGroupLock "addGroup
       -- setGroupLinkDataAsync is called automatically to add the relay link.
       -- The LINK callback then promotes RSAccepted→RSActive.
       relays' <- withFastStore $ \db -> liftIO $ getGroupRelays db gInfo
-      pure $ CRGroupRelayAdded user gInfo gLink relays'
+      pure $ CRGroupRelaysAdded user gInfo gLink relays'
     _ -> do
       let toRelayResult (r, Left e) = AddRelayResult r (Just e)
           toRelayResult (r, Right _) = AddRelayResult r Nothing
-      pure $ CRGroupRelayAddFailed user (map toRelayResult results)
+      pure $ CRGroupRelaysAddFailed user (map toRelayResult results)
 ```
 
 Key points:
@@ -144,7 +192,40 @@ APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
     _ -> throwCmdError "group link data not available"
 ```
 
-**New functions** `syncSubscriberRelays` and `connectToNewRelay` in `Commands.hs` (must be in `processChatCommand`'s scope to access `connectViaContact`, which is a local function in its `where` block at line 3496):
+**Extract shared relay connection logic** from `connectToRelay` in `APIConnectPreparedGroup` (Commands.hs:2165-2181). The inner body (lines 2170-2178, inside `tryAllErrors`) is identical to what subscriber sync needs. Extract it into a shared function in `processChatCommand`'s scope:
+
+```
+-- Shared: fetch relay link data, update relay member profile, and connect.
+-- Requires relay member already created via getCreateRelayForMember.
+-- connectViaContact handles incognito internally for relay groups (Commands.hs:3545-3546).
+connectRelayMember :: User -> GroupInfo -> GroupMember -> ShortLinkContact -> CM ()
+connectRelayMember user gInfo relayMember relayLink = do
+  (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <-
+    getShortLinkConnReq nm user relayLink
+  relayLinkData_ <- liftIO $ decodeLinkUserData cData
+  case (relayLinkData_, linkEntityId) of
+    (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
+      withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
+    _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
+  let cReq = linkConnReq fd
+      relayLinkToConnect = CCLink cReq (Just relayLink)
+  void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) False relayLinkToConnect Nothing Nothing
+```
+
+**Refactor `connectToRelay`** in `APIConnectPreparedGroup` to call `connectRelayMember`:
+
+```
+connectToRelay gInfo' relayLink = do
+  gVar <- asks random
+  relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
+  r <- tryAllErrors $ connectRelayMember user gInfo' relayMember relayLink
+  relayMember' <- withFastStore $ \db -> getGroupMember db vr user groupId (groupMemberId' relayMember)
+  pure (relayLink, relayMember', r)
+```
+
+`getCreateRelayForMember` stays outside `tryAllErrors` — the member must be available for re-read even on failure (for `RelayConnectionResult` reporting).
+
+**New function** `syncSubscriberRelays` in `processChatCommand`'s scope (for `connectRelayMember` and `connectViaContact` access):
 
 ```
 syncSubscriberRelays :: NetworkRequestMode -> User -> GroupInfo -> [ShortLinkContact] -> CM ()
@@ -159,8 +240,10 @@ syncSubscriberRelays nm user gInfo currentRelayLinks = tryAllErrors $ do
 
   -- Discover new relays (in link data but not among active local relay members)
   let newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
-  forM_ newRelayLinks $ \rlnk -> tryAllErrors $
-    connectToNewRelay nm user gInfo rlnk
+  forM_ newRelayLinks $ \rlnk -> tryAllErrors $ do
+    gVar <- asks random
+    relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo rlnk
+    connectRelayMember user gInfo relayMember rlnk
 
   -- Discover removed relays (active local relay member whose link is absent from link data)
   forM_ activeRelayMembers $ \m ->
@@ -172,37 +255,13 @@ syncSubscriberRelays nm user gInfo currentRelayLinks = tryAllErrors $ do
       _ -> pure ()
 ```
 
-Where `connectToNewRelay` follows the same pattern as `connectToRelay` in `APIConnectPreparedGroup` (Commands.hs:2165-2181):
-
-```
-connectToNewRelay :: NetworkRequestMode -> User -> GroupInfo -> ShortLinkContact -> CM ()
-connectToNewRelay nm user gInfo relayLink = do
-  vr <- chatVersionRange
-  gVar <- asks random
-  -- getCreateRelayForMember is idempotent — returns existing member if relay_link matches
-  relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink
-  (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <-
-    getShortLinkConnReq nm user relayLink
-  relayLinkData_ <- liftIO $ decodeLinkUserData cData
-  case (relayLinkData_, linkEntityId) of
-    (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
-      withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
-    _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
-  let cReq = linkConnReq fd
-      relayLinkToConnect = CCLink cReq (Just relayLink)
-  -- connectViaContact handles incognito internally for relay groups (Commands.hs:3545-3546):
-  -- when PCEGroup gInfo is passed and useRelays' gInfo, it uses incognitoMembershipProfile gInfo
-  -- regardless of the incognito parameter.
-  void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) False relayLinkToConnect Nothing Nothing
-```
-
 **Note on `getCreateRelayForMember` idempotency**: This function queries `WHERE m.relay_link = ?` without filtering by member status (Store/Groups.hs:1379). If a relay was previously removed (GSMemRemoved) and is later re-added by the owner, `getCreateRelayForMember` will return the old removed member. During implementation, verify whether the member status needs to be reset before reconnecting, or whether `connectViaContact` handles this correctly.
 
 ### 4. LINK Event Handler — Detect Relay Removal (Owner)
 
 **File**: `src/Simplex/Chat/Library/Subscriber.hs` (lines 1308-1317)
 
-Replace the TODO with relay removal detection. This handles the multi-owner scenario where another owner removes a relay:
+Replace the TODO with relay removal detection. The LINK callback fires when this owner updates link data (via `setGroupLinkData` / `setConnShortLink`). Currently multi-owner channels are not supported, so this only fires after the same owner's own actions (add/remove relay, profile update). When multi-owner support is added, another owner's link data update on the SMP server would need a separate mechanism (e.g., periodic link data fetch or subscription) for this owner to learn about it — the LINK callback only fires in response to this client's own `setConnShortLink` calls.
 
 ```haskell
 updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool) -> IO ([GroupRelay], Bool)
@@ -215,54 +274,66 @@ updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
           pure (relay' : acc, True)
       | rLink `elem` relayLinks -> pure (relay : acc, changed)
       | relayStatus `elem` [RSAccepted, RSActive, RSInactive] -> do
-          -- Relay link ABSENT from link data — removed (e.g., by another owner)
+          -- Relay link ABSENT from link data — set to inactive.
+          -- TODO [multi-owner] When multi-owner channels are supported, another owner removing
+          -- a relay updates link data on the SMP server, but this owner won't receive a LINK
+          -- callback for it (LINK only fires in response to own setConnShortLink calls).
+          -- A separate mechanism will be needed for cross-owner relay state synchronization.
           relay' <- updateRelayStatus db relay RSInactive
           pure (relay' : acc, True)
     _ -> pure (relay : acc, changed)
 ```
 
-**Why `RSInactive`**: After the owner's own `APIRemoveMembers` call, the relay is already `RSInactive` before `updatePublicGroupData` triggers the LINK callback. The `relayStatus `elem` [RSAccepted, RSActive, RSInactive]` guard will still match `RSInactive` but `updateRelayStatus` is idempotent (RSInactive→RSInactive is a no-op write). The `RSInactive` guard is included to handle the case where another owner removed a relay that was already inactive on this owner's side — the link absence confirms it should stay/become inactive.
-
-In the same-owner removal case: `APIRemoveMembers` → `delMember` sets RSInactive → `updatePublicGroupData` → LINK callback → relay is already RSInactive, `rLink `notElem` relayLinks` matches, `updateRelayStatus db relay RSInactive` is effectively a no-op.
+After the same owner's `APIRemoveMembers` call, the relay is already `RSInactive` before `updatePublicGroupData` triggers the LINK callback. The guard matches `RSInactive` but `updateRelayStatus` is idempotent (RSInactive→RSInactive is a no-op write).
 
 ### 5. Relay Self-Check (`runRelayGroupLinkChecks`)
 
 **File**: `src/Simplex/Chat/Library/Commands.hs` (lines 4729-4735)
 
-Implement the stub. When this client acts as a relay for a channel, it periodically verifies its link is present in the group link data:
+Implement the stub. The existing `startRelayChecks` (Commands.hs:225-233) already launches `runRelayGroupLinkChecks` as an async task via `relayGroupLinkChecksAsync`. The stub currently does `pure ()` and exits immediately. Replace with a periodic loop following the `cleanupManager` pattern (Commands.hs:4643):
 
 ```
 runRelayGroupLinkChecks :: User -> CM ()
 runRelayGroupLinkChecks user = do
-  vr <- chatVersionRange
-  -- Get all groups where this client is a relay (relay_own_status is set and not RSInactive)
-  relayGroups <- withFastStore' $ \db -> getRelayOwnGroups db vr user
-  forM_ relayGroups $ \gInfo -> tryAllErrors $ do
-    case publicGroup (groupProfile gInfo) of
-      Just PublicGroupProfile {groupLink = sLnk} -> do
-        -- getShortLinkConnReq' returns (FixedLinkData, ConnLinkData m).
-        -- ConnLinkData 'CMContact = ContactLinkData VersionRangeSMPA UserContactData
-        -- (NOT UserContactLinkData which is for the LINK event's auData)
-        (_, ContactLinkData _ UserContactData {relays = relayLinks}) <-
-          getShortLinkConnReq' NRMBackground user sLnk
-        -- Check if our own relay link is present
-        gLink_ <- withFastStore' $ \db -> runExceptT $ getGroupLink db user gInfo
-        case gLink_ of
-          Right GroupLink {connLinkContact = CCLink _ (Just ourLink)} ->
-            if ourLink `elem` relayLinks
-              then do
-                -- Our link is present — promote to RSActive if still RSAccepted
-                gInfo' <- withFastStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAccepted RSActive
-                when (relayOwnStatus gInfo' /= relayOwnStatus gInfo) $
-                  toView $ CEvtGroupRelayUpdated user gInfo' (membership gInfo')
-              else do
-                -- Our link is ABSENT — we have been removed
-                withFastStore' $ \db -> updateRelayOwnStatus_ db gInfo RSInactive
-                -- Per RFC: relay should forward "relay is deleted" notification to
-                -- connected members, then clean up. The x.grp.mem.del from owner
-                -- may also arrive and trigger cleanup independently.
+  initialDelay <- asks (initialCleanupManagerDelay . config)
+  liftIO $ threadDelay' initialDelay
+  interval <- asks (cleanupManagerInterval . config)  -- or a dedicated config field
+  forever $ do
+    flip catchAllErrors eToView $ do
+      lift waitChatStartedAndActivated
+      checkRelayGroups
+    liftIO $ threadDelay' $ diffToMicroseconds interval
+  where
+    checkRelayGroups = do
+      vr <- chatVersionRange
+      -- Get all groups where this client is a relay (relay_own_status is set and not RSInactive)
+      relayGroups <- withFastStore' $ \db -> getRelayOwnGroups db vr user
+      forM_ relayGroups $ \gInfo -> tryAllErrors $ do
+        case publicGroup (groupProfile gInfo) of
+          Just PublicGroupProfile {groupLink = sLnk} -> do
+            -- getShortLinkConnReq' returns (FixedLinkData, ConnLinkData m).
+            -- ConnLinkData 'CMContact = ContactLinkData VersionRangeSMPA UserContactData
+            -- (NOT UserContactLinkData which is for the LINK event's auData)
+            (_, ContactLinkData _ UserContactData {relays = relayLinks}) <-
+              getShortLinkConnReq' NRMBackground user sLnk
+            -- Check if our own relay link is present
+            gLink_ <- withFastStore' $ \db -> runExceptT $ getGroupLink db user gInfo
+            case gLink_ of
+              Right GroupLink {connLinkContact = CCLink _ (Just ourLink)} ->
+                if ourLink `elem` relayLinks
+                  then do
+                    -- Our link is present — promote to RSActive if still RSAccepted
+                    gInfo' <- withFastStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAccepted RSActive
+                    when (relayOwnStatus gInfo' /= relayOwnStatus gInfo) $
+                      toView $ CEvtGroupRelayUpdated user gInfo' (membership gInfo')
+                  else do
+                    -- Our link is ABSENT — we have been removed
+                    withFastStore' $ \db -> updateRelayOwnStatus_ db gInfo RSInactive
+                    -- Per RFC: relay should forward "relay is deleted" notification to
+                    -- connected members, then clean up. The x.grp.mem.del from owner
+                    -- may also arrive and trigger cleanup independently.
+              _ -> pure ()
           _ -> pure ()
-      _ -> pure ()
 ```
 
 **New store function** in `Store/Groups.hs`:
@@ -271,8 +342,6 @@ runRelayGroupLinkChecks user = do
 getRelayOwnGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
 -- SELECT groups WHERE relay_own_status IS NOT NULL AND relay_own_status != 'inactive'
 ```
-
-**Scheduling**: Add to the existing periodic tasks loop (check patterns for `expireChatItems` or similar periodic functions in `startChat`).
 
 ---
 
@@ -318,17 +387,15 @@ getRelayOwnGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
 
 5. **Relay goes offline permanently**: Owner removes it via `APIRemoveMembers`. New subscribers won't see it in link data. Existing subscribers with connections to this relay will experience connection failures. On next channel open, `syncSubscriberRelays` discovers the relay link is gone and marks it removed locally.
 
-6. **Subscriber discovers new relay via link data**: `connectToNewRelay` follows the same pattern as `APIConnectPreparedGroup`'s `connectToRelay` — calls `getCreateRelayForMember` (idempotent), fetches relay link data, connects via `connectViaContact`.
-
-7. **Concurrent owners adding/removing relays**: The group lock serializes operations within one client. Cross-client conflicts are resolved by the SMP server — the last `setConnShortLink` call wins. Both owners' LINK callbacks see the final state and reconcile.
+6. **Subscriber discovers new relay via link data**: `syncSubscriberRelays` calls `getCreateRelayForMember` (idempotent) + `connectRelayMember` (shared with `connectToRelay`).
 
 ---
 
 ## Implementation Order
 
-1. **Extend `APIRemoveMembers`** — add `GroupRelay` status update to `RSInactive` when removing relay members. Small, contained change in `delMember`.
+1. **Relay deactivation in member-removal primitives** — add `deactivateRelayIfNeeded` helper to `deleteOrUpdateMemberRecordIO` and `updateMemberRecordDeleted` in Internal.hs; remove redundant code from `xGrpLeave`.
 2. **LINK handler relay-removal detection** — implement the TODO in Subscriber.hs to detect absent relay links.
-3. **`APIAddGroupRelay`** — new command, reuses `addRelays`.
+3. **`APIAddGroupRelays`** — new command, reuses `addRelays`.
 4. **`runRelayGroupLinkChecks`** — relay self-check implementation.
 5. **Extend `APIGetUpdatedGroupLinkData`** — add `syncSubscriberRelays` for subscriber relay synchronization.
 6. **iOS UI** — ChannelRelaysView add/remove buttons, AddGroupRelayView sheet, API functions.
@@ -337,16 +404,19 @@ getRelayOwnGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
 
 | File | Change |
 |------|--------|
-| `src/Simplex/Chat/Controller.hs` | Add `APIAddGroupRelay` command; add `CRGroupRelayAdded`, `CRGroupRelayAddFailed` responses |
-| `src/Simplex/Chat/Library/Commands.hs` | Extend `delMember` in `APIRemoveMembers` for relay status; implement `APIAddGroupRelay` handler; implement `runRelayGroupLinkChecks`; extend `APIGetUpdatedGroupLinkData`; add `syncSubscriberRelays`, `connectToNewRelay` (must be in `processChatCommand` scope for `connectViaContact` access) |
-| `src/Simplex/Chat/Library/Subscriber.hs` | Fix LINK handler relay removal detection |
+| `src/Simplex/Chat/Controller.hs` | Add `APIAddGroupRelays` command; add `CRGroupRelaysAdded`, `CRGroupRelaysAddFailed` responses |
+| `src/Simplex/Chat/Library/Internal.hs` | Add `deactivateRelayIfNeeded` helper; extend `deleteOrUpdateMemberRecordIO` and `updateMemberRecordDeleted` to call it |
+| `src/Simplex/Chat/Library/Commands.hs` | Extract `connectRelayMember` from `connectToRelay`; refactor `connectToRelay` to use it; implement `APIAddGroupRelays` handler; implement `runRelayGroupLinkChecks`; extend `APIGetUpdatedGroupLinkData`; add `syncSubscriberRelays` (all in `processChatCommand` scope for `connectViaContact` access) |
+| `src/Simplex/Chat/Library/Subscriber.hs` | Fix LINK handler relay removal detection; remove redundant relay deactivation from `xGrpLeave` |
 | `src/Simplex/Chat/Store/Groups.hs` | Add `getRelayOwnGroups` |
 
 ## Files Changed (iOS)
 
 | File | Change |
 |------|--------|
-| `apps/ios/Shared/Model/AppAPITypes.swift` | Add `APIAddGroupRelay` command, `CRGroupRelayAdded`/`CRGroupRelayAddFailed` responses |
-| `apps/ios/Shared/Model/SimpleXAPI.swift` | Add `apiAddGroupRelay` function |
-| `apps/ios/Shared/Views/Chat/Group/ChannelRelaysView.swift` | Add relay button, swipe-to-delete (calls existing `apiRemoveMembers`) |
+| `apps/ios/Shared/Model/AppAPITypes.swift` | Add `APIAddGroupRelays` command, `CRGroupRelaysAdded`/`CRGroupRelaysAddFailed` responses |
+| `apps/ios/Shared/Model/SimpleXAPI.swift` | Add `apiAddGroupRelays` function |
+| `apps/ios/Shared/Views/Chat/Group/GroupMemberInfoView.swift` | Remove `.relay` guard from `adminDestructiveSection` (line 646); add relay-specific button/alert text; add last-active-relay warning |
+| `apps/ios/Shared/Views/Chat/Group/GroupChatInfoView.swift` | Add relay branch to `showRemoveMemberAlert` text |
+| `apps/ios/Shared/Views/Chat/Group/ChannelRelaysView.swift` | Add relay button |
 | `apps/ios/Shared/Views/Chat/Group/AddGroupRelayView.swift` | NEW: relay selection sheet |
