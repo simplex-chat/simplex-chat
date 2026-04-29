@@ -120,6 +120,8 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
             imageUri = normalizeImageUri(u, imageUri)
             try {
               val conn = URL(imageUri).openConnection(proxy ?: Proxy.NO_PROXY)
+              conn.connectTimeout = 10_000
+              conn.readTimeout = 10_000
               val stream = conn.getInputStream()
               val image = resizeImageToStrSize(stream.use(::loadImageBitmap), maxDataSize = 14000)
               //          TODO add once supported in iOS
