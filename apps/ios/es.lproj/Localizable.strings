@@ -364,7 +364,7 @@ time interval */
 "A few more things" = "Algunas cosas más";
 
 /* No comment provided by engineer. */
-"A link for one person to connect" = "Enlace para una persona";
+"A link for one person to connect" = "Enlace para un solo contacto";
 
 /* notification title */
 "A new contact" = "Contacto nuevo";
@@ -986,6 +986,9 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Tanto tú como tu contacto podéis enviar mensajes de voz.";
 
+/* No comment provided by engineer. */
+"Bottom bar" = "Barra inferior";
+
 /* compose placeholder for channel owner */
 "Broadcast" = "Emisión";
 
@@ -1455,7 +1458,7 @@ server test step */
 "Connect via link" = "Conectar mediante enlace";
 
 /* No comment provided by engineer. */
-"Connect via link or QR code" = "Conecta con enlace o QR";
+"Connect via link or QR code" = "Conecta vía enlace o QR";
 
 /* new chat sheet title */
 "Connect via one-time link" = "Conectar mediante enlace de un sólo uso";
@@ -1698,7 +1701,7 @@ server test step */
 "Create your address" = "Crea tu dirección";
 
 /* No comment provided by engineer. */
-"Create your link" = "Conecta con alguien";
+"Create your link" = "Crea tu enlace";
 
 /* No comment provided by engineer. */
 "Create your profile" = "Crea tu perfil";
@@ -1871,7 +1874,7 @@ swipe action */
 "Delete channel" = "Eliminar canal";
 
 /* No comment provided by engineer. */
-"Delete channel?" = "¿Eliminar canal?";
+"Delete channel?" = "¿Eliminar el canal?";
 
 /* No comment provided by engineer. */
 "Delete chat" = "Eliminar chat";
@@ -3498,7 +3501,7 @@ servers warning */
 "Less traffic on mobile networks." = "Menos tráfico en redes móviles.";
 
 /* No comment provided by engineer. */
-"Let someone connect to you" = "Conéctate con alguien";
+"Let someone connect to you" = "Conecta con alguien";
 
 /* email subject */
 "Let's talk in SimpleX Chat" = "Hablemos en SimpleX Chat";
@@ -4347,7 +4350,7 @@ alert button */
 "Or to share privately" = "O para compartir en privado";
 
 /* No comment provided by engineer. */
-"Or use this QR - print or show online." = "O usa este QR - imprímelo o muestralo en línea.";
+"Or use this QR - print or show online." = "O usa el QR, imprímelo o muestralo en línea.";
 
 /* No comment provided by engineer. */
 "Organize chats into lists" = "Organiza tus chats en listas";
@@ -6186,6 +6189,9 @@ server test failure */
 "Toolbar opacity" = "Opacidad barra";
 
 /* No comment provided by engineer. */
+"Top bar" = "Barra superior";
+
+/* No comment provided by engineer. */
 "Total" = "Total";
 
 /* No comment provided by engineer. */
@@ -6444,7 +6450,7 @@ server test failure */
 "Use the app with one hand." = "Usa la aplicación con una sola mano.";
 
 /* No comment provided by engineer. */
-"Use this address in your social media profile, website, or email signature." = "Usa esta dirección en tu perfil de redes sociales, página web o firma para email.";
+"Use this address in your social media profile, website, or email signature." = "Usa esta dirección en tu perfil de redes sociales, página web o firma email.";
 
 /* No comment provided by engineer. */
 "Use web port" = "Usar puerto web";

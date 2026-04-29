@@ -364,7 +364,7 @@ time interval */
 "A few more things" = "Ein paar weitere Dinge";
 
 /* No comment provided by engineer. */
-"A link for one person to connect" = "Ein Link für eine einzelne Person zum Verbinden";
+"A link for one person to connect" = "Verbindungs-Link für eine Person";
 
 /* notification title */
 "A new contact" = "Ein neuer Kontakt";
@@ -539,7 +539,7 @@ swipe action */
 "Admins can block a member for all." = "Administratoren können ein Gruppenmitglied für Alle blockieren.";
 
 /* No comment provided by engineer. */
-"Admins can create the links to join groups." = "Administratoren können Links für den Beitritt zu Gruppen erzeugen.";
+"Admins can create the links to join groups." = "Administratoren können Links für den Beitritt zu Gruppen erstellen.";
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "Erweiterte Netzwerkeinstellungen";
@@ -985,6 +985,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten senden.";
+
+/* No comment provided by engineer. */
+"Bottom bar" = "Untere Leiste";
 
 /* compose placeholder for channel owner */
 "Broadcast" = "Broadcast";
@@ -1659,7 +1662,7 @@ server test step */
 "Create 1-time link" = "Einmal-Link erstellen";
 
 /* No comment provided by engineer. */
-"Create a group using a random profile." = "Erstellen Sie eine Gruppe mit einem zufälligen Profil.";
+"Create a group using a random profile." = "Gruppe mit einem zufälligen Profil erstellen.";
 
 /* server test step */
 "Create file" = "Datei erstellen";
@@ -1671,7 +1674,7 @@ server test step */
 "Create group link" = "Gruppenlink erstellen";
 
 /* No comment provided by engineer. */
-"Create link" = "Link erzeugen";
+"Create link" = "Link erstellen";
 
 /* No comment provided by engineer. */
 "Create list" = "Liste erstellen";
@@ -1689,7 +1692,7 @@ server test step */
 "Create public channel (BETA)" = "Öffentlichen Kanal erstellen (BETA)";
 
 /* server test step */
-"Create queue" = "Erzeuge Warteschlange";
+"Create queue" = "Warteschlange erstellen";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "SimpleX-Adresse erstellen";
@@ -1698,13 +1701,13 @@ server test step */
 "Create your address" = "Ihre Adresse erstellen";
 
 /* No comment provided by engineer. */
-"Create your link" = "Mit jemandem verbinden";
+"Create your link" = "Ihren Link erstellen";
 
 /* No comment provided by engineer. */
-"Create your profile" = "Erstellen Sie Ihr Profil";
+"Create your profile" = "Ihr Profil erstellen";
 
 /* No comment provided by engineer. */
-"Create your public address" = "Erstellen Sie Ihre öffentliche Adresse";
+"Create your public address" = "Ihre öffentliche Adresse erstellen";
 
 /* No comment provided by engineer. */
 "Created" = "Erstellt";
@@ -3354,7 +3357,7 @@ servers warning */
 "Invite members" = "Mitglieder einladen";
 
 /* No comment provided by engineer. */
-"Invite someone privately" = "Jemanden privat einladen";
+"Invite someone privately" = "Für privaten Chat einladen";
 
 /* No comment provided by engineer. */
 "Invite to chat" = "Zum Chat einladen";
@@ -3498,7 +3501,7 @@ servers warning */
 "Less traffic on mobile networks." = "Weniger Datenverkehr in mobilen Netzen.";
 
 /* No comment provided by engineer. */
-"Let someone connect to you" = "Damit sich Jemand mit Ihnen verbinden kann";
+"Let someone connect to you" = "Jemand mit Ihnen verbinden lassen";
 
 /* email subject */
 "Let's talk in SimpleX Chat" = "Lassen Sie uns in SimpleX Chat kommunizieren";
@@ -6184,6 +6187,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Toolbar opacity" = "Deckkraft der Symbolleiste";
+
+/* No comment provided by engineer. */
+"Top bar" = "Obere Leiste";
 
 /* No comment provided by engineer. */
 "Total" = "Summe aller Abonnements";

@@ -607,7 +607,7 @@ time interval</note>
       </trans-unit>
       <trans-unit id="A link for one person to connect" xml:space="preserve">
         <source>A link for one person to connect</source>
-        <target>Ein Link für eine einzelne Person zum Verbinden</target>
+        <target>Verbindungs-Link für eine Person</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -853,7 +853,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
         <source>Admins can create the links to join groups.</source>
-        <target>Administratoren können Links für den Beitritt zu Gruppen erzeugen.</target>
+        <target>Administratoren können Links für den Beitritt zu Gruppen erstellen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve">
@@ -1520,6 +1520,7 @@ in Ihrem Netzwerk</target>
       </trans-unit>
       <trans-unit id="Bottom bar" xml:space="preserve">
         <source>Bottom bar</source>
+        <target>Untere Leiste</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
@@ -2481,7 +2482,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Create a group using a random profile." xml:space="preserve">
         <source>Create a group using a random profile.</source>
-        <target>Erstellen Sie eine Gruppe mit einem zufälligen Profil.</target>
+        <target>Gruppe mit einem zufälligen Profil erstellen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -2501,7 +2502,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Create link" xml:space="preserve">
         <source>Create link</source>
-        <target>Link erzeugen</target>
+        <target>Link erstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create list" xml:space="preserve">
@@ -2531,7 +2532,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Create queue" xml:space="preserve">
         <source>Create queue</source>
-        <target>Erzeuge Warteschlange</target>
+        <target>Warteschlange erstellen</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Create your address" xml:space="preserve">
@@ -2541,17 +2542,17 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Create your link" xml:space="preserve">
         <source>Create your link</source>
-        <target>Mit jemandem verbinden</target>
+        <target>Ihren Link erstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
         <source>Create your profile</source>
-        <target>Erstellen Sie Ihr Profil</target>
+        <target>Ihr Profil erstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your public address" xml:space="preserve">
         <source>Create your public address</source>
-        <target>Erstellen Sie Ihre öffentliche Adresse</target>
+        <target>Ihre öffentliche Adresse erstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created" xml:space="preserve">
@@ -5064,7 +5065,7 @@ Weitere Verbesserungen sind bald verfügbar!</target>
       </trans-unit>
       <trans-unit id="Invite someone privately" xml:space="preserve">
         <source>Invite someone privately</source>
-        <target>Jemanden privat einladen</target>
+        <target>Für privaten Chat einladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to chat" xml:space="preserve">
@@ -5272,7 +5273,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
         <source>Let someone connect to you</source>
-        <target>Damit sich Jemand mit Ihnen verbinden kann</target>
+        <target>Jemand mit Ihnen verbinden lassen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -9422,6 +9423,7 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       </trans-unit>
       <trans-unit id="Top bar" xml:space="preserve">
         <source>Top bar</source>
+        <target>Obere Leiste</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">

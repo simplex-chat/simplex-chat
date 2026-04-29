@@ -1520,6 +1520,7 @@ in your network</source>
       </trans-unit>
       <trans-unit id="Bottom bar" xml:space="preserve">
         <source>Bottom bar</source>
+        <target>Нижнее меню</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
@@ -9421,6 +9422,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Top bar" xml:space="preserve">
         <source>Top bar</source>
+        <target>Верхнее меню</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">

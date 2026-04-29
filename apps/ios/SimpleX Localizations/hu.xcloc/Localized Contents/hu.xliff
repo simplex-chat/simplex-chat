@@ -502,9 +502,9 @@ channel relay bar</note>
         <source>- opt-in to send link previews.
 - prevent hyperlink phishing.
 - remove link tracking.</source>
-        <target>- hivatkozások előnézetének küldése.
-- hiperhivatkozásokon keresztüli adathalászat megakadályozása.
-- hivatkozások nyomonkövetési paramétereinek eltávolítása.</target>
+        <target>- Hivatkozások előnézetének küldése.
+- Hiperhivatkozásokon keresztüli adathalászat megakadályozása.
+- Hivatkozások nyomonkövetési paramétereinek eltávolítása.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
@@ -1520,6 +1520,7 @@ a saját hálózatában</target>
       </trans-unit>
       <trans-unit id="Bottom bar" xml:space="preserve">
         <source>Bottom bar</source>
+        <target>Alsó sáv</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
@@ -2219,7 +2220,7 @@ Ez a saját egyszer használható meghívója!</target>
       </trans-unit>
       <trans-unit id="Connect via link or QR code" xml:space="preserve">
         <source>Connect via link or QR code</source>
-        <target>Kapcsolódás hivatkozáson vagy QR-kódon keresztül</target>
+        <target>Hivatkozás vagy QR-kód használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
@@ -2541,7 +2542,7 @@ Ez a saját egyszer használható meghívója!</target>
       </trans-unit>
       <trans-unit id="Create your link" xml:space="preserve">
         <source>Create your link</source>
-        <target>Kapcsolatba lépés valakivel</target>
+        <target>Saját hivatkozás létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -5272,7 +5273,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
         <source>Let someone connect to you</source>
-        <target>Hagyja, hogy valaki kapcsolatba lépjen Önnel</target>
+        <target>Hagyja, hogy valaki elérje Önt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -6257,7 +6258,7 @@ new chat action</note>
       </trans-unit>
       <trans-unit id="On your phone, not on servers." xml:space="preserve">
         <source>On your phone, not on servers.</source>
-        <target>Az Ön eszközén, nem pedig a kiszolgálókon.</target>
+        <target>Az eszközön, nem pedig kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -9422,6 +9423,7 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
       </trans-unit>
       <trans-unit id="Top bar" xml:space="preserve">
         <source>Top bar</source>
+        <target>Felső sáv</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
