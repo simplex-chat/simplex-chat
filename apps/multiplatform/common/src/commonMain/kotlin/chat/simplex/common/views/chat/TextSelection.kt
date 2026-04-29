@@ -240,30 +240,33 @@ fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
     }
 }
 
-// Ordered display segments for an item, matching the rendered string used for selection offsets.
-// itemPrefixText is included as a leading plain segment so offsets in prefix-bearing items (reports)
-// map to the same positions the user sees.
-private fun itemDisplaySegments(ci: ChatItem): List<FormattedText> {
-    val segs = mutableListOf<FormattedText>()
-    val prefix = itemPrefixText(ci)
-    if (prefix.isNotEmpty()) segs.add(FormattedText(prefix, null))
-    val ft = ci.formattedText
-    if (ft != null) segs.addAll(ft)
-    else if (ci.text.isNotEmpty()) segs.add(FormattedText(ci.text, null))
-    return segs
-}
-
 // Extracts source text for the selected range within one item.
 // Selection offsets are in display-text space. For transformed segments (mentions, links with showText),
 // the full source is emitted if any part is selected. For untransformed segments, partial substring works.
+// Items rendered with a leading itemPrefixText (reports) shift body offsets by prefix.length.
 private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: SimplexLinkMode): String {
+    val prefix = itemPrefixText(ci)
     val sb = StringBuilder()
+    if (prefix.isNotEmpty() && sel.first < prefix.length) {
+        sb.append(prefix, sel.first.coerceAtLeast(0), minOf(prefix.length, sel.last + 1))
+    }
+    val bodyFirst = sel.first - prefix.length
+    val bodyLast = sel.last - prefix.length
+    if (bodyLast < 0) return sb.toString()
+    val bodyStart = bodyFirst.coerceAtLeast(0)
+    val formattedText = ci.formattedText ?: run {
+        sb.append(ci.text.substring(
+            bodyStart.coerceAtMost(ci.text.length),
+            (bodyLast + 1).coerceAtMost(ci.text.length)
+        ))
+        return sb.toString()
+    }
     var displayOffset = 0
-    for (ft in itemDisplaySegments(ci)) {
+    for (ft in formattedText) {
         val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
         val displayEnd = displayOffset + segDisplay.length
-        val overlapStart = maxOf(displayOffset, sel.first)
-        val overlapEnd = minOf(displayEnd, sel.last + 1)
+        val overlapStart = maxOf(displayOffset, bodyStart)
+        val overlapEnd = minOf(displayEnd, bodyLast + 1)
         if (overlapStart < overlapEnd) {
             if (ft.text.length == segDisplay.length) {
                 sb.append(ft.text, overlapStart - displayOffset, overlapEnd - displayOffset)
@@ -276,14 +279,20 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
     return sb.toString()
 }
 
-// Snaps a boundary offset to include full transformed segments.
+// Snaps a boundary offset to include full transformed segments. The itemPrefixText (reports) is plain
+// text — boundaries inside or at its right edge pass through; deeper offsets are shifted into
+// ci.formattedText space and the snap result is shifted back.
 private fun snapOffset(ci: ChatItem, offset: Int, linkMode: SimplexLinkMode, expandRight: Boolean): Int {
+    val prefix = itemPrefixText(ci)
+    if (offset <= prefix.length) return offset
+    val formattedText = ci.formattedText ?: return offset
+    val bodyOffset = offset - prefix.length
     var displayOffset = 0
-    for (ft in itemDisplaySegments(ci)) {
+    for (ft in formattedText) {
         val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
         val displayEnd = displayOffset + segDisplay.length
-        if (offset > displayOffset && offset < displayEnd && ft.text.length != segDisplay.length) {
-            return if (expandRight) displayEnd else displayOffset
+        if (bodyOffset > displayOffset && bodyOffset < displayEnd && ft.text.length != segDisplay.length) {
+            return prefix.length + if (expandRight) displayEnd else displayOffset
         }
         displayOffset = displayEnd
     }
