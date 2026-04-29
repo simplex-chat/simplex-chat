@@ -1706,7 +1706,12 @@ fun ComposeView(
 private fun showLinkPreviewsConfirmAlert(socksEnabled: Boolean, onChoice: (Boolean?) -> Unit) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.link_previews_alert_title),
-    text = AnnotatedString(generalGetString(if (socksEnabled) MR.strings.link_previews_alert_desc_socks else MR.strings.link_previews_alert_desc)),
+    text = AnnotatedString(
+      if (socksEnabled)
+        generalGetString(MR.strings.link_previews_alert_desc) + "\n\n" + generalGetString(MR.strings.link_previews_alert_desc_socks)
+      else
+        generalGetString(MR.strings.link_previews_alert_desc)
+    ),
     onDismissRequest = { onChoice(null) },
     buttons = {
       Column {

@@ -3061,7 +3061,7 @@
   <!-- ComposeView.kt link previews opt-in alert -->
   <string name="link_previews_alert_title">Enable link previews?</string>
   <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
-  <string name="link_previews_alert_desc_socks">Link preview will be sent through SOCKS proxy. DNS lookup may still happen locally and could be visible to your DNS resolver.</string>
+  <string name="link_previews_alert_desc_socks">Link preview will be requested via SOCKS proxy. DNS lookup may still happen locally via your DNS resolver.</string>
   <string name="link_previews_alert_enable">Enable</string>
   <string name="link_previews_alert_disable">Disable</string>
   <!-- <string name="link_previews_alert_dont_ask_again">Don't ask again</string> -->
