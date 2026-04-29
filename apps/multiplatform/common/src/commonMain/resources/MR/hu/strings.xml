@@ -2754,7 +2754,7 @@
     <string name="onboarding_network_commitments">Hálózati kötelezettségvállalások</string>
     <string name="onboarding_network_routers_cannot_know">A hálózati útválasztók nem tudhatják,\nhogy ki kivel beszélget</string>
     <string name="onboarding_no_account">Nincs fiók. Nincs telefonszám. Nincs e-mail-cím. Nincs személyazonosító.\nA legbiztonságosabb titkosítás.</string>
-    <string name="onboarding_on_your_phone">Az Ön eszközén, nem pedig a kiszolgálókon.</string>
+    <string name="onboarding_on_your_phone">Az eszközön, nem pedig kiszolgálókon.</string>
     <string name="open_external_link_title">Megnyitja a külső hivatkozást?</string>
     <string name="onboarding_private_and_secure">Privát és biztonságos üzenetváltás.</string>
     <string name="prohibit_chat_with_admins">A csevegés az adminisztrátorokkal le van tiltva.</string>
@@ -2763,7 +2763,7 @@
     <string name="members_can_chat_with_admins_channel">A feliratkozók cseveghetnek az adminisztrátorokkal</string>
     <string name="why_simplex_is_built">Miért jött létre a SimpleX?</string>
     <string name="onboarding_your_network">Saját hálózat</string>
-    <string name="onboarding_your_profile">Saját profil</string>
+    <string name="onboarding_your_profile">Profil létrehozása</string>
     <string name="onboarding_first_network">Az első hálózat, ahol Ön birtokolja\na saját kapcsolatait és csoportjait.</string>
     <string name="one_hand_ui_bottom_bar">Alsó sáv</string>
     <string name="link_previews_alert_desc_socks">A hivatkozások előnézetét SOCKS proxyn keresztül kéri le a kliens. A DNS-lekérdezés viszont továbbra is történhet helyi szinten, a saját DNS-kiszolgálón keresztül.</string>
