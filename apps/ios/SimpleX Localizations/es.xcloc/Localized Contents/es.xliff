@@ -1518,8 +1518,9 @@ en tu red</target>
         <target>Tanto tú como tu contacto podéis enviar mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bottom bar" xml:space="preserve">
+      <trans-unit id="Bottom bar" xml:space="preserve" approved="no">
         <source>Bottom bar</source>
+        <target state="translated">Barra inferior</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
@@ -9420,8 +9421,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Opacidad barra</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Top bar" xml:space="preserve">
+      <trans-unit id="Top bar" xml:space="preserve" approved="no">
         <source>Top bar</source>
+        <target state="translated">Barra superior</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
