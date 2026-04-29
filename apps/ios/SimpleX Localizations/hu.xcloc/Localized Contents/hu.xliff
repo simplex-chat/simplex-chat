@@ -2540,9 +2540,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Saját cím létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create your link" xml:space="preserve">
+      <trans-unit id="Create your link" xml:space="preserve" approved="no">
         <source>Create your link</source>
-        <target>Kapcsolatba lépés valakivel</target>
+        <target state="translated">Saját hivatkozás létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -6256,9 +6256,9 @@ new chat action</note>
         <target>Régi adatbázis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="On your phone, not on servers." xml:space="preserve">
+      <trans-unit id="On your phone, not on servers." xml:space="preserve" approved="no">
         <source>On your phone, not on servers.</source>
-        <target>Az Ön eszközén, nem pedig a kiszolgálókon.</target>
+        <target state="translated">Az eszközön, nem pedig kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
