@@ -590,7 +590,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [incognito] print incognito profile used for this contact
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
           toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
-          let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
+          let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just pqEnc) Nothing
           -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
           when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
             (Nothing, Nothing) -> do
@@ -842,7 +842,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               firstConnectedHost
               ( do
                   let cd = CDGroupRcv gInfo'' scopeInfo m''
-                  createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+                  createInternalChatItem user cd (CIRcvGroupE2EEInfo $ e2eInfoGroup gInfo'') Nothing
                   let prepared = preparedGroup gInfo''
                   unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
                   memberConnectedChatItem gInfo'' scopeInfo m''
@@ -1356,7 +1356,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
                         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
-                        let e2eContent = CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
+                        let e2eContent = CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just $ CR.pqSupportToEnc $ reqPQSup
                         void $ createChatItem user cd False e2eContent Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \mc -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
@@ -1535,7 +1535,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
     memberCanSend Nothing _ a = a -- channel message - was previously checked and allowed by relay
     memberCanSend (Just m@GroupMember {memberRole}) msgScope a = case msgScope of
-      Just MSMember {} -> a
+      Just (MSMember mId)
+        | sameMemberId mId m || memberRole >= GRModerator -> a
+        | otherwise -> messageError "member is not allowed to send to this support chat" $> Nothing
       Nothing
         | memberRole > GRObserver || memberPending m -> a
         | otherwise -> messageError "member is not allowed to send messages" $> Nothing
@@ -1837,13 +1839,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- This patches initial sharedMsgId into chat item when locally deleted chat item
         -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
         -- Chat item and update message which created it will have different sharedMsgId in this case...
-        let timed_ = rcvContactCITimed ct ttl
-            ts = ciContentTexts content
-        (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live M.empty
-        ci' <- withStore' $ \db -> do
-          createChatItemVersion db (chatItemId' ci) brokerTs mc
-          updateDirectChatItem' db user contactId ci content True live Nothing Nothing
-        toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci')
+        if isVoice mc && not (featureAllowed SCFVoice forContact ct)
+          then do
+            let ciContent = ciContentNoParse $ CIRcvChatFeatureRejected CFVoice
+            (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs ciContent Nothing Nothing False M.empty
+            toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci)
+          else do
+            let timed_ = rcvContactCITimed ct ttl
+                ts = ciContentTexts content
+            (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live M.empty
+            ci' <- withStore' $ \db -> do
+              createChatItemVersion db (chatItemId' ci) brokerTs mc
+              updateDirectChatItem' db user contactId ci content True live Nothing Nothing
+            toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci')
       where
         brokerTs = metaBrokerTs msgMeta
         content = CIRcvMsgContent mc
@@ -2073,15 +2081,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m mc msgScope_
                         pure (gInfo', CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
                       Nothing -> pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
-                (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
-                ci' <- withStore' $ \db -> do
-                  createChatItemVersion db (chatItemId' ci) brokerTs mc
-                  updateGroupChatItem db user groupId ci content True live Nothing
-                ci'' <- case chatDir of
-                  CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
-                  CDChannelRcv {} -> pure ci'
-                toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
-                pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
+                case m_ >>= \m -> prohibitedGroupContent gInfo' m scopeInfo mc ft_ (Nothing :: Maybe String) False of
+                  Just f -> do
+                    let ciContent = ciContentNoParse $ CIRcvGroupFeatureRejected f
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs ciContent Nothing timed_ False M.empty
+                    groupMsgToView cInfo ci
+                    pure Nothing
+                  Nothing -> do
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
+                    ci' <- withStore' $ \db -> do
+                      createChatItemVersion db (chatItemId' ci) brokerTs mc
+                      updateGroupChatItem db user groupId ci content True live Nothing
+                    ci'' <- case chatDir of
+                      CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
+                      CDChannelRcv {} -> pure ci'
+                    toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
+                    pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
         content = CIRcvMsgContent mc
         ts@(_, ft_) = msgContentTexts mc
@@ -2546,7 +2561,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- create item in both scopes
             let gInfo' = gInfo {membership = membership'}
                 cd = CDGroupRcv gInfo' Nothing m
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo $ e2eInfoGroup gInfo') Nothing
             let prepared = preparedGroup gInfo'
             unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> preparedGroup gInfo'
@@ -2616,10 +2631,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           BCCustomer -> customerId == memberId
         createProfileUpdatedItem m' (msg, brokerTs) = do
           (gInfo', m'', scopeInfo) <- mkGroupChatScope gInfo m'
-          let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
-              cd = CDGroupRcv gInfo' scopeInfo m''
-          (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs ciContent
-          groupMsgToView cInfo ci
+          let createItem scopeInfo_ m_ = do
+                let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
+                    cd = CDGroupRcv gInfo' scopeInfo_ m_
+                (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs ciContent
+                groupMsgToView cInfo ci
+          case scopeInfo of
+            Just _ -> createItem scopeInfo m''
+            Nothing
+              | useRelays' gInfo' && not (isRelay m'') && memberRole' m'' < GRModerator ->
+                  forM_ (supportChat m'') $ \_ ->
+                    createItem (Just GCSIMemberSupport {groupMember_ = Just m''}) m''
+              | otherwise -> createItem Nothing m''
 
     xInfoProbe :: ContactOrMember -> Probe -> CM ()
     xInfoProbe cgm2 probe = do
@@ -2917,8 +2940,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Right existingMember
-              | useRelays' gInfo ->
-                  void $ withStore $ \db -> updatePreparedChannelMember db vr user existingMember memInfo
+              | useRelays' gInfo -> do
+                  updatedMember <- withStore $ \db -> updatePreparedChannelMember db vr user existingMember memInfo
+                  toView $ CEvtGroupMemberUpdated user gInfo existingMember updatedMember
               | otherwise ->
                   messageError "x.grp.mem.intro ignored: member already exists"
             Left _

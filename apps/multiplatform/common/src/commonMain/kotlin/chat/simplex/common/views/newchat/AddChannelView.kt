@@ -23,6 +23,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import androidx.compose.ui.layout.ContentScale
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.views.*
 import chat.simplex.common.views.chat.group.GroupLinkView
 import chat.simplex.common.views.chatlist.openGroupChat
@@ -110,7 +112,10 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
           fullName = "",
           shortDescr = null,
           image = profileImage.value,
-          groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
+          groupPreferences = GroupPreferences(
+            history = GroupPreference(GroupFeatureEnabled.ON),
+            support = GroupPreference(GroupFeatureEnabled.OFF)
+          )
         )
         creationInProgress.value = true
         withBGApi {
@@ -254,21 +259,36 @@ private fun ProfileStepView(
   ) {
     ModalView(close = close) {
       ColumnWithScrollBar {
-        AppBarTitle(generalGetString(MR.strings.create_channel_title))
-        Box(
+        AppBarTitle(generalGetString(MR.strings.create_channel_title), bottomPadding = DEFAULT_PADDING_HALF)
+        Row(
           Modifier
             .fillMaxWidth()
-            .padding(bottom = 24.dp),
-          contentAlignment = Alignment.Center
+            .padding(vertical = DEFAULT_PADDING_HALF),
+          horizontalArrangement = if (BuildConfigCommon.SIMPLEX_ASSETS) Arrangement.SpaceEvenly else Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Box(contentAlignment = Alignment.TopEnd) {
-            Box(contentAlignment = Alignment.Center) {
-              ProfileImage(108.dp, image = profileImage.value, icon = MR.images.ic_bigtop_updates_circle_filled)
-              EditImageButton { scope.launch { bottomSheetModalState.show() } }
+          // Padding offsets transparent space built into 3D asset
+          Box(
+            modifier = if (BuildConfigCommon.SIMPLEX_ASSETS) Modifier.padding(horizontal = 3.dp) else Modifier,
+            contentAlignment = Alignment.Center
+          ) {
+            Box(contentAlignment = Alignment.TopEnd) {
+              Box(contentAlignment = Alignment.Center) {
+                ProfileImage(128.dp, image = profileImage.value, icon = MR.images.ic_bigtop_updates_circle_filled)
+                EditImageButton { scope.launch { bottomSheetModalState.show() } }
+              }
+              if (profileImage.value != null) {
+                DeleteImageButton { profileImage.value = null }
+              }
             }
-            if (profileImage.value != null) {
-              DeleteImageButton { profileImage.value = null }
-            }
+          }
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Image(
+              painterResource(if (isInDarkTheme()) MR.images.create_channel_light else MR.images.create_channel),
+              contentDescription = null,
+              contentScale = ContentScale.Fit,
+              modifier = Modifier.height(140.dp)
+            )
           }
         }
         Row(

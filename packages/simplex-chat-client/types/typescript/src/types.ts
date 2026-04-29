@@ -2094,6 +2094,7 @@ export interface DroppedMsg {
 }
 
 export interface E2EInfo {
+  public?: boolean
   pqEnabled?: boolean
 }
 
@@ -2442,6 +2443,7 @@ export interface FullGroupPreferences {
   simplexLinks: RoleGroupPreference
   reports: GroupPreference
   history: GroupPreference
+  support: SupportGroupPreference
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
   commands: ChatBotCommand[]
@@ -2515,6 +2517,7 @@ export enum GroupFeature {
   SimplexLinks = "simplexLinks",
   Reports = "reports",
   History = "history",
+  Support = "support",
   Sessions = "sessions",
   Comments = "comments",
 }
@@ -2565,6 +2568,11 @@ export interface GroupLink {
   acceptMemberRole: GroupMemberRole
 }
 
+export interface GroupLinkOwner {
+  memberId: string
+  memberKey: string
+}
+
 export type GroupLinkPlan = 
   | GroupLinkPlan.Ok
   | GroupLinkPlan.OwnLink
@@ -2610,6 +2618,9 @@ export namespace GroupLinkPlan {
   export interface Known extends Interface {
     type: "known"
     groupInfo: GroupInfo
+    groupUpdated: boolean
+    ownerVerification?: OwnerVerification
+    linkOwners: GroupLinkOwner[]
   }
 
   export interface NoRelays extends Interface {
@@ -2706,6 +2717,7 @@ export interface GroupPreferences {
   simplexLinks?: RoleGroupPreference
   reports?: GroupPreference
   history?: GroupPreference
+  support?: SupportGroupPreference
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
   commands?: ChatBotCommand[]
@@ -2776,6 +2788,7 @@ export interface GroupSupportChat {
 
 export enum GroupType {
   Channel = "channel",
+  Group = "group",
 }
 
 export enum HandshakeError {
@@ -4625,6 +4638,10 @@ export namespace SubscriptionStatus {
   export interface NoSub extends Interface {
     type: "noSub"
   }
+}
+
+export interface SupportGroupPreference {
+  enable: GroupFeatureEnabled
 }
 
 export enum SwitchPhase {

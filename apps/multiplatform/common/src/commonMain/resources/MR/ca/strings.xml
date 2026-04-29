@@ -1216,7 +1216,6 @@
     <string name="first_platform_without_user_ids">Sense identificadors d\'usuari.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Per protegir la vostra privadesa SimpleX utilitza identificadors separats per a cadascun dels vostres contactes..</string>
     <string name="use_chat">Obrir SimpleX</string>
-    <string name="how_simplex_works">Com funciona SimpleX</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Només els dispositius client emmagatzemen perfils d\'usuari, contactes, grups i missatges.</string>
     <string name="onboarding_notifications_mode_title">Notificacions privades</string>
     <string name="onboarding_notifications_mode_subtitle">Com afecta la bateria</string>
@@ -1975,7 +1974,6 @@
     <string name="one_hand_ui">Barres d\'eines d\'aplicacions accessible</string>
     <string name="chat_bottom_bar">Barres d\'eines de xat accessible</string>
     <string name="chat_list_always_visible">Mostra la llista de xat en una finestra nova</string>
-    <string name="one_hand_ui_card_title">Commuta la llista de xat:</string>
     <string name="terminal_always_visible">Mostrar consola en finestra nova</string>
     <string name="one_hand_ui_change_instruction">Podeu canviar-la a la configuració de l\'aparença.</string>
     <string name="upgrade_and_open_chat">Actualitzar i obrir el xat</string>
@@ -2342,7 +2340,6 @@
     <string name="onboarding_conditions_private_chats_not_accessible">Els xats privats, els grups i els vostres contactes no són accessibles per als operadors de servidor.</string>
     <string name="onboarding_conditions_accept">Acceptar</string>
     <string name="onboarding_conditions_by_using_you_agree">En utilitzar SimpleX Chat accepteu:\n- enviar només contingut legal en grups públics.\n- Respectar els altres usuaris, sense correu brossa.</string>
-    <string name="onboarding_conditions_configure_server_operators">Configurar els operadors de servidor</string>
     <string name="simplex_link_channel">Enllaç al canal SimpleX</string>
     <string name="link_requires_newer_app_version_please_upgrade">Aquest enllaç requereix una versió de l\'aplicació més recent. Actualitzeu l\'aplicació o demaneu al vostre contacte que enviï un enllaç compatible.</string>
     <string name="unsupported_connection_link">Enllaç de connexió no compatible</string>
