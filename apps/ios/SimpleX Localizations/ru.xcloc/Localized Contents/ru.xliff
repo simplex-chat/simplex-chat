@@ -1518,8 +1518,9 @@ in your network</source>
         <target>Вы и Ваш контакт можете отправлять голосовые сообщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bottom bar" xml:space="preserve">
+      <trans-unit id="Bottom bar" xml:space="preserve" approved="no">
         <source>Bottom bar</source>
+        <target state="translated">Нижнее меню</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
@@ -9419,8 +9420,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Прозрачность тулбара</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Top bar" xml:space="preserve">
+      <trans-unit id="Top bar" xml:space="preserve" approved="no">
         <source>Top bar</source>
+        <target state="translated">Верхнее меню</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
