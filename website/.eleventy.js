@@ -441,6 +441,37 @@ module.exports = function (ty) {
   }).use(markdownItReplaceLink)
   .use(markdownItFootnote)
 
+  markdownLib.renderer.rules.footnote_anchor_name = function (tokens, idx, options, env) {
+    var token = tokens[idx]
+    var label = token.meta.label
+    if (label) return label
+    var n = Number(token.meta.id + 1).toString()
+    var prefix = typeof env.docId === 'string' ? '-' + env.docId + '-' : ''
+    return prefix + n
+  }
+  markdownLib.renderer.rules.footnote_caption = function (tokens, idx) {
+    var n = Number(tokens[idx].meta.id + 1).toString()
+    if (tokens[idx].meta.subId > 0) n += ':' + tokens[idx].meta.subId
+    return n
+  }
+  markdownLib.renderer.rules.footnote_ref = function (tokens, idx, options, env, slf) {
+    var id = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf)
+    var caption = slf.rules.footnote_caption(tokens, idx, options, env, slf)
+    var refid = id
+    if (tokens[idx].meta.subId > 0) refid += ':' + tokens[idx].meta.subId
+    return '<sup class="footnote-ref"><a href="#note-' + id + '" id="ref-' + refid + '">' + caption + '</a></sup>'
+  }
+  markdownLib.renderer.rules.footnote_open = function (tokens, idx, options, env, slf) {
+    var id = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf)
+    if (tokens[idx].meta.subId > 0) id += ':' + tokens[idx].meta.subId
+    return '<li id="note-' + id + '" class="footnote-item">'
+  }
+  markdownLib.renderer.rules.footnote_anchor = function (tokens, idx, options, env, slf) {
+    var id = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf)
+    if (tokens[idx].meta.subId > 0) id += ':' + tokens[idx].meta.subId
+    return ' <a href="#ref-' + id + '" class="footnote-backref">↩︎</a>'
+  }
+
   // replace the default markdown-it instance
   ty.setLibrary("md", markdownLib)
 
