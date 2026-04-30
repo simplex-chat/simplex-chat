@@ -314,3 +314,7 @@ h3::before {
 .footnotes-list > li > p {
   display: inline;
 }
+
+.footnote-backref {
+  text-decoration: none;
+}
