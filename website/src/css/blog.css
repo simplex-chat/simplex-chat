@@ -303,6 +303,10 @@ h3::before {
   line-height: 20px;
 }
 
+.footnotes-sep {
+  margin: 1.2rem 0;
+}
+
 .footnotes-list > li {
   list-style-position: outside !important;
   margin-bottom: 1.2rem;
