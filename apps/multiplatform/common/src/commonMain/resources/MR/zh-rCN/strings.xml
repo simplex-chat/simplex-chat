@@ -1349,7 +1349,7 @@
     <string name="receipts_contacts_enable_for_all">为所有人启用</string>
     <string name="conn_event_ratchet_sync_required">需要重新协商加密</string>
     <string name="delivery_receipts_are_disabled">已关闭送达回执！</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>请注意</b>：消息和文件中继通过 SOCKS 代理连接。呼叫和发送链接预览使用直接连接。]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>请注意</b>：消息和文件中继通过 SOCKS 代理连接。通话使用直接连接。]]></string>
     <string name="encrypt_local_files">加密本地文件</string>
     <string name="v5_3_encrypt_local_files">为存储的文件和媒体加密</string>
     <string name="v5_3_new_desktop_app">全新桌面应用！</string>
@@ -2708,7 +2708,7 @@
     <string name="a_link_for_one_person">用于单人进行连接的链接</string>
     <string name="chat_list_channels">频道</string>
     <string name="connect_via_link_or_qr_code">通过链接或二维码连接</string>
-    <string name="connect_with_someone">和某人连接</string>
+    <string name="connect_with_someone">创建链接</string>
     <string name="create_your_public_address">创建你的公开地址</string>
     <string name="v6_5_invite_friends">邀请好友更简单 👋</string>
     <string name="for_anyone_to_reach_you">给任何要和你联系的人</string>
@@ -2716,7 +2716,7 @@
     <string name="let_someone_connect_to_you">让某人和你连接</string>
     <string name="new_1_time_link">新建一次性链接</string>
     <string name="v6_5_non_profit_governance">非盈利治理</string>
-    <string name="v6_5_safe_web_links_descr">- 可选发送链接预览\n- 防止超链接钓鱼\n- 删除链接跟踪。</string>
+    <string name="v6_5_safe_web_links_descr">- 可选发送链接预览\n- 如启用则使用 SOCKS 代理\n- 防止超链接钓鱼\n- 删除链接跟踪。</string>
     <string name="onboarding_or_show_qr_code">面对面或通过视频通话展示二维码。</string>
     <string name="onboarding_or_use_qr_code">或使用此二维码 — 打印或在线展示。</string>
     <string name="v6_5_ownership">所有权：你可以运行自己的中继。</string>
@@ -2745,7 +2745,7 @@
     <string name="allow_chat_with_admins_channel">允许订阅者与管理员聊天。</string>
     <string name="onboarding_be_free">在您的网络中\n自由驰骋</string>
     <string name="chat_with_admins_is_prohibited">禁止与管理员聊天。</string>
-    <string name="chat_with_admins_relay_note">与管理员在公开频道中聊天没有端到端加密 — 请只在受信任聊天中继中进行。</string>
+    <string name="chat_with_admins_relay_note">与管理员在公开频道中聊天没有端到端加密 — 请只在受信任聊天中继中使用。</string>
     <string name="support_chats_disabled">禁止与成员聊天</string>
     <string name="chat_with_admins">与管理员聊天</string>
     <string name="direct_messages_are_prohibited_channel">禁止订阅者间发送私信。</string>
@@ -2784,4 +2784,7 @@
     <string name="why_simplex_is_built">为何打造 SimpleX。</string>
     <string name="onboarding_your_network">您的网络</string>
     <string name="onboarding_your_profile">您的个人资料</string>
+    <string name="one_hand_ui_bottom_bar">底部栏</string>
+    <string name="link_previews_alert_desc_socks">将通过 SOCKS5 代理请求链接预览。DNS 查询仍可能通过你的 DNS 解析器在本地发生。</string>
+    <string name="one_hand_ui_top_bar">顶部栏</string>
 </resources>

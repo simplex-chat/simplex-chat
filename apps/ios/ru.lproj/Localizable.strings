@@ -986,6 +986,9 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Вы и Ваш контакт можете отправлять голосовые сообщения.";
 
+/* No comment provided by engineer. */
+"Bottom bar" = "Нижнее меню";
+
 /* compose placeholder for channel owner */
 "Broadcast" = "Опубликовать";
 
@@ -6184,6 +6187,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Toolbar opacity" = "Прозрачность тулбара";
+
+/* No comment provided by engineer. */
+"Top bar" = "Верхнее меню";
 
 /* No comment provided by engineer. */
 "Total" = "Всего";
