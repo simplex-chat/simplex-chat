@@ -2,11 +2,11 @@
 
 ## Problem
 
-When a subscriber reacts to a message in a channel (relay group), the relay forwards the reaction via `XGrpMsgForward` with `FwdMember {memberId, memberName}`. This causes `getCreateUnknownGMByMemberId` to create an unknown member record on every other subscriber's device, leaking the reacting member's name.
+When a subscriber reacts to a message in a channel (relay group), the relay forwards the reaction via `XGrpMsgForward` with `FwdMember {memberId, memberName}`. This causes `getCreateUnknownGMByMemberId` to create unknown member records on other subscribers' devices, leaking the reacting member's name.
 
-**Goal**: Channel owners see full reaction details (who reacted). Subscribers see only reaction counts (emoji + count), with no member identity leaked.
+**Goal**: Channel owners see full reaction details (who reacted). Subscribers see only reaction counts, with no member identity leaked.
 
-## Root Cause
+## Root cause
 
 1. Subscriber sends `XMsgReact` to relay
 2. Relay's `groupMsgReaction` returns `DeliveryTaskContext (DJSGroup {DJDeliveryJob}) False` — `sentAsGroup = False`
@@ -14,297 +14,352 @@ When a subscriber reacts to a message in a channel (relay group), the relay forw
 4. Job worker sends same body to ALL members via `getGroupMembersByCursor` — no role filter
 5. Receiving subscriber's `xGrpMsgForward` → `FwdMember` → `getCreateUnknownGMByMemberId` creates unknown member
 
-## Design: Split Delivery for Reactions
+## Design
 
-The relay creates **two delivery tasks** for reactions in channels:
-- **Subscriber task**: `sentAsGroup = True` → `FwdChannel` (no identity)
-- **Owner task**: `sentAsGroup = False` → `FwdMember` (full identity), delivered only to owners
+Add a new `DJReaction` delivery job spec. When the relay processes a reaction in a channel, `groupMsgReaction` returns `DJReaction` instead of `DJDeliveryJob`. A single delivery task is created; the split happens at the job level.
 
-This reuses the existing `sentAsGroup`/`FwdChannel` mechanism. The new part is a `DJOwnerOnlyJob` delivery job spec that restricts delivery to owners.
+**Task worker** (`DJReaction`): Encodes two bodies from the same batch of tasks:
+- Owner body: uses each task's `fwdSender` (`FwdMember`) — preserves member identity
+- Subscriber body: uses `FwdChannel` — no member identity
 
-### Why two tasks instead of one FwdChannel task?
+Creates a single delivery job carrying both bodies.
 
-Owners need to see who reacted — this is the stated requirement. Sending `FwdChannel` to everyone would strip identity from owners too.
+**Job worker** (`DJReaction` in channels): Iterates members via cursor. For each bucket, partitions members into owners (`memberRole >= GROwner`) and non-owners, sends the owner body to owners and the subscriber body to non-owners.
 
-### Why not a new event type for subscribers?
+**Receiving subscriber**: When `XMsgReact` arrives via `FwdChannel` (no author), a new function `groupMsgReactionNoMember` processes and stores the reaction with `group_member_id = NULL`. The UI shows updated counts without member attribution.
 
-The existing `XMsgReact` + `FwdChannel` combination already carries everything needed: the reaction, the target message, add/remove flag. The subscriber doesn't need the reacting member's identity. No new protocol event is required — `FwdChannel` already means "anonymous sender."
-
-### Batching compatibility
-
-Tasks are batched by matching `jobScope` (Store/Delivery.hs:188-199). `DJOwnerOnlyJob` is a distinct `DeliveryJobSpec`, so owner tasks batch separately from subscriber tasks. No cross-contamination.
+The existing `sentAsGroup`/`message_from_channel` mechanism is not involved — `DJReaction` handles the split directly in the task/job workers.
 
 ## Changes
 
-### 1. New DeliveryJobSpec variant: `DJOwnerOnlyJob`
+### 1. New DeliveryJobSpec variant
 
 **File**: `src/Simplex/Chat/Delivery.hs`
 
-Add `DJOwnerOnlyJob` to `DeliveryJobSpec`:
+Add `DJReaction` to `DeliveryJobSpec`:
+
 ```haskell
 data DeliveryJobSpec
   = DJDeliveryJob {includePending :: Bool}
-  | DJOwnerOnlyJob
+  | DJReaction
   | DJRelayRemoved
 ```
 
-Add `DJSTOwnerOnlyJob` to `DeliveryJobSpecTag` with text encoding `"owner_only_job"`.
+Add `DJSTReaction` to `DeliveryJobSpecTag` with text encoding `"reaction"`.
 
-Update `jobScopeImpliedSpec`, `isRelayRemoved` — no changes needed (they match on specific constructors).
+Add `DJReaction` case to `jobSpecImpliedPending`:
+
+```haskell
+DJReaction -> False
+```
+
+No changes needed to `jobScopeImpliedSpec` (it passes through `jobSpec` from `DJSGroup`), `isRelayRemoved` (matches `DJRelayRemoved` specifically), or `toWorkerScope` (dispatches on `DJSGroup` constructor).
+
+Add `subscriberBody_` field to `MessageDeliveryJob`:
+
+```haskell
+data MessageDeliveryJob = MessageDeliveryJob
+  { jobId :: Int64,
+    jobScope :: DeliveryJobScope,
+    singleSenderGMId_ :: Maybe GroupMemberId,
+    body :: ByteString,
+    subscriberBody_ :: Maybe ByteString,
+    cursorGMId_ :: Maybe GroupMemberId
+  }
+```
+
+### 2. Delivery store changes
 
 **File**: `src/Simplex/Chat/Store/Delivery.hs`
 
-Update `jobScopeRow_` and `toJobScope_` for the new tag.
-
-### 2. Owner-only member query
-
-**File**: `src/Simplex/Chat/Store/Delivery.hs`
-
-Add `getGroupOwnersByCursor` — same as `getGroupMembersByCursor` but with `AND member_role = 'owner'` filter (or `>= GROwner`). Could also be a parameter to `getGroupMembersByCursor` but a separate function is clearer given the single use.
-
-### 3. Job worker: dispatch DJOwnerOnlyJob
-
-**File**: `src/Simplex/Chat/Library/Subscriber.hs` (job worker, ~line 3589)
-
-In `processDeliveryJob`, the `DJSGroup` channel branch currently only handles `DJDeliveryJob`. Add a case for `DJOwnerOnlyJob` that uses `getGroupOwnersByCursor` instead of `getGroupMembersByCursor`.
-
-### 4. Task worker: dispatch DJOwnerOnlyJob
-
-**File**: `src/Simplex/Chat/Library/Subscriber.hs` (task worker, ~line 3524)
-
-`processDeliveryTask` dispatches on `jobScopeImpliedSpec`. Add `DJOwnerOnlyJob` case — same batching logic as `DJDeliveryJob`.
-
-### 5. Relay-side: return two tasks for reactions in channels
-
-**File**: `src/Simplex/Chat/Library/Subscriber.hs`
-
-Change `processEvent` return type from `Maybe NewMessageDeliveryTask` to `[NewMessageDeliveryTask]`:
+Update `jobScopeRow_` and `toJobScope_` for new tag:
 
 ```haskell
-processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> VerifiedMsg e -> CM [NewMessageDeliveryTask]
+-- in jobScopeRow_:
+DJReaction -> (DWSGroup, Just DJSTReaction, Nothing, Nothing)
+
+-- in toJobScope_:
+(DWSGroup, Just DJSTReaction, Nothing, Nothing) -> Just $ DJSGroup {jobSpec = DJReaction}
 ```
 
-All existing `pure $ Just $ DeliveryTaskContext ...` become `pure [DeliveryTaskContext ...]`, `pure Nothing` becomes `pure []`.
+Extend `createMsgDeliveryJob` with optional subscriber body parameter:
 
-In `processAChatMsg` (line 964), change accumulation:
 ```haskell
-newTasks <- join <$> withVerifiedMsg ...
-  (\verifiedMsg -> processEvent gInfo' m' verifiedMsg ...)
-pure $ maybe id (++) newTasks newDeliveryTasks  -- was: maybe id (:)
+createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> Maybe GroupMemberId -> ByteString -> Maybe ByteString -> IO ()
 ```
 
-Wait — actually, the simpler approach: keep `processEvent` returning `Maybe NewMessageDeliveryTask`, and handle the split specifically in `groupMsgReaction`.
+Add `subscriber_body` to the INSERT. Existing call sites (2 in Subscriber.hs task worker, 1 in Commands.hs relay removal) pass `Nothing`.
 
-**Better approach**: Change only `groupMsgReaction` to return `[DeliveryTaskContext]` (instead of `Maybe DeliveryTaskContext`), and adapt the single call site in `processEvent` (line 998).
+Update `MessageDeliveryJobRow`, `getNextDeliveryJob` query, and `toDeliveryJob` to read `subscriber_body` column into the new `subscriberBody_` field.
 
-In `processEvent` for `XMsgReact` (line 998):
-```haskell
-XMsgReact sharedMsgId memberId scope_ reaction add -> do
-  taskContexts <- groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
-  pure taskContexts  -- [DeliveryTaskContext]
+### 3. DB migration
+
+```sql
+ALTER TABLE delivery_jobs ADD COLUMN subscriber_body BLOB;
 ```
 
-But `processEvent` returns `Maybe NewMessageDeliveryTask`. To return multiple, either:
-- (a) Change return type to `[NewMessageDeliveryTask]` — touches every branch
-- (b) Return the first task from processEvent, and create the second task directly — ugly
+(`chat_item_reactions.group_member_id` is already nullable — verified from schema.)
 
-Option (a) is cleaner despite touching more lines, because the change is mechanical (`Just ctx` → `[ctx]`, `Nothing` → `[]`) and `createDeliveryTasks` already takes `[NewMessageDeliveryTask]`.
-
-**Decision**: Change `processEvent` to return `[NewMessageDeliveryTask]`.
-
-### 6. groupMsgReaction: return two tasks for channels
+### 4. Relay-side: `groupMsgReaction` returns `DJReaction` for channels
 
 **File**: `src/Simplex/Chat/Library/Subscriber.hs` (~line 1922)
 
-Change `groupMsgReaction` return type from `Maybe DeliveryTaskContext` to `[DeliveryTaskContext]`.
+In `groupMsgReaction`, for channel groups (`useRelays' g`), return `DJReaction` instead of `DJDeliveryJob`.
 
-For channel groups (`useRelays' g`), in the `Nothing` scope branch (line 1936-1938):
+The `catchCINotFound` fallback, `Nothing` scope branch (line 1936–1938):
+
 ```haskell
 Nothing -> do
   withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
-  pure
-    [ DeliveryTaskContext (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}) True    -- subscribers: FwdChannel
-    , DeliveryTaskContext (DJSGroup {jobSpec = DJOwnerOnlyJob}) False                           -- owners: FwdMember
-    ]
+  let jobSpec = if useRelays' g then DJReaction else DJDeliveryJob {includePending = False}
+  pure $ Just $ DeliveryTaskContext (DJSGroup {jobSpec}) False
 ```
 
-For non-channel groups, return single-element list as before.
+The `updateChatItemReaction` path (line 1949–1957):
 
-The `updateChatItemReaction` path (line 1942-1958) similarly returns two tasks for channels.
+```haskell
+pure $ Just $ case scopeInfo of
+  Nothing | useRelays' g -> DeliveryTaskContext (DJSGroup {jobSpec = DJReaction}) False
+  _ -> infoToDeliveryContext g scopeInfo False
+```
 
-### 7. Subscriber receiving side: handle FwdChannel + XMsgReact
+The member support scope branch (line 1929–1934) is unaffected — it returns `DJSMemberSupport`, a different delivery scope.
+
+### 5. Task worker: `DJReaction` handling
+
+**File**: `src/Simplex/Chat/Library/Subscriber.hs` (~line 3524)
+
+In `processDeliveryTask`, add `DJReaction` case alongside existing `DJDeliveryJob`:
+
+```haskell
+DJReaction ->
+  withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
+    let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
+        subscriberBody = encodeBinaryBatch
+          [ encodeFwdElement (GrpMsgForward FwdChannel fwdBrokerTs) verifiedMsg
+          | MessageDeliveryTask {taskId = tId, brokerTs = fwdBrokerTs, verifiedMsg} <- L.toList nextTasks
+          , tId `elem` taskIds
+          ]
+    withStore' $ \db -> do
+      createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body (Just subscriberBody)
+      forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
+      forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
+    lift . void $ getDeliveryJobWorker True deliveryKey
+```
+
+The owner body (`body`) uses each task's `fwdSender` (which is `FwdMember` because `sentAsGroup = False`). The subscriber body re-encodes the same included tasks with `FwdChannel`.
+
+### 6. Job worker: `DJReaction` handling
+
+**File**: `src/Simplex/Chat/Library/Subscriber.hs` (~line 3589)
+
+In `processDeliveryJob`, add `DJReaction` case:
+
+```haskell
+DJReaction -> do
+  sendBodyToMembersReaction
+  withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
+```
+
+Where `sendBodyToMembersReaction` for channels:
+
+```haskell
+sendBodyToMembersReaction
+  | useRelays' gInfo = do
+      bucketSize <- asks $ deliveryBucketSize . config
+      sendLoopReaction bucketSize startingCursor
+  | otherwise = -- fallback for non-channel: deliver body to all (shouldn't happen)
+      ...
+  where
+    sendLoopReaction bucketSize cursorGMId_ = do
+      mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
+      unless (null mems) $ do
+        let (owners, nonOwners) = partition (\m -> memberRole' m >= GROwner) mems
+        unless (null owners) $ deliver body owners
+        let subBody = fromMaybe body subscriberBody_
+        unless (null nonOwners) $ deliver subBody nonOwners
+        let cursorGMId' = groupMemberId' $ last mems
+        withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
+        unless (length mems < bucketSize) $ sendLoopReaction bucketSize (Just cursorGMId')
+```
+
+Single cursor pass. Members partitioned in memory. Each group receives the appropriate body.
+
+### 7. Receiving side: handle `FwdChannel` + `XMsgReact`
 
 **File**: `src/Simplex/Chat/Library/Subscriber.hs` (~line 3349)
 
-Currently:
-```haskell
-XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author ...
-```
+In `processForwardedMsg`, change `XMsgReact` handling from `withAuthor` to case on `author_`:
 
-`withAuthor` fails when `author_ = Nothing` (FwdChannel case). Change to:
 ```haskell
 XMsgReact sharedMsgId memId scope_ reaction add -> case author_ of
   Just author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
-  Nothing -> void $ groupMsgReactionAnon gInfo sharedMsgId memId scope_ reaction add rcvMsg msgTs
+  Nothing -> groupMsgReactionNoMember gInfo sharedMsgId memId reaction add rcvMsg msgTs
 ```
 
-### 8. Anonymous reaction processing
+### 8. New function: `groupMsgReactionNoMember`
 
 **File**: `src/Simplex/Chat/Library/Subscriber.hs`
 
-New function `groupMsgReactionAnon` — simplified version of `groupMsgReaction` for channel subscribers receiving anonymous reactions:
+New function in the `processGroupMessage` where-clause (same scope as `groupMsgReaction`, has access to `user`, `vr`, `toView`, `catchCINotFound`):
 
 ```haskell
-groupMsgReactionAnon :: GroupInfo -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM [DeliveryTaskContext]
+groupMsgReactionNoMember :: GroupInfo -> SharedMsgId -> Maybe MemberId -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM ()
+groupMsgReactionNoMember g sharedMsgId itemMemberId reaction add RcvMessage {msgId} brokerTs
+  | groupFeatureAllowed SGFReactions g =
+      updateChatItemReaction `catchCINotFound` \_ ->
+        withStore' $ \db -> setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs
+  | otherwise = pure ()
+  where
+    updateChatItemReaction = do
+      (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
+        cci <- case itemMemberId of
+          Just itemMemberId' -> getGroupMemberCIBySharedMsgId db user g itemMemberId' sharedMsgId
+          Nothing -> getGroupChatItemBySharedMsgId db user g Nothing sharedMsgId
+        scopeInfo <- getGroupChatScopeInfoForItem db vr user g (cChatItemId cci)
+        pure (cci, scopeInfo)
+      when (ciReactionAllowed ci) $ do
+        reactions <- withStore' $ \db -> do
+          setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs
+          getGroupCIReactions db g itemMemberId sharedMsgId
+        let ci' = CChatItem md ci {reactions}
+            r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction CIChannelRcv ci' brokerTs reaction
+        toView $ CEvtChatItemReaction user add r
 ```
 
-- Skip `getGroupReactions` dedup check (no `group_member_id` to check against) — or use a NULL-member variant
-- Call `setGroupReactionAnon` (new) to store with `group_member_id = NULL`
-- Update `CIReactionCount` via `getGroupCIReactions` (already aggregates, NULL member_id works)
-- Return `[]` (no further forwarding — this is a subscriber, not a relay)
+Key differences from `groupMsgReaction`:
+- No per-member dedup check — trusts relay's existing `reactionAllowed` validation
+- Stores with `group_member_id = NULL` via `setGroupReactionNoMember`
+- Uses `CIChannelRcv` direction in the UI event (no member attribution)
+- Returns `()` — no delivery context (subscriber doesn't forward)
+- No member support scope handling (irrelevant for channel subscriber reactions)
 
-Actually, this function doesn't need to return delivery tasks at all — it's on the receiving subscriber side, not the relay. It should return `CM ()` or similar — it just processes and stores the reaction locally.
-
-### 9. Anonymous reaction storage
+### 9. New storage function: `setGroupReactionNoMember`
 
 **File**: `src/Simplex/Chat/Store/Messages.hs`
 
-Add `setGroupReactionAnon`:
 ```haskell
-setGroupReactionAnon :: DB.Connection -> GroupInfo -> Maybe MemberId -> SharedMsgId -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
+setGroupReactionNoMember :: DB.Connection -> GroupInfo -> Maybe MemberId -> SharedMsgId -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
+setGroupReactionNoMember db GroupInfo {groupId} itemMemberId itemSharedMId reaction add msgId reactionTs
+  | add =
+      DB.execute db
+        [sql|
+          INSERT INTO chat_item_reactions
+            (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+            VALUES (?,NULL,?,?,0,?,?,?)
+        |]
+        (groupId, itemMemberId, itemSharedMId, reaction, msgId, reactionTs)
+  | otherwise =
+      DB.execute db
+        [sql|
+          DELETE FROM chat_item_reactions
+          WHERE chat_item_reaction_id = (
+            SELECT chat_item_reaction_id FROM chat_item_reactions
+            WHERE group_id = ? AND group_member_id IS NULL AND shared_msg_id = ?
+              AND item_member_id IS NOT DISTINCT FROM ? AND reaction_sent = 0 AND reaction = ?
+            LIMIT 1
+          )
+        |]
+        (groupId, itemSharedMId, itemMemberId, reaction)
 ```
 
-- INSERT: `group_member_id = NULL`
-- DELETE: use `LIMIT 1` subquery since multiple anonymous reactions of same type can exist:
-  ```sql
-  DELETE FROM chat_item_reactions
-  WHERE chat_item_reaction_id = (
-    SELECT chat_item_reaction_id FROM chat_item_reactions
-    WHERE group_id = ? AND group_member_id IS NULL AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND reaction_sent = 0 AND reaction = ?
-    LIMIT 1
-  )
-  ```
+INSERT always uses `NULL` for `group_member_id` and `0` for `reaction_sent`.
 
-Also add `getGroupReactionsAnon` for dedup — count of anonymous reactions of this type for this message, to enforce `maxMsgReactions`.
+DELETE uses `LIMIT 1` subquery — all NULL-member reactions of the same type are equivalent, so removing any one decrements the count correctly.
 
-### 10. iOS UI: hide reaction member list for channel subscribers
-
-**File**: `apps/ios/Shared/Views/Chat/ChatView.swift` (~line 2248)
-
-Change the `.group` context menu case to suppress `ReactionContextMenu` for non-owner channel subscribers:
-
-```swift
-case let .group(groupInfo, _):
-    if groupInfo.useRelays && !groupInfo.isOwner {
-        v  // no context menu — just the pill
-    } else {
-        v.contextMenu {
-            ReactionContextMenu(...)
-        }
-    }
-```
-
-### 11. Backend API: restrict reaction members for channel subscribers
+### 10. API restriction
 
 **File**: `src/Simplex/Chat/Library/Commands.hs` (~line 884)
 
-In `APIGetReactionMembers`, check if the group is a channel and the user is not an owner. If so, return empty list:
+Restrict `APIGetReactionMembers` for non-owner channel subscribers:
 
 ```haskell
 APIGetReactionMembers userId groupId itemId reaction -> withUserId userId $ \user -> do
   gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-  memberReactions <- if useRelays' gInfo && not (isOwner gInfo)
-    then pure []
-    else withStore $ \db -> do
-      CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
-      liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
+  memberReactions <-
+    if useRelays' gInfo && memberRole' (membership gInfo) < GROwner
+      then pure []
+      else withStore $ \db -> do
+        CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
+        liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
   pure $ CRReactionMembers user memberReactions
 ```
 
-where `isOwner` checks `membership.memberRole >= GROwner && memberCurrent membership`.
+### 11. iOS UI: suppress reaction context menu
 
-## Alternatives Considered
+**File**: `apps/ios/Shared/Views/Chat/ChatView.swift` (~line 2248)
 
-### A. New protocol event (e.g., XMsgReactCount)
+In `chatItemReactions`, change the `.group` case:
 
-Instead of forwarding `XMsgReact` with `FwdChannel`, send a new event like `XMsgReactCount sharedMsgId [(reaction, count)]` that carries aggregated counts.
+```swift
+case let .group(groupInfo, _):
+    if groupInfo.useRelays && !groupInfo.isOwner {
+        v
+    } else {
+        v.contextMenu {
+            ReactionContextMenu(
+                groupInfo: groupInfo,
+                itemId: ci.id,
+                reactionCount: r,
+                selectedMember: $selectedMember,
+                profileRadius: profileRadius
+            )
+        }
+    }
+```
 
-**Rejected because**:
-- Requires new protocol event definition, encoding/decoding, versioning
-- The relay would need to aggregate reactions before forwarding — stateful, complex
-- Individual add/remove of reactions is lost — subscriber can't toggle their own reaction
-- `XMsgReact` + `FwdChannel` already carries exactly the right information (reaction, target, add/remove) without identity
+Reaction pills (emoji + count) remain visible. Only the long-press context menu showing member names is suppressed.
 
-### B. Single FwdChannel task for everyone (owners lose identity)
-
-Send `FwdChannel` to all members including owners. Owners wouldn't see who reacted.
-
-**Rejected because**: Violates the requirement that owners see full reaction details.
-
-### C. Filter in getGroupMembersByCursor instead of new job spec
-
-Add a role filter parameter to the existing cursor query instead of creating `DJOwnerOnlyJob`.
-
-**Rejected because**: The filter is a property of the job, not a parameter of the query function. A dedicated job spec makes the intent explicit and doesn't complicate the general-purpose cursor query.
-
-### D. Don't forward reactions to subscribers at all
-
-Subscribers wouldn't see any reactions.
-
-**Rejected because**: Reaction counts are a core UX feature. The RFC mentions "send reaction counts" as the minimum viable approach.
-
-## Adversarial Review
-
-### Pass 1
-
-1. **Race condition on reaction toggle**: Subscriber sends reaction, receives anonymous forwarded copy of own reaction → double-counted? No — the subscriber's own reaction is stored with `reaction_sent = True`, the forwarded one with `reaction_sent = False`. `getGroupCIReactions` aggregates by reaction type across both. The `userReacted` field in `CIReactionCount` is `MAX(reaction_sent)` — if user reacted, it's True. The count includes both sent and received. **Issue**: subscriber's own reaction would be counted twice (once as sent, once as anonymous received). **Fix**: The relay should exclude the sender from the subscriber delivery, same as it already does via `singleSenderGMId_` in the cursor query (Store/Delivery.hs:369 — `AND group_member_id IS DISTINCT FROM ?`). The subscriber task's `singleSenderGMId_` is the reacting member's GMId, so the reacting subscriber won't receive their own anonymous reaction back. Confirmed: existing mechanism handles this.
-
-2. **Owner receiving both tasks**: Owner is a member. If both tasks deliver to them, they'd get the reaction twice — once via `DJOwnerOnlyJob` (FwdMember) and once via `DJDeliveryJob` (FwdChannel). **Fix**: The subscriber task (`DJDeliveryJob`) cursor query must EXCLUDE owners. Add `AND member_role < 'owner'` (or `< GROwner`) to the subscriber task's query. But `getGroupMembersByCursor` is a general-purpose function used for all forwarding, not just reactions. **Better fix**: Don't change the general query. Instead, for reaction subscriber tasks specifically, use a new query `getGroupSubscribersByCursor` that excludes owners. This means `DJDeliveryJob` for reactions needs different member selection than `DJDeliveryJob` for messages. **Problem**: The job spec doesn't distinguish reaction vs message delivery jobs — both are `DJDeliveryJob`. **Solution**: Use a different job spec for the subscriber reaction task too. Add `DJSubscriberOnlyJob` variant, or parameterize `DJDeliveryJob` with an optional role filter.
-
-   Actually, simplest: the subscriber reaction task uses `DJDeliveryJob` as before, but in the channel case of `sendBodyToMembers`, when the job body contains only FwdChannel reactions, the query excludes owners. But the job worker doesn't know the content semantics.
-
-   **Revised approach**: Instead of `DJOwnerOnlyJob`, use `DJOwnerOnlyJob` for owners AND change the subscriber task to also be a new spec `DJSubscriberReactionJob` that excludes owners. This is getting complex.
-
-   **Simpler revised approach**: Single new job spec `DJOwnerOnlyJob`. For the subscriber task, keep `DJDeliveryJob` as-is (delivers to everyone). Owners receive BOTH the anonymous reaction (FwdChannel) and the identified reaction (FwdMember). On the receiving side, the `FwdMember` reaction creates the member record and stores with `group_member_id`. The `FwdChannel` anonymous reaction would try to add a second reaction for the same emoji on the same message — which `reactionAllowed` would reject (reaction already present). So the duplicate is harmlessly dropped.
-
-   **This is the simplest correct approach**: owners get both, the FwdMember one wins (processed first or dedup catches it), the FwdChannel one is a no-op.
-
-   Wait — ordering isn't guaranteed. If FwdChannel arrives first, it stores anonymously. Then FwdMember arrives — `reactionAllowed` checks if reaction already exists for this member, finds none (anonymous has NULL member_id), adds it. Now there are two: one anonymous, one identified. Count is inflated.
-
-   **Fix**: On the owner side, don't process anonymous reactions at all. In `xGrpMsgForward`, when `FwdChannel` + `XMsgReact` and the user is an owner, skip processing:
-
-   ```haskell
-   Nothing -> if isOwner gInfo  -- FwdChannel case
-     then pure ()  -- owner will receive identified reaction via DJOwnerOnlyJob
-     else groupMsgReactionAnon ...
-   ```
-
-   This is clean. Owners ignore FwdChannel reactions because they'll get the FwdMember version.
-
-3. **processEvent return type change**: Mechanical but touches ~20 branches. Each `Just ctx` → `[ctx]`, `Nothing` → `[]`. Risk of missing one. Mitigation: compiler will catch type mismatches.
-
-4. **Member support scope reactions**: `groupMsgReaction` has a `Just (MSMember scopeMemberId)` branch (line 1929-1935) that returns `DJSMemberSupport`. This is for support scope, not channel main scope. The split delivery should only apply to the `Nothing` scope (main channel scope) and the `updateChatItemReaction` path. The member support path is unaffected.
-
-### Pass 2
-
-5. **getGroupReactionsAnon dedup**: For anonymous reactions, we can't check per-member dedup. But `reactionAllowed` in `groupMsgReaction` uses `getGroupReactions` which filters by `group_member_id`. For anonymous processing, we need a variant that counts total anonymous reactions for this message+emoji, and checks `maxMsgReactions` against all anonymous reactions. This prevents a flood of anonymous reactions from inflating counts.
-
-   Actually, `reactionAllowed` checks: `(reaction `elem` rs) /= add && not (add && length rs >= maxMsgReactions)`. For anonymous reactions, `rs` should be all anonymous reactions for this message. An add is allowed only if this reaction isn't already present anonymously beyond the max. But since each forwarded anonymous reaction is from a unique original sender, and the relay already does dedup per-sender, the subscriber can trust the relay's dedup. Still, a limit check is prudent.
-
-6. **Schema**: `chat_item_reactions.group_member_id` — is it `NOT NULL`? Need to check. If NOT NULL, need a migration to make it nullable.
-
-7. **Existing tests**: Need to verify no tests break from `processEvent` return type change. The function is internal to `processAChatMsg`, not directly tested. But `groupMsgReaction` may be referenced in tests.
-
-### Pass 2 — continued, no new issues found.
-
-## Summary of Files Changed
+## Files changed summary
 
 | File | Change |
 |------|--------|
-| `src/Simplex/Chat/Delivery.hs` | Add `DJOwnerOnlyJob` to `DeliveryJobSpec`, `DJSTOwnerOnlyJob` to tag |
-| `src/Simplex/Chat/Store/Delivery.hs` | `jobScopeRow_`/`toJobScope_` for new tag; `getGroupOwnersByCursor` query |
-| `src/Simplex/Chat/Library/Subscriber.hs` | `processEvent` returns `[NewMessageDeliveryTask]`; `groupMsgReaction` returns `[DeliveryTaskContext]` with split for channels; `xGrpMsgForward` handles FwdChannel+XMsgReact; `groupMsgReactionAnon` new function; task/job workers handle `DJOwnerOnlyJob` |
-| `src/Simplex/Chat/Store/Messages.hs` | `setGroupReactionAnon`, `getGroupReactionsAnon` |
-| `src/Simplex/Chat/Library/Commands.hs` | `APIGetReactionMembers` returns empty for non-owner channel members |
+| `src/Simplex/Chat/Delivery.hs` | Add `DJReaction` to `DeliveryJobSpec`/tag; add `subscriberBody_` to `MessageDeliveryJob` |
+| `src/Simplex/Chat/Store/Delivery.hs` | `jobScopeRow_`/`toJobScope_` for new tag; `createMsgDeliveryJob` new parameter; `getNextDeliveryJob` reads new column |
+| `src/Simplex/Chat/Library/Subscriber.hs` | `groupMsgReaction` returns `DJReaction` for channels; task/job workers handle `DJReaction`; `processForwardedMsg` handles `FwdChannel`+`XMsgReact`; new `groupMsgReactionNoMember` |
+| `src/Simplex/Chat/Store/Messages.hs` | New `setGroupReactionNoMember` |
+| `src/Simplex/Chat/Library/Commands.hs` | `APIGetReactionMembers` restricted for non-owner channel members |
 | `apps/ios/Shared/Views/Chat/ChatView.swift` | Suppress `ReactionContextMenu` for channel subscribers |
-| Migration file | Make `chat_item_reactions.group_member_id` nullable (if not already) |
+| DB migration | `ALTER TABLE delivery_jobs ADD COLUMN subscriber_body BLOB` |
+
+## Adversarial review
+
+### Pass 1
+
+1. **Owner duplicate delivery**: Owner is a member. In the cursor loop, they're partitioned into the `owners` group and receive `body` (FwdMember). They do NOT receive `subscriberBody`. No duplicate reactions.
+
+2. **Subscriber's own reaction**: The reacting subscriber is excluded from delivery via `singleSenderGMId_` in `getGroupMembersByCursor` (`AND group_member_id IS DISTINCT FROM ?`). No self-delivery, no double-counting.
+
+3. **Owner's reaction identity hidden from subscribers**: When an owner reacts, the relay processes it and returns `DJReaction`. The subscriber body uses `FwdChannel`, hiding the owner's identity from subscribers. Owners see each other's identities via `body`. Correct.
+
+4. **Member support scope reactions**: The member support scope branch in `groupMsgReaction` (line 1929–1934) returns `DJSMemberSupport`, an entirely different delivery scope processed by a different job worker path. Unaffected.
+
+5. **Non-channel groups**: `groupMsgReaction` returns `DJReaction` only when `useRelays' g`. Regular groups continue using `DJDeliveryJob`. Unaffected.
+
+6. **Batching**: `getNextDeliveryTasks` filters by `jobScopeRow_`. `DJReaction` tasks have tag `"reaction"` — they batch with each other, NOT with `DJDeliveryJob` tasks. Multiple rapid reactions are correctly batched together, and both owner and subscriber bodies contain all batched elements.
+
+7. **`getGroupCIReactions` counts NULL-member reactions**: The aggregation query groups by reaction and counts `chat_item_reaction_id` with no filter on `group_member_id`. NULL-member rows are counted. `userReacted = MAX(reaction_sent)` — for received anonymous reactions `reaction_sent = 0`, for the user's own reaction `reaction_sent = 1`. Correct.
+
+8. **`getReactionMembers` on owner's device**: On the owner's device, reactions arrive via `FwdMember` and are stored with real `group_member_id` values. `getReactionMembers` fetches by `group_member_id` and joins `group_members` — works as before. On the subscriber's device, `APIGetReactionMembers` returns empty (API restriction), so NULL-member reactions are never queried for member details.
+
+9. **Reaction removal (add=False)**: Relay processes removal, returns `DJReaction`. Task/job workers encode both bodies. Owner receives `FwdMember` removal — `setGroupReaction` deletes the specific member's reaction row. Subscriber receives `FwdChannel` removal — `setGroupReactionNoMember` deletes one NULL-member row via `LIMIT 1`. Correct.
+
+10. **`saveGroupFwdRcvMsg` with `Nothing` author**: Already works — `refAuthorId = groupMemberId' <$> refAuthorMember_` handles `Nothing` (Internal.hs:2283). Dedup via `sharedMsgId_` is unaffected.
+
+11. **`createMsgDeliveryJob` call sites**: Three existing call sites (Subscriber.hs:3531, 3548; Commands.hs:2927) need `Nothing` as the new subscriber body parameter. Mechanical change.
+
+No issues found.
+
+### Pass 2
+
+12. **Subscriber body encoding size**: `FwdChannel` encodes as `"C"` (1 byte) vs `FwdMember` which is `"M" + memberId + memberName` (variable, larger). If the owner body fits within `maxEncodedMsgLength`, the subscriber body will also fit (same content, smaller wrapper). No overflow risk.
+
+13. **`catchCINotFound` in `groupMsgReactionNoMember`**: When the chat item doesn't exist yet, the fallback stores the reaction with NULL member via `setGroupReactionNoMember`. When the chat item eventually arrives, `getGroupCIReactions` picks up all stored reactions including NULL-member ones. Counts are correct.
+
+14. **`CIChannelRcv` direction in reaction UI event**: `CIReaction` uses `chatDir :: CIDirection c d`. `CIChannelRcv` is a valid `CIDirection 'CTGroup 'MDRcv`. The iOS event handler (`.chatItemReaction`) just calls `m.updateChatItem(r.chatInfo, r.chatReaction.chatItem)` — it updates the chat item's reaction counts regardless of direction. No UI issue.
+
+15. **Old client compatibility**: Old clients that receive `FwdChannel` + `XMsgReact` parse `FwdChannel` correctly (it's an existing encoding). They hit `withAuthor XMsgReact_` → error logged, reaction silently dropped. Acceptable degradation — no crash, reaction count is marginally lower until client update.
+
+16. **`subscriberBody_` for non-`DJReaction` jobs**: The field is `Maybe ByteString`, defaults to `Nothing` for all other job types. The `fromMaybe body subscriberBody_` fallback in the job worker ensures non-owners get `body` if no subscriber body exists. Safe.
+
+No issues found. Two consecutive clean passes.
