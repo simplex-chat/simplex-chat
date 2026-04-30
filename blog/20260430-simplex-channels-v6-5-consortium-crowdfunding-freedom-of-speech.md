@@ -5,7 +5,6 @@ date: 2026-04-30
 # previewBody: blog_previews/20260421.html
 # image: images/20260421-channel.png
 # imageBottom: true
-draft: true
 permalink: "/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"
 ---
 
@@ -19,21 +18,21 @@ Freedom of speech needs infrastructure that protects it by design &mdash; not on
 
 v6.5[1] release brings SimpleX Channels: a new model for online publishing built for participation privacy.
 
-Channel content is visible to chat relay operators &mdash; they can decide if they want to deliver it. And each channel uses multiple relays, so no single one can block the channel[2].
+Channel content is visible to chat relay operators. And each channel uses multiple relays, so no single relay can block the channel[2].
 
 But the real identities of channel owners and subscribers are unknown to relay operators, to each other, and to the network. This is important for freedom of speech and for our ability to say the truth[3].
 
-This is the opposite of the usual approach: instead of hiding content from operators while exposing participants, we designed the protocols to protect people who participate while letting operators see what they deliver. Anybody can join a public channel via its link and see what is said, but not who said it, and not who else is reading. This is win-win for both users and chat relays operators. Users' privacy is protected, operators can decide what content to deliver in public spaces, and anybody can run chat relays.
+This is the opposite of the usual approach: instead of trying (and failing [4]) to hide publicly available content from operators while exposing participants, we designed the protocols to protect people. Anybody can join a public channel via its link and see what is sent, but not who sent it, and not who else is reading. This is win-win for both users and chat relays operators. Users' privacy is protected, operators can decide what content to deliver in public spaces, and anybody can run chat relays.
 
 This is only possible because SimpleX network was built without user profile identifiers of any kind. You can't add participation privacy to a network that identifies its users &mdash; as you can't add privacy to a messenger built on phone numbers.
 
-This is a first beta version of channels:
+v6.5 is the first beta version of channels:
 - channel owners hold their own channel keys,
 - each channel uses multiple relays for reliability,
 - publishers can run their own chat relays,
 - channels can be added to our [SimpleX Directory](https://simplex.chat/directory/).
 
-This release is a beginning of a very important new part of SimpleX Network, with a lot of work ahead: subscriber comments and messages, features improving publishing and privacy, and other improvements.
+This release is a beginning of a very important new layer of SimpleX Network. Read more about channels in [whitepaper](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md): [their purpose](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md#introduction), [architecture](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md#architecture), [security model](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md#security) and planned [future work](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md#future-work).
 
 ## SimpleX Network Consortium - to preserve network independence
 
@@ -41,9 +40,9 @@ No single company should control protocols and network that people depend on to 
 
 To protect network neutrality and make sure its protocols and intellectual property are available to the users, we're launching [SimpleX Network Consortium](https://simplexnetwork.org) within a few months &mdash; the agreement between the new SimpleX Network Foundation and SimpleX Chat company that will govern protocols and licensing &mdash; perpetual, irrevocable, surviving if any party is sold or shut down. Other organizations will join.
 
-We are currently forming the board for SimpleX Network Foundation &mdash; initially, [Heather Meeker](https://heathermeeker.com/about-me/), who drafted the Consortium agreement, SimpleX Chat founder, and several other people will join. We will announce the board soon.
+We are currently forming the board for SimpleX Network Foundation &mdash; initially, [Heather Meeker](https://heathermeeker.com/about-me/), who drafted the Consortium agreement, and several other people will join. We will announce the board soon.
 
-As the power over the network protocols moves away from the company, it cannot move back[^4]. It is a structural guarantee &mdash; the same principle we applied to privacy.
+As the power over the network protocols moves away from the company, it cannot move back[5]. It is a structural guarantee &mdash; the same principle we applied to privacy.
 
 ## Community Crowdfunding
 
@@ -69,4 +68,6 @@ _Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. 
 
 [3]: Oscar Wilde wrote: *"Man is least himself when he talks in his own person. Give him a mask, and he will tell you the truth"*. Privacy is essential for our ability to say the truth, and without truth we cannot survive as society.
 
-[4]: Ulysses pact &mdash; adding constraints to reduce future options. Sé Reed used this analogy for the WordPress Foundation: tying the project to the mast before the siren songs of commercial capture (https://www.wpwatercooler.com/wpwatercooler/ep484-whose-wordpress-is-it-anyway/).
+[4]: From whitepaper: any channel joinable via a public link, whether encrypted or not, must be considered completely public - the cost of joining through automated means has collapsed with large language models. End-to-end encrypting such content provides no privacy; it only undermines users' security by creating false expectations and increases infrastructure operators' risks by making them unable to see what they deliver.
+
+[5]: Ulysses pact &mdash; adding constraints to reduce future options. Sé Reed used this analogy for the WordPress Foundation: tying the project to the mast before the siren songs of commercial capture (https://www.wpwatercooler.com/wpwatercooler/ep484-whose-wordpress-is-it-anyway/).
