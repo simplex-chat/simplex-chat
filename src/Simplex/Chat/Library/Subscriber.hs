@@ -3735,9 +3735,12 @@ runRelayRequestWorker a Worker {doWork} = do
             eToView e
         processRelayRequest :: GroupId -> RelayRequestData -> CM ()
         processRelayRequest groupId rrd = do
+          putStrLn "**** processRelayRequest"
           (gInfo, groupLink_) <- withStore $ \db -> do
             gInfo <- getGroupInfo db vr user groupId
+            putStrLn "**** processRelayRequest getGroupInfo"
             groupLink_ <- liftIO $ runExceptT $ getGroupLink db user gInfo
+            putStrLn "**** processRelayRequest after getGroupLink"
             pure (gInfo, groupLink_)
           -- Check if relay link already exists (recovery case)
           case groupLink_ of
