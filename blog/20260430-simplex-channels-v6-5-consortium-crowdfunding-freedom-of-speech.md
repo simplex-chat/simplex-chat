@@ -32,7 +32,7 @@ v6.5 is the first beta version of channels:
 - publishers can run their own chat relays,
 - channels can be added to our [SimpleX Directory](https://simplex.chat/directory/).
 
-This release is a beginning of a very important new layer of SimpleX Network. Read more about channels in [whitepaper](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md): [their purpose](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md#introduction), [architecture](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md#architecture), [security model](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md#security) and planned [future work](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md#future-work).
+This release is a beginning of a very important new layer of SimpleX Network. Read more about channels in [whitepaper](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md): their purpose, architecture, security model and planned future work.
 
 ## SimpleX Network Consortium &mdash; to preserve network independence
 
@@ -54,7 +54,7 @@ We recently published [a preliminary design of commercial model](https://simplex
 
 You can *register your interest* to participate in crowdfunding here: https://simplexchat.typeform.com/crowdfunding
 
-Join the channel for updates here: https://smp4.simplex.im/g#g6pdBGlLoeOwqYmbmyvRye8EBiFd2inNUzKc87Pt3y4
+Join the channel for updates here: https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg (you must use v6.5 to join it).
 
 Evgeny
 
@@ -62,7 +62,7 @@ SimpleX Chat founder
 
 _Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind._
 
-[^release]: v6.5 also improved onboarding and how users make the first connection, and has many other improvements &mdash; see *What's new* in the app or full release notes.
+[^release]: v6.5 release also improved onboarding and how users make the first connection, increased security of sending web links, and has many other improvements &mdash; see *What's new* in the app or full release notes.
 
 [^preset]: Currently there is only one preset operator of chat relays in the app. It will change in the next release.
 
