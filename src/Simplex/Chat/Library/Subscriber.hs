@@ -3729,7 +3729,9 @@ runRelayRequestWorker a Worker {doWork} = do
       where
         retryTmpError :: CM () -> GroupId -> ChatError -> CM ()
         retryTmpError loop groupId = \case
-          ChatErrorAgent {agentError} | temporaryOrHostError agentError -> loop
+          e@ChatErrorAgent {agentError} | temporaryOrHostError agentError -> do
+            liftIO $ putStrLn $ "**** retryTmpError " <> show e
+            loop
           e -> do
             withStore' $ \db -> setRelayRequestErr db groupId (tshow e)
             eToView e
@@ -3746,14 +3748,14 @@ runRelayRequestWorker a Worker {doWork} = do
               case sLnk_ of
                 Just sLnk -> acceptOwnerConnection rrd gInfo sLnk
                 Nothing -> throwChatError $ CEException "processRelayRequest: relay link doesn't have short link"
-            Left e -> do
+            Left _ -> do
               (gInfo', sLnk) <- getLinkDataCreateRelayLink rrd gInfo
               acceptOwnerConnection rrd gInfo' sLnk
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
               liftIO $ putStrLn "**** getLinkDataCreateRelayLink"
-              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' NRMBackground user reqGroupLink
+              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' NRMBackground user reqGroupLink `catchAllErrors` \e -> liftIO (print e) >> throwError e
               liftIO $ putStrLn "**** getLinkDataCreateRelayLink after getShortLinkConnReq"
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> do
