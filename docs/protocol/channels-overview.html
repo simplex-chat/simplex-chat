@@ -49,7 +49,7 @@
 
         <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>SimpleX Chat Protocol</title>
+        <title></title>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
 
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
@@ -336,7 +336,7 @@
                         
                             
                                 <li>
-                                    <a href="/docs/protocol/simplex-chat.html">
+                                    <a href="/docs/protocol/channels-overview.html">
                                         <p>English</p>
                                     </a>
                                 </li>
@@ -744,7 +744,7 @@ window.addEventListener('click',(e)=>{
                                         <ul>
                                             
                                                 <li>
-                                                    <a class="active" href="/docs/protocol/simplex-chat.html">SimpleX Chat Protocol</a>
+                                                    <a class="" href="/docs/protocol/simplex-chat.html">SimpleX Chat Protocol</a>
                                                 </li>
                                             
                                         </ul>
@@ -787,307 +787,369 @@ window.addEventListener('click',(e)=>{
                             </div>
                         </div>
                     </div> -->
-                    <div><p>Revision 2, 2024-06-24</p>
-<p>Evgeny Poberezkin</p>
-<h1 id="simplex-chat-protocol" tabindex="-1">SimpleX Chat Protocol</h1>
-<h2 id="abstract" tabindex="-1">Abstract</h2>
-<p>SimpleX Chat Protocol is a protocol used by SimpleX Chat clients to exchange messages. This protocol relies on lower level SimpleX protocols - SimpleX Messaging Protocol (SMP) and SimpleX Messaging Agent protocol. SimpleX Chat Protocol describes the format of messages and the client operations that should be performed when receiving such messages.</p>
-<h2 id="scope" tabindex="-1">Scope</h2>
-<p>The scope of SimpleX Chat Protocol is application level messages, both for chat functionality, related to the conversations between the clients, and extensible for any other application functions. Currently supported chat functions:</p>
+                    <div><p>Revision 1, 2026-04-28</p>
+<h1 id="simplex-channels-stateful-information-delivery-and-management" tabindex="-1">SimpleX Channels: stateful information delivery and management</h1>
+<h2 id="table-of-contents" tabindex="-1">Table of contents</h2>
 <ul>
-<li>direct and group messages,</li>
-<li>message replies (quoting), message editing, forwarded messages and message deletions,</li>
-<li>message attachments: images, videos, voice messages and files,</li>
-<li>creating and managing chat groups,</li>
-<li>invitation and signalling for audio/video WebRTC calls.</li>
-</ul>
-<h2 id="general-message-format" tabindex="-1">General message format</h2>
-<p>SimpleX Chat protocol supports these message formats:</p>
+<li><a href="#introduction">Introduction</a>
 <ul>
-<li>JSON-based format for chat and application messages.</li>
-<li>compressed format for adapting larger messages to reduced size of message envelope, caused by addition of PQ encryption keys to SMP agent message envelope.</li>
-<li>binary format for sending files or any other binary data.</li>
+<li><a href="#what-are-simplex-channels">What are SimpleX Channels</a></li>
+<li><a href="#channels-as-transport-layer">Channels as transport layer</a></li>
+<li><a href="#content-visibility-and-participant-privacy">Content visibility and participant privacy</a></li>
+<li><a href="#in-comparison">In comparison</a></li>
+<li><a href="#non-goals">Non-goals</a></li>
 </ul>
-<p>JSON-based message format supports batching inside a single container message, by encoding list of messages as JSON array.</p>
-<p>Current implementation of chat protocol in SimpleX Chat uses SimpleX File Transfer Protocol (XFTP) for file transfer, with passing file description as chat protocol messages, instead passing files in binary format via SMP connections.</p>
-<h3 id="json-format-for-chat-and-application-messages" tabindex="-1">JSON format for chat and application messages</h3>
-<p>This document uses JTD schemas <a href="https://www.rfc-editor.org/rfc/rfc8927.html">RFC 8927</a> to define the properties of chat messages, with some additional restrictions on message properties included in metadata member of JTD schemas. In case of any contradiction between JSON examples and JTD schema the latter MUST be considered correct.</p>
-<p>Whitespace is used in JSON examples for readability, SimpleX Chat Protocol clients MUST avoid using whitespace when encoding JSON messages.</p>
-<p>General message format is defined by this JTD schema:</p>
-<pre><code class="language-JSON">{
-  &quot;properties&quot;: {
-    &quot;event&quot;: {
-      &quot;type&quot;: &quot;string&quot;
-    },
-    &quot;msgId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;metadata&quot;: {
-        &quot;format&quot;: &quot;base64url-encoded 12 bytes random message ID&quot;
-      }
-    },
-    &quot;params&quot;: {
-      &quot;optionalProperties&quot;: {}
-    }
-  }
-}
-</code></pre>
-<p>For example, this message defines a simple text message <code>&quot;hello!&quot;</code>:</p>
-<pre><code class="language-JSON">{
-  &quot;event&quot;: &quot;x.msg.new&quot;,
-  &quot;msgId&quot;: &quot;abcd&quot;,
-  &quot;params&quot;: {
-    &quot;content&quot;: {
-      &quot;type&quot;: &quot;text&quot;,
-      &quot;text&quot;: &quot;hello!&quot;
-    }
-  }
-}
-</code></pre>
-<p><code>msgId</code> property is a 12 bytes base64url-encoded random message ID that the clients can use to reference the message in the future, e.g. when editing, quoting or deleting it.</p>
-<p><code>event</code> property is the type of the message that defines the semantics of the message and the allowed format of <code>params</code> property.</p>
-<p><code>params</code> property includes message data, depending on <code>event</code>, as defined below and in <a href="simplex-chat.schema.json">JTD schema</a>.</p>
-<h3 id="compressed-format" tabindex="-1">Compressed format</h3>
-<p>The syntax of compressed message is defined by the following ABNF notation:</p>
-<pre><code class="language-abnf">compressedMessage = %s&quot;X&quot; 1*15780 OCTET; compressed message data
-</code></pre>
-<p>Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).</p>
-<p>The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).</p>
-<h3 id="binary-format-for-sending-files" tabindex="-1">Binary format for sending files</h3>
-<blockquote>
-<p>Note: Planned to be deprecated. No longer used for file transfer in SimpleX Chat implementation of chat protocol.</p>
-</blockquote>
-<p>SimpleX Chat clients use separate connections to send files using a binary format. File chunk size send in each message MUST NOT be bigger than 15,780 bytes to fit into 16kb (16384 bytes) transport block.</p>
-<p>The syntax of each message used to send files is defined by the following ABNF notation:</p>
-<pre><code class="language-abnf">fileMessage = fileChunk / cancelFile
-fileChunk = %s&quot;F&quot; chunkNo chunk
-cancelFile = %s&quot;C&quot;
-chunkNo = 4*4 OCTET ; 32bit word sequential chunk number, starting from 1, in network byte order
-chunk = 1*15780 OCTET ; file data, up to 15,780 bytes
-</code></pre>
-<p>The first chunk number MUST be 1.</p>
-<h2 id="messages-and-chat-items" tabindex="-1">Messages and chat items</h2>
-<p>While users usually use the term &quot;message&quot; to refer to the objects presented in the conversation, the expected functionality of these objects makes it a wrong term. &quot;Messages&quot; are supposed to be immutable; they cannot be modified or deleted once sent. The objects in the conversation are expected to be mutable. This document and implementation use the term &quot;chat item&quot; to refer to these objects to differentiate them from the messages sent between the clients.</p>
-<h2 id="supported-json-message-types-and-simplex-chat-sub-protocols" tabindex="-1">Supported JSON message types and SimpleX Chat sub-protocols</h2>
-<p>Message types are sent as a string in <code>event</code> property of JSON messages. General syntax of event string is defined by this ABNF:</p>
-<pre><code class="language-abnf">event = namespace &quot;.&quot; subprotocol *(&quot;.&quot; eventWord)
-namespace = eventWord ; 1-letter recommended
-subprotocol = eventWord
-eventWord = 1* ALPHA
-</code></pre>
-<p>All SimpleX Chat Protocol messages related to chat functions are defined in <code>x</code> namespace.</p>
-<p>Sub-protocol is a group of messages for related message functions - e.g. sending files, managing groups or negotiating WebRTC calls.</p>
-<p>SimpleX Chat Protocol supports the following message types passed in <code>event</code> property:</p>
+</li>
+<li><a href="#architecture">Architecture</a>
 <ul>
-<li><code>x.contact</code> - contact profile and additional data sent as part of contact request to a long-term contact address.</li>
-<li><code>x.info*</code> - messages to send, update and de-duplicate contact profiles.</li>
-<li><code>x.msg.*</code> - messages to create, update and delete content chat items.</li>
-<li><code>x.msg.file.descr</code> - message to transfer XFTP file description.</li>
-<li><code>x.file.*</code> - messages to accept and cancel sending files (see files sub-protocol).</li>
-<li><code>x.direct.del</code> - message to notify about contact deletion.</li>
-<li><code>x.grp.*</code> - messages used to manage groups and group members (see group sub-protocol).</li>
-<li><code>x.call.*</code> - messages to invite to WebRTC calls and send signalling messages.</li>
-<li><code>x.ok</code> - message sent during connection handshake.</li>
+<li><a href="#state-and-distribution">State and distribution</a></li>
+<li><a href="#identity-and-ownership">Identity and ownership</a></li>
+<li><a href="#governance">Governance</a></li>
+<li><a href="#roles">Roles</a></li>
 </ul>
-<p>JTD schema defining messages for all chat functions is available in <a href="simplex-chat.schema.json">this file</a> – please refer to this document for all properties of the message <code>params</code>.</p>
-<h2 id="xcontact-sending-connection-request" tabindex="-1">x.contact - sending connection request</h2>
-<p>The message is sent as part of the connection request to the long-term user address. <code>contactReqId</code> property is used to identify a duplicate contact request - the receiving client MAY put repeated request on top of the list in the UI.</p>
-<h2 id="sub-protocol-for-contact-profile" tabindex="-1">Sub-protocol for contact profile</h2>
-<h3 id="xinfo-contact-profile" tabindex="-1"><a href="http://x.info">x.info</a> - contact profile</h3>
-<p>This message is sent by both sides of the connection during the connection handshake, and can be sent later as well when contact profile is updated.</p>
-<h3 id="probing-for-duplicate-contacts" tabindex="-1">Probing for duplicate contacts</h3>
-<p>As there are no globally unique user identifiers, when the contact a user is already connected to is added to the group by some other group member, this contact will be added to user's list of contacts as a new contact. To allow merging such contacts, &quot;a probe&quot; (random base64url-encoded 32 bytes) SHOULD be sent to all new members as part of <code>x.info.probe</code> message and, in case there is a contact with the same profile, the hash of the probe MAY be sent to it as part of <code>x.info.probe.check</code> message. In case both the new member and the existing contact are the same user (they would receive both the probe and its hash), the contact would send back the original probe as part of <code>x.info.probe.ok</code> message via the previously existing contact connection – proving to the sender that this new member and the existing contact are the same user, in which case the sender SHOULD merge these two contacts.</p>
-<p>Sending clients MAY disable this functionality, and receiving clients MAY ignore probe messages.</p>
-<p>If the sending client uses <code>x.info.probe</code> messages, it MUST send them to all new members, rather than only when there is a matching contact profile. This is to avoid leaking information that the matching contact profile exists.</p>
-<h2 id="sub-protocol-for-content-messages" tabindex="-1">Sub-protocol for content messages</h2>
-<h3 id="xmsgnew-a-new-content-message" tabindex="-1">x.msg.new - a new content message</h3>
-<p>When chat clients receive or send this message, they MUST create a new chat item in the conversation. Top level <code>msgId</code> property is defined to allow referencing this chat item or message in the future, e.g. to delete, update or quote chat item, or to accept file.</p>
-<p>This message uses <code>params</code> property of the message as content message container, without any top level properties for the container. Message container (<code>params</code>) includes message <code>content</code> property, an optional &quot;invitation&quot; to receive file or image attachment in <code>file</code> property (that is interpreted depending on message content type) and optional indication whether this message is forwarded (<code>&quot;forward&quot;: true</code> property of container) or sent in reply to other message (<code>&quot;quote&quot;: {&lt;quoted message&gt;}</code>). See <code>/definition/msgContainer</code> in <a href="simplex-chat.schema.json">JTD schema</a> for message container format.</p>
-<p>Message content can be one of four types:</p>
+</li>
+<li><a href="#cryptographic-primitives">Cryptographic primitives</a></li>
+<li><a href="#security">Security</a>
 <ul>
-<li><code>text</code> - no file attachment is expected for this format, <code>text</code> property MUST be non-empty.</li>
-<li><code>file</code> - attached file is required, <code>text</code> property MAY be empty.</li>
-<li><code>image</code> - attached file is required, <code>text</code> property MAY be empty.</li>
-<li><code>video</code> - attached file is required, <code>text</code> property MAY be empty.</li>
-<li><code>voice</code> - attached file is required, <code>text</code> property MAY be empty.</li>
-<li><code>link</code> - no file attachment is expected, <code>text</code> property MUST be non-empty. <code>preview</code> property contains information about link preview.</li>
+<li><a href="#design-objectives">Design objectives</a></li>
+<li><a href="#signing-scope-roster-only-content-optional">Signing scope: roster only, content optional</a></li>
+<li><a href="#threat-model">Threat model</a></li>
+<li><a href="#current-gaps">Current gaps</a></li>
 </ul>
-<p>See <code>/definition/msgContent</code> in <a href="simplex-chat.schema.json">JTD schema</a> for message container format.</p>
-<h3 id="xmsgupdate-update-of-the-previously-sent-message" tabindex="-1">x.msg.update - update of the previously sent message</h3>
-<p>This message is used to update previously created chat item. Its <code>params</code> property contains <code>msgId</code> of the previously sent message that this one is updating and <code>content</code> with the message content that the clients must use to replace the content of the original chat item.</p>
-<p>If the referenced message does not exist, the clients MUST create a new chat item with the ID of the referenced message. If the referenced message is not a content message, the clients MUST ignore this message.</p>
-<h3 id="xmsgdel-request-to-delete-previously-sent-message" tabindex="-1">x.msg.del - request to delete previously sent message</h3>
-<p>This message is used to delete previously sent chat items. Receiving clients MUST implement it as soft-delete, replacing the original chat item with a special chat item indicating that &quot;message is deleted&quot; that can be fully deleted by the user. If the referenced message does not exist or was sent by the different user than the one sending <code>x.msg.del</code>, the receiving clients MUST ignore this message. Clients are also RECOMMENDED to limit the time during which message deletion is allowed, both for senders and for the recipients.</p>
-<h2 id="sub-protocol-for-sending-and-receiving-files" tabindex="-1">Sub-protocol for sending and receiving files</h2>
-<p>When content message <code>x.msg.new</code> contains file attachment (the invitation to receive the file), this sub-protocol is used to accept this file or to notify the recipient that sending the file was cancelled.</p>
-<p>File attachment can optionally include connection address to receive the file - clients MUST include it when sending files to direct connections, and MUST NOT include it when sending file attachment to the group (as different members would need different connections to receive the file).</p>
-<p><code>x.file.acpt</code> message is used to accept the file in case when file connection address was included in the message (that is the case when the file invitation was sent in direct message). It is sent as part of file connection handshake via file connection, that is why this message contains no reference to the file - the used connection provides sufficient context for the sender.</p>
-<p><code>x.file.acpt.inv</code> message is used to accept the file in group conversations, it includes the connection address. It is sent in the same connection where the file was offered and must reference the original message.</p>
-<p><code>x.file.cancel</code> message is sent to notify the recipient that sending of the file was cancelled. It is sent in response to accepting the file with <code>x.file.acpt.inv</code> message. It is sent in the same connection where the file was offered.</p>
-<p><code>x.msg.file.descr</code> message is used to send XFTP file description. File descriptions that don't fit into a single chat protocol message are sent in parts, with messages including part number (<code>fileDescrPartNo</code>) and description completion marker (<code>fileDescrComplete</code>). Recipient client accumulates description parts and starts file download upon completing file description.</p>
-<h2 id="sub-protocol-for-chat-groups" tabindex="-1">Sub-protocol for chat groups</h2>
-<h3 id="decentralized-design-for-chat-groups" tabindex="-1">Decentralized design for chat groups</h3>
-<p>SimpleX Chat groups are fully decentralized and do not have any globally unique group identifiers - they are only defined on client devices as a group profile and a set of bi-directional SimpleX connections with other group members. When a new member accepts group invitation or joins via group link, the inviting member introduces a new member to all existing members and forwards the connection addresses so that they can establish direct and group member connections.</p>
-<p>There is a possibility of the attack here: as the introducing member forwards the addresses, they can substitute them with other addresses, performing MITM attack on the communication between existing and introduced members - this is similar to the communication operator being able to perform MITM on any connection between the users. To mitigate this attack this group sub-protocol will be extended to allow validating security of the connection by sending connection verification out-of-band.</p>
-<p>Clients are RECOMMENDED to indicate in the UI whether the connection to a group member or contact was made directly or via another user.</p>
-<p>Each member in the group is identified by a group-wide unique identifier used by all members in the group. This is to allow referencing members in the messages and to allow group message integrity validation.</p>
-<p>The diagram below shows the sequence of messages sent between the users' clients to add the new member to the group.</p>
-<p>While introduced members establish connection inside group, inviting member forwards messages between them by sending <code>x.grp.msg.forward</code> messages. When introduced members finalize connection, they notify inviting member to stop forwarding via <code>x.grp.mem.con</code> message.</p>
-<p><img src="diagrams/group.svg" alt="Adding member to the group"></p>
-<h3 id="member-roles" tabindex="-1">Member roles</h3>
-<p>Currently members can have one of four roles - <code>owner</code>, <code>admin</code>, <code>member</code> and <code>observer</code>. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only <code>owner</code> and <code>admin</code> members can add new members; only <code>owner</code> members can add members with <code>owner</code> role. <code>Observer</code> members only receive messages and aren't allowed to send messages.</p>
-<h3 id="messages-to-manage-groups-and-add-members" tabindex="-1">Messages to manage groups and add members</h3>
-<p><code>x.grp.inv</code> message is sent to invite contact to the group via contact's direct connection and includes group member connection address. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Optional <code>groupLinkId</code> is included when this message is sent to contacts connected via the user's group link. This identifier is a random byte sequence, with no global or even local uniqueness - it is only used for the user's invitations to a given group to provide confirmation to the contact that the group invitation is for the same group the contact was connecting to via the group link, so that the invitation can be automatically accepted by the contact - the contact compares it with the group link id contained in the group link uri's data field.</p>
-<p><code>x.grp.acpt</code> message is sent as part of group member connection handshake, only to the inviting user.</p>
-<p><code>x.grp.link.inv</code> message is sent as part of connection handshake to member joining via group link, and contains group profile and initial information about inviting and joining member.</p>
-<p><code>x.grp.link.mem</code> message is sent as part of connection handshake to member joining via group link, and contains remaining information about inviting member.</p>
-<p><code>x.grp.mem.new</code> message is sent by the inviting user to all connected members (and scheduled as pending to all announced but not yet connected members) to announce a new member to the existing members. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with <code>member</code> role.</p>
-<p><code>x.grp.mem.intro</code> messages are sent by the inviting user to the invited member, via their group member connection, one message for each existing member. When this message is sent by any other member than the one who invited the recipient it MUST be ignored.</p>
-<p><code>x.grp.mem.inv</code> messages are sent by the invited user to the inviting user, one message for each existing member previously introduced with <code>x.grp.mem.intro</code> message. When this message is sent by any other member than the one who was invited by the recipient it MUST be ignored.</p>
-<p><code>x.grp.mem.fwd</code> message is used by the inviting user to forward the invitations received from invited member in <code>x.grp.mem.inv</code> messages to all other members. This message can only be sent by the member who previously announced the new member, otherwise the recipients MUST ignore it.</p>
-<p><code>x.grp.mem.info</code> this message is sent as part of member connection handshake - it includes group member profile.</p>
-<p><code>x.grp.mem.role</code> message is sent to update group member role - it is sent to all members by the member who updated the role of the member referenced in this message. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with role less than <code>admin</code>.</p>
-<p><code>x.grp.mem.restrict</code> message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages.</p>
-<p><code>x.grp.mem.con</code> message is sent by members connecting inside group to inviting member, to notify the inviting member they have completed the connection and no longer require forwarding messages between them.</p>
-<p><code>x.grp.mem.del</code> message is sent to delete a member - it is sent to all members by the member who deletes the member referenced in this message. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with <code>member</code> role.</p>
-<p><code>x.grp.leave</code> message is sent to all members by the member leaving the group. If the only group <code>owner</code> leaves the group, it will not be possible to delete it with <code>x.grp.del</code> message - but all members can still leave the group with <code>x.grp.leave</code> message and then delete a local copy of the group.</p>
-<p><code>x.grp.del</code> message is sent to all members by the member who deletes the group. Clients who received this message SHOULD keep a local copy of the deleted group, until it is deleted by the user. This message MUST only be sent by members with <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member other than with <code>owner</code> role.</p>
-<p><code>x.grp.info</code> message is sent to all members by the member who updated group profile. Only group owners can update group profiles. Clients MAY implement some conflict resolution strategy - it is currently not implemented by SimpleX Chat client. This message MUST only be sent by members with <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member other than with <code>owner</code> role.</p>
-<p><code>x.grp.direct.inv</code> message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.</p>
-<p><code>x.grp.msg.forward</code> message is sent by inviting member to forward messages between introduced members, while they are connecting.</p>
-<h3 id="channels-relay-mediated-groups" tabindex="-1">Channels: relay-mediated groups</h3>
-<p>Channels are groups where message delivery is mediated by dedicated relay members rather than by direct connections between all members. Channels extend the group sub-protocol with additional roles (<code>relay</code>, <code>observer</code>), message signing for administrative actions, a binary batch format for signed and forwarded messages, and an asynchronous delivery pipeline.</p>
-<p>For architecture and design rationale, see <a href="/docs/protocol/channels-overview.html">SimpleX Channels Overview</a>. For protocol-level detail - wire formats, message types, signing mechanics, delivery pipeline - see <a href="/docs/protocol/channels-protocol.html">SimpleX Channels Protocol</a>.</p>
-<h2 id="sub-protocol-for-webrtc-audiovideo-calls" tabindex="-1">Sub-protocol for WebRTC audio/video calls</h2>
-<p>This sub-protocol is used to send call invitations and to negotiate end-to-end encryption keys and pass WebRTC signalling information.</p>
-<p>These message are used for WebRTC calls:</p>
+</li>
+<li><a href="#future-work">Future work</a>
+<ul>
+<li><a href="#stateful-access-and-history-navigation">Stateful access and history navigation</a></li>
+<li><a href="#transcript-integrity">Transcript integrity</a></li>
+<li><a href="#end-to-end-encrypted-side-conversations">End-to-end encrypted side conversations</a></li>
+<li><a href="#relay-addition-and-removal">Relay addition and removal</a></li>
+<li><a href="#governance-evolution">Governance evolution</a></li>
+<li><a href="#pre-moderation">Pre-moderation</a></li>
+<li><a href="#scheduled-delivery">Scheduled delivery</a></li>
+<li><a href="#link-preview-proxying">Link preview proxying</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+<h2 id="introduction" tabindex="-1">Introduction</h2>
+<p>The SimpleX network provides private point-to-point communication without user or endpoint identifiers, but most speech that matters is public. Every existing platform that distributes content at scale identifies both publishers and their audiences to the operator - none protect participation privacy. SimpleX Chat supported peer-to-peer groups, but they cannot scale to large audiences. SimpleX Channels close this gap.</p>
+<h3 id="what-are-simplex-channels" tabindex="-1">What are SimpleX Channels</h3>
+<p>SimpleX Channels are a stateful information delivery and management layer built on the <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md">SimpleX network</a>. SMP queues provide stateless, unidirectional packet delivery between two endpoints. Channels add persistence, state, and scalable distribution - enabling one-to-many publishing with cryptographic identity independent of infrastructure operators.</p>
+<p><a href="https://simplex.chat">SimpleX Chat</a> is the first application, presenting channels as a broadcast publication model where owners publish and subscribers read, react, and comment. But channels are not limited to this use case - they are a general-purpose layer for distributing and managing stateful information (feeds, telemetry, automated pipelines, coordination services, social media). This document describes channels as a transport mechanism - the same mechanism will also be used for large groups, communities, wikis, forums, and other social media primitives.</p>
+<p>The critical difference from conventional publish-subscribe systems is that channel identity and governance are controlled cryptographically by the channel owners, not by the infrastructure operators. Relays - SimpleX network clients that forward and optionally cache channel content - can be added, removed, and replaced without changing the channel's identity, address, content, or cryptographic trust chain. A channel's relationship with its relays is transient; its identity is permanent. The authoritative record of content is hosted on channel owners' devices; relays perform transmission and caching similar to CDN infrastructure.</p>
+<p>Channel owners hold full control of the channel - its identity, content, governance rules, and membership - through self-custody of cryptographic keys. No infrastructure operator, relay provider, or third party can control or alter a channel without the owner's keys. Blockchain systems achieve a related property for financial assets - no third party can control holdings - through network-wide consensus. Channels achieve it through local authority and cryptographic signatures, without global consensus or a public ledger. Unlike blockchain state, channel state is mutable by the owner and not publicly verifiable by third parties.</p>
+<h3 id="channels-as-transport-layer" tabindex="-1">Channels as transport layer</h3>
+<p>The SimpleX network has three transport layers, each built on the one below:</p>
 <ol>
 <li>
-<p><code>x.call.inv</code>: the client initiating the call sends <code>x.call.inv</code> message in direct connection to invite another client to the call. At this point WebRTC session is not initialized yet, this message only contains call type and DH key for key agreement.</p>
+<p><strong>SMP</strong> (<a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md">SimpleX Messaging Protocol</a>) - stateless, unidirectional packet delivery between two endpoints through SMP routers. Provides fixed-size blocks, 2-node onion routing, and transport metadata protection.</p>
 </li>
 <li>
-<p><code>x.call.offer</code>: to accept the call, the receiving client sends <code>x.call.offer</code> message. This message contains WebRTC offer and collected ICE candidates. Additional ICE candidates can be sent in <code>x.call.extra</code> message.</p>
+<p><strong>SimpleX agents</strong> (<a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md">agent protocol</a>) - bidirectional, redundant connections between endpoints, with end-to-end post-quantum double ratchet encryption. The <a href="/docs/protocol/simplex-chat.html">SimpleX Chat Protocol</a> runs on top of this layer, providing direct messaging, group communication, and metadata delivery for file transfers via <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/xftp.md">XFTP protocol</a>.</p>
 </li>
 <li>
-<p><code>x.call.answer</code>: to continue with call connection the initiating clients must reply with <code>x.call.answer</code> message. This message contains WebRTC answer and collected ICE candidates. Additional ICE candidates can be sent in <code>x.call.extra</code> message.</p>
-</li>
-<li>
-<p><code>x.call.end</code> message is sent to notify the other party that the call is terminated.</p>
+<p><strong>Channels</strong> - stateful, one-to-many information delivery and management with cryptographic ownership and programmable governance. This layer runs on top of chat and agent layer 2, and it is described in this document.</p>
 </li>
 </ol>
-<h2 id="threat-model" tabindex="-1">Threat model</h2>
-<p>This threat model complements SMP, XFTP, push notifications and XRCP protocols threat models, as well as the channel-specific threat model:</p>
+<p>No network-wide user profile identifiers exist at any of these layers. Just as SMP enables private messaging by providing transport without user identifiers, channels enable public communication while preserving participation privacy at the distribution layer.</p>
+<p>Channel relays are themselves SimpleX clients in the SMP network, connecting to SMP routers using the same protocol, the same 2-node onion routing, and the same fixed-size transport blocks as any other endpoint. Even though the SMP network can distinguish a relay from a person's phone by its transport patterns, it prevents relays from learning anything about other network endpoints. In the case of SimpleX Chat, any CLI client can act as a chat relay without modifications.</p>
+<p>Channels therefore inherit all of SMP's transport privacy properties:</p>
 <ul>
-<li><a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#threat-model">SimpleX Messaging Protocol threat model</a>;</li>
-<li><a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/xftp.md#threat-model">SimpleX File Transfer Protocol threat model</a>;</li>
-<li><a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model">Push notifications threat model</a>;</li>
-<li><a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model">SimpleX Remote Control Protocol threat model</a>;</li>
-<li><a href="/docs/protocol/channels-overview.html#threat-model">SimpleX Channels threat model</a>.</li>
+<li>
+<p><strong>Relays cannot observe subscriber network addresses.</strong> The relay sees SMP queue addresses, not IP addresses or network sessions. The subscriber's IP is known only to their SMP router, which cannot see the message content (encrypted at the agent layer) or the IP addresses of whoever sends messages.</p>
+</li>
+<li>
+<p><strong>SMP routers cannot see channel content.</strong> Messages between relay and subscriber are end-to-end encrypted. The SMP router forwards fixed-size encrypted blocks without knowing whether they carry channel messages, direct messages, or anything else.</p>
+</li>
+<li>
+<p><strong>Participation in multiple channels is unlinkable.</strong> Each channel connection uses independent SMP queues with separate cryptographic credentials. Because of packet-level anonymity in 2-node routing, even if a subscriber uses the same SMP routers for all channels, the sending relays cannot determine this without collusion with those routers. Clients choose independently operated routers by default.</p>
+</li>
 </ul>
-<h4 id="a-users-contact" tabindex="-1">A user's contact</h4>
+<p>No single point in the system sees both content and network identity. SMP routers see network addresses but not content, and no single SMP router can see which endpoints are communicating because clients choose independently operated routers. Relays see content but not network addresses.</p>
+<h3 id="content-visibility-and-participant-privacy" tabindex="-1">Content visibility and participant privacy</h3>
+<p>Any channel joinable via a public link, whether encrypted or not, must be considered completely public - the cost of joining through automated means has collapsed with large language models and is approaching zero. End-to-end encrypting such content provides no privacy; it only undermines users' security by creating false expectations and increases infrastructure operators' risks by making them unable to see what they deliver. Private channels with encrypted content are a separate use case discussed in <a href="#end-to-end-encrypted-side-conversations">Future work</a>.</p>
+<p>Content of public channels is therefore not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. Relay operators cannot undetectably alter channel content when multiple relays serve the channel, and cannot alter signed content at all - the authoritative state is held by owners. That each channel can use multiple chat relays provides both technical reliability and censorship resistance against any relay-specific content policies.</p>
+<p>The achievable privacy property for public communication is participation privacy - protecting who reads and writes content. The SMP transport carries no user identifiers, and relays are ordinary SMP clients, so subscribers connect without revealing their identity, network address, or any information that persists across channels. If an adversary joins a SimpleX channel, they see everything that is sent, but cannot determine who sent it or link any participant to anything outside the channel.</p>
+<p>Other systems make the opposite choice: content encryption in exchange for participant identification. For groups and channels joinable via public links this is the opposite of what is needed - the content encryption is meaningless (anyone can join and read), while the participant identification is the security threat.</p>
+<h3 id="in-comparison" tabindex="-1">In comparison</h3>
+<p><strong>Telegram channels</strong> - the operator controls channel identity (usernames are revocable), has full access to both content and participant identity. Channels cannot exist without Telegram's permission.</p>
+<p><strong>Nostr relays</strong> - a single persistent key is used for publishing, following, and identity. Relays see content, the user's key, and their IP address. All posts and follow lists are signed and non-repudiable, linked to the same key - making both publishing and reading activity traceable and undeniable.</p>
+<p><strong>Signal groups</strong> - content is end-to-end encrypted, but the operator manages group state and can observe the membership graph. Groups are capped at 1,000 members with no concept of a channel.</p>
+<p><strong>Matrix rooms</strong> - server operators see room membership and metadata. Room identity is bound to the creating server's domain - if the server disappears, the room identity is lost.</p>
+<p><strong>Mastodon / ActivityPub</strong> - publisher identity is bound to a server domain - if the server disappears, the identity is lost. Server operators see all content and all follower relationships. No encryption or privacy of any kind.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Telegram</th>
+<th>Nostr</th>
+<th>Signal</th>
+<th>Matrix</th>
+<th>Mastodon</th>
+<th><strong>SimpleX</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Content visible to operator</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>Configurable</td>
+<td>Yes</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>Participant identity visible to operator</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td>Channel identity independent of infrastructure</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>Sovereign ownership (no 3rd party can seize)</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>Programmable governance</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+<td><strong>Planned</strong></td>
+</tr>
+<tr>
+<td>Cryptographic content deniability</td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td><strong>Yes (default)</strong></td>
+</tr>
+<tr>
+<td>Scalable one-to-many delivery</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>Limited</td>
+<td>Yes</td>
+<td><strong>Yes</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="non-goals" tabindex="-1">Non-goals</h3>
+<p>Channels do not attempt to:</p>
+<ul>
+<li><strong>Encrypt public content from relay operators.</strong> See <a href="#content-visibility-and-participant-privacy">Content visibility and participant privacy</a>.</li>
+<li><strong>Assign persistent identities to participants.</strong> There are no usernames, public keys, or any identifiers that persist across channels or link activity across contexts.</li>
+<li><strong>Require network-wide consensus.</strong> Channel state is authoritative on owner devices. The network does not validate channel transactions.</li>
+<li><strong>Guarantee immutability of content.</strong> Channel state is fully controlled and mutable by owners, unlike blockchain state, which is immutable by design.</li>
+</ul>
+<h2 id="architecture" tabindex="-1">Architecture</h2>
+<p>The introduction established what channels provide and why. This section describes how: where state lives, how identity and ownership work, how governance evolves, and what each participant does.</p>
+<h3 id="state-and-distribution" tabindex="-1">State and distribution</h3>
+<p>The authoritative record of a channel - content, member roster, profile, cryptographic keys, governance rules - is held by channel owners on their own devices, not on relays, not on any server, and not on any shared ledger. Relays hold transient copies for distribution and optional caching, analogous to CDN edge nodes: the origin holds the truth, CDN nodes come and go. Consensus is only required between channel owners, not across the entire network.</p>
+<pre><code>                     ┌──────────┐
+                     │  Owner   │  &lt;- authoritative state
+                     └────┬─────┘
+                          │
+              ┌───────────┼───────────┐
+              │           │           │
+         ┌────▼───┐  ┌────▼───┐  ┌────▼───┐
+         │Relay A │  │Relay B │  │Relay C │  &lt;- cache / distribution
+         └────┬───┘  └────┬───┘  └────┬───┘
+              │           │           │
+        ┌─────┼─────┐    ...    ┌─────┼─────┐
+        │     │     │           │     │     │
+       S1    S2    S3          S7    S8    S9   &lt;- received copies
+</code></pre>
+<p>Content originates on the owner's device and flows through relays to subscribers. Each relay independently forwards to all of its subscribers. Subscribers do not connect to owners or to each other - this provides better scalability than peer-to-peer SimpleX groups, where adding a member requires N new connections. When multiple relays serve the same channel, subscribers deduplicate at the client level.</p>
+<p><strong>Failure modes:</strong></p>
+<ul>
+<li>
+<p><strong>Loss of a relay is loss of a cache node, not loss of data.</strong> The owner can send the same content through a replacement relay.</p>
+</li>
+<li>
+<p><strong>Loss of all owner devices is the catastrophic event</strong> - relay caches become orphaned and the channel's private keys are gone. Multiple owners and backups mitigate this risk.</p>
+</li>
+<li>
+<p><strong>Disagreements between relays are resolved by the origin.</strong> The owner's version is authoritative, settling cache inconsistency through any reachable relay.</p>
+</li>
+</ul>
+<p>Subscribers hold their own received copies. Signed messages are independently verifiable without consulting the relay or owner. Unsigned content depends on cross-relay consistency or future transcript integrity mechanisms.</p>
+<h3 id="identity-and-ownership" tabindex="-1">Identity and ownership</h3>
+<p>A channel's identity is the SHA-256 hash of the genesis root public key, computed at creation time and never changed - even if relays are added, removed, or the channel link is rotated. It is self-authenticating: derived from a key pair that only the channel creator held. It is embedded in the channel's link, distributed in the profile to all members, and used as a binding prefix in all signed messages.</p>
+<p>Subscribers validate that the identity in the link matches the identity in the profile, preventing link substitution. Profile updates that attempt to change the identity are rejected. Full validation that the identity equals the hash of the root key is deferred: if current clients enforced this check, they would reject future rotated links as invalid. The identity is correctly managed today; validation will be enforced with the key rotation protocol. See the <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/docs/rfcs/2026-03-28-group-identity-binding.md">group identity binding RFC</a>.</p>
+<p>The root key does not sign messages directly. Instead, it authorizes owner keys through a signed chain. At creation, the owner generates a root key pair and a separate member key pair for signing. The member key is published as an authorization entry signed by the root key. New owners can be added by any previously authorized owner signing a new entry. Anyone retrieving the channel link can verify this chain without network access.</p>
+<p>The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which - provided multiple owners were signed by the root key - conceals the creator's identity.</p>
+<p>The channel link is the out-of-band trust anchor - relays and SMP routers cannot modify link content. All members announce their signing keys on joining. Owner keys are verifiable against the link. Role changes (promoting members to admin, moderator) are signed by owners at the protocol level.</p>
+<p>A planned extension will record role changes as a linearly ordered signed roster log with consistent sequencing across all owners, relays, and subscribers. This linearization prevents ambiguous roster states from concurrent unordered changes, and creates a verifiable chain of trust from the channel link through owners to all elevated roles. Out-of-band key verification for non-owner members will further extend this to E2E encrypted conversations.</p>
+<h3 id="governance" tabindex="-1">Governance</h3>
+<p>&quot;Management&quot; in &quot;information delivery and management&quot; refers not only to managing content but to managing the channel itself - who can make decisions, and how.</p>
+<p>The low-level protocol supports multiple owners from the initial release. The application-level governance model evolves through a planned progression:</p>
+<p><strong>Current (v6.5): Single owner.</strong> One owner controls the channel. All administrative actions (profile changes, roster modifications, relay management) are decided by this single owner. The protocol-level owners chain supports verification of multiple entries, but the application creates and manages only one.</p>
+<p><strong>Near-term (v7): Multiple owners, any-owner-decides.</strong> Multiple owners share control of the channel. Any owner can independently make any administrative decision - add or remove members, change the profile, manage relays. This is the most common decision-making model in practice (equivalent to &quot;all admins are equal&quot; in most online platforms). No coordination between owners is required for any action.</p>
+<p><strong>Future: Multisig and programmable governance.</strong> Further stages include M-of-N multisig for administrative actions and, eventually, programmable governance rules defined as code in the channel's definition. The protocol must support these without prescribing a specific governance model.</p>
+<h3 id="roles" tabindex="-1">Roles</h3>
+<ul>
+<li>
+<p><strong>Owners</strong> create the channel, hold the authoritative state and private keys on their devices, publish content, and manage the member roster. Owners sign administrative messages and optionally content messages. A channel must have at least one owner.</p>
+</li>
+<li>
+<p><strong>Relays</strong> receive content from owners and members with posting rights, optionally cache it, and forward it to subscribers. They accept new subscriber connections and introduce them to the channel owners. Relays cannot author messages. A channel must have at least one active relay. Relays are ordinary SimpleX clients - a relay can be operated by anyone (a channel operator, a third-party service provider, or a self-hosted instance) and each creates its own contact address link, bound to the channel's identity. The relay's relationship with the channel is transient - owners can add and remove relays without changing the channel's identity.</p>
+</li>
+<li>
+<p><strong>Subscribers</strong> connect to relays and receive content. They cannot send messages by default, but can be given posting rights.</p>
+</li>
+</ul>
+<p>Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol.</p>
+<p>For protocol-level detail - wire formats, message types, signing and verification mechanics, delivery pipeline - see <a href="/docs/protocol/channels-protocol.html">SimpleX Channels Protocol</a>.</p>
+<h2 id="cryptographic-primitives" tabindex="-1">Cryptographic primitives</h2>
+<ul>
+<li>
+<p><strong>Ed25519</strong> - channel identity (root key pair), owner authorization chain, and message signing. The signature binding prefix includes the channel's entity ID and the sender's member ID, preventing cross-channel replay.</p>
+</li>
+<li>
+<p><strong>SHA-256</strong> - derives the channel's entity ID from the genesis root public key. Immutable, serves as the channel's permanent identity.</p>
+</li>
+<li>
+<p><strong>Double ratchet with post-quantum KEM</strong> (inherited from <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md">SimpleX agent layer</a>) - end-to-end encryption for all SMP transport. Not channel-specific - channels inherit it by being built on the agent layer. Future E2E side conversations (support scope, member DMs, private channels) will use the same mechanism.</p>
+</li>
+</ul>
+<p>Content messages are not signed by default to preserve cryptographic deniability - see <a href="#signing-scope-roster-only-content-optional">Signing scope</a>. Owners may opt into signing all content in a future release.</p>
+<h2 id="security" tabindex="-1">Security</h2>
+<p>This section examines what the architectural properties protect against, where they hold, and where gaps remain.</p>
+<h3 id="design-objectives" tabindex="-1">Design objectives</h3>
+<p>The channel protocol is designed to achieve the following security objectives:</p>
+<ol>
+<li><strong>Stable message delivery</strong> between channel participants, resilient to individual relay failures.</li>
+<li><strong>No possibility for a relay to substitute the channel</strong> - the channel's identity is cryptographically bound to the link and profile controlled by channel owners.</li>
+<li><strong>No possibility for a relay to impersonate an owner</strong> - administrative messages require valid signatures.</li>
+<li><strong>Prevention of relay-initiated roster manipulation</strong> - member removal, role changes, and other roster modifications require valid owner signatures.</li>
+<li><strong>Relay transience</strong> - the owner can add and remove relays, including the last relay, without permanently losing the channel. Subscribers can restore connectivity by retrieving updated link data.</li>
+<li><strong>Sender anonymity within multi-owner channels</strong> - owners can publish as the channel, hiding which specific owner authored a message from subscribers.</li>
+<li><strong>Participant privacy</strong> - relay operators cannot determine subscriber identity or network address, and subscribers cannot determine each other's identity. This is inherited from the SMP transport layer.</li>
+</ol>
+<h3 id="signing-scope-roster-only-content-optional" tabindex="-1">Signing scope: roster only, content optional</h3>
+<p>By default, only roster-modifying and administrative messages are signed. Content messages are not signed. Two reasons:</p>
+<ol>
+<li>
+<p><strong>Cryptographic deniability.</strong> Signing creates non-repudiable proof of authorship verifiable by any third party. Without signatures, no such proof exists - a relay could have fabricated any unsigned message.</p>
+</li>
+<li>
+<p><strong>Proportional defense.</strong> Changes to roster, channel profile, and permissions can be disruptive and irreversible - they must be authenticated at processing time. Content manipulation is detectable post-hoc through cross-relay consistency, and the authoritative record on the owner's device is unaffected.</p>
+</li>
+</ol>
+<p>Owners will be able to opt into signing content on a per-channel or per-message basis - some publishers want non-repudiable authorship, others prefer deniability.</p>
+<h3 id="threat-model" tabindex="-1">Threat model</h3>
+<p>This threat model assumes the <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md">SimpleX network threat model</a> and addresses threats specific to the channel layer.</p>
+<p><strong>A single compromised relay</strong></p>
 <p><em>can:</em></p>
 <ul>
-<li>
-<p>send messages prohibited by user's preferences or otherwise act non-compliantly with user's preferences (for example, if message with updated preferences was lost or failed to be processed, or with modified client), in which case user client should treat such messages and actions as prohibited.</p>
-</li>
-<li>
-<p>by exchanging special messages with user's client, match user's contact with existing group members and/or contacts that have identical user profile (see <a href="#probing-for-duplicate-contacts">Probing for duplicate contacts</a>).</p>
-</li>
-<li>
-<p>identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client responses.</p>
-</li>
+<li>Substitute unsigned content or selectively drop messages for its subscribers. Detectable by subscribers connected to other relays - the owner's version is authoritative. TODO: difference detection not yet implemented.</li>
+<li>Selectively target specific subscribers while delivering correctly to others.</li>
+<li>Ignore the &quot;message from channel&quot; directive, revealing which owner sent a message. Detectable out-of-band.</li>
+<li>Fabricate or hide subscriber connections, inflating or deflating counts. Detectable if subscribers are connected to other relays.</li>
 </ul>
 <p><em>cannot:</em></p>
 <ul>
-<li>
-<p>match user's contact with existing group members and/or contacts with different or with incognito profiles.</p>
-</li>
-<li>
-<p>match user's contact without communicating with the user's client.</p>
-</li>
+<li>Undetectably substitute content - subscribers on honest relays receive the original.</li>
+<li>Alter the channel's authoritative state on the owner's device.</li>
+<li>Substitute the channel profile or impersonate an owner - these require valid signatures.</li>
+<li>Redirect subscribers to a different channel - the entity ID is validated across link and profile.</li>
+<li>Determine subscriber identity or network address - inherited from SMP transport.</li>
+<li>Correlate subscriber participation across channels - each connection uses independent SMP queues. The subscriber chooses their SMP router independently, so collusion between a relay and the relay's SMP router does not compromise connections through a different router.</li>
 </ul>
-<h4 id="a-group-member" tabindex="-1">A group member</h4>
+<p><strong>All relays compromised and colluding</strong></p>
 <p><em>can:</em></p>
 <ul>
-<li>
-<p>send messages prohibited by group's preferences and member restrictions or otherwise act non-compliantly with preferences and restrictions (for example, if decentralized group state diverged, or with modified client), in which case user client should treat such messages and actions as prohibited.</p>
-</li>
-<li>
-<p>create a direct contact with a user if group permissions allow it.</p>
-</li>
-<li>
-<p>by exchanging special messages with user's client, match user's group member record with the existing group members and/or contacts that have identical user profile.</p>
-</li>
-<li>
-<p>undetectably send different messages to different group members, or selectively send messages to some members and not send to others.</p>
-</li>
-<li>
-<p>identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client responses.</p>
-</li>
-<li>
-<p>join the same group several times, from the same or from different user profile, and pretend to be different members.</p>
-</li>
+<li>Undetectably substitute unsigned content for all subscribers, unless owners sign content messages.</li>
+<li>Prevent delivery of any messages, including signed ones (signing prevents substitution, not dropping).</li>
+<li>Fabricate or hide subscriber connections undetectably.</li>
 </ul>
 <p><em>cannot:</em></p>
 <ul>
-<li>
-<p>match user's contact with existing group members and/or contacts with different or with incognito profiles.</p>
-</li>
-<li>
-<p>match user's group member record with existing group members and/or contacts without communication of user's client.</p>
-</li>
-<li>
-<p>determine whether two group members with different or with incognito profiles are the same user.</p>
-</li>
+<li>Forge signed administrative messages or substitute the channel profile.</li>
+<li>Alter the authoritative state on the owner's device.</li>
 </ul>
-<h4 id="a-group-admin" tabindex="-1">A group admin</h4>
+<p><strong>Compromise of owner keys</strong></p>
+<p>An attacker who obtains the root private key or an owner's member private key (through device compromise, backup theft, or coercion) can impersonate the owner and sign arbitrary administrative messages. This is a different threat from key loss - the channel continues operating, but under adversarial control. Mitigation depends on owner-side operational security and future multisig governance. For the threat model of the channel link itself (the trust anchor), see the <a href="https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/2025-04-04-short-links-for-groups.md">short links for groups RFC</a>.</p>
+<p><strong>Loss of all owner devices</strong></p>
+<p>The channel can have no new content, no administrative updates, no new owners. Relay caches continue delivering existing content but cannot be refreshed, and will eventually expire in the absence of the owner connection. Multiple owners and key backups mitigate this risk.</p>
+<p><strong>A subscriber</strong></p>
 <p><em>can:</em></p>
 <ul>
-<li>
-<p>carry out MITM attack between user and other group member(s) when forwarding invitations for group connections (user can detect such attack by verifying connection security codes out-of-band).</p>
-</li>
-<li>
-<p>undetectably forward different messages to different group members, selectively adding, modifying, and dropping forwarded messages.</p>
-</li>
-<li>
-<p>disrupt decentralized group state by sending different messages that change group state (such as adding or removing members, member role changes, etc.) to different group members, or sending such messages selectively.</p>
-</li>
+<li>See all public content, by design.</li>
+<li>Join multiple times with different profiles, inflating counts.</li>
 </ul>
 <p><em>cannot:</em></p>
 <ul>
-<li>prove that two group members with incognito profiles is the same user.</li>
+<li>Identify other subscribers, send messages to the channel (unless given posting rights), or forge messages of the owner or other subscribers.</li>
 </ul>
-<h4 id="a-channel-relay" tabindex="-1">A channel relay</h4>
-<p>For the full channel threat model, see <a href="/docs/protocol/channels-overview.html#threat-model">SimpleX Channels: threat model</a>.</p>
+<p><strong>A passive network observer</strong></p>
 <p><em>can:</em></p>
 <ul>
-<li>
-<p>send arbitrary unsigned content messages to subscribers, effectively fabricating the content stream while the channel identity and signed profile remain intact.</p>
-</li>
-<li>
-<p>selectively drop any messages, both content and signed administrative events, for some or all subscribers.</p>
-</li>
-<li>
-<p>ignore the &quot;message from channel&quot; directive, revealing which specific owner sent a message.</p>
-</li>
-<li>
-<p>fabricate subscriber connections, inflating subscriber counts.</p>
-</li>
+<li>Observe communication with an SMP router, but not whether it is channel-related.</li>
 </ul>
 <p><em>cannot:</em></p>
 <ul>
-<li>
-<p>impersonate an owner - administrative messages (roster changes, profile updates, channel deletion) require valid cryptographic signatures that the relay cannot produce.</p>
-</li>
-<li>
-<p>substitute the channel profile - profile changes require a valid owner signature.</p>
-</li>
-<li>
-<p>redirect joining subscribers to a different channel - the channel's entity ID is baked into both the channel link and the relay link's immutable data.</p>
-</li>
-<li>
-<p>determine the real-world identity of subscribers - subscriber connections carry no persistent identity.</p>
-</li>
+<li>Determine which channel a subscriber uses, correlate channel activity with other SimpleX activity, or identify a relay as distinct from an ordinary user, other than by traffic volume. Inherited from SMP transport.</li>
 </ul>
+<h3 id="current-gaps" tabindex="-1">Current gaps</h3>
+<ol>
+<li><strong>Cross-relay consistency detection.</strong> Duplicate messages are silently deduplicated without hash comparison. Designed but not implemented.</li>
+<li><strong>Link entity ID validation.</strong> Deferred to a future version with key rotation. See <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/docs/rfcs/2026-03-28-group-identity-binding.md">group identity binding RFC</a>.</li>
+<li><strong>Multi-relay UX.</strong> Protocol supports multiple relays per subscriber; no UX for monitoring relay-level delivery health. It will be added in v6.5.x.</li>
+</ol>
+<h2 id="future-work" tabindex="-1">Future work</h2>
+<h3 id="stateful-access-and-history-navigation" tabindex="-1">Stateful access and history navigation</h3>
+<p>Currently, relays send recent cached history on join but do not support navigation or search. Planned: history pagination by timestamp or message ID, remote search against relay caches, and selective retrieval of specific message ranges. Relay operators can differentiate on cache depth and search capabilities.</p>
+<h3 id="transcript-integrity" tabindex="-1">Transcript integrity</h3>
+<ul>
+<li><strong>Opt-in content signing.</strong> Per-channel or per-message choice to sign content, making it non-repudiable. This will be released in SimpleX Chat v7.</li>
+<li><strong>Subscriber transcript acknowledgment.</strong> Subscribers periodically sign a digest of received history (&quot;I've seen it&quot; rather than &quot;I've authored it&quot;), enabling detection of relay manipulation through diverging digests.</li>
+<li><strong>Merkle tree signing.</strong> Owner periodically publishes a signed Merkle root. Subscribers verify their copies against the owner's authoritative record.</li>
+</ul>
+<h3 id="end-to-end-encrypted-side-conversations" tabindex="-1">End-to-end encrypted side conversations</h3>
+<ul>
+<li><strong>E2E encrypted support scope</strong> between subscriber and moderator/owner.</li>
+<li><strong>E2E encrypted DMs between members</strong> where channel settings permit, using standard SimpleX connection establishment.</li>
+<li><strong>Private channels</strong> where the entire content stream is encrypted to authorized subscribers. The relay becomes a conduit that sees neither content nor identity.</li>
+</ul>
+<h3 id="relay-addition-and-removal" tabindex="-1">Relay addition and removal</h3>
+<p>Dynamic relay addition with cache population from existing relays or owner. Relay removal with subscriber migration. Relay rotation with continuity - new relay connects before old relay is removed. It will be added in v6.5.x.</p>
+<h3 id="governance-evolution" tabindex="-1">Governance evolution</h3>
+<ul>
+<li><strong>Multiple owners (v7):</strong> concurrent administrative authority, any owner acts independently.</li>
+<li><strong>Multisig:</strong> M-of-N approval for administrative actions, with per-action quorums.</li>
+<li><strong>Programmable governance:</strong> rules defined as code in the channel definition.</li>
+</ul>
+<h3 id="pre-moderation" tabindex="-1">Pre-moderation</h3>
+<p>Subscriber messages reviewed by moderators before becoming visible to all subscribers.</p>
+<h3 id="scheduled-delivery" tabindex="-1">Scheduled delivery</h3>
+<p>Messages scheduled for future delivery, cached by relay until the scheduled time.</p>
+<h3 id="link-preview-proxying" tabindex="-1">Link preview proxying</h3>
+<p>The relay loads link previews on behalf of the sender - it already sees message content, so it learns nothing new, and unlike the sender its IP is not linked to any identity.</p>
+<h2 id="conclusion" tabindex="-1">Conclusion</h2>
+<p>SimpleX Channels enable a publisher to reach an unlimited audience without any infrastructure operator knowing who that audience is. No third party can seize the channel because owners hold the keys and the authoritative state on their own devices - relays only cache and forward. Owner signatures protect content integrity and the trust chain extends to all administrative roles. These properties require a network without participant identifiers - they cannot be added to a system that has them.</p>
 </div>
                 </article>
             </main>

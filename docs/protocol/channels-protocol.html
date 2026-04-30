@@ -49,7 +49,7 @@
 
         <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>SimpleX Chat Protocol</title>
+        <title></title>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
 
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
@@ -336,7 +336,7 @@
                         
                             
                                 <li>
-                                    <a href="/docs/protocol/simplex-chat.html">
+                                    <a href="/docs/protocol/channels-protocol.html">
                                         <p>English</p>
                                     </a>
                                 </li>
@@ -744,7 +744,7 @@ window.addEventListener('click',(e)=>{
                                         <ul>
                                             
                                                 <li>
-                                                    <a class="active" href="/docs/protocol/simplex-chat.html">SimpleX Chat Protocol</a>
+                                                    <a class="" href="/docs/protocol/simplex-chat.html">SimpleX Chat Protocol</a>
                                                 </li>
                                             
                                         </ul>
@@ -787,307 +787,272 @@ window.addEventListener('click',(e)=>{
                             </div>
                         </div>
                     </div> -->
-                    <div><p>Revision 2, 2024-06-24</p>
-<p>Evgeny Poberezkin</p>
-<h1 id="simplex-chat-protocol" tabindex="-1">SimpleX Chat Protocol</h1>
-<h2 id="abstract" tabindex="-1">Abstract</h2>
-<p>SimpleX Chat Protocol is a protocol used by SimpleX Chat clients to exchange messages. This protocol relies on lower level SimpleX protocols - SimpleX Messaging Protocol (SMP) and SimpleX Messaging Agent protocol. SimpleX Chat Protocol describes the format of messages and the client operations that should be performed when receiving such messages.</p>
-<h2 id="scope" tabindex="-1">Scope</h2>
-<p>The scope of SimpleX Chat Protocol is application level messages, both for chat functionality, related to the conversations between the clients, and extensible for any other application functions. Currently supported chat functions:</p>
+                    <div><p>Revision 1, 2026-04-28</p>
+<h1 id="simplex-channels-protocol" tabindex="-1">SimpleX Channels Protocol</h1>
+<p>For architecture, design rationale, security properties, and threat model, see <a href="/docs/protocol/channels-overview.html">SimpleX Channels Overview</a>.</p>
+<h2 id="table-of-contents" tabindex="-1">Table of contents</h2>
 <ul>
-<li>direct and group messages,</li>
-<li>message replies (quoting), message editing, forwarded messages and message deletions,</li>
-<li>message attachments: images, videos, voice messages and files,</li>
-<li>creating and managing chat groups,</li>
-<li>invitation and signalling for audio/video WebRTC calls.</li>
-</ul>
-<h2 id="general-message-format" tabindex="-1">General message format</h2>
-<p>SimpleX Chat protocol supports these message formats:</p>
+<li><a href="#protocol">Protocol</a>
 <ul>
-<li>JSON-based format for chat and application messages.</li>
-<li>compressed format for adapting larger messages to reduced size of message envelope, caused by addition of PQ encryption keys to SMP agent message envelope.</li>
-<li>binary format for sending files or any other binary data.</li>
+<li><a href="#channel-creation">Channel creation</a></li>
+<li><a href="#relay-acceptance">Relay acceptance</a></li>
+<li><a href="#subscriber-connection">Subscriber connection</a></li>
+<li><a href="#message-signing">Message signing</a></li>
+<li><a href="#message-forwarding">Message forwarding</a></li>
+<li><a href="#binary-batch-format">Binary batch format</a></li>
+<li><a href="#delivery-pipeline">Delivery pipeline</a></li>
+<li><a href="#message-deduplication">Message deduplication</a></li>
+<li><a href="#channel-as-sender-messages">Channel-as-sender messages</a></li>
+<li><a href="#member-support-scope">Member support scope</a></li>
 </ul>
-<p>JSON-based message format supports batching inside a single container message, by encoding list of messages as JSON array.</p>
-<p>Current implementation of chat protocol in SimpleX Chat uses SimpleX File Transfer Protocol (XFTP) for file transfer, with passing file description as chat protocol messages, instead passing files in binary format via SMP connections.</p>
-<h3 id="json-format-for-chat-and-application-messages" tabindex="-1">JSON format for chat and application messages</h3>
-<p>This document uses JTD schemas <a href="https://www.rfc-editor.org/rfc/rfc8927.html">RFC 8927</a> to define the properties of chat messages, with some additional restrictions on message properties included in metadata member of JTD schemas. In case of any contradiction between JSON examples and JTD schema the latter MUST be considered correct.</p>
-<p>Whitespace is used in JSON examples for readability, SimpleX Chat Protocol clients MUST avoid using whitespace when encoding JSON messages.</p>
-<p>General message format is defined by this JTD schema:</p>
-<pre><code class="language-JSON">{
-  &quot;properties&quot;: {
-    &quot;event&quot;: {
-      &quot;type&quot;: &quot;string&quot;
-    },
-    &quot;msgId&quot;: {
-      &quot;type&quot;: &quot;string&quot;,
-      &quot;metadata&quot;: {
-        &quot;format&quot;: &quot;base64url-encoded 12 bytes random message ID&quot;
-      }
-    },
-    &quot;params&quot;: {
-      &quot;optionalProperties&quot;: {}
-    }
-  }
-}
-</code></pre>
-<p>For example, this message defines a simple text message <code>&quot;hello!&quot;</code>:</p>
-<pre><code class="language-JSON">{
-  &quot;event&quot;: &quot;x.msg.new&quot;,
-  &quot;msgId&quot;: &quot;abcd&quot;,
-  &quot;params&quot;: {
-    &quot;content&quot;: {
-      &quot;type&quot;: &quot;text&quot;,
-      &quot;text&quot;: &quot;hello!&quot;
-    }
-  }
-}
-</code></pre>
-<p><code>msgId</code> property is a 12 bytes base64url-encoded random message ID that the clients can use to reference the message in the future, e.g. when editing, quoting or deleting it.</p>
-<p><code>event</code> property is the type of the message that defines the semantics of the message and the allowed format of <code>params</code> property.</p>
-<p><code>params</code> property includes message data, depending on <code>event</code>, as defined below and in <a href="simplex-chat.schema.json">JTD schema</a>.</p>
-<h3 id="compressed-format" tabindex="-1">Compressed format</h3>
-<p>The syntax of compressed message is defined by the following ABNF notation:</p>
-<pre><code class="language-abnf">compressedMessage = %s&quot;X&quot; 1*15780 OCTET; compressed message data
-</code></pre>
-<p>Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).</p>
-<p>The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).</p>
-<h3 id="binary-format-for-sending-files" tabindex="-1">Binary format for sending files</h3>
-<blockquote>
-<p>Note: Planned to be deprecated. No longer used for file transfer in SimpleX Chat implementation of chat protocol.</p>
-</blockquote>
-<p>SimpleX Chat clients use separate connections to send files using a binary format. File chunk size send in each message MUST NOT be bigger than 15,780 bytes to fit into 16kb (16384 bytes) transport block.</p>
-<p>The syntax of each message used to send files is defined by the following ABNF notation:</p>
-<pre><code class="language-abnf">fileMessage = fileChunk / cancelFile
-fileChunk = %s&quot;F&quot; chunkNo chunk
-cancelFile = %s&quot;C&quot;
-chunkNo = 4*4 OCTET ; 32bit word sequential chunk number, starting from 1, in network byte order
-chunk = 1*15780 OCTET ; file data, up to 15,780 bytes
-</code></pre>
-<p>The first chunk number MUST be 1.</p>
-<h2 id="messages-and-chat-items" tabindex="-1">Messages and chat items</h2>
-<p>While users usually use the term &quot;message&quot; to refer to the objects presented in the conversation, the expected functionality of these objects makes it a wrong term. &quot;Messages&quot; are supposed to be immutable; they cannot be modified or deleted once sent. The objects in the conversation are expected to be mutable. This document and implementation use the term &quot;chat item&quot; to refer to these objects to differentiate them from the messages sent between the clients.</p>
-<h2 id="supported-json-message-types-and-simplex-chat-sub-protocols" tabindex="-1">Supported JSON message types and SimpleX Chat sub-protocols</h2>
-<p>Message types are sent as a string in <code>event</code> property of JSON messages. General syntax of event string is defined by this ABNF:</p>
-<pre><code class="language-abnf">event = namespace &quot;.&quot; subprotocol *(&quot;.&quot; eventWord)
-namespace = eventWord ; 1-letter recommended
-subprotocol = eventWord
-eventWord = 1* ALPHA
-</code></pre>
-<p>All SimpleX Chat Protocol messages related to chat functions are defined in <code>x</code> namespace.</p>
-<p>Sub-protocol is a group of messages for related message functions - e.g. sending files, managing groups or negotiating WebRTC calls.</p>
-<p>SimpleX Chat Protocol supports the following message types passed in <code>event</code> property:</p>
-<ul>
-<li><code>x.contact</code> - contact profile and additional data sent as part of contact request to a long-term contact address.</li>
-<li><code>x.info*</code> - messages to send, update and de-duplicate contact profiles.</li>
-<li><code>x.msg.*</code> - messages to create, update and delete content chat items.</li>
-<li><code>x.msg.file.descr</code> - message to transfer XFTP file description.</li>
-<li><code>x.file.*</code> - messages to accept and cancel sending files (see files sub-protocol).</li>
-<li><code>x.direct.del</code> - message to notify about contact deletion.</li>
-<li><code>x.grp.*</code> - messages used to manage groups and group members (see group sub-protocol).</li>
-<li><code>x.call.*</code> - messages to invite to WebRTC calls and send signalling messages.</li>
-<li><code>x.ok</code> - message sent during connection handshake.</li>
+</li>
 </ul>
-<p>JTD schema defining messages for all chat functions is available in <a href="simplex-chat.schema.json">this file</a> – please refer to this document for all properties of the message <code>params</code>.</p>
-<h2 id="xcontact-sending-connection-request" tabindex="-1">x.contact - sending connection request</h2>
-<p>The message is sent as part of the connection request to the long-term user address. <code>contactReqId</code> property is used to identify a duplicate contact request - the receiving client MAY put repeated request on top of the list in the UI.</p>
-<h2 id="sub-protocol-for-contact-profile" tabindex="-1">Sub-protocol for contact profile</h2>
-<h3 id="xinfo-contact-profile" tabindex="-1"><a href="http://x.info">x.info</a> - contact profile</h3>
-<p>This message is sent by both sides of the connection during the connection handshake, and can be sent later as well when contact profile is updated.</p>
-<h3 id="probing-for-duplicate-contacts" tabindex="-1">Probing for duplicate contacts</h3>
-<p>As there are no globally unique user identifiers, when the contact a user is already connected to is added to the group by some other group member, this contact will be added to user's list of contacts as a new contact. To allow merging such contacts, &quot;a probe&quot; (random base64url-encoded 32 bytes) SHOULD be sent to all new members as part of <code>x.info.probe</code> message and, in case there is a contact with the same profile, the hash of the probe MAY be sent to it as part of <code>x.info.probe.check</code> message. In case both the new member and the existing contact are the same user (they would receive both the probe and its hash), the contact would send back the original probe as part of <code>x.info.probe.ok</code> message via the previously existing contact connection – proving to the sender that this new member and the existing contact are the same user, in which case the sender SHOULD merge these two contacts.</p>
-<p>Sending clients MAY disable this functionality, and receiving clients MAY ignore probe messages.</p>
-<p>If the sending client uses <code>x.info.probe</code> messages, it MUST send them to all new members, rather than only when there is a matching contact profile. This is to avoid leaking information that the matching contact profile exists.</p>
-<h2 id="sub-protocol-for-content-messages" tabindex="-1">Sub-protocol for content messages</h2>
-<h3 id="xmsgnew-a-new-content-message" tabindex="-1">x.msg.new - a new content message</h3>
-<p>When chat clients receive or send this message, they MUST create a new chat item in the conversation. Top level <code>msgId</code> property is defined to allow referencing this chat item or message in the future, e.g. to delete, update or quote chat item, or to accept file.</p>
-<p>This message uses <code>params</code> property of the message as content message container, without any top level properties for the container. Message container (<code>params</code>) includes message <code>content</code> property, an optional &quot;invitation&quot; to receive file or image attachment in <code>file</code> property (that is interpreted depending on message content type) and optional indication whether this message is forwarded (<code>&quot;forward&quot;: true</code> property of container) or sent in reply to other message (<code>&quot;quote&quot;: {&lt;quoted message&gt;}</code>). See <code>/definition/msgContainer</code> in <a href="simplex-chat.schema.json">JTD schema</a> for message container format.</p>
-<p>Message content can be one of four types:</p>
-<ul>
-<li><code>text</code> - no file attachment is expected for this format, <code>text</code> property MUST be non-empty.</li>
-<li><code>file</code> - attached file is required, <code>text</code> property MAY be empty.</li>
-<li><code>image</code> - attached file is required, <code>text</code> property MAY be empty.</li>
-<li><code>video</code> - attached file is required, <code>text</code> property MAY be empty.</li>
-<li><code>voice</code> - attached file is required, <code>text</code> property MAY be empty.</li>
-<li><code>link</code> - no file attachment is expected, <code>text</code> property MUST be non-empty. <code>preview</code> property contains information about link preview.</li>
-</ul>
-<p>See <code>/definition/msgContent</code> in <a href="simplex-chat.schema.json">JTD schema</a> for message container format.</p>
-<h3 id="xmsgupdate-update-of-the-previously-sent-message" tabindex="-1">x.msg.update - update of the previously sent message</h3>
-<p>This message is used to update previously created chat item. Its <code>params</code> property contains <code>msgId</code> of the previously sent message that this one is updating and <code>content</code> with the message content that the clients must use to replace the content of the original chat item.</p>
-<p>If the referenced message does not exist, the clients MUST create a new chat item with the ID of the referenced message. If the referenced message is not a content message, the clients MUST ignore this message.</p>
-<h3 id="xmsgdel-request-to-delete-previously-sent-message" tabindex="-1">x.msg.del - request to delete previously sent message</h3>
-<p>This message is used to delete previously sent chat items. Receiving clients MUST implement it as soft-delete, replacing the original chat item with a special chat item indicating that &quot;message is deleted&quot; that can be fully deleted by the user. If the referenced message does not exist or was sent by the different user than the one sending <code>x.msg.del</code>, the receiving clients MUST ignore this message. Clients are also RECOMMENDED to limit the time during which message deletion is allowed, both for senders and for the recipients.</p>
-<h2 id="sub-protocol-for-sending-and-receiving-files" tabindex="-1">Sub-protocol for sending and receiving files</h2>
-<p>When content message <code>x.msg.new</code> contains file attachment (the invitation to receive the file), this sub-protocol is used to accept this file or to notify the recipient that sending the file was cancelled.</p>
-<p>File attachment can optionally include connection address to receive the file - clients MUST include it when sending files to direct connections, and MUST NOT include it when sending file attachment to the group (as different members would need different connections to receive the file).</p>
-<p><code>x.file.acpt</code> message is used to accept the file in case when file connection address was included in the message (that is the case when the file invitation was sent in direct message). It is sent as part of file connection handshake via file connection, that is why this message contains no reference to the file - the used connection provides sufficient context for the sender.</p>
-<p><code>x.file.acpt.inv</code> message is used to accept the file in group conversations, it includes the connection address. It is sent in the same connection where the file was offered and must reference the original message.</p>
-<p><code>x.file.cancel</code> message is sent to notify the recipient that sending of the file was cancelled. It is sent in response to accepting the file with <code>x.file.acpt.inv</code> message. It is sent in the same connection where the file was offered.</p>
-<p><code>x.msg.file.descr</code> message is used to send XFTP file description. File descriptions that don't fit into a single chat protocol message are sent in parts, with messages including part number (<code>fileDescrPartNo</code>) and description completion marker (<code>fileDescrComplete</code>). Recipient client accumulates description parts and starts file download upon completing file description.</p>
-<h2 id="sub-protocol-for-chat-groups" tabindex="-1">Sub-protocol for chat groups</h2>
-<h3 id="decentralized-design-for-chat-groups" tabindex="-1">Decentralized design for chat groups</h3>
-<p>SimpleX Chat groups are fully decentralized and do not have any globally unique group identifiers - they are only defined on client devices as a group profile and a set of bi-directional SimpleX connections with other group members. When a new member accepts group invitation or joins via group link, the inviting member introduces a new member to all existing members and forwards the connection addresses so that they can establish direct and group member connections.</p>
-<p>There is a possibility of the attack here: as the introducing member forwards the addresses, they can substitute them with other addresses, performing MITM attack on the communication between existing and introduced members - this is similar to the communication operator being able to perform MITM on any connection between the users. To mitigate this attack this group sub-protocol will be extended to allow validating security of the connection by sending connection verification out-of-band.</p>
-<p>Clients are RECOMMENDED to indicate in the UI whether the connection to a group member or contact was made directly or via another user.</p>
-<p>Each member in the group is identified by a group-wide unique identifier used by all members in the group. This is to allow referencing members in the messages and to allow group message integrity validation.</p>
-<p>The diagram below shows the sequence of messages sent between the users' clients to add the new member to the group.</p>
-<p>While introduced members establish connection inside group, inviting member forwards messages between them by sending <code>x.grp.msg.forward</code> messages. When introduced members finalize connection, they notify inviting member to stop forwarding via <code>x.grp.mem.con</code> message.</p>
-<p><img src="diagrams/group.svg" alt="Adding member to the group"></p>
-<h3 id="member-roles" tabindex="-1">Member roles</h3>
-<p>Currently members can have one of four roles - <code>owner</code>, <code>admin</code>, <code>member</code> and <code>observer</code>. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only <code>owner</code> and <code>admin</code> members can add new members; only <code>owner</code> members can add members with <code>owner</code> role. <code>Observer</code> members only receive messages and aren't allowed to send messages.</p>
-<h3 id="messages-to-manage-groups-and-add-members" tabindex="-1">Messages to manage groups and add members</h3>
-<p><code>x.grp.inv</code> message is sent to invite contact to the group via contact's direct connection and includes group member connection address. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Optional <code>groupLinkId</code> is included when this message is sent to contacts connected via the user's group link. This identifier is a random byte sequence, with no global or even local uniqueness - it is only used for the user's invitations to a given group to provide confirmation to the contact that the group invitation is for the same group the contact was connecting to via the group link, so that the invitation can be automatically accepted by the contact - the contact compares it with the group link id contained in the group link uri's data field.</p>
-<p><code>x.grp.acpt</code> message is sent as part of group member connection handshake, only to the inviting user.</p>
-<p><code>x.grp.link.inv</code> message is sent as part of connection handshake to member joining via group link, and contains group profile and initial information about inviting and joining member.</p>
-<p><code>x.grp.link.mem</code> message is sent as part of connection handshake to member joining via group link, and contains remaining information about inviting member.</p>
-<p><code>x.grp.mem.new</code> message is sent by the inviting user to all connected members (and scheduled as pending to all announced but not yet connected members) to announce a new member to the existing members. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with <code>member</code> role.</p>
-<p><code>x.grp.mem.intro</code> messages are sent by the inviting user to the invited member, via their group member connection, one message for each existing member. When this message is sent by any other member than the one who invited the recipient it MUST be ignored.</p>
-<p><code>x.grp.mem.inv</code> messages are sent by the invited user to the inviting user, one message for each existing member previously introduced with <code>x.grp.mem.intro</code> message. When this message is sent by any other member than the one who was invited by the recipient it MUST be ignored.</p>
-<p><code>x.grp.mem.fwd</code> message is used by the inviting user to forward the invitations received from invited member in <code>x.grp.mem.inv</code> messages to all other members. This message can only be sent by the member who previously announced the new member, otherwise the recipients MUST ignore it.</p>
-<p><code>x.grp.mem.info</code> this message is sent as part of member connection handshake - it includes group member profile.</p>
-<p><code>x.grp.mem.role</code> message is sent to update group member role - it is sent to all members by the member who updated the role of the member referenced in this message. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with role less than <code>admin</code>.</p>
-<p><code>x.grp.mem.restrict</code> message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages.</p>
-<p><code>x.grp.mem.con</code> message is sent by members connecting inside group to inviting member, to notify the inviting member they have completed the connection and no longer require forwarding messages between them.</p>
-<p><code>x.grp.mem.del</code> message is sent to delete a member - it is sent to all members by the member who deletes the member referenced in this message. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with <code>member</code> role.</p>
-<p><code>x.grp.leave</code> message is sent to all members by the member leaving the group. If the only group <code>owner</code> leaves the group, it will not be possible to delete it with <code>x.grp.del</code> message - but all members can still leave the group with <code>x.grp.leave</code> message and then delete a local copy of the group.</p>
-<p><code>x.grp.del</code> message is sent to all members by the member who deletes the group. Clients who received this message SHOULD keep a local copy of the deleted group, until it is deleted by the user. This message MUST only be sent by members with <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member other than with <code>owner</code> role.</p>
-<p><code>x.grp.info</code> message is sent to all members by the member who updated group profile. Only group owners can update group profiles. Clients MAY implement some conflict resolution strategy - it is currently not implemented by SimpleX Chat client. This message MUST only be sent by members with <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member other than with <code>owner</code> role.</p>
-<p><code>x.grp.direct.inv</code> message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.</p>
-<p><code>x.grp.msg.forward</code> message is sent by inviting member to forward messages between introduced members, while they are connecting.</p>
-<h3 id="channels-relay-mediated-groups" tabindex="-1">Channels: relay-mediated groups</h3>
-<p>Channels are groups where message delivery is mediated by dedicated relay members rather than by direct connections between all members. Channels extend the group sub-protocol with additional roles (<code>relay</code>, <code>observer</code>), message signing for administrative actions, a binary batch format for signed and forwarded messages, and an asynchronous delivery pipeline.</p>
-<p>For architecture and design rationale, see <a href="/docs/protocol/channels-overview.html">SimpleX Channels Overview</a>. For protocol-level detail - wire formats, message types, signing mechanics, delivery pipeline - see <a href="/docs/protocol/channels-protocol.html">SimpleX Channels Protocol</a>.</p>
-<h2 id="sub-protocol-for-webrtc-audiovideo-calls" tabindex="-1">Sub-protocol for WebRTC audio/video calls</h2>
-<p>This sub-protocol is used to send call invitations and to negotiate end-to-end encryption keys and pass WebRTC signalling information.</p>
-<p>These message are used for WebRTC calls:</p>
+<h2 id="protocol" tabindex="-1">Protocol</h2>
+<p>This document describes the channel protocol as currently implemented. It builds on the <a href="/docs/protocol/simplex-chat.html">SimpleX Chat Protocol</a>, using the same message format and connection model, with extensions for relay-mediated distribution and cryptographic message signing.</p>
+<h3 id="channel-creation" tabindex="-1">Channel creation</h3>
+<p>Creating a channel involves generating cryptographic material, creating the channel link, and connecting relay members:</p>
 <ol>
 <li>
-<p><code>x.call.inv</code>: the client initiating the call sends <code>x.call.inv</code> message in direct connection to invite another client to the call. At this point WebRTC session is not initialized yet, this message only contains call type and DH key for key agreement.</p>
+<p><strong>Key generation.</strong> The owner generates an Ed25519 root key pair. The entity ID is computed as <code>sha256(rootPubKey)</code>. A separate member key pair is generated for message signing, and an <code>OwnerAuth</code> entry is created, signed by the root key.</p>
 </li>
 <li>
-<p><code>x.call.offer</code>: to accept the call, the receiving client sends <code>x.call.offer</code> message. This message contains WebRTC offer and collected ICE candidates. Additional ICE candidates can be sent in <code>x.call.extra</code> message.</p>
+<p><strong>Link creation.</strong> The owner calls the agent's <code>prepareConnectionLink</code> API with the root key pair and entity ID. This returns a prepared link (including a <code>ConnShortLink</code> address) without any network calls. The link address is deterministic, derived from the fixed data hash, so it can be embedded in the group profile immediately.</p>
 </li>
 <li>
-<p><code>x.call.answer</code>: to continue with call connection the initiating clients must reply with <code>x.call.answer</code> message. This message contains WebRTC answer and collected ICE candidates. Additional ICE candidates can be sent in <code>x.call.extra</code> message.</p>
+<p><strong>Link data upload.</strong> The owner calls <code>createConnectionForLink</code>, which makes a single network call to create the SMP queue and upload the encrypted link data. The link's fixed data contains the root public key and connection request. The mutable user data contains the <code>OwnerAuth</code> array, the channel profile (including the entity ID and the link itself), and the initial subscriber count.</p>
 </li>
 <li>
-<p><code>x.call.end</code> message is sent to notify the other party that the call is terminated.</p>
+<p><strong>Relay invitation.</strong> For each selected relay, the owner sends a contact request containing an <code>x.grp.relay.inv</code> message with the channel's short link. The relay retrieves the link data, validates the channel profile, creates its own relay link (with the channel's entity ID in its immutable data), and responds with <code>x.grp.relay.acpt</code> containing its relay link.</p>
+</li>
+<li>
+<p><strong>Link update.</strong> As each relay accepts and provides its relay link, the owner validates that the relay link contains the correct entity ID, then adds the relay link to the channel link's mutable data.</p>
+</li>
+<li>
+<p><strong>Local record.</strong> The channel is stored on the owner's device with the root private key, member private key, and channel profile. This local record is the authoritative state of the channel.</p>
 </li>
 </ol>
-<h2 id="threat-model" tabindex="-1">Threat model</h2>
-<p>This threat model complements SMP, XFTP, push notifications and XRCP protocols threat models, as well as the channel-specific threat model:</p>
+<h3 id="relay-acceptance" tabindex="-1">Relay acceptance</h3>
+<p>When a relay receives an invitation to serve a channel, it validates the channel and creates its own relay link. This flow is currently part of channel creation; adding relays to an existing channel is planned but not yet implemented.</p>
+<ol>
+<li>
+<p>Owner sends <code>x.grp.relay.inv</code> to the relay's contact address. This message includes the relay's member ID and role, the owner's profile, and the channel's short link.</p>
+</li>
+<li>
+<p>Relay receives the invitation and creates a relay request record. A relay request worker processes it asynchronously.</p>
+</li>
+<li>
+<p>The worker retrieves the channel's link data from the SMP server, extracts and validates the channel profile and owner authorization.</p>
+</li>
+<li>
+<p>The relay creates its own contact address link (the relay link) with the channel's entity ID in the immutable fixed data.</p>
+</li>
+<li>
+<p>The relay accepts the owner's connection request, sending its relay link in the acceptance.</p>
+</li>
+<li>
+<p>The owner retrieves the relay link data, validates that the entity ID in the relay link matches the channel's entity ID, and adds the relay link to the channel link's user data.</p>
+</li>
+</ol>
+<p>TODO: Periodic monitoring where the relay retrieves channel link data to verify its relay link is still listed is planned but not yet implemented.</p>
+<h3 id="subscriber-connection" tabindex="-1">Subscriber connection</h3>
+<p>A subscriber joins a channel through the following flow:</p>
+<ol>
+<li>
+<p><strong>Link retrieval.</strong> The subscriber scans or receives the channel's short link. The client retrieves the link data, which contains the channel profile, owner authorization chain, and list of relay links.</p>
+</li>
+<li>
+<p><strong>Relay link resolution.</strong> For each relay link listed, the client resolves the <code>ConnectionRequestUri</code> from the relay's short link.</p>
+</li>
+<li>
+<p><strong>Connection.</strong> The client connects to relays - the first synchronously, the rest asynchronously. Each connection sends an <code>x.member</code> message with the subscriber's profile (or an incognito profile, created once and shared with all relays), member ID, and member signing key.</p>
+</li>
+<li>
+<p><strong>Relay acceptance.</strong> Each relay accepts the connection, creates a member record for the subscriber with the configured subscriber role (default <code>observer</code>), and sends an <code>x.grp.link.inv</code> message with the channel profile and group link invitation data.</p>
+</li>
+<li>
+<p><strong>Introduction.</strong> The relay introduces the new subscriber to the channel's moderators and owners by sending an <code>x.grp.mem.new</code> message. It also sends moderator/owner profiles to the subscriber.</p>
+</li>
+<li>
+<p><strong>History.</strong> If the channel has history sharing enabled, the relay sends recent cached history to the new subscriber.</p>
+</li>
+</ol>
+<p>The subscriber is functional (can receive messages) as soon as at least one relay connection succeeds. Additional relay connections provide redundancy and cross-relay consistency checking.</p>
+<h3 id="message-signing" tabindex="-1">Message signing</h3>
+<p>Messages that alter the channel's roster, profile, or administrative state are cryptographically signed by the sending owner. Content messages are not signed by default; see <a href="#signing-scope-roster-only-content-optional">Signing scope</a> for the rationale.</p>
+<p><strong>Which messages require signatures:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Message</th>
+<th>Description</th>
+<th>Signed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x.grp.del</code></td>
+<td>Delete channel</td>
+<td>Required</td>
+</tr>
+<tr>
+<td><code>x.grp.info</code></td>
+<td>Update channel profile</td>
+<td>Required</td>
+</tr>
+<tr>
+<td><code>x.grp.prefs</code></td>
+<td>Update channel preferences</td>
+<td>Required</td>
+</tr>
+<tr>
+<td><code>x.grp.mem.del</code></td>
+<td>Remove member</td>
+<td>Required</td>
+</tr>
+<tr>
+<td><code>x.grp.mem.role</code></td>
+<td>Change member role</td>
+<td>Required</td>
+</tr>
+<tr>
+<td><code>x.grp.mem.restrict</code></td>
+<td>Restrict member</td>
+<td>Required</td>
+</tr>
+<tr>
+<td><code>x.grp.leave</code></td>
+<td>Leave channel</td>
+<td>Required (unverified allowed between subscribers)</td>
+</tr>
+<tr>
+<td><code>x.info</code></td>
+<td>Update member profile</td>
+<td>Required (unverified allowed between subscribers)</td>
+</tr>
+<tr>
+<td><code>x.msg.new</code></td>
+<td>Content message</td>
+<td>Not signed</td>
+</tr>
+<tr>
+<td><code>x.msg.update</code></td>
+<td>Edit message</td>
+<td>Not signed</td>
+</tr>
+<tr>
+<td><code>x.msg.del</code></td>
+<td>Delete message</td>
+<td>Not signed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Signing process:</strong></p>
+<p>The signing context binds the signature to a specific channel and sender:</p>
+<pre><code>bindingPrefix = smpEncode(CBGroup) &lt;&gt; smpEncode(publicGroupId, memberId)
+signedBytes   = bindingPrefix &lt;&gt; messageBody
+signature     = Ed25519.sign(memberPrivKey, signedBytes)
+</code></pre>
+<p>The binding prefix includes the chat binding tag (<code>&quot;G&quot;</code> for group), the channel's entity ID, and the sender's member ID. This prevents cross-channel and cross-member replay attacks - a signature valid in one channel cannot be reused in another.</p>
+<p><strong>Verification process:</strong></p>
+<p>When a subscriber receives a signed message:</p>
+<ol>
+<li>
+<p>The signature is present: reconstruct the binding prefix from the channel's stored entity ID and the sender's member ID. Verify all signatures against the sender's stored public key. If all verify, the message is accepted as verified.</p>
+</li>
+<li>
+<p>The signature is present but the sender's key is unknown: the message is accepted as signed-but-unverified only if the event does not require a signature. For <code>x.grp.leave</code> and <code>x.info</code> between subscribers whose keys haven't been exchanged yet, unverified signatures are permitted as a temporary measure.</p>
+</li>
+<li>
+<p>No signature is present: the message is accepted only if the event does not require a signature (i.e., the channel does not use relays, or the event is a content message).</p>
+</li>
+</ol>
+<p>If verification fails for a message that requires a signature, the message is rejected and a bad signature event is shown to the user.</p>
+<h3 id="message-forwarding" tabindex="-1">Message forwarding</h3>
+<p>Content originates on the owner's device and flows through relays to subscribers. The forwarding mechanism preserves the original message bytes, including any signature, without re-encoding:</p>
+<p><strong>Owner to Relay:</strong> The owner sends messages directly to each relay over their SMP connection. Messages are encoded in binary batch format.</p>
+<p><strong>Relay processing:</strong> When a relay receives a message from an owner, it:</p>
+<ol>
+<li>Parses and processes the message locally (updating its cached state, e.g. for roster changes).</li>
+<li>If the relay is configured to forward for this channel, creates a <strong>delivery task</strong> for each message that should be forwarded to subscribers. The task records the message ID, the sender's member ID, the broker timestamp, and whether the message was sent as the channel (not attributed to a specific owner).</li>
+<li>The delivery task is persisted to the database for delivery reliability - ensuring forwarding can resume after a relay crash.</li>
+</ol>
+<p><strong>Relay to Subscribers:</strong> A delivery task worker reads pending tasks, batches them into delivery jobs, and a delivery job worker sends each job to subscribers in paginated batches (using a cursor over group member IDs).</p>
+<p>For forwarded messages from subscribers to owners (e.g. support scope messages), the relay wraps the message in a forwarding envelope:</p>
+<pre><code>forwardEnvelope = &quot;&gt;&quot; &lt;&gt; smpEncode(GrpMsgForward) &lt;&gt; encodeBatchElement(signedMsg, msgBody)
+</code></pre>
+<p>This preserves the original message's signature bytes verbatim.</p>
+<h3 id="binary-batch-format" tabindex="-1">Binary batch format</h3>
+<p>Channels use a binary batch format that preserves exact message bytes for signature verification. This is distinct from the JSON array batching used by regular groups.</p>
+<pre><code class="language-abnf">binaryBatch    = %s&quot;=&quot; elementCount *batchElement
+elementCount   = 1*1 OCTET                    ; 1-255 elements
+batchElement   = elementLen elementBody
+elementLen     = 2*2 OCTET                    ; 16-bit big-endian length
+
+elementBody    = signedElement / forwardElement / plainElement / fileElement
+
+signedElement  = %s&quot;/&quot; chatBinding sigCount *msgSignature jsonBody
+forwardElement = %s&quot;&gt;&quot; grpMsgForward (signedElement / plainElement)
+plainElement   = %s&quot;{&quot; *OCTET                 ; JSON message body
+fileElement    = %s&quot;F&quot; *OCTET                 ; binary file chunk
+
+chatBinding    = 1*1 OCTET                    ; &quot;G&quot; (group), &quot;D&quot; (direct), &quot;C&quot; (channel)
+sigCount       = 1*1 OCTET                    ; number of signatures (1-255)
+msgSignature   = keyRef sigBytes
+keyRef         = %s&quot;M&quot;                        ; member key reference
+sigBytes       = 64*64 OCTET                  ; Ed25519 signature
+
+grpMsgForward  = fwdSender brokerTs
+fwdSender      = memberFwd / channelFwd
+memberFwd      = %s&quot;M&quot; memberId memberName    ; attributed to specific member
+channelFwd     = %s&quot;C&quot;                        ; attributed to channel as sender
+brokerTs       = 8*8 OCTET                    ; UTC system time
+</code></pre>
+<p>The parser (<code>parseChatMessages</code>) dispatches on the first byte:</p>
 <ul>
-<li><a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#threat-model">SimpleX Messaging Protocol threat model</a>;</li>
-<li><a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/xftp.md#threat-model">SimpleX File Transfer Protocol threat model</a>;</li>
-<li><a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model">Push notifications threat model</a>;</li>
-<li><a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model">SimpleX Remote Control Protocol threat model</a>;</li>
-<li><a href="/docs/protocol/channels-overview.html#threat-model">SimpleX Channels threat model</a>.</li>
+<li><code>'='</code> -&gt; binary batch (new format, used by channels)</li>
+<li><code>'X'</code> -&gt; compressed (decompress, then re-parse)</li>
+<li><code>'['</code> -&gt; JSON array (legacy group format)</li>
+<li><code>'{'</code> -&gt; single JSON message</li>
 </ul>
-<h4 id="a-users-contact" tabindex="-1">A user's contact</h4>
-<p><em>can:</em></p>
+<p>Forward elements contain the original message bytes verbatim. The relay does not re-encode the inner message. This is what makes signature verification possible after forwarding: the exact bytes that were signed by the owner are preserved through the relay.</p>
+<p>Nested forwarding (<code>&gt;</code> inside <code>&gt;</code>) is explicitly rejected by the parser.</p>
+<h3 id="delivery-pipeline" tabindex="-1">Delivery pipeline</h3>
+<p>The relay's delivery pipeline has two stages, both backed by persistent database tables for delivery reliability (not for authoritative storage - the relay's database is a delivery queue, not a content database):</p>
+<p><strong>Stage 1: Delivery tasks.</strong> When the relay receives a message from an owner that should be forwarded, it creates a <code>delivery_task</code> record:</p>
+<pre><code>delivery_task:
+  group_id, worker_scope, job_scope,
+  sender_group_member_id, message_id,
+  message_from_channel (bool),
+  task_status (new -&gt; processed)
+</code></pre>
+<p>A <strong>task worker</strong> (one per group per scope) reads pending tasks, batches multiple tasks into a single binary batch body, and creates a delivery job.</p>
+<p><strong>Stage 2: Delivery jobs.</strong> A delivery job contains the pre-encoded batch body and a cursor for paginated delivery:</p>
+<pre><code>delivery_job:
+  group_id, worker_scope, job_scope,
+  body (pre-encoded binary batch),
+  cursor_group_member_id,
+  job_status (pending -&gt; complete)
+</code></pre>
+<p>A <strong>job worker</strong> reads the body and delivers it to subscribers in paginated batches. For each page, it loads a bucket of subscribers by cursor position, sends the body to all of them, advances the cursor, and continues until all subscribers have been served. This avoids loading all subscribers into memory at once.</p>
+<p>For subsequent subscribers in a batch, the agent uses a value reference to the first subscriber's message body, avoiding redundant data transmission to the SMP server.</p>
+<h3 id="message-deduplication" tabindex="-1">Message deduplication</h3>
+<p>When multiple relays serve the same channel, each subscriber receives the same message from each relay independently. Deduplication is performed at the subscriber's client level using the message's shared message ID:</p>
 <ul>
-<li>
-<p>send messages prohibited by user's preferences or otherwise act non-compliantly with user's preferences (for example, if message with updated preferences was lost or failed to be processed, or with modified client), in which case user client should treat such messages and actions as prohibited.</p>
-</li>
-<li>
-<p>by exchanging special messages with user's client, match user's contact with existing group members and/or contacts that have identical user profile (see <a href="#probing-for-duplicate-contacts">Probing for duplicate contacts</a>).</p>
-</li>
-<li>
-<p>identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client responses.</p>
-</li>
+<li>When saving a received message, the client checks whether a message with the same shared ID already exists for this group.</li>
+<li>If a duplicate is found, the message is silently dropped (in channels with relays).</li>
+<li>In non-relay groups, duplicate detection triggers a <code>x.grp.mem.con</code> notification to the forwarding member.</li>
 </ul>
-<p><em>cannot:</em></p>
-<ul>
-<li>
-<p>match user's contact with existing group members and/or contacts with different or with incognito profiles.</p>
-</li>
-<li>
-<p>match user's contact without communicating with the user's client.</p>
-</li>
-</ul>
-<h4 id="a-group-member" tabindex="-1">A group member</h4>
-<p><em>can:</em></p>
-<ul>
-<li>
-<p>send messages prohibited by group's preferences and member restrictions or otherwise act non-compliantly with preferences and restrictions (for example, if decentralized group state diverged, or with modified client), in which case user client should treat such messages and actions as prohibited.</p>
-</li>
-<li>
-<p>create a direct contact with a user if group permissions allow it.</p>
-</li>
-<li>
-<p>by exchanging special messages with user's client, match user's group member record with the existing group members and/or contacts that have identical user profile.</p>
-</li>
-<li>
-<p>undetectably send different messages to different group members, or selectively send messages to some members and not send to others.</p>
-</li>
-<li>
-<p>identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client responses.</p>
-</li>
-<li>
-<p>join the same group several times, from the same or from different user profile, and pretend to be different members.</p>
-</li>
-</ul>
-<p><em>cannot:</em></p>
-<ul>
-<li>
-<p>match user's contact with existing group members and/or contacts with different or with incognito profiles.</p>
-</li>
-<li>
-<p>match user's group member record with existing group members and/or contacts without communication of user's client.</p>
-</li>
-<li>
-<p>determine whether two group members with different or with incognito profiles are the same user.</p>
-</li>
-</ul>
-<h4 id="a-group-admin" tabindex="-1">A group admin</h4>
-<p><em>can:</em></p>
-<ul>
-<li>
-<p>carry out MITM attack between user and other group member(s) when forwarding invitations for group connections (user can detect such attack by verifying connection security codes out-of-band).</p>
-</li>
-<li>
-<p>undetectably forward different messages to different group members, selectively adding, modifying, and dropping forwarded messages.</p>
-</li>
-<li>
-<p>disrupt decentralized group state by sending different messages that change group state (such as adding or removing members, member role changes, etc.) to different group members, or sending such messages selectively.</p>
-</li>
-</ul>
-<p><em>cannot:</em></p>
-<ul>
-<li>prove that two group members with incognito profiles is the same user.</li>
-</ul>
-<h4 id="a-channel-relay" tabindex="-1">A channel relay</h4>
-<p>For the full channel threat model, see <a href="/docs/protocol/channels-overview.html#threat-model">SimpleX Channels: threat model</a>.</p>
-<p><em>can:</em></p>
-<ul>
-<li>
-<p>send arbitrary unsigned content messages to subscribers, effectively fabricating the content stream while the channel identity and signed profile remain intact.</p>
-</li>
-<li>
-<p>selectively drop any messages, both content and signed administrative events, for some or all subscribers.</p>
-</li>
-<li>
-<p>ignore the &quot;message from channel&quot; directive, revealing which specific owner sent a message.</p>
-</li>
-<li>
-<p>fabricate subscriber connections, inflating subscriber counts.</p>
-</li>
-</ul>
-<p><em>cannot:</em></p>
-<ul>
-<li>
-<p>impersonate an owner - administrative messages (roster changes, profile updates, channel deletion) require valid cryptographic signatures that the relay cannot produce.</p>
-</li>
-<li>
-<p>substitute the channel profile - profile changes require a valid owner signature.</p>
-</li>
-<li>
-<p>redirect joining subscribers to a different channel - the channel's entity ID is baked into both the channel link and the relay link's immutable data.</p>
-</li>
-<li>
-<p>determine the real-world identity of subscribers - subscriber connections carry no persistent identity.</p>
-</li>
-</ul>
+<p>This is essentially cache coherence verification - comparing what was received from one cache node against another. TODO: Currently, deduplication only detects the presence of duplicates. The protocol design includes provisions for detecting differences between relay-delivered copies of the same message (hash comparison, UI indicators for discrepancies). This is described in the <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/docs/rfcs/2025-08-11-channels-forwarding.md">channels forwarding RFC</a> and is not yet implemented.</p>
+<h3 id="channel-as-sender-messages" tabindex="-1">Channel-as-sender messages</h3>
+<p>Owners can send messages attributed to the channel rather than to themselves. When <code>asGroup = True</code> is set in the message container, the relay forwards the message with a channel-as-sender tag instead of attributing it to a specific member. On the subscriber side, such messages are displayed as coming from the channel (using the channel's profile image and name) rather than from a specific owner.</p>
+<p>This will be useful for channels with multiple owners (not yet implemented at application level) where the identity of the specific sender should not be visible to subscribers. The relay must respect this directive; ignoring it and revealing the sending owner's identity is a threat vector (detectable out-of-band by members communicating with the owner).</p>
+<p>The forwarding binding prefix for channel-as-sender messages uses <code>CBChannel</code> instead of <code>CBGroup</code>, and includes only the channel's entity ID (not the sender's member ID):</p>
+<pre><code>channelBinding = smpEncode(CBChannel) &lt;&gt; smpEncode(publicGroupId)
+</code></pre>
+<h3 id="member-support-scope" tabindex="-1">Member support scope</h3>
+<p>Channels support a <strong>member support scope</strong> - a private side-channel between a subscriber and the channel's moderators/owners. Messages sent in the support scope are delivered only to moderators and the scoped subscriber, not to all subscribers.</p>
+<p>A support-scoped message includes the target member's ID. The delivery pipeline uses a separate job scope for support messages, loading only the scoped member and moderators rather than all subscribers.</p>
+<p>Support scope messages are visible only to the subscriber who initiated the support conversation and to the channel's moderators. Other subscribers cannot see them. This allows subscribers to report issues, appeal moderation decisions, or communicate with administrators without revealing their identity to other subscribers.</p>
 </div>
                 </article>
             </main>
