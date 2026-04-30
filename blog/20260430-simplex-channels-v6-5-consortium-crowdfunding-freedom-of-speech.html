@@ -55,7 +55,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:title" content="SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech" />
     
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.jpg" />
+      <meta property="og:image" content="https://simplex.chat/blog/images/20260430-home.png" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -410,23 +410,51 @@ window.addEventListener('click',(e)=>{
     </div>
 
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#071C46] px-5">
-      <div class="py-6 md:p-[60px]"><h1 id="simplex-channels-simplex-network-consortium-and-community-crowdfunding-to-preserve-freedom-of-speech" tabindex="-1">SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech</h1>
-<p><strong>To be published:</strong> Apr 30, 2026</p>
-<p>This is a permalink for a blog post about:</p>
+      <div class="py-6 md:p-[60px]"><h1 id="simplex-channels-simplex-network-consortium-and-community-crowdfunding-to-preserve-freedom-of-speech" tabindex="-1">SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding — to Preserve Freedom of Speech</h1>
+<p><strong>Published:</strong> Apr 30, 2026</p>
+<p>Freedom of speech needs infrastructure that protects it by design — not only the protocols and servers, but the governance and funding to support them.</p>
+<h2 id="simplex-channels-more-public-more-freedom-more-private" tabindex="-1">SimpleX Channels — more public, more freedom, more private</h2>
+<img src="./images/20260430-channel.png" width="264" class="float-to-right">
+<p>v6.5 release<sup class="footnote-ref"><a href="#note-release" id="ref-release">1</a></sup> brings SimpleX Channels: a new model for online publishing built for participation privacy.</p>
+<p>Channel content is visible to chat relay operators. And each channel uses multiple relays, so no single relay can block the channel<sup class="footnote-ref"><a href="#note-preset" id="ref-preset">2</a></sup>.</p>
+<p>But the real identities of channel owners and subscribers are unknown to relay operators, to each other, and to the network. This is important for freedom of speech and for our ability to say the truth<sup class="footnote-ref"><a href="#note-wilde" id="ref-wilde">3</a></sup>.</p>
+<p>This is the opposite of the usual approach: instead of trying (and failing <sup class="footnote-ref"><a href="#note-public" id="ref-public">4</a></sup>) to hide publicly available content from operators while exposing participants, we designed the protocols to protect people. Anybody can join a public channel via its link and see what is sent, but not who sent it, and not who else is reading. This is win-win for both users and chat relays operators. Users' privacy is protected, operators can decide what content to deliver in public spaces, and anybody can run chat relays.</p>
+<p>This is only possible because SimpleX network was built without user profile identifiers of any kind. You can't add participation privacy to a network that identifies its users — as you can't add privacy to a messenger built on phone numbers.</p>
+<p>v6.5 is the first beta version of channels:</p>
 <ul>
-<li>SimpleX Channels - a new model for online publishing that preserves participation privacy, protecting both user and network operators. It is being released in v6.5</li>
-<li>SimpleX Network Consortium - a cross-jurisdictional governance and licensing structure to ensure long term availability and sustainability of SimpleX Network.</li>
-<li>Testing the water for community crowdfunding under Reg CF.</li>
+<li>channel owners hold their own channel keys,</li>
+<li>each channel uses multiple relays for reliability,</li>
+<li>publishers can run their own chat relays,</li>
+<li>channels can be added to our <a href="https://simplex.chat/directory/">SimpleX Directory</a>.</li>
 </ul>
-<h2 id="simplex-channels-more-public-more-freedom-more-private" tabindex="-1">SimpleX Channels - more public, more freedom, more private</h2>
-<p>TODO</p>
-<h2 id="simplex-network-consortium-to-govern-simplex-network" tabindex="-1">SimpleX Network Consortium - to govern SimpleX Network</h2>
-<p>TODO</p>
+<p>This release is a beginning of a very important new layer of SimpleX Network. Read more about channels in <a href="https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/channels-overview.md">whitepaper</a>: their purpose, architecture, security model and planned future work.</p>
+<h2 id="simplex-network-consortium-to-preserve-network-independence" tabindex="-1">SimpleX Network Consortium — to preserve network independence</h2>
+<p>No single company should control protocols and network that people depend on to speak freely. If a network is run by a single company, the network has a risk that business and users interests diverge — if it happens, users lose.</p>
+<p>To protect network neutrality and make sure its protocols and intellectual property are available to the users, we're launching <a href="https://simplexnetwork.org">SimpleX Network Consortium</a> within a few months — the agreement between the new SimpleX Network Foundation and SimpleX Chat company that will govern protocols and licensing — perpetual, irrevocable, surviving if any party is sold or shut down. Other organizations will join.</p>
+<p>We are currently forming the board for SimpleX Network Foundation — initially, <a href="https://heathermeeker.com/about-me/">Heather Meeker</a>, who drafted the Consortium agreement, and several other people will join. We will announce the board soon.</p>
+<p>As the power over the network protocols moves away from the company, it cannot move back<sup class="footnote-ref"><a href="#note-ulysses" id="ref-ulysses">5</a></sup>. It is a structural guarantee — the same principle we applied to privacy.</p>
 <h2 id="community-crowdfunding" tabindex="-1">Community Crowdfunding</h2>
-<p>TODO</p>
-<p><em>Register your interest</em> to participate in crowdfunding here: <a href="https://simplexchat.typeform.com/crowdfunding">https://simplexchat.typeform.com/crowdfunding</a></p>
-<p>Join the channel for updates here: <a href="https://smp4.simplex.im/g#g6pdBGlLoeOwqYmbmyvRye8EBiFd2inNUzKc87Pt3y4">https://smp4.simplex.im/g#g6pdBGlLoeOwqYmbmyvRye8EBiFd2inNUzKc87Pt3y4</a></p>
+<p>We've seen open-source privacy-focussed projects die without funding, or worse — being captured by their sponsors. We've seen &quot;don't be evil&quot; companies get lured off course by growth and board pressure. Neither pure ideology nor pure commerce survives the long run alone.</p>
+<p>So we're building both: a governance structure and a real business. The governance protects the network neutrality. The commercial model funds the network and makes our and other businesses on the network profitable, ensuring their independence. Neither works without the other.</p>
+<p>We recently published <a href="https://simplex.chat/vouchers/">a preliminary design of commercial model</a> — private Community Credits that fund servers, development, and governance without surveillance or speculation. The full investment case will be published when crowdfunding launches.</p>
+<p>You can <em>register your interest</em> to participate in crowdfunding here: <a href="https://simplexchat.typeform.com/crowdfunding">https://simplexchat.typeform.com/crowdfunding</a></p>
+<p>Join the channel for updates <a href="https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg">here</a> — you must install v6.5 to join it — or you can join a <a href="https://smp12.simplex.im/g#gJzy7ETpuvltqARIB73TQUpJ11Lz4Xpl9xeH9qNoGCg">read-only group</a> from the previous app versions.</p>
 <p><em>Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind.</em></p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="note-release" class="footnote-item"><p>v6.5 release also improved how new users make the first connection, increased security of sending web links, and has many other improvements — see <em>What's new</em> in the app or full release notes. <a href="#ref-release" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="note-preset" class="footnote-item"><p>Currently there is only one preset operator of chat relays in the app. It will change in the next release. <a href="#ref-preset" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="note-wilde" class="footnote-item"><p>Oscar Wilde wrote: <em>&quot;Man is least himself when he talks in his own person. Give him a mask, and he will tell you the truth&quot;</em>. Privacy is essential for our ability to say the truth, and without truth we cannot survive as society. <a href="#ref-wilde" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="note-public" class="footnote-item"><p>From whitepaper: any channel joinable via a public link, whether encrypted or not, must be considered completely public — the cost of joining through automated means has collapsed with large language models. End-to-end encrypting such content provides no privacy; it only undermines users' security by creating false expectations and increases infrastructure operators' risks by making them unable to see what they deliver. <a href="#ref-public" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="note-ulysses" class="footnote-item"><p>Ulysses pact — adding constraints to reduce future options. Sé Reed used this analogy for the WordPress Foundation: tying the project to the mast before the siren songs of commercial capture (<a href="https://www.wpwatercooler.com/wpwatercooler/ep484-whose-wordpress-is-it-anyway/">https://www.wpwatercooler.com/wpwatercooler/ep484-whose-wordpress-is-it-anyway/</a>). <a href="#ref-ulysses" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
 </div>
     </section>
 
