@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find)
+import Data.List (find, isPrefixOf)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -3729,9 +3729,10 @@ runRelayRequestWorker a Worker {doWork} = do
       where
         retryTmpError :: CM () -> GroupId -> ChatError -> CM ()
         retryTmpError loop groupId = \case
-          e@ChatErrorAgent {agentError} | temporaryOrHostError agentError -> do
-            liftIO $ putStrLn $ "**** retryTmpError " <> show e
-            loop
+          e@ChatErrorAgent {agentError = agentError@BROKER {brokerErr = NETWORK {networkError = SMP.NEConnectError {connectError}}}}
+            | temporaryOrHostError agentError && not ("Network.Socket.getAddrInfo (called with preferred socket type/protocol: AddrInfo {addrFlags = [], addrFamily = AF_UNSPEC" `isPrefixOf` connectError) -> do
+                liftIO $ putStrLn $ "**** retryTmpError " <> show e            
+                loop
           e -> do
             withStore' $ \db -> setRelayRequestErr db groupId (tshow e)
             eToView e
