@@ -94,6 +94,8 @@ module Simplex.Chat.Store.Groups
     setGroupInProgressDone,
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
+    updateRelayOwnStatus_,
+    getRelayOwnGroups,
     createNewContactMemberAsync,
     createJoiningMember,
     getMemberJoinRequest,
@@ -1584,6 +1586,16 @@ updateRelayOwnStatus_ :: DB.Connection -> GroupInfo -> RelayStatus -> IO ()
 updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET relay_own_status = ?, updated_at = ? WHERE group_id = ?" (relayStatus, currentTs, groupId)
+
+getRelayOwnGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
+getRelayOwnGroups db vr User {userId, userContactId} = do
+  map (toGroupInfo vr userContactId [])
+    <$> DB.query
+      db
+      ( groupInfoQuery
+          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IS NOT NULL AND g.relay_own_status != ?"
+      )
+      (userId, userContactId, RSInactive)
 
 createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> SubscriptionMode -> ExceptT StoreError IO ()
 createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo {groupId, membership} Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) chatV peerChatVRange subMode =

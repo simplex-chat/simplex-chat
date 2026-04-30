@@ -1305,14 +1305,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     pure (gInfo, gLink, relays', changed)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
                   where
-                    -- TODO [relays] owner: on relay deletion (link absent from relayLinks)
-                    -- TODO          move status RSActive to new "Removed" status / remove relay record
                     updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool) -> IO ([GroupRelay], Bool)
                     updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
                       case relayLink of
                         Just rLink
                           | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
                               relay' <- updateRelayStatus db relay RSActive
+                              pure (relay' : acc, True)
+                          | rLink `elem` relayLinks -> pure (relay : acc, changed)
+                          | relayStatus == RSAccepted || relayStatus == RSActive -> do
+                              -- Relay link absent from link data — deactivate.
+                              -- TODO [multi-owner] Another owner removing a relay updates link data on
+                              -- the SMP server, but this owner won't receive a LINK callback for it
+                              -- (LINK only fires in response to own setConnShortLink calls).
+                              relay' <- updateRelayStatus db relay RSInactive
                               pure (relay' : acc, True)
                         _ -> pure (relay : acc, changed)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
@@ -3166,10 +3172,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
-      when (isRelay m) $
-        withStore' $ \db -> do
-          relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
-          forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
       gInfo'' <- updatePublicGroupData user gInfo'
       unless (muteEventInChannel gInfo'' m) $ do
         (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m

@@ -15,10 +15,28 @@ struct ChannelRelaysView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State private var groupRelays: [GroupRelay] = []
+    @State private var showAddRelay = false
 
     var body: some View {
         List {
             relaysList()
+            if groupInfo.isOwner {
+                Section {
+                    Button {
+                        showAddRelay = true
+                    } label: {
+                        Label("Add relay", systemImage: "plus")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showAddRelay) {
+            AddGroupRelayView(groupInfo: groupInfo) {
+                Task {
+                    groupRelays = await apiGetGroupRelays(groupInfo.groupId)
+                    await chatModel.loadGroupMembers(groupInfo)
+                }
+            }
         }
         .onAppear {
             Task {

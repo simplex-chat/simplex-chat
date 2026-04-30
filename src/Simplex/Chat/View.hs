@@ -182,6 +182,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
   CRGroupRelays u g relays -> ttyUser u $ viewGroupRelays g relays
+  CRGroupRelaysAdded u g _groupLink relays -> ttyUser u $ viewGroupRelays g relays
+  CRGroupRelaysAddFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
   -- CRGroupConversationsArchived u _g _conversations -> ttyUser u []
