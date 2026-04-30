@@ -59,7 +59,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
       Icon(
         painterResource(MR.images.ic_open_in_new), stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
-          .clickable { if (link.startsWith("simplex:")) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openUriCatching(link) }
+          .clickable { if (link.startsWith("simplex:")) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openExternalLink(link) }
       )
     }
 
@@ -229,7 +229,7 @@ fun ReadMoreButton(url: String) {
           interactionSource = remember { MutableInteractionSource() },
           indication = null
         ) {
-          uriHandler.openUriCatching(url)
+          uriHandler.openExternalLink(url)
         }
     )
     Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
@@ -882,7 +882,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v6.5",
-    post = "https://simplex.chat/blog/20260428-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html",
+    post = "https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html",
     features = listOf(
       VersionFeature.FeatureDescription(
         icon = null,

@@ -19,7 +19,7 @@ import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Library.Internal (roundedFDCount)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
+import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
@@ -940,7 +940,7 @@ testXFTPRcvError ps = do
         alice <## "completed uploading file 1 (test.pdf) for bob"
 
   -- server is up w/t store log - file reception should fail
-  withXFTPServer' xftpServerConfig {storeLogFile = Nothing} $ do
+  withXFTPServer' xftpServerConfig {serverStoreCfg = XSCMemory Nothing, storeLogFile = Nothing} $ do
     withTestChat ps "bob" $ \bob -> do
       bob <## "subscribed 1 connections on server localhost"
       bob ##> "/fr 1 ./tests/tmp"

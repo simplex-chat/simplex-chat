@@ -26,13 +26,7 @@
 "(this device v%@)" = "(цей пристрій v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Внесок](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Напишіть нам електронною поштою](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Зірка на GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Додати контакт**: створити нове посилання-запрошення.";
@@ -399,9 +393,6 @@ swipe action */
 "Active connections" = "Активні з'єднання";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Додайте адресу до свого профілю, щоб ваші контакти могли поділитися нею з іншими людьми. Повідомлення про оновлення профілю буде надіслано вашим контактам.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Додайте друзів";
 
 /* No comment provided by engineer. */
@@ -642,9 +633,6 @@ swipe action */
 "Answer call" = "Відповісти на дзвінок";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Кожен може хостити сервери.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Збірка програми: %@";
 
 /* No comment provided by engineer. */
@@ -879,7 +867,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарською, фінською, тайською та українською мовами - завдяки користувачам та [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Адреса підприємства";
 
 /* No comment provided by engineer. */
@@ -893,9 +881,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Через профіль чату (за замовчуванням) або [за з'єднанням](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Використовуючи SimpleX Chat, ви погоджуєтеся:\n- надсилати лише легальний контент у публічних групах.\n- поважати інших користувачів - без спаму.";
 
 /* No comment provided by engineer. */
 "call" = "дзвонити";
@@ -1080,7 +1065,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Чат буде видалено для вас - цю дію неможливо скасувати!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Чат з адміністраторами";
 
 /* No comment provided by engineer. */
@@ -1193,9 +1179,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Налаштування серверів ICE";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Налаштувати операторів сервера";
 
 /* No comment provided by engineer. */
 "Confirm" = "Підтвердити";
@@ -1330,7 +1313,7 @@ server test step */
 /* alert title */
 "Connection error" = "Помилка підключення";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Помилка підключення (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1430,6 +1413,9 @@ server test step */
 "Continue" = "Продовжуйте";
 
 /* No comment provided by engineer. */
+"Contribute" = "Внесок";
+
+/* No comment provided by engineer. */
 "Conversation deleted!" = "Розмова видалена!";
 
 /* No comment provided by engineer. */
@@ -1446,9 +1432,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Виправити ім'я на %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Створити";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Створити одноразове посилання";
@@ -1602,9 +1585,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Доставка налагодження";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Децентралізований";
 
 /* message decrypt error item */
 "Decryption error" = "Помилка розшифровки";
@@ -2000,7 +1980,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Порожнє повідомлення!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Увімкнути";
 
 /* No comment provided by engineer. */
@@ -2029,9 +2009,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable lock" = "Увімкнути блокування";
-
-/* No comment provided by engineer. */
-"Enable notifications" = "Увімкнути сповіщення";
 
 /* No comment provided by engineer. */
 "Enable periodic notifications?" = "Увімкнути періодичні сповіщення?";
@@ -2174,7 +2151,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "помилка";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Помилка";
 
 /* No comment provided by engineer. */
@@ -2706,7 +2683,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "групу видалено";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Посилання на групу";
 
 /* No comment provided by engineer. */
@@ -2833,9 +2810,6 @@ servers warning */
 "Immediately" = "Негайно";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Імунітет до спаму та зловживань";
-
-/* No comment provided by engineer. */
 "Import" = "Імпорт";
 
 /* No comment provided by engineer. */
@@ -2935,7 +2909,7 @@ servers warning */
 "Initial role" = "Початкова роль";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Встановіть [SimpleX Chat для терміналу](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Встановіть SimpleX Chat для терміналу";
 
 /* No comment provided by engineer. */
 "Instant" = "Миттєво";
@@ -2970,7 +2944,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "невірні дані чату";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Неправильне посилання для підключення";
 
 /* invalid chat item */
@@ -3400,9 +3374,6 @@ servers warning */
 "Migrate device" = "Перенести пристрій";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Перехід з іншого пристрою";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Мігруйте сюди";
 
 /* No comment provided by engineer. */
@@ -3679,9 +3650,6 @@ servers warning */
 "No unread chats" = "Немає непрочитаних чатів";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Ніяких ідентифікаторів користувачів.";
-
-/* No comment provided by engineer. */
 "Not compatible!" = "Не сумісні!";
 
 /* No comment provided by engineer. */
@@ -3737,7 +3705,7 @@ alert button
 new chat action */
 "Ok" = "Гаразд";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "ОК";
 
 /* No comment provided by engineer. */
@@ -3812,7 +3780,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Тільки ваш контакт може надсилати голосові повідомлення.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Відкрито";
 
 /* No comment provided by engineer. */
@@ -4059,12 +4028,6 @@ new chat action */
 "Privacy policy and conditions of use." = "Політика конфіденційності та умови використання.";
 
 /* No comment provided by engineer. */
-"Privacy redefined" = "Конфіденційність переглянута";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Приватні чати, групи та ваші контакти недоступні для операторів сервера.";
-
-/* No comment provided by engineer. */
 "Private filenames" = "Приватні імена файлів";
 
 /* No comment provided by engineer. */
@@ -4102,9 +4065,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Тема профілю";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Оновлення профілю буде надіслано вашим контактам.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Заборонити аудіо/відеодзвінки.";
@@ -4194,16 +4154,10 @@ new chat action */
 "Read more" = "Читати далі";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Читайте більше в [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Читайте більше в нашому GitHub репозиторії.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Читайте більше в нашому [GitHub репозиторії](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Читайте більше в User Guide.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Підтвердження виключені";
@@ -4923,9 +4877,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Поділіться адресою публічно";
 
-/* alert title */
-"Share address with contacts?" = "Поділіться адресою з контактами?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Діліться з інших програм.";
 
@@ -4949,9 +4900,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Поділіться з SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Поділіться з контактами";
 
 /* No comment provided by engineer. */
 "Share your address" = "Поділіться своєю адресою";
@@ -5108,6 +5056,9 @@ report reason */
 "standard end-to-end encryption" = "стандартне наскрізне шифрування";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Зірка на GitHub";
+
+/* No comment provided by engineer. */
 "Start chat" = "Почати чат";
 
 /* No comment provided by engineer. */
@@ -5208,9 +5159,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap Connect to send request" = "Натисніть Підключитися, щоб відправити запит";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Натисніть «Створити адресу SimpleX» у меню, щоб створити її пізніше.";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "Натисніть Приєднатися до групи";
@@ -5314,9 +5262,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Шифрування працює і нова угода про шифрування не потрібна. Це може призвести до помилок з'єднання!";
-
-/* No comment provided by engineer. */
-"The future of messaging" = "Наступне покоління приватних повідомлень";
 
 /* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хеш попереднього повідомлення відрізняється.";
@@ -5487,9 +5432,6 @@ server test failure */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Щоб перевірити наскрізне шифрування з вашим контактом, порівняйте (або відскануйте) код на ваших пристроях.";
 
 /* No comment provided by engineer. */
-"Toggle chat list:" = "Перемикання списку чату:";
-
-/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Увімкніть інкогніто при підключенні.";
 
 /* token status */
@@ -5606,7 +5548,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Непрочитане";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Несумісне посилання для підключення";
 
 /* No comment provided by engineer. */
@@ -5680,9 +5622,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use %@" = "Використовуйте %@";
-
-/* No comment provided by engineer. */
-"Use chat" = "Використовуйте чат";
 
 /* new chat action */
 "Use current profile" = "Використовувати поточний профіль";
@@ -6091,9 +6030,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Вас не вдалося верифікувати, спробуйте ще раз.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Ви вирішуєте, хто може під'єднатися.";
 
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Ви вже надіслали запит на підключення!\nПовторити запит на підключення?";

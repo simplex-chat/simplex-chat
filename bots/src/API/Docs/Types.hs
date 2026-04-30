@@ -278,6 +278,7 @@ chatTypesDocsData =
     (sti @GroupKeys, STRecord, "", [], "", ""),
     (sti @GroupRootKey, STUnion, "GRK", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
+    (sti @GroupLinkOwner, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
     (sti @GroupMember, STRecord, "", [], "", ""),
     (sti @GroupMemberAdmission, STRecord, "", [], "", ""),
@@ -294,7 +295,7 @@ chatTypesDocsData =
     (sti @GroupShortLinkInfo, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
-    (sti @GroupType, STEnum1, "GT", ["GTUnknown"], "", ""),
+    (sti @GroupType, STEnum, "GT", ["GTUnknown"], "", ""),
     (sti @HandshakeError, STEnum, "", [], "", ""),
     (sti @InlineFileMode, STEnum, "IFM", [], "", ""),
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
@@ -353,6 +354,7 @@ chatTypesDocsData =
     (sti @SrvError, STUnion, "SrvErr", [], "", ""),
     (sti @StoreError, STUnion, "SE", [], "", ""),
     (sti @SubscriptionStatus, STUnion, "SS", [], "", ""),
+    (sti @SupportGroupPreference, STRecord, "", [], "", ""),
     (sti @SwitchPhase, STEnum, "SP", [], "", ""),
     (sti @TimedMessagesGroupPreference, STRecord, "", [], "", ""),
     (sti @TimedMessagesPreference, STRecord, "", [], "", ""),
@@ -482,6 +484,7 @@ deriving instance Generic GroupInfo
 deriving instance Generic GroupKeys
 deriving instance Generic GroupRootKey
 deriving instance Generic GroupLink
+deriving instance Generic GroupLinkOwner
 deriving instance Generic GroupLinkPlan
 deriving instance Generic GroupMember
 deriving instance Generic GroupMemberAdmission
@@ -561,6 +564,7 @@ deriving instance Generic SndGroupEvent
 deriving instance Generic SrvError
 deriving instance Generic StoreError
 deriving instance Generic SubscriptionStatus
+deriving instance Generic SupportGroupPreference
 deriving instance Generic SwitchPhase
 deriving instance Generic TimedMessagesGroupPreference
 deriving instance Generic TimedMessagesPreference

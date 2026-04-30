@@ -1,7 +1,7 @@
 ---
 layout: layouts/article.html
 title: "SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech"
-date: 2026-04-28
+date: 2026-04-30
 # previewBody: blog_previews/20260421.html
 # image: images/20260421-channel.png
 # imageBottom: true
@@ -10,7 +10,7 @@ permalink: "/blog/20260428-simplex-channels-v6-5-consortium-crowdfunding-freedom
 
 # SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech
 
-**Published:** Apr 28, 2026
+**Published:** Apr 30, 2026
 
 Freedom of speech needs infrastructure that protects it by design &mdash; not only the protocols and servers, but the governance and funding to support them.
 

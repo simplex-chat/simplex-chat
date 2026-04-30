@@ -16,7 +16,7 @@ Defined in: [src/core.ts:92](../src/core.ts#L92)
 
 ### Constructor
 
-> **new ChatAPIError**(`message`, `chatError`): `ChatAPIError`
+> **new ChatAPIError**(`message`, `chatError?`): `ChatAPIError`
 
 Defined in: [src/core.ts:93](../src/core.ts#L93)
 
@@ -26,9 +26,9 @@ Defined in: [src/core.ts:93](../src/core.ts#L93)
 
 `string`
 
-##### chatError
+##### chatError?
 
-`ChatError` | `undefined`
+`ChatError` \| `undefined`
 
 #### Returns
 
@@ -74,7 +74,7 @@ Defined in: [node\_modules/typescript/lib/lib.es5.d.ts:1076](../node_modules/typ
 
 ### stack?
 
-> `optional` **stack**: `string`
+> `optional` **stack?**: `string`
 
 Defined in: [node\_modules/typescript/lib/lib.es5.d.ts:1078](../node_modules/typescript/lib/lib.es5.d.ts#L1078)
 
