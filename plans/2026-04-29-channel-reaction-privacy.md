@@ -26,7 +26,7 @@ Creates a single delivery job carrying both bodies.
 
 **Job worker** (`DJReaction` in channels): Iterates members via cursor. For each bucket, partitions members into owners (`memberRole >= GROwner`) and non-owners, sends the owner body to owners and the subscriber body to non-owners.
 
-**Receiving subscriber**: When `XMsgReact` arrives via `FwdChannel` (no author), a new function `groupMsgReactionNoMember` processes and stores the reaction with `group_member_id = NULL`. The UI shows updated counts without member attribution.
+**Receiving subscriber**: When `XMsgReact` arrives via `FwdChannel` (no author), `groupMsgReaction` receives `Nothing` for the member parameter and takes the channel reaction path — stores with `group_member_id = NULL`, emits a `CIChannelRcv` UI event. This follows the established pattern where all forwarded message handlers (`newGroupContentMessage`, `groupMessageUpdate`, `groupMessageDelete`, `groupMessageFileDescription`) accept `Maybe GroupMember` and branch on `Nothing`.
 
 The existing `sentAsGroup`/`message_from_channel` mechanism is not involved — `DJReaction` handles the split directly in the task/job workers.
 
@@ -132,13 +132,62 @@ ALTER TABLE delivery_jobs ADD COLUMN subscriber_body BLOB;
 
 (`chat_item_reactions.group_member_id` is already nullable — verified from schema.)
 
-### 4. Relay-side: `groupMsgReaction` returns `DJReaction` for channels
+### 4. `groupMsgReaction`: accept `Maybe GroupMember`, add channel reaction path
 
 **File**: `src/Simplex/Chat/Library/Subscriber.hs` (~line 1922)
 
-In `groupMsgReaction`, for channel groups (`useRelays' g`), return `DJReaction` instead of `DJDeliveryJob`.
+Change signature from `GroupMember` to `Maybe GroupMember`, consistent with sibling forwarded message handlers:
 
-The `catchCINotFound` fallback, `Nothing` scope branch (line 1936–1938):
+```haskell
+groupMsgReaction :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
+groupMsgReaction g m_ sharedMsgId itemMemberId scope_ reaction add RcvMessage {msgId} brokerTs
+  | groupFeatureAllowed SGFReactions g = case m_ of
+      Nothing -> -- channel reaction without member identity (subscriber receiving FwdChannel)
+        ...
+      Just m -> -- existing logic (relay processing or forwarded with FwdMember)
+        ...
+  | otherwise = pure Nothing
+```
+
+**`Nothing` branch** (new — channel reaction on receiving subscriber):
+
+```haskell
+Nothing ->
+  updateChannelReaction `catchCINotFound` \_ ->
+    withStore' (\db -> setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs)
+      $> Nothing
+```
+
+Where `updateChannelReaction`:
+
+```haskell
+updateChannelReaction = do
+  (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
+    cci <- case itemMemberId of
+      Just itemMemberId' -> getGroupMemberCIBySharedMsgId db user g itemMemberId' sharedMsgId
+      Nothing -> getGroupChatItemBySharedMsgId db user g Nothing sharedMsgId
+    scopeInfo <- getGroupChatScopeInfoForItem db vr user g (cChatItemId cci)
+    pure (cci, scopeInfo)
+  when (ciReactionAllowed ci) $ do
+    reactions <- withStore' $ \db -> do
+      setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs
+      getGroupCIReactions db g itemMemberId sharedMsgId
+    let ci' = CChatItem md ci {reactions}
+        r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction CIChannelRcv ci' brokerTs reaction
+    toView $ CEvtChatItemReaction user add r
+  pure Nothing
+```
+
+Key differences from the `Just m` branch:
+- No per-member dedup check — trusts relay's existing `reactionAllowed` validation
+- Stores with `group_member_id = NULL` via `setGroupReactionNoMember`
+- Uses `CIChannelRcv` direction in the UI event (no member attribution)
+- Returns `Nothing` — no delivery context (subscriber doesn't forward)
+- No member support scope handling (irrelevant for channel subscriber reactions)
+
+**`Just m` branch** (existing logic, two changes for `DJReaction`):
+
+The `catchCINotFound` fallback, `Nothing` scope sub-branch (line 1936–1938):
 
 ```haskell
 Nothing -> do
@@ -147,7 +196,7 @@ Nothing -> do
   pure $ Just $ DeliveryTaskContext (DJSGroup {jobSpec}) False
 ```
 
-The `updateChatItemReaction` path (line 1949–1957):
+The `updateChatItemReaction` return path (line 1949–1957):
 
 ```haskell
 pure $ Just $ case scopeInfo of
@@ -156,6 +205,11 @@ pure $ Just $ case scopeInfo of
 ```
 
 The member support scope branch (line 1929–1934) is unaffected — it returns `DJSMemberSupport`, a different delivery scope.
+
+**Call site updates**:
+
+- Line 998 (direct call in `processGroupMessage`): `groupMsgReaction gInfo' m''` → `groupMsgReaction gInfo' (Just m'')`
+- Line 3349 (forwarded call in `processForwardedMsg`): see section 7
 
 ### 5. Task worker: `DJReaction` handling
 
@@ -217,56 +271,19 @@ sendBodyToMembersReaction
 
 Single cursor pass. Members partitioned in memory. Each group receives the appropriate body.
 
-### 7. Receiving side: handle `FwdChannel` + `XMsgReact`
+### 7. Receiving side: pass `author_` directly to `groupMsgReaction`
 
 **File**: `src/Simplex/Chat/Library/Subscriber.hs` (~line 3349)
 
-In `processForwardedMsg`, change `XMsgReact` handling from `withAuthor` to case on `author_`:
+In `processForwardedMsg`, replace `withAuthor` wrapper with direct call, matching sibling handlers:
 
 ```haskell
-XMsgReact sharedMsgId memId scope_ reaction add -> case author_ of
-  Just author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
-  Nothing -> groupMsgReactionNoMember gInfo sharedMsgId memId reaction add rcvMsg msgTs
+XMsgReact sharedMsgId memId scope_ reaction add -> void $ groupMsgReaction gInfo author_ sharedMsgId memId scope_ reaction add rcvMsg msgTs
 ```
 
-### 8. New function: `groupMsgReactionNoMember`
+When `author_` is `Nothing` (FwdChannel), `groupMsgReaction` takes the channel reaction path (section 4). When `Just author` (FwdMember), it takes the existing path. The `void` discards the delivery context — the receiving subscriber doesn't forward.
 
-**File**: `src/Simplex/Chat/Library/Subscriber.hs`
-
-New function in the `processGroupMessage` where-clause (same scope as `groupMsgReaction`, has access to `user`, `vr`, `toView`, `catchCINotFound`):
-
-```haskell
-groupMsgReactionNoMember :: GroupInfo -> SharedMsgId -> Maybe MemberId -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM ()
-groupMsgReactionNoMember g sharedMsgId itemMemberId reaction add RcvMessage {msgId} brokerTs
-  | groupFeatureAllowed SGFReactions g =
-      updateChatItemReaction `catchCINotFound` \_ ->
-        withStore' $ \db -> setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs
-  | otherwise = pure ()
-  where
-    updateChatItemReaction = do
-      (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
-        cci <- case itemMemberId of
-          Just itemMemberId' -> getGroupMemberCIBySharedMsgId db user g itemMemberId' sharedMsgId
-          Nothing -> getGroupChatItemBySharedMsgId db user g Nothing sharedMsgId
-        scopeInfo <- getGroupChatScopeInfoForItem db vr user g (cChatItemId cci)
-        pure (cci, scopeInfo)
-      when (ciReactionAllowed ci) $ do
-        reactions <- withStore' $ \db -> do
-          setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs
-          getGroupCIReactions db g itemMemberId sharedMsgId
-        let ci' = CChatItem md ci {reactions}
-            r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction CIChannelRcv ci' brokerTs reaction
-        toView $ CEvtChatItemReaction user add r
-```
-
-Key differences from `groupMsgReaction`:
-- No per-member dedup check — trusts relay's existing `reactionAllowed` validation
-- Stores with `group_member_id = NULL` via `setGroupReactionNoMember`
-- Uses `CIChannelRcv` direction in the UI event (no member attribution)
-- Returns `()` — no delivery context (subscriber doesn't forward)
-- No member support scope handling (irrelevant for channel subscriber reactions)
-
-### 9. New storage function: `setGroupReactionNoMember`
+### 8. New storage function: `setGroupReactionNoMember`
 
 **File**: `src/Simplex/Chat/Store/Messages.hs`
 
@@ -299,7 +316,7 @@ INSERT always uses `NULL` for `group_member_id` and `0` for `reaction_sent`.
 
 DELETE uses `LIMIT 1` subquery — all NULL-member reactions of the same type are equivalent, so removing any one decrements the count correctly.
 
-### 10. API restriction
+### 9. API restriction
 
 **File**: `src/Simplex/Chat/Library/Commands.hs` (~line 884)
 
@@ -317,7 +334,7 @@ APIGetReactionMembers userId groupId itemId reaction -> withUserId userId $ \use
   pure $ CRReactionMembers user memberReactions
 ```
 
-### 11. iOS UI: suppress reaction context menu
+### 10. iOS UI: suppress reaction context menu
 
 **File**: `apps/ios/Shared/Views/Chat/ChatView.swift` (~line 2248)
 
@@ -348,7 +365,7 @@ Reaction pills (emoji + count) remain visible. Only the long-press context menu 
 |------|--------|
 | `src/Simplex/Chat/Delivery.hs` | Add `DJReaction` to `DeliveryJobSpec`/tag; add `subscriberBody_` to `MessageDeliveryJob` |
 | `src/Simplex/Chat/Store/Delivery.hs` | `jobScopeRow_`/`toJobScope_` for new tag; `createMsgDeliveryJob` new parameter; `getNextDeliveryJob` reads new column |
-| `src/Simplex/Chat/Library/Subscriber.hs` | `groupMsgReaction` returns `DJReaction` for channels; task/job workers handle `DJReaction`; `processForwardedMsg` handles `FwdChannel`+`XMsgReact`; new `groupMsgReactionNoMember` |
+| `src/Simplex/Chat/Library/Subscriber.hs` | `groupMsgReaction` accepts `Maybe GroupMember`, adds channel reaction path, returns `DJReaction` for channels; task/job workers handle `DJReaction`; `processForwardedMsg` passes `author_` directly |
 | `src/Simplex/Chat/Store/Messages.hs` | New `setGroupReactionNoMember` |
 | `src/Simplex/Chat/Library/Commands.hs` | `APIGetReactionMembers` restricted for non-owner channel members |
 | `apps/ios/Shared/Views/Chat/ChatView.swift` | Suppress `ReactionContextMenu` for channel subscribers |
@@ -374,7 +391,7 @@ Reaction pills (emoji + count) remain visible. Only the long-press context menu 
 
 8. **`getReactionMembers` on owner's device**: On the owner's device, reactions arrive via `FwdMember` and are stored with real `group_member_id` values. `getReactionMembers` fetches by `group_member_id` and joins `group_members` — works as before. On the subscriber's device, `APIGetReactionMembers` returns empty (API restriction), so NULL-member reactions are never queried for member details.
 
-9. **Reaction removal (add=False)**: Relay processes removal, returns `DJReaction`. Task/job workers encode both bodies. Owner receives `FwdMember` removal — `setGroupReaction` deletes the specific member's reaction row. Subscriber receives `FwdChannel` removal — `setGroupReactionNoMember` deletes one NULL-member row via `LIMIT 1`. Correct.
+9. **Reaction removal (add=False)**: Relay processes removal, returns `DJReaction`. Task/job workers encode both bodies. Owner receives `FwdMember` removal — `setGroupReaction` deletes the specific member's reaction row. Subscriber receives `FwdChannel` removal — `groupMsgReaction` `Nothing` branch calls `setGroupReactionNoMember`, which deletes one NULL-member row via `LIMIT 1`. Correct.
 
 10. **`saveGroupFwdRcvMsg` with `Nothing` author**: Already works — `refAuthorId = groupMemberId' <$> refAuthorMember_` handles `Nothing` (Internal.hs:2283). Dedup via `sharedMsgId_` is unaffected.
 
@@ -386,11 +403,11 @@ No issues found.
 
 12. **Subscriber body encoding size**: `FwdChannel` encodes as `"C"` (1 byte) vs `FwdMember` which is `"M" + memberId + memberName` (variable, larger). If the owner body fits within `maxEncodedMsgLength`, the subscriber body will also fit (same content, smaller wrapper). No overflow risk.
 
-13. **`catchCINotFound` in `groupMsgReactionNoMember`**: When the chat item doesn't exist yet, the fallback stores the reaction with NULL member via `setGroupReactionNoMember`. When the chat item eventually arrives, `getGroupCIReactions` picks up all stored reactions including NULL-member ones. Counts are correct.
+13. **`catchCINotFound` in `groupMsgReaction` `Nothing` branch**: When the chat item doesn't exist yet, the fallback stores the reaction with NULL member via `setGroupReactionNoMember`. When the chat item eventually arrives, `getGroupCIReactions` picks up all stored reactions including NULL-member ones. Counts are correct.
 
 14. **`CIChannelRcv` direction in reaction UI event**: `CIReaction` uses `chatDir :: CIDirection c d`. `CIChannelRcv` is a valid `CIDirection 'CTGroup 'MDRcv`. The iOS event handler (`.chatItemReaction`) just calls `m.updateChatItem(r.chatInfo, r.chatReaction.chatItem)` — it updates the chat item's reaction counts regardless of direction. No UI issue.
 
-15. **Old client compatibility**: Old clients that receive `FwdChannel` + `XMsgReact` parse `FwdChannel` correctly (it's an existing encoding). They hit `withAuthor XMsgReact_` → error logged, reaction silently dropped. Acceptable degradation — no crash, reaction count is marginally lower until client update.
+15. **Old client compatibility**: Old clients that receive `FwdChannel` + `XMsgReact` parse `FwdChannel` correctly (it's an existing encoding). They still use `withAuthor XMsgReact_` → error logged, reaction silently dropped. Acceptable degradation — no crash, reaction count is marginally lower until client update.
 
 16. **`subscriberBody_` for non-`DJReaction` jobs**: The field is `Maybe ByteString`, defaults to `Nothing` for all other job types. The `fromMaybe body subscriberBody_` fallback in the job worker ensures non-owners get `body` if no subscriber body exists. Safe.
 
