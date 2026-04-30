@@ -3738,9 +3738,7 @@ runRelayRequestWorker a Worker {doWork} = do
           liftIO $ putStrLn "**** processRelayRequest"
           (gInfo, groupLink_) <- withStore $ \db -> do
             gInfo <- getGroupInfo db vr user groupId
-            liftIO $ putStrLn "**** processRelayRequest getGroupInfo"
             groupLink_ <- liftIO $ runExceptT $ getGroupLink db user gInfo
-            liftIO $ putStrLn "**** processRelayRequest after getGroupLink"
             pure (gInfo, groupLink_)
           -- Check if relay link already exists (recovery case)
           case groupLink_ of
@@ -3749,26 +3747,33 @@ runRelayRequestWorker a Worker {doWork} = do
                 Just sLnk -> acceptOwnerConnection rrd gInfo sLnk
                 Nothing -> throwChatError $ CEException "processRelayRequest: relay link doesn't have short link"
             Left e -> do
-              liftIO $ putStrLn $ "**** processRelayRequest failed to create group link " <> show e
               (gInfo', sLnk) <- getLinkDataCreateRelayLink rrd gInfo
               acceptOwnerConnection rrd gInfo' sLnk
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
+              liftIO $ putStrLn "**** getLinkDataCreateRelayLink"
               (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' NRMBackground user reqGroupLink
+              liftIO $ putStrLn "**** getLinkDataCreateRelayLink after getShortLinkConnReq"
               liftIO (decodeLinkUserData cData) >>= \case
-                Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
+                Nothing -> do
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink error: no group link data"
+                  throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink GroupShortLinkData"
                   pg <- case (linkEntityId, publicGroup) of
                     (Just entityId, Just pg@PublicGroupProfile {publicGroupId})
                       | B64UrlByteString entityId == publicGroupId -> pure pg
                     _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match profile publicGroupId"
                   validateGroupProfile gp
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink after validateGroupProfile"
                   ((_, memberPrivKey), sLnk) <- createRelayLink gInfo
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink after createRelayLink"
                   gInfo' <- withStore $ \db -> do
                     void $ updateGroupProfile db user gInfo gp
                     updateRelayGroupKeys db user gInfo pg rootKey memberPrivKey owners
                     getGroupInfo db vr user groupId
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink after updateRelayGroupKeys"
                   pure (gInfo', sLnk)
               where
                 validateGroupProfile :: GroupProfile -> CM ()
