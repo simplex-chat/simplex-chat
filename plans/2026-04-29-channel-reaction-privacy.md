@@ -124,6 +124,8 @@ Add `subscriber_body` to the INSERT. Existing call sites (2 in Subscriber.hs tas
 
 Update `MessageDeliveryJobRow`, `getNextDeliveryJob` query, and `toDeliveryJob` to read `subscriber_body` column into the new `subscriberBody_` field.
 
+In `getNextDeliveryTasks`, add sender filtering for DJReaction tasks on relay groups (via `isSenderFiltered` helper). This ensures `singleSenderGMId_` is always Just for DJReaction jobs, preventing subscribers from receiving their own reaction back via FwdChannel in multi-sender batches.
+
 ### 3. DB migration
 
 ```sql
@@ -364,7 +366,7 @@ Reaction pills (emoji + count) remain visible. Only the long-press context menu 
 | File | Change |
 |------|--------|
 | `src/Simplex/Chat/Delivery.hs` | Add `DJReaction` to `DeliveryJobSpec`/tag; add `subscriberBody_` to `MessageDeliveryJob` |
-| `src/Simplex/Chat/Store/Delivery.hs` | `jobScopeRow_`/`toJobScope_` for new tag; `createMsgDeliveryJob` new parameter; `getNextDeliveryJob` reads new column |
+| `src/Simplex/Chat/Store/Delivery.hs` | `jobScopeRow_`/`toJobScope_` for new tag; `createMsgDeliveryJob` new parameter; `getNextDeliveryJob` reads new column; `getNextDeliveryTasks` sender-filters DJReaction |
 | `src/Simplex/Chat/Library/Subscriber.hs` | `groupMsgReaction` accepts `Maybe GroupMember`, adds channel reaction path, returns `DJReaction` for channels; task/job workers handle `DJReaction`; `processForwardedMsg` passes `author_` directly |
 | `src/Simplex/Chat/Store/Messages.hs` | New `setGroupReactionNoMember` |
 | `src/Simplex/Chat/Library/Commands.hs` | `APIGetReactionMembers` restricted for non-owner channel members |
@@ -375,40 +377,52 @@ Reaction pills (emoji + count) remain visible. Only the long-press context menu 
 
 ### Pass 1
 
-1. **Owner duplicate delivery**: Owner is a member. In the cursor loop, they're partitioned into the `owners` group and receive `body` (FwdMember). They do NOT receive `subscriberBody`. No duplicate reactions.
+1. **Owner duplicate delivery**: Owner partitioned into `owners` group in `sendBodyToMembersReaction` via `memberRole' m >= GROwner`. Receives `body` (FwdMember) only. No subscriber body sent to owners.
 
-2. **Subscriber's own reaction**: The reacting subscriber is excluded from delivery via `singleSenderGMId_` in `getGroupMembersByCursor` (`AND group_member_id IS DISTINCT FROM ?`). No self-delivery, no double-counting.
+2. **Subscriber's own reaction excluded**: `isSenderFiltered` in `getNextDeliveryTasks` ensures DJReaction tasks are always sender-filtered (even for relay groups). All tasks in a DJReaction batch are from the same sender, so `singleSenderGMId_` is always Just. `getGroupMembersByCursor` excludes the sender via `AND group_member_id IS DISTINCT FROM ?`.
 
-3. **Owner's reaction identity hidden from subscribers**: When an owner reacts, the relay processes it and returns `DJReaction`. The subscriber body uses `FwdChannel`, hiding the owner's identity from subscribers. Owners see each other's identities via `body`. Correct.
+3. **Multi-sender batch dedup** (found and fixed during review): Without sender filtering, if multiple senders' DJReaction tasks were batched, `singleSenderGMId_` would be Nothing and senders would receive their own reactions back as FwdChannel, causing duplicate NULL-member reaction rows. Fixed by adding `isSenderFiltered` to always use sender-filtered query for DJReaction. Tasks from other senders remain DTSNew and are processed in subsequent iterations.
 
-4. **Member support scope reactions**: The member support scope branch in `groupMsgReaction` (line 1929–1934) returns `DJSMemberSupport`, an entirely different delivery scope processed by a different job worker path. Unaffected.
+4. **Owner's reaction identity hidden from subscribers**: Owner reacts → relay returns DJReaction → subscriber body uses FwdChannel → subscribers see only emoji + count, no member identity.
 
-5. **Non-channel groups**: `groupMsgReaction` returns `DJReaction` only when `useRelays' g`. Regular groups continue using `DJDeliveryJob`. Unaffected.
+5. **Non-channel groups unaffected**: `DJReaction` only returned when `useRelays' g`. Regular groups use `DJDeliveryJob`. `isSenderFiltered` returns False for non-DJReaction scopes.
 
-6. **Batching**: `getNextDeliveryTasks` filters by `jobScopeRow_`. `DJReaction` tasks have tag `"reaction"` — they batch with each other, NOT with `DJDeliveryJob` tasks. Multiple rapid reactions are correctly batched together, and both owner and subscriber bodies contain all batched elements.
+6. **Member support scope unaffected**: Returns `DJSMemberSupport`, different delivery scope and worker. Never interacts with DJReaction.
 
-7. **`getGroupCIReactions` counts NULL-member reactions**: The aggregation query groups by reaction and counts `chat_item_reaction_id` with no filter on `group_member_id`. NULL-member rows are counted. `userReacted = MAX(reaction_sent)` — for received anonymous reactions `reaction_sent = 0`, for the user's own reaction `reaction_sent = 1`. Correct.
+7. **Batching**: DJReaction tasks batch same-scope AND same-sender. Tag `"reaction"` separates from `DJDeliveryJob`. Both owner and subscriber bodies encode the same set of tasks.
 
-8. **`getReactionMembers` on owner's device**: On the owner's device, reactions arrive via `FwdMember` and are stored with real `group_member_id` values. `getReactionMembers` fetches by `group_member_id` and joins `group_members` — works as before. On the subscriber's device, `APIGetReactionMembers` returns empty (API restriction), so NULL-member reactions are never queried for member details.
+8. **`getGroupCIReactions` counts NULL-member reactions**: Aggregation groups by reaction, counts all rows. `userReacted = MAX(reaction_sent)` — 0 for anonymous, 1 for user's own.
 
-9. **Reaction removal (add=False)**: Relay processes removal, returns `DJReaction`. Task/job workers encode both bodies. Owner receives `FwdMember` removal — `setGroupReaction` deletes the specific member's reaction row. Subscriber receives `FwdChannel` removal — `groupMsgReaction` `Nothing` branch calls `setGroupReactionNoMember`, which deletes one NULL-member row via `LIMIT 1`. Correct.
+9. **API restriction consistent with UI**: Both use `< GROwner` threshold. `APIGetReactionMembers` returns `[]` for non-owner channel subscribers. iOS suppresses context menu.
 
-10. **`saveGroupFwdRcvMsg` with `Nothing` author**: Already works — `refAuthorId = groupMemberId' <$> refAuthorMember_` handles `Nothing` (Internal.hs:2283). Dedup via `sharedMsgId_` is unaffected.
+10. **Reaction removal (add=False)**: `setGroupReactionNoMember` DELETE uses LIMIT 1 subquery. Finds one NULL-member row or no-ops if none exists.
 
-11. **`createMsgDeliveryJob` call sites**: Three existing call sites (Subscriber.hs:3531, 3548; Commands.hs:2927) need `Nothing` as the new subscriber body parameter. Mechanical change.
+11. **`processForwardedMsg` passes `author_` directly**: FwdMember → Just author → `groupMsgReaction (Just m)`. FwdChannel → Nothing → `groupMsgReaction Nothing`. Matches sibling handlers.
+
+12. **Migration**: `subscriber_body` column nullable. Existing rows get NULL. `toDeliveryJob` reads as `Maybe (Binary ByteString)`.
 
 No issues found.
 
 ### Pass 2
 
-12. **Subscriber body encoding size**: `FwdChannel` encodes as `"C"` (1 byte) vs `FwdMember` which is `"M" + memberId + memberName` (variable, larger). If the owner body fits within `maxEncodedMsgLength`, the subscriber body will also fit (same content, smaller wrapper). No overflow risk.
+13. **`isSenderFiltered` correctness**: Only matches `DJSGroup {jobSpec = DJReaction}`. DJDeliveryJob and DJRelayRemoved on relay groups continue without sender filter. DJRelayRemoved doesn't use `getNextDeliveryTasks` (single-task processing). Only DJDeliveryJob and DJReaction go through the plural version. Behavior preserved for all existing paths.
 
-13. **`catchCINotFound` in `groupMsgReaction` `Nothing` branch**: When the chat item doesn't exist yet, the fallback stores the reaction with NULL member via `setGroupReactionNoMember`. When the chat item eventually arrives, `getGroupCIReactions` picks up all stored reactions including NULL-member ones. Counts are correct.
+14. **Subscriber body encoding includes signatures**: For signed messages, `encodeFwdElement` includes signature bytes. On receiving side, FwdChannel path discards them with `VMUnsigned chatMsg`. Extra bytes but functionally correct. No information leak.
 
-14. **`CIChannelRcv` direction in reaction UI event**: `CIReaction` uses `chatDir :: CIDirection c d`. `CIChannelRcv` is a valid `CIDirection 'CTGroup 'MDRcv`. The iOS event handler (`.chatItemReaction`) just calls `m.updateChatItem(r.chatInfo, r.chatReaction.chatItem)` — it updates the chat item's reaction counts regardless of direction. No UI issue.
+15. **`partition` threshold `>= GROwner`**: Only GROwner gets owner body. GRAdmin, GRModerator, GRMember, GRObserver get subscriber body. Correct for channel privacy model.
 
-15. **Old client compatibility**: Old clients that receive `FwdChannel` + `XMsgReact` parse `FwdChannel` correctly (it's an existing encoding). They still use `withAuthor XMsgReact_` → error logged, reaction silently dropped. Acceptable degradation — no crash, reaction count is marginally lower until client update.
+16. **Subscriber body encoding size**: FwdChannel encodes smaller than FwdMember. If owner body fits in `maxEncodedMsgLength`, subscriber body fits too.
 
-16. **`subscriberBody_` for non-`DJReaction` jobs**: The field is `Maybe ByteString`, defaults to `Nothing` for all other job types. The `fromMaybe body subscriberBody_` fallback in the job worker ensures non-owners get `body` if no subscriber body exists. Safe.
+17. **`catchCINotFound` fallback in `Nothing` branch**: Stores reaction without UI event when chat item doesn't exist. Matches `Just m` branch fallback behavior.
+
+18. **`CIChannelRcv` direction in reaction UI event**: Valid `CIDirection 'CTGroup 'MDRcv`. iOS event handler updates reaction counts regardless of direction.
+
+19. **Old client compatibility**: FwdChannel is existing encoding. Old clients hit `withAuthor XMsgReact_` → error logged, reaction dropped. No crash. Acceptable degradation.
+
+20. **`subscriberBody_` for non-`DJReaction` jobs**: `Maybe ByteString`, defaults to `Nothing`. `fromMaybe body subscriberBody_` fallback safe.
+
+21. **Column mapping**: SELECT lists 9 columns matching `MessageDeliveryJobRow` type. `subscriber_body` at position 8 maps to `Maybe (Binary ByteString)`.
+
+22. **`sentAsGroup = False` for DJReaction tasks**: Task worker reads `showGroupAsSender = False` → `fwdSender = FwdMember`. Owner body has member identity. Subscriber body explicitly overrides with FwdChannel.
 
 No issues found. Two consecutive clean passes.

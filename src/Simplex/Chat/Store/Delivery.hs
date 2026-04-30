@@ -62,12 +62,14 @@ jobScopeRow_ :: DeliveryJobScope -> DeliveryJobScopeRow
 jobScopeRow_ = \case
   DJSGroup {jobSpec} -> case jobSpec of
     DJDeliveryJob {includePending} -> (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing)
+    DJReaction -> (DWSGroup, Just DJSTReaction, Nothing, Nothing)
     DJRelayRemoved -> (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing)
   DJSMemberSupport {supportGMId} -> (DWSMemberSupport, Nothing, Nothing, Just supportGMId)
 
 toJobScope_ :: DeliveryJobScopeRow -> Maybe DeliveryJobScope
 toJobScope_ = \case
   (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing) -> Just $ DJSGroup {jobSpec = DJDeliveryJob {includePending}}
+  (DWSGroup, Just DJSTReaction, Nothing, Nothing) -> Just $ DJSGroup {jobSpec = DJReaction}
   (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing) -> Just $ DJSGroup {jobSpec = DJRelayRemoved}
   (DWSMemberSupport, Nothing, Nothing, Just supportGMId) -> Just $ DJSMemberSupport {supportGMId}
   _ -> Nothing
@@ -180,7 +182,7 @@ getNextDeliveryTasks db gInfo task =
     MessageDeliveryTask {jobScope, senderGMId} = task
     getTaskIds :: IO [Int64]
     getTaskIds
-      | useRelays' gInfo =
+      | useRelays' gInfo, not (isSenderFiltered jobScope) =
           map fromOnly
             <$> DB.query
               db
@@ -198,10 +200,10 @@ getNextDeliveryTasks db gInfo task =
               |]
               ((Only groupId) :. jobScopeRow_ jobScope :. (Only DTSNew))
       | otherwise =
-          -- For fully connected groups we guarantee a singleSenderGMId for a delivery job by additionally filtering
-          -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
-          -- optimizing for this single sender (see processDeliveryJob -> fully connected group branch).
-          -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
+          -- Filtering on sender_group_member_id guarantees a singleSenderGMId for the delivery job.
+          -- For fully connected groups this optimizes recipient retrieval (single sender exclusion).
+          -- For DJReaction in relay groups this is required to ensure the sender is excluded from
+          -- delivery, preventing subscribers from receiving their own reaction back via FwdChannel.
           map fromOnly
             <$> DB.query
               db
@@ -219,6 +221,9 @@ getNextDeliveryTasks db gInfo task =
                 ORDER BY delivery_task_id ASC
               |]
               ((Only groupId) :. jobScopeRow_ jobScope :. (senderGMId, DTSNew))
+    isSenderFiltered :: DeliveryJobScope -> Bool
+    isSenderFiltered (DJSGroup {jobSpec = DJReaction}) = True
+    isSenderFiltered _ = False
 
 updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
 updateDeliveryTaskStatus db taskId status = updateDeliveryTaskStatus_ db taskId status Nothing
@@ -245,8 +250,8 @@ deleteDoneDeliveryTasks db createdAtCutoff = do
     |]
     (createdAtCutoff, DTSProcessed, DTSError)
 
-createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> Maybe GroupMemberId -> ByteString -> IO ()
-createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body = do
+createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> Maybe GroupMemberId -> ByteString -> Maybe ByteString -> IO ()
+createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body subscriberBody_ = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -254,10 +259,10 @@ createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body = do
       INSERT INTO delivery_jobs (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        single_sender_group_member_id, body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?)
+        single_sender_group_member_id, body, subscriber_body, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, Binary body, DJSPending, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, Binary body, Binary <$> subscriberBody_, DJSPending, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
 
@@ -272,7 +277,7 @@ getPendingDeliveryJobScopes db =
     |]
     (Only DJSPending)
 
-type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe GroupMemberId, Binary ByteString, Maybe GroupMemberId)
+type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe GroupMemberId, Binary ByteString, Maybe (Binary ByteString), Maybe GroupMemberId)
 
 getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryJob))
 getNextDeliveryJob db deliveryKey = do
@@ -302,16 +307,18 @@ getNextDeliveryJob db deliveryKey = do
             SELECT
               delivery_job_id,
               worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-              single_sender_group_member_id, body, cursor_group_member_id
+              single_sender_group_member_id, body, subscriber_body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           |]
           (Only jobId)
       where
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
-        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleSenderGMId_, Binary body, cursorGMId_)) =
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleSenderGMId_, Binary body, subscriberBodyBin_, cursorGMId_)) =
           case toJobScope_ jobScopeRow of
-            Just jobScope -> Right $ MessageDeliveryJob {jobId = jobId', jobScope, singleSenderGMId_, body, cursorGMId_}
+            Just jobScope ->
+              let subscriberBody_ = (\(Binary bs) -> bs) <$> subscriberBodyBin_
+               in Right $ MessageDeliveryJob {jobId = jobId', jobScope, singleSenderGMId_, body, subscriberBody_, cursorGMId_}
             Nothing -> Left $ SEInvalidDeliveryJob jobId'
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =

@@ -2247,14 +2247,18 @@ struct ChatView: View {
                     }
                     switch chat.chatInfo {
                     case let .group(groupInfo, _):
-                        v.contextMenu {
-                            ReactionContextMenu(
-                                groupInfo: groupInfo,
-                                itemId: ci.id,
-                                reactionCount: r,
-                                selectedMember: $selectedMember,
-                                profileRadius: profileRadius
-                            )
+                        if groupInfo.useRelays && !groupInfo.isOwner {
+                            v
+                        } else {
+                            v.contextMenu {
+                                ReactionContextMenu(
+                                    groupInfo: groupInfo,
+                                    itemId: ci.id,
+                                    reactionCount: r,
+                                    selectedMember: $selectedMember,
+                                    profileRadius: profileRadius
+                                )
+                            }
                         }
                     case let .direct(contact):
                         v.contextMenu {

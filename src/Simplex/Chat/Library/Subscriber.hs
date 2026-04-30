@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find)
+import Data.List (find, partition)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -995,7 +995,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   memberCanSend (Just m'') msgScope $
                     groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_
               XMsgDel sharedMsgId memberId_ scope_ -> groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ msg brokerTs
-              XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
+              XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' (Just m'') sharedMsgId memberId scope_ reaction add msg brokerTs
               -- TODO discontinue XFile
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo' (Just m'') sharedMsgId
@@ -1919,27 +1919,48 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               else pure Nothing
           mapM_ toView cEvt_
 
-    groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
-    groupMsgReaction g m sharedMsgId itemMemberId scope_ reaction add RcvMessage {msgId} brokerTs
-      | groupFeatureAllowed SGFReactions g = do
-          rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
-          if reactionAllowed add reaction rs
-            then
-              updateChatItemReaction `catchCINotFound` \_ -> case scope_ of
-                Just (MSMember scopeMemberId)
-                  | memberRole' m >= GRModerator || scopeMemberId == memberId' m -> do
-                      djScope <- withStore $ \db -> do
-                        liftIO $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
-                        Just . DJSMemberSupport <$> getScopeMemberIdViaMemberId db user g m scopeMemberId
-                      pure $ fmap (\js -> DeliveryTaskContext js False) djScope
-                  | otherwise -> pure Nothing
-                Nothing -> do
-                  withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
-                  pure $ Just $ DeliveryTaskContext (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}) False
-            else pure Nothing
+    groupMsgReaction :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
+    groupMsgReaction g m_ sharedMsgId itemMemberId scope_ reaction add RcvMessage {msgId} brokerTs
+      | groupFeatureAllowed SGFReactions g = case m_ of
+          Nothing ->
+            updateChannelReaction `catchCINotFound` \_ ->
+              withStore' (\db -> setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs)
+                $> Nothing
+          Just m -> do
+            rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
+            if reactionAllowed add reaction rs
+              then
+                updateChatItemReaction m `catchCINotFound` \_ -> case scope_ of
+                  Just (MSMember scopeMemberId)
+                    | memberRole' m >= GRModerator || scopeMemberId == memberId' m -> do
+                        djScope <- withStore $ \db -> do
+                          liftIO $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
+                          Just . DJSMemberSupport <$> getScopeMemberIdViaMemberId db user g m scopeMemberId
+                        pure $ fmap (\js -> DeliveryTaskContext js False) djScope
+                    | otherwise -> pure Nothing
+                  Nothing -> do
+                    withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
+                    let jobSpec = if useRelays' g then DJReaction else DJDeliveryJob {includePending = False}
+                    pure $ Just $ DeliveryTaskContext (DJSGroup {jobSpec}) False
+              else pure Nothing
       | otherwise = pure Nothing
       where
-        updateChatItemReaction = do
+        updateChannelReaction = do
+          (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
+            cci <- case itemMemberId of
+              Just itemMemberId' -> getGroupMemberCIBySharedMsgId db user g itemMemberId' sharedMsgId
+              Nothing -> getGroupChatItemBySharedMsgId db user g Nothing sharedMsgId
+            scopeInfo <- getGroupChatScopeInfoForItem db vr user g (cChatItemId cci)
+            pure (cci, scopeInfo)
+          when (ciReactionAllowed ci) $ do
+            reactions <- withStore' $ \db -> do
+              setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs
+              getGroupCIReactions db g itemMemberId sharedMsgId
+            let ci' = CChatItem md ci {reactions}
+                r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction CIChannelRcv ci' brokerTs reaction
+            toView $ CEvtChatItemReaction user add r
+          pure Nothing
+        updateChatItemReaction m = do
           (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
             cci <- case itemMemberId of
               Just itemMemberId' -> getGroupMemberCIBySharedMsgId db user g itemMemberId' sharedMsgId
@@ -1954,7 +1975,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let ci' = CChatItem md ci {reactions}
                   r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
               toView $ CEvtChatItemReaction user add r
-              pure $ Just $ infoToDeliveryContext g scopeInfo False
+              pure $ Just $ case scopeInfo of
+                Nothing | useRelays' g -> DeliveryTaskContext (DJSGroup {jobSpec = DJReaction}) False
+                _ -> infoToDeliveryContext g scopeInfo False
             else pure Nothing
 
     reactionAllowed :: Bool -> MsgReaction -> [MsgReaction] -> Bool
@@ -3346,7 +3369,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
               void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_
             XMsgDel sharedMsgId memId scope_ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ rcvMsg msgTs
-            XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
+            XMsgReact sharedMsgId memId scope_ reaction add -> void $ groupMsgReaction gInfo author_ sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
@@ -3528,7 +3551,25 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
               withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                 let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
                 withStore' $ \db -> do
-                  createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body
+                  createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body Nothing
+                  forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
+                  forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
+                lift . void $ getDeliveryJobWorker True deliveryKey
+              where
+                singleSenderGMId_ :: NonEmpty MessageDeliveryTask -> Maybe GroupMemberId
+                singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
+                  | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
+                  | otherwise = Nothing
+            DJReaction ->
+              withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
+                let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
+                    subscriberBody = encodeBinaryBatch
+                      [ encodeFwdElement (GrpMsgForward FwdChannel fwdBrokerTs) verifiedMsg
+                      | MessageDeliveryTask {taskId = tId, brokerTs = fwdBrokerTs, verifiedMsg} <- L.toList nextTasks
+                      , tId `elem` taskIds
+                      ]
+                withStore' $ \db -> do
+                  createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body (Just subscriberBody)
                   forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
                   forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
                 lift . void $ getDeliveryJobWorker True deliveryKey
@@ -3545,7 +3586,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                       fwd = GrpMsgForward {fwdSender, fwdBrokerTs}
                       body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
                   withStore' $ \db -> do
-                    createMsgDeliveryJob db gInfo jobScope (Just senderGMId) body
+                    createMsgDeliveryJob db gInfo jobScope (Just senderGMId) body Nothing
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
                   lift . void $ getDeliveryJobWorker True deliveryKey
 
@@ -3592,6 +3633,9 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
             DJDeliveryJob _includePending -> do
               sendBodyToMembers
               withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
+            DJReaction -> do
+              sendBodyToMembersReaction
+              withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
             DJRelayRemoved
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery job worker: relay removed job in wrong worker scope"
@@ -3600,7 +3644,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
-            MessageDeliveryJob {jobId, jobScope, singleSenderGMId_, body, cursorGMId_ = startingCursor} = job
+            MessageDeliveryJob {jobId, jobScope, singleSenderGMId_, body, subscriberBody_, cursorGMId_ = startingCursor} = job
             sendBodyToMembers :: CM ()
             sendBodyToMembers
               -- channel
@@ -3662,26 +3706,44 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                 memberRole >= GRModerator
                                   && memberCurrent m
                                   && maxVersion (memberChatVRange m) >= groupKnockingVersion
+            sendBodyToMembersReaction :: CM ()
+            sendBodyToMembersReaction
+              | useRelays' gInfo = do
+                  bucketSize <- asks $ deliveryBucketSize . config
+                  sendLoopReaction bucketSize startingCursor
+              | otherwise = -- fallback: deliver body to all (DJReaction should only be created for channels)
+                  deliver body =<< withStore' (\db -> getGroupMembersByCursor db vr user gInfo startingCursor singleSenderGMId_ 0)
               where
-                deliver :: ByteString -> [GroupMember] -> CM ()
-                deliver msgBody mems =
-                  let mConns = mapMaybe (fmap snd . readyMemberConn) mems
-                      msgReqs = foldMemConns mConns
-                   in void $ withAgent (`sendMessages` msgReqs)
+                sendLoopReaction :: Int -> Maybe GroupMemberId -> CM ()
+                sendLoopReaction bucketSize cursorGMId_ = do
+                  mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
+                  unless (null mems) $ do
+                    let (owners, nonOwners) = partition (\m -> memberRole' m >= GROwner) mems
+                        subBody = fromMaybe body subscriberBody_
+                    unless (null owners) $ deliver body owners
+                    unless (null nonOwners) $ deliver subBody nonOwners
+                    let cursorGMId' = groupMemberId' $ last mems
+                    withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
+                    unless (length mems < bucketSize) $ sendLoopReaction bucketSize (Just cursorGMId')
+            deliver :: ByteString -> [GroupMember] -> CM ()
+            deliver msgBody mems =
+              let mConns = mapMaybe (fmap snd . readyMemberConn) mems
+                  msgReqs = foldMemConns mConns
+               in void $ withAgent (`sendMessages` msgReqs)
+              where
+                foldMemConns :: [Connection] -> [MsgReq]
+                foldMemConns mConns = snd $ foldr' addReq (lastMemIdx_, []) mConns
                   where
-                    foldMemConns :: [Connection] -> [MsgReq]
-                    foldMemConns mConns = snd $ foldr' addReq (lastMemIdx_, []) mConns
+                    lastMemIdx_ = let len = length mConns in if len > 1 then Just len else Nothing
+                    addReq :: Connection -> (Maybe Int, [MsgReq]) -> (Maybe Int, [MsgReq])
+                    addReq conn (memIdx_, reqs) =
+                      (subtract 1 <$> memIdx_, req : reqs)
                       where
-                        lastMemIdx_ = let len = length mConns in if len > 1 then Just len else Nothing
-                        addReq :: Connection -> (Maybe Int, [MsgReq]) -> (Maybe Int, [MsgReq])
-                        addReq conn (memIdx_, reqs) =
-                          (subtract 1 <$> memIdx_, req : reqs)
-                          where
-                            req = (aConnId conn, PQEncOff, MsgFlags False, vrValue_)
-                            vrValue_ = case memIdx_ of
-                              Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
-                              Just 1 -> VRValue (Just 1) msgBody
-                              Just _ -> VRRef 1
+                        req = (aConnId conn, PQEncOff, MsgFlags False, vrValue_)
+                        vrValue_ = case memIdx_ of
+                          Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
+                          Just 1 -> VRValue (Just 1) msgBody
+                          Just _ -> VRRef 1
 
 -- Single worker processes all relay requests (XGrpRelayInv).
 -- We use map with a single key 1 to fit into existing worker management framework.

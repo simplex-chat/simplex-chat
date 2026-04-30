@@ -59,11 +59,13 @@ data DeliveryJobScope
 
 data DeliveryJobSpec
   = DJDeliveryJob {includePending :: Bool}
+  | DJReaction
   | DJRelayRemoved
   deriving (Show)
 
 data DeliveryJobSpecTag
   = DJSTDeliveryJob
+  | DJSTReaction
   | DJSTRelayRemoved
   deriving (Show)
 
@@ -74,10 +76,12 @@ instance ToField DeliveryJobSpecTag where toField = toField . textEncode
 instance TextEncoding DeliveryJobSpecTag where
   textDecode = \case
     "delivery_job" -> Just DJSTDeliveryJob
+    "reaction" -> Just DJSTReaction
     "relay_removed" -> Just DJSTRelayRemoved
     _ -> Nothing
   textEncode = \case
     DJSTDeliveryJob -> "delivery_job"
+    DJSTReaction -> "reaction"
     DJSTRelayRemoved -> "relay_removed"
 
 toWorkerScope :: DeliveryJobScope -> DeliveryWorkerScope
@@ -101,6 +105,7 @@ jobScopeImpliedSpec = \case
 jobSpecImpliedPending :: DeliveryJobSpec -> Bool
 jobSpecImpliedPending = \case
   DJDeliveryJob {includePending} -> includePending
+  DJReaction -> False
   DJRelayRemoved -> True
 
 infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
@@ -163,6 +168,7 @@ data MessageDeliveryJob = MessageDeliveryJob
     jobScope :: DeliveryJobScope,
     singleSenderGMId_ :: Maybe GroupMemberId, -- Just for single-sender deliveries, Nothing for multi-sender deliveries
     body :: ByteString,
+    subscriberBody_ :: Maybe ByteString,
     cursorGMId_ :: Maybe GroupMemberId
   }
   deriving (Show)

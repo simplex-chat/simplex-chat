@@ -882,9 +882,13 @@ processChatCommand vr nm = \case
         when (add && length rs >= maxMsgReactions) $
           throwCmdError "too many reactions"
   APIGetReactionMembers userId groupId itemId reaction -> withUserId userId $ \user -> do
-    memberReactions <- withStore $ \db -> do
-      CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
-      liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
+    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+    memberReactions <-
+      if useRelays' gInfo && memberRole' (membership gInfo) < GROwner
+        then pure []
+        else withStore $ \db -> do
+          CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
+          liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
     pure $ CRReactionMembers user memberReactions
   -- TODO [knocking] forward from scope?
   APIPlanForwardChatItems (ChatRef fromCType fromChatId _scope) itemIds -> withUser $ \user -> case fromCType of
@@ -2924,7 +2928,7 @@ processChatCommand vr nm = \case
         withFastStore' $ \db -> do
           deleteGroupDeliveryTasks db gInfo
           deleteGroupDeliveryJobs db gInfo
-          createMsgDeliveryJob db gInfo (DJSGroup {jobSpec = DJRelayRemoved}) Nothing body
+          createMsgDeliveryJob db gInfo (DJSGroup {jobSpec = DJRelayRemoved}) Nothing body Nothing
         lift . void $ getDeliveryJobWorker True (groupId, DWSGroup)
         pure msg
       leaveGroupSendMsg user gInfo = do

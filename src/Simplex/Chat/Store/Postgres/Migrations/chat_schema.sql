@@ -637,6 +637,7 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     job_scope_support_gm_id bigint,
     single_sender_group_member_id bigint,
     body bytea,
+    subscriber_body bytea,
     cursor_group_member_id bigint,
     job_status text NOT NULL,
     job_err_reason text,
