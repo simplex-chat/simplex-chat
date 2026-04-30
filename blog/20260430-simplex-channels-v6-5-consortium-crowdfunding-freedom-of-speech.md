@@ -16,13 +16,13 @@ Freedom of speech needs infrastructure that protects it by design &mdash; not on
 
 ## SimpleX Channels - more public, more freedom, more private
 
-v6.5[1] release brings SimpleX Channels: a new model for online publishing built for participation privacy.
+v6.5[^1] release brings SimpleX Channels: a new model for online publishing built for participation privacy.
 
-Channel content is visible to chat relay operators. And each channel uses multiple relays, so no single relay can block the channel[2].
+Channel content is visible to chat relay operators. And each channel uses multiple relays, so no single relay can block the channel[^2].
 
-But the real identities of channel owners and subscribers are unknown to relay operators, to each other, and to the network. This is important for freedom of speech and for our ability to say the truth[3].
+But the real identities of channel owners and subscribers are unknown to relay operators, to each other, and to the network. This is important for freedom of speech and for our ability to say the truth[^3].
 
-This is the opposite of the usual approach: instead of trying (and failing [4]) to hide publicly available content from operators while exposing participants, we designed the protocols to protect people. Anybody can join a public channel via its link and see what is sent, but not who sent it, and not who else is reading. This is win-win for both users and chat relays operators. Users' privacy is protected, operators can decide what content to deliver in public spaces, and anybody can run chat relays.
+This is the opposite of the usual approach: instead of trying (and failing [^4]) to hide publicly available content from operators while exposing participants, we designed the protocols to protect people. Anybody can join a public channel via its link and see what is sent, but not who sent it, and not who else is reading. This is win-win for both users and chat relays operators. Users' privacy is protected, operators can decide what content to deliver in public spaces, and anybody can run chat relays.
 
 This is only possible because SimpleX network was built without user profile identifiers of any kind. You can't add participation privacy to a network that identifies its users &mdash; as you can't add privacy to a messenger built on phone numbers.
 
@@ -42,7 +42,7 @@ To protect network neutrality and make sure its protocols and intellectual prope
 
 We are currently forming the board for SimpleX Network Foundation &mdash; initially, [Heather Meeker](https://heathermeeker.com/about-me/), who drafted the Consortium agreement, and several other people will join. We will announce the board soon.
 
-As the power over the network protocols moves away from the company, it cannot move back[5]. It is a structural guarantee &mdash; the same principle we applied to privacy.
+As the power over the network protocols moves away from the company, it cannot move back[^5]. It is a structural guarantee &mdash; the same principle we applied to privacy.
 
 ## Community Crowdfunding
 
@@ -62,12 +62,12 @@ SimpleX Chat founder
 
 _Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind._
 
-[1]: v6.5 also improved onboarding and how users make the first connection, and has many other improvements &mdash; see *What's new* in the app or full release notes.
+[^1]: v6.5 also improved onboarding and how users make the first connection, and has many other improvements &mdash; see *What's new* in the app or full release notes.
 
-[2]: Currently there is only one preset operator of chat relays in the app. It will change in the next release.
+[^2]: Currently there is only one preset operator of chat relays in the app. It will change in the next release.
 
-[3]: Oscar Wilde wrote: *"Man is least himself when he talks in his own person. Give him a mask, and he will tell you the truth"*. Privacy is essential for our ability to say the truth, and without truth we cannot survive as society.
+[^3]: Oscar Wilde wrote: *"Man is least himself when he talks in his own person. Give him a mask, and he will tell you the truth"*. Privacy is essential for our ability to say the truth, and without truth we cannot survive as society.
 
-[4]: From whitepaper: any channel joinable via a public link, whether encrypted or not, must be considered completely public - the cost of joining through automated means has collapsed with large language models. End-to-end encrypting such content provides no privacy; it only undermines users' security by creating false expectations and increases infrastructure operators' risks by making them unable to see what they deliver.
+[^4]: From whitepaper: any channel joinable via a public link, whether encrypted or not, must be considered completely public - the cost of joining through automated means has collapsed with large language models. End-to-end encrypting such content provides no privacy; it only undermines users' security by creating false expectations and increases infrastructure operators' risks by making them unable to see what they deliver.
 
-[5]: Ulysses pact &mdash; adding constraints to reduce future options. Sé Reed used this analogy for the WordPress Foundation: tying the project to the mast before the siren songs of commercial capture (https://www.wpwatercooler.com/wpwatercooler/ep484-whose-wordpress-is-it-anyway/).
+[^5]: Ulysses pact &mdash; adding constraints to reduce future options. Sé Reed used this analogy for the WordPress Foundation: tying the project to the mast before the siren songs of commercial capture (https://www.wpwatercooler.com/wpwatercooler/ep484-whose-wordpress-is-it-anyway/).

@@ -1,6 +1,7 @@
 const markdownIt = require("markdown-it")
 const markdownItAnchor = require("markdown-it-anchor")
 const markdownItReplaceLink = require('markdown-it-replace-link')
+const markdownItFootnote = require('markdown-it-footnote')
 const slugify = require("slugify")
 const uri = require('fast-uri')
 const i18n = require('eleventy-plugin-i18n')
@@ -438,6 +439,7 @@ module.exports = function (ty) {
         strict: true,
       })
   }).use(markdownItReplaceLink)
+  .use(markdownItFootnote)
 
   // replace the default markdown-it instance
   ty.setLibrary("md", markdownLib)
