@@ -297,3 +297,20 @@ h3::before {
 .dark #article th {
   color: rgba(255, 255, 255, 1);
 }
+
+.footnotes-list {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.footnotes-list > li {
+  list-style-position: outside !important;
+}
+
+.footnotes-list > li::marker {
+  font-weight: 400;
+}
+
+.footnotes-list > li > p {
+  display: inline;
+}
