@@ -315,6 +315,6 @@ h3::before {
   display: inline;
 }
 
-.footnote-backref {
+#article .footnotes-list .footnote-backref {
   text-decoration: none;
 }
