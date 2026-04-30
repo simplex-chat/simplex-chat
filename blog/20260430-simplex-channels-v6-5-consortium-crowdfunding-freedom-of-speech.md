@@ -54,7 +54,7 @@ We recently published [a preliminary design of commercial model](https://simplex
 
 You can *register your interest* to participate in crowdfunding here: https://simplexchat.typeform.com/crowdfunding
 
-Join the channel for updates here: https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg (you must use v6.5 to join it).
+Join the channel for updates [here](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg) (you must install v6.5 to join it).
 
 Evgeny
 
