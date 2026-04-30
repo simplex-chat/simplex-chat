@@ -30,6 +30,38 @@ Creates a single delivery job carrying both bodies.
 
 The existing `sentAsGroup`/`message_from_channel` mechanism is not involved — `DJReaction` handles the split directly in the task/job workers.
 
+## Alternatives considered
+
+### A. Two delivery tasks with separate job specs
+
+Instead of one job with two bodies, create two delivery tasks from `groupMsgReaction`: one subscriber task (`DJDeliveryJob` with `sentAsGroup = True` → `FwdChannel`) and one owner task (new `DJOwnerOnlyJob` → `FwdMember`). Each becomes a separate job with its own cursor-based delivery.
+
+**Rejected because**: Requires changing `processEvent` return type from `Maybe NewMessageDeliveryTask` to `[NewMessageDeliveryTask]` (mechanical but touches ~20 branches). Two cursor passes through the same member table (redundant). Two job records per reaction. Mixes reaction privacy into the `sentAsGroup`/`message_from_channel` abstraction, which was designed specifically for "owner sends as channel." Overall higher complexity for the same result.
+
+### B. Two jobs from a single task
+
+Keep a single `DJReaction` task, but the task worker creates two jobs — one for owners, one for subscribers. Each job uses a different cursor query (owners-only vs non-owners-only).
+
+**Rejected because**: Approximately the same complexity as option A at the job level. Requires either two new `DeliveryJobSpec` variants (`DJReactionOwner`, `DJReactionSubscriber`) or an ad-hoc flag column to distinguish them. Two cursor passes. The one-job-two-bodies approach (chosen design) achieves the same with a single cursor pass and in-memory partition.
+
+### C. Job worker re-encodes body for subscribers
+
+Single task, single job with one body (FwdMember). The job worker parses the binary batch, strips member identity from `GrpMsgForward` elements, and re-encodes for subscriber recipients.
+
+**Rejected because**: Fragile — requires parsing opaque binary batch at the job worker level, which currently treats the body as opaque bytes. Encoding/decoding at delivery time introduces failure modes. Pre-computing both bodies at task worker time is more robust.
+
+### D. New aggregated reaction count event (`XMsgReactCount`)
+
+Instead of forwarding `XMsgReact` to subscribers, the relay aggregates current reaction counts and sends a new `XMsgReactCount {sharedMsgId, itemMemberId, [(reaction, count)]}` event.
+
+**Rejected because**: Does not eliminate the delivery split — owners still need full `XMsgReact` with `FwdMember`, subscribers need the new event. So the core problem (different content to different recipients) remains. Additionally requires: new protocol event definition with encoding/decoding/versioning, relay-side aggregation queries before forwarding, new message records for relay-generated events, and the delivery task system currently ties tasks to received messages — a relay-generated event would need rework (the RFC envisions this as a future architectural change). Strictly more complex than the chosen approach.
+
+### E. Reuse `sentAsGroup` / `FwdChannel` via existing mechanism
+
+Set `sentAsGroup = True` on the reaction delivery task so it naturally produces `FwdChannel` on the subscriber body. Owners would receive a separate task with `sentAsGroup = False`.
+
+**Rejected because**: `sentAsGroup`/`message_from_channel` was designed specifically for "owner sends as channel" — it drives `CIChannelRcv` direction, chat binding validation, and other channel-message-specific logic. Repurposing it for reaction privacy conflates two distinct concepts. The chosen design (`DJReaction`) handles the split in the task/job workers without involving the `sentAsGroup` flag.
+
 ## Changes
 
 ### 1. New DeliveryJobSpec variant
