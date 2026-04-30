@@ -305,6 +305,7 @@ h3::before {
 
 .footnotes-list > li {
   list-style-position: outside !important;
+  margin-bottom: 1.2rem;
 }
 
 .footnotes-list > li::marker {
