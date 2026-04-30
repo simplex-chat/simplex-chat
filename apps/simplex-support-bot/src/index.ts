@@ -165,7 +165,7 @@ async function main(): Promise<void> {
 
   // Step 5: List contacts, resolve Grok contact
   const contacts = await chat.apiListContacts(mainUser.userId)
-  log(`Contacts: ${contacts.map(c => `${c.contactId}:${c.profile.displayName}`).join(", ") || "(none)"}`)
+  log(`Contacts connected: ${contacts.length || "(none)"}`)
 
   // Always restore grokContactId so the one-way gate can find and remove
   // Grok members even when Grok API is disabled.
