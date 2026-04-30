@@ -1281,7 +1281,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
       REQ invId pqSupport _ connInfo -> do
+        liftIO $ print "**** REQ"
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
+        liftIO $ print "**** REQ parsed event"
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
           XMember p joiningMemberId joiningMemberKey -> memberJoinRequestViaRelay invId chatVRange p joiningMemberId joiningMemberKey
@@ -1492,6 +1494,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
         xGrpRelayInv invId chatVRange groupRelayInv = do
+          liftIO $ print "**** XGrpRelayInv"
           (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange
           lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
