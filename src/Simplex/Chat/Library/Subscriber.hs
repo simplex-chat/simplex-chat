@@ -3735,12 +3735,12 @@ runRelayRequestWorker a Worker {doWork} = do
             eToView e
         processRelayRequest :: GroupId -> RelayRequestData -> CM ()
         processRelayRequest groupId rrd = do
-          putStrLn "**** processRelayRequest"
+          liftIO $ putStrLn "**** processRelayRequest"
           (gInfo, groupLink_) <- withStore $ \db -> do
             gInfo <- getGroupInfo db vr user groupId
-            putStrLn "**** processRelayRequest getGroupInfo"
+            liftIO $ putStrLn "**** processRelayRequest getGroupInfo"
             groupLink_ <- liftIO $ runExceptT $ getGroupLink db user gInfo
-            putStrLn "**** processRelayRequest after getGroupLink"
+            liftIO $ putStrLn "**** processRelayRequest after getGroupLink"
             pure (gInfo, groupLink_)
           -- Check if relay link already exists (recovery case)
           case groupLink_ of
@@ -3748,7 +3748,8 @@ runRelayRequestWorker a Worker {doWork} = do
               case sLnk_ of
                 Just sLnk -> acceptOwnerConnection rrd gInfo sLnk
                 Nothing -> throwChatError $ CEException "processRelayRequest: relay link doesn't have short link"
-            Left _ -> do
+            Left e -> do
+              liftIO $ putStrLn $ "**** processRelayRequest failed to create group link " <> show e
               (gInfo', sLnk) <- getLinkDataCreateRelayLink rrd gInfo
               acceptOwnerConnection rrd gInfo' sLnk
           where
@@ -3799,5 +3800,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   pure (sigKeys, sLnk)
             acceptOwnerConnection :: RelayRequestData -> GroupInfo -> ShortLinkContact -> CM ()
             acceptOwnerConnection RelayRequestData {relayInvId, reqChatVRange} gi relayLink = do
+              liftIO $ putStrLn "**** acceptOwnerConnection"
               ownerMember <- withStore $ \db -> getHostMember db vr user groupId
               void $ acceptRelayJoinRequestAsync user uclId gi ownerMember relayInvId reqChatVRange relayLink
+              liftIO $ putStrLn "**** acceptOwnerConnection after acceptRelayJoinRequestAsync"
