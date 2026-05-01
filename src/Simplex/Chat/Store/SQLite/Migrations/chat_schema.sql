@@ -173,7 +173,9 @@ CREATE TABLE groups(
   root_priv_key BLOB,
   root_pub_key BLOB,
   member_priv_key BLOB,
-  public_member_count INTEGER, -- received
+  public_member_count INTEGER,
+  relay_request_retries INTEGER NOT NULL DEFAULT 0,
+  relay_request_delay INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
