@@ -3732,7 +3732,7 @@ runRelayRequestWorker a Worker {doWork} = do
               currentTs <- liftIO getCurrentTime
               if currentTs >= reqExecuteAt
                 then pure $ Right (Just (groupId, rrd))
-                else Right Nothing <$ scheduleRequest groupId (diffUTCTime reqExecuteAt currentTs)
+                else Right Nothing <$ scheduleRequest groupId (max 1 $ diffUTCTime reqExecuteAt currentTs)
             r -> pure r
         scheduleRequest :: GroupId -> NominalDiffTime -> CM ()
         scheduleRequest groupId delay = do
