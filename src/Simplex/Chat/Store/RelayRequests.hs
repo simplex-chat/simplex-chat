@@ -9,7 +9,6 @@
 module Simplex.Chat.Store.RelayRequests
   ( hasPendingRelayRequests,
     getNextPendingRelayRequest,
-    markRelayRequestFailed,
     updateRelayRequestRetries,
     setRelayRequestErr,
   )

@@ -3727,11 +3727,11 @@ runRelayRequestWorker a Worker {doWork} = do
             processRelayRequest groupId rrd `catchAllErrors` retryTmpError relayRequestExpiry loop groupId rrd delay
       where
         retryTmpError :: (Int, NominalDiffTime) -> CM () -> GroupId -> RelayRequestData -> Int64 -> ChatError -> CM ()
-        retryTmpError (maxRetries, maxAge) loop groupId RelayRequestData {relayRequestRetries, relayRequestCreatedAt} delay = \case
+        retryTmpError (retriesThreshold, ttl) loop groupId RelayRequestData {relayRequestRetries, relayRequestCreatedAt} delay = \case
           ChatErrorAgent {agentError} | temporaryOrHostError agentError -> do
             currentTs <- liftIO getCurrentTime
-            if relayRequestRetries >= maxRetries && diffUTCTime currentTs relayRequestCreatedAt >= maxAge
-              then withStore' $ \db -> markRelayRequestFailed db groupId
+            if relayRequestRetries >= retriesThreshold && diffUTCTime currentTs relayRequestCreatedAt >= ttl
+              then withStore' $ \db -> setRelayRequestErr db groupId "expired"
               else do
                 withStore' $ \db -> updateRelayRequestRetries db groupId delay
                 loop
