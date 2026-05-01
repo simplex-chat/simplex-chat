@@ -374,11 +374,11 @@ chatTypesDocsData =
     (sti @UserPwdHash, STRecord, "", [], "", ""),
     (sti @XFTPErrorType, STUnion, "", [], "", ""),
     (sti @XFTPRcvFile, STRecord, "", [], "", ""),
-    (sti @XFTPSndFile, STRecord, "", [], "", "")
+    (sti @XFTPSndFile, STRecord, "", [], "", ""),
     -- (sti @DatabaseError, STUnion, "DB", [], "", ""),
     -- (sti @ChatItemInfo, STRecord, "", [], "", ""),
     -- (sti @ChatItemVersion, STRecord, "", [], "", ""),
-    -- (sti @ChatListQuery, STUnion, "CLQ", [], "", ""),
+    (sti @ChatListQuery, STUnion, "CLQ", [], "", ""),
     -- (sti @ChatName, STRecord, "", [], "", ""),
     -- (sti @ChatPagination, STRecord, "CP", [], "", ""),
     -- (sti @ConnectionStats, STRecord, "", [], "", ""),
@@ -387,7 +387,26 @@ chatTypesDocsData =
     -- (sti @MemberReaction, STRecord, "", [], "", ""),
     -- (sti @MsgContentTag, (STEnum' $ dropPfxSfx "MC" '_'), "", ["MCUnknown_"], "", ""),
     -- (sti @NavigationInfo, STRecord, "", [], "", ""),
-    -- (sti @PaginationByTime, STRecord, "", [], "", ""),
+    -- PaginationByTime has positional constructor fields in Haskell, so we
+    -- define the records manually with named fields to drive cmdString
+    -- codegen. The wire format is parsed by paginationByTimeP in
+    -- src/Simplex/Chat/Library/Commands.hs (count=N | after=TS count=N |
+    -- before=TS count=N), not JSON.
+    ( STI "PaginationByTime"
+        [ RecordTypeInfo "PTLast" [FieldInfo "count" (ti TInt)]
+        , RecordTypeInfo "PTAfter" [FieldInfo "after" (ti TUTCTime), FieldInfo "count" (ti TInt)]
+        , RecordTypeInfo "PTBefore" [FieldInfo "before" (ti TUTCTime), FieldInfo "count" (ti TInt)]
+        ]
+    , STUnion
+    , "PT"
+    , []
+    , Choice "self"
+        [ ("last", "count=" <> Param "count")
+        , ("after", "after=" <> Param "after" <> " count=" <> Param "count")
+        , ("before", "before=" <> Param "before" <> " count=" <> Param "count")
+        ] ""
+    , ""
+    )
     -- (sti @RcvQueueInfo, STRecord, "", [], "", ""),
     -- (sti @RcvSwitchStatus, STEnum, "", [], "", ""), -- incorrect
     -- (sti @SendRef, STRecord, "", [], "", ""),
@@ -589,7 +608,7 @@ deriving instance Generic XFTPSndFile
 -- deriving instance Generic DatabaseError
 -- deriving instance Generic ChatItemInfo
 -- deriving instance Generic ChatItemVersion
--- deriving instance Generic ChatListQuery
+deriving instance Generic ChatListQuery
 -- deriving instance Generic ChatName
 -- deriving instance Generic ChatPagination
 -- deriving instance Generic ConnectionStats
