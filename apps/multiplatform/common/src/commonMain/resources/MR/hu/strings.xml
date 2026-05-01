@@ -2524,7 +2524,6 @@
     <string name="down_migration_warning_chat_relays">Ha csatornákat hozott létre vagy csak csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</string>
     <string name="relay_status_active">aktív</string>
     <string name="compose_view_broadcast">Közvetítés…</string>
-    <string name="cancel_creating_channel_confirm">Mégse</string>
     <string name="channel_role_label">csatorna</string>
     <string name="chat_banner_channel">Csatorna</string>
     <string name="info_row_channel">Csatorna</string>
@@ -2624,7 +2623,6 @@
     <string name="configure_relays">Átjátszók konfigurálása</string>
     <string name="relay_connection_failed">Nem sikerült kapcsolódni az átjátszóhoz</string>
     <string name="not_all_relays_connected">Nem minden átjátszó kapcsolódott</string>
-    <string name="proceed_verb">Folytatás</string>
     <string name="channel_will_start_with_relays">A csatorna %2$d átjátszóból %1$d használatával kezd el működni. Folytatja?</string>
     <string name="relay_address_alert_title">Átjátszó címe</string>
     <string name="relay_address_alert_message">Ez egy csevegési átjátszó címe, nem használható kapcsolódásra.</string>

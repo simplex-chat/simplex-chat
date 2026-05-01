@@ -370,7 +370,7 @@ private fun ProgressStepView(
     AlertManager.shared.showAlertDialog(
       title = generalGetString(MR.strings.cancel_creating_channel_question),
       text = String.format(generalGetString(MR.strings.cancel_channel_alert_msg), gInfo.groupProfile.displayName, active, tot),
-      confirmText = generalGetString(MR.strings.cancel_creating_channel_confirm),
+      confirmText = generalGetString(MR.strings.cancel_verb),
       onConfirm = cancelChannelCreation,
       dismissText = generalGetString(MR.strings.wait_verb),
       destructive = true,

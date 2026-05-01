@@ -2675,7 +2675,6 @@
     <string name="relay_status_active">активный</string>
     <string name="block_subscriber_for_all_question">Заблокировать подписчика для всех?</string>
     <string name="compose_view_broadcast">Опубликовать</string>
-    <string name="cancel_creating_channel_confirm">Отменить</string>
     <string name="channel_will_start_with_relays">Канал начнёт работу с %1$d из %2$d релеев. Продолжить?</string>
     <string name="chat_relay">Чат-релей</string>
     <string name="button_channel_relays">Чат-релеи</string>
@@ -2721,7 +2720,6 @@
     <string name="connect_plan_open_new_channel">Открыть новый канал</string>
     <string name="channel_members_section_owners">Владельцы</string>
     <string name="member_info_section_title_owner">ВЛАДЕЛЕЦ</string>
-    <string name="proceed_verb">Продолжить</string>
     <string name="group_member_role_relay">релей</string>
     <string name="member_info_section_title_relay">РЕЛЕЙ</string>
     <string name="info_row_relay_address">Адрес релея</string>
