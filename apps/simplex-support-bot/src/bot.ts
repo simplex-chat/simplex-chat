@@ -8,7 +8,7 @@ import {
   teamAlreadyInvitedMessage, teamLockedMessage, noTeamMembersMessage,
   grokUnavailableMessage, grokErrorMessage, grokNoHistoryMessage,
 } from "./messages.js"
-import {profileMutex, log, logError} from "./util.js"
+import {profileMutex, log, logError, getGroupInfo} from "./util.js"
 
 // True for any non-terminal status — invited but not yet accepted, through
 // connected. Used to decide whether a contact is already in the group so we
@@ -795,10 +795,7 @@ export class SupportBot {
 
   private async handleJoinCommand(targetGroupId: number, senderContactId: number): Promise<void> {
     // Validate target is a business group
-    const groups = await this.withMainProfile(() =>
-      this.chat.apiListGroups(this.mainUserId)
-    )
-    const targetGroup = groups.find(g => g.groupId === targetGroupId)
+    const targetGroup = await this.withMainProfile(() => getGroupInfo(this.chat, targetGroupId))
     if (!targetGroup?.businessChat) {
       await this.sendToGroup(this.config.teamGroup.id, `Error: group ${targetGroupId} is not a business chat`)
       return

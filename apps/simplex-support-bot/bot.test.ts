@@ -1,4 +1,5 @@
 import {describe, test, expect, beforeEach, vi} from "vitest"
+import {core} from "simplex-chat"
 import {SupportBot} from "./src/bot.js"
 import {CardManager} from "./src/cards.js"
 import {parseConfig} from "./src/config.js"
@@ -83,14 +84,38 @@ class MockChatApi {
   async apiListMembers(groupId: number) {
     return this.members.get(groupId) || []
   }
-  async apiGetChat(_chatType: string, chatId: number, _count: number) {
+  async apiGetChat(chatType: string, chatId: number, _count: number) {
+    if (chatType === ChatType.Direct) {
+      // Tests don't exercise direct lookups; throw the same shape production
+      // would so getContact() resolves to null instead of synthesizing a contact.
+      throw new core.ChatAPIError("contact not found", {
+        type: "errorStore",
+        storeError: {type: "contactNotFound", contactId: chatId},
+      } as any)
+    }
+    const baseGroupInfo = this.groups.get(chatId)
+    if (!baseGroupInfo) {
+      // Mirror production behavior: the real apiGetChat throws "groupNotFound"
+      // for an unknown id; getGroupInfo() catches and returns null.
+      throw new core.ChatAPIError("group not found", {
+        type: "errorStore",
+        storeError: {type: "groupNotFound", groupId: chatId},
+      } as any)
+    }
     const items = this.chatItems.get(chatId) || []
-    const groupInfo = this.groups.get(chatId)
+    const groupInfo = {...baseGroupInfo, customData: this.customData.get(chatId)}
     return {
-      chatInfo: {type: "group", groupInfo: groupInfo || makeGroupInfo(chatId)},
+      chatInfo: {type: "group", groupInfo},
       chatItems: items,
       chatStats: {unreadCount: 0, unreadMentions: 0, reportsCount: 0, minUnreadItemId: 0, unreadChat: false},
     }
+  }
+  async apiGetChats(_userId: number, _pagination: any, _query?: any, _pcc?: boolean) {
+    return [...this.groups.values()].map(g => ({
+      chatInfo: {type: "group", groupInfo: {...g, customData: this.customData.get(g.groupId)}},
+      chatItems: [],
+      chatStats: {unreadCount: 0, unreadMentions: 0, reportsCount: 0, minUnreadItemId: 0, unreadChat: false},
+    }))
   }
   async apiListGroups(_userId: number) {
     return [...this.groups.values()].map(g => ({...g, customData: this.customData.get(g.groupId)}))
