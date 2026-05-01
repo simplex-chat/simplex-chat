@@ -26,7 +26,7 @@ import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
-import Data.Time.Clock (getCurrentTime)
+import Data.Time.Clock (getCurrentTime, nominalDay)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -115,6 +115,8 @@ defaultChatConfig =
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
       channelSubscriberRole = GRObserver,
+      relayRequestConsecutiveRetries = 3,
+      relayRequestExpiry = (10, nominalDay),
       deviceNameForRemote = "",
       remoteCompression = True,
       chatHooks = defaultChatHooks
