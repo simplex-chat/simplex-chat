@@ -1045,7 +1045,10 @@ data GroupMember = GroupMember
 data RelayRequestData = RelayRequestData
   { relayInvId :: InvitationId,
     reqGroupLink :: ShortLinkContact,
-    reqChatVRange :: VersionRangeChat
+    reqChatVRange :: VersionRangeChat,
+    relayRequestDelay :: Maybe Int64,
+    relayRequestRetries :: Int,
+    relayRequestCreatedAt :: UTCTime
   }
   deriving (Eq, Show)
 
