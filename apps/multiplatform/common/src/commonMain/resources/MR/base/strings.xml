@@ -3043,7 +3043,7 @@
   <string name="relay_connection_failed">Relay connection failed</string>
   <string name="not_all_relays_connected">Not all relays connected</string>
   <string name="wait_verb">Wait</string>
-  <string name="channel_will_start_with_relays">Channel will start working with %1$d of %2$d relays. Proceed?</string>
+  <string name="channel_will_start_with_relays">Channel will start working with %1$d of %2$d relays. Continue?</string>
 
   <!-- ConnectPlan.kt channel-related -->
   <string name="relay_address_alert_title">Relay address</string>

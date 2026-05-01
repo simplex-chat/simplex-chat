@@ -355,7 +355,7 @@ struct AddChannelView: View {
                         }
                         showAlert(
                             NSLocalizedString("Not all relays connected", comment: "alert title"),
-                            message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), activeCount, total),
+                            message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Continue?", comment: "alert message"), activeCount, total),
                             actions: { actions }
                         )
                     }
