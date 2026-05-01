@@ -575,6 +575,23 @@ export namespace APIListGroups {
   }
 }
 
+// Get chat previews. Supports time-based pagination — use this instead of APIListContacts / APIListGroups when scanning at scale (those load every record into memory and fail on large databases).
+// Network usage: no.
+export interface APIGetChats {
+  userId: number // int64
+  pendingConnections: boolean
+  pagination: T.PaginationByTime
+  query: T.ChatListQuery
+}
+
+export namespace APIGetChats {
+  export type Response = CR.ApiChats | CR.ChatCmdError
+
+  export function cmdString(self: APIGetChats): string {
+    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + ' ' + T.PaginationByTime.cmdString(self.pagination) + ' ' + JSON.stringify(self.query)
+  }
+}
+
 // Delete chat.
 // Network usage: background.
 export interface APIDeleteChat {
