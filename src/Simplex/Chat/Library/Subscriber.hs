@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find)
+import Data.List (find, isPrefixOf)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -1281,7 +1281,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
       REQ invId pqSupport _ connInfo -> do
+        liftIO $ print "**** REQ"
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
+        liftIO $ print "**** REQ parsed event"
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
           XMember p joiningMemberId joiningMemberKey -> memberJoinRequestViaRelay invId chatVRange p joiningMemberId joiningMemberKey
@@ -1492,6 +1494,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
         xGrpRelayInv invId chatVRange groupRelayInv = do
+          liftIO $ print "**** XGrpRelayInv"
           (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange
           lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
@@ -3726,12 +3729,16 @@ runRelayRequestWorker a Worker {doWork} = do
       where
         retryTmpError :: CM () -> GroupId -> ChatError -> CM ()
         retryTmpError loop groupId = \case
-          ChatErrorAgent {agentError} | temporaryOrHostError agentError -> loop
+          e@ChatErrorAgent {agentError = agentError@BROKER {brokerErr = NETWORK {networkError = SMP.NEConnectError {connectError}}}}
+            | temporaryOrHostError agentError && not ("Network.Socket.getAddrInfo (called with preferred socket type/protocol: AddrInfo {addrFlags = [], addrFamily = AF_UNSPEC" `isPrefixOf` connectError) -> do
+                liftIO $ putStrLn $ "**** retryTmpError " <> show e            
+                loop
           e -> do
             withStore' $ \db -> setRelayRequestErr db groupId (tshow e)
             eToView e
         processRelayRequest :: GroupId -> RelayRequestData -> CM ()
         processRelayRequest groupId rrd = do
+          liftIO $ putStrLn "**** processRelayRequest"
           (gInfo, groupLink_) <- withStore $ \db -> do
             gInfo <- getGroupInfo db vr user groupId
             groupLink_ <- liftIO $ runExceptT $ getGroupLink db user gInfo
@@ -3748,20 +3755,28 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
-              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' NRMBackground user reqGroupLink
+              liftIO $ putStrLn "**** getLinkDataCreateRelayLink"
+              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' NRMBackground user reqGroupLink `catchAllErrors` \e -> liftIO (print e) >> throwError e
+              liftIO $ putStrLn "**** getLinkDataCreateRelayLink after getShortLinkConnReq"
               liftIO (decodeLinkUserData cData) >>= \case
-                Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
+                Nothing -> do
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink error: no group link data"
+                  throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink GroupShortLinkData"
                   pg <- case (linkEntityId, publicGroup) of
                     (Just entityId, Just pg@PublicGroupProfile {publicGroupId})
                       | B64UrlByteString entityId == publicGroupId -> pure pg
                     _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match profile publicGroupId"
                   validateGroupProfile gp
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink after validateGroupProfile"
                   ((_, memberPrivKey), sLnk) <- createRelayLink gInfo
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink after createRelayLink"
                   gInfo' <- withStore $ \db -> do
                     void $ updateGroupProfile db user gInfo gp
                     updateRelayGroupKeys db user gInfo pg rootKey memberPrivKey owners
                     getGroupInfo db vr user groupId
+                  liftIO $ putStrLn "**** getLinkDataCreateRelayLink after updateRelayGroupKeys"
                   pure (gInfo', sLnk)
               where
                 validateGroupProfile :: GroupProfile -> CM ()
@@ -3793,5 +3808,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   pure (sigKeys, sLnk)
             acceptOwnerConnection :: RelayRequestData -> GroupInfo -> ShortLinkContact -> CM ()
             acceptOwnerConnection RelayRequestData {relayInvId, reqChatVRange} gi relayLink = do
+              liftIO $ putStrLn "**** acceptOwnerConnection"
               ownerMember <- withStore $ \db -> getHostMember db vr user groupId
               void $ acceptRelayJoinRequestAsync user uclId gi ownerMember relayInvId reqChatVRange relayLink
+              liftIO $ putStrLn "**** acceptOwnerConnection after acceptRelayJoinRequestAsync"
