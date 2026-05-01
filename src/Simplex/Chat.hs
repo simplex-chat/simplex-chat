@@ -115,7 +115,6 @@ defaultChatConfig =
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
       channelSubscriberRole = GRObserver,
-      relayRequestConsecutiveRetries = 3,
       relayRequestExpiry = (10, nominalDay),
       deviceNameForRemote = "",
       remoteCompression = True,

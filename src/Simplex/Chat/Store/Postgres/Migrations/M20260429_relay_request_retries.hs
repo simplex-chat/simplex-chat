@@ -11,6 +11,8 @@ m20260429_relay_request_retries =
   [r|
 ALTER TABLE groups ADD COLUMN relay_request_retries BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE groups ADD COLUMN relay_request_delay BIGINT;
+ALTER TABLE groups ADD COLUMN relay_request_execute_at TEXT NOT NULL DEFAULT (now());
+UPDATE groups SET relay_request_execute_at = created_at;
 |]
 
 down_m20260429_relay_request_retries :: Text
@@ -18,4 +20,5 @@ down_m20260429_relay_request_retries =
   [r|
 ALTER TABLE groups DROP COLUMN relay_request_retries;
 ALTER TABLE groups DROP COLUMN relay_request_delay;
+ALTER TABLE groups DROP COLUMN relay_request_execute_at;
 |]

@@ -1532,7 +1532,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
         }
   (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) Nothing currentTs
   -- Store relay request data for recovery
-  liftIO $ setRelayRequestData_ groupId
+  liftIO $ setRelayRequestData_ groupId currentTs
   ownerMemberId <- insertOwner_ currentTs groupId
   let relayMember = MemberIdRole relayMemberId GRRelay
   -- TODO [member keys] should relays use member keys?
@@ -1541,7 +1541,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
   where
-    setRelayRequestData_ groupId =
+    setRelayRequestData_ groupId currentTs =
       DB.execute
         db
         [sql|
@@ -1549,10 +1549,11 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           SET relay_request_inv_id = ?,
               relay_request_group_link = ?,
               relay_request_peer_chat_min_version = ?,
-              relay_request_peer_chat_max_version = ?
+              relay_request_peer_chat_max_version = ?,
+              relay_request_execute_at = ?
           WHERE group_id = ?
         |]
-        (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, groupId)
+        (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, currentTs, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
           VersionRange minV maxV = reqChatVRange

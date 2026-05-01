@@ -1048,7 +1048,8 @@ data RelayRequestData = RelayRequestData
     reqChatVRange :: VersionRangeChat,
     relayRequestDelay :: Maybe Int64,
     relayRequestRetries :: Int,
-    relayRequestCreatedAt :: UTCTime
+    relayRequestCreatedAt :: UTCTime,
+    relayRequestExecuteAt :: UTCTime
   }
   deriving (Eq, Show)
 
