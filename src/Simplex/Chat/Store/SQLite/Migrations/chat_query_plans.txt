@@ -695,7 +695,8 @@ SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
             SELECT
               relay_request_inv_id, relay_request_group_link,
-              relay_request_peer_chat_min_version, relay_request_peer_chat_max_version
+              relay_request_peer_chat_min_version, relay_request_peer_chat_max_version,
+              relay_request_delay, relay_request_retries, created_at, relay_request_execute_at
             FROM groups
             WHERE group_id = ?
           
@@ -993,11 +994,12 @@ Query:
             WHERE relay_own_status = ?
               AND relay_request_failed = 0
               AND relay_request_err_reason IS NULL
-            ORDER BY group_id ASC
+            ORDER BY relay_request_execute_at ASC
             LIMIT 1
           
 Plan:
 SCAN groups
+USE TEMP B-TREE FOR ORDER BY
 
 Query: 
             SELECT i.chat_item_id
@@ -1775,7 +1777,8 @@ Query:
           SET relay_request_inv_id = ?,
               relay_request_group_link = ?,
               relay_request_peer_chat_min_version = ?,
-              relay_request_peer_chat_max_version = ?
+              relay_request_peer_chat_max_version = ?,
+              relay_request_execute_at = ?
           WHERE group_id = ?
         
 Plan:
