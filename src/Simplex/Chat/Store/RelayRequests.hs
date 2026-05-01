@@ -87,8 +87,8 @@ getNextPendingRelayRequest db =
       where
         toRelayRequestData :: (Maybe InvitationId, Maybe ShortLinkContact, Maybe VersionChat, Maybe VersionChat, Maybe Int64, Int, UTCTime, UTCTime) -> Either StoreError (GroupId, RelayRequestData)
         toRelayRequestData = \case
-          (Just relayInvId, Just reqGroupLink, Just minV, Just maxV, relayRequestDelay, relayRequestRetries, relayRequestCreatedAt, relayRequestExecuteAt) ->
-            Right (groupId, RelayRequestData {relayInvId, reqGroupLink, reqChatVRange = fromMaybe (versionToRange maxV) $ safeVersionRange minV maxV, relayRequestDelay, relayRequestRetries, relayRequestCreatedAt, relayRequestExecuteAt})
+          (Just relayInvId, Just reqGroupLink, Just minV, Just maxV, reqDelay, reqRetries, reqCreatedAt, reqExecuteAt) ->
+            Right (groupId, RelayRequestData {relayInvId, reqGroupLink, reqChatVRange = fromMaybe (versionToRange maxV) $ safeVersionRange minV maxV, reqDelay, reqRetries, reqCreatedAt, reqExecuteAt})
           _ -> Left $ SEInternalError "missing relay request data"
 
 updateRelayRequestRetries :: DB.Connection -> GroupId -> Int64 -> UTCTime -> IO ()
