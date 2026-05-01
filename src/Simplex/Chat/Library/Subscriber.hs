@@ -3730,7 +3730,7 @@ runRelayRequestWorker a Worker {doWork} = do
         retryTmpError (maxRetries, maxAge) loop groupId RelayRequestData {relayRequestRetries, relayRequestCreatedAt} delay = \case
           ChatErrorAgent {agentError} | temporaryOrHostError agentError -> do
             currentTs <- liftIO getCurrentTime
-            if relayRequestRetries >= maxRetries && diffUTCTime currentTs relayRequestCreatedAt > maxAge
+            if relayRequestRetries >= maxRetries && diffUTCTime currentTs relayRequestCreatedAt >= maxAge
               then withStore' $ \db -> markRelayRequestFailed db groupId
               else do
                 withStore' $ \db -> updateRelayRequestRetries db groupId delay
