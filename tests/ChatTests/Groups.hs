@@ -270,6 +270,8 @@ chatGroupTests = do
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
       it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
       it "should deliver support scope messages via relay" testChannelSupportScope
+      it "should add relay to existing channel" testChannelAddRelay
+      it "should remove relay from channel" testChannelRemoveRelay
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -9686,6 +9688,86 @@ testChannelSubscriberProfileUpdate ps =
             cath `hasContactProfiles` ["alice", "bob", "kate", "dave"]
             dan `hasContactProfiles` ["alice", "bob", "kate", "dave"]
             eve `hasContactProfiles` ["alice", "bob", "kate", "dave", "eve"]
+
+testChannelAddRelay :: HasCallStack => TestParams -> IO ()
+testChannelAddRelay ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            -- create channel with 1 relay (bob)
+            (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+
+            -- configure cath as a second relay
+            cath ##> "/ad"
+            (cathSLink, _cLink) <- getContactLinks cath True
+            alice ##> ("/relays name=cath " <> cathSLink)
+            alice <## "ok"
+
+            -- add cath relay to existing channel
+            alice ##> "/_add relays #1 2"
+            alice <## "#team: group relays:"
+            alice <## "  - relay id 1: active"
+            alice <## "  - relay id 2: invited"
+
+            -- wait for cath to join as relay (async)
+            concurrentlyN_
+              [ do
+                  alice <## "#team: group link relays updated, current relays:"
+                  alice
+                    <### [ "  - relay id 1: active",
+                           "  - relay id 2: active"
+                         ]
+                  alice <## "group link:"
+                  void $ getTermLine alice,
+                cath <## "#team: you joined the group as relay"
+              ]
+
+            threadDelay 1000000
+
+            -- new subscribers join through both relays
+            memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink dan
+            memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink eve
+
+            -- verify delivery through both relays
+            alice #> "#team hello"
+            [bob, cath] *<# "#team> hello"
+            [dan, eve] *<# "#team> hello [>>]"
+
+testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
+testChannelRemoveRelay ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+          memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink dan
+
+          -- verify delivery works
+          alice #> "#team hello"
+          [bob, cath] *<# "#team> hello"
+          dan <# "#team> hello [>>]"
+
+          -- remove relay bob
+          threadDelay 1000000
+          alice ##> "/rm #team bob"
+          alice <## "#team: you removed bob from the group (signed)"
+          concurrentlyN_
+            [ do
+                bob <## "#team: alice removed you from the group (signed)"
+                bob <## "use /d #team to delete the group",
+              -- cath doesn't have bob in member list (relays aren't introduced to each other),
+              -- so x.grp.mem.del arrives with unknown member ID — cath still forwards it
+              cath <## "error: x.grp.mem.del with unknown member ID",
+              dan <## "#team: alice removed bob from the group (signed)"
+            ]
+
+          -- verify delivery still works via remaining relay (cath)
+          threadDelay 100000
+          alice #> "#team still working"
+          cath <# "#team> still working"
+          dan <# "#team> still working [>>]"
 
 testChannelCreateDeletedRelay :: HasCallStack => TestParams -> IO ()
 testChannelCreateDeletedRelay ps =

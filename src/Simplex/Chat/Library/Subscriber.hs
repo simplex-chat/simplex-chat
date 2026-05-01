@@ -1309,12 +1309,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
                       case relayLink of
                         Just rLink
-                          | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
+                          | rLink `elem` relayLinks && (relayStatus == RSAccepted || relayStatus == RSInactive) -> do
                               relay' <- updateRelayStatus db relay RSActive
                               pure (relay' : acc, True)
                           | rLink `elem` relayLinks -> pure (relay : acc, changed)
-                          | relayStatus == RSAccepted || relayStatus == RSActive -> do
+                          | relayStatus == RSActive -> do
                               -- Relay link absent from link data — deactivate.
+                              -- RSAccepted relays are not deactivated: their own link data update
+                              -- may not have been processed yet (race with concurrent relay connections).
                               -- TODO [multi-owner] Another owner removing a relay updates link data on
                               -- the SMP server, but this owner won't receive a LINK callback for it
                               -- (LINK only fires in response to own setConnShortLink calls).
