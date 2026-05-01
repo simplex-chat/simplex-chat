@@ -3730,10 +3730,9 @@ runRelayRequestWorker a Worker {doWork} = do
           withStore' getNextPendingRelayRequest >>= \case
             Right (Just (groupId, rrd@RelayRequestData {reqExecuteAt})) -> do
               currentTs <- liftIO getCurrentTime
-              let reqExecuteAt' = addUTCTime 1 reqExecuteAt
-              if currentTs >= reqExecuteAt'
+              if currentTs >= reqExecuteAt
                 then pure $ Right (Just (groupId, rrd))
-                else Right Nothing <$ scheduleRequest groupId (diffUTCTime reqExecuteAt' currentTs)
+                else Right Nothing <$ scheduleRequest groupId (diffUTCTime reqExecuteAt currentTs)
             r -> pure r
         scheduleRequest :: GroupId -> NominalDiffTime -> CM ()
         scheduleRequest groupId delay = do
