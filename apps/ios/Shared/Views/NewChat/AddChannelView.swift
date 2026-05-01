@@ -344,12 +344,12 @@ struct AddChannelView: View {
                     } else if activeCount > 0 {
                         let actions: [UIAlertAction] = if activeCount + failedCount < total {
                             [
-                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Continue", comment: "alert action"), style: .default) { _ in showLinkStep = true },
                                 UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
                             ]
                         } else {
                             [
-                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Continue", comment: "alert action"), style: .default) { _ in showLinkStep = true },
                                 cancelAlertAction
                             ]
                         }

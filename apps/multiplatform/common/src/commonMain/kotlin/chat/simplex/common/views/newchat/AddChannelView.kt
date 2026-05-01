@@ -506,7 +506,7 @@ private fun ProgressStepView(
                         AlertManager.shared.hideAlert()
                         onLinkReady()
                       }) {
-                        Text(generalGetString(MR.strings.proceed_verb))
+                        Text(generalGetString(MR.strings.continue_to_next_step))
                       }
                     }
                   }
@@ -515,7 +515,7 @@ private fun ProgressStepView(
                 AlertManager.shared.showAlertDialog(
                   title = generalGetString(MR.strings.not_all_relays_connected),
                   text = alertText,
-                  confirmText = generalGetString(MR.strings.proceed_verb),
+                  confirmText = generalGetString(MR.strings.continue_to_next_step),
                   onConfirm = { onLinkReady() }
                 )
               }
