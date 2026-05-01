@@ -372,7 +372,7 @@ struct AddChannelView: View {
         }
         .onDisappear {
             if !showLinkStep && m.creatingChannelId == gInfo.id {
-                cancelChannelCreation(gInfo)
+                showCancelChannelAlert(gInfo)
             }
         }
         .onChange(of: channelRelaysModel.groupRelays) { relays in
