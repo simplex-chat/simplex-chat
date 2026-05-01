@@ -959,7 +959,9 @@ CREATE TABLE test_chat_schema.groups (
     root_priv_key bytea,
     root_pub_key bytea,
     member_priv_key bytea,
-    public_member_count bigint
+    public_member_count bigint,
+    relay_request_retries bigint DEFAULT 0 NOT NULL,
+    relay_request_delay bigint
 );
 
 
