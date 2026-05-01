@@ -6853,9 +6853,9 @@ Hiba: %@</target>
         <target>Adatvédelmi szabályzat és felhasználási feltételek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy: for owners and subscribers." xml:space="preserve">
+      <trans-unit id="Privacy: for owners and subscribers." xml:space="preserve" approved="no">
         <source>Privacy: for owners and subscribers.</source>
-        <target>Adatvédelem: tulajdonosok és előfizetők számára.</target>
+        <target state="translated">Adatvédelem: tulajdonosok és feliratkozók számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private and secure messaging." xml:space="preserve">
