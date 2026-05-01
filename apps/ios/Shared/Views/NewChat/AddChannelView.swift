@@ -370,7 +370,11 @@ struct AddChannelView: View {
                 Button("Delete channel") { showCancelChannelAlert(gInfo) }
             }
         }
-        .interactiveDismissDisabled(true)
+        .onDisappear {
+            if !showLinkStep && m.creatingChannelId == gInfo.id {
+                cancelChannelCreation(gInfo)
+            }
+        }
         .onChange(of: channelRelaysModel.groupRelays) { relays in
             guard channelRelaysModel.groupId == gInfo.groupId else { return }
             groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
@@ -436,7 +440,7 @@ struct AddChannelView: View {
         showAlert(
             NSLocalizedString("Cancel creating channel?", comment: "alert title"),
             message: String.localizedStringWithFormat(
-                NSLocalizedString("Your new channel %@ is connected to %d of %d relays.\n\nIf you cancel, the channel will be deleted - you can create it again.", comment: "alert message"),
+                NSLocalizedString("Your new channel %@ is connected to %d of %d relays.\nIf you cancel, the channel will be deleted - you can create it again.", comment: "alert message"),
                 gInfo.groupProfile.displayName, activeCount, total
             ),
             actions: {[
