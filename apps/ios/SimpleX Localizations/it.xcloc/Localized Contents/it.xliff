@@ -6461,14 +6461,14 @@ alert button</note>
         <target>Apri migrazione ad un altro dispositivo</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open new channel" xml:space="preserve">
+      <trans-unit id="Open new channel" xml:space="preserve" approved="no">
         <source>Open new channel</source>
-        <target>Apri un canale nuovo</target>
+        <target state="translated">Apri il nuovo canale</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="Open new chat" xml:space="preserve">
+      <trans-unit id="Open new chat" xml:space="preserve" approved="no">
         <source>Open new chat</source>
-        <target>Apri una chat nuova</target>
+        <target state="translated">Apri la nuova chat</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open new group" xml:space="preserve">
