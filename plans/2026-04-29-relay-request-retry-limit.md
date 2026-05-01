@@ -113,7 +113,7 @@ updateRelayRequestRetries db groupId delay = do
     (delay, currentTs, groupId)
 ```
 
-Export `updateRelayRequestRetries` from module.
+Export `updateRelayRequestRetries` and `markRelayRequestFailed` from module (the latter is currently internal, used only as a callback in `getWorkItem`).
 
 ### 4. Worker changes
 
@@ -184,13 +184,13 @@ Key changes from current code:
    - Request to unreachable server: retried 3 times per cycle, pushed to back of queue, marked failed after 1 day and 10+ retries
    - Request to reachable server: succeeds on first attempt, unaffected by changes
    - Multiple pending requests: stuck request doesn't block others — items with fewer retries processed first
-   - App restart with pending requests: `hasPendingRelayRequests` starts worker, old requests marked failed on first iteration
+   - App restart with expired pending requests: worker starts, picks up expired request, attempts it — if it succeeds (server now reachable), completes normally; if it fails, `retryTmpError` marks it failed
 
 ## Known considerations
 
 1. **Single stuck item re-pickup**: If only one request is pending and it's stuck, the worker picks it up repeatedly (3 retries each cycle, immediate re-pickup). This is acceptable — backoff grows via stored delay, and the request is marked failed after 1 day and 10+ retries. The main protection is that other requests aren't blocked.
 
-2. **`hasPendingRelayRequests` unchanged**: Old expired requests still match the `hasPendingRelayRequests` query at startup. The worker starts, picks them up, attempts processing, and marks them failed in `retryTmpError` on the next temp error. This is correct — expiry is checked at the point of failure.
+2. **`hasPendingRelayRequests` unchanged**: Expired requests still match the `hasPendingRelayRequests` query at startup, so the worker starts. It picks them up, attempts processing — if the server became reachable, the request succeeds normally. If it fails, `retryTmpError` checks the expiry condition and marks it failed. This is strictly better than filtering at query time: expired items get one last chance.
 
 3. **Delay resumption across pickups**: Stored delay resumes backoff at the last level (XFTP pattern). After many cycles, delay reaches `maxInterval` and stays there. This means retry frequency stabilizes at a low rate for stuck items.
 
