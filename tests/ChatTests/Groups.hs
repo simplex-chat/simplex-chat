@@ -9699,6 +9699,9 @@ testChannelAddRelay ps =
             -- create channel with 1 relay (bob)
             (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
 
+            -- existing subscriber joins through bob (the only relay at this point)
+            memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
             -- configure cath as a second relay
             cath ##> "/ad"
             (cathSLink, _cLink) <- getContactLinks cath True
@@ -9726,8 +9729,22 @@ testChannelAddRelay ps =
 
             threadDelay 1000000
 
-            -- new subscribers join through both relays
-            memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink dan
+            -- existing subscriber discovers and connects to new relay
+            dan ##> "/_get group link data #1"
+            dan <## "group ID: 1"
+            void $ getTermLine dan -- subscribers: N
+            concurrentlyN_
+              [ do
+                  dan <## "#team: joining the group (connecting to relay cath)..."
+                  dan <## "#team: you joined the group (connected to relay cath)",
+                do
+                  cath <## "dan (Daniel): accepting request to join group #team..."
+                  cath <## "#team: dan joined the group"
+              ]
+
+            threadDelay 1000000
+
+            -- new subscriber joins through both relays
             memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink eve
 
             -- verify delivery through both relays
