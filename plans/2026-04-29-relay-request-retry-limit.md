@@ -14,14 +14,14 @@ Follow the XFTP worker retry pattern (`runXFTPDelWorker` in `simplexmq/src/Simpl
 2. **Order by retries**: Query for next work item ordered by `relay_request_retries ASC, created_at ASC` — items with fewer retries are processed first, stuck items get pushed to the back
 3. **Limit consecutive retries**: Replace `withRetryInterval` with `withRetryIntervalCount`, limiting to a small number of consecutive retries per pickup cycle (3, matching XFTP's `xftpConsecutiveRetries`). After the limit, the worker yields and picks the next item.
 4. **Store delay for resumption**: On each retry, store the current backoff delay in DB. On next pickup, resume backoff from the stored delay (XFTP pattern: `ri {initialInterval = d, increaseAfter = 0}`)
-5. **Expire old requests**: Mark relay requests older than 1 day as failed before querying for next item
+5. **Expire old requests**: On temp error, before retrying, check if the request is older than 1 day and has 10+ retries — if so, mark as failed instead of retrying. Both conditions must hold — a request that's old but has few retries may just have been delayed, while a request with many retries that's recent is still being actively worked on.
 
 ### How this neutralizes the attack
 
 - Attacker's request gets picked up, retried 3 times with backoff (~15s total), then yielded
 - Worker picks the next item by retry count — legitimate requests (retries=0) go first
 - Attacker's request accumulates retries, always processed last
-- After 1 day, the request is marked failed and permanently excluded
+- After 1 day and 10+ retries, the request is marked failed and permanently excluded
 
 ---
 
@@ -32,7 +32,7 @@ Follow the XFTP worker retry pattern (`runXFTPDelWorker` in `simplexmq/src/Simpl
 New migration: `M20260429_relay_request_retries.hs`
 
 ```sql
-ALTER TABLE groups ADD COLUMN relay_request_retries INTEGER DEFAULT 0;
+ALTER TABLE groups ADD COLUMN relay_request_retries INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE groups ADD COLUMN relay_request_delay INTEGER;
 ```
 
@@ -43,7 +43,7 @@ ALTER TABLE groups ADD COLUMN relay_request_delay INTEGER;
 - `src/Simplex/Chat/Store/Postgres/Migrations.hs` (register)
 - `simplex-chat.cabal` (add modules)
 
-### 2. Add delay field to RelayRequestData
+### 2. Extend RelayRequestData
 
 **File:** `src/Simplex/Chat/Types.hs`
 
@@ -52,24 +52,26 @@ data RelayRequestData = RelayRequestData
   { relayInvId :: InvitationId,
     reqGroupLink :: ShortLinkContact,
     reqChatVRange :: VersionRangeChat,
-    relayRequestDelay :: Maybe Int64
+    relayRequestDelay :: Maybe Int64,
+    relayRequestRetries :: Int,
+    relayRequestCreatedAt :: UTCTime
   }
 ```
 
-The delay is needed at the worker level to resume backoff from the stored position.
+- `relayRequestDelay`: resume backoff from stored position (XFTP pattern)
+- `relayRequestRetries`: current retry count, used with `relayRequestCreatedAt` to decide expiry in `retryTmpError`
+- `relayRequestCreatedAt`: group creation time, used for the 1-day expiry check
 
 ### 3. Update store functions
 
 **File:** `src/Simplex/Chat/Store/RelayRequests.hs`
 
-**`getNextPendingRelayRequest`** — three changes:
-- Before querying, mark requests older than 1 day as failed
+**`getNextPendingRelayRequest`** — two changes:
 - Order by `relay_request_retries ASC, created_at ASC` instead of `group_id ASC`
-- SELECT and return `relay_request_delay` in the data query
+- SELECT and return `relay_request_delay`, `relay_request_retries`, `created_at` in the data query
 
 ```haskell
-getNextPendingRelayRequest db = do
-  markOldRelayRequestsFailed db
+getNextPendingRelayRequest db =
   getWorkItem "relay request" getNextRequestGroupId getRelayRequestData (markRelayRequestFailed db)
   where
     getNextRequestGroupId =
@@ -90,33 +92,14 @@ getNextPendingRelayRequest db = do
           [sql|
             SELECT relay_request_inv_id, relay_request_group_link,
                    relay_request_peer_chat_min_version, relay_request_peer_chat_max_version,
-                   relay_request_delay
+                   relay_request_delay, relay_request_retries, created_at
             FROM groups WHERE group_id = ?
           |]
           (Only groupId)
       where
-        toRelayRequestData (Just relayInvId, Just reqGroupLink, Just minV, Just maxV, relayRequestDelay) =
-          Right (groupId, RelayRequestData {relayInvId, reqGroupLink, reqChatVRange = fromMaybe (versionToRange maxV) $ safeVersionRange minV maxV, relayRequestDelay})
+        toRelayRequestData (Just relayInvId, Just reqGroupLink, Just minV, Just maxV, relayRequestDelay, relayRequestRetries, relayRequestCreatedAt) =
+          Right (groupId, RelayRequestData {relayInvId, reqGroupLink, reqChatVRange = fromMaybe (versionToRange maxV) $ safeVersionRange minV maxV, relayRequestDelay, relayRequestRetries, relayRequestCreatedAt})
         toRelayRequestData _ = Left $ SEInternalError "missing relay request data"
-```
-
-**New function: `markOldRelayRequestsFailed`**:
-
-```haskell
-markOldRelayRequestsFailed :: DB.Connection -> IO ()
-markOldRelayRequestsFailed db = do
-  cutoffTs <- addUTCTime (-nominalDay) <$> getCurrentTime
-  currentTs <- getCurrentTime
-  DB.execute db
-    [sql|
-      UPDATE groups
-      SET relay_request_failed = 1, updated_at = ?
-      WHERE relay_own_status = ?
-        AND relay_request_failed = 0
-        AND relay_request_err_reason IS NULL
-        AND created_at < ?
-    |]
-    (currentTs, RSInvited, cutoffTs)
 ```
 
 **New function: `updateRelayRequestRetries`**:
@@ -143,13 +126,13 @@ Export `updateRelayRequestRetries` from module.
 ```haskell
 runRelayRequestOperation vr user uclId =
   withWork_ a doWork (withStore' getNextPendingRelayRequest) $
-    \(groupId, rrd@RelayRequestData {relayRequestDelay}) -> do
+    \(groupId, rrd@RelayRequestData {relayRequestDelay, relayRequestRetries, relayRequestCreatedAt}) -> do
       ri <- asks $ reconnectInterval . agentConfig . config
       let ri' = maybe ri (\d -> ri {initialInterval = d, increaseAfter = 0}) relayRequestDelay
       withRetryIntervalLimit ri' $ \delay loop -> do
         liftIO $ waitWhileSuspended a
         liftIO $ waitForUserNetwork a
-        processRelayRequest groupId rrd `catchAllErrors` retryTmpError loop groupId delay
+        processRelayRequest groupId rrd `catchAllErrors` retryTmpError loop groupId delay relayRequestRetries relayRequestCreatedAt
   where
     maxConsecutiveRetries :: Int
     maxConsecutiveRetries = 3
@@ -157,11 +140,15 @@ runRelayRequestOperation vr user uclId =
     withRetryIntervalLimit ri action =
       withRetryIntervalCount ri $ \n delay loop ->
         when (n < maxConsecutiveRetries) $ action delay loop
-    retryTmpError :: CM () -> GroupId -> Int64 -> ChatError -> CM ()
-    retryTmpError loop groupId delay = \case
+    retryTmpError :: CM () -> GroupId -> Int64 -> Int -> UTCTime -> ChatError -> CM ()
+    retryTmpError loop groupId delay retries createdAt = \case
       ChatErrorAgent {agentError} | temporaryOrHostError agentError -> do
-        withStore' $ \db -> updateRelayRequestRetries db groupId delay
-        loop
+        currentTs <- liftIO getCurrentTime
+        if retries >= 10 && diffUTCTime currentTs createdAt > nominalDay
+          then withStore' $ \db -> markRelayRequestFailed db groupId
+          else do
+            withStore' $ \db -> updateRelayRequestRetries db groupId delay
+            loop
       e -> do
         withStore' $ \db -> setRelayRequestErr db groupId (tshow e)
         eToView e
@@ -170,7 +157,8 @@ runRelayRequestOperation vr user uclId =
 Key changes from current code:
 - `withRetryInterval` → `withRetryIntervalCount` wrapped in local `withRetryIntervalLimit`
 - Resume from stored delay via `ri'` (XFTP pattern)
-- `retryTmpError` now takes `delay` parameter, stores it with incremented retry count before calling `loop`
+- `retryTmpError` now takes `delay`, `retries`, and `createdAt` parameters
+- On temp error: checks if request is older than 1 day with 10+ retries — if so, marks as failed instead of retrying; otherwise increments retries and calls `loop`
 - After `maxConsecutiveRetries` (3), the `when` guard exits, worker picks next item
 
 ---
@@ -184,25 +172,25 @@ Key changes from current code:
 | `src/Simplex/Chat/Store/Postgres/Migrations/M20260429_relay_request_retries.hs` | New migration |
 | `src/Simplex/Chat/Store/Postgres/Migrations.hs` | Register migration |
 | `simplex-chat.cabal` | Add migration modules |
-| `src/Simplex/Chat/Types.hs` | Add `relayRequestDelay` to `RelayRequestData` |
-| `src/Simplex/Chat/Store/RelayRequests.hs` | Retry ordering, TTL expiry, `updateRelayRequestRetries` |
-| `src/Simplex/Chat/Library/Subscriber.hs` | Limited retry with delay storage |
+| `src/Simplex/Chat/Types.hs` | Add `relayRequestDelay`, `relayRequestRetries`, `relayRequestCreatedAt` to `RelayRequestData` |
+| `src/Simplex/Chat/Store/RelayRequests.hs` | Retry ordering, `updateRelayRequestRetries` |
+| `src/Simplex/Chat/Library/Subscriber.hs` | Limited retry with delay storage, expiry check in `retryTmpError` |
 
 ## Verification
 
 1. **Build**: `cabal build --ghc-options=-O0`
 2. **Run relay tests**: `cabal test simplex-chat-test --test-options='-m "relay"'`
 3. **Scenarios**:
-   - Request to unreachable server: retried 3 times per cycle, pushed to back of queue, aged out after 1 day
+   - Request to unreachable server: retried 3 times per cycle, pushed to back of queue, marked failed after 1 day and 10+ retries
    - Request to reachable server: succeeds on first attempt, unaffected by changes
    - Multiple pending requests: stuck request doesn't block others — items with fewer retries processed first
    - App restart with pending requests: `hasPendingRelayRequests` starts worker, old requests marked failed on first iteration
 
 ## Known considerations
 
-1. **Single stuck item re-pickup**: If only one request is pending and it's stuck, the worker picks it up repeatedly (3 retries each cycle, immediate re-pickup). This is acceptable — backoff grows via stored delay, and the request ages out after 1 day. The main protection is that other requests aren't blocked.
+1. **Single stuck item re-pickup**: If only one request is pending and it's stuck, the worker picks it up repeatedly (3 retries each cycle, immediate re-pickup). This is acceptable — backoff grows via stored delay, and the request is marked failed after 1 day and 10+ retries. The main protection is that other requests aren't blocked.
 
-2. **`hasPendingRelayRequests` unchanged**: Old requests (>1 day) still match the `hasPendingRelayRequests` query at startup. The worker starts, `getNextPendingRelayRequest` marks them failed, then finds no valid items and waits. This is correct — the cleanup happens lazily on first iteration.
+2. **`hasPendingRelayRequests` unchanged**: Old expired requests still match the `hasPendingRelayRequests` query at startup. The worker starts, picks them up, attempts processing, and marks them failed in `retryTmpError` on the next temp error. This is correct — expiry is checked at the point of failure.
 
 3. **Delay resumption across pickups**: Stored delay resumes backoff at the last level (XFTP pattern). After many cycles, delay reaches `maxInterval` and stays there. This means retry frequency stabilizes at a low rate for stuck items.
 
@@ -210,6 +198,6 @@ Key changes from current code:
 
 5. **`withWork_` re-signals work**: After the action returns (hitting max consecutive retries), `withWork_` has already called `hasWork` (re-signaling the doWork TMVar). The outer `forever` loop immediately proceeds to the next iteration. This is the desired behavior — the worker processes all pending items before waiting.
 
-6. **Interaction with `markRelayRequestFailed`**: The `getWorkItem` pattern calls `markRelayRequestFailed` only when `getRelayRequestData` throws an exception (corrupted data). This is orthogonal to the retry mechanism and remains unchanged.
+6. **`retries` count is from pickup time**: The `relayRequestRetries` value in `retryTmpError` is the count loaded when the item was picked up. Within a single pickup cycle (up to 3 consecutive retries), `updateRelayRequestRetries` increments the DB count but the local value stays the same. The expiry check uses the pickup-time count, which is at most 3 behind the DB. This is acceptable — the threshold (10) has margin.
 
-7. **Migration column defaults**: `relay_request_retries DEFAULT 0` ensures existing pending requests start with 0 retries. `relay_request_delay` is nullable (NULL = use default reconnectInterval), matching the `Maybe Int64` field.
+7. **Migration column defaults**: `relay_request_retries NOT NULL DEFAULT 0` ensures existing pending requests start with 0 retries. `relay_request_delay` is nullable (NULL = use default reconnectInterval), matching the `Maybe Int64` field.
