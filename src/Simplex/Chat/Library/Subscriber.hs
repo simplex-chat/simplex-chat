@@ -93,8 +93,8 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
-import System.Mem.Weak (Weak)
 import qualified System.FilePath as FP
+import System.Mem.Weak (Weak)
 import Text.Read (readMaybe)
 import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
