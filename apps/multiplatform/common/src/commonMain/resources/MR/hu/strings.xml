@@ -2702,7 +2702,7 @@
     <string name="v6_5_non_profit_governance">Nonprofit irányítás</string>
     <string name="v6_5_safe_web_links_descr">- Hivatkozások előnézetének küldése.\n- SOCKS proxy használata, ha engedélyezve van.\n- Hiperhivatkozásokon keresztüli adathalászat megakadályozása.\n- Hivatkozások nyomonkövetési paramétereinek eltávolítása.</string>
     <string name="v6_5_ownership">Tulajdonjog: saját átjátszókat üzemeltethet.</string>
-    <string name="v6_5_privacy">Adatvédelem: tulajdonosok és előfizetők számára.</string>
+    <string name="v6_5_privacy">Adatvédelem: tulajdonosok és feliratkozók számára.</string>
     <string name="v6_5_public_channels">Nyilvános csatornák – mondja el szabadon a véleményét 🚀</string>
     <string name="v6_5_reliability">Megbízhatóság: több átjátszó is használható csatornánként.</string>
     <string name="v6_5_safe_web_links">Biztonságos webhivatkozások</string>
