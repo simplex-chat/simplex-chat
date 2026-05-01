@@ -235,7 +235,6 @@ chatGroupTests = do
     it "should respect support preference in channel" testSupportPreferenceChannel
   -- TODO [relays] add tests for channels
   -- TODO   - tests with delivery loop over members restored after restart
-  -- TODO   - delivery in support scopes inside channels
   -- TODO   - connect plans for relay groups
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
