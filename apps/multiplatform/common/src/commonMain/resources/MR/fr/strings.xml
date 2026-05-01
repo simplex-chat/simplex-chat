@@ -2368,7 +2368,6 @@
     <string name="allow_files_and_media_only_if">Permettre des fichiers et des médias seulement si votre contact les permet.</string>
     <string name="allow_your_contacts_to_send_files_and_media">Permettre à vos contacts d\'envoyer des fichiers et des médias.</string>
     <string name="network_smp_web_port_all">Tous les serveurs</string>
-    <string name="cancel_creating_channel_confirm">Annuler</string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Vous allez pouvoir envoyer des messages <b>seulement après que votre requête soit acceptée</b>.]]></string>
     <string name="check_relay_address">Vérifiez l\'adresse de relais et essayez à nouveau.</string>
     <string name="check_relay_name">Vérifiez le nom du relais et essayez à nouveau.</string>
@@ -2405,7 +2404,6 @@
     <string name="preset_relay_name">Nom de relais prédéfini</string>
     <string name="network_smp_web_port_preset">Serveurs prédéfinis</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Politique de confidentialité et conditions d\'utilisation.</string>
-    <string name="proceed_verb">Continuer</string>
     <string name="reject_pending_member_button">Rejeter</string>
     <string name="reject_contact_request">Rejeter la demande de contact</string>
     <string name="group_preview_rejected">rejeté</string>

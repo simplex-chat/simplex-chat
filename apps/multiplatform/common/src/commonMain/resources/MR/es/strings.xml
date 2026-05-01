@@ -2585,7 +2585,6 @@
     <string name="channel_subscriber_count_plural">%1$d suscriptores</string>
     <string name="block_subscriber_for_all_question">¿Bloquear al suscriptor para todos?</string>
     <string name="compose_view_broadcast">Retransmisión</string>
-    <string name="cancel_creating_channel_confirm">Cancelar</string>
     <string name="cancel_creating_channel_question">¿Cancelar la creación del canal?</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[¡Este es tu enlace para el canal <b>%1$s</b>!]]></string>
     <string name="channel_role_label">canal</string>
@@ -2636,7 +2635,6 @@
     <string name="channel_members_section_owners">Propietarios</string>
     <string name="preset_relay_address">Direcciones predefinidas</string>
     <string name="preset_relay_name">Nombres predefinidos</string>
-    <string name="proceed_verb">Continuar</string>
     <string name="group_member_role_relay">servidor</string>
     <string name="member_info_section_title_relay">SERVIDOR</string>
     <string name="info_row_relay_address">Dirección servidor</string>

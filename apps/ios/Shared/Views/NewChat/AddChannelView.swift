@@ -338,24 +338,24 @@ struct AddChannelView: View {
             .compactSectionSpacing()
 
             Section {
-                Button("Channel link") {
+                Button("Continue") {
                     if activeCount >= total {
                         showLinkStep = true
                     } else if activeCount > 0 {
                         let actions: [UIAlertAction] = if activeCount + failedCount < total {
                             [
-                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Continue", comment: "alert action"), style: .default) { _ in showLinkStep = true },
                                 UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
                             ]
                         } else {
                             [
-                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Continue", comment: "alert action"), style: .default) { _ in showLinkStep = true },
                                 cancelAlertAction
                             ]
                         }
                         showAlert(
                             NSLocalizedString("Not all relays connected", comment: "alert title"),
-                            message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), activeCount, total),
+                            message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Continue?", comment: "alert message"), activeCount, total),
                             actions: { actions }
                         )
                     }
@@ -367,7 +367,12 @@ struct AddChannelView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Cancel") { cancelChannelCreation(gInfo) }
+                Button("Delete channel") { showCancelChannelAlert(gInfo) }
+            }
+        }
+        .onDisappear {
+            if !showLinkStep && m.creatingChannelId == gInfo.id {
+                showCancelChannelAlert(gInfo)
             }
         }
         .onChange(of: channelRelaysModel.groupRelays) { relays in
@@ -427,6 +432,24 @@ struct AddChannelView: View {
                 logger.error("cancelChannelCreation error: \(responseError(error))")
             }
         }
+    }
+
+    private func showCancelChannelAlert(_ gInfo: GroupInfo) {
+        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
+        let total = groupRelays.count
+        showAlert(
+            NSLocalizedString("Cancel creating channel?", comment: "alert title"),
+            message: String.localizedStringWithFormat(
+                NSLocalizedString("Your new channel %@ is connected to %d of %d relays.\nIf you cancel, the channel will be deleted - you can create it again.", comment: "alert message"),
+                gInfo.groupProfile.displayName, activeCount, total
+            ),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in },
+                UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .destructive) { _ in
+                    cancelChannelCreation(gInfo)
+                }
+            ]}
+        )
     }
 
     // MARK: - Helpers
