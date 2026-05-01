@@ -126,13 +126,13 @@ Export `updateRelayRequestRetries` and `markRelayRequestFailed` from module (the
 ```haskell
 runRelayRequestOperation vr user uclId =
   withWork_ a doWork (withStore' getNextPendingRelayRequest) $
-    \(groupId, rrd@RelayRequestData {relayRequestDelay, relayRequestRetries, relayRequestCreatedAt}) -> do
+    \(groupId, rrd@RelayRequestData {relayRequestDelay}) -> do
       ri <- asks $ reconnectInterval . agentConfig . config
       let ri' = maybe ri (\d -> ri {initialInterval = d, increaseAfter = 0}) relayRequestDelay
       withRetryIntervalLimit ri' $ \delay loop -> do
         liftIO $ waitWhileSuspended a
         liftIO $ waitForUserNetwork a
-        processRelayRequest groupId rrd `catchAllErrors` retryTmpError loop groupId delay relayRequestRetries relayRequestCreatedAt
+        processRelayRequest groupId rrd `catchAllErrors` retryTmpError loop groupId rrd delay
   where
     maxConsecutiveRetries :: Int
     maxConsecutiveRetries = 3
@@ -140,11 +140,11 @@ runRelayRequestOperation vr user uclId =
     withRetryIntervalLimit ri action =
       withRetryIntervalCount ri $ \n delay loop ->
         when (n < maxConsecutiveRetries) $ action delay loop
-    retryTmpError :: CM () -> GroupId -> Int64 -> Int -> UTCTime -> ChatError -> CM ()
-    retryTmpError loop groupId delay retries createdAt = \case
+    retryTmpError :: CM () -> GroupId -> RelayRequestData -> Int64 -> ChatError -> CM ()
+    retryTmpError loop groupId RelayRequestData {relayRequestRetries, relayRequestCreatedAt} delay = \case
       ChatErrorAgent {agentError} | temporaryOrHostError agentError -> do
         currentTs <- liftIO getCurrentTime
-        if retries >= 10 && diffUTCTime currentTs createdAt > nominalDay
+        if relayRequestRetries >= 10 && diffUTCTime currentTs relayRequestCreatedAt > nominalDay
           then withStore' $ \db -> markRelayRequestFailed db groupId
           else do
             withStore' $ \db -> updateRelayRequestRetries db groupId delay
@@ -157,7 +157,7 @@ runRelayRequestOperation vr user uclId =
 Key changes from current code:
 - `withRetryInterval` → `withRetryIntervalCount` wrapped in local `withRetryIntervalLimit`
 - Resume from stored delay via `ri'` (XFTP pattern)
-- `retryTmpError` now takes `delay`, `retries`, and `createdAt` parameters
+- `retryTmpError` receives the full `RelayRequestData` record and destructures the fields it needs
 - On temp error: checks if request is older than 1 day with 10+ retries — if so, marks as failed instead of retrying; otherwise increments retries and calls `loop`
 - After `maxConsecutiveRetries` (3), the `when` guard exits, worker picks next item
 
