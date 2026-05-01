@@ -338,7 +338,7 @@ struct AddChannelView: View {
             .compactSectionSpacing()
 
             Section {
-                Button("Channel link") {
+                Button("Continue") {
                     if activeCount >= total {
                         showLinkStep = true
                     } else if activeCount > 0 {
@@ -367,9 +367,10 @@ struct AddChannelView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Cancel") { cancelChannelCreation(gInfo) }
+                Button("Delete channel") { showCancelChannelAlert(gInfo) }
             }
         }
+        .interactiveDismissDisabled(true)
         .onChange(of: channelRelaysModel.groupRelays) { relays in
             guard channelRelaysModel.groupId == gInfo.groupId else { return }
             groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
@@ -427,6 +428,24 @@ struct AddChannelView: View {
                 logger.error("cancelChannelCreation error: \(responseError(error))")
             }
         }
+    }
+
+    private func showCancelChannelAlert(_ gInfo: GroupInfo) {
+        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
+        let total = groupRelays.count
+        showAlert(
+            NSLocalizedString("Cancel creating channel?", comment: "alert title"),
+            message: String.localizedStringWithFormat(
+                NSLocalizedString("Your new channel %@ is connected to %d of %d relays.\n\nIf you cancel, the channel will be deleted - you can create it again.", comment: "alert message"),
+                gInfo.groupProfile.displayName, activeCount, total
+            ),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in },
+                UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .destructive) { _ in
+                    cancelChannelCreation(gInfo)
+                }
+            ]}
+        )
     }
 
     // MARK: - Helpers

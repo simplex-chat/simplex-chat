@@ -364,16 +364,23 @@ private fun ProgressStepView(
   val activeCount = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
   val total = groupRelays.value.size
 
+  fun showCancelAlert() {
+    val active = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
+    val tot = groupRelays.value.size
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.cancel_creating_channel_question),
+      text = String.format(generalGetString(MR.strings.cancel_channel_alert_msg), gInfo.groupProfile.displayName, active, tot),
+      confirmText = generalGetString(MR.strings.cancel_creating_channel_confirm),
+      onConfirm = cancelChannelCreation,
+      dismissText = generalGetString(MR.strings.wait_verb),
+      destructive = true,
+    )
+  }
+
   if (appPlatform.isDesktop) {
     DisposableEffect(Unit) {
       chatModel.centerPanelBackgroundClickHandler = {
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.cancel_creating_channel_question),
-          confirmText = generalGetString(MR.strings.cancel_creating_channel_confirm),
-          onConfirm = cancelChannelCreation,
-          dismissText = generalGetString(MR.strings.wait_verb),
-          destructive = true,
-        )
+        showCancelAlert()
         true
       }
       onDispose {
@@ -395,11 +402,11 @@ private fun ProgressStepView(
   }
 
   ModalView(
-    close = cancelChannelCreation,
+    close = { showCancelAlert() },
     showClose = false,
     endButtons = {
-      TextButton(onClick = cancelChannelCreation) {
-        Text(generalGetString(MR.strings.cancel_verb))
+      TextButton(onClick = { showCancelAlert() }) {
+        Text(generalGetString(MR.strings.button_delete_channel))
       }
     }
   ) {
@@ -477,7 +484,7 @@ private fun ProgressStepView(
         val enabled = activeCount > 0
         SettingsActionItem(
           painterResource(MR.images.ic_link),
-          generalGetString(MR.strings.channel_link),
+          generalGetString(MR.strings.continue_to_next_step),
           click = {
             if (activeCount >= total) {
               onLinkReady()
