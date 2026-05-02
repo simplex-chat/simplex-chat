@@ -11671,9 +11671,9 @@ last received msg: %2$@</source>
         <target>незащищённый</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="updated channel profile" xml:space="preserve">
+      <trans-unit id="updated channel profile" xml:space="preserve" approved="no">
         <source>updated channel profile</source>
-        <target>обновлён профиль канала</target>
+        <target state="translated">обновил профиль канала</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
