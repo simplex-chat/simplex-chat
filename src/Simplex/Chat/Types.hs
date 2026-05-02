@@ -1046,7 +1046,7 @@ data RelayRequestData = RelayRequestData
   { relayInvId :: InvitationId,
     reqGroupLink :: ShortLinkContact,
     reqChatVRange :: VersionRangeChat,
-    reqDelay :: Maybe Int64,
+    reqDelay :: Int64,
     reqRetries :: Int,
     reqCreatedAt :: UTCTime,
     reqExecuteAt :: UTCTime

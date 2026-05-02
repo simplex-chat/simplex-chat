@@ -9,7 +9,7 @@ m20260429_relay_request_retries :: Query
 m20260429_relay_request_retries =
   [sql|
 ALTER TABLE groups ADD COLUMN relay_request_retries INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE groups ADD COLUMN relay_request_delay INTEGER;
+ALTER TABLE groups ADD COLUMN relay_request_delay INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE groups ADD COLUMN relay_request_execute_at TEXT NOT NULL DEFAULT(datetime('now'));
 |]
 

@@ -1515,8 +1515,8 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     "UPDATE groups SET creating_in_progress = 0, updated_at = ? WHERE group_id = ?"
     (currentTs, groupId)
 
-createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange = do
+createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile
@@ -1550,10 +1550,11 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
               relay_request_group_link = ?,
               relay_request_peer_chat_min_version = ?,
               relay_request_peer_chat_max_version = ?,
+              relay_request_delay = ?,
               relay_request_execute_at = ?
           WHERE group_id = ?
         |]
-        (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, currentTs, groupId)
+        (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, initialDelay, currentTs, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
           VersionRange minV maxV = reqChatVRange

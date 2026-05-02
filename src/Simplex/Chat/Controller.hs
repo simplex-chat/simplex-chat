@@ -73,6 +73,7 @@ import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
 import Simplex.Messaging.Agent.Lock
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
@@ -158,6 +159,7 @@ data ChatConfig = ChatConfig
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
+    relayRequestRetryInterval :: RetryInterval,
     relayRequestExpiry :: (Int, NominalDiffTime),
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,

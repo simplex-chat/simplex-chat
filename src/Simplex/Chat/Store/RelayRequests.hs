@@ -85,7 +85,7 @@ getNextPendingRelayRequest db =
           |]
           (Only groupId)
       where
-        toRelayRequestData :: (Maybe InvitationId, Maybe ShortLinkContact, Maybe VersionChat, Maybe VersionChat, Maybe Int64, Int, UTCTime, UTCTime) -> Either StoreError (GroupId, RelayRequestData)
+        toRelayRequestData :: (Maybe InvitationId, Maybe ShortLinkContact, Maybe VersionChat, Maybe VersionChat, Int64, Int, UTCTime, UTCTime) -> Either StoreError (GroupId, RelayRequestData)
         toRelayRequestData = \case
           (Just relayInvId, Just reqGroupLink, Just minV, Just maxV, reqDelay, reqRetries, reqCreatedAt, reqExecuteAt) ->
             Right (groupId, RelayRequestData {relayInvId, reqGroupLink, reqChatVRange = fromMaybe (versionToRange maxV) $ safeVersionRange minV maxV, reqDelay, reqRetries, reqCreatedAt, reqExecuteAt})

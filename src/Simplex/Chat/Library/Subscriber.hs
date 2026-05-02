@@ -96,7 +96,7 @@ import Simplex.Messaging.Version
 import qualified System.FilePath as FP
 import System.Mem.Weak (Weak)
 import Text.Read (readMaybe)
-import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId, threadDelay)
+import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.STM
 
@@ -1493,7 +1493,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
         xGrpRelayInv invId chatVRange groupRelayInv = do
-          (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange
+          initialDelay <- asks $ initialInterval . relayRequestRetryInterval . config
+          (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange initialDelay
           lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
         xGrpRelayTest invId chatVRange challenge = do
@@ -3730,9 +3731,10 @@ runRelayRequestWorker a Worker {doWork} = do
           withStore' getNextPendingRelayRequest >>= \case
             Right (Just (groupId, rrd@RelayRequestData {reqExecuteAt})) -> do
               currentTs <- liftIO getCurrentTime
-              if currentTs >= reqExecuteAt
+              let delay = diffUTCTime reqExecuteAt currentTs
+              if delay <= 1
                 then pure $ Right (Just (groupId, rrd))
-                else Right Nothing <$ scheduleRequest groupId (max 1 $ diffUTCTime reqExecuteAt currentTs)
+                else Right Nothing <$ scheduleRequest groupId delay
             r -> pure r
         scheduleRequest :: GroupId -> NominalDiffTime -> CM ()
         scheduleRequest groupId delay = do
@@ -3743,7 +3745,7 @@ runRelayRequestWorker a Worker {doWork} = do
               (pure Nothing)
           forM_ v_ $ \v -> do
             tId <- liftIO $ forkIO $ do
-              threadDelay $ fromIntegral $ diffToMicroseconds delay
+              threadDelay' $ diffToMicroseconds delay
               atomically $ TM.delete groupId delayThreads
               void $ atomically $ tryPutTMVar doWork ()
             weakTId <- liftIO $ mkWeakThreadId tId
@@ -3755,10 +3757,10 @@ runRelayRequestWorker a Worker {doWork} = do
             if reqRetries >= retriesThreshold && diffUTCTime currentTs reqCreatedAt >= ttl
               then withStore' $ \db -> setRelayRequestErr db groupId "expired"
               else do
-                ri <- asks $ reconnectInterval . agentConfig . config
-                let delay = maybe (initialInterval ri) (\d -> nextRetryDelay 0 d ri {increaseAfter = 0}) reqDelay
-                    executeAt = addUTCTime (fromIntegral delay / 1000000) currentTs
-                withStore' $ \db -> updateRelayRequestRetries db groupId delay executeAt
+                ri <- asks $ relayRequestRetryInterval . config
+                let executeAt = addUTCTime (fromIntegral reqDelay / 1000000) currentTs
+                    nextDelay = nextRetryDelay 0 reqDelay ri
+                withStore' $ \db -> updateRelayRequestRetries db groupId nextDelay executeAt
           e -> do
             withStore' $ \db -> setRelayRequestErr db groupId (tshow e)
             eToView e
