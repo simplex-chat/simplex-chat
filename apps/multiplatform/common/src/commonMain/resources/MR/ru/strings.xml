@@ -2799,7 +2799,7 @@
     <string name="alert_text_msg_reception_error">Приложение удалило это сообщение после %1$d попыток его получить.</string>
     <string name="down_migration_warning_chat_relays">Если Вы присоединились к каналам или создали их, они перестанут работать навсегда.</string>
     <string name="you_will_stop_receiving_messages_from_this_channel_chat_history_will_be_preserved">Вы перестанете получать сообщения из этого канала. История чата сохранится.</string>
-    <string name="rcv_channel_event_updated_channel_profile">обновлён профиль канала</string>
+    <string name="rcv_channel_event_updated_channel_profile">обновил профиль канала</string>
     <string name="member_info_member_failed">ошибка</string>
     <string name="info_row_connection_failed">ОШИБКА СОЕДИНЕНИЯ</string>
     <string name="chat_with_admins">Чат с админами</string>
