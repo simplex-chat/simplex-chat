@@ -35,10 +35,12 @@ async function initDirectory() {
         mode = 'live';
         comparator = byActiveAtDesc;
         btn = liveBtn;
+        break;
       case '#new':
         mode = 'new';
         comparator = byCreatedAtDesc;
         btn = newBtn;
+        break;
       default:
         mode = 'top';
         comparator = bySortPriority;

@@ -383,7 +383,7 @@ export class SupportBot {
           await this.withMainProfile(() =>
             this.chat.apiSendTextMessage(
               [T.ChatType.Direct, contactId],
-              `Please use my business address to ask questions: ${this.businessAddress}`,
+              `Please re-connect to this address for any questions: ${this.businessAddress}`,
             )
           )
         } catch (err) {
