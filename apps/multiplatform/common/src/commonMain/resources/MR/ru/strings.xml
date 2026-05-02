@@ -2207,7 +2207,7 @@
     <string name="operator_review_conditions">Посмотреть условия</string>
     <string name="operators_conditions_accepted_for"><![CDATA[Условия приняты для оператора(ов): <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Условия будут автоматически приняты для включенных операторов: %s.</string>
-    <string name="operator_conditions_accepted_on">Условия приняты: %s.</string>
+    <string name="operator_conditions_accepted_on">Условия приняты: %s</string>
     <string name="operator_website">Вебсайт</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Условия уже приняты для следующих операторов: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Эти условия также будут применены к: <b>%s</b>.]]></string>
