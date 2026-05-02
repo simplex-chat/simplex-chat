@@ -2564,7 +2564,7 @@
     <string name="snd_channel_event_channel_profile_updated">حُدِّث ملف تعريف القناة</string>
     <string name="delete_channel_for_all_subscribers_cannot_undo_warning">ستُحذف القناة لجميع المشتركين - لا يمكن التراجع عن هذا الإجراء!</string>
     <string name="delete_channel_for_self_cannot_undo_warning">ستُحذف القناة من عِندك - لا يمكن التراجع عن هذا الإجراء!</string>
-    <string name="channel_will_start_with_relays">ستبدأ القناة بالعمل مع %1$d من أصل %2$d من المُرحلات. أتود المتابعة؟</string>
+    <string name="channel_will_start_with_relays">ستبدأ القناة بالعمل مع %1$d من أصل %2$d مُرحلات. أتود الاستمرار؟</string>
     <string name="chat_relay">مُرحل الدردشة</string>
     <string name="button_channel_relays">مُرحلات الدردشة</string>
     <string name="chat_relays_forward_messages_in_channels">مُرحلات الدردشة توجّه الرسائل في القنوات التي تنشئها.</string>
@@ -2776,4 +2776,5 @@
     <string name="onboarding_your_profile">ملف تعريفك</string>
     <string name="your_public_address">عنوانك العام</string>
     <string name="why_built_heading">لقد وُلدت دون حساب تعريفي.</string>
+    <string name="cancel_channel_alert_msg">قناتك الجديدة %1$s متصلة بـ %2$d من أصل %3$d مُرحلات. إذا ألغيت، ستُحذف القناة - يمكنك إنشاؤها مرة أخرى.</string>
 </resources>
