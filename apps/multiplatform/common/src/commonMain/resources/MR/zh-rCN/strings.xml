@@ -2785,4 +2785,5 @@
     <string name="one_hand_ui_bottom_bar">底部栏</string>
     <string name="link_previews_alert_desc_socks">将通过 SOCKS5 代理请求链接预览。DNS 查询仍可能通过你的 DNS 解析器在本地发生。</string>
     <string name="one_hand_ui_top_bar">顶部栏</string>
+    <string name="cancel_channel_alert_msg">你的新频道 %1$s 已连接到 %3$d 个中继中的 %2$d 个中继。\n如果取消，频道将被删除 —— 你可以再次创建它。</string>
 </resources>
