@@ -961,7 +961,7 @@ CREATE TABLE test_chat_schema.groups (
     member_priv_key bytea,
     public_member_count bigint,
     relay_request_retries bigint DEFAULT 0 NOT NULL,
-    relay_request_delay bigint,
+    relay_request_delay bigint DEFAULT 0 NOT NULL,
     relay_request_execute_at timestamp with time zone DEFAULT now() NOT NULL
 );
 

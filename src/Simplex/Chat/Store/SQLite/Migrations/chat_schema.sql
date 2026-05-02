@@ -175,7 +175,7 @@ CREATE TABLE groups(
   member_priv_key BLOB,
   public_member_count INTEGER,
   relay_request_retries INTEGER NOT NULL DEFAULT 0,
-  relay_request_delay INTEGER,
+  relay_request_delay INTEGER NOT NULL DEFAULT 0,
   relay_request_execute_at TEXT NOT NULL DEFAULT(datetime('now')), -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)

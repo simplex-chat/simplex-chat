@@ -1778,6 +1778,7 @@ Query:
               relay_request_group_link = ?,
               relay_request_peer_chat_min_version = ?,
               relay_request_peer_chat_max_version = ?,
+              relay_request_delay = ?,
               relay_request_execute_at = ?
           WHERE group_id = ?
         
