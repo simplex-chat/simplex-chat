@@ -2766,4 +2766,5 @@
     <string name="one_hand_ui_bottom_bar">Alsó sáv</string>
     <string name="link_previews_alert_desc_socks">A hivatkozások előnézetét SOCKS proxyn keresztül kéri le a kliens. A DNS-lekérdezés viszont továbbra is történhet helyi szinten, a saját DNS-kiszolgálón keresztül.</string>
     <string name="one_hand_ui_top_bar">Felső sáv</string>
+    <string name="cancel_channel_alert_msg">Az új %1$s nevű csatornája %3$d átjátszóból %2$d átjátszóhoz kapcsolódik.\nHa megszakítja, akkor a csatorna törlődni fog – de később újra létrehozhatja.</string>
 </resources>
