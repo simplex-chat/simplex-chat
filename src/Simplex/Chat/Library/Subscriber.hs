@@ -613,7 +613,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- let UserContactLink {addressSettings = AddressSettings {autoReply}} = ucl
             when (connChatVersion < batchSend2Version) $ forM_ (autoReply $ addressSettings ucl) $ \mc -> sendAutoReply ct' mc Nothing -- old versions only
             -- TODO REMOVE LEGACY vvv
-            forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
+            forM_ gli_ $ \GroupLinkInfo {glGroupId = groupId, memberRole = gLinkMemRole} -> do
               groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
               subMode <- chatReadVar subscriptionMode
               groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
@@ -1525,7 +1525,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   (Nothing, Just prevSharedMsgId) -> Nothing <$ delete prevSharedMsgId
                   _ -> pure Nothing
             -- ##### Group link join requests (don't create contact requests) #####
-            Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
+            Just gli@GroupLinkInfo {glGroupId = groupId, memberRole = gLinkMemRole} -> do
               -- TODO [short links] deduplicate request by xContactId?
               gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
               if useRelays' gInfo
@@ -1579,7 +1579,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         memberJoinRequestViaRelay invId chatVRange p joiningMemberId joiningMemberKey = do
           (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           case gLinkInfo_ of
-            Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
+            Just GroupLinkInfo {glGroupId = groupId, memberRole = gLinkMemRole} -> do
               gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
               mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted gLinkMemRole Nothing (Just joiningMemberKey)
               (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem

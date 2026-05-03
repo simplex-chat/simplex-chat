@@ -20,8 +20,8 @@ constraints: zip +disable-bzip2 +disable-zstd
 
 source-repository-package
     type: git
-    location: https://github.com/simplex-chat/simplexmq.git
-    tag: e9265a7f7cb723d70b03e1b67af01f2666872a44
+    location: https://github.com/neospe/simplexmq.git
+    tag: 17753056459d127fca99513986c610a211203210
 
 source-repository-package
     type: git
@@ -48,10 +48,10 @@ source-repository-package
     location: https://github.com/simplex-chat/haskell-terminal.git
     tag: f708b00009b54890172068f168bf98508ffcd495
 
-source-repository-package
-    type: git
-    location: https://github.com/simplex-chat/android-support.git
-    tag: 9aa09f148089d6752ce563b14c2df1895718d806
+-- source-repository-package
+--    type: git
+--    location: https://github.com/simplex-chat/android-support.git
+--    tag: 9aa09f148089d6752ce563b14c2df1895718d806
 
 -- TODO this fork is only needed to compile with GHC 8.10.7 - it allows previous base version
 source-repository-package
