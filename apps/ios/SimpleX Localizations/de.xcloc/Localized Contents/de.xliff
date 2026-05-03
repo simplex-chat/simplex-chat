@@ -620,9 +620,9 @@ time interval</note>
         <target>Es wird ein neues Zufallsprofil geteilt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
-        <target>**Für jedes von Ihnen in der App genutzte Chat-Profil** wird eine separate TCP-Verbindung genutzt.</target>
+        <target state="translated">**Für jedes von Ihnen in der App genutzte Chat-Profil** wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
@@ -961,9 +961,9 @@ swipe action</note>
         <target>Alle Ihre Kontakte bleiben verbunden. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
-        <target>Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Relais hochgeladen.</target>
+        <target state="translated">Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Router hochgeladen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -1121,14 +1121,14 @@ swipe action</note>
         <target>Sie sind bereits Mitglied der Gruppe!</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="Always use private routing." xml:space="preserve">
+      <trans-unit id="Always use private routing." xml:space="preserve" approved="no">
         <source>Always use private routing.</source>
-        <target>Sie nutzen immer privates Routing.</target>
+        <target state="translated">Immer privates Routing nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Always use relay" xml:space="preserve">
+      <trans-unit id="Always use relay" xml:space="preserve" approved="no">
         <source>Always use relay</source>
-        <target>Über ein Relais verbinden</target>
+        <target state="translated">Immer über einen Router verbinden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve">
@@ -1196,9 +1196,9 @@ swipe action</note>
         <target>App Version: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Appearance" xml:space="preserve">
+      <trans-unit id="Appearance" xml:space="preserve" approved="no">
         <source>Appearance</source>
-        <target>Erscheinungsbild</target>
+        <target state="translated">Darstellung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Apply" xml:space="preserve">
@@ -1862,9 +1862,9 @@ alert subtitle</note>
         <target>Die Chat-Präferenzen wurden geändert.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Chat profile" xml:space="preserve">
+      <trans-unit id="Chat profile" xml:space="preserve" approved="no">
         <source>Chat profile</source>
-        <target>Benutzerprofil</target>
+        <target state="translated">Chat-Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat relay" xml:space="preserve">
@@ -2068,9 +2068,9 @@ chat toolbar</note>
         <target>Abgeschlossen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions accepted on: %@." xml:space="preserve">
+      <trans-unit id="Conditions accepted on: %@." xml:space="preserve" approved="no">
         <source>Conditions accepted on: %@.</source>
-        <target>Die Nutzungsbedingungen wurden akzeptiert am: %@.</target>
+        <target state="translated">Die Nutzungsbedingungen wurden am %@ akzeptiert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions are accepted for the operator(s): **%@**." xml:space="preserve">
@@ -2093,14 +2093,14 @@ chat toolbar</note>
         <target>Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions will be accepted on: %@." xml:space="preserve">
+      <trans-unit id="Conditions will be accepted on: %@." xml:space="preserve" approved="no">
         <source>Conditions will be accepted on: %@.</source>
-        <target>Die Nutzungsbedingungen werden akzeptiert am: %@.</target>
+        <target state="translated">Die Nutzungsbedingungen werden am %@ akzeptiert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions will be automatically accepted for enabled operators on: %@." xml:space="preserve">
+      <trans-unit id="Conditions will be automatically accepted for enabled operators on: %@." xml:space="preserve" approved="no">
         <source>Conditions will be automatically accepted for enabled operators on: %@.</source>
-        <target>Die Nutzungsbedingungen der aktivierten Betreiber werden automatisch akzeptiert am: %@.</target>
+        <target state="translated">Die Nutzungsbedingungen der aktivierten Betreiber werden am %@ automatisch akzeptiert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -3240,9 +3240,9 @@ alert button</note>
         <target>SimpleX NICHT für Notrufe nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use private routing." xml:space="preserve">
+      <trans-unit id="Do NOT use private routing." xml:space="preserve" approved="no">
         <source>Do NOT use private routing.</source>
-        <target>Sie nutzen KEIN privates Routing.</target>
+        <target state="translated">KEIN privates Routing nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
@@ -3260,9 +3260,9 @@ alert button</note>
         <target>Den Nachrichtenverlauf nicht an neue Abonnenten senden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do not use credentials with proxy." xml:space="preserve">
+      <trans-unit id="Do not use credentials with proxy." xml:space="preserve" approved="no">
         <source>Do not use credentials with proxy.</source>
-        <target>Verwenden Sie keine Anmeldeinformationen mit einem Proxy.</target>
+        <target state="translated">Keine Anmeldeinformationen mit einem Proxy verwenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Documents:" xml:space="preserve">
@@ -5893,14 +5893,14 @@ wer mit wem kommuniziert</target>
         <target>Neuer Zugangscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used every time you start the app.</source>
-        <target>Jedes Mal wenn Sie die App starten, werden neue SOCKS-Anmeldeinformationen genutzt</target>
+        <target state="translated">Bei jedem Neustart der App, werden neue SOCKS-Anmeldeinformationen genutzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used for each server.</source>
-        <target>Für jeden Server werden neue SOCKS-Anmeldeinformationen genutzt</target>
+        <target state="translated">Für jeden Server werden neue SOCKS-Anmeldeinformationen genutzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
@@ -6130,9 +6130,9 @@ Die sicherste Verschlüsselung.</target>
         <target>Keine herunter- oder hochgeladenen Dateien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No servers for private message routing." xml:space="preserve">
+      <trans-unit id="No servers for private message routing." xml:space="preserve" approved="no">
         <source>No servers for private message routing.</source>
-        <target>Keine Server für privates Nachrichten-Routing.</target>
+        <target state="translated">Keine Router für privates Nachrichten-Routing.</target>
         <note>servers error</note>
       </trans-unit>
       <trans-unit id="No servers to receive files." xml:space="preserve">
@@ -6853,9 +6853,9 @@ Fehler: %@</target>
         <target>Datenschutz- und Nutzungsbedingungen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy: for owners and subscribers." xml:space="preserve">
+      <trans-unit id="Privacy: for owners and subscribers." xml:space="preserve" approved="no">
         <source>Privacy: for owners and subscribers.</source>
-        <target>Privatsphäre: für Besitzer und Abonnenten.</target>
+        <target state="translated">Privatsphäre: Für Eigentümer und Abonnenten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private and secure messaging." xml:space="preserve">
@@ -7008,10 +7008,10 @@ Fehler: %@</target>
         <target>App-Bildschirm schützen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
-        <target>Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais, die Ihre Kontakte ausgewählt haben.
+        <target state="translated">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Routern, die Ihre Kontakte ausgewählt haben.
 Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -7292,9 +7292,9 @@ swipe action</note>
         <target>Relais-Server werden nur genutzt, wenn sie benötigt werden. Ihre IP-Adresse kann von Anderen erfasst werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve">
+      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve" approved="no">
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
-        <target>Relais-Server schützen Ihre IP-Adresse, aber sie können die Anrufdauer erfassen.</target>
+        <target state="translated">Relais-Server schützen Ihre IP-Adresse, können aber die Anrufdauer erfassen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Relay test failed!" xml:space="preserve">
@@ -7302,9 +7302,9 @@ swipe action</note>
         <target>Relais-Test fehlgeschlagen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reliability: many relays per channel." xml:space="preserve">
+      <trans-unit id="Reliability: many relays per channel." xml:space="preserve" approved="no">
         <source>Reliability: many relays per channel.</source>
-        <target>Zuverlässigkeit: mehrere Relais pro Kanal.</target>
+        <target state="translated">Zuverlässigkeit: Mehrere Relais pro Kanal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve">
@@ -7848,9 +7848,9 @@ chat item action</note>
         <target>Sicherheitscode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Security: owners hold channel keys." xml:space="preserve">
+      <trans-unit id="Security: owners hold channel keys." xml:space="preserve" approved="no">
         <source>Security: owners hold channel keys.</source>
-        <target>Sicherheit: Eigentümer besitzen die Kanalschlüssel.</target>
+        <target state="translated">Sicherheit: Nur die Eigentümer des Kanals besitzen die Schlüssel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Select" xml:space="preserve">
@@ -7943,14 +7943,14 @@ chat item action</note>
         <target>Nachricht senden, um Anrufe zu aktivieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send messages directly when IP address is protected and your or destination server does not support private routing." xml:space="preserve">
+      <trans-unit id="Send messages directly when IP address is protected and your or destination server does not support private routing." xml:space="preserve" approved="no">
         <source>Send messages directly when IP address is protected and your or destination server does not support private routing.</source>
-        <target>Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Zielserver kein privates Routing unterstützt.</target>
+        <target state="translated">Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Ziel-Server kein privates Routing unterstützt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send messages directly when your or destination server does not support private routing." xml:space="preserve">
+      <trans-unit id="Send messages directly when your or destination server does not support private routing." xml:space="preserve" approved="no">
         <source>Send messages directly when your or destination server does not support private routing.</source>
-        <target>Nachrichten werden direkt versendet, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</target>
+        <target state="translated">Nachrichten werden direkt versendet, wenn Ihr oder der Ziel-Server kein privates Routing unterstützt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send notifications" xml:space="preserve">
@@ -8148,9 +8148,9 @@ chat item action</note>
         <target>Das Server-Protokoll wurde geändert.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to connect to relay, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to connect to relay, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to connect to relay, check password.</source>
-        <target>Der Server erfordert eine Autorisierung, um eine Verbindung zum Relais herzustellen. Bitte Passwort überprüfen.</target>
+        <target state="translated">Der Server erfordert eine Autorisierung, um eine Verbindung zum Router herzustellen. Bitte Passwort überprüfen.</target>
         <note>relay test error</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
@@ -8364,9 +8364,9 @@ chat item action</note>
         <target>Profil teilen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share relay address" xml:space="preserve">
+      <trans-unit id="Share relay address" xml:space="preserve" approved="no">
         <source>Share relay address</source>
-        <target>Relais-Adresse teilen</target>
+        <target state="translated">Router-Adresse teilen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
@@ -9334,9 +9334,9 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target>Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve">
+      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve" approved="no">
         <source>To protect your IP address, private routing uses your SMP servers to deliver messages.</source>
-        <target>Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.</target>
+        <target state="translated">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Router genutzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
@@ -9783,14 +9783,14 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Nur lokale Benachrichtigungen nutzen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers when IP address is not protected.</source>
-        <target>Sie nutzen privates Routing mit unbekannten Servern, wenn Ihre IP-Adresse nicht geschützt ist.</target>
+        <target state="translated">Bei unbekannten Servern privates Routing nutzen, wenn Ihre IP-Adresse nicht geschützt ist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers.</source>
-        <target>Sie nutzen privates Routing mit unbekannten Servern.</target>
+        <target state="translated">Bei unbekannten Servern privates Routing nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use relay" xml:space="preserve">
@@ -10118,9 +10118,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für Datei-Server sichtbar sein.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve" approved="no">
         <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
-        <target>Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für diese XFTP-Relais sichtbar sein: %@.</target>
+        <target state="translated">Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für diese XFTP-Router sichtbar sein: %@.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -10235,9 +10235,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie können Anrufe ohne Geräte- und App-Authentifizierung vom Sperrbildschirm aus annehmen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
+      <trans-unit id="You can change it in Appearance settings." xml:space="preserve" approved="no">
         <source>You can change it in Appearance settings.</source>
-        <target>Kann von Ihnen in den Erscheinungsbild-Einstellungen geändert werden.</target>
+        <target state="translated">Kann von Ihnen in den Darstellungs-Einstellungen geändert werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can configure servers via settings." xml:space="preserve">
@@ -11657,9 +11657,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Unbekannt</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="unknown servers" xml:space="preserve">
+      <trans-unit id="unknown servers" xml:space="preserve" approved="no">
         <source>unknown servers</source>
-        <target>Unbekannte Relais</target>
+        <target state="translated">Unbekannte Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unknown status" xml:space="preserve">
