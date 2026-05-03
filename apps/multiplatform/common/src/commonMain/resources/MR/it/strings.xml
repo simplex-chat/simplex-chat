@@ -2578,7 +2578,7 @@
     <string name="channel_display_name_field">Nome del canale</string>
     <string name="delete_channel_for_all_subscribers_cannot_undo_warning">Il canale verrà eliminato per tutti gli iscritti, non è reversibile!</string>
     <string name="delete_channel_for_self_cannot_undo_warning">Il canale verrà eliminato per te, non è reversibile!</string>
-    <string name="channel_will_start_with_relays">Il canale sarà operativo con %1$d di %2$d relay. Procedere?</string>
+    <string name="channel_will_start_with_relays">Il canale sarà operativo con %1$d di %2$d relay. Continuare?</string>
     <string name="chat_relay">Relay di chat</string>
     <string name="button_channel_relays">Relay di chat</string>
     <string name="chat_relays">Relay di chat</string>
@@ -2802,4 +2802,5 @@
     <string name="one_hand_ui_bottom_bar">Barra inferiore</string>
     <string name="link_previews_alert_desc_socks">L\'anteprima del link verrà richiesta via proxy SOCKS. La ricerca DNS può ancora accadere localmente tramite il tuo risolutore DNS.</string>
     <string name="one_hand_ui_top_bar">Barra superiore</string>
+    <string name="cancel_channel_alert_msg">Il tuo nuovo canale %1$s è connesso a %2$d di %3$d relay.\nSe annulli, il canale verrà eliminato. Potrai crearlo di nuovo.</string>
 </resources>
