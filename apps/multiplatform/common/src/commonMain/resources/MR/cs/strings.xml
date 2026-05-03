@@ -1556,8 +1556,7 @@
     <string name="remote_ctrl_error_bad_version">PC má nepodporovanou verzi. Ujistěte se, že používáte stejnou verzi na obou zařízeních</string>
     <string name="remote_ctrl_error_bad_invitation">PC má chybný kód pozvánky</string>
     <string name="failed_to_create_user_invalid_title">Neplatné jméno!</string>
-    <string name="database_migration_in_progress">Databáze migrace běží.
-\nMůže to trvat několik minut.</string>
+    <string name="database_migration_in_progress">Probíhá migrace databáze. \nMůže to trvat několik minut.</string>
     <string name="profile_update_event_member_name_changed">člen %1$s změněn na %2$s</string>
     <string name="member_info_member_blocked">blokováno</string>
     <string name="member_blocked_by_admin">Blokováno adminem</string>
