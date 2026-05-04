@@ -3211,10 +3211,10 @@ export namespace OwnerVerification {
   }
 }
 
-export type PaginationByTime = PaginationByTime.Last | PaginationByTime.After | PaginationByTime.Before
+export type PaginationByTime = PaginationByTime.Last
 
 export namespace PaginationByTime {
-  export type Tag = "last" | "after" | "before"
+  export type Tag = "last"
 
   interface Interface {
     type: Tag
@@ -3225,20 +3225,8 @@ export namespace PaginationByTime {
     count: number // int
   }
 
-  export interface After extends Interface {
-    type: "after"
-    after: string // ISO-8601 timestamp
-    count: number // int
-  }
-
-  export interface Before extends Interface {
-    type: "before"
-    before: string // ISO-8601 timestamp
-    count: number // int
-  }
-
   export function cmdString(self: PaginationByTime): string {
-    return self.type == 'last' ? 'count=' + self.count : self.type == 'after' ? 'after=' + self.after + ' count=' + self.count : self.type == 'before' ? 'before=' + self.before + ' count=' + self.count : ''
+    return 'count=' + self.count
   }
 }
 

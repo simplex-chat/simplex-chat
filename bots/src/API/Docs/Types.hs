@@ -387,26 +387,10 @@ chatTypesDocsData =
     -- (sti @MemberReaction, STRecord, "", [], "", ""),
     -- (sti @MsgContentTag, (STEnum' $ dropPfxSfx "MC" '_'), "", ["MCUnknown_"], "", ""),
     -- (sti @NavigationInfo, STRecord, "", [], "", ""),
-    -- PaginationByTime has positional constructor fields in Haskell, so we
-    -- define the records manually with named fields to drive cmdString
-    -- codegen. The wire format is parsed by paginationByTimeP in
-    -- src/Simplex/Chat/Library/Commands.hs (count=N | after=TS count=N |
-    -- before=TS count=N), not JSON.
-    ( STI "PaginationByTime"
-        [ RecordTypeInfo "PTLast" [FieldInfo "count" (ti TInt)]
-        , RecordTypeInfo "PTAfter" [FieldInfo "after" (ti TUTCTime), FieldInfo "count" (ti TInt)]
-        , RecordTypeInfo "PTBefore" [FieldInfo "before" (ti TUTCTime), FieldInfo "count" (ti TInt)]
-        ]
-    , STUnion
-    , "PT"
-    , []
-    , Choice "self"
-        [ ("last", "count=" <> Param "count")
-        , ("after", "after=" <> Param "after" <> " count=" <> Param "count")
-        , ("before", "before=" <> Param "before" <> " count=" <> Param "count")
-        ] ""
-    , ""
-    )
+    -- PTAfter / PTBefore are hidden — bots only need "tail last N chats".
+    -- The wire format is parsed by paginationByTimeP in
+    -- src/Simplex/Chat/Library/Commands.hs.
+    (sti @PaginationByTime, STUnion1, "PT", ["PTAfter", "PTBefore"], "count=" <> Param "count", "")
     -- (sti @RcvQueueInfo, STRecord, "", [], "", ""),
     -- (sti @RcvSwitchStatus, STEnum, "", [], "", ""), -- incorrect
     -- (sti @SendRef, STRecord, "", [], "", ""),
@@ -618,7 +602,7 @@ deriving instance Generic ChatListQuery
 -- deriving instance Generic MemberReaction
 -- deriving instance Generic MsgContentTag
 -- deriving instance Generic NavigationInfo
--- deriving instance Generic PaginationByTime
+deriving instance Generic PaginationByTime
 -- deriving instance Generic RcvQueueInfo
 -- deriving instance Generic RcvSwitchStatus
 -- deriving instance Generic SendRef

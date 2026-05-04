@@ -2921,28 +2921,18 @@ Last:
 - type: "last"
 - count: int
 
-After:
-- type: "after"
-- after: UTCTime
-- count: int
-
-Before:
-- type: "before"
-- before: UTCTime
-- count: int
-
 **Syntax**:
 
 ```
-count=<count>|after=<after> count=<count>|before=<before> count=<count>|
+count=<count>
 ```
 
 ```javascript
-type == 'last' ? 'count=' + count : type == 'after' ? 'after=' + after + ' count=' + count : type == 'before' ? 'before=' + before + ' count=' + count : '' // JavaScript
+'count=' + count // JavaScript
 ```
 
 ```python
-'count=' + str(count) if str(type) == 'last' else 'after=' + str(after) + ' count=' + str(count) if str(type) == 'after' else 'before=' + str(before) + ' count=' + str(count) if str(type) == 'before' else '' # Python
+'count=' + str(count) # Python
 ```
 
 
