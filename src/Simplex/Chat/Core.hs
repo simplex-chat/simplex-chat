@@ -73,11 +73,11 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       exitFailure
 
 runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
+runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc
-      when (chatRelay && not testView) $ askCreateRelayAddress cc u
+      when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer
       forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc
       waitEither_ a1 a2
@@ -146,8 +146,8 @@ createActiveUser cc CoreChatOpts {chatRelay} = \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 
-askCreateRelayAddress :: ChatController -> User -> IO ()
-askCreateRelayAddress cc@ChatController {chatStore} user =
+askCreateRelayAddress :: ChatController -> User -> Maybe SMPServerWithAuth -> IO ()
+askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} srv_ =
   withTransaction chatStore (\db -> runExceptT $ getUserAddress db user) >>= \case
     Right _ -> pure ()
     Left SEUserContactLinkNotFound -> promptCreate
@@ -157,7 +157,7 @@ askCreateRelayAddress cc@ChatController {chatStore} user =
     promptCreate = do
       ok <- onOffPrompt "Create relay address" True
       when ok $
-        execChatCommand' CreateMyAddress 0 `runReaderT` cc >>= \case
+        execChatCommand' (APICreateMyAddress userId srv_) 0 `runReaderT` cc >>= \case
           Right (CRUserContactLinkCreated _ address) -> do
             putStrLn "Chat relay address is created:"
             putStrLn $ addressStr address
