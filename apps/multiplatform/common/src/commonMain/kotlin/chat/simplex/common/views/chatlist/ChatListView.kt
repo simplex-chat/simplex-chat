@@ -351,7 +351,7 @@ private fun ConnectBannerCard() {
             painterResource(if (isDark) MR.images.banner_create_link_light else MR.images.banner_create_link),
             contentDescription = null,
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO)
           )
         } else {
           BannerGradientBox(isDark) {
@@ -382,7 +382,7 @@ private fun ConnectBannerCard() {
             painterResource(if (isDark) MR.images.banner_paste_link_light else MR.images.banner_paste_link),
             contentDescription = null,
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO)
           )
         } else {
           BannerGradientBox(isDark) {

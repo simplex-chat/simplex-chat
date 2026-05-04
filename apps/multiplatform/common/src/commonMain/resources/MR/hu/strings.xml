@@ -45,7 +45,7 @@
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják – lehetővé teszi az értesítési szolgáltatás működését.</string>
     <string name="alert_title_msg_bad_hash">Hibás az üzenet kivonata</string>
     <string name="color_background">Háttér</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és a fájlátjátszók SOCKS proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének küldése közvetlen kapcsolatot használ.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és a fájlátjátszók SOCKS proxyn keresztül kapcsolódnak. A hívások pedig közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Az összes partnerével továbbra is kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.</string>
@@ -2524,7 +2524,6 @@
     <string name="down_migration_warning_chat_relays">Ha csatornákat hozott létre vagy csak csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</string>
     <string name="relay_status_active">aktív</string>
     <string name="compose_view_broadcast">Közvetítés…</string>
-    <string name="cancel_creating_channel_confirm">Mégse</string>
     <string name="channel_role_label">csatorna</string>
     <string name="chat_banner_channel">Csatorna</string>
     <string name="info_row_channel">Csatorna</string>
@@ -2624,7 +2623,6 @@
     <string name="configure_relays">Átjátszók konfigurálása</string>
     <string name="relay_connection_failed">Nem sikerült kapcsolódni az átjátszóhoz</string>
     <string name="not_all_relays_connected">Nem minden átjátszó kapcsolódott</string>
-    <string name="proceed_verb">Folytatás</string>
     <string name="channel_will_start_with_relays">A csatorna %2$d átjátszóból %1$d használatával kezd el működni. Folytatja?</string>
     <string name="relay_address_alert_title">Átjátszó címe</string>
     <string name="relay_address_alert_message">Ez egy csevegési átjátszó címe, nem használható kapcsolódásra.</string>
@@ -2689,12 +2687,12 @@
     <string name="new_1_time_link">Új egyszer használható meghívó</string>
     <string name="chat_list_channels">Csatornák</string>
     <string name="create_your_public_address">Saját nyilvános cím létrehozása</string>
-    <string name="connect_via_link_or_qr_code">Kapcsolódás hivatkozáson vagy QR-kódon keresztül</string>
+    <string name="connect_via_link_or_qr_code">Hivatkozás vagy QR-kód használata</string>
     <string name="a_link_for_one_person">Egy hivatkozás, ami egyetlen partnerrel való kapcsolat létrehozására szolgál</string>
-    <string name="connect_with_someone">Kapcsolatba lépés valakivel</string>
+    <string name="connect_with_someone">Saját hivatkozás létrehozása</string>
     <string name="for_anyone_to_reach_you">Bárki számára, aki el szeretné érni Önt</string>
     <string name="invite_someone_privately">Partner meghívása privátban</string>
-    <string name="let_someone_connect_to_you">Hagyja, hogy valaki kapcsolatba lépjen Önnel</string>
+    <string name="let_someone_connect_to_you">Hagyja, hogy valaki elérje Önt</string>
     <string name="onboarding_or_show_qr_code">Vagy mutassa meg a QR-kódot személyesen vagy videóhíváson keresztül.</string>
     <string name="onboarding_or_use_qr_code">Vagy használja ezt a QR-kódot – nyomtassa ki vagy mutassa meg online.</string>
     <string name="onboarding_send_1_time_link">Küldje el a hivatkozást bármilyen üzenetváltó alkalmazáson keresztül – ez egy biztonságos módszer – és kérje meg a partnerét, hogy illessze be a SimpleX alkalmazásba.</string>
@@ -2702,7 +2700,7 @@
     <string name="onboarding_post_address">Használja ezt a címet a közösségi oldalakon használt profiljaiban, weboldalakon vagy az e-mail aláírásában.</string>
     <string name="v6_5_invite_friends">Könnyebben hívhatja meg a barátait 👋</string>
     <string name="v6_5_non_profit_governance">Nonprofit irányítás</string>
-    <string name="v6_5_safe_web_links_descr">- hivatkozások előnézetének küldése.\n- hiperhivatkozásokon keresztüli adathalászat megakadályozása.\n- hivatkozások nyomonkövetési paramétereinek eltávolítása.</string>
+    <string name="v6_5_safe_web_links_descr">- Hivatkozások előnézetének küldése.\n- SOCKS proxy használata, ha engedélyezve van.\n- Hiperhivatkozásokon keresztüli adathalászat megakadályozása.\n- Hivatkozások nyomonkövetési paramétereinek eltávolítása.</string>
     <string name="v6_5_ownership">Tulajdonjog: saját átjátszókat üzemeltethet.</string>
     <string name="v6_5_privacy">Adatvédelem: tulajdonosok és előfizetők számára.</string>
     <string name="v6_5_public_channels">Nyilvános csatornák – mondja el szabadon a véleményét 🚀</string>
@@ -2754,7 +2752,7 @@
     <string name="onboarding_network_commitments">Hálózati kötelezettségvállalások</string>
     <string name="onboarding_network_routers_cannot_know">A hálózati útválasztók nem tudhatják,\nhogy ki kivel beszélget</string>
     <string name="onboarding_no_account">Nincs fiók. Nincs telefonszám. Nincs e-mail-cím. Nincs személyazonosító.\nA legbiztonságosabb titkosítás.</string>
-    <string name="onboarding_on_your_phone">Az Ön eszközén, nem pedig a kiszolgálókon.</string>
+    <string name="onboarding_on_your_phone">Az eszközön, nem pedig kiszolgálókon.</string>
     <string name="open_external_link_title">Megnyitja a külső hivatkozást?</string>
     <string name="onboarding_private_and_secure">Privát és biztonságos üzenetváltás.</string>
     <string name="prohibit_chat_with_admins">A csevegés az adminisztrátorokkal le van tiltva.</string>
@@ -2763,6 +2761,9 @@
     <string name="members_can_chat_with_admins_channel">A feliratkozók cseveghetnek az adminisztrátorokkal</string>
     <string name="why_simplex_is_built">Miért jött létre a SimpleX?</string>
     <string name="onboarding_your_network">Saját hálózat</string>
-    <string name="onboarding_your_profile">Saját profil</string>
+    <string name="onboarding_your_profile">Profil létrehozása</string>
     <string name="onboarding_first_network">Az első hálózat, ahol Ön birtokolja\na saját kapcsolatait és csoportjait.</string>
+    <string name="one_hand_ui_bottom_bar">Alsó sáv</string>
+    <string name="link_previews_alert_desc_socks">A hivatkozások előnézetét SOCKS proxyn keresztül kéri le a kliens. A DNS-lekérdezés viszont továbbra is történhet helyi szinten, a saját DNS-kiszolgálón keresztül.</string>
+    <string name="one_hand_ui_top_bar">Felső sáv</string>
 </resources>

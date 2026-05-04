@@ -1520,6 +1520,7 @@ nella tua rete</target>
       </trans-unit>
       <trans-unit id="Bottom bar" xml:space="preserve">
         <source>Bottom bar</source>
+        <target>Barra inferiore</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
@@ -9422,6 +9423,7 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
       </trans-unit>
       <trans-unit id="Top bar" xml:space="preserve">
         <source>Top bar</source>
+        <target>Barra superiore</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
@@ -10347,7 +10349,7 @@ Ripetere la richiesta di ingresso?</target>
         <source>You commit to:
 - Only legal content in public groups
 - Respect other users - no spam</source>
-        <target>Ti impegni a:
+        <target>Tu ti impegni a:
 - Pubblicare solo contenuto legale nei gruppi pubblici
 - Rispettare gli altri utenti. Niente spam</target>
         <note>No comment provided by engineer.</note>
