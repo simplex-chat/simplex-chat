@@ -735,13 +735,14 @@ CREATE TABLE delivery_jobs(
   job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   body BLOB,
-  subscriber_body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
   job_err_reason TEXT,
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  subscriber_body BLOB
 ) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
