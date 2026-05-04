@@ -1,5 +1,5 @@
-packages: .
--- packages: . ../simplexmq
+-- packages: .
+packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
 -- uncomment two sections below to run tests with coverage
@@ -18,10 +18,10 @@ package cryptostore
 
 constraints: zip +disable-bzip2 +disable-zstd
 
-source-repository-package
-    type: git
-    location: https://github.com/simplex-chat/simplexmq.git
-    tag: 1f173abf6d6fccb617be1e7994629c405983c431
+-- source-repository-package
+--    type: git
+--    location: https://github.com/simplex-chat/simplexmq.git
+--    tag: 1f173abf6d6fccb617be1e7994629c405983c431
 
 source-repository-package
     type: git

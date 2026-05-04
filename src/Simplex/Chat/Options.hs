@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.Options
@@ -66,6 +67,7 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
+    chatRelayServer :: Maybe SMPServerWithAuth,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
@@ -234,11 +236,11 @@ coreChatOptsP appDir defaultDbName = do
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
         )
-  chatRelay <-
-    switch
-      ( long "relay"
-          <> help "Run as a chat relay client"
-      )
+  chatRelayOpt <-
+    option ((True,) . Just <$> strParse)
+          (long "relay" <> metavar "SERVER" <> help "Run as a chat relay client, optionally with specific SMP server")
+      <|> flag' (True, Nothing) (long "relay" <> help "Run as a chat relay client")
+      <|> pure (False, Nothing)
   highlyAvailable <-
     switch
       ( long "ha"
@@ -281,7 +283,8 @@ coreChatOptsP appDir defaultDbName = do
         logFile,
         tbqSize,
         deviceName,
-        chatRelay,
+        chatRelay = fst chatRelayOpt,
+        chatRelayServer = snd chatRelayOpt,
         highlyAvailable,
         yesToUpMigrations,
         migrationBackupPath,

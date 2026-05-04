@@ -152,6 +152,7 @@ testCoreOpts =
       tbqSize = 16,
       deviceName = Nothing,
       chatRelay = False,
+      chatRelayServer = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
