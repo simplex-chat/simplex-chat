@@ -22,7 +22,7 @@ where
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -51,7 +51,8 @@ data ChatOpts = ChatOpts
     muteNotifications :: Bool,
     markRead :: Bool,
     createBot :: Maybe CreateBotOpts,
-    userDisplayName :: Maybe Text
+    userDisplayName :: Maybe Text,
+    userImageFile :: Maybe FilePath
   }
 
 data CoreChatOpts = CoreChatOpts
@@ -458,6 +459,13 @@ chatOptsP appDir defaultDbName = do
             <> metavar "NAME"
             <> help "Use existing active user with this display name, or create one on the first start (incompatible with --create-bot-display-name)"
         )
+  userImageFile <-
+    optional $
+      strOption
+        ( long "user-image-file"
+            <> metavar "FILE"
+            <> help "Set user profile image from .png/.jpg file (requires --user-display-name); does not notify existing contacts"
+        )
   pure
     ChatOpts
       { coreOptions,
@@ -480,7 +488,10 @@ chatOptsP appDir defaultDbName = do
             | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
             | createBotClientService -> error "--create-bot-client-service option requires --create-bot-name option"
             | otherwise -> Nothing,
-        userDisplayName
+        userDisplayName,
+        userImageFile = case userImageFile of
+          Just _ | isNothing userDisplayName -> error "--user-image-file option requires --user-display-name option"
+          _ -> userImageFile
       }
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]
