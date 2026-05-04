@@ -2344,7 +2344,7 @@ processChatCommand cxt nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db cxt user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APIListContacts userId
-  APICreateMyAddress userId -> withUserId userId $ \user@User {userChatRelay} -> do
+  APICreateMyAddress userId srv_ -> withUserId userId $ \user@User {userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
@@ -2353,7 +2353,7 @@ processChatCommand cxt nm = \case
     gVar <- asks random
     rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
     let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
-    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing
+    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing srv_
     ccLink' <- shortenCreatedLink ccLink
     -- TODO [relays] relay: add identity, key to link data?
     userData <-
@@ -2366,7 +2366,7 @@ processChatCommand cxt nm = \case
     withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode rootPrivKey
     pure $ CRUserContactLinkCreated user ccLink''
   CreateMyAddress -> withUser $ \User {userId} ->
-    processChatCommand cxt nm $ APICreateMyAddress userId
+    processChatCommand cxt nm $ APICreateMyAddress userId Nothing
   APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do
     conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
     withChatLock "deleteMyAddress" $ do
@@ -2612,7 +2612,7 @@ processChatCommand cxt nm = \case
         let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
             crClientData = encodeJSON $ CRDataGroup groupLinkId
         -- prepare link with entityId as linkEntityId (no server request)
-        (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True (Just crClientData)
+        (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True (Just crClientData) Nothing
         ccLink' <- setShortLinkType CCTChannel <$> shortenCreatedLink ccLink
         sLnk <- case connShortLink' ccLink' of
           Just sl -> pure sl
@@ -5578,7 +5578,7 @@ chatCommandP =
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/_connect contact " *> (APIConnectContactViaAddress <$> A.decimal <*> incognitoOnOffP <* A.space <*> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),
-      "/_address " *> (APICreateMyAddress <$> A.decimal),
+      "/_address " *> (APICreateMyAddress <$> A.decimal <*> optional (A.space *> strP)),
       ("/address" <|> "/ad") $> CreateMyAddress,
       "/_delete_address " *> (APIDeleteMyAddress <$> A.decimal),
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
