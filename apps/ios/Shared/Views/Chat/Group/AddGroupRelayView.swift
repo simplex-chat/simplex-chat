@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct AddGroupRelayView: View {
     var groupInfo: GroupInfo
+    var existingRelayIds: Set<Int64>
     var onRelayAdded: () -> Void
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
@@ -18,16 +19,6 @@ struct AddGroupRelayView: View {
     @State private var selectedRelayIds: Set<Int64> = []
     @State private var isLoading = true
     @State private var isAdding = false
-    @State private var alert: AddRelayAlert?
-
-    enum AddRelayAlert: Identifiable {
-        case error(String)
-        var id: String {
-            switch self {
-            case let .error(msg): return "error_\(msg)"
-            }
-        }
-    }
 
     var body: some View {
         NavigationView {
@@ -63,42 +54,36 @@ struct AddGroupRelayView: View {
                         .disabled(selectedRelayIds.isEmpty || isAdding)
                 }
             }
-            .alert(item: $alert) { a in
-                switch a {
-                case let .error(msg):
-                    return Alert(title: Text("Error adding relays"), message: Text(msg))
-                }
-            }
         }
         .task { await loadAvailableRelays() }
     }
 
-    @ViewBuilder private func relayCheckRow(_ relay: UserChatRelay) -> some View {
-        if let relayId = relay.chatRelayId {
-            let selected = selectedRelayIds.contains(relayId)
-            Button {
-                if selected {
-                    selectedRelayIds.remove(relayId)
-                } else {
-                    selectedRelayIds.insert(relayId)
-                }
-            } label: {
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(relay.displayName.isEmpty ? relay.address : relay.displayName)
-                            .foregroundColor(theme.colors.onBackground)
+    private func relayCheckRow(_ relay: UserChatRelay) -> some View {
+        let relayId = relay.chatRelayId!
+        let selected = selectedRelayIds.contains(relayId)
+        let title = !relay.displayName.isEmpty ? relay.displayName : (relay.domains.first ?? relay.address)
+        return Button {
+            if selected {
+                selectedRelayIds.remove(relayId)
+            } else {
+                selectedRelayIds.insert(relayId)
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading) {
+                    Text(title)
+                        .foregroundColor(theme.colors.onBackground)
+                        .lineLimit(1)
+                    if let domain = relay.domains.first, !relay.displayName.isEmpty {
+                        Text(domain)
+                            .font(.caption)
+                            .foregroundColor(theme.colors.secondary)
                             .lineLimit(1)
-                        if !relay.displayName.isEmpty {
-                            Text(relay.domains.first ?? relay.address)
-                                .font(.caption)
-                                .foregroundColor(theme.colors.secondary)
-                                .lineLimit(1)
-                        }
                     }
-                    Spacer()
-                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(selected ? .accentColor : theme.colors.secondary)
                 }
+                Spacer()
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(selected ? .accentColor : theme.colors.secondary)
             }
         }
     }
@@ -110,7 +95,9 @@ struct AddGroupRelayView: View {
             for op in servers {
                 if let oper = op.operator, oper.enabled != true { continue }
                 for relay in op.chatRelays {
-                    if relay.enabled && !relay.deleted && relay.chatRelayId != nil {
+                    if relay.enabled && !relay.deleted,
+                       let relayId = relay.chatRelayId,
+                       !existingRelayIds.contains(relayId) {
                         relays.append(relay)
                     }
                 }
@@ -137,18 +124,19 @@ struct AddGroupRelayView: View {
                 await MainActor.run {
                     isAdding = false
                     switch result {
-                    case .added:
+                    case let .added(gInfo, _, relays):
+                        ChannelRelaysModel.shared.set(groupId: gInfo.groupId, groupRelays: relays)
                         onRelayAdded()
                         dismiss()
                     case let .addFailed(results):
                         let errors = results.compactMap { $0.relayError }.map { responseError($0) }
-                        alert = .error(errors.joined(separator: "\n"))
+                        showAlert(NSLocalizedString("Error adding relays", comment: "alert title"), message: errors.joined(separator: "\n"))
                     }
                 }
             } catch {
                 await MainActor.run {
                     isAdding = false
-                    alert = .error(responseError(error))
+                    showAlert(NSLocalizedString("Error adding relays", comment: "alert title"), message: responseError(error))
                 }
             }
         }

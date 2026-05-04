@@ -735,9 +735,9 @@ struct ComposeView: View {
               gInfo.membership.memberRole == .owner,
               ![.memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus)
         else { return nil }
-        let relays = channelRelaysModel.groupId == gInfo.groupId
-            ? channelRelaysModel.groupRelays : []
-        guard !relays.isEmpty else { return nil }
+        guard channelRelaysModel.groupId == gInfo.groupId else { return nil }
+        let relays = channelRelaysModel.groupRelays
+        guard !relays.isEmpty else { return ([], 0, 0, 0, true) }
         let relayMembers = relays.map { relay in
             (relay, chatModel.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId })?.wrapped)
         }

@@ -14,8 +14,12 @@ struct ChannelRelaysView: View {
     var groupInfo: GroupInfo
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @State private var groupRelays: [GroupRelay] = []
+    @ObservedObject private var channelRelaysModel = ChannelRelaysModel.shared
     @State private var showAddRelay = false
+
+    private var groupRelays: [GroupRelay] {
+        channelRelaysModel.groupId == groupInfo.groupId ? channelRelaysModel.groupRelays : []
+    }
 
     var body: some View {
         List {
@@ -31,25 +35,26 @@ struct ChannelRelaysView: View {
             }
         }
         .sheet(isPresented: $showAddRelay) {
-            AddGroupRelayView(groupInfo: groupInfo) {
-                Task {
-                    groupRelays = await apiGetGroupRelays(groupInfo.groupId)
-                    await chatModel.loadGroupMembers(groupInfo)
-                }
+            let existingRelayIds = Set(groupRelays.compactMap { $0.userChatRelay.chatRelayId })
+            AddGroupRelayView(groupInfo: groupInfo, existingRelayIds: existingRelayIds) {
+                Task { await chatModel.loadGroupMembers(groupInfo) }
             }
         }
         .onAppear {
             Task {
                 await chatModel.loadGroupMembers(groupInfo)
                 if groupInfo.isOwner {
-                    groupRelays = await apiGetGroupRelays(groupInfo.groupId)
+                    let relays = await apiGetGroupRelays(groupInfo.groupId)
+                    await MainActor.run {
+                        ChannelRelaysModel.shared.set(groupId: groupInfo.groupId, groupRelays: relays)
+                    }
                 }
             }
         }
     }
 
     @ViewBuilder private func relaysList() -> some View {
-        let relayMembers = chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay }
+        let relayMembers = chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay && $0.wrapped.memberStatus != .memRemoved && $0.wrapped.memberStatus != .memGroupDeleted }
         if relayMembers.isEmpty {
             Section {
                 Text("No chat relays")
@@ -58,7 +63,7 @@ struct ChannelRelaysView: View {
         } else {
             Section {
                 ForEach(relayMembers) { member in
-                    NavigationLink {
+                    let link = NavigationLink {
                         GroupMemberInfoView(
                             groupInfo: groupInfo,
                             chat: chat,
@@ -72,6 +77,18 @@ struct ChannelRelaysView: View {
                             ? ownerRelayStatusText(member.wrapped)
                             : subscriberRelayStatusText(member.wrapped)
                         relayMemberRow(member.wrapped, statusText: statusText)
+                    }
+                    if groupInfo.isOwner && member.wrapped.canBeRemoved(groupInfo: groupInfo) {
+                        link.swipeActions(edge: .trailing) {
+                            Button {
+                                showRemoveMemberAlert(groupInfo, member.wrapped)
+                            } label: {
+                                Label("Remove relay", systemImage: "trash")
+                            }
+                            .tint(.red)
+                        }
+                    } else {
+                        link
                     }
                 }
             } footer: {
