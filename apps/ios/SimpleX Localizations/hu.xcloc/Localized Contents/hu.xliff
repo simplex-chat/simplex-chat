@@ -1752,9 +1752,9 @@ alert subtitle</note>
         <target>A csatornaprofil a feliratkozók eszközén és a csevegési átjátszókon van tárolva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers." xml:space="preserve">
+      <trans-unit id="Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers." xml:space="preserve" approved="no">
         <source>Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers.</source>
-        <target>A csatornaprofil módosult. Ha menti, akkor a frissített profil el lesz küldve a csatorna feliratkozóinak.</target>
+        <target state="translated">Csatornaprofil módosítva. Ha menti, akkor a frissített profil el lesz küldve a csatorna feliratkozóinak.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Channel temporarily unavailable" xml:space="preserve">
@@ -4609,9 +4609,9 @@ Hiba: %2$@</target>
         <target>A csoportprofil a tagok eszközein tárolódik, nem a kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve">
+      <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve" approved="no">
         <source>Group profile was changed. If you save it, the updated profile will be sent to group members.</source>
-        <target>Csoportprofil módosítva. Ha menti, akkor a frissített profil el lesz küldve a csoporttagoknak.</target>
+        <target state="translated">Csoportprofil módosítva. Ha menti, akkor a frissített profil el lesz küldve a csoport tagjainak.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
@@ -11672,14 +11672,14 @@ utoljára fogadott üzenet: %2$@</target>
         <target>nem védett</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="updated channel profile" xml:space="preserve">
+      <trans-unit id="updated channel profile" xml:space="preserve" approved="no">
         <source>updated channel profile</source>
-        <target>frissített csatornaprofil</target>
+        <target state="translated">frissítette csatorna profilját</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="updated group profile" xml:space="preserve">
+      <trans-unit id="updated group profile" xml:space="preserve" approved="no">
         <source>updated group profile</source>
-        <target>frissítette a csoportprofilt</target>
+        <target state="translated">frissítette a csoport profilját</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="updated profile" xml:space="preserve">
