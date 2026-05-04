@@ -3604,14 +3604,15 @@ processChatCommand vr nm = \case
           localRelayLinks = mapMaybe memberRelayLink activeRelayMembers
           newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
       forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
-        void $ connectToRelay user gInfo rlnk
+        connectToRelay user gInfo rlnk
       forM_ activeRelayMembers $ \m ->
         case memberRelayLink m of
           Just rlnk | rlnk `notElem` currentRelayLinks ->
             void . tryAllErrors $ do
               deleteMemberConnection m
-              void $ updateMemberRecordDeleted user gInfo m GSMemRemoved
+              updateMemberRecordDeleted user gInfo m GSMemRemoved
           _ -> pure ()
+
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
       -- 0) toggle disabled - PQSupportOff
@@ -4784,7 +4785,10 @@ runRelayGroupLinkChecks user = do
             case gLink_ of
               Right GroupLink {connLinkContact = CCLink _ (Just ourLink)} ->
                 if ourLink `elem` relayLinks
-                  then void $ withFastStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAccepted RSActive
+                  then do
+                    -- TODO [relays] emit event to UI when relay own status promoted to RSActive
+                    -- CEvtGroupRelayUpdated requires GroupRelay (owner-side), not available on relay side
+                    void $ withFastStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAccepted RSActive
                   else withFastStore' $ \db -> updateRelayOwnStatus_ db gInfo RSInactive
               _ -> pure ()
           _ -> pure ()

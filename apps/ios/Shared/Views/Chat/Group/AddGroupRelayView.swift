@@ -74,30 +74,31 @@ struct AddGroupRelayView: View {
     }
 
     @ViewBuilder private func relayCheckRow(_ relay: UserChatRelay) -> some View {
-        let relayId = relay.chatRelayId ?? -1
-        let selected = selectedRelayIds.contains(relayId)
-        Button {
-            if selected {
-                selectedRelayIds.remove(relayId)
-            } else {
-                selectedRelayIds.insert(relayId)
-            }
-        } label: {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(relay.displayName.isEmpty ? relay.address : relay.displayName)
-                        .foregroundColor(theme.colors.onBackground)
-                        .lineLimit(1)
-                    if !relay.displayName.isEmpty {
-                        Text(relay.domains.first ?? relay.address)
-                            .font(.caption)
-                            .foregroundColor(theme.colors.secondary)
-                            .lineLimit(1)
-                    }
+        if let relayId = relay.chatRelayId {
+            let selected = selectedRelayIds.contains(relayId)
+            Button {
+                if selected {
+                    selectedRelayIds.remove(relayId)
+                } else {
+                    selectedRelayIds.insert(relayId)
                 }
-                Spacer()
-                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(selected ? .accentColor : theme.colors.secondary)
+            } label: {
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(relay.displayName.isEmpty ? relay.address : relay.displayName)
+                            .foregroundColor(theme.colors.onBackground)
+                            .lineLimit(1)
+                        if !relay.displayName.isEmpty {
+                            Text(relay.domains.first ?? relay.address)
+                                .font(.caption)
+                                .foregroundColor(theme.colors.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    Spacer()
+                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(selected ? .accentColor : theme.colors.secondary)
+                }
             }
         }
     }
