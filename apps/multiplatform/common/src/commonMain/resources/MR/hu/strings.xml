@@ -1022,7 +1022,7 @@
     <string name="paste_the_link_you_received">Kapott hivatkozás beillesztése</string>
     <string name="smp_save_servers_question">Menti a kiszolgálókat?</string>
     <string name="v4_2_security_assessment_desc">A SimpleX Chat biztonsága a Trail of Bits által lett auditálva.</string>
-    <string name="rcv_group_event_updated_group_profile">frissítette a csoportprofilt</string>
+    <string name="rcv_group_event_updated_group_profile">frissítette a csoport profilját</string>
     <string name="settings_section_title_support">SIMPLEX CHAT TÁMOGATÁSA</string>
     <string name="simplex_service_notification_title">SimpleX Chat szolgáltatás</string>
     <string name="observer_cant_send_message_title">Ön megfigyelő</string>
@@ -2640,7 +2640,7 @@
     <string name="alert_title_msg_error">Üzenethiba</string>
     <string name="save_and_notify_channel_subscribers">Mentés és a csatorna feliratkozóinak értesítése</string>
     <string name="save_channel_profile">Csatornaprofil mentése</string>
-    <string name="rcv_channel_event_updated_channel_profile">frissített csatornaprofil</string>
+    <string name="rcv_channel_event_updated_channel_profile">frissítette a csatorna profilját</string>
     <string name="alert_text_msg_reception_error">Az alkalmazás %1$d sikertelen letöltési kísérlet után eltávolította ezt az üzenetet.</string>
     <string name="rcv_msg_error_dropped">eltávolítva (%1$d kísérlet)</string>
     <string name="channel_temporarily_unavailable">A csatorna ideiglenesen nem érhető el</string>
