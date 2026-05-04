@@ -42,6 +42,7 @@ data DirectoryOpts = DirectoryOpts
     runCLI :: Bool,
     searchResults :: Int,
     webFolder :: Maybe FilePath,
+    linkCheckInterval :: Int,
     testing :: Bool
   }
 
@@ -162,6 +163,14 @@ directoryOpts appDir defaultDbName = do
             <> metavar "WEB_FOLDER"
             <> help "Folder to store static web assets"
         )
+  linkCheckInterval <-
+    option
+      auto
+      ( long "link-check-interval"
+          <> metavar "SECONDS"
+          <> help "Interval in seconds to check public group link data (default: 1800)"
+          <> value 1800
+      )
   pure
     DirectoryOpts
       { coreOptions,
@@ -182,6 +191,7 @@ directoryOpts appDir defaultDbName = do
         runCLI,
         searchResults = 10,
         webFolder,
+        linkCheckInterval,
         testing = False
       }
 

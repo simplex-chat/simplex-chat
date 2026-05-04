@@ -16,13 +16,19 @@ val simplexAssetsLocal = file("src/commonMain/resources/assets/simplex")
 val hasSimplexAssets = simplexAssetsDir != null
 
 if (simplexAssetsDir != null) {
-  val resolvedAssetsDir = rootProject.rootDir.resolve(simplexAssetsDir).absolutePath
-  tasks.register<Exec>("copySimplexAssets") {
-    commandLine(
-      "${rootProject.rootDir}/../../scripts/android/copy-assets.sh",
-      resolvedAssetsDir,
-      simplexAssetsLocal.absolutePath
-    )
+  val resolvedAssetsDir = rootProject.rootDir.resolve(simplexAssetsDir)
+  val srcImagesDir = resolvedAssetsDir.resolve("multiplatform/resources/MR/images")
+  val verifySimplexAssets = tasks.register("verifySimplexAssets") {
+    doLast {
+      if (!srcImagesDir.isDirectory) {
+        throw GradleException("Source assets not found: $srcImagesDir (run resize.sh first)")
+      }
+    }
+  }
+  tasks.register<Sync>("copySimplexAssets") {
+    dependsOn(verifySimplexAssets)
+    from(srcImagesDir)
+    into(simplexAssetsLocal.resolve("MR/images"))
   }
 } else {
   tasks.register<Delete>("cleanSimplexAssets") {

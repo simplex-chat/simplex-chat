@@ -37,7 +37,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
@@ -77,7 +77,7 @@ import Simplex.Messaging.Agent.Client (getAgentWorker, temporaryOrHostError, wai
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
-import Simplex.Messaging.Agent.RetryInterval (withRetryInterval)
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkRequestMode (..), ProxyClientError (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -94,8 +94,9 @@ import Simplex.Messaging.Transport (TransportError (..))
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import qualified System.FilePath as FP
+import System.Mem.Weak (Weak)
 import Text.Read (readMaybe)
-import UnliftIO.Concurrent (forkIO)
+import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.STM
 
@@ -590,7 +591,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [incognito] print incognito profile used for this contact
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
           toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
-          let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
+          let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just pqEnc) Nothing
           -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
           when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
             (Nothing, Nothing) -> do
@@ -842,7 +843,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               firstConnectedHost
               ( do
                   let cd = CDGroupRcv gInfo'' scopeInfo m''
-                  createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+                  createInternalChatItem user cd (CIRcvGroupE2EEInfo $ e2eInfoGroup gInfo'') Nothing
                   let prepared = preparedGroup gInfo''
                   unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
                   memberConnectedChatItem gInfo'' scopeInfo m''
@@ -1356,7 +1357,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
                         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
-                        let e2eContent = CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
+                        let e2eContent = CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just $ CR.pqSupportToEnc $ reqPQSup
                         void $ createChatItem user cd False e2eContent Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \mc -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
@@ -1492,7 +1493,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
         xGrpRelayInv invId chatVRange groupRelayInv = do
-          (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange
+          initialDelay <- asks $ initialInterval . relayRequestRetryInterval . config
+          (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange initialDelay
           lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
         xGrpRelayTest invId chatVRange challenge = do
@@ -1535,7 +1537,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
     memberCanSend Nothing _ a = a -- channel message - was previously checked and allowed by relay
     memberCanSend (Just m@GroupMember {memberRole}) msgScope a = case msgScope of
-      Just MSMember {} -> a
+      Just (MSMember mId)
+        | sameMemberId mId m || memberRole >= GRModerator -> a
+        | otherwise -> messageError "member is not allowed to send to this support chat" $> Nothing
       Nothing
         | memberRole > GRObserver || memberPending m -> a
         | otherwise -> messageError "member is not allowed to send messages" $> Nothing
@@ -1837,13 +1841,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- This patches initial sharedMsgId into chat item when locally deleted chat item
         -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
         -- Chat item and update message which created it will have different sharedMsgId in this case...
-        let timed_ = rcvContactCITimed ct ttl
-            ts = ciContentTexts content
-        (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live M.empty
-        ci' <- withStore' $ \db -> do
-          createChatItemVersion db (chatItemId' ci) brokerTs mc
-          updateDirectChatItem' db user contactId ci content True live Nothing Nothing
-        toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci')
+        if isVoice mc && not (featureAllowed SCFVoice forContact ct)
+          then do
+            let ciContent = ciContentNoParse $ CIRcvChatFeatureRejected CFVoice
+            (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs ciContent Nothing Nothing False M.empty
+            toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci)
+          else do
+            let timed_ = rcvContactCITimed ct ttl
+                ts = ciContentTexts content
+            (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live M.empty
+            ci' <- withStore' $ \db -> do
+              createChatItemVersion db (chatItemId' ci) brokerTs mc
+              updateDirectChatItem' db user contactId ci content True live Nothing Nothing
+            toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci')
       where
         brokerTs = metaBrokerTs msgMeta
         content = CIRcvMsgContent mc
@@ -2073,15 +2083,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m mc msgScope_
                         pure (gInfo', CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
                       Nothing -> pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
-                (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
-                ci' <- withStore' $ \db -> do
-                  createChatItemVersion db (chatItemId' ci) brokerTs mc
-                  updateGroupChatItem db user groupId ci content True live Nothing
-                ci'' <- case chatDir of
-                  CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
-                  CDChannelRcv {} -> pure ci'
-                toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
-                pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
+                case m_ >>= \m -> prohibitedGroupContent gInfo' m scopeInfo mc ft_ (Nothing :: Maybe String) False of
+                  Just f -> do
+                    let ciContent = ciContentNoParse $ CIRcvGroupFeatureRejected f
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs ciContent Nothing timed_ False M.empty
+                    groupMsgToView cInfo ci
+                    pure Nothing
+                  Nothing -> do
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
+                    ci' <- withStore' $ \db -> do
+                      createChatItemVersion db (chatItemId' ci) brokerTs mc
+                      updateGroupChatItem db user groupId ci content True live Nothing
+                    ci'' <- case chatDir of
+                      CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
+                      CDChannelRcv {} -> pure ci'
+                    toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
+                    pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
         content = CIRcvMsgContent mc
         ts@(_, ft_) = msgContentTexts mc
@@ -2546,7 +2563,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- create item in both scopes
             let gInfo' = gInfo {membership = membership'}
                 cd = CDGroupRcv gInfo' Nothing m
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo $ e2eInfoGroup gInfo') Nothing
             let prepared = preparedGroup gInfo'
             unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> preparedGroup gInfo'
@@ -2616,10 +2633,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           BCCustomer -> customerId == memberId
         createProfileUpdatedItem m' (msg, brokerTs) = do
           (gInfo', m'', scopeInfo) <- mkGroupChatScope gInfo m'
-          let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
-              cd = CDGroupRcv gInfo' scopeInfo m''
-          (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs ciContent
-          groupMsgToView cInfo ci
+          let createItem scopeInfo_ m_ = do
+                let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
+                    cd = CDGroupRcv gInfo' scopeInfo_ m_
+                (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs ciContent
+                groupMsgToView cInfo ci
+          case scopeInfo of
+            Just _ -> createItem scopeInfo m''
+            Nothing
+              | useRelays' gInfo' && not (isRelay m'') && memberRole' m'' < GRModerator ->
+                  forM_ (supportChat m'') $ \_ ->
+                    createItem (Just GCSIMemberSupport {groupMember_ = Just m''}) m''
+              | otherwise -> createItem Nothing m''
 
     xInfoProbe :: ContactOrMember -> Probe -> CM ()
     xInfoProbe cgm2 probe = do
@@ -2917,8 +2942,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Right existingMember
-              | useRelays' gInfo ->
-                  void $ withStore $ \db -> updatePreparedChannelMember db vr user existingMember memInfo
+              | useRelays' gInfo -> do
+                  updatedMember <- withStore $ \db -> updatePreparedChannelMember db vr user existingMember memInfo
+                  toView $ CEvtGroupMemberUpdated user gInfo existingMember updatedMember
               | otherwise ->
                   messageError "x.grp.mem.intro ignored: member already exists"
             Left _
@@ -3686,23 +3712,55 @@ runRelayRequestWorker a Worker {doWork} = do
     user <- getRelayUser db
     UserContactLink {userContactLinkId} <- getUserAddress db user
     pure (user, userContactLinkId)
+  delayThreads <- liftIO TM.emptyIO
   forever $ do
     lift $ waitForWork doWork
-    runRelayRequestOperation vr user uclId
+    runRelayRequestOperation delayThreads vr user uclId
   where
-    runRelayRequestOperation :: VersionRangeChat -> User -> Int64 -> CM ()
-    runRelayRequestOperation vr user uclId =
-      withWork_ a doWork (withStore' getNextPendingRelayRequest) $
+    runRelayRequestOperation :: TM.TMap GroupId (TMVar (Weak ThreadId)) -> VersionRangeChat -> User -> Int64 -> CM ()
+    runRelayRequestOperation delayThreads vr user uclId =
+      withWork_ a doWork getReadyRelayRequest $
         \(groupId, rrd) -> do
-          ri <- asks $ reconnectInterval . agentConfig . config
-          withRetryInterval ri $ \_ loop -> do
-            liftIO $ waitWhileSuspended a
-            liftIO $ waitForUserNetwork a
-            processRelayRequest groupId rrd `catchAllErrors` retryTmpError loop groupId
+          ChatConfig {relayRequestExpiry} <- asks config
+          liftIO $ waitWhileSuspended a
+          liftIO $ waitForUserNetwork a
+          processRelayRequest groupId rrd `catchAllErrors` retryTmpError relayRequestExpiry groupId rrd
       where
-        retryTmpError :: CM () -> GroupId -> ChatError -> CM ()
-        retryTmpError loop groupId = \case
-          ChatErrorAgent {agentError} | temporaryOrHostError agentError -> loop
+        getReadyRelayRequest :: CM (Either StoreError (Maybe (GroupId, RelayRequestData)))
+        getReadyRelayRequest =
+          withStore' getNextPendingRelayRequest >>= \case
+            Right (Just (groupId, rrd@RelayRequestData {reqExecuteAt})) -> do
+              currentTs <- liftIO getCurrentTime
+              let delay = diffUTCTime reqExecuteAt currentTs
+              if delay <= 1
+                then pure $ Right (Just (groupId, rrd))
+                else Right Nothing <$ scheduleRequest groupId delay
+            r -> pure r
+        scheduleRequest :: GroupId -> NominalDiffTime -> CM ()
+        scheduleRequest groupId delay = do
+          v_ <- liftIO $ atomically $
+            ifM
+              (isNothing <$> TM.lookup groupId delayThreads)
+              (newEmptyTMVar >>= \v -> TM.insert groupId v delayThreads $> Just v)
+              (pure Nothing)
+          forM_ v_ $ \v -> do
+            tId <- liftIO $ forkIO $ do
+              threadDelay' $ diffToMicroseconds delay
+              atomically $ TM.delete groupId delayThreads
+              void $ atomically $ tryPutTMVar doWork ()
+            weakTId <- liftIO $ mkWeakThreadId tId
+            liftIO $ atomically $ putTMVar v weakTId
+        retryTmpError :: (Int, NominalDiffTime) -> GroupId -> RelayRequestData -> ChatError -> CM ()
+        retryTmpError (retriesThreshold, ttl) groupId RelayRequestData {reqDelay, reqRetries, reqCreatedAt} = \case
+          ChatErrorAgent {agentError} | temporaryOrHostError agentError -> do
+            currentTs <- liftIO getCurrentTime
+            if reqRetries >= retriesThreshold && diffUTCTime currentTs reqCreatedAt >= ttl
+              then withStore' $ \db -> setRelayRequestErr db groupId "expired"
+              else do
+                ri <- asks $ relayRequestRetryInterval . config
+                let executeAt = addUTCTime (fromIntegral reqDelay / 1000000) currentTs
+                    nextDelay = nextRetryDelay 0 reqDelay ri
+                withStore' $ \db -> updateRelayRequestRetries db groupId nextDelay executeAt
           e -> do
             withStore' $ \db -> setRelayRequestErr db groupId (tshow e)
             eToView e

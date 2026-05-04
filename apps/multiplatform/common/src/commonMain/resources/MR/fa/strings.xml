@@ -730,7 +730,6 @@
     <string name="callstatus_accepted">تماس پذیرفته</string>
     <string name="decentralized">نامتمرکز</string>
     <string name="create_your_profile">پروفایل خود را ایجاد کنید</string>
-    <string name="how_simplex_works">SimpleX چگونه کار می‌کند</string>
     <string name="read_more_in_github_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">مخزن GitHub</font> ما.]]></string>
     <string name="use_chat">استفاده از چت</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>بهترین گزینه برای باتری</b>. شما اعلان‌ها را فقط وقتی دریافت می‌کنید که برنامه در حال اجراست (بدون سرویس پس‌زمینه).]]></string>
@@ -2183,7 +2182,6 @@
     <string name="operator_conditions_accepted_for_enabled_operators_on">شرایط به‌طور خودکار برای اپراتورهای فعال در: %s پذیرفته خواهد شد.</string>
     <string name="smp_servers_configured">سرورهای SMP پیکربندی‌شده</string>
     <string name="xftp_servers_configured">سرورهای XFTP پیکربندی‌شده</string>
-    <string name="onboarding_conditions_configure_server_operators">پیکربندی اپراتورهای سرور</string>
     <string name="servers_info_connected_servers_section_header">سرورهای متصل شده</string>
     <string name="sync_connection_desc">اتصال نیاز به تجدید مذاکره رمزنگاری دارد.</string>
     <string name="connections">اتصالات</string>
@@ -2426,7 +2424,6 @@
     <string name="message_deleted_or_not_received_error_desc">این پیام حذف شده یا هنوز دریافت نشده است.</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">زمان ناپدید شدن فقط برای مخاطبان جدید تنظیم شده است.</string>
     <string name="app_check_for_updates_notice_desc">برای مطلع شدن از نسخه‌های جدید، بررسی دوره‌ای برای نسخه‌های Stable یا Beta را فعال کنید.</string>
-    <string name="one_hand_ui_card_title">تغییر لیست چت:</string>
     <string name="call_desktop_permission_denied_title">برای برقراری تماس، اجازه دهید از میکروفن شما استفاده شود. تماس را پایان دهید و دوباره تلاش کنید.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">برای جلوگیری از جایگزینی لینک شما، می‌توانید کدهای امنیتی مخاطب را مقایسه کنید.</string>
     <string name="operator_use_for_messages_receiving">برای دریافت</string>

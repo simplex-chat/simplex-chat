@@ -93,7 +93,8 @@ disabledSimplexChatSMPServers =
 simplexChatRelays :: [NewUserChatRelay]
 simplexChatRelays =
   [ presetChatRelay True (mkRelayProfile "SimpleX Chat Relay 1" $ Just simplexChatImage) ["simplex.im"] (either error id $ strDecode "https://smp5.simplex.im/r#Fp5RWXkiRFg-hgcDwC2v-MWnPfvEf42RgCqREntW0mw"),
-    presetChatRelay True (mkRelayProfile "SimpleX Chat Relay 2" $ Just simplexChatImage) ["simplex.im"] (either error id $ strDecode "https://smp6.simplex.im/r#_qlQfogHGDJ8MAF2wKmkglRBM-xHR142gDJstKiGRQQ")
+    presetChatRelay True (mkRelayProfile "SimpleX Chat Relay 2" $ Just simplexChatImage) ["simplex.im"] (either error id $ strDecode "https://smp6.simplex.im/r#_qlQfogHGDJ8MAF2wKmkglRBM-xHR142gDJstKiGRQQ"),
+    presetChatRelay True (mkRelayProfile "SimpleX Chat Relay 3" $ Just simplexChatImage) ["simplex.im"] (either error id $ strDecode "https://smp4.simplex.im/r#yxNOMJcry5jMTRPEBVtGBATYaKeoRIsZRBPIDLx7x6M")
   ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]

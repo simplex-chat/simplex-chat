@@ -14,7 +14,7 @@ Bot address settings.
 
 ### autoAccept?
 
-> `optional` **autoAccept**: `boolean`
+> `optional` **autoAccept?**: `boolean`
 
 Defined in: [src/api.ts:28](../src/api.ts#L28)
 
@@ -30,7 +30,7 @@ true
 
 ### businessAddress?
 
-> `optional` **businessAddress**: `boolean`
+> `optional` **businessAddress?**: `boolean`
 
 Defined in: [src/api.ts:41](../src/api.ts#L41)
 
@@ -47,7 +47,7 @@ false
 
 ### welcomeMessage?
 
-> `optional` **welcomeMessage**: `string` \| `MsgContent`
+> `optional` **welcomeMessage?**: `string` \| `MsgContent`
 
 Defined in: [src/api.ts:34](../src/api.ts#L34)
 

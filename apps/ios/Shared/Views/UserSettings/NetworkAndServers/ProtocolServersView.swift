@@ -223,9 +223,7 @@ struct YourServersView: View {
 
     func howToButton() -> some View {
         Button {
-            DispatchQueue.main.async {
-                UIApplication.shared.open(howToUrl)
-            }
+            openExternalLink(howToUrl)
         } label: {
             HStack {
                 Text("How to use your servers")

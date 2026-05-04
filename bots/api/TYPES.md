@@ -95,6 +95,7 @@ This file is generated automatically.
 - [GroupInfo](#groupinfo)
 - [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
+- [GroupLinkOwner](#grouplinkowner)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
 - [GroupMemberAdmission](#groupmemberadmission)
@@ -170,6 +171,7 @@ This file is generated automatically.
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
 - [SubscriptionStatus](#subscriptionstatus)
+- [SupportGroupPreference](#supportgrouppreference)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -1846,6 +1848,7 @@ connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Py
 ## E2EInfo
 
 **Record type**:
+- public: bool?
 - pqEnabled: bool?
 
 
@@ -2107,6 +2110,7 @@ Phone:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)
 - reports: [GroupPreference](#grouppreference)
 - history: [GroupPreference](#grouppreference)
+- support: [SupportGroupPreference](#supportgrouppreference)
 - sessions: [RoleGroupPreference](#rolegrouppreference)
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
@@ -2198,6 +2202,7 @@ MemberSupport:
 - "simplexLinks"
 - "reports"
 - "history"
+- "support"
 - "sessions"
 - "comments"
 
@@ -2266,6 +2271,15 @@ MemberSupport:
 
 ---
 
+## GroupLinkOwner
+
+**Record type**:
+- memberId: string
+- memberKey: string
+
+
+---
+
 ## GroupLinkPlan
 
 **Discriminated union type**:
@@ -2290,6 +2304,9 @@ ConnectingProhibit:
 Known:
 - type: "known"
 - groupInfo: [GroupInfo](#groupinfo)
+- groupUpdated: bool
+- ownerVerification: [OwnerVerification](#ownerverification)?
+- linkOwners: [[GroupLinkOwner](#grouplinkowner)]
 
 NoRelays:
 - type: "noRelays"
@@ -2420,6 +2437,7 @@ NoRelays:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)?
 - reports: [GroupPreference](#grouppreference)?
 - history: [GroupPreference](#grouppreference)?
+- support: [SupportGroupPreference](#supportgrouppreference)?
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
@@ -2513,6 +2531,7 @@ Public:
 
 **Enum type**:
 - "channel"
+- "group"
 
 
 ---
@@ -3882,6 +3901,14 @@ Removed:
 
 NoSub:
 - type: "noSub"
+
+
+---
+
+## SupportGroupPreference
+
+**Record type**:
+- enable: [GroupFeatureEnabled](#groupfeatureenabled)
 
 
 ---

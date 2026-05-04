@@ -44,30 +44,53 @@ private func srgbToP3(red r: Double, green g: Double, blue b: Double, opacity a:
     return Color(.sRGB, red: r, green: g, blue: b, opacity: a)
 }
 
-/// Create a Display P3 Color from oklch components. H in degrees.
-func oklch(_ L: Double, _ C: Double, _ H: Double, alpha: Double = 1.0) -> Color {
+// Create a Display P3 Color from oklch components. H in degrees
+public func oklch(_ L: Double, _ C: Double, _ H: Double, alpha: Double = 1.0) -> Color {
     let hRad = H * .pi / 180.0
-    let a = C * cos(hRad)
-    let b = C * sin(hRad)
-    // oklab → LMS (Ottosson 2021)
-    let l_ = L + 0.3963377774 * a + 0.2158037573 * b
-    let m_ = L - 0.1055613458 * a - 0.0638541728 * b
-    let s_ = L - 0.0894841775 * a - 1.2914855480 * b
-    let l = l_ * l_ * l_
-    let m = m_ * m_ * m_
-    let s = s_ * s_ * s_
-    // LMS → linear Display P3 (direct, no sRGB clamping)
-    let lr =  3.1281105148 * l - 2.2570749853 * m + 0.1293047593 * s
-    let lg = -1.0911282009 * l + 2.4132668169 * m - 0.3221681599 * s
-    let lb = -0.0260136845 * l - 0.5080276339 * m + 1.5333166364 * s
+    let cosH = cos(hRad)
+    let sinH = sin(hRad)
+
+    func linearP3(C: Double) -> (Double, Double, Double) {
+        let a = C * cosH
+        let b = C * sinH
+        // oklab → LMS (Ottosson 2021)
+        let l_ = L + 0.3963377774 * a + 0.2158037573 * b
+        let m_ = L - 0.1055613458 * a - 0.0638541728 * b
+        let s_ = L - 0.0894841775 * a - 1.2914855480 * b
+        let l = l_ * l_ * l_
+        let m = m_ * m_ * m_
+        let s = s_ * s_ * s_
+        // LMS → linear Display P3 (direct, no sRGB clamping)
+        return (
+            3.1281105148 * l - 2.2570749853 * m + 0.1293047593 * s,
+           -1.0911282009 * l + 2.4132668169 * m - 0.3221681599 * s,
+           -0.0260136845 * l - 0.5080276339 * m + 1.5333166364 * s
+        )
+    }
+
+    func inGamut(_ r: Double, _ g: Double, _ b: Double) -> Bool {
+        r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1
+    }
+
     // linear P3 → gamma-encoded P3 (same transfer function as sRGB)
-    func gammaEncode(_ x: Double) -> Double { x >= 0.0031308 ? 1.055 * pow(x, 1.0 / 2.4) - 0.055 : 12.92 * x }
-    return Color(.displayP3,
-        red: gammaEncode(min(max(lr, 0), 1)),
-        green: gammaEncode(min(max(lg, 0), 1)),
-        blue: gammaEncode(min(max(lb, 0), 1)),
-        opacity: alpha
-    )
+    func gammaEncode(_ x: Double) -> Double {
+        x >= 0.0031308
+        ? 1.055 * pow(min(x, 1.0), 1.0 / 2.4) - 0.055
+        : 12.92 * max(x, 0)
+    }
+
+    var (r, g, b) = linearP3(C: C)
+    if !inGamut(r, g, b) {
+        var lo = 0.0, hi = C
+        while hi - lo > 1e-5 {
+            let mid = (lo + hi) / 2
+            let (mr, mg, mb) = linearP3(C: mid)
+            if inGamut(mr, mg, mb) { lo = mid; r = mr; g = mg; b = mb }
+            else { hi = mid }
+        }
+    }
+
+    return Color(.displayP3, red: gammaEncode(r), green: gammaEncode(g), blue: gammaEncode(b), opacity: alpha)
 }
 
 extension Color {
@@ -155,7 +178,7 @@ extension Color {
     }
 }
 
-extension String {
+public extension String {
     func colorFromReadableHex() -> Color {
         // https://stackoverflow.com/a/56874327
         let hex = self.trimmingCharacters(in: ["#", " "])
