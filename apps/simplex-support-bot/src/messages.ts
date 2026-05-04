@@ -1,7 +1,8 @@
 import {isWeekend} from "./util.js"
 
 export const welcomeMessage = `Hello! This is a *SimpleX team* support bot - not an AI.
-Please ask any question about SimpleX Chat.`
+*Join public groups* at https://simplex.chat/directory or [via directory bot](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok)
+Please ask any questions about SimpleX Chat.`
 
 export function queueMessage(timezone: string, grokEnabled: boolean): string {
   const hours = isWeekend(timezone) ? "48" : "24"
@@ -14,7 +15,7 @@ If your question is about SimpleX, click /grok for an *instant Grok answer*.
 Send /team to switch back.`
 }
 
-export const grokActivatedMessage = `*You are chatting with Grok* - use any language.`
+export const grokActivatedMessage = `*You are now chatting with Grok* - use any language.`
 
 export function teamAddedMessage(timezone: string, grokPresent: boolean): string {
   const hours = isWeekend(timezone) ? "48" : "24"
@@ -24,9 +25,9 @@ export function teamAddedMessage(timezone: string, grokPresent: boolean): string
 Grok will be answering your questions until then.`
 }
 
-export const teamAlreadyInvitedMessage = "A team member has already been invited to this conversation and will reply when available."
+export const teamAlreadyInvitedMessage = "A team member was invited to this conversation and will reply when available."
 
-export const teamLockedMessage = "You are now in team mode. A team member will reply to your message."
+export const teamLockedMessage = "Only the team will now receive your messages."
 
 export function noTeamMembersMessage(grokEnabled: boolean): string {
   return grokEnabled

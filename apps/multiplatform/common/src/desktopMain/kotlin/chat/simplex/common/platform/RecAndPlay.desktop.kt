@@ -14,6 +14,8 @@ import java.util.*
 import kotlin.math.max
 
 internal val vlcFactory: MediaPlayerFactory by lazy { MediaPlayerFactory() }
+// No hardware acceleration - more secure for previews
+internal val vlcPreviewFactory: MediaPlayerFactory by lazy { MediaPlayerFactory("--avcodec-hw=none") }
 
 actual class RecorderNative: RecorderInterface {
   private var player: MediaPlayer? = null

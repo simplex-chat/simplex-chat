@@ -11,7 +11,7 @@
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- stabilabb üzenetkézbesítés.\n- picit továbbfejlesztett csoportok.\n- és még sok más!";
 
 /* No comment provided by engineer. */
-"- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking." = "- hivatkozások előnézetének küldése.\n- hiperhivatkozásokon keresztüli adathalászat megakadályozása.\n- hivatkozások nyomonkövetési paramétereinek eltávolítása.";
+"- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking." = "- Hivatkozások előnézetének küldése.\n- Hiperhivatkozásokon keresztüli adathalászat megakadályozása.\n- Hivatkozások nyomonkövetési paramétereinek eltávolítása.";
 
 /* No comment provided by engineer. */
 "- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- partnerek értesítése a törlésről (nem kötelező)\n- profilnevek szóközökkel\n- és még sok más!";
@@ -986,6 +986,9 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Mindkét fél küldhet hangüzeneteket.";
 
+/* No comment provided by engineer. */
+"Bottom bar" = "Alsó sáv";
+
 /* compose placeholder for channel owner */
 "Broadcast" = "Közvetítés…";
 
@@ -1455,7 +1458,7 @@ server test step */
 "Connect via link" = "Kapcsolódás egy hivatkozáson keresztül";
 
 /* No comment provided by engineer. */
-"Connect via link or QR code" = "Kapcsolódás hivatkozáson vagy QR-kódon keresztül";
+"Connect via link or QR code" = "Hivatkozás vagy QR-kód használata";
 
 /* new chat sheet title */
 "Connect via one-time link" = "Kapcsolódás az egyszer használható meghívón keresztül";
@@ -1698,7 +1701,7 @@ server test step */
 "Create your address" = "Saját cím létrehozása";
 
 /* No comment provided by engineer. */
-"Create your link" = "Kapcsolatba lépés valakivel";
+"Create your link" = "Saját hivatkozás létrehozása";
 
 /* No comment provided by engineer. */
 "Create your profile" = "Profil létrehozása";
@@ -3498,7 +3501,7 @@ servers warning */
 "Less traffic on mobile networks." = "Kevesebb adatforgalom a mobilhálózatokon.";
 
 /* No comment provided by engineer. */
-"Let someone connect to you" = "Hagyja, hogy valaki kapcsolatba lépjen Önnel";
+"Let someone connect to you" = "Hagyja, hogy valaki elérje Önt";
 
 /* email subject */
 "Let's talk in SimpleX Chat" = "Beszélgessünk a SimpleX Chatben";
@@ -4172,7 +4175,7 @@ new chat action */
 "on" = "bekapcsolva";
 
 /* No comment provided by engineer. */
-"On your phone, not on servers." = "Az Ön eszközén, nem pedig a kiszolgálókon.";
+"On your phone, not on servers." = "Az eszközön, nem pedig kiszolgálókon.";
 
 /* No comment provided by engineer. */
 "One-time invitation link" = "Egyszer használható meghívó";
@@ -6184,6 +6187,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Toolbar opacity" = "Eszköztár átlátszatlansága";
+
+/* No comment provided by engineer. */
+"Top bar" = "Felső sáv";
 
 /* No comment provided by engineer. */
 "Total" = "Összes kapcsolat";

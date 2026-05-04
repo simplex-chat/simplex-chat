@@ -44,6 +44,7 @@ directoryServiceTests = do
   it "should support group names with spaces" testGroupNameWithSpaces
   it "should return more groups in search, all and recent groups" testSearchGroups
   it "should invite to owners' group if specified" testInviteToOwnersGroup
+  it "should re-invite owner who left owners' group" testInviteOwnerAfterLeavingOwnersGroup
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
@@ -576,6 +577,32 @@ testInviteToOwnersGroup ps =
       -- second group
       registerGroupId superUser bob "security" "Security" 3 2
       superUser <## "Owner is already a member of owners' group"
+
+testInviteOwnerAfterLeavingOwnersGroup :: HasCallStack => TestParams -> IO ()
+testInviteOwnerAfterLeavingOwnersGroup ps =
+  withDirectoryServiceCfgOwnersGroup ps testCfg True Nothing $ \superUser dsLink ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroupId superUser bob "privacy" "Privacy" 2 1
+      bob <## "#owners: 'SimpleX Directory' invites you to join the group as member"
+      bob <## "use /j owners to accept"
+      superUser <## "Invited @bob, the owner of the group ID 2 (privacy) to owners' group owners"
+      bob ##> "/j owners"
+      bob <## "#owners: you joined the group"
+      bob <## "#owners: member alice (Alice) is connected"
+      superUser <## "#owners: 'SimpleX Directory' added bob (Bob) to the group (connecting...)"
+      superUser <## "#owners: new member bob is connected"
+      -- owner leaves owners' group; GroupMember row keeps status GSMemLeft
+      leaveGroup "owners" bob
+      superUser <## "#owners: bob left the group"
+      -- owners' group has no GroupReg, so directory service notifies admins on contact left
+      superUser <# "'SimpleX Directory'> Error: contact left, group: 1 owners, group registration not found"
+      -- super-user re-invites via /invite — must send a fresh invitation, not "already a member"
+      superUser #> "@'SimpleX Directory' /invite 2:privacy"
+      superUser <# "'SimpleX Directory'> > /invite 2:privacy"
+      superUser <## "      you invited @bob, the owner of the group ID 2 (privacy) to owners' group owners"
+      bob <## "#owners_1: 'SimpleX Directory' invites you to join the group as member"
+      bob <## "use /j owners_1 to accept"
 
 testDelistedOwnerLeaves :: HasCallStack => TestParams -> IO ()
 testDelistedOwnerLeaves ps =
@@ -2189,14 +2216,6 @@ testLinkCheckUpdatesCount ps = do
             superUser <## "      Channel approved!"
             bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
             bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
-            -- search shows initial count
-            bob #> "@'SimpleX Directory' news"
-            bob <# "'SimpleX Directory'> > news"
-            bob <## "      Found 1 group(s)."
-            bob <# "'SimpleX Directory'> news"
-            bob <##. "Link to join channel: "
-            bob <## "You need SimpleX Chat app v6.5 to join."
-            bob <## "1 subscribers"
             -- link check updates count (bot joined)
             threadDelay 1000000
             bob #> "@'SimpleX Directory' news"

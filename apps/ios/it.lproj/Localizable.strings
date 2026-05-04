@@ -986,6 +986,9 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Sia tu che il tuo contatto potete inviare messaggi vocali.";
 
+/* No comment provided by engineer. */
+"Bottom bar" = "Barra inferiore";
+
 /* compose placeholder for channel owner */
 "Broadcast" = "Trasmetti";
 
@@ -6186,6 +6189,9 @@ server test failure */
 "Toolbar opacity" = "Opacità barra degli strumenti";
 
 /* No comment provided by engineer. */
+"Top bar" = "Barra superiore";
+
+/* No comment provided by engineer. */
 "Total" = "Totale";
 
 /* No comment provided by engineer. */
@@ -6831,7 +6837,7 @@ server test failure */
 "you changed role of %@ to %@" = "hai cambiato il ruolo di %1$@ in %2$@";
 
 /* No comment provided by engineer. */
-"You commit to:\n- Only legal content in public groups\n- Respect other users - no spam" = "Ti impegni a:\n- Pubblicare solo contenuto legale nei gruppi pubblici\n- Rispettare gli altri utenti. Niente spam";
+"You commit to:\n- Only legal content in public groups\n- Respect other users - no spam" = "Tu ti impegni a:\n- Pubblicare solo contenuto legale nei gruppi pubblici\n- Rispettare gli altri utenti. Niente spam";
 
 /* No comment provided by engineer. */
 "You connected to the channel via this relay link." = "Ti sei connesso/a al canale attraverso questo link del relay.";
