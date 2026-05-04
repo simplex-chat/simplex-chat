@@ -3593,6 +3593,7 @@ processChatCommand vr nm = \case
           _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
         let cReq = linkConnReq fd
             relayLinkToConnect = CCLink cReq (Just relayLink)
+        -- incognito parameter ignored for relay groups: connectViaContact uses incognitoMembershipProfile
         void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) False relayLinkToConnect Nothing Nothing
       relayMember' <- withFastStore $ \db -> getGroupMember db vr user (groupId' gInfo) (groupMemberId' relayMember)
       pure (relayLink, relayMember', r)

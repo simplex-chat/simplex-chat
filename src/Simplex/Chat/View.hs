@@ -1241,21 +1241,17 @@ viewGroupCreated g testView =
   where
     relaysInstruction = "wait for selected relay(s) to join, then you can invite members via group link"
 
-viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
-viewPublicGroupCreationFailed results =
-  ["channel not created, results:"]
-    <> map showRelayResult results
+viewRelayResults :: StyledString -> [AddRelayResult] -> [StyledString]
+viewRelayResults header results = [header] <> map showRelayResult results
   where
     showRelayResult (AddRelayResult UserChatRelay {chatRelayId = DBEntityId i} err_) =
       "  relay " <> sShow i <> ": " <> maybe "ok" (plain . tshow) err_
 
+viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
+viewPublicGroupCreationFailed = viewRelayResults "channel not created, results:"
+
 viewGroupRelaysAddFailed :: [AddRelayResult] -> [StyledString]
-viewGroupRelaysAddFailed results =
-  ["relays not added, results:"]
-    <> map showRelayResult results
-  where
-    showRelayResult (AddRelayResult UserChatRelay {chatRelayId = DBEntityId i} err_) =
-      "  relay " <> sShow i <> ": " <> maybe "ok" (plain . tshow) err_
+viewGroupRelaysAddFailed = viewRelayResults "relays not added, results:"
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
