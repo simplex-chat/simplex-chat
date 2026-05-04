@@ -1924,10 +1924,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     groupMsgReaction :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMsgReaction g m_ sharedMsgId itemMemberId scope_ reaction add RcvMessage {msgId} brokerTs
       | groupFeatureAllowed SGFReactions g = case m_ of
-          Nothing ->
-            updateChannelReaction `catchCINotFound` \_ ->
-              withStore' (\db -> setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs)
-                $> Nothing
+          Nothing
+            | useRelays' g ->
+                updateChannelReaction `catchCINotFound` \_ ->
+                  withStore' (\db -> setGroupReactionNoMember db g itemMemberId sharedMsgId reaction add msgId brokerTs)
+                    $> Nothing
+            | otherwise -> pure Nothing
           Just m -> do
             rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
             if reactionAllowed add reaction rs
@@ -3557,11 +3559,6 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
                   forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
                 lift . void $ getDeliveryJobWorker True deliveryKey
-              where
-                singleSenderGMId_ :: NonEmpty MessageDeliveryTask -> Maybe GroupMemberId
-                singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
-                  | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
-                  | otherwise = Nothing
             DJReaction ->
               withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                 let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
@@ -3575,11 +3572,6 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
                   forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
                 lift . void $ getDeliveryJobWorker True deliveryKey
-              where
-                singleSenderGMId_ :: NonEmpty MessageDeliveryTask -> Maybe GroupMemberId
-                singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
-                  | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
-                  | otherwise = Nothing
             DJRelayRemoved
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery task worker: relay removed task in wrong worker scope"
@@ -3591,6 +3583,11 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                     createMsgDeliveryJob db gInfo jobScope (Just senderGMId) body Nothing
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
                   lift . void $ getDeliveryJobWorker True deliveryKey
+          where
+            singleSenderGMId_ :: NonEmpty MessageDeliveryTask -> Maybe GroupMemberId
+            singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
+              | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
+              | otherwise = Nothing
 
 startDeliveryJobWorkers :: CM ()
 startDeliveryJobWorkers = do

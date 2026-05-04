@@ -3478,6 +3478,7 @@ getReactionMembers db vr user groupId itemSharedMId reaction = do
         SELECT group_member_id, reaction_ts
         FROM chat_item_reactions
         WHERE group_id = ? AND shared_msg_id = ? AND reaction = ?
+          AND group_member_id IS NOT NULL
       |]
       (groupId, itemSharedMId, reaction)
   rights <$> mapM (runExceptT . toMemberReaction) reactions

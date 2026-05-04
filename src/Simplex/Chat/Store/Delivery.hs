@@ -182,7 +182,7 @@ getNextDeliveryTasks db gInfo task =
     MessageDeliveryTask {jobScope, senderGMId} = task
     getTaskIds :: IO [Int64]
     getTaskIds
-      | useRelays' gInfo, not (isSenderFiltered jobScope) =
+      | useRelays' gInfo, not (needsSenderFiltering jobScope) =
           map fromOnly
             <$> DB.query
               db
@@ -221,9 +221,9 @@ getNextDeliveryTasks db gInfo task =
                 ORDER BY delivery_task_id ASC
               |]
               ((Only groupId) :. jobScopeRow_ jobScope :. (senderGMId, DTSNew))
-    isSenderFiltered :: DeliveryJobScope -> Bool
-    isSenderFiltered (DJSGroup {jobSpec = DJReaction}) = True
-    isSenderFiltered _ = False
+    needsSenderFiltering :: DeliveryJobScope -> Bool
+    needsSenderFiltering (DJSGroup {jobSpec = DJReaction}) = True
+    needsSenderFiltering _ = False
 
 updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
 updateDeliveryTaskStatus db taskId status = updateDeliveryTaskStatus_ db taskId status Nothing
