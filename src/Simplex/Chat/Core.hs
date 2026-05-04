@@ -17,13 +17,18 @@ import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
+import Data.Char (toLower)
 import Data.List (find)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
+import System.FilePath (takeExtension)
+import UnliftIO.STM
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
@@ -44,7 +49,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath, maintenance}, createBot, userDisplayName} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath, maintenance}, createBot, userDisplayName, userImageFile} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -70,7 +75,8 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
           exitFailure
         Right cc -> do
           forM_ (preStartHook chatHooks) ($ cc)
-          u <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot userDisplayName) pure u_
+          u0 <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot userDisplayName) pure u_
+          u <- maybe (pure u0) (applyUserImage cc chatStore u0) userImageFile
           unless testView $ putStrLn $ "Current user: " <> userStr u
           runSimplexChat cfg opts u cc chat
     noMaintenance = when maintenance $ do
@@ -198,6 +204,30 @@ onOffPrompt prompt def =
       "n" -> pure False
       "N" -> pure False
       _ -> putStrLn "Invalid input, please enter 'y' or 'n'" >> onOffPrompt prompt def
+
+applyUserImage :: ChatController -> DBStore -> User -> FilePath -> IO User
+applyUserImage cc store u@User {profile = p@LocalProfile {image = currentImg}} path = do
+  newImg <- loadImageFile path >>= either failExit pure
+  if currentImg == Just newImg
+    then pure u
+    else do
+      let p' = (fromLocalProfile p) {image = Just newImg} :: Profile
+      withTransaction store (\db -> runExceptT $ updateUserProfile db u p') >>= \case
+        Left e -> failExit $ "Failed to update user profile: " <> show e
+        Right u' -> u' <$ atomically (writeTVar (currentUser cc) (Just u'))
+  where
+    failExit msg = putStrLn msg >> exitFailure
+
+loadImageFile :: FilePath -> IO (Either String ImageData)
+loadImageFile path = case map toLower (takeExtension path) of
+  ".png" -> readAs "image/png"
+  ".jpg" -> readAs "image/jpg"
+  ".jpeg" -> readAs "image/jpg"
+  ext -> pure $ Left $ "--user-image-file: unsupported image extension " <> show ext <> " (only .png, .jpg, .jpeg)"
+  where
+    readAs mime = do
+      bs <- BS.readFile path
+      pure $ Right $ ImageData $ "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
 
 userStr :: User -> String
 userStr User {localDisplayName, profile = LocalProfile {fullName}} =
