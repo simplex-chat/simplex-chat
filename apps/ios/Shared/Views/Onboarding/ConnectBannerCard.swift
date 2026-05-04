@@ -83,6 +83,7 @@ struct ConnectBannerCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                 }
+                .frame(height: 20)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
                 .background(ToolbarMaterial.material(toolbarMaterial))

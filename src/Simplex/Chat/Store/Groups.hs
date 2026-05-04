@@ -1515,8 +1515,8 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     "UPDATE groups SET creating_in_progress = 0, updated_at = ? WHERE group_id = ?"
     (currentTs, groupId)
 
-createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange = do
+createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile
@@ -1532,7 +1532,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
         }
   (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) Nothing currentTs
   -- Store relay request data for recovery
-  liftIO $ setRelayRequestData_ groupId
+  liftIO $ setRelayRequestData_ groupId currentTs
   ownerMemberId <- insertOwner_ currentTs groupId
   let relayMember = MemberIdRole relayMemberId GRRelay
   -- TODO [member keys] should relays use member keys?
@@ -1541,7 +1541,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
   where
-    setRelayRequestData_ groupId =
+    setRelayRequestData_ groupId currentTs =
       DB.execute
         db
         [sql|
@@ -1549,12 +1549,15 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           SET relay_request_inv_id = ?,
               relay_request_group_link = ?,
               relay_request_peer_chat_min_version = ?,
-              relay_request_peer_chat_max_version = ?
+              relay_request_peer_chat_max_version = ?,
+              relay_request_delay = ?,
+              relay_request_execute_at = ?
           WHERE group_id = ?
         |]
-        (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, groupId)
+        (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, initialDelay, currentTs, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
+          VersionRange minV maxV = reqChatVRange
       (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       liftIO $ do
@@ -1563,11 +1566,13 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           [sql|
             INSERT INTO group_members
               ( group_id, index_in_group, member_id, member_role, member_category, member_status,
-                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+                peer_chat_min_version, peer_chat_max_version)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, GSMemAccepted)
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+              :. (minV, maxV)
           )
         insertedRowId db
 
@@ -2966,8 +2971,8 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
   where
     VersionRange minV maxV = vr
 
-createLinkOwnerMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
-createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId ownerKey = do
+createLinkOwnerMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe ContactId -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
+createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId} contactId_ memberId ownerKey = do
   currentTs <- liftIO getCurrentTime
   let memberProfile = profileFromName $ nameFromMemberId memberId
   (localDisplayName, profileId) <- createNewMemberProfile_ db user memberProfile currentTs
@@ -2983,7 +2988,7 @@ createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (groupId, indexInGroup, memberId, GROwner, GCPreMember, GSMemUnknown, Binary B.empty, fromInvitedBy userContactId IBUnknown)
-          :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, ownerKey, currentTs, currentTs)
+          :. (userId, localDisplayName, contactId_, profileId, ownerKey, currentTs, currentTs)
           :. (minV, maxV)
       )
   groupMemberId <- liftIO $ insertedRowId db

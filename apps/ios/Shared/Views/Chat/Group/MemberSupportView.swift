@@ -45,7 +45,7 @@ struct MemberSupportView: View {
         : membersWithChats.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
 
         if membersWithChats.isEmpty {
-            Text("No chats with members")
+            Text(groupInfo.fullGroupPreferences.support.on ? "No chats with members" : "Chats with members are disabled")
                 .foregroundColor(.secondary)
         } else {
             List {

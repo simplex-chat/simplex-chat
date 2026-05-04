@@ -847,7 +847,6 @@
     <string name="v4_4_french_interface_descr">感謝用戶 - 使用 Weblate 的翻譯貢獻！</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">正在修改聯絡地址為 %s …</string>
     <string name="database_encryption_will_be_updated">受加密的資料庫密碼會再次更新和儲存於金鑰庫。</string>
-    <string name="how_simplex_works">SimpleX 是怎樣運作</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">當發生： \n1. 訊息將在傳送至客戶端後兩天或在伺服器內三十天時過時。 \n2. 訊息解密失敗，因為你或你的聯絡人用了舊的資料庫備份 \n3. 連接被破壞。</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">只有客戶端裝置儲存個人檔案、聯絡人、群組，和訊息。</string>
     <string name="store_passphrase_securely">請放置你的密碼於安全的地方，如果你遺失了密碼，將不可能修改你的密碼。</string>
@@ -2061,7 +2060,6 @@
     <string name="disable_automatic_deletion_question">停用自動刪除訊息？</string>
     <string name="v6_1_delete_many_messages_descr">刪除或審查最多 200 條訊息。</string>
     <string name="v6_2_network_decentralization_enable_flux">於網路和伺服器設定中啟用 Flux 以獲得更好的元資料隱私。</string>
-    <string name="onboarding_conditions_configure_server_operators">配置伺服器營運者</string>
     <string name="operator_conditions_of_use">使用條款</string>
     <string name="v6_3_better_privacy_and_security">更好的隱私和安全性</string>
     <string name="migrate_from_device_try_again">你可以再試一次。</string>

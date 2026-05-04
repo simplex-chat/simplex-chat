@@ -90,41 +90,85 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 
 @Composable
 fun ToggleChatListCard() {
-  ChatListCard(
-    close = {
-      appPrefs.oneHandUICardShown.set(true)
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.one_hand_ui),
-        text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val onClose = {
+    appPrefs.oneHandUICardShown.set(true)
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.one_hand_ui),
+      text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+    )
+  }
+  val activeBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+    .copy(alpha = appPrefs.inAppBarsAlpha.get())
+  val selectedBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
+  Row(
+    Modifier
+      .padding(horizontal = 16.dp, vertical = 12.dp)
+      .fillMaxWidth()
+      .height(IntrinsicSize.Min)
+      .clip(RoundedCornerShape(percent = 50)),
+    horizontalArrangement = Arrangement.spacedBy(2.dp)
+  ) {
+    ToolbarSegment(
+      icon = MR.images.ic_mobile_3,
+      text = stringResource(MR.strings.one_hand_ui_bottom_bar),
+      isSelected = oneHandUI.value,
+      selectedBg = selectedBg,
+      activeBg = activeBg,
+      modifier = Modifier.weight(1f)
+    ) { appPrefs.oneHandUI.set(true) }
+    Box(Modifier.weight(1f).fillMaxHeight()) {
+      ToolbarSegment(
+        icon = MR.images.ic_mobile_4,
+        text = stringResource(MR.strings.one_hand_ui_top_bar),
+        isSelected = !oneHandUI.value,
+        selectedBg = selectedBg,
+        activeBg = activeBg,
+        modifier = Modifier.fillMaxSize()
+      ) { appPrefs.oneHandUI.set(false) }
+      Icon(
+        painterResource(MR.images.ic_close), null,
+        Modifier
+          .align(Alignment.CenterEnd)
+          .padding(end = 4.dp)
+          .clip(CircleShape)
+          .clickable(onClick = onClose)
+          .padding(8.dp)
+          .size(16.dp),
+        tint = MaterialTheme.colors.secondary
       )
     }
+  }
+}
+
+@Composable
+private fun ToolbarSegment(
+  icon: ImageResource,
+  text: String,
+  isSelected: Boolean,
+  selectedBg: Color,
+  activeBg: Color,
+  modifier: Modifier = Modifier,
+  onClick: () -> Unit
+) {
+  Row(
+    modifier
+      .fillMaxHeight()
+      .background(if (isSelected) selectedBg else activeBg)
+      .then(if (!isSelected) Modifier.clickable(onClick = onClick) else Modifier)
+      .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
   ) {
-    Column(
-      modifier = Modifier
-        .padding(horizontal = DEFAULT_PADDING)
-        .padding(top = DEFAULT_PADDING)
-    ) {
-      Row(
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
-      }
-      Row(
-        Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
-
-        Spacer(Modifier.fillMaxWidth().weight(1f))
-
-        SharedPreferenceToggle(
-          appPrefs.oneHandUI,
-          enabled = true
-        )
-      }
-    }
+    Icon(
+      painterResource(icon), null, Modifier.size(20.dp),
+      tint = if (isSelected) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.width(8.dp))
+    Text(
+      text,
+      color = if (isSelected) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground,
+      style = MaterialTheme.typography.body1
+    )
   }
 }
 
@@ -307,7 +351,7 @@ private fun ConnectBannerCard() {
             painterResource(if (isDark) MR.images.banner_create_link_light else MR.images.banner_create_link),
             contentDescription = null,
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO)
           )
         } else {
           BannerGradientBox(isDark) {
@@ -338,7 +382,7 @@ private fun ConnectBannerCard() {
             painterResource(if (isDark) MR.images.banner_paste_link_light else MR.images.banner_paste_link),
             contentDescription = null,
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO)
           )
         } else {
           BannerGradientBox(isDark) {
@@ -918,13 +962,18 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         }
       }
     }
+    if (!oneHandUICardShown.value) {
+      item {
+        ToggleChatListCard()
+      }
+    }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!oneHandUICardShown.value || !addressCreationCardShown.value) {
+    if (!addressCreationCardShown.value) {
       item {
         ChatListFeatureCards()
       }
@@ -989,19 +1038,11 @@ private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
 
 @Composable
 private fun ChatListFeatureCards() {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
 
-  Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-    if (!oneHandUICardShown.value && !oneHandUI.value) {
-      ToggleChatListCard()
-    }
-    if (!addressCreationCardShown.value && hasConversations(chatModel.chats.value)) {
+  if (!addressCreationCardShown.value && hasConversations(chatModel.chats.value)) {
+    Column(modifier = Modifier.padding(16.dp)) {
       ConnectBannerCard()
-    }
-    if (!oneHandUICardShown.value && oneHandUI.value) {
-      ToggleChatListCard()
     }
   }
 }
@@ -1144,7 +1185,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
     is ActiveFilter.PresetTag -> af.tag == tag
     else -> false
   }
-  val (icon, text) = presetTagLabel(tag, active)
+  val (icon, menuIcon, text) = presetTagLabel(tag, active)
   val color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
 
   Row(
@@ -1164,7 +1205,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
     horizontalArrangement = Arrangement.Center
   ) {
     Icon(
-      painterResource(icon),
+      painterResource(menuIcon ?: icon),
       stringResource(text),
       Modifier.size(18.sp.toDp()),
       tint = color
@@ -1206,9 +1247,9 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
     contentAlignment = Alignment.Center
   ) {
     if (selectedPresetTag != null) {
-      val (icon, text) = presetTagLabel(selectedPresetTag, true)
+      val (icon, menuIcon, text) = presetTagLabel(selectedPresetTag, true)
       Icon(
-        painterResource(icon),
+        painterResource(menuIcon ?: icon),
         stringResource(text),
         Modifier.size(18.sp.toDp()),
         tint = MaterialTheme.colors.primary
@@ -1254,7 +1295,7 @@ fun ItemPresetFilterAction(
   showMenu: MutableState<Boolean>,
   onCloseMenuAction: MutableState<(() -> Unit)>
 ) {
-  val (icon, text) = presetTagLabel(presetTag, active)
+  val (icon, _, text) = presetTagLabel(presetTag, active)
   ItemAction(
     stringResource(text),
     painterResource(icon),
@@ -1336,15 +1377,15 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat
     }
   }
 
-private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResource, StringResource> =
+private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Triple<ImageResource, ImageResource?, StringResource> =
   when (tag) {
-    PresetTagKind.GROUP_REPORTS -> (if (active) MR.images.ic_flag_filled else MR.images.ic_flag) to MR.strings.chat_list_group_reports
-    PresetTagKind.FAVORITES -> (if (active) MR.images.ic_star_filled else MR.images.ic_star) to MR.strings.chat_list_favorites
-    PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
-    PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
-    PresetTagKind.CHANNELS -> (if (active) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_bigtop_updates) to MR.strings.chat_list_channels
-    PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
-    PresetTagKind.NOTES -> (if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed) to MR.strings.chat_list_notes
+    PresetTagKind.GROUP_REPORTS -> Triple(if (active) MR.images.ic_flag_filled else MR.images.ic_flag, null, MR.strings.chat_list_group_reports)
+    PresetTagKind.FAVORITES -> Triple(if (active) MR.images.ic_star_filled else MR.images.ic_star, null, MR.strings.chat_list_favorites)
+    PresetTagKind.CONTACTS -> Triple(if (active) MR.images.ic_person_filled else MR.images.ic_person, null, MR.strings.chat_list_contacts)
+    PresetTagKind.GROUPS -> Triple(if (active) MR.images.ic_group_filled else MR.images.ic_group, null, MR.strings.chat_list_groups)
+    PresetTagKind.CHANNELS -> Triple(if (active) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_bigtop_updates, MR.images.ic_bigtop_updates, MR.strings.chat_list_channels)
+    PresetTagKind.BUSINESS -> Triple(if (active) MR.images.ic_work_filled else MR.images.ic_work, null, MR.strings.chat_list_businesses)
+    PresetTagKind.NOTES -> Triple(if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed, null, MR.strings.chat_list_notes)
   }
 
 private fun presetCanBeCollapsed(tag: PresetTagKind): Boolean = when (tag) {

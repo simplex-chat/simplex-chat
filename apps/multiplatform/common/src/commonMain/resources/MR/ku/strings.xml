@@ -215,7 +215,6 @@
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="create_your_profile">Profîla xwe çêke</string>
     <string name="how_it_works">Çawa dişuxule</string>
-    <string name="how_simplex_works">SimpleX çawa dişuxule</string>
     <string name="onboarding_notifications_mode_subtitle">Çawa tesîrê li pîlê dike</string>
     <string name="onboarding_notifications_mode_periodic">Her serê pêlekê</string>
     <string name="onboarding_notifications_mode_service">Di cih de</string>

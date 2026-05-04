@@ -376,7 +376,6 @@
     <string name="how_to_use_markdown">วิธีใช้มาร์กดาวน์</string>
     <string name="callstate_ended">สิ้นสุดลงแล้ว</string>
     <string name="how_it_works">มันทำงานอย่างไร</string>
-    <string name="how_simplex_works">วิธีการ SimpleX ทํางานอย่างไร</string>
     <string name="decentralized">กระจายอำนาจแล้ว</string>
     <string name="encrypted_audio_call">การโทรเสียงแบบ encrypted จากต้นจนจบ</string>
     <string name="encrypted_video_call">การโทรวิดีแบบ encrypted จากต้นจนจบ</string>
@@ -909,7 +908,7 @@
     <string name="show_dev_options">แสดง:</string>
     <string name="show_developer_options">แสดงตัวเลือกสําหรับนักพัฒนาซอฟต์แวร์</string>
     <string name="share_link">แชร์ลิงก์</string>
-    <string name="share_address_with_contacts_question">แชร์ที่อยู่กับผู้ติดต่อ\?</string>
+    <string name="share_address_with_contacts_question">แชร์ที่อยู่กับผู้ติดต่อ?</string>
     <string name="share_with_contacts">แชร์กับผู้ติดต่อ</string>
     <string name="save_preferences_question">บันทึกการตั้งค่า\?</string>
     <string name="show_call_on_lock_screen">แสดง</string>

@@ -74,6 +74,7 @@
   <string name="e2ee_info_e2ee"><![CDATA[Messages are protected by <b>end-to-end encryption</b>.]]></string>
   <string name="e2ee_info_no_pq"><![CDATA[Messages, files and calls are protected by <b>end-to-end encryption</b> with perfect forward secrecy, repudiation and break-in recovery.]]></string>
   <string name="e2ee_info_pq"><![CDATA[Messages, files and calls are protected by <b>quantum resistant e2e encryption</b> with perfect forward secrecy, repudiation and break-in recovery.]]></string>
+  <string name="e2ee_info_no_e2ee"><![CDATA[Messages in this channel are <b>not end-to-end encrypted</b>. Chat relays can see these messages.]]></string>
   <string name="e2ee_info_no_pq_short">This chat is protected by end-to-end encryption.</string>
   <string name="e2ee_info_pq_short">This chat is protected by quantum resistant end-to-end encryption.</string>
 
@@ -468,7 +469,7 @@
   <string name="talk_to_someone">Talk to someone</string>
   <string name="let_someone_connect_to_you">Let someone connect to you</string>
   <string name="connect_via_link_or_qr_code">Connect via link or QR code</string>
-  <string name="connect_with_someone">Connect with someone</string>
+  <string name="connect_with_someone">Create your link</string>
   <string name="invite_someone_privately">Invite someone privately</string>
   <string name="a_link_for_one_person">A link for one person to connect</string>
   <string name="create_your_public_address">Create your public address</string>
@@ -1066,7 +1067,7 @@
   <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
-  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
+  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls use direct connection.]]></string>
   <string name="network_smp_proxy_mode_private_routing">Private routing</string>
   <string name="network_smp_proxy_mode_always">Always</string>
   <string name="network_smp_proxy_mode_unknown">Unknown servers</string>
@@ -1291,9 +1292,27 @@
   <string name="make_private_connection">Make a private connection</string>
   <string name="migrate_from_another_device">Migrate from another device</string>
   <string name="how_it_works">How it works</string>
+  <string name="onboarding_be_free">Be free\nin your network</string>
+  <string name="onboarding_private_and_secure">Private and secure messaging.</string>
+  <string name="onboarding_first_network">The first network where you own\nyour contacts and groups.</string>
+  <string name="get_started">Get started</string>
+  <string name="why_simplex_is_built">Why SimpleX is built.</string>
+  <string name="onboarding_your_profile">Your profile</string>
+  <string name="onboarding_on_your_phone">On your phone, not on servers.</string>
+  <string name="onboarding_no_account">No account. No phone. No email. No ID.\nThe most secure encryption.</string>
+  <string name="enter_profile_name">Enter profile name…</string>
+  <string name="migrate">Migrate</string>
 
-  <!-- How SimpleX Works -->
-  <string name="how_simplex_works">How SimpleX works</string>
+  <!-- Why SimpleX is built -->
+  <string name="why_built_heading">You were born without an account.</string>
+  <string name="why_built_p1">Nobody tracked your conversations. No one drew a map of where you\'d been. Privacy was never a feature — it was the way of life.</string>
+  <string name="why_built_p2">Then we moved online, and every platform asked for a piece of you — your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way — telephone, email, messengers, social media. It seemed the only way possible.</string>
+  <string name="why_built_p3">There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected.</string>
+  <string name="why_built_p4">Not a better lock on someone else\'s door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it — you are sovereign.</string>
+  <string name="why_built_p5">Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public.</string>
+  <string name="why_built_p6">The oldest human freedom — to speak to another person without being watched — built on infrastructure that cannot betray it.</string>
+  <string name="why_built_p7">Because we destroyed the power to know who you are. So that your power can never be taken.</string>
+  <string name="why_built_tagline">Be free in your network.</string>
   <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect your privacy, SimpleX uses separate IDs for each of your contacts.</string>
   <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages.</string>
   <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>end-to-end encrypted</b>, with post-quantum security in direct messages.]]></string>
@@ -1320,11 +1339,10 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
-  <string name="onboarding_conditions_private_chats_not_accessible">Private chats, groups and your contacts are not accessible to server operators.</string>
-  <string name="onboarding_conditions_by_using_you_agree">By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam.</string>
+  <string name="onboarding_conditions_private_chats_not_accessible">Operators commit to:\n- Be independent\n- Minimize metadata usage\n- Run verified open-source code</string>
+  <string name="onboarding_conditions_by_using_you_agree">You commit to:\n- Only legal content in public groups\n- Respect other users — no spam</string>
   <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacy policy and conditions of use.</string>
   <string name="onboarding_conditions_accept">Accept</string>
-  <string name="onboarding_conditions_configure_server_operators">Configure server operators</string>
   <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
   <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</string>
@@ -1340,6 +1358,15 @@
   <string name="onboarding_network_operators_review_later">Review later</string>
   <string name="onboarding_network_operators_update">Update</string>
   <string name="onboarding_network_operators_continue">Continue</string>
+
+  <!-- Onboarding Step 3: Your Network -->
+  <string name="onboarding_your_network">Your network</string>
+  <string name="onboarding_network_routers_cannot_know">Network routers cannot know\nwho talks to whom</string>
+  <string name="onboarding_configure_routers">Setup routers</string>
+  <string name="onboarding_configure_notifications">Setup notifications</string>
+
+  <!-- Onboarding Step 4: Network Commitments -->
+  <string name="onboarding_network_commitments">Network commitments</string>
 
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>
@@ -1376,6 +1403,7 @@
   <string name="open_simplex_chat_to_accept_call">Open SimpleX Chat to accept call</string>
   <string name="allow_accepting_calls_from_lock_screen">Enable calls from lock screen via Settings.</string>
   <string name="open_verb">Open</string>
+  <string name="open_external_link_title">Open external link?</string>
 
   <!-- Call overlay -->
   <string name="status_e2e_encrypted">e2e encrypted</string>
@@ -1673,7 +1701,8 @@
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
   <string name="one_hand_ui">Reachable app toolbars</string>
   <string name="chat_bottom_bar">Reachable chat toolbar</string>
-  <string name="one_hand_ui_card_title">Toggle chat list:</string>
+  <string name="one_hand_ui_bottom_bar">Bottom bar</string>
+  <string name="one_hand_ui_top_bar">Top bar</string>
   <string name="one_hand_ui_change_instruction">You can change it in Appearance settings.</string>
   <string name="terminal_always_visible">Show console in new window</string>
   <string name="chat_list_always_visible">Show chat list in new window</string>
@@ -2335,6 +2364,35 @@
   <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
   <string name="group_members_can_send_reports">Members can report messsages to moderators.</string>
   <string name="member_reports_are_prohibited">Reporting messages is prohibited in this group.</string>
+  <string name="chat_with_admins">Chat with admins</string>
+  <string name="allow_chat_with_admins">Allow members to chat with admins.</string>
+  <string name="prohibit_chat_with_admins">Prohibit chats with admins.</string>
+  <string name="members_can_chat_with_admins">Members can chat with admins.</string>
+  <string name="chat_with_admins_is_prohibited">Chats with admins are prohibited.</string>
+  <string name="chat_with_admins_relay_note">Chats with admins in public channels have no E2E encryption - use only with trusted chat relays.</string>
+  <string name="enable_chats_with_admins_question">Enable chats with admins?</string>
+  <string name="enable_chats_with_admins">Enable</string>
+
+  <!-- channel preference descriptions (subscribers) -->
+  <string name="group_reports_subscriber_reports">Subscriber reports</string>
+  <string name="allow_direct_messages_channel">Allow sending direct messages to subscribers.</string>
+  <string name="prohibit_direct_messages_channel">Prohibit sending direct messages to subscribers.</string>
+  <string name="enable_sending_recent_history_channel">Send up to 100 last messages to new subscribers.</string>
+  <string name="disable_sending_recent_history_channel">Do not send history to new subscribers.</string>
+  <string name="group_members_can_send_disappearing_channel">Subscribers can send disappearing messages.</string>
+  <string name="group_members_can_send_dms_channel">Subscribers can send direct messages.</string>
+  <string name="direct_messages_are_prohibited_channel">Direct messages between subscribers are prohibited.</string>
+  <string name="group_members_can_delete_channel">Subscribers can irreversibly delete sent messages. (24 hours)</string>
+  <string name="group_members_can_add_message_reactions_channel">Subscribers can add message reactions.</string>
+  <string name="group_members_can_send_voice_channel">Subscribers can send voice messages.</string>
+  <string name="group_members_can_send_files_channel">Subscribers can send files and media.</string>
+  <string name="group_members_can_send_simplex_links_channel">Subscribers can send SimpleX links.</string>
+  <string name="group_members_can_send_reports_channel">Subscribers can report messsages to moderators.</string>
+  <string name="recent_history_is_sent_to_new_members_channel">Up to 100 last messages are sent to new subscribers.</string>
+  <string name="recent_history_is_not_sent_to_new_members_channel">History is not sent to new subscribers.</string>
+  <string name="allow_chat_with_admins_channel">Allow subscribers to chat with admins.</string>
+  <string name="members_can_chat_with_admins_channel">Subscribers can chat with admins.</string>
+
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>
@@ -2371,6 +2429,7 @@
   <!-- MemberSupportView.kt -->
   <string name="member_support">Chats with members</string>
   <string name="no_support_chats">No chats with members</string>
+  <string name="support_chats_disabled">Chats with members are disabled</string>
   <string name="delete_member_support_chat_button">Delete chat</string>
   <string name="delete_member_support_chat_alert_title">Delete chat with member?</string>
 
@@ -2587,7 +2646,7 @@
   <string name="v6_5_invite_friends">Easier to invite your friends 👋</string>
   <string name="v6_5_invite_friends_descr">We made connecting simpler for new users.</string>
   <string name="v6_5_safe_web_links">Safe web links</string>
-  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
+  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- use SOCKS proxy if enabled.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
   <string name="view_updated_conditions">View updated conditions</string>
@@ -2976,7 +3035,7 @@
   <string name="network_error">Network error</string>
   <string name="error_prefix">Error</string>
   <string name="cancel_creating_channel_question">Cancel creating channel?</string>
-  <string name="cancel_creating_channel_confirm">Cancel</string>
+  <string name="cancel_channel_alert_msg">Your new channel %1$s is connected to %2$d of %3$d relays.\nIf you cancel, the channel will be deleted - you can create it again.</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
   <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.\nRelays can access channel messages.</string>
   <string name="configure_relays">Configure relays</string>
@@ -2984,8 +3043,7 @@
   <string name="relay_connection_failed">Relay connection failed</string>
   <string name="not_all_relays_connected">Not all relays connected</string>
   <string name="wait_verb">Wait</string>
-  <string name="proceed_verb">Proceed</string>
-  <string name="channel_will_start_with_relays">Channel will start working with %1$d of %2$d relays. Proceed?</string>
+  <string name="channel_will_start_with_relays">Channel will start working with %1$d of %2$d relays. Continue?</string>
 
   <!-- ConnectPlan.kt channel-related -->
   <string name="relay_address_alert_title">Relay address</string>
@@ -3002,7 +3060,7 @@
   <!-- ComposeView.kt link previews opt-in alert -->
   <string name="link_previews_alert_title">Enable link previews?</string>
   <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
+  <string name="link_previews_alert_desc_socks">Link preview will be requested via SOCKS proxy. DNS lookup may still happen locally via your DNS resolver.</string>
   <string name="link_previews_alert_enable">Enable</string>
   <string name="link_previews_alert_disable">Disable</string>
-  <!-- <string name="link_previews_alert_dont_ask_again">Don't ask again</string> -->
 </resources>

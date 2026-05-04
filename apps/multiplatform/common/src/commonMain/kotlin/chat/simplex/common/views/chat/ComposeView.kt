@@ -419,9 +419,9 @@ fun ComposeView(
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
         if (pendingLinkUrl.value != url) return@withLongRunningApi
-        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()
-            && !chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
-          showLinkPreviewsConfirmAlert { enable ->
+        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()) {
+          val socksEnabled = chatModel.controller.appPrefs.networkUseSocksProxy.get()
+          showLinkPreviewsConfirmAlert(socksEnabled) { enable ->
             if (enable != null) {
               chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
               chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
@@ -534,7 +534,7 @@ fun ComposeView(
         type = cInfo.chatType,
         id = cInfo.apiId,
         scope = cInfo.groupChatScope(),
-        sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false,
+        sendAsGroup = cInfo.sendAsGroup,
         live = live,
         ttl = ttl,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
@@ -665,7 +665,7 @@ fun ComposeView(
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         toScope = chat.chatInfo.groupChatScope(),
-        sendAsGroup = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false,
+        sendAsGroup = chat.chatInfo.sendAsGroup,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
         fromScope = fromChatInfo.groupChatScope(),
@@ -1496,7 +1496,7 @@ fun ComposeView(
       )
       is SharedContent.ChatLink -> {
         val cInfo = chat.chatInfo
-        val sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false
+        val sendAsGroup = cInfo.sendAsGroup
         withBGApi {
           val mc = chatModel.controller.apiShareChatMsgContent(
             chat.remoteHostId, ChatType.Group, shared.groupInfo.groupId,
@@ -1693,7 +1693,7 @@ fun ComposeView(
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
           AttachmentAndCommandsButtons()
           val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
-            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner) generalGetString(MR.strings.compose_view_broadcast)
+            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner && chat.chatInfo.groupChatScope() == null) generalGetString(MR.strings.compose_view_broadcast)
             else null
           }
           SendMsgView_(disableSendButton = disableSendButton, placeholder = broadcastPlaceholder)
@@ -1703,10 +1703,15 @@ fun ComposeView(
   }
 }
 
-private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
+private fun showLinkPreviewsConfirmAlert(socksEnabled: Boolean, onChoice: (Boolean?) -> Unit) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.link_previews_alert_title),
-    text = AnnotatedString(generalGetString(MR.strings.link_previews_alert_desc)),
+    text = AnnotatedString(
+      if (socksEnabled)
+        generalGetString(MR.strings.link_previews_alert_desc) + "\n\n" + generalGetString(MR.strings.link_previews_alert_desc_socks)
+      else
+        generalGetString(MR.strings.link_previews_alert_desc)
+    ),
     onDismissRequest = { onChoice(null) },
     buttons = {
       Column {
@@ -1714,13 +1719,13 @@ private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
           AlertManager.shared.hideAlert()
           onChoice(false)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
           onChoice(true)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = if (socksEnabled) MaterialTheme.colors.primary else Color.Red)
         }
 //        SectionItemView({
 //          AlertManager.shared.hideAlert()

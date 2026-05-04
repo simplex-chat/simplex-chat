@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct AddChannelView: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
@@ -45,28 +46,39 @@ struct AddChannelView: View {
     private func profileStepView() -> some View {
         List {
             Group {
-                ZStack(alignment: .center) {
-                    ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
-                        if profile.image != nil {
-                            Button {
-                                profile.image = nil
-                            } label: {
-                                Image(systemName: "multiply")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 12)
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    ZStack(alignment: .center) {
+                        ZStack(alignment: .topTrailing) {
+                            ProfileImage(imageStr: profile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
+                            if profile.image != nil {
+                                Button {
+                                    profile.image = nil
+                                } label: {
+                                    Image(systemName: "multiply")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 12)
+                                }
                             }
                         }
+                        editImageButton { showChooseSource = true }
+                            .buttonStyle(BorderlessButtonStyle())
                     }
-                    editImageButton { showChooseSource = true }
-                        .buttonStyle(BorderlessButtonStyle())
+                    .padding(.horizontal, 10) // Offsets transparent space built into 3D asset
+                    #if SIMPLEX_ASSETS
+                    Spacer(minLength: 0)
+                    Image(colorScheme == .light ? "create-channel" : "create-channel-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 140)
+                    #endif
+                    Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))
 
             Section {
                 channelNameTextField()
@@ -161,7 +173,10 @@ struct AddChannelView: View {
     private func createChannel() {
         focusDisplayName = false
         profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
-        profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
+        profile.groupPreferences = GroupPreferences(
+            history: GroupPreference(enable: .on),
+            support: GroupPreference(enable: .off)
+        )
         creationInProgress = true
         Task {
             do {
@@ -323,24 +338,24 @@ struct AddChannelView: View {
             .compactSectionSpacing()
 
             Section {
-                Button("Channel link") {
+                Button("Continue") {
                     if activeCount >= total {
                         showLinkStep = true
                     } else if activeCount > 0 {
                         let actions: [UIAlertAction] = if activeCount + failedCount < total {
                             [
-                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Continue", comment: "alert action"), style: .default) { _ in showLinkStep = true },
                                 UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
                             ]
                         } else {
                             [
-                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Continue", comment: "alert action"), style: .default) { _ in showLinkStep = true },
                                 cancelAlertAction
                             ]
                         }
                         showAlert(
                             NSLocalizedString("Not all relays connected", comment: "alert title"),
-                            message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), activeCount, total),
+                            message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Continue?", comment: "alert message"), activeCount, total),
                             actions: { actions }
                         )
                     }
@@ -352,7 +367,12 @@ struct AddChannelView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Cancel") { cancelChannelCreation(gInfo) }
+                Button("Delete channel") { showCancelChannelAlert(gInfo) }
+            }
+        }
+        .onDisappear {
+            if !showLinkStep && m.creatingChannelId == gInfo.id {
+                showCancelChannelAlert(gInfo)
             }
         }
         .onChange(of: channelRelaysModel.groupRelays) { relays in
@@ -412,6 +432,24 @@ struct AddChannelView: View {
                 logger.error("cancelChannelCreation error: \(responseError(error))")
             }
         }
+    }
+
+    private func showCancelChannelAlert(_ gInfo: GroupInfo) {
+        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
+        let total = groupRelays.count
+        showAlert(
+            NSLocalizedString("Cancel creating channel?", comment: "alert title"),
+            message: String.localizedStringWithFormat(
+                NSLocalizedString("Your new channel %@ is connected to %d of %d relays.\nIf you cancel, the channel will be deleted - you can create it again.", comment: "alert message"),
+                gInfo.groupProfile.displayName, activeCount, total
+            ),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in },
+                UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .destructive) { _ in
+                    cancelChannelCreation(gInfo)
+                }
+            ]}
+        )
     }
 
     // MARK: - Helpers
