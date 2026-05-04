@@ -3710,8 +3710,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
               | useRelays' gInfo = do
                   bucketSize <- asks $ deliveryBucketSize . config
                   sendLoopReaction bucketSize startingCursor
-              | otherwise = -- fallback: deliver body to all (DJReaction should only be created for channels)
-                  deliver body =<< withStore' (\db -> getGroupMembersByCursor db vr user gInfo startingCursor singleSenderGMId_ 0)
+              | otherwise = pure () -- DJReaction is only created for channels (useRelays)
               where
                 sendLoopReaction :: Int -> Maybe GroupMemberId -> CM ()
                 sendLoopReaction bucketSize cursorGMId_ = do
