@@ -339,14 +339,6 @@ private struct InviteView: View {
             let link = connLinkInvitation.simplexChatUri(short: showShortLink)
             linkTextView(link)
             Button {
-                UIPasteboard.general.string = link
-                setInvitationUsed()
-            } label: {
-                Image(systemName: "doc.on.doc")
-                    .padding(.top, -7)
-                    .padding(.horizontal, 8)
-            }
-            Button {
                 showShareSheet(items: [link])
                 setInvitationUsed()
             } label: {

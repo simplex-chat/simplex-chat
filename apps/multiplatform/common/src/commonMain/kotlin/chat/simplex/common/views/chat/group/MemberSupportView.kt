@@ -116,7 +116,10 @@ private fun ModalData.MemberSupportViewLayout(
     if (membersWithChats.isEmpty()) {
       item {
         Box(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-          Text(generalGetString(MR.strings.no_support_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+          Text(
+            generalGetString(if (groupInfo.fullGroupPreferences.support.on) MR.strings.no_support_chats else MR.strings.support_chats_disabled),
+            color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center
+          )
         }
       }
     } else {

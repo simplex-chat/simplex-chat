@@ -867,6 +867,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
     case simplexLinks
     case reports
     case history
+    case support
 
     public var id: Self { self }
 
@@ -888,10 +889,13 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: true
         case .reports: false
         case .history: false
+        case .support: false
         }
     }
 
-    public var text: String {
+    public var text: String { text(isChannel: false) }
+
+    public func text(isChannel: Bool) -> String {
         switch self {
         case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .directMessages: return NSLocalizedString("Direct messages", comment: "chat feature")
@@ -900,8 +904,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         case .files: return NSLocalizedString("Files and media", comment: "chat feature")
         case .simplexLinks: return NSLocalizedString("SimpleX links", comment: "chat feature")
-        case .reports: return NSLocalizedString("Member reports", comment: "chat feature")
+        case .reports: return isChannel
+            ? NSLocalizedString("Subscriber reports", comment: "chat feature")
+            : NSLocalizedString("Member reports", comment: "chat feature")
         case .history: return NSLocalizedString("Visible history", comment: "chat feature")
+        case .support: return NSLocalizedString("Chat with admins", comment: "chat feature")
         }
     }
 
@@ -916,6 +923,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: return "link.circle"
         case .reports: return "flag"
         case .history: return "clock"
+        case .support: return "questionmark.circle"
         }
     }
 
@@ -930,6 +938,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: return "link.circle.fill"
         case .reports: return "flag.fill"
         case .history: return "clock.fill"
+        case .support: return "questionmark.circle.fill"
         }
     }
 
@@ -940,7 +949,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         }
     }
 
-    public func enableDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
+    public func enableDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool, isChannel: Bool = false) -> LocalizedStringKey {
         if canEdit {
             switch self {
             case .timedMessages:
@@ -950,8 +959,12 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 }
             case .directMessages:
                 switch enabled {
-                case .on: return "Allow sending direct messages to members."
-                case .off: return "Prohibit sending direct messages to members."
+                case .on: return isChannel
+                    ? "Allow sending direct messages to subscribers."
+                    : "Allow sending direct messages to members."
+                case .off: return isChannel
+                    ? "Prohibit sending direct messages to subscribers."
+                    : "Prohibit sending direct messages to members."
                 }
             case .fullDelete:
                 switch enabled {
@@ -985,56 +998,96 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 }
             case .history:
                 switch enabled {
-                case .on: return "Send up to 100 last messages to new members."
-                case .off: return "Do not send history to new members."
+                case .on: return isChannel
+                    ? "Send up to 100 last messages to new subscribers."
+                    : "Send up to 100 last messages to new members."
+                case .off: return isChannel
+                    ? "Do not send history to new subscribers."
+                    : "Do not send history to new members."
+                }
+            case .support:
+                switch enabled {
+                case .on: return isChannel
+                    ? "Allow subscribers to chat with admins."
+                    : "Allow members to chat with admins."
+                case .off: return "Prohibit chats with admins."
                 }
             }
         } else {
             switch self {
             case .timedMessages:
                 switch enabled {
-                case .on: return "Members can send disappearing messages."
+                case .on: return isChannel
+                    ? "Subscribers can send disappearing messages."
+                    : "Members can send disappearing messages."
                 case .off: return "Disappearing messages are prohibited."
                 }
             case .directMessages:
                 switch enabled {
-                case .on: return "Members can send direct messages."
-                case .off: return "Direct messages between members are prohibited."
+                case .on: return isChannel
+                    ? "Subscribers can send direct messages."
+                    : "Members can send direct messages."
+                case .off: return isChannel
+                    ? "Direct messages between subscribers are prohibited."
+                    : "Direct messages between members are prohibited."
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Members can irreversibly delete sent messages. (24 hours)"
+                case .on: return isChannel
+                    ? "Subscribers can irreversibly delete sent messages. (24 hours)"
+                    : "Members can irreversibly delete sent messages. (24 hours)"
                 case .off: return "Irreversible message deletion is prohibited."
                 }
             case .reactions:
                 switch enabled {
-                case .on: return "Members can add message reactions."
+                case .on: return isChannel
+                    ? "Subscribers can add message reactions."
+                    : "Members can add message reactions."
                 case .off: return "Message reactions are prohibited."
                 }
             case .voice:
                 switch enabled {
-                case .on: return "Members can send voice messages."
+                case .on: return isChannel
+                    ? "Subscribers can send voice messages."
+                    : "Members can send voice messages."
                 case .off: return "Voice messages are prohibited."
                 }
             case .files:
                 switch enabled {
-                case .on: return "Members can send files and media."
+                case .on: return isChannel
+                    ? "Subscribers can send files and media."
+                    : "Members can send files and media."
                 case .off: return "Files and media are prohibited."
                 }
             case .simplexLinks:
                 switch enabled {
-                case .on: return "Members can send SimpleX links."
+                case .on: return isChannel
+                    ? "Subscribers can send SimpleX links."
+                    : "Members can send SimpleX links."
                 case .off: return "SimpleX links are prohibited."
                 }
             case .reports:
                 switch enabled {
-                case .on: return "Members can report messsages to moderators."
+                case .on: return isChannel
+                    ? "Subscribers can report messsages to moderators."
+                    : "Members can report messsages to moderators."
                 case .off: return "Reporting messages to moderators is prohibited."
                 }
             case .history:
                 switch enabled {
-                case .on: return "Up to 100 last messages are sent to new members."
-                case .off: return "History is not sent to new members."
+                case .on: return isChannel
+                    ? "Up to 100 last messages are sent to new subscribers."
+                    : "Up to 100 last messages are sent to new members."
+                case .off: return isChannel
+                    ? "History is not sent to new subscribers."
+                    : "History is not sent to new members."
+                }
+            case .support:
+                switch enabled {
+                case .on: return isChannel
+                    ? "Subscribers can chat with admins."
+                    : "Members can chat with admins."
+                case .off: return "Chats with admins are prohibited."
                 }
             }
         }
@@ -1190,6 +1243,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var simplexLinks: RoleGroupPreference
     public var reports: GroupPreference
     public var history: GroupPreference
+    public var support: GroupPreference
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1202,6 +1256,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         simplexLinks: RoleGroupPreference,
         reports: GroupPreference,
         history: GroupPreference,
+        support: GroupPreference,
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1213,6 +1268,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.simplexLinks = simplexLinks
         self.reports = reports
         self.history = history
+        self.support = support
         self.commands = commands
     }
 
@@ -1226,6 +1282,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         simplexLinks: RoleGroupPreference(enable: .on, role: nil),
         reports: GroupPreference(enable: .on),
         history: GroupPreference(enable: .on),
+        support: GroupPreference(enable: .on),
         commands: []
     )
 }
@@ -1240,6 +1297,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var simplexLinks: RoleGroupPreference?
     public var reports: GroupPreference?
     public var history: GroupPreference?
+    public var support: GroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1252,6 +1310,7 @@ public struct GroupPreferences: Codable, Hashable {
         simplexLinks: RoleGroupPreference? = nil,
         reports: GroupPreference? = nil,
         history: GroupPreference? = nil,
+        support: GroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1263,6 +1322,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.simplexLinks = simplexLinks
         self.reports = reports
         self.history = history
+        self.support = support
         self.commands = commands
     }
 
@@ -1276,6 +1336,7 @@ public struct GroupPreferences: Codable, Hashable {
         simplexLinks: RoleGroupPreference(enable: .on, role: nil),
         reports: GroupPreference(enable: .on),
         history: GroupPreference(enable: .on),
+        support: GroupPreference(enable: .on),
         commands: nil
     )
 }
@@ -1757,6 +1818,18 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         switch self {
         case let .group(_, groupChatScope): groupChatScope?.toChatScope()
         default: nil
+        }
+    }
+
+    public var sendAsGroup: Bool {
+        if let g = groupInfo, g.useRelays && g.membership.memberRole >= .owner {
+            switch groupChatScope() {
+            case .none: true
+            case .memberSupport: false
+            case .reports: false
+            }
+        } else {
+            false
         }
     }
 
@@ -4092,8 +4165,8 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
         case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
         case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
-        case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
-        case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
+        case let .sndGroupE2EEInfo(e2eeInfo): return groupE2EEInfoStr(e2eeInfo)
+        case let .rcvGroupE2EEInfo(e2eeInfo): return groupE2EEInfoStr(e2eeInfo)
         case .chatBanner: return ""
         case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
         }
@@ -4102,6 +4175,12 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     private func directE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
         e2eeInfo.pqEnabled == true
         ? NSLocalizedString("This chat is protected by quantum resistant end-to-end encryption.", comment: "E2EE info chat item")
+        : e2eeInfoNoPQStr
+    }
+
+    private func groupE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
+        e2eeInfo.public == true
+        ? NSLocalizedString("Messages in this channel are not end-to-end encrypted. Chat relays can see these messages.", comment: "E2EE info chat item")
         : e2eeInfoNoPQStr
     }
 
@@ -5319,6 +5398,7 @@ public enum CIGroupInvitationStatus: String, Decodable, Hashable {
 
 public struct E2EEInfo: Decodable, Hashable {
     public var pqEnabled: Bool?
+    public var `public`: Bool?
 }
 
 public enum RcvDirectEvent: Decodable, Hashable {

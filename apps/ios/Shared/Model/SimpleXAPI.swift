@@ -2183,7 +2183,7 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
             withAnimation {
                 let savedOnboardingStage = onboardingStageDefault.get()
                 m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
-                ? .step3_ChooseServerOperators
+                ? .step4_NetworkCommitments
                 : savedOnboardingStage
                 if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
                     m.setDeliveryReceipts = true

@@ -242,7 +242,6 @@
     <string name="callstatus_in_progress">probíhající hovor</string>
     <string name="decentralized">Decentralizovaná</string>
     <string name="how_it_works">Jak to funguje</string>
-    <string name="how_simplex_works">Jak funguje SimpleX</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy.</string>
     <string name="onboarding_notifications_mode_title">Soukromé oznámení</string>
     <string name="onboarding_notifications_mode_periodic">Pravidelné</string>
@@ -877,7 +876,7 @@
     <string name="group_preferences">Předvolby skupiny</string>
     <string name="direct_messages">Přímé zprávy</string>
     <string name="full_deletion">Mazání všem</string>
-    <string name="feature_enabled">zapnuty</string>
+    <string name="feature_enabled">zapnuto</string>
     <string name="feature_enabled_for_you">povoleno vám</string>
     <string name="feature_off">vypnuty</string>
     <string name="prohibit_sending_disappearing_messages">Mizící zprávy zakázány.</string>
@@ -930,7 +929,7 @@
     <string name="moderated_description">moderované</string>
     <string name="moderated_item_description">moderovaný %s</string>
     <string name="delete_member_message__question">Smazat zprávu člena\?</string>
-    <string name="moderate_verb">moderovaný</string>
+    <string name="moderate_verb">Moderovat</string>
     <string name="observer_cant_send_message_desc">Kontaktujte prosím správce skupiny.</string>
     <string name="you_are_observer">jste pozorovatel</string>
     <string name="group_member_role_observer">pozorovatel</string>
@@ -1168,7 +1167,7 @@
     <string name="theme_colors_section_title">BARVY MOTIVU</string>
     <string name="customize_theme_title">Přizpůsobit motiv</string>
     <string name="profile_update_will_be_sent_to_contacts">Aktualizace profilu bude zaslána vašim kontaktům.</string>
-    <string name="share_address_with_contacts_question">Sdílet adresu s kontakty\?</string>
+    <string name="share_address_with_contacts_question">Sdílet adresu s kontakty?</string>
     <string name="stop_sharing_address">Přestat sdílet adresu\?</string>
     <string name="create_address_and_let_people_connect">Vytvořit adresu, aby se s vámi lidé mohli spojit.</string>
     <string name="save_auto_accept_settings">Uložit nastavení SimpleX adresy</string>
@@ -1543,7 +1542,7 @@
     <string name="rcv_group_event_member_blocked">blokováno %s</string>
     <string name="profile_update_event_contact_name_changed">kontakt %1$s změnen na %2$s</string>
     <string name="info_row_created_at">Vytvořeno v</string>
-    <string name="block_for_all">Blok všem</string>
+    <string name="block_for_all">Blokovat všem</string>
     <string name="block_for_all_question">Blokovat člena všem?</string>
     <string name="error_blocking_member_for_all">Chyba blokování člena všem</string>
     <string name="v5_5_message_delivery">Vylepšené doručovaní zpráv</string>
@@ -2054,7 +2053,7 @@
     <string name="no_message_servers_configured_for_private_routing">Žádné servery pro soukromé směrování chatů.</string>
     <string name="no_media_servers_configured_for_private_routing">Žádné servery pro příjem souborů.</string>
     <string name="no_message_servers_configured_for_receiving">Žádné servery pro příjem zpráv.</string>
-    <string name="delete_chat_list_warning">Všechny chaty budou ze seznamu odebrány %s, a seznam bude smazán</string>
+    <string name="delete_chat_list_warning">Všechny chaty budou ze seznamu %s odebrány, a seznam bude smazán</string>
     <string name="for_social_media">Pro sociální sítě</string>
     <string name="remote_hosts_section">Vzdálené telefony</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Podmínky budou přijaty pro operátora(y): <b>%s</b>.]]></string>
@@ -2247,7 +2246,6 @@
     <string name="chat_theme_set_default_theme">Nastavit výchozí téma</string>
     <string name="servers_info_uploaded">Nahráno</string>
     <string name="privacy_chat_list_open_links_yes">Ano</string>
-    <string name="one_hand_ui_card_title">Přepnout chat seznam:</string>
     <string name="change_automatic_chat_deletion_message">Tuto akci nelze zrušit - zprávy odeslané a přijaté v tomto chatu dříve než vybraná, budou smazány.</string>
     <string name="servers_info_reset_stats_alert_message">Statistiky serverů budou obnoveny - nemůže být vráceno!</string>
     <string name="v6_3_reports">Odešlete soukromý report</string>
@@ -2366,7 +2364,6 @@
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Členové budou odstraněny z chatu - toto nelze zvrátit!</string>
     <string name="onboarding_conditions_by_using_you_agree">Použitím SimpleX chatu souhlasíte že:\n- ve veřejných skupinách budete zasílat pouze legální obsah.\n- budete respektovat ostatní uživatele – žádný spam.</string>
     <string name="onboarding_conditions_accept">Přijmout</string>
-    <string name="onboarding_conditions_configure_server_operators">Nastavit operátora serveru</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Zásady ochrany soukromí a podmínky používání.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Soukromé konverzace, skupiny a kontakty nejsou přístupné provozovatelům serverů.</string>
     <string name="unsupported_connection_link">Nepodporovaný odkaz k připojení</string>
@@ -2550,5 +2547,13 @@
     <string name="member_info_member_failed">selhal</string>
     <string name="down_migration_warning_chat_relays">Pokud jste se připojili k nějakým kanálům nebo je vytvořili, přestanou trvale fungovat.</string>
     <string name="relay_status_active">aktivní</string>
-    <string name="cancel_creating_channel_confirm">Zrušit</string>
+    <string name="why_built_heading">Narodili jste se bez účtu.</string>
+    <string name="why_built_p1">Nikdo nesledoval vaše konverzace. Nikdo nevytvořil mapu, kde jste byli. Soukromí nikdy nebylo funkcí - byl to způsob života.</string>
+    <string name="why_built_p2">Pak jsme se přesunuli na internet a každá platforma chtěla o vás něco vědět - vaše jméno, vaše číslo, vaše přátele. Smířili jsme se s tím, že cenou za komunikaci s ostatními je dát někomu vědět, s kým mluvíme. Každá generace, lidská i technická, to tak měla - telefon, e-mail, komunikátory, sociální sítě. Zdálo se, že je to jediný možný způsob.</string>
+    <string name="why_built_p3">Existuje i jiný způsob. Síť bez telefonních čísel. Bez uživatelských jmen. Bez účtů. Bez jakékoli uživatelské identity. Síť, která spojuje lidi a přenáší šifrované zprávy, aniž by bylo známo, kdo je připojen.</string>
+    <string name="why_built_p4">Nejde o to mít lepší zámek na dveřích někoho jiného. Ani o to mít nájemce, který respektuje vaše soukromí, ale vede evidenci všech vašich návštěvníků. Nejste host. Jste doma. Ani král k vám nemůže vstoupit - jste suverén.</string>
+    <string name="why_built_p5">Vaše konverzace patří vám, jako tomu bylo vždy před internetem. Síť není místo, které navštěvujete. Je to místo, které vytváříte a vlastníte. A nikdo vám ho nemůže vzít, ať už je soukromé, nebo veřejné.</string>
+    <string name="why_built_p6">Nejstarší lidská svoboda - mluvit s druhým člověkem, aniž by byl sledován - postavena na infrastruktuře, která ji nemůže zradit.</string>
+    <string name="why_built_p7">Protože jsme zničili sílu vědět, kdo jste. Aby vám vaši moc nikdo nemohl vzít.</string>
+    <string name="why_built_tagline">Buďte svobodní ve své síti.</string>
 </resources>

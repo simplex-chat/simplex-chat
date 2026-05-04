@@ -12,8 +12,11 @@ It automates creating and updating of the bot profile, address and bot commands 
 ## Interfaces
 
 - [BotConfig](bot.Interface.BotConfig.md)
-- [BotDbOpts](bot.Interface.BotDbOpts.md)
 - [BotOptions](bot.Interface.BotOptions.md)
+
+## Type Aliases
+
+- [BotDbOpts](bot.TypeAlias.BotDbOpts.md)
 
 ## Functions
 

@@ -769,7 +769,7 @@ fun UsageConditionsView(
           .clip(shape = CircleShape)
           .clickable {
             val commitUrl = "https://github.com/simplex-chat/simplex-chat/commit/$commit"
-            uriHandler.openUriCatching(commitUrl)
+            uriHandler.openExternalLink(commitUrl)
           }
           .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -826,12 +826,21 @@ fun UsageConditionsView(
 
 @Composable
 fun SimpleConditionsView(
-  rhId: Long?
+  rhId: Long?,
+  onAccept: () -> Unit
 ) {
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
     Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
       ConditionsTextView(rhId)
+    }
+    Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+      OnboardingActionButton(
+        modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+        labelId = MR.strings.onboarding_conditions_accept,
+        onboarding = null,
+        onclick = onAccept
+      )
     }
   }
 }
