@@ -28,7 +28,6 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import System.FilePath (takeExtension)
-import UnliftIO.STM
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
@@ -71,15 +70,21 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
           exitFailure
         Right cc -> do
           forM_ (preStartHook chatHooks) ($ cc)
-          u0 <- case u_ of
-            Nothing -> noMaintenance >> createActiveUser cc coreOptions createBot userDisplayName
+          img_ <- mapM loadImageFile userImageFile
+          u <- case u_ of
+            Nothing -> noMaintenance >> createActiveUser cc coreOptions createBot userDisplayName img_
             Just u@User {localDisplayName} -> do
               forM_ userDisplayName $ \name ->
                 when (localDisplayName /= name) $ do
                   putStrLn $ "Active user display name " <> show localDisplayName <> " does not match --user-display-name " <> show name
                   exitFailure
-              pure u
-          u <- maybe (pure u0) (applyUserImage cc chatStore u0) userImageFile
+              case img_ of
+                Nothing -> pure u
+                Just img ->
+                  execChatCommand' (UpdateProfileImage (Just img)) 0 `runReaderT` cc >>= \case
+                    Right (CRUserProfileUpdated u' _ _ _) -> pure u'
+                    Right (CRUserProfileNoChange u') -> pure u'
+                    r -> printResponseEvent (Nothing, Nothing) (config cc) r >> exitFailure
           unless testView $ putStrLn $ "Current user: " <> userStr u
           runSimplexChat cfg opts u cc chat
     noMaintenance = when maintenance $ do
@@ -134,13 +139,13 @@ selectActiveUser CoreChatOpts {chatRelay} st users
                     let user = users !! (n - 1)
                      in Just <$> withTransaction st (`setActiveUser` user)
 
-createActiveUser :: ChatController -> CoreChatOpts -> Maybe CreateBotOpts -> Maybe Text -> IO User
-createActiveUser cc CoreChatOpts {chatRelay} createBot_ userDisplayName_ = case createBot_ of
+createActiveUser :: ChatController -> CoreChatOpts -> Maybe CreateBotOpts -> Maybe Text -> Maybe ImageData -> IO User
+createActiveUser cc CoreChatOpts {chatRelay} createBot_ userDisplayName_ img_ = case createBot_ of
   Just CreateBotOpts {botDisplayName, allowFiles, clientService} -> do
     let preferences = if allowFiles then Nothing else Just emptyChatPrefs {files = Just FilesPreference {allow = FANo}}
     createUser exitFailure clientService $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
   Nothing -> case userDisplayName_ of
-    Just displayName -> createUser exitFailure False $ mkProfile displayName
+    Just displayName -> createUser exitFailure False $ (mkProfile displayName :: Profile) {image = img_}
     Nothing -> putStrLn prompt >> loop
       where
         prompt
@@ -208,34 +213,16 @@ onOffPrompt prompt def =
       "N" -> pure False
       _ -> putStrLn "Invalid input, please enter 'y' or 'n'" >> onOffPrompt prompt def
 
-applyUserImage :: ChatController -> DBStore -> User -> FilePath -> IO User
-applyUserImage cc store u@User {profile = p@LocalProfile {image = currentImg}} path = do
-  newImg <- loadImageFile path >>= either failExit pure
-  if currentImg == Just newImg
-    then pure u
-    else do
-      let p' = (fromLocalProfile p) {image = Just newImg} :: Profile
-      withTransaction store (\db -> runExceptT $ updateUserProfile db u p') >>= \case
-        Left e -> failExit $ "Failed to update user profile: " <> show e
-        Right u' -> u' <$ atomically (writeTVar (currentUser cc) (Just u'))
-  where
-    failExit msg = putStrLn msg >> exitFailure
-
-loadImageFile :: FilePath -> IO (Either String ImageData)
+loadImageFile :: FilePath -> IO ImageData
 loadImageFile path = case map toLower (takeExtension path) of
   ".png" -> readAs "image/png"
   ".jpg" -> readAs "image/jpg"
   ".jpeg" -> readAs "image/jpg"
-  ext -> pure $ Left $ "--user-image-file: unsupported image extension " <> show ext <> " (only .png, .jpg, .jpeg)"
+  ext -> putStrLn ("--user-image-file: unsupported image extension " <> show ext <> " (only .png, .jpg, .jpeg)") >> exitFailure
   where
-    -- matches the cap mobile/desktop UIs pass to resizeImageToStrSize for profile images
-    maxProfileImageSize = 12500
     readAs mime = do
       bs <- BS.readFile path
-      let url = "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
-      pure $ if T.length url > maxProfileImageSize
-        then Left $ "--user-image-file: encoded image size " <> show (T.length url) <> " bytes exceeds max " <> show maxProfileImageSize <> " bytes"
-        else Right $ ImageData url
+      pure $ ImageData $ "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
 
 userStr :: User -> String
 userStr User {localDisplayName, profile = LocalProfile {fullName}} =
