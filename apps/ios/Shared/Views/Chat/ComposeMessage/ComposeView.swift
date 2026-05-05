@@ -395,7 +395,7 @@ struct ComposeView: View {
             if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
                ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
-                    if let s = ownerState, s.activeCount < s.relays.count {
+                    if let s = ownerState, s.relays.isEmpty || s.activeCount < s.relays.count {
                         ownerChannelRelayBar(relays: s.relays, activeCount: s.activeCount, failedCount: s.failedCount, removedCount: s.removedCount)
                     }
                 } else {
@@ -763,7 +763,11 @@ struct ComposeView: View {
                 if !allBroken && activeCount + failedCount + removedCount < total {
                     RelayProgressIndicator(active: activeCount, total: total)
                 }
-                if allBroken {
+                if total == 0 {
+                    Text("No relays")
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                } else if allBroken {
                     if removedCount == total {
                         Text("All relays removed")
                     } else if failedCount == total {
@@ -793,7 +797,7 @@ struct ComposeView: View {
             }
             if relayListExpanded {
                 if allBroken {
-                    Text("Adding relays will be supported later.")
+                    Text("Add relays to restore message delivery.")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)

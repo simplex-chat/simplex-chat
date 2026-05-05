@@ -35,7 +35,7 @@ struct ChannelRelaysView: View {
             }
         }
         .sheet(isPresented: $showAddRelay) {
-            let existingRelayIds = Set(groupRelays.compactMap { $0.userChatRelay.chatRelayId })
+            let existingRelayIds = Set(groupRelays.filter { $0.relayStatus != .rsInactive }.compactMap { $0.userChatRelay.chatRelayId })
             AddGroupRelayView(groupInfo: groupInfo, existingRelayIds: existingRelayIds) {
                 Task { await chatModel.loadGroupMembers(groupInfo) }
             }

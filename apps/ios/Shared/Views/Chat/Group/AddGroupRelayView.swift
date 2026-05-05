@@ -15,7 +15,7 @@ struct AddGroupRelayView: View {
     var onRelayAdded: () -> Void
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
-    @State private var availableRelays: [UserChatRelay] = []
+    @State private var availableRelays: [(relay: UserChatRelay, operatorName: String?)] = []
     @State private var selectedRelayIds: Set<Int64> = []
     @State private var isLoading = true
     @State private var isAdding = false
@@ -35,14 +35,13 @@ struct AddGroupRelayView: View {
                     }
                 } else {
                     Section {
-                        ForEach(availableRelays, id: \.id) { relay in
-                            relayCheckRow(relay)
+                        ForEach(availableRelays, id: \.relay.id) { item in
+                            relayCheckRow(item.relay, operatorName: item.operatorName)
                         }
-                    } footer: {
-                        Text("Select relays to add to the channel.")
                     }
                 }
             }
+            .modifier(ThemedBackground(grouped: true))
             .navigationTitle("Add relays")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -58,7 +57,7 @@ struct AddGroupRelayView: View {
         .task { await loadAvailableRelays() }
     }
 
-    private func relayCheckRow(_ relay: UserChatRelay) -> some View {
+    private func relayCheckRow(_ relay: UserChatRelay, operatorName: String?) -> some View {
         let relayId = relay.chatRelayId!
         let selected = selectedRelayIds.contains(relayId)
         let title = !relay.displayName.isEmpty ? relay.displayName : (relay.domains.first ?? relay.address)
@@ -74,8 +73,8 @@ struct AddGroupRelayView: View {
                     Text(title)
                         .foregroundColor(theme.colors.onBackground)
                         .lineLimit(1)
-                    if let domain = relay.domains.first, !relay.displayName.isEmpty {
-                        Text(domain)
+                    if let opName = operatorName {
+                        Text(opName)
                             .font(.caption)
                             .foregroundColor(theme.colors.secondary)
                             .lineLimit(1)
@@ -83,7 +82,7 @@ struct AddGroupRelayView: View {
                 }
                 Spacer()
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(selected ? .accentColor : theme.colors.secondary)
+                    .foregroundColor(selected ? theme.colors.primary : Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme))
             }
         }
     }
@@ -91,14 +90,15 @@ struct AddGroupRelayView: View {
     private func loadAvailableRelays() async {
         do {
             let servers = try await getUserServers()
-            var relays: [UserChatRelay] = []
+            var relays: [(relay: UserChatRelay, operatorName: String?)] = []
             for op in servers {
                 if let oper = op.operator, oper.enabled != true { continue }
+                let opName: String? = op.operator?.operatorTag != nil ? op.operator?.tradeName : nil
                 for relay in op.chatRelays {
                     if relay.enabled && !relay.deleted,
                        let relayId = relay.chatRelayId,
                        !existingRelayIds.contains(relayId) {
-                        relays.append(relay)
+                        relays.append((relay, opName))
                     }
                 }
             }
