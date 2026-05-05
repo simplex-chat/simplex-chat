@@ -2275,9 +2275,7 @@ processChatCommand vr nm = \case
           | isTrue userChatRelay = relayShortLinkData (userProfileDirect user Nothing Nothing True)
           | otherwise = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
-    (connId, ccLink) <- withAgent $ \a -> case server_ of
-      Just server -> createConnectionOnServer a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing server IKPQOn subMode
-      Nothing -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
+    (connId, ccLink) <- withAgent $ \a -> createConnectionOnServer a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing server_ IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     let ccLink'' = if isTrue userChatRelay then setShortLinkType CCTRelay ccLink' else ccLink'
     withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode
