@@ -228,9 +228,14 @@ loadImageFile path = case map toLower (takeExtension path) of
   ".jpeg" -> readAs "image/jpg"
   ext -> pure $ Left $ "--user-image-file: unsupported image extension " <> show ext <> " (only .png, .jpg, .jpeg)"
   where
+    -- matches the cap mobile/desktop UIs pass to resizeImageToStrSize for profile images
+    maxProfileImageSize = 12500
     readAs mime = do
       bs <- BS.readFile path
-      pure $ Right $ ImageData $ "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
+      let url = "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
+      pure $ if T.length url > maxProfileImageSize
+        then Left $ "--user-image-file: encoded image size " <> show (T.length url) <> " bytes exceeds max " <> show maxProfileImageSize <> " bytes"
+        else Right $ ImageData url
 
 userStr :: User -> String
 userStr User {localDisplayName, profile = LocalProfile {fullName}} =
