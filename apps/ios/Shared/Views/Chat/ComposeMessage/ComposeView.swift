@@ -409,7 +409,7 @@ struct ComposeView: View {
                     let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
                     let resolvedCount = connectedCount + removedCount + failedCount
                     let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
-                    if total > 0, removedCount + failedCount > 0 || resolvedCount < total {
+                    if total == 0 || removedCount + failedCount > 0 || resolvedCount < total {
                         subscriberChannelRelayBar(
                             hostnames: hostnames,
                             relayMembers: relayMembers,
@@ -847,7 +847,11 @@ struct ComposeView: View {
         let allBroken = connectedCount == 0 && errorCount == total
         VStack(spacing: 0) {
             relayBarHeader {
-                if allBroken {
+                if total == 0 {
+                    Text("No relays")
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                } else if allBroken {
                     if removedCount == total {
                         Text("All relays removed")
                     } else if failedCount == total {

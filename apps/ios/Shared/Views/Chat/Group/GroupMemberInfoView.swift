@@ -642,7 +642,7 @@ struct GroupMemberInfoView: View {
                     }
                 }
                 if canRemove {
-                    if mem.memberStatus != .memRemoved && mem.memberStatus != .memLeft {
+                    if mem.memberStatus != .memRemoved && (mem.memberStatus != .memLeft || mem.memberRole == .relay) {
                         removeMemberButton(mem)
                     } else if mem.memberRole != .relay {
                         deleteMemberMessagesButton(mem)
