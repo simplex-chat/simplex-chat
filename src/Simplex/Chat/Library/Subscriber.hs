@@ -1324,9 +1324,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               -- Relay link absent from link data — deactivate.
                               -- RSAccepted relays are not deactivated: their own link data update
                               -- may not have been processed yet (race with concurrent relay connections).
-                              -- TODO [multi-owner] Another owner removing a relay updates link data on
-                              -- the SMP server, but this owner won't receive a LINK callback for it
-                              -- (LINK only fires in response to own setConnShortLink calls).
+                              -- TODO [relays] multi-owner: Another owner removing a relay updates link data on
+                              -- TODO   the SMP server, but this owner won't receive a LINK callback for it
+                              -- TODO   (LINK only fires in response to own setConnShortLink calls).
                               relay' <- updateRelayStatus db relay RSInactive
                               pure (relay' : acc, True)
                         _ -> pure (relay : acc, changed)
