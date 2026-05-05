@@ -15,7 +15,7 @@ struct AddGroupRelayView: View {
     var onRelayAdded: () -> Void
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
-    @State private var availableRelays: [(relay: UserChatRelay, operatorName: String?)] = []
+    @State private var availableRelays: [(relayId: Int64, relay: UserChatRelay, operatorName: String?)] = []
     @State private var selectedRelayIds: Set<Int64> = []
     @State private var isLoading = true
     @State private var isAdding = false
@@ -35,8 +35,8 @@ struct AddGroupRelayView: View {
                     }
                 } else {
                     Section {
-                        ForEach(availableRelays, id: \.relay.id) { item in
-                            relayCheckRow(item.relay, operatorName: item.operatorName)
+                        ForEach(availableRelays, id: \.relayId) { item in
+                            relayCheckRow(item.relayId, item.relay, operatorName: item.operatorName)
                         }
                     }
                 }
@@ -57,10 +57,8 @@ struct AddGroupRelayView: View {
         .task { await loadAvailableRelays() }
     }
 
-    private func relayCheckRow(_ relay: UserChatRelay, operatorName: String?) -> some View {
-        let relayId = relay.chatRelayId!
+    private func relayCheckRow(_ relayId: Int64, _ relay: UserChatRelay, operatorName: String?) -> some View {
         let selected = selectedRelayIds.contains(relayId)
-        let title = !relay.displayName.isEmpty ? relay.displayName : (relay.domains.first ?? relay.address)
         return Button {
             if selected {
                 selectedRelayIds.remove(relayId)
@@ -70,7 +68,7 @@ struct AddGroupRelayView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading) {
-                    Text(title)
+                    Text(chatRelayDisplayName(relay))
                         .foregroundColor(theme.colors.onBackground)
                         .lineLimit(1)
                     if let opName = operatorName {
@@ -90,7 +88,7 @@ struct AddGroupRelayView: View {
     private func loadAvailableRelays() async {
         do {
             let servers = try await getUserServers()
-            var relays: [(relay: UserChatRelay, operatorName: String?)] = []
+            var relays: [(relayId: Int64, relay: UserChatRelay, operatorName: String?)] = []
             for op in servers {
                 if let oper = op.operator, oper.enabled != true { continue }
                 let opName: String? = op.operator?.operatorTag != nil ? op.operator?.tradeName : nil
@@ -98,7 +96,7 @@ struct AddGroupRelayView: View {
                     if relay.enabled && !relay.deleted,
                        let relayId = relay.chatRelayId,
                        !existingRelayIds.contains(relayId) {
-                        relays.append((relay, opName))
+                        relays.append((relayId, relay, opName))
                     }
                 }
             }
@@ -120,7 +118,10 @@ struct AddGroupRelayView: View {
         isAdding = true
         Task {
             do {
-                let result = try await apiAddGroupRelays(groupInfo.groupId, relayIds: relayIds)
+                guard let result = try await apiAddGroupRelays(groupInfo.groupId, relayIds: relayIds) else {
+                    await MainActor.run { isAdding = false }
+                    return
+                }
                 await MainActor.run {
                     isAdding = false
                     switch result {
@@ -132,7 +133,7 @@ struct AddGroupRelayView: View {
                         let successIds = Set(results.filter { $0.relayError == nil }.compactMap { $0.relay.chatRelayId })
                         if !successIds.isEmpty {
                             selectedRelayIds.subtract(successIds)
-                            availableRelays.removeAll { successIds.contains($0.relay.chatRelayId ?? -1) }
+                            availableRelays.removeAll { successIds.contains($0.relayId) }
                             onRelayAdded()
                         }
                         let msg = results.filter { $0.relayError != nil }

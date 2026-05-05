@@ -1896,14 +1896,14 @@ enum AddGroupRelaysResult {
     case addFailed([AddRelayResult])
 }
 
-func apiAddGroupRelays(_ groupId: Int64, relayIds: [Int64]) async throws -> AddGroupRelaysResult {
-    let r: ChatResponse2 = try await chatSendCmd(.apiAddGroupRelays(groupId: groupId, relayIds: relayIds))
+func apiAddGroupRelays(_ groupId: Int64, relayIds: [Int64]) async throws -> AddGroupRelaysResult? {
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiAddGroupRelays(groupId: groupId, relayIds: relayIds))
     switch r {
-    case let .groupRelaysAdded(_, groupInfo, groupLink, groupRelays):
+    case let .result(.groupRelaysAdded(_, groupInfo, groupLink, groupRelays)):
         return .added(groupInfo, groupLink, groupRelays)
-    case let .groupRelaysAddFailed(_, addRelayResults):
+    case let .result(.groupRelaysAddFailed(_, addRelayResults)):
         return .addFailed(addRelayResults)
-    default: throw r.unexpected
+    default: if let r { throw r.unexpected } else { return nil }
     }
 }
 

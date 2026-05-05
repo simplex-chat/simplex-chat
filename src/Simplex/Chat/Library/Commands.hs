@@ -2546,10 +2546,18 @@ processChatCommand vr nm = \case
       ([], _) -> do
         relays' <- withFastStore $ \db -> liftIO $ getGroupRelays db gInfo
         pure $ CRGroupRelaysAdded user gInfo gLink relays'
-      _ -> do
-        let toRelayResult (r, Left e) = AddRelayResult r (Just e)
-            toRelayResult (r, Right _) = AddRelayResult r Nothing
-        pure $ CRGroupRelaysAddFailed user (map toRelayResult results)
+      (errors@(e : _), _) -> do
+        if all isTempErr errors
+          then throwError e
+          else do
+            let toRelayResult (r, Left e') = AddRelayResult r (Just e')
+                toRelayResult (r, Right _) = AddRelayResult r Nothing
+            pure $ CRGroupRelaysAddFailed user (map toRelayResult results)
+    where
+      isTempErr :: ChatError -> Bool
+      isTempErr = \case
+        ChatErrorAgent {agentError = e} -> temporaryOrHostError e
+        _ -> False
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
