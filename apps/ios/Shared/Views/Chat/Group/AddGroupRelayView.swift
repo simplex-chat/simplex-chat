@@ -136,9 +136,14 @@ struct AddGroupRelayView: View {
                             availableRelays.removeAll { successIds.contains($0.relayId) }
                             onRelayAdded()
                         }
-                        let msg = results.filter { $0.relayError != nil }
+                        let errorLines = results.filter { $0.relayError != nil }
                             .map { "\(chatRelayDisplayName($0.relay)): \($0.relayError.map { connErrorText($0) } ?? "")" }
-                            .joined(separator: "\n")
+                        let successNames = results.filter { $0.relayError == nil }
+                            .map { chatRelayDisplayName($0.relay) }
+                        var msg = errorLines.joined(separator: "\n")
+                        if !successNames.isEmpty {
+                            msg += "\n" + String.localizedStringWithFormat(NSLocalizedString("Relays added: %@.", comment: "alert message"), successNames.joined(separator: ", "))
+                        }
                         showAlert(
                             NSLocalizedString("Error adding relays", comment: "alert title"),
                             message: msg
