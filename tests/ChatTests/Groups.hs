@@ -9698,7 +9698,7 @@ testChannelAddRelay ps =
             -- create channel with 1 relay (bob)
             (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
 
-            -- existing subscriber joins through bob (the only relay at this point)
+            -- subscriber joins through bob (the only relay at this point)
             memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
 
             -- configure cath as a second relay
@@ -9773,8 +9773,7 @@ testChannelRemoveRelay ps =
             [ do
                 bob <## "#team: alice removed you from the group (signed)"
                 bob <## "use /d #team to delete the group",
-              -- cath doesn't have bob in member list (relays aren't introduced to each other),
-              -- so x.grp.mem.del arrives with unknown member ID — cath still forwards it
+              -- cath doesn't have bob in member list (relays aren't introduced to each other)
               cath <## "error: x.grp.mem.del with unknown member ID",
               dan <## "#team: alice removed bob from the group (signed)"
             ]
