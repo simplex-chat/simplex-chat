@@ -481,7 +481,7 @@ func relayDisplayName(_ relay: GroupRelay) -> String {
     return "relay \(relay.groupRelayId)"
 }
 
-private func chatRelayDisplayName(_ relay: UserChatRelay) -> String {
+func chatRelayDisplayName(_ relay: UserChatRelay) -> String {
     if !relay.displayName.isEmpty { return relay.displayName }
     return relay.address
 }

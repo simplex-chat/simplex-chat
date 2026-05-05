@@ -745,7 +745,7 @@ struct ChatView: View {
                             ChannelRelaysModel.shared.set(groupId: groupInfo.groupId, groupRelays: relays)
                         }
                     }
-                } else {
+                } else if groupInfo.membership.memberCurrent {
                     Task {
                         if let gInfo = await apiGetUpdatedGroupLinkData(groupInfo.groupId) {
                             await MainActor.run {
