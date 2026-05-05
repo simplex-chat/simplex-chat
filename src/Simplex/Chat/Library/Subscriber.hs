@@ -931,7 +931,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
           shouldDelConns <-
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
-              then createDeliveryTasks gInfo' m' newDeliveryTasks
+              then
+                let tasks
+                      | relayOwnStatus gInfo' == Just RSInactive = filter relayRemovedNewTask newDeliveryTasks
+                      | otherwise = newDeliveryTasks
+                 in createDeliveryTasks gInfo' m' tasks
               else pure False
           withRcpt <- checkSendRcpt $ rights aChatMsgs
           pure (withRcpt, shouldDelConns)
@@ -1039,6 +1043,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               aChatMsgHasReceipt (APMsg _ (ParsedMsg _ _ ChatMessage {chatMsgEvent})) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
+          relayRemovedNewTask :: NewMessageDeliveryTask -> Bool
+          relayRemovedNewTask NewMessageDeliveryTask {taskContext = DeliveryTaskContext {jobScope}} = isRelayRemoved jobScope
           createDeliveryTasks :: GroupInfo -> GroupMember -> [NewMessageDeliveryTask] -> CM ShouldDeleteGroupConns
           createDeliveryTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
             let relayRemovedTask_ = find (\NewMessageDeliveryTask {taskContext = DeliveryTaskContext {jobScope}} -> isRelayRemoved jobScope) newDeliveryTasks
@@ -3531,19 +3537,23 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask :: MessageDeliveryTask -> CM ()
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
           case jobScopeImpliedSpec jobScope of
-            DJDeliveryJob _includePending ->
-              withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
-                let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
-                withStore' $ \db -> do
-                  createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body
-                  forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
-                  forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
-                lift . void $ getDeliveryJobWorker True deliveryKey
+            DJDeliveryJob _includePending
+              | relayOwnStatus gInfo == Just RSInactive ->
+                  throwChatError $ CEInternalError "delivery task worker: relay inactive"
+              | otherwise ->
+                  withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
+                    let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
+                    withStore' $ \db -> do
+                      createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body
+                      forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
+                      forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
+                    lift . void $ getDeliveryJobWorker True deliveryKey
               where
                 singleSenderGMId_ :: NonEmpty MessageDeliveryTask -> Maybe GroupMemberId
                 singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
                   | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
                   | otherwise = Nothing
+            -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery task worker: relay removed task in wrong worker scope"
@@ -3596,9 +3606,13 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob :: MessageDeliveryJob -> CM ()
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
-            DJDeliveryJob _includePending -> do
-              sendBodyToMembers
-              withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
+            DJDeliveryJob _includePending
+              | relayOwnStatus gInfo == Just RSInactive ->
+                  throwChatError $ CEInternalError "delivery job worker: relay inactive"
+              | otherwise -> do
+                  sendBodyToMembers
+                  withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
+            -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery job worker: relay removed job in wrong worker scope"
