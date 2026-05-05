@@ -4784,7 +4784,7 @@ runRelayGroupLinkChecks user = do
   where
     checkRelayGroups = do
       vr <- chatVersionRange
-      relayGroups <- withFastStore' $ \db -> getRelayOwnGroups db vr user
+      relayGroups <- withFastStore' $ \db -> getRelayServedGroups db vr user
       forM_ relayGroups $ \gInfo@GroupInfo {groupProfile = gp} -> flip catchAllErrors eToView $ do
         case publicGroup gp of
           Just PublicGroupProfile {groupLink = sLnk} -> do

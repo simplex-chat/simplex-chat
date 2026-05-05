@@ -95,7 +95,7 @@ module Simplex.Chat.Store.Groups
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
     updateRelayOwnStatus_,
-    getRelayOwnGroups,
+    getRelayServedGroups,
     createNewContactMemberAsync,
     createJoiningMember,
     getMemberJoinRequest,
@@ -1589,8 +1589,8 @@ updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET relay_own_status = ?, updated_at = ? WHERE group_id = ?" (relayStatus, currentTs, groupId)
 
-getRelayOwnGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
-getRelayOwnGroups db vr User {userId, userContactId} = do
+getRelayServedGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
+getRelayServedGroups db vr User {userId, userContactId} = do
   map (toGroupInfo vr userContactId [])
     <$> DB.query
       db
