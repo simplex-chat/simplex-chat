@@ -1821,11 +1821,11 @@ updateMemberRecordDeleted user@User {userId} gInfo m newStatus =
   withStore' $ \db -> do
     (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
     updateGroupMemberStatus db userId m' newStatus
-    deactivateRelayIfNeeded db m
+    deactivateRelay_ db m
     pure gInfo'
 
-deactivateRelayIfNeeded :: DB.Connection -> GroupMember -> IO ()
-deactivateRelayIfNeeded db m =
+deactivateRelay_ :: DB.Connection -> GroupMember -> IO ()
+deactivateRelay_ db m =
   when (isRelay m) $ do
     relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
     forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive

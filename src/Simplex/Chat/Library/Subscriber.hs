@@ -1316,7 +1316,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
                       case relayLink of
                         Just rLink
-                          | rLink `elem` relayLinks && (relayStatus == RSAccepted || relayStatus == RSInactive) -> do
+                          | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
                               relay' <- updateRelayStatus db relay RSActive
                               pure (relay' : acc, True)
                           | rLink `elem` relayLinks -> pure (relay : acc, changed)
