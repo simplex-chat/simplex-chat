@@ -3110,8 +3110,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           deleteGroupLinkIfExists user gInfo
           -- TODO [relays] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
           unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
-          withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
-          withStore' $ \db -> updateRelayOwnStatus_ db gInfo RSInactive
+          withStore' $ \db -> do
+            updateGroupMemberStatus db userId membership GSMemRemoved
+            when (isJust $ relayOwnStatus gInfo) $ updateRelayOwnStatus_ db gInfo RSInactive
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
           deleteMemberItem gInfo RGEUserDeleted
