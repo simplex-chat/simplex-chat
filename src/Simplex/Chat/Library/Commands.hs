@@ -2137,7 +2137,7 @@ processChatCommand vr nm = \case
                   _ -> Nothing
             void $ createLinkOwnerMember db vr user gInfo' ctId_ (MemberId ownerId) ownerKey
           pure gInfo'
-        rs <- mapConcurrently (connectToRelay user gInfo' incognito) relays
+        rs <- mapConcurrently (connectToRelay user gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
         if null succeeded
@@ -3588,8 +3588,8 @@ processChatCommand vr nm = \case
               ct' <- withStore $ \db -> getContact db vr user contactId
               pure $ CRSentInvitationToContact user ct' incognitoProfile
             _ -> throwCmdError "contact already has connection"
-    connectToRelay :: User -> GroupInfo -> IncognitoEnabled -> ShortLinkContact -> CM (ShortLinkContact, GroupMember, Either ChatError ())
-    connectToRelay user gInfo incognito relayLink = do
+    connectToRelay :: User -> GroupInfo -> ShortLinkContact -> CM (ShortLinkContact, GroupMember, Either ChatError ())
+    connectToRelay user gInfo relayLink = do
       gVar <- asks random
       -- Save relayLink to re-use relay member record on retry (check by relayLink)
       relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink
@@ -3602,7 +3602,7 @@ processChatCommand vr nm = \case
           _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
         let cReq = linkConnReq fd
             relayLinkToConnect = CCLink cReq (Just relayLink)
-        void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) incognito relayLinkToConnect Nothing Nothing
+        void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
       relayMember' <- withFastStore $ \db -> getGroupMember db vr user (groupId' gInfo) (groupMemberId' relayMember)
       pure (relayLink, relayMember', r)
     syncSubscriberRelays :: User -> GroupInfo -> [ShortLinkContact] -> CM ()
@@ -3613,7 +3613,7 @@ processChatCommand vr nm = \case
           localRelayLinks = mapMaybe memberRelayLink activeRelayMembers
           newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
       forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
-        connectToRelay user gInfo (incognitoMembership gInfo) rlnk
+        connectToRelay user gInfo rlnk
       forM_ activeRelayMembers $ \m ->
         case memberRelayLink m of
           Just rlnk | rlnk `notElem` currentRelayLinks ->
