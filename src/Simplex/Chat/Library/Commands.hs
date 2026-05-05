@@ -2344,7 +2344,7 @@ processChatCommand cxt nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db cxt user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APIListContacts userId
-  APICreateMyAddress userId srv_ -> withUserId userId $ \user@User {userChatRelay} -> do
+  APICreateMyAddress userId server_ -> withUserId userId $ \user@User {userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
@@ -2353,7 +2353,7 @@ processChatCommand cxt nm = \case
     gVar <- asks random
     rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
     let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
-    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing srv_
+    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing server_
     ccLink' <- shortenCreatedLink ccLink
     -- TODO [relays] relay: add identity, key to link data?
     userData <-

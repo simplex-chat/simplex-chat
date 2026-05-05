@@ -546,7 +546,7 @@ data ChatCommand
   | ClearContact ContactName
   | APIListContacts {userId :: UserId}
   | ListContacts
-  | APICreateMyAddress {userId :: UserId, srv_ :: Maybe SMPServerWithAuth}
+  | APICreateMyAddress {userId :: UserId, server_ :: Maybe SMPServerWithAuth}
   | CreateMyAddress
   | APIDeleteMyAddress {userId :: UserId}
   | DeleteMyAddress

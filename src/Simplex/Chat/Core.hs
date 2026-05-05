@@ -64,10 +64,6 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
     run db@ChatDatabase {chatStore} = do
       users <- withTransaction chatStore getUsers
       u_ <- selectActiveUser coreOptions chatStore users
-      forM_ ((,) <$> userDisplayName <*> u_) $ \(name, User {localDisplayName}) ->
-        when (localDisplayName /= name) $ do
-          putStrLn $ "Active user display name " <> show localDisplayName <> " does not match --user-display-name " <> show name
-          exitFailure
       let backgroundMode = maintenance
       newChatController db u_ cfg opts backgroundMode >>= \case
         Left e -> do
@@ -75,7 +71,14 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
           exitFailure
         Right cc -> do
           forM_ (preStartHook chatHooks) ($ cc)
-          u0 <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot userDisplayName) pure u_
+          u0 <- case u_ of
+            Nothing -> noMaintenance >> createActiveUser cc coreOptions createBot userDisplayName
+            Just u@User {localDisplayName} -> do
+              forM_ userDisplayName $ \name ->
+                when (localDisplayName /= name) $ do
+                  putStrLn $ "Active user display name " <> show localDisplayName <> " does not match --user-display-name " <> show name
+                  exitFailure
+              pure u
           u <- maybe (pure u0) (applyUserImage cc chatStore u0) userImageFile
           unless testView $ putStrLn $ "Current user: " <> userStr u
           runSimplexChat cfg opts u cc chat
@@ -138,9 +141,9 @@ createActiveUser cc CoreChatOpts {chatRelay} createBot_ userDisplayName_ = case 
     createUser exitFailure clientService $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
   Nothing -> case userDisplayName_ of
     Just displayName -> createUser exitFailure False $ mkProfile displayName
-    Nothing -> putStrLn noProfile >> loop
+    Nothing -> putStrLn prompt >> loop
       where
-        noProfile
+        prompt
           | chatRelay =
               "No chat relay user profile found, it will be created now.\n\
               \Please choose chat relay display name."
@@ -149,10 +152,10 @@ createActiveUser cc CoreChatOpts {chatRelay} createBot_ userDisplayName_ = case 
               \Please choose your display name.\n\
               \It will be sent to your contacts when you connect.\n\
               \It is only stored on your device and you can change it later."
-        loop = do
-          displayName <- T.pack <$> withPrompt "display name" getLine
-          createUser loop False $ mkProfile displayName
   where
+    loop = do
+      displayName <- T.pack <$> withPrompt "display name" getLine
+      createUser loop False $ mkProfile displayName
     mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
     createUser onError clientService p =
       execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, userChatRelay = BoolDef chatRelay, clientService = BoolDef clientService}) 0 `runReaderT` cc >>= \case
@@ -160,7 +163,7 @@ createActiveUser cc CoreChatOpts {chatRelay} createBot_ userDisplayName_ = case 
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 
 askCreateRelayAddress :: ChatController -> User -> Maybe SMPServerWithAuth -> IO ()
-askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} srv_ =
+askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} server_ =
   withTransaction chatStore (\db -> runExceptT $ getUserAddress db user) >>= \case
     Right _ -> pure ()
     Left SEUserContactLinkNotFound -> promptCreate
@@ -170,7 +173,7 @@ askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} srv_ =
     promptCreate = do
       ok <- onOffPrompt "Create relay address" True
       when ok $
-        execChatCommand' (APICreateMyAddress userId srv_) 0 `runReaderT` cc >>= \case
+        execChatCommand' (APICreateMyAddress userId server_) 0 `runReaderT` cc >>= \case
           Right (CRUserContactLinkCreated _ address) -> do
             putStrLn "Chat relay address is created:"
             putStrLn $ addressStr address
