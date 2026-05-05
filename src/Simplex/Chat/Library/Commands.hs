@@ -3619,7 +3619,7 @@ processChatCommand vr nm = \case
           Just rlnk | rlnk `notElem` currentRelayLinks ->
             void . tryAllErrors $ do
               deleteMemberConnection m
-              updateMemberRecordDeleted user gInfo m GSMemRemoved
+              deleteOrUpdateMemberRecord user gInfo m
           _ -> pure ()
 
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
