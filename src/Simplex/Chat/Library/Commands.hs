@@ -163,6 +163,22 @@ checkProfileImageSize = mapM_ $ \(ImageData t) ->
   let size = T.length t
    in when (size > maxProfileImageSize) $ throwCmdError $ "Profile image is too large " <> show size
 
+checkProfileSize :: Profile -> CM ()
+checkProfileSize profile = do
+  vr <- chatVersionRange
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = XInfo profile}
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded _ -> pure ()
+    ECMLarge -> throwCmdError "Profile is too large"
+
+checkGroupProfileSize :: GroupProfile -> CM ()
+checkGroupProfileSize gProfile = do
+  vr <- chatVersionRange
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = XGrpInfo gProfile}
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded _ -> pure ()
+    ECMLarge -> throwCmdError "Group profile is too large"
+
 imageExtensions :: [String]
 imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
 
@@ -378,9 +394,10 @@ processChatCommand :: StoreCxt -> NetworkRequestMode -> ChatCommand -> CM ChatRe
 processChatCommand cxt nm = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, pastTimestamp, userChatRelay, clientService} -> do
-    forM_ profile $ \Profile {displayName, image} -> do
+    forM_ profile $ \p@Profile {displayName, image} -> do
       checkValidName displayName
       checkProfileImageSize image
+      checkProfileSize p
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
     users <- withFastStore' getUsers
@@ -3851,6 +3868,7 @@ processChatCommand cxt nm = \case
       | otherwise = do
           when (n /= n') $ checkValidName n'
           checkProfileImageSize img'
+          checkProfileSize p'
           -- read contacts before user update to correctly merge preferences
           contacts <- withFastStore' $ \db -> getUserContacts db cxt user
           user' <- updateUser
@@ -3940,6 +3958,7 @@ processChatCommand cxt nm = \case
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
       checkProfileImageSize img'
+      checkGroupProfileSize p'
       -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
       gInfo' <- withStore $ \db -> do
         g <- updateGroupProfile db user gInfo p'
@@ -4094,6 +4113,7 @@ processChatCommand cxt nm = \case
     newGroup user incognito gProfile@GroupProfile {displayName, image} useRelays memberId groupKeys_ publicMemberCount_ = do
       checkValidName displayName
       checkProfileImageSize image
+      checkGroupProfileSize gProfile
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile useRelays memberId groupKeys_ publicMemberCount_
