@@ -9726,7 +9726,7 @@ testChannelAddRelay ps =
                 cath <## "#team: you joined the group as relay"
               ]
 
-            threadDelay 1000000
+            threadDelay 100000
 
             -- existing subscriber discovers and connects to new relay
             dan ##> "/_get group link data #1"
@@ -9741,7 +9741,7 @@ testChannelAddRelay ps =
                   cath <## "#team: dan joined the group"
               ]
 
-            threadDelay 1000000
+            threadDelay 100000
 
             -- new subscriber joins through both relays
             memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink eve
@@ -9766,14 +9766,15 @@ testChannelRemoveRelay ps =
           dan <# "#team> hello [>>]"
 
           -- remove relay bob
-          threadDelay 1000000
+          threadDelay 100000
           alice ##> "/rm #team bob"
           alice <## "#team: you removed bob from the group (signed)"
           concurrentlyN_
             [ do
                 bob <## "#team: alice removed you from the group (signed)"
                 bob <## "use /d #team to delete the group",
-              -- cath doesn't have bob in member list (relays aren't introduced to each other)
+              -- cath doesn't have bob in member list (relays aren't introduced to each other),
+              -- so x.grp.mem.del arrives with unknown member ID — cath still forwards it (Left branch in xGrpMemDel)
               cath <## "error: x.grp.mem.del with unknown member ID",
               dan <## "#team: alice removed bob from the group (signed)"
             ]
@@ -9783,6 +9784,59 @@ testChannelRemoveRelay ps =
           alice #> "#team still working"
           cath <# "#team> still working"
           dan <# "#team> still working [>>]"
+
+          -- remove last relay cath
+          threadDelay 100000
+          alice ##> "/rm #team cath"
+          alice <## "#team: you removed cath from the group (signed)"
+          concurrentlyN_
+            [ do
+                cath <## "#team: alice removed you from the group (signed)"
+                cath <## "use /d #team to delete the group",
+              dan <## "#team: alice removed cath from the group (signed)"
+            ]
+
+          -- verify delivery stops — no relays to forward
+          threadDelay 100000
+          alice #> "#team no relays"
+          (dan </)
+
+          -- re-add bob as relay
+          alice ##> "/_add relays #1 1"
+          alice <## "#team: group relays:"
+          alice <##. "  - relay id 1: invited"
+
+          -- wait for bob to rejoin as relay (bob gets LDN "team_1" since old group record exists)
+          concurrentlyN_
+            [ do
+                alice <## "#team: group link relays updated, current relays:"
+                alice <##. "  - relay id 1: active"
+                alice <## "group link:"
+                void $ getTermLine alice,
+              bob <## "#team_1: you joined the group as relay"
+            ]
+
+          threadDelay 100000
+
+          -- subscriber discovers and connects to new relay
+          dan ##> "/_get group link data #1"
+          dan <## "group ID: 1"
+          void $ getTermLine dan -- subscribers: N
+          concurrentlyN_
+            [ do
+                dan <## "#team: joining the group (connecting to relay bob)..."
+                dan <## "#team: you joined the group (connected to relay bob)",
+              do
+                bob <## "dan_1 (Daniel): accepting request to join group #team_1..."
+                bob <## "#team_1: dan_1 joined the group"
+            ]
+
+          threadDelay 100000
+
+          -- verify delivery works again through re-added relay
+          alice #> "#team relays restored"
+          bob <# "#team_1> relays restored"
+          dan <# "#team> relays restored [>>]"
 
 testChannelCreateDeletedRelay :: HasCallStack => TestParams -> IO ()
 testChannelCreateDeletedRelay ps =

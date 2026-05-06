@@ -3115,7 +3115,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             when (isJust $ relayOwnStatus gInfo) $ updateRelayOwnStatus_ db gInfo RSInactive
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
-          deleteMemberItem gInfo RGEUserDeleted
+          deleteMemberItem msg gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
           pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
         else
@@ -3143,7 +3143,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
                     deletedMember' = deletedMember {memberStatus = GSMemRemoved}
                 when withMessages $ deleteMessages gInfo'' deletedMember' SMDRcv
-                unless wasDeleted $ deleteMemberItem gInfo'' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                -- Clear forwardedByMember if it references the deleted member,
+                -- as the member record was already deleted above.
+                let RcvMessage {forwardedByMember = fwdBy} = msg
+                    msg' = if fwdBy == Just groupMemberId then (msg :: RcvMessage) {forwardedByMember = Nothing} else msg
+                unless wasDeleted $ deleteMemberItem msg' gInfo'' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                 toView $ CEvtDeletedMember user gInfo'' m deletedMember' withMessages msgSigned
                 pure deliveryScope
       where
@@ -3151,9 +3155,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | senderRole < GRAdmin || senderRole < memberRole =
               messageError "x.grp.mem.del with insufficient member permissions" $> Nothing
           | otherwise = a
-        deleteMemberItem gi gEvent = do
+        deleteMemberItem msg' gi gEvent = do
           (gi', m', scopeInfo) <- mkGroupChatScope gi m
-          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
+          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg' brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView cInfo ci
         deleteMessages :: MsgDirectionI d => GroupInfo -> GroupMember -> SMsgDirection d -> CM ()
         deleteMessages gInfo' delMem msgDir
