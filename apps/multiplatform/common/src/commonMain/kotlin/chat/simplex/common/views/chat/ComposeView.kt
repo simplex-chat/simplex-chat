@@ -1550,7 +1550,7 @@ fun ComposeView(
       } else {
         val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
         val relayMembers = chatModel.groupMembers.value
-          .filter { it.memberRole == GroupMemberRole.Relay }
+          .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus !in listOf(GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) }
           .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
         val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
         val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }

@@ -401,7 +401,7 @@ struct ComposeView: View {
                 } else {
                     let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
                     let relayMembers = chatModel.groupMembers
-                        .filter { $0.wrapped.memberRole == .relay }
+                        .filter { $0.wrapped.memberRole == .relay && ![.memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) }
                         .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
                     let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
                     let removedCount = relayMembers.filter { relayMemberRemoved($0.wrapped.memberStatus) }.count
