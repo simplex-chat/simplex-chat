@@ -9891,6 +9891,34 @@ testChannelRemoveLeftRelay ps =
             DB.query_ db "SELECT local_display_name FROM group_members" :: IO [Only T.Text]
           danMembers `shouldMatchList` [Only "dan", Only "alice", Only "cath"]
 
+          -- cath leaves
+          threadDelay 100000
+          cath ##> "/l team"
+          concurrentlyN_
+            [ do
+                cath <## "#team: you left the group"
+                cath <## "use /d #team to delete the group",
+              alice <## "#team: cath left the group (signed)",
+              dan <## "#team: cath left the group (signed)"
+            ]
+
+          -- alice removes left cath - dan doesn't receive (no relay to forward)
+          threadDelay 100000
+          alice ##> "/rm #team cath"
+          alice <## "#team: you removed cath from the group (signed)"
+
+          -- dan syncs with link - should clean up cath's stale record
+          threadDelay 100000
+          dan ##> "/_get group link data #1"
+          dan <## "group ID: 1"
+          void $ getTermLine dan -- subscribers: N
+
+          -- cath's member record should be cleaned up on dan's side after sync
+          threadDelay 100000
+          danMembers2 <- withCCTransaction dan $ \db ->
+            DB.query_ db "SELECT local_display_name FROM group_members" :: IO [Only T.Text]
+          danMembers2 `shouldMatchList` [Only "dan", Only "alice"]
+
 testChannelCreateDeletedRelay :: HasCallStack => TestParams -> IO ()
 testChannelCreateDeletedRelay ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
