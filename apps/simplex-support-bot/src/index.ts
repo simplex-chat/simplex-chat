@@ -4,6 +4,7 @@ import {T} from "@simplex-chat/types"
 import {parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
 import {GrokApiClient, GrokMessage} from "./grok.js"
+import {loadGrokContext} from "./context.js"
 import {welcomeMessage} from "./messages.js"
 import {profileMutex, log, logError, getGroupInfo, getContact} from "./util.js"
 
@@ -319,14 +320,19 @@ async function main(): Promise<void> {
   // Load Grok context and build API client only if enabled
   let grokApi: GrokApiClient | null = null
   if (grokEnabled) {
-    const initialContext: GrokMessage[] = []
+    let initialContext: GrokMessage[] = []
     if (config.contextFile) {
       try {
-        const contextFile = readFileSync(config.contextFile, "utf-8")
-        initialContext.push({role: "system", content: contextFile})
-        log(`Loaded Grok context: ${contextFile.length} chars from ${config.contextFile}`)
-      } catch {
-        log(`Warning: context file not found: ${config.contextFile}`)
+        initialContext = loadGrokContext(config.contextFile)
+        log(`Loaded Grok context: ${initialContext.length} message(s) from ${config.contextFile}`)
+      } catch (err) {
+        const e = err as NodeJS.ErrnoException
+        if (e.code === "ENOENT") {
+          log(`Warning: context file not found: ${config.contextFile}`)
+        } else {
+          logError(`Failed to load Grok context file ${config.contextFile}`, err)
+          throw err
+        }
       }
     }
     grokApi = new GrokApiClient(config.grokApiKey!, initialContext)
