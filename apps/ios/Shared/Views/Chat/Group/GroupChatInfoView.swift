@@ -925,7 +925,7 @@ struct GroupChatInfoView: View {
 
 func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
     if mem.memberRole == .relay {
-        let isLastActive = groupInfo.useRelays && {
+        let isLastActive = groupInfo.useRelays && mem.memberCurrent && {
             let activeRelays = ChatModel.shared.groupMembers.filter { $0.wrapped.memberRole == .relay && $0.wrapped.memberCurrent }
             return activeRelays.count <= 1
         }()

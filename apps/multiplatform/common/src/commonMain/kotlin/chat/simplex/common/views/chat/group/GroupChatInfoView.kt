@@ -241,7 +241,7 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
 
 fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
   if (mem.memberRole == GroupMemberRole.Relay) {
-    val isLastActive = groupInfo.useRelays && run {
+    val isLastActive = groupInfo.useRelays && mem.memberCurrent && run {
       val activeRelays = ChatModel.groupMembers.value.filter { it.memberRole == GroupMemberRole.Relay && it.memberCurrent }
       activeRelays.size <= 1
     }
