@@ -3614,9 +3614,13 @@ processChatCommand vr nm = \case
           newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
       forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
         connectToRelay user gInfo rlnk
-      forM_ activeRelayMembers $ \m ->
+      forM_ localRelayMembers $ \m ->
         case memberRelayLink m of
-          Just rlnk | rlnk `notElem` currentRelayLinks ->
+          -- Remove relay if its link is no longer in the current link data.
+          -- Inactive relays (e.g. left) are only cleaned up when no active relays remain,
+          -- as that is the only case where the owner's relay removal can't be forwarded.
+          Just rlnk | rlnk `notElem` currentRelayLinks,
+                      memberCurrent m || null activeRelayMembers ->
             void . tryAllErrors $ do
               deleteMemberConnection m
               deleteOrUpdateMemberRecord user gInfo m
