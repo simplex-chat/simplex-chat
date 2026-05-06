@@ -242,34 +242,86 @@ fun GroupMemberInfoView(
 }
 
 fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  val messageId = if (groupInfo.businessChat == null)
-    MR.strings.member_will_be_removed_from_group_cannot_be_undone
-  else
-    MR.strings.member_will_be_removed_from_chat_cannot_be_undone
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    generalGetString(MR.strings.button_remove_member_question),
-    generalGetString(messageId),
-    buttons = {
-      Column {
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
-        }) {
-          Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+  if (member.memberRole == GroupMemberRole.Relay) {
+    val isLastActive = groupInfo.useRelays && run {
+      val activeRelays = chatModel.groupMembers.value.filter { it.memberRole == GroupMemberRole.Relay && it.memberCurrent }
+      activeRelays.size <= 1
+    }
+    val message = if (isLastActive) generalGetString(MR.strings.last_active_relay_warning)
+      else generalGetString(MR.strings.relay_will_be_removed_from_channel)
+    AlertManager.shared.showAlertDialogButtonsColumn(
+      generalGetString(MR.strings.button_remove_relay_question),
+      message,
+      buttons = {
+        Column {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
+          }) {
+            Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          }
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+          }) {
+            Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
         }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
-        }) {
-          Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+      })
+  } else if (groupInfo.useRelays) {
+    AlertManager.shared.showAlertDialogButtonsColumn(
+      generalGetString(MR.strings.button_remove_subscriber_question),
+      generalGetString(MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone),
+      buttons = {
+        Column {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
+          }) {
+            Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          }
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
+          }) {
+            Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          }
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+          }) {
+            Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
         }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      })
+  } else {
+    val messageId = if (groupInfo.businessChat == null)
+      MR.strings.member_will_be_removed_from_group_cannot_be_undone
+    else
+      MR.strings.member_will_be_removed_from_chat_cannot_be_undone
+    AlertManager.shared.showAlertDialogButtonsColumn(
+      generalGetString(MR.strings.button_remove_member_question),
+      generalGetString(messageId),
+      buttons = {
+        Column {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
+          }) {
+            Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          }
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
+          }) {
+            Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          }
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+          }) {
+            Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
         }
-      }
-    })
+      })
+  }
 }
 
 fun deleteMemberMessagesDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
@@ -368,7 +420,7 @@ fun GroupMemberInfoLayout(
   @Composable
   fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
-    val canRemove = member.canBeRemoved(groupInfo) && member.memberRole != GroupMemberRole.Relay
+    val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
       SectionDividerSpaced(maxBottomPadding = false)
       SectionView {
@@ -380,10 +432,10 @@ fun GroupMemberInfoLayout(
           }
         }
         if (canRemove) {
-          if (member.memberStatus == GroupMemberStatus.MemRemoved || member.memberStatus == GroupMemberStatus.MemLeft) {
+          if (member.memberStatus != GroupMemberStatus.MemRemoved && (member.memberStatus != GroupMemberStatus.MemLeft || member.memberRole == GroupMemberRole.Relay)) {
+            RemoveMemberButton(groupInfo.useRelays, member.memberRole == GroupMemberRole.Relay, removeMember)
+          } else if (member.memberRole != GroupMemberRole.Relay) {
             DeleteMemberMessagesButton(deleteMemberMessages)
-          } else {
-            RemoveMemberButton(groupInfo.useRelays, removeMember)
           }
         }
       }
@@ -753,8 +805,10 @@ fun UnblockForAllButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun RemoveMemberButton(useRelays: Boolean = false, onClick: () -> Unit) {
-  val label = if (useRelays) MR.strings.button_remove_subscriber else MR.strings.button_remove_member
+fun RemoveMemberButton(useRelays: Boolean = false, isRelay: Boolean = false, onClick: () -> Unit) {
+  val label = if (isRelay) MR.strings.button_remove_relay
+    else if (useRelays) MR.strings.button_remove_subscriber
+    else MR.strings.button_remove_member
   SettingsActionItem(
     painterResource(MR.images.ic_delete),
     stringResource(label),

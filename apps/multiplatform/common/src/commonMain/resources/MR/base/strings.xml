@@ -2985,6 +2985,7 @@
   <string name="relay_conn_status_deleted">deleted</string>
   <string name="relay_conn_status_failed">failed</string>
   <string name="relay_conn_status_removed_by_operator">removed by operator</string>
+  <string name="relay_conn_status_removed">removed</string>
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
@@ -3006,7 +3007,8 @@
   <string name="relay_bar_connected_with_failures">%1$d/%2$d relays connected, %3$d failed</string>
   <string name="relay_bar_connected_with_removed">%1$d/%2$d relays connected, %3$d removed</string>
   <string name="relay_bar_connected">%1$d/%2$d relays connected</string>
-  <string name="relay_bar_owner_no_delivery">Adding relays will be supported later.</string>
+  <string name="relay_bar_no_relays">No relays</string>
+  <string name="relay_bar_owner_no_delivery">Add relays to restore message delivery.</string>
   <string name="relay_bar_subscriber_waiting">Waiting for channel owner to add relays.</string>
 
   <!-- GroupMemberInfoView.kt channel-related -->
@@ -3021,6 +3023,10 @@
   <string name="relay_section_footer_owner">Subscribers use relay link to connect to the channel.\nRelay address was used to set up this relay for the channel.</string>
   <string name="relay_section_footer_subscriber">You connected to the channel via this relay link.</string>
   <string name="button_remove_subscriber">Remove subscriber</string>
+  <string name="button_remove_relay">Remove relay</string>
+  <string name="button_remove_relay_question">Remove relay?</string>
+  <string name="relay_will_be_removed_from_channel">Relay will be removed from channel - this cannot be undone!</string>
+  <string name="last_active_relay_warning">This is the last active relay. Removing it will prevent message delivery to subscribers.</string>
   <string name="block_subscriber_for_all_question">Block subscriber for all?</string>
 
   <!-- AddChannelView.kt -->
@@ -3040,6 +3046,15 @@
   <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.\nRelays can access channel messages.</string>
   <string name="configure_relays">Configure relays</string>
   <string name="relay_status_failed">failed</string>
+  <string name="add_button">Add</string>
+  <string name="add_relay_button">Add relay</string>
+  <string name="add_relays_title">Add relays</string>
+  <string name="no_available_relays">No available relays</string>
+  <string name="error_adding_relays">Error adding relays</string>
+  <string name="relays_added_format">Relays added: %1$s.</string>
+  <string name="select_relays">Select relays</string>
+  <string name="no_relays_selected">No relays selected</string>
+  <string name="num_relays_selected">%d relay(s) selected</string>
   <string name="relay_connection_failed">Relay connection failed</string>
   <string name="not_all_relays_connected">Not all relays connected</string>
   <string name="wait_verb">Wait</string>

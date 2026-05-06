@@ -92,6 +92,7 @@ object ChannelRelaysModel {
     if (groupId.value == groupInfo.groupId) {
       val i = groupRelays.indexOfFirst { it.groupRelayId == relay.groupRelayId }
       if (i >= 0) groupRelays[i] = relay
+      else groupRelays.add(relay)
     }
   }
 
