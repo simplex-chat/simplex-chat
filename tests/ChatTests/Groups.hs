@@ -282,6 +282,7 @@ chatGroupTests = do
       it "should send and receive file sent as member" testChannelOwnerFileTransferAsMember
       it "should cancel file sent as member" testChannelOwnerFileCancelAsMember
       it "should attribute reactions to member" testChannelReactionAttribution
+      it "should hide subscriber reactor identity from other subscribers" testChannelSubscriberReaction
       it "should recreate deleted item with correct sendAsGroup from update" testChannelUpdateFallbackSendAsGroup
       it "should respect sendAsGroup parameter in forward API" testForwardAPIUsesParameter
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
@@ -8534,15 +8535,16 @@ testChannels1RelayDeliver ps =
             cath <## "added 👍"
             bob <# "#team cath> > hi"
             bob <## "    + 👍"
-            -- alice knows cath via XGrpMemNew announcement from relay
+            -- alice (owner) receives reaction with cath's identity via FwdMember
             alice <# "#team cath> > hi"
             alice <## "    + 👍"
-            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            dan <# "#team cath> > hi"
-            dan <## "    + 👍"
-            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            eve <# "#team cath> > hi"
-            eve <## "    + 👍"
+            -- dan and eve (subscribers) receive anonymous reaction via FwdChannel
+            concurrentlyN_
+              [ do dan <# "#team> > hi"
+                   dan <## "    + 👍",
+                do eve <# "#team> > hi"
+                   eve <## "    + 👍"
+              ]
 
             -- owner's public member count is maintained automatically
             alice ##> "/_info #1"
@@ -8734,14 +8736,16 @@ testChannels1RelayDeliverLoop deliveryBucketSize ps =
             cath <## "added 👍"
             bob <# "#team cath> > hi"
             bob <## "    + 👍"
+            -- owner receives reaction with subscriber's identity via FwdMember
             alice <# "#team cath> > hi"
             alice <## "    + 👍"
-            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            dan <# "#team cath> > hi"
-            dan <## "    + 👍"
-            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            eve <# "#team cath> > hi"
-            eve <## "    + 👍"
+            -- subscribers receive anonymous reaction via FwdChannel
+            concurrentlyN_
+              [ do dan <# "#team> > hi"
+                   dan <## "    + 👍",
+                do eve <# "#team> > hi"
+                   eve <## "    + 👍"
+              ]
   where
     cfg = testCfg {deliveryBucketSize}
 
@@ -8827,17 +8831,26 @@ testChannels2RelaysDeliver ps =
               cath <## "    + 👍"
               alice <# "#team dan> > hi"
               alice <## "    + 👍"
-              eve .<## " forwarded a message from an unknown member, creating unknown member record dan"
-              eve <# "#team dan> > hi"
-              eve <## "    + 👍"
-              frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
-              frank <# "#team dan> > hi"
-              frank <## "    + 👍"
+              -- subscribers receive anonymous reaction via FwdChannel
+              concurrentlyN_
+                [ do eve <# "#team> > hi"
+                     eve <## "    + 👍",
+                  do frank <# "#team> > hi"
+                     frank <## "    + 👍"
+                ]
 
               -- remove below if default role is changed to observer
+              -- eve and frank don't know dan yet (reaction was anonymous FwdChannel),
+              -- so they create unknown member record on first FwdMember message
               dan #> "#team hey"
               [bob, cath] *<# "#team dan> hey"
-              [alice, eve, frank] *<# "#team dan> hey [>>]"
+              alice <# "#team dan> hey [>>]"
+              concurrentlyN_
+                [ do eve .<## " forwarded a message from an unknown member, creating unknown member record dan"
+                     eve <# "#team dan> hey [>>]",
+                  do frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
+                     frank <# "#team dan> hey [>>]"
+                ]
 
 testChannels2RelaysIncognito :: HasCallStack => TestParams -> IO ()
 testChannels2RelaysIncognito ps =
@@ -8865,17 +8878,26 @@ testChannels2RelaysIncognito ps =
               cath <## "    + 👍"
               alice <# ("#team " <> danIncognito <> "> > hi")
               alice <## "    + 👍"
-              eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
-              eve <# ("#team " <> danIncognito <> "> > hi")
-              eve <## "    + 👍"
-              frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
-              frank <# ("#team " <> danIncognito <> "> > hi")
-              frank <## "    + 👍"
+              -- subscribers receive anonymous reaction via FwdChannel
+              concurrentlyN_
+                [ do eve <# "#team> > hi"
+                     eve <## "    + 👍",
+                  do frank <# "#team> > hi"
+                     frank <## "    + 👍"
+                ]
 
               -- remove below if default role is changed to observer
+              -- eve and frank don't know dan yet (reaction was anonymous FwdChannel),
+              -- so they create unknown member record on first FwdMember message
               dan ?#> "#team hey"
               [bob, cath] *<# ("#team " <> danIncognito <> "> hey")
-              [alice, eve, frank] *<# ("#team " <> danIncognito <> "> hey [>>]")
+              alice <# ("#team " <> danIncognito <> "> hey [>>]")
+              concurrentlyN_
+                [ do eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+                     eve <# ("#team " <> danIncognito <> "> hey [>>]"),
+                  do frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+                     frank <# ("#team " <> danIncognito <> "> hey [>>]")
+                ]
 
 testChannelUpdateProfileSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdateProfileSigned ps =
@@ -9924,17 +9946,18 @@ testChannelOwnerReaction ps =
             bob <# "#team> hello"
             [cath, dan, eve] *<# "#team> hello [>>]"
 
-            -- owner reacts to own channel message - reaction is forwarded as member
+            -- owner reacts to own channel message - reaction is forwarded via DJReaction
             alice ##> "+1 #team hello"
             alice <## "added 👍"
             bob <# "#team alice> > hello"
             bob <## "    + 👍"
+            -- subscribers receive anonymous reaction via FwdChannel (no reactor identity)
             concurrentlyN_
-              [ do cath <# "#team alice> > hello"
+              [ do cath <# "#team> > hello"
                    cath <## "    + 👍",
-                do dan <# "#team alice> > hello"
+                do dan <# "#team> > hello"
                    dan <## "    + 👍",
-                do eve <# "#team alice> > hello"
+                do eve <# "#team> > hello"
                    eve <## "    + 👍"
               ]
 
@@ -10110,17 +10133,48 @@ testChannelReactionAttribution ps =
             bob <# "#team alice> hello"
             [cath, dan, eve] *<# "#team alice> hello [>>]"
 
-            -- owner reacts to own member message - reaction is forwarded as member
+            -- owner reacts to own member message - reaction is forwarded via DJReaction
             alice ##> "+1 #team hello"
             alice <## "added 👍"
             bob <# "#team alice> > alice hello"
             bob <## "    + 👍"
+            -- subscribers receive anonymous reaction via FwdChannel, but quoted message retains author
             concurrentlyN_
-              [ do cath <# "#team alice> > alice hello"
+              [ do cath <# "#team> > alice hello"
                    cath <## "    + 👍",
-                do dan <# "#team alice> > alice hello"
+                do dan <# "#team> > alice hello"
                    dan <## "    + 👍",
-                do eve <# "#team alice> > alice hello"
+                do eve <# "#team> > alice hello"
+                   eve <## "    + 👍"
+              ]
+
+testChannelSubscriberReaction :: HasCallStack => TestParams -> IO ()
+testChannelSubscriberReaction ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner sends channel message
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- subscriber reacts to channel message
+            cath ##> "+1 #team hello"
+            cath <## "added 👍"
+            bob <# "#team cath> > hello"
+            bob <## "    + 👍"
+            -- owner receives reaction with subscriber's identity via FwdMember
+            alice <# "#team cath> > hello"
+            alice <## "    + 👍"
+            -- other subscribers receive anonymous reaction via FwdChannel
+            concurrentlyN_
+              [ do dan <# "#team> > hello"
+                   dan <## "    + 👍",
+                do eve <# "#team> > hello"
                    eve <## "    + 👍"
               ]
 
