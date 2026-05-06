@@ -7,11 +7,11 @@ export interface GrokMessage {
 
 export class GrokApiClient {
   private readonly apiKey: string
-  private readonly systemPrompt: string
+  private readonly initialContext: readonly GrokMessage[]
 
-  constructor(apiKey: string, systemPrompt: string) {
+  constructor(apiKey: string, initialContext: readonly GrokMessage[]) {
     this.apiKey = apiKey
-    this.systemPrompt = systemPrompt
+    this.initialContext = initialContext
   }
 
   async chatRaw(messages: GrokMessage[]): Promise<string> {
@@ -45,9 +45,9 @@ export class GrokApiClient {
   }
 
   async chat(history: GrokMessage[], userMessage: string): Promise<string> {
-    log(`Grok API call: ${history.length} history msgs, user msg ${userMessage.length} chars`)
+    log(`Grok API call: ${this.initialContext.length} context msgs, ${history.length} history msgs, user msg ${userMessage.length} chars`)
     return this.chatRaw([
-      {role: "system", content: this.systemPrompt},
+      ...this.initialContext,
       ...history,
       {role: "user", content: userMessage},
     ])

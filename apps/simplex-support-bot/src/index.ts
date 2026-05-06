@@ -3,7 +3,7 @@ import {api, bot, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
 import {parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
-import {GrokApiClient} from "./grok.js"
+import {GrokApiClient, GrokMessage} from "./grok.js"
 import {welcomeMessage} from "./messages.js"
 import {profileMutex, log, logError, getGroupInfo, getContact} from "./util.js"
 
@@ -319,16 +319,17 @@ async function main(): Promise<void> {
   // Load Grok context and build API client only if enabled
   let grokApi: GrokApiClient | null = null
   if (grokEnabled) {
-    let contextFile = ""
+    const initialContext: GrokMessage[] = []
     if (config.contextFile) {
       try {
-        contextFile = readFileSync(config.contextFile, "utf-8")
+        const contextFile = readFileSync(config.contextFile, "utf-8")
+        initialContext.push({role: "system", content: contextFile})
         log(`Loaded Grok context: ${contextFile.length} chars from ${config.contextFile}`)
       } catch {
         log(`Warning: context file not found: ${config.contextFile}`)
       }
     }
-    grokApi = new GrokApiClient(config.grokApiKey!, contextFile)
+    grokApi = new GrokApiClient(config.grokApiKey!, initialContext)
   }
 
   // Create SupportBot

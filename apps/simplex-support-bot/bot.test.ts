@@ -2427,7 +2427,7 @@ describe("GrokApiClient HTTP timeout", () => {
       new Response(JSON.stringify({choices: [{message: {content: "ok"}}]}), {status: 200}),
     )
 
-    const client = new GrokApiClient("test-key", "system prompt")
+    const client = new GrokApiClient("test-key", [{role: "system", content: "system prompt"}])
     await client.chat([], "hello")
 
     expect(timeoutSpy).toHaveBeenCalledWith(60_000)
