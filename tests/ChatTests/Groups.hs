@@ -271,6 +271,7 @@ chatGroupTests = do
       it "should deliver support scope messages via relay" testChannelSupportScope
       it "should add relay to existing channel" testChannelAddRelay
       it "should remove relay from channel" testChannelRemoveRelay
+      it "should remove left relay from channel" testChannelRemoveLeftRelay
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -9801,6 +9802,15 @@ testChannelRemoveRelay ps =
           alice #> "#team no relays"
           (dan </)
 
+          -- bob's and cath's member records should be deleted on alice's and dan's sides
+          threadDelay 100000
+          aliceMembers <- withCCTransaction alice $ \db ->
+            DB.query_ db "SELECT local_display_name FROM group_members" :: IO [Only T.Text]
+          aliceMembers `shouldMatchList` [Only "alice", Only "dan"]
+          danMembers <- withCCTransaction dan $ \db ->
+            DB.query_ db "SELECT local_display_name FROM group_members" :: IO [Only T.Text]
+          danMembers `shouldMatchList` [Only "dan", Only "alice"]
+
           -- re-add bob as relay
           alice ##> "/_add relays #1 1"
           alice <## "#team: group relays:"
@@ -9837,6 +9847,49 @@ testChannelRemoveRelay ps =
           alice #> "#team relays restored"
           bob <# "#team_1> relays restored"
           dan <# "#team> relays restored [>>]"
+
+testChannelRemoveLeftRelay :: HasCallStack => TestParams -> IO ()
+testChannelRemoveLeftRelay ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+          memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink dan
+
+          -- verify delivery works
+          alice #> "#team hello"
+          [bob, cath] *<# "#team> hello"
+          dan <# "#team> hello [>>]"
+
+          -- bob leaves
+          threadDelay 100000
+          bob ##> "/l team"
+          concurrentlyN_
+            [ do
+                bob <## "#team: you left the group"
+                bob <## "use /d #team to delete the group",
+              alice <## "#team: bob left the group (signed)",
+              dan <## "#team: bob left the group (signed)"
+            ]
+
+          -- alice removes left bob
+          threadDelay 100000
+          alice ##> "/rm #team bob"
+          alice <## "#team: you removed bob from the group (signed)"
+          concurrentlyN_
+            [ cath <## "error: x.grp.mem.del with unknown member ID",
+              dan <## "#team: alice removed bob from the group (signed)"
+            ]
+
+          -- bob's member record should be deleted on alice's and dan's sides
+          threadDelay 100000
+          aliceMembers <- withCCTransaction alice $ \db ->
+            DB.query_ db "SELECT local_display_name FROM group_members" :: IO [Only T.Text]
+          aliceMembers `shouldMatchList` [Only "alice", Only "cath", Only "dan"]
+          danMembers <- withCCTransaction dan $ \db ->
+            DB.query_ db "SELECT local_display_name FROM group_members" :: IO [Only T.Text]
+          danMembers `shouldMatchList` [Only "dan", Only "alice", Only "cath"]
 
 testChannelCreateDeletedRelay :: HasCallStack => TestParams -> IO ()
 testChannelCreateDeletedRelay ps =
