@@ -372,6 +372,21 @@ export namespace APIGetGroupRelays {
   }
 }
 
+// Add relays to group.
+// Network usage: interactive.
+export interface APIAddGroupRelays {
+  groupId: number // int64
+  relayIds: number[] // int64, non-empty
+}
+
+export namespace APIAddGroupRelays {
+  export type Response = CR.GroupRelaysAdded | CR.GroupRelaysAddFailed | CR.ChatCmdError
+
+  export function cmdString(self: APIAddGroupRelays): string {
+    return '/_add relays #' + self.groupId + ' ' + self.relayIds.join(',')
+  }
+}
+
 // Update group profile.
 // Network usage: background.
 export interface APIUpdateGroupProfile {

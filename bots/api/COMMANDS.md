@@ -32,6 +32,7 @@ This file is generated automatically.
 - [APINewGroup](#apinewgroup)
 - [APINewPublicGroup](#apinewpublicgroup)
 - [APIGetGroupRelays](#apigetgrouprelays)
+- [APIAddGroupRelays](#apiaddgrouprelays)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -1025,6 +1026,51 @@ GroupRelays: Group relays.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIAddGroupRelays
+
+Add relays to group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- relayIds: [int64]
+
+**Syntax**:
+
+```
+/_add relays #<groupId> <relayIds[0]>[,<relayIds[1]>...]
+```
+
+```javascript
+'/_add relays #' + groupId + ' ' + relayIds.join(',') // JavaScript
+```
+
+```python
+'/_add relays #' + str(groupId) + ' ' + ','.join(map(str, relayIds)) # Python
+```
+
+**Responses**:
+
+GroupRelaysAdded: Group relays added.
+- type: "groupRelaysAdded"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+GroupRelaysAddFailed: Group relays add failed.
+- type: "groupRelaysAddFailed"
+- user: [User](./TYPES.md#user)
+- addRelayResults: [[AddRelayResult](./TYPES.md#addrelayresult)]
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
