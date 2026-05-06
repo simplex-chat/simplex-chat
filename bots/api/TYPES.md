@@ -41,6 +41,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatListQuery](#chatlistquery)
 - [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
 - [ChatSettings](#chatsettings)
@@ -136,6 +137,7 @@ This file is generated automatically.
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
 - [OwnerVerification](#ownerverification)
+- [PaginationByTime](#paginationbytime)
 - [PendingContactConnection](#pendingcontactconnection)
 - [PrefEnabled](#prefenabled)
 - [Preferences](#preferences)
@@ -1325,6 +1327,22 @@ Message deletion result.
 **Record type**:
 - deletedChatItem: [AChatItem](#achatitem)
 - toChatItem: [AChatItem](#achatitem)?
+
+
+---
+
+## ChatListQuery
+
+**Discriminated union type**:
+
+Filters:
+- type: "filters"
+- favorite: bool
+- unread: bool
+
+Search:
+- type: "search"
+- search: string
 
 
 ---
@@ -2891,6 +2909,31 @@ Verified:
 Failed:
 - type: "failed"
 - reason: string
+
+
+---
+
+## PaginationByTime
+
+**Discriminated union type**:
+
+Last:
+- type: "last"
+- count: int
+
+**Syntax**:
+
+```
+count=<count>
+```
+
+```javascript
+'count=' + count // JavaScript
+```
+
+```python
+'count=' + str(count) # Python
+```
 
 
 ---

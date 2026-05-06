@@ -765,6 +765,25 @@ export class ChatApi {
   }
 
   /**
+   * Get chat previews (paginated).
+   * Network usage: no.
+   *
+   * Prefer this over apiListContacts / apiListGroups for any scan: those
+   * methods load every record into memory in a single response and will fail
+   * on large databases.
+   */
+  async apiGetChats(
+    userId: number,
+    pagination: T.PaginationByTime,
+    query: T.ChatListQuery = {type: "filters", favorite: false, unread: false},
+    pendingConnections = false,
+  ): Promise<T.AChat[]> {
+    const r = await this.sendChatCmd(CC.APIGetChats.cmdString({userId, pendingConnections, pagination, query}))
+    if (r.type === "apiChats") return r.chats
+    throw new ChatCommandError("error getting chats", r)
+  }
+
+  /**
    * Delete chat.
    * Network usage: background.
    */

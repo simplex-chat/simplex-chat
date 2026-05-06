@@ -19,8 +19,18 @@ function contactAddressStr(link) {
   return link.connShortLink || link.connFullLink
 }
 
+// Mirrors core.ChatAPIError so isChatNotFound's instanceof check passes when
+// MockChatApi throws. Tests should construct these directly.
+class ChatAPIError extends Error {
+  constructor(message, chatError) {
+    super(message)
+    this.chatError = chatError
+  }
+}
+
 module.exports = {
   api: {ChatApi: {}},
   bot: {},
+  core: {ChatAPIError},
   util: {ciContentText, ciBotCommand, contactAddressStr},
 }

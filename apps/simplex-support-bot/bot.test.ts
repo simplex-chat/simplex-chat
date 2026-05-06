@@ -1,9 +1,10 @@
 import {describe, test, expect, beforeEach, vi} from "vitest"
+import {core} from "simplex-chat"
 import {SupportBot} from "./src/bot.js"
 import {CardManager} from "./src/cards.js"
 import {parseConfig} from "./src/config.js"
 import {GrokApiClient} from "./src/grok.js"
-import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage} from "./src/messages.js"
+import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage, teamAlreadyInvitedMessage} from "./src/messages.js"
 
 // Silence console output during tests
 vi.spyOn(console, "log").mockImplementation(() => {})
@@ -83,14 +84,38 @@ class MockChatApi {
   async apiListMembers(groupId: number) {
     return this.members.get(groupId) || []
   }
-  async apiGetChat(_chatType: string, chatId: number, _count: number) {
+  async apiGetChat(chatType: string, chatId: number, _count: number) {
+    if (chatType === ChatType.Direct) {
+      // Tests don't exercise direct lookups; throw the same shape production
+      // would so getContact() resolves to null instead of synthesizing a contact.
+      throw new core.ChatAPIError("contact not found", {
+        type: "errorStore",
+        storeError: {type: "contactNotFound", contactId: chatId},
+      } as any)
+    }
+    const baseGroupInfo = this.groups.get(chatId)
+    if (!baseGroupInfo) {
+      // Mirror production behavior: the real apiGetChat throws "groupNotFound"
+      // for an unknown id; getGroupInfo() catches and returns null.
+      throw new core.ChatAPIError("group not found", {
+        type: "errorStore",
+        storeError: {type: "groupNotFound", groupId: chatId},
+      } as any)
+    }
     const items = this.chatItems.get(chatId) || []
-    const groupInfo = this.groups.get(chatId)
+    const groupInfo = {...baseGroupInfo, customData: this.customData.get(chatId)}
     return {
-      chatInfo: {type: "group", groupInfo: groupInfo || makeGroupInfo(chatId)},
+      chatInfo: {type: "group", groupInfo},
       chatItems: items,
       chatStats: {unreadCount: 0, unreadMentions: 0, reportsCount: 0, minUnreadItemId: 0, unreadChat: false},
     }
+  }
+  async apiGetChats(_userId: number, _pagination: any, _query?: any, _pcc?: boolean) {
+    return [...this.groups.values()].map(g => ({
+      chatInfo: {type: "group", groupInfo: {...g, customData: this.customData.get(g.groupId)}},
+      chatItems: [],
+      chatStats: {unreadCount: 0, unreadMentions: 0, reportsCount: 0, minUnreadItemId: 0, unreadChat: false},
+    }))
   }
   async apiListGroups(_userId: number) {
     return [...this.groups.values()].map(g => ({...g, customData: this.customData.get(g.groupId)}))
@@ -638,7 +663,7 @@ describe("/grok Activation", () => {
     await joinPromise
     await bot.flush()
     expectMemberAdded(CUSTOMER_GROUP_ID, GROK_CONTACT_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
   })
 
   test("/grok as first message → WELCOME→GROK directly, no queue message", async () => {
@@ -646,7 +671,7 @@ describe("/grok Activation", () => {
     await bot.onNewChatItems(customerMessage("/grok"))
     await joinPromise
     await bot.flush()
-    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
@@ -654,7 +679,7 @@ describe("/grok Activation", () => {
   test("/grok in TEAM → rejected with teamLockedMessage", async () => {
     await reachTeam()
     await bot.onNewChatItems(customerMessage("/grok"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team mode")
+    expectSentToGroup(CUSTOMER_GROUP_ID, teamLockedMessage)
   })
 
   test("/grok when grokContactId is null → grokUnavailableMessage", async () => {
@@ -864,7 +889,7 @@ describe("/team Activation", () => {
     addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "already been invited")
+    expectSentToGroup(CUSTOMER_GROUP_ID, teamAlreadyInvitedMessage)
   })
 
   test("/team with no team members → noTeamMembersMessage", async () => {
@@ -898,7 +923,7 @@ describe("One-Way Gate", () => {
   test("/grok after gate → teamLockedMessage", async () => {
     await reachTeam()
     await bot.onNewChatItems(customerMessage("/grok"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team mode")
+    expectSentToGroup(CUSTOMER_GROUP_ID, teamLockedMessage)
   })
 
   test("customer text in TEAM → card update scheduled, no bot reply", async () => {
@@ -1456,7 +1481,7 @@ describe("Error Handling", () => {
     // Only the "Inviting Grok" message is sent — no activated/unavailable result
     expect(chat.sent.length).toBe(sentBefore + 1)
     expectSentToGroup(CUSTOMER_GROUP_ID, "Inviting Grok")
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
   })
 
@@ -1646,7 +1671,7 @@ describe("Grok Join Flow", () => {
     await bot.flush()
 
     expect(chat.joined).toContain(GROK_LOCAL_GROUP_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
   })
 
   test("per-message responses suppressed during activateGrok initial response", async () => {
@@ -1794,7 +1819,7 @@ describe("End-to-End Flows", () => {
     await joinPromise
     await bot.flush()
 
-    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
@@ -1834,8 +1859,8 @@ describe("Message Templates", () => {
     expect(grokActivatedMessage).toContain("chatting with Grok")
   })
 
-  test("teamLockedMessage mentions team mode", () => {
-    expect(teamLockedMessage).toContain("team mode")
+  test("teamLockedMessage tells customer the team will handle the conversation", () => {
+    expect(teamLockedMessage).toContain("team")
   })
 
   test("queueMessage mentions hours", () => {

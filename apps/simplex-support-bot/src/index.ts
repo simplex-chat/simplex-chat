@@ -5,7 +5,7 @@ import {parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
 import {GrokApiClient} from "./grok.js"
 import {welcomeMessage} from "./messages.js"
-import {profileMutex, log, logError} from "./util.js"
+import {profileMutex, log, logError, getGroupInfo, getContact} from "./util.js"
 
 interface BotState {
   teamGroupId?: number
@@ -163,14 +163,12 @@ async function main(): Promise<void> {
   await chat.apiSetAutoAcceptMemberContacts(mainUser.userId, true)
   log("Auto-accept member contacts enabled")
 
-  // Step 5: List contacts, resolve Grok contact
-  const contacts = await chat.apiListContacts(mainUser.userId)
-  log(`Contacts connected: ${contacts.length || "(none)"}`)
-
+  // Step 5: Resolve Grok contact by ID. Avoid apiListContacts — it loads
+  // every contact in one response and OOMs the native binding on large DBs.
   // Always restore grokContactId so the one-way gate can find and remove
   // Grok members even when Grok API is disabled.
   if (typeof state.grokContactId === "number") {
-    const found = contacts.find(c => c.contactId === state.grokContactId)
+    const found = await getContact(chat, state.grokContactId)
     if (found) {
       config.grokContactId = found.contactId
       log(`Grok contact from state: ID=${config.grokContactId}`)
@@ -210,14 +208,13 @@ async function main(): Promise<void> {
     }
   }
 
-  // Step 6: Resolve team group
+  // Step 6: Resolve team group by ID. Avoid apiListGroups — it loads every
+  // group in one response and OOMs the native binding on large DBs.
   log("Resolving team group...")
-  const groups = await chat.apiListGroups(mainUser.userId)
-
-  let existingGroup: T.GroupInfo | undefined
+  let existingGroup: T.GroupInfo | null = null
 
   if (typeof state.teamGroupId === "number") {
-    existingGroup = groups.find(g => g.groupId === state.teamGroupId)
+    existingGroup = await getGroupInfo(chat, state.teamGroupId)
     if (existingGroup) {
       config.teamGroup.id = existingGroup.groupId
       log(`Team group from state: ${config.teamGroup.id}:${existingGroup.groupProfile.displayName}`)
@@ -302,13 +299,13 @@ async function main(): Promise<void> {
     inviteLinkTimer.unref()
   }
 
-  // Step 9: Validate team members
+  // Step 9: Validate team members (lookup by ID, one round-trip per member)
   if (config.teamMembers.length > 0) {
     log("Validating team members...")
     for (const member of config.teamMembers) {
-      const contact = contacts.find(c => c.contactId === member.id)
+      const contact = await getContact(chat, member.id)
       if (!contact) {
-        console.error(`Team member not found: ID=${member.id}. Available: ${contacts.map(c => `${c.contactId}:${c.profile.displayName}`).join(", ") || "(none)"}`)
+        console.error(`Team member not found: ID=${member.id}`)
         process.exit(1)
       }
       if (contact.profile.displayName !== member.name) {
