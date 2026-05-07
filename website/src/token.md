@@ -16,6 +16,12 @@ Take money from advertisers and you become a surveillance company. Take money fr
 
 These credits are not tradable tokens or speculative assets — there will be no pre-sale or emission. It's a method to pay directly for the network infrastructure while maintaining privacy.
 
+## Crowdfunding to Build Community Credits
+
+Building Community Credits requires more capital than we have. So we will raise capital in the same way we designed the network: decentralized, community-funded, with no single point of capture. If you use SimpleX, you can own part of what you already help build. Register your interest via [this form](https://simplexchat.typeform.com/crowdfunding) and join [SimpleX Crowdfunding News channel](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg) for updates.
+
+_Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind._
+
 ## Why Community Credits?
 
 To pay for network infrastructure securely and privately.
@@ -26,12 +32,6 @@ With "free" centralized platforms:
 - you don't own all rights to your content.
 
 Paying for server capacity may be cheaper than "free" platforms.
-
-## Crowdfunding to Build Community Credits
-
-Building Community Credits requires more capital than we have. So we will raise capital in the same way we designed the network: decentralized, community-funded, with no single point of capture. If you use SimpleX, you can own part of what you already help build. Register your interest via [this form](https://simplexchat.typeform.com/crowdfunding) and join [SimpleX Crowdfunding News channel](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg) for updates.
-
-_Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind._
 
 ## How Will It Work?
 
