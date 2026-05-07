@@ -25,6 +25,6 @@ Thank you,
 
 Evgeny, SimpleX Chat founder
 
-## SimpleX Community Vouchers
+## SimpleX Community Credits
 
-Please comment on our plan to make SimpleX network sustainable and get a free access pass (an NFT) for early testing: https://simplex.chat/vouchers
+Please comment on our plan to make SimpleX network sustainable: https://simplex.chat/credits
