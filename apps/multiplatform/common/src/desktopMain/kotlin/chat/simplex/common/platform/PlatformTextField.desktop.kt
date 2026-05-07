@@ -83,11 +83,12 @@ actual fun PlatformTextField(
     lastTimeWasRtlByCharacters.value = isRtlByCharacters
   }
   val isLtrGlobally = LocalLayoutDirection.current == LayoutDirection.Ltr
-  // Reserve space on the same side as the send button (Alignment.BottomEnd in SendMsgView),
-  // i.e. the global layout-direction's end. RTL text in an LTR locale right-aligns onto that
-  // edge and would otherwise render under the send button.
-  val endPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
-  val padding = PaddingValues(0.dp, 12.dp, endPadding, 0.dp)
+  // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
+  // In this case padding from right side should be bigger
+  val startEndPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
+  val startPadding = 0.dp
+  val endPadding = startEndPadding
+  val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message.text, selection = cs.message.selection)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message.text, selection = cs.message.selection)
   val clipboard = LocalClipboardManager.current
@@ -115,7 +116,7 @@ actual fun PlatformTextField(
       autoCorrectEnabled = true
     ),
     modifier = Modifier
-      .padding(end = endPadding)
+      .padding(start = startPadding, end = endPadding)
       .offset(y = (-5).dp)
       .fillMaxWidth()
       .focusRequester(focusReq)
