@@ -156,6 +156,8 @@ fun ChatItemView(
             fun showReactionsMenu() {
               when (cInfo) {
                 is ChatInfo.Group -> {
+                  val g = cInfo.groupInfo
+                  if (g.useRelays && !g.isOwner) return
                   withBGApi {
                     try {
                       val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)

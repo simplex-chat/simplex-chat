@@ -29,6 +29,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260122_has_link
 import Simplex.Chat.Store.Postgres.Migrations.M20260222_chat_relays
 import Simplex.Chat.Store.Postgres.Migrations.M20260403_item_viewed
 import Simplex.Chat.Store.Postgres.Migrations.M20260429_relay_request_retries
+import Simplex.Chat.Store.Postgres.Migrations.M20260430_subscriber_body
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -57,7 +58,8 @@ schemaMigrations =
     ("20260122_has_link", m20260122_has_link, Just down_m20260122_has_link),
     ("20260222_chat_relays", m20260222_chat_relays, Just down_m20260222_chat_relays),
     ("20260403_item_viewed", m20260403_item_viewed, Just down_m20260403_item_viewed),
-    ("20260429_relay_request_retries", m20260429_relay_request_retries, Just down_m20260429_relay_request_retries)
+    ("20260429_relay_request_retries", m20260429_relay_request_retries, Just down_m20260429_relay_request_retries),
+    ("20260430_subscriber_body", m20260430_subscriber_body, Just down_m20260430_subscriber_body)
   ]
 
 -- | The list of migrations in ascending order by date

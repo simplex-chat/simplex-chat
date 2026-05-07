@@ -94,6 +94,7 @@ module Simplex.Chat.Store.Messages
     getGroupCIReactions,
     getGroupReactions,
     setGroupReaction,
+    setGroupReactionNoMember,
     getReactionMembers,
     getChatItemIdsByAgentMsgId,
     getDirectChatItem,
@@ -3443,6 +3444,31 @@ setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reacti
         |]
         (groupId, groupMemberId' m, itemSharedMId, itemMemberId, BI sent, reaction)
 
+setGroupReactionNoMember :: DB.Connection -> GroupInfo -> Maybe MemberId -> SharedMsgId -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
+setGroupReactionNoMember db GroupInfo {groupId} itemMemberId itemSharedMId reaction add msgId reactionTs
+  | add =
+      DB.execute
+        db
+        [sql|
+          INSERT INTO chat_item_reactions
+            (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+            VALUES (?,NULL,?,?,0,?,?,?)
+        |]
+        (groupId, itemMemberId, itemSharedMId, reaction, msgId, reactionTs)
+  | otherwise =
+      DB.execute
+        db
+        [sql|
+          DELETE FROM chat_item_reactions
+          WHERE chat_item_reaction_id = (
+            SELECT chat_item_reaction_id FROM chat_item_reactions
+            WHERE group_id = ? AND group_member_id IS NULL AND shared_msg_id = ?
+              AND item_member_id IS NOT DISTINCT FROM ? AND reaction_sent = 0 AND reaction = ?
+            LIMIT 1
+          )
+        |]
+        (groupId, itemSharedMId, itemMemberId, reaction)
+
 getReactionMembers :: DB.Connection -> VersionRangeChat -> User -> GroupId -> SharedMsgId -> MsgReaction -> IO [MemberReaction]
 getReactionMembers db vr user groupId itemSharedMId reaction = do
   reactions <-
@@ -3452,6 +3478,7 @@ getReactionMembers db vr user groupId itemSharedMId reaction = do
         SELECT group_member_id, reaction_ts
         FROM chat_item_reactions
         WHERE group_id = ? AND shared_msg_id = ? AND reaction = ?
+          AND group_member_id IS NOT NULL
       |]
       (groupId, itemSharedMId, reaction)
   rights <$> mapM (runExceptT . toMemberReaction) reactions
