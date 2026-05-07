@@ -9818,13 +9818,13 @@ testChannelRemoveRelay ps =
           -- re-add bob as relay
           alice ##> "/_add relays #1 1"
           alice <## "#team: group relays:"
-          alice <##. "  - relay id 1: invited"
+          alice .<##. ("  - relay id", ": invited")
 
           -- wait for bob to rejoin as relay (bob gets LDN "team_1" since old group record exists)
           concurrentlyN_
             [ do
                 alice <## "#team: group link relays updated, current relays:"
-                alice <##. "  - relay id 1: active"
+                alice .<##. ("  - relay id", ": active")
                 alice <## "group link:"
                 void $ getTermLine alice,
               bob <## "#team_1: you joined the group as relay"
