@@ -9708,6 +9708,10 @@ testChannelAddRelay ps =
             alice ##> ("/relays name=cath " <> cathSLink)
             alice <## "ok"
 
+            -- can't add same relay twice
+            alice ##> "/_add relays #1 1"
+            alice <## "bad chat command: some relays are already in the group"
+
             -- add cath relay to existing channel
             alice ##> "/_add relays #1 2"
             alice <## "#team: group relays:"

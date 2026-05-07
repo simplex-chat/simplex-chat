@@ -2534,9 +2534,14 @@ processChatCommand vr nm = \case
       pure (gInfo, relays)
     pure $ CRGroupRelays user gInfo relays
   APIAddGroupRelays groupId relayIds -> withUser $ \user -> withGroupLock "addGroupRelays" groupId $ do
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    (gInfo, existingRelays) <- withFastStore $ \db -> do
+      gi <- getGroupInfo db vr user groupId
+      rs <- liftIO $ getGroupRelays db gi
+      pure (gi, rs)
     assertUserGroupRole gInfo GROwner
     unless (useRelays' gInfo) $ throwCmdError "group does not use relays"
+    let existingRelayIds = map (\GroupRelay {userChatRelay = UserChatRelay {chatRelayId = DBEntityId rId}} -> rId) existingRelays
+    when (any (`elem` existingRelayIds) relayIds) $ throwCmdError "some relays are already in the group"
     gLink@GroupLink {connLinkContact = ccLink} <- withFastStore $ \db -> getGroupLink db user gInfo
     sLnk <- case connShortLink' ccLink of
       Just sl -> pure sl
