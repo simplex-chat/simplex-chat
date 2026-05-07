@@ -1784,7 +1784,8 @@ processChatCommand vr nm = \case
           Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData
           _ -> pure gInfo
         when (memberRole' (membership gInfo) /= GROwner && memberCurrent (membership gInfo)) $
-          syncSubscriberRelays user gInfo' currentRelayLinks
+          withGroupLock "syncSubscriberRelays" groupId $
+            syncSubscriberRelays user gInfo' currentRelayLinks
         pure $ CRGroupInfo user gInfo'
       _ -> throwCmdError "group link data not available"
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
