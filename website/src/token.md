@@ -4,15 +4,15 @@ title: "SimpleX Community Credits"
 permalink: "/credits/index.html"
 ---
 
-# SimpleX Community Credits: Strategy & Vision
+# SimpleX Crowdfunding to Build Community Credits: Strategy & Vision
 
 <a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn"><img src="/img/design_3/simplex_nft_smpx.jpg" width="200" class="float-to-right" style="border-radius: 10px;"></a>
 
-SimpleX is a private and secure messaging network without user IDs where you own your identity, contacts, groups, and content — there are no ads, no tracking, and no central authority. It relies on open protocols and open-source code, enabling anyone to audit the code and to create alternative apps and servers.
+SimpleX is a private and secure messaging network without user IDs where you own your identity, contacts, groups, and content — there are no ads, no tracking, and no central authority. It relies on open protocols and open-source code, enabling anyone to audit the code and to create alternative apps and servers. No single entity can control it.
 
-To scale for large groups and channels, without relying on any single entity, SimpleX network needs a sustainable way to fund servers.
+To scale for large groups and channels, without relying on any single entity, network needs a sustainable way to fund servers.
 
-Community Credits offer the solution - they are prepaid infrastructure credits for servers used by groups and channels.
+Take money from advertisers and you become a surveillance company. Take money from a single large investor and you hand them the kill switch. Community Credits offer the solution — they are prepaid infrastructure credits for servers used by groups and channels.
 
 These credits are not tradable tokens or speculative assets — there will be no pre-sale or emission. It's a method to pay directly for the network infrastructure while maintaining privacy.
 
@@ -26,6 +26,12 @@ With "free" centralized platforms:
 - you don't own all rights to your content.
 
 Paying for server capacity may be cheaper than "free" platforms.
+
+## Crowdfunding to Build Community Credits
+
+Building Community Credits requires more capital than we have. So we will raise capital in the same way we designed the network: decentralized, community-funded, with no single point of capture. If you use SimpleX, you can own part of what you already help build. Register your interest via [this form](https://simplexchat.typeform.com/crowdfunding) and join [SimpleX Crowdfunding News channel](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg) for updates.
+
+_Disclaimer: SimpleX Chat is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind._
 
 ## How Will It Work?
 
