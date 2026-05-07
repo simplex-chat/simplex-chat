@@ -45,7 +45,7 @@ In short:
 
 - Funds are locked in an autonomous smart contract not controlled by SimpleX Chat company or by anybody else.
 
-- Assign the Community Voucher to a group or channel you want, using its public address. This assignment is private, and group owners or server operators won't be able to link it to the purchase, thanks to zero-knowledge proofs.
+- Assign Community Credits to a group or channel you want, using its public address. This assignment is private, and group owners or server operators won't be able to link it to the purchase, thanks to zero-knowledge proofs.
 
 - Group or channel owners redeem the Credits to the server operators they use. The redemption is also private, and not linkable to the assignment or purchase.
 
@@ -78,7 +78,6 @@ We welcome your feedback on this proposal and any in-progress design documents.
 - SimpleX network namespace v1.
 
 **Join in**:
-- <a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn">Get a free NFT</a> for early testing.
 - Create a small group or channel using today's tech, and get it added to our experimental directory of groups.
 - Talk to us if you want to be a server operator to earn revenue and about any partnerships.
 
@@ -122,7 +121,7 @@ Server operators will receive up to 70% of the infrastructure payments. A higher
 
 [The conceptual design](https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2025-12-10-vouchers-2.md) for Community Credits uses zero-knowledge proofs, making the purchase, assigning credits to groups and their redemptions unlinkable.
 
-A whitepaper will be published in February 2026.
+A whitepaper will be published in June 2026.
 
 
 ## Disclaimer
