@@ -119,6 +119,7 @@ defaultChatConfig =
       channelSubscriberRole = GRObserver,
       relayChecksInitialDelay = 30 * 1000000, -- 30 seconds
       relayChecksInterval = 30 * 60, -- 30 minutes
+      relayInactiveTTL = nominalDay,
       relayRequestRetryInterval = RetryInterval {initialInterval = 5_000000, increaseAfter = 0, maxInterval = 600_000000},
       relayRequestExpiry = (10, nominalDay),
       deviceNameForRemote = "",

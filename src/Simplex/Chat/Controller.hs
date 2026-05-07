@@ -161,6 +161,7 @@ data ChatConfig = ChatConfig
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
     relayChecksInitialDelay :: Int64,
     relayChecksInterval :: NominalDiffTime,
+    relayInactiveTTL :: NominalDiffTime,
     relayRequestRetryInterval :: RetryInterval,
     relayRequestExpiry :: (Int, NominalDiffTime),
     highlyAvailable :: Bool,

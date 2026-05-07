@@ -4789,28 +4789,35 @@ runRelayGroupLinkChecks user = do
   forever $ do
     flip catchAllErrors eToView $ do
       lift waitChatStartedAndActivated
-      checkRelayGroups
+      checkRelayServedGroups
+      checkRelayInactiveGroups
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
-    checkRelayGroups = do
+    checkRelayServedGroups = do
       vr <- chatVersionRange
-      relayGroups <- withFastStore' $ \db -> getRelayServedGroups db vr user
+      relayGroups <- withStore' $ \db -> getRelayServedGroups db vr user
       forM_ relayGroups $ \gInfo@GroupInfo {groupProfile = gp} -> flip catchAllErrors eToView $ do
         case publicGroup gp of
           Just PublicGroupProfile {groupLink = sLnk} -> do
             (_, ContactLinkData _ UserContactData {relays = relayLinks}) <-
               getShortLinkConnReq' NRMBackground user sLnk
-            gLink_ <- withFastStore' $ \db -> runExceptT $ getGroupLink db user gInfo
+            gLink_ <- withStore' $ \db -> runExceptT $ getGroupLink db user gInfo
             case gLink_ of
               Right GroupLink {connLinkContact = CCLink _ (Just ourLink)} ->
                 if ourLink `elem` relayLinks
                   then do
                     -- TODO [relays] emit event to UI when relay own status promoted to RSActive
                     -- CEvtGroupRelayUpdated requires GroupRelay (owner-side), not available on relay side
-                    void $ withFastStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAccepted RSActive
-                  else withFastStore' $ \db -> updateRelayOwnStatus_ db gInfo RSInactive
+                    void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAccepted RSActive
+                  else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
               _ -> pure ()
           _ -> pure ()
+    checkRelayInactiveGroups = do
+      vr <- chatVersionRange
+      ttl <- asks (relayInactiveTTL . config)
+      inactiveGroups <- withStore' $ \db -> getRelayInactiveGroups db vr user ttl
+      forM_ inactiveGroups $ \gInfo -> flip catchAllErrors eToView $
+        deleteGroupConnections user gInfo False
 
 expireChatItems :: User -> Int64 -> Bool -> CM ()
 expireChatItems user@User {userId} globalTTL sync = do
