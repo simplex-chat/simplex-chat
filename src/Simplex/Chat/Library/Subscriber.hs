@@ -3543,8 +3543,9 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending
-              | relayOwnStatus gInfo == Just RSInactive ->
-                  throwChatError $ CEInternalError "delivery task worker: relay inactive"
+              | relayOwnStatus gInfo == Just RSInactive -> do
+                  logWarn "delivery task worker: relay inactive"
+                  withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
               | otherwise ->
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
@@ -3612,8 +3613,9 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending
-              | relayOwnStatus gInfo == Just RSInactive ->
-                  throwChatError $ CEInternalError "delivery job worker: relay inactive"
+              | relayOwnStatus gInfo == Just RSInactive -> do
+                  logWarn "delivery job worker: relay inactive"
+                  withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) "relay inactive"
               | otherwise -> do
                   sendBodyToMembers
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
