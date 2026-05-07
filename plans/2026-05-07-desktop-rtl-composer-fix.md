@@ -124,26 +124,36 @@ invariant.
 
 ## 3. Solution summary
 
-Change the textfield padding to **always reserve on the global end** —
-matching the side where `Alignment.BottomEnd` puts the send button —
-and delete the now-redundant start/end branching.
+Make the two conditional assignments that compute `startPadding` and
+`endPadding` unconditional, taking the values they already produced in
+the `else` branch:
 
 ```kotlin
-val endPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
-val padding    = PaddingValues(0.dp, 12.dp, endPadding, 0.dp)
-...
-.padding(end = endPadding)
+val startPadding = 0.dp
+val endPadding = startEndPadding
 ```
 
-The 95dp/50dp distinction is preserved verbatim: only in
-RTL-text + LTR-locale + empty-text + voice-button-shown does the right
-edge need 95dp to clear the wider voice-button row at `BottomEnd`.
+The surrounding code is unchanged — `startEndPadding`'s computation,
+the `PaddingValues(startPadding, 12.dp, endPadding, 0.dp)` construction,
+the `.padding(start = startPadding, end = endPadding)` modifier call,
+and the original two-line comment all stay verbatim.
+
+Master's `if (isRtlByCharacters && isLtrGlobally)` predicate split each
+of `startPadding` and `endPadding` into two branches. In cases 1, 3, 4
+the predicate is `false` and master takes the `else` branch — exactly
+the values the surgical version produces unconditionally. Only case 2
+(the bug) takes the `then` branch, and that branch reserves space on
+the wrong horizontal side. Removing the predicate removes only case 2's
+wrong values; cases 1/3/4 are byte-identical to master.
+
+The 95dp/50dp distinction is preserved verbatim through `startEndPadding`,
+which is unchanged.
 
 `ComposeOverlay` (called twice at the bottom of `PlatformTextField`)
 reuses the same `padding` value — its placement is corrected for the
 same reason without an extra change.
 
-**Net effect**: 4 lines deleted, 2 lines added, one logical change.
+**Net effect**: 2 lines changed.
 
 ---
 
@@ -151,16 +161,17 @@ same reason without an extra change.
 
 ### 4.1 Behavior matrix (post-fix)
 
-| Locale | Text | `endPadding` | Resolves to | Button side | Result |
-|--------|------|--------------|-------------|-------------|--------|
-| LTR    | LTR  | 50.dp        | visual right| right       | text/overlay clears button ✓ |
-| LTR    | RTL  | 50.dp        | visual right| right       | RTL text right-aligned, 50dp keeps it clear ✓ |
-| LTR    | RTL + empty + voice | 95.dp | visual right | right (wider row) | placeholder clears voice row ✓ |
-| RTL    | LTR  | 50.dp        | visual left | left        | clear ✓ (unchanged) |
-| RTL    | RTL  | 50.dp        | visual left | left        | clear ✓ (unchanged) |
+| Case | Locale | Text | Master `(start, end)` | Surgical `(start, end)` | Button side |
+|------|--------|------|-----------------------|-------------------------|-------------|
+| 1    | LTR    | LTR  | `(0, 50)`             | `(0, 50)`               | right ✓ same |
+| 2    | LTR    | RTL  | `(50, 0)`             | `(0, 50)`               | right ✓ **fix** |
+| 2′   | LTR    | RTL + empty + voice | `(95, 0)` | `(0, 95)`     | right ✓ **fix** |
+| 3    | RTL    | LTR  | `(0, 50)`             | `(0, 50)`               | left ✓ same  |
+| 4    | RTL    | RTL  | `(0, 50)`             | `(0, 50)`               | left ✓ same  |
 
-Three of the four pre-PR cases are byte-identical to the new code. Only
-the broken case (LTR + RTL) flips from `start=50, end=0` to `end=50`.
+Three of the four pre-PR cases are byte-identical to the new code.
+Only the broken case (LTR locale + RTL text) flips from `(50, 0)` to
+`(0, 50)`, which matches the side where the send button resolves.
 
 ### 4.2 Why the 95dp condition stays exactly as-is
 
@@ -198,19 +209,22 @@ Out of scope for #4137 — listed for clarity:
 
 - The two adjacent conditional assignments dispatching on
   `isRtlByCharacters && isLtrGlobally` (one for `startPadding`, one for
-  `endPadding`) collapse to a single `endPadding` definition.
-- Padding direction literally matches button-placement direction. A
-  reader who knows `Alignment.BottomEnd` resolves against the global
-  layout direction can infer the padding rule from the code alone.
-- The intermediate `startEndPadding` and `startPadding` locals — which
-  existed only as artifacts of the wrong rule — are deleted.
+  `endPadding`) become unconditional. The predicate is removed; the
+  `else` branch's values are lifted to the bare assignments.
+- All four locals (`startEndPadding`, `startPadding`, `endPadding`,
+  `padding`) keep the same names and continue to exist.
+- The `PaddingValues(startPadding, 12.dp, endPadding, 0.dp)` call and
+  the `.padding(start = startPadding, end = endPadding)` modifier are
+  unchanged.
+- The original two-line comment is unchanged. "padding from right side
+  should be bigger" remains accurate — `endPadding` is still `95.dp`
+  vs `50.dp` under the same condition as before, just consistently on
+  the global end side.
 - No behavior is removed: RTL detection, the `decorationBox` direction
   override, overlay rendering, and the empty-text/voice-button 95dp
   expansion are all retained verbatim.
-- Diff size: 7 lines removed, 6 added, one file, one commit. No
-  reformatting of unrelated code.
-- The new comment states the rule (reserve on the send-button side)
-  rather than describing the conditional structure.
+- Diff size: 2 lines changed, one file. No reformatting of unrelated
+  code.
 
 ### 4.5 Risk surface
 
@@ -234,42 +248,26 @@ Out of scope for #4137 — listed for clarity:
 File:
 `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/PlatformTextField.desktop.kt`
 
-**Lines 86–91 — replace 6 lines with 5 lines:**
+**Lines 89–90 — replace 2 lines:**
 
 ```kotlin
 // remove
-  val isLtrGlobally = LocalLayoutDirection.current == LayoutDirection.Ltr
-  // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
-  // In this case padding from right side should be bigger
-  val startEndPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
   val startPadding = if (isRtlByCharacters && isLtrGlobally) startEndPadding else 0.dp
   val endPadding = if (isRtlByCharacters && isLtrGlobally) 0.dp else startEndPadding
-  val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
 
 // add
-  val isLtrGlobally = LocalLayoutDirection.current == LayoutDirection.Ltr
-  // Reserve space on the same side as the send button (Alignment.BottomEnd in SendMsgView),
-  // i.e. the global layout-direction's end. RTL text in an LTR locale right-aligns onto that
-  // edge and would otherwise render under the send button.
-  val endPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
-  val padding = PaddingValues(0.dp, 12.dp, endPadding, 0.dp)
+  val startPadding = 0.dp
+  val endPadding = startEndPadding
 ```
 
-**Line 119 — replace `padding(start, end)` with `padding(end)`:**
-
-```kotlin
-// remove
-      .padding(start = startPadding, end = endPadding)
-
-// add
-      .padding(end = endPadding)
-```
-
-No other lines change. No imports added or removed.
+No other lines change. No imports added or removed. The comment, the
+`startEndPadding` computation, the `PaddingValues` construction, and
+the `.padding(start = startPadding, end = endPadding)` modifier are
+all preserved verbatim.
 
 ### 5.2 Steps
 
-1. Edit `PlatformTextField.desktop.kt` at the two sites above.
+1. Edit `PlatformTextField.desktop.kt` at the site above (lines 89–90).
 2. Build desktop module:
    `cd apps/multiplatform && ./gradlew :common:desktopMainClasses`
 3. Run desktop app on an LTR system locale; type
@@ -305,10 +303,14 @@ Revert is one commit and one file. Behavior reverts cleanly.
 
 ## 6. Alternative approaches considered
 
-### 6.1 Chosen approach — global-end padding (§3)
+### 6.1 Chosen approach — drop the buggy `then` branch (§3)
 
-Smallest diff, fixes the root cause, fixes the overlay placement as a
-free byproduct, removes the parallel-dispatch defect.
+The 2-line surgical change. Removes the predicate from the
+`startPadding` and `endPadding` assignments, keeping the (correct)
+`else` branch values as the unconditional definition. Smallest
+possible diff; preserves all variable names, the comment, the
+`PaddingValues` call, and the `.padding(start, end)` modifier.
+Fixes the overlay placement as a free byproduct.
 
 ### 6.2 Re-couple padding to inner forced direction by wrapping `BasicTextField`
 
@@ -380,7 +382,8 @@ and now harder to spot. **Rejected as a workaround.**
 
 Implement §3 (the chosen approach). It is the minimal structural
 root-cause fix, also corrects the overlay placement as a free byproduct,
-and removes the parallel-dispatch on `isRtlByCharacters && isLtrGlobally`.
+and removes the wrong-side `then` branch from both `startPadding` and
+`endPadding`.
 
 Defer §6.3 and §6.4 to separate PRs if desired — both are reasonable
 cleanups but are not necessary to fix #4137 and would expand the blast
