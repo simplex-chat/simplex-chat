@@ -485,7 +485,7 @@ private fun ProgressStepView(
         )
         val enabled = activeCount > 0
         SettingsActionItem(
-          painterResource(MR.images.ic_link),
+          painterResource(MR.images.ic_check),
           generalGetString(MR.strings.continue_to_next_step),
           click = {
             if (activeCount >= total) {
