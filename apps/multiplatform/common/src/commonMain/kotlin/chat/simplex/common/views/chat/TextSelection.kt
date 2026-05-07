@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.itemPrefixText
 import chat.simplex.common.views.chat.item.itemSegmentDisplayText
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -241,11 +240,11 @@ fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
 }
 
 // Extracts source text for the selected range within one item.
-// Selection offsets are in display-text space, including any leading itemPrefixText (reports).
-// For transformed segments (mentions, links with showText), the full source is emitted if any part
-// is selected. For untransformed segments, partial substring works.
+// Selection offsets are in display-text space. For transformed segments (mentions, links with showText),
+// the full source is emitted if any part is selected. For untransformed segments, partial substring works.
+// Reports render a leading "${reason}: " prefix that's included in selection space.
 private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: SimplexLinkMode): String {
-    val prefix = itemPrefixText(ci)
+    val prefix = (ci.content.msgContent as? MsgContent.MCReport)?.let { if (it.text.isEmpty()) it.reason.text else "${it.reason.text}: " } ?: ""
     val sb = StringBuilder()
     if (sel.first < prefix.length) {
         sb.append(prefix, sel.first.coerceAtLeast(0), minOf(prefix.length, sel.last + 1))
@@ -277,7 +276,7 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
 // Snaps a boundary offset to include full transformed segments.
 private fun snapOffset(ci: ChatItem, offset: Int, linkMode: SimplexLinkMode, expandRight: Boolean): Int {
     val formattedText = ci.formattedText ?: return offset
-    var displayOffset = itemPrefixText(ci).length
+    var displayOffset = (ci.content.msgContent as? MsgContent.MCReport)?.let { (if (it.text.isEmpty()) it.reason.text else "${it.reason.text}: ").length } ?: 0
     for (ft in formattedText) {
         val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
         val displayEnd = displayOffset + segDisplay.length
