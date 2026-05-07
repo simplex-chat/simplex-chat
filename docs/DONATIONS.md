@@ -11,6 +11,8 @@ We are prioritizing users' privacy and security - it would be impossible without
 
 Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
 
+To ensure network independence and neutrality, we are currently finalizing the launch of [SimpleX Network Consortium](https://simplexnetwork.org/) - an agreement between SimpleX Network Foundation that is being formed as 501.c3 non-profit and SimpleX Chat company.
+
 Your donations help us raise more funds - any amount, even the price of the cup of coffee, makes a big difference for us.
 
 Please donate via:
@@ -25,6 +27,6 @@ Thank you,
 
 Evgeny, SimpleX Chat founder
 
-## SimpleX Community Vouchers
+## SimpleX Community Credits
 
-Please comment on our plan to make SimpleX network sustainable and get a free access pass (an NFT) for early testing: https://simplex.chat/vouchers
+Please comment on our plan to make SimpleX network sustainable: https://simplex.chat/credits
