@@ -18,8 +18,12 @@ rather than only on next channel open via `syncSubscriberRelays`.
   and call `sendGroupMessages user gInfo Nothing False otherRelays events`.
 - Recipients: channel's currently-connected relays minus the newly-active ones
   (the announced relays don't need self-announcement).
-- Batching is critical — multiple Accepted→Active transitions can land in one
-  LINK callback when relays accept in quick succession.
+- Batched shape is defensive, not load-bearing. The receive-loop group lock
+  serializes `XGrpRelayAcpt` handling and the subsequent
+  `setGroupLinkDataAsync` → LINK chain, so each LINK callback typically
+  transitions at most one relay. Coding the send as a `NonEmpty` of
+  `XGrpRelayNew` events keeps the path correct if the agent ever consolidates
+  link-data writes.
 
 ## Relay — forward only
 - `processEvent` (Subscriber.hs:980-1032) gets a new case:
