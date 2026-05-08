@@ -114,9 +114,11 @@ must reuse the existing required-signature gate. Without this, `withVerifiedMsg`
 
 `getCreateRelayForMember` runs `getGroupMemberByRelayLink` (an inner `let` at 1380-1385),
 falls back to `createRelayMember`. The inner SQL filters on `group_id = ? AND relay_link
-= ?` only — no status filter. For the owner-driven sync flow this is fine (owner re-uses
-the row on retry), but for the subscriber receive path we must filter to *active* rows so
-that a re-add after a `GSMemLeft` creates a fresh row instead of resurrecting the old one.
+= ?` only — no status filter. For the subscriber's initial-join flow this is fine
+(`APIConnectPreparedGroup` → `connectToRelay`, Commands.hs:2141 / 3597-3613 — re-uses
+the row on retry), but for the subscriber receive path we must filter to *active* rows
+so that a re-add after a `GSMemLeft` creates a fresh row instead of resurrecting the
+old one.
 
 ### 3.2 The change
 
@@ -150,9 +152,10 @@ getCreateRelayForMember db vr gVar user gInfo@GroupInfo {groupId} relayLink =
     createRelayMember = ...  -- unchanged from current 1386-1407
 ```
 
-The owner's existing flow (`APIConnectPreparedGroup → connectToRelay`, Commands.hs:3597-3613)
-is preserved: the lookup will still find the owner's relay member row because the row is
-created with `GSMemAccepted` (1403), which is `memberCurrent`.
+The subscriber's initial-join flow (`APIConnectPreparedGroup → connectToRelay`,
+Commands.hs:2141 / 3597-3613) is preserved: the lookup will still find the relay
+member row because the row is created with `GSMemAccepted` (1403), which is
+`memberCurrent`.
 
 ### 3.4 Re-export
 
@@ -188,26 +191,18 @@ Body — described, not coded:
 1. `vr <- chatVersionRange`.
 2. `gVar <- asks random` — needed by `getCreateRelayForMember` via the create branch.
 3. `existing_ <- withFastStore' $ \db -> getRelayMemberByRelayLink db vr user (groupId' gInfo) relayLink`.
-4. Decide based purely on `activeConn m`:
+4. Decide based on the lookup result and `activeConn`:
 
-   ```
-   case activeConn m of
-     Just _  -> skip
-     Nothing -> trigger
-   ```
-
-   If the relay member already has an `activeConn`, skip — the agent layer
-   handles transient failures internally and a present `activeConn` means an
-   earlier path is in flight or already done. Permanent-failure recovery is
-   deferred to explicit retry paths (`retryRelayConnectionAsync`) and channel
-   re-join.
-
-   - `Just m | isJust (activeConn m)` → `pure ()` (idempotent skip).
-   - `Just m` (no `activeConn` — leftover row from an attempt that never bound
-     a connection) → reuse `m`; proceed to step 5.
+   - `Just m | isJust (activeConn m)` → `pure ()` (idempotent skip;
+     a present `activeConn` means an earlier path is in flight or
+     already done; the agent layer handles transient failures
+     internally; permanent-failure recovery is deferred to explicit
+     retry paths and channel re-join).
+   - `Just m` (no `activeConn` — leftover row from an attempt that
+     never bound a connection) → reuse `m`; proceed to step 5.
    - `Nothing` → `withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink`
-     to create the row. `getCreateRelayForMember` re-runs the lookup atomically inside the
-     same transaction, so the create branch is taken only when no active row exists.
+     to create the row. `getCreateRelayForMember` re-runs the lookup atomically inside
+     the same transaction, so the create branch is taken only when no active row exists.
 5. `subMode <- chatReadVar subscriptionMode`.
 6. `newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink`
    (Commands.hs:2479 — already returns `(CommandId, ConnId)` for binding).
@@ -611,17 +606,24 @@ length (filter (isJust . activeConn) relayRows) `shouldBe` 1
 4. **Malformed signature.** `requiresSignature XGrpRelayNew_ = True` causes
    `withVerifiedMsg` to reject and produce `RGEMsgBadSignature`. Standard path; tested.
 
-5. **Agent error during `getAgentConnShortLinkAsync`.** The async command will
-   eventually surface as an `ERR` agent message bound to the same connection; the
-   existing error path (Subscriber.hs:1202-1204) reports it. The pre-created
-   relay-member row remains; the next `APIGetUpdatedGroupLinkData` (channel open) will
-   detect via the `memberCurrent` filter that the row exists but no active connection,
-   and re-issue the connect via `connectToRelayAsync`. Treated as recoverable.
+5. **Agent error during `getAgentConnShortLinkAsync` (step 3 of
+   `connectToRelayAsync`).** If the failure happens before
+   `createRelayMemberConnectionAsync` runs, `activeConn` is `Nothing`
+   and the next trigger retries automatically. If the call succeeds
+   but a later async step (LDATA, CONF, CON) stalls, `activeConn`
+   exists in a non-`ConnReady` state; the chat layer does not retry
+   by design (Option A simple skip). The agent layer's internal
+   retries on subscription resume drive recovery for transient
+   network failures. Permanent stalls are recovered via explicit
+   retry paths (`retryRelayConnectionAsync`, channel re-join).
 
-6. **Link-data fetch failure after pre-created member row.** Same as (5). The row stays;
-   on retry (channel open or subsequent `XGrpRelayNew` from another relay forwarding the
-   same event), `connectToRelayAsync` finds the row, sees no active connection, and
-   re-attempts.
+6. **Link-data fetch failure after pre-created member row.** Two
+   sub-cases. (a) `createRelayMemberConnectionAsync` not yet run:
+   `activeConn = Nothing`, next trigger retries (`XGrpRelayNew`
+   arrival from another relay or channel re-open via
+   `syncSubscriberRelays`). (b) Connection record exists but LDATA
+   failed: `activeConn = Just _`, chat layer skips by Option A;
+   agent layer retries internally on subscription resume.
 
 7. **Schema-change to lookup breaks other call sites.** The active-row filter is added
    in a new function `getRelayMemberByRelayLink`. `getCreateRelayForMember` is rewired
