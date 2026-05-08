@@ -180,6 +180,12 @@ every pre-existing message because no in-flight message ever produced
 zero behavioral change. The `Maybe` shape is internally consistent with the
 `Maybe`-style discriminator fields `quote` and `parent`.
 
+**Invariant.** `forward = Just False` is semantically equivalent to
+`forward = Nothing` on the wire (the serializer omits both). Construction
+sites SHOULD normalize to `Nothing`; treating `Just False` as "forwarded"
+would be a bug. The smart constructor `mcForward` always sets `Just True`;
+no in-tree caller produces `Just False`.
+
 **2. Per-message comments-disabled in `XMsgUpdate.prefs` instead of a
 dedicated `XGrpCommentsDisabled` event.**
 
@@ -210,6 +216,15 @@ whereas they would refuse a new event tag entirely. The receive path
   prefs from a non-channel sender are silently discarded by the receiver — a
   defensive no-op.
 
+**Invariant.** A non-owner moderator cannot mutate content via `XMsgUpdate`;
+their content field is silently discarded by the receive-path arm ordering.
+The owner-content branch (`maybe True (\m -> memberRole' m == GROwner) m_`,
+Subscriber.hs:2089) is the only path that reaches `updateCI`; the moderator
+branch (`isJust prefs_ && memberRole' m'' >= GRModerator`, line 2090) calls
+`applyMsgPrefs` and returns directly. A moderator's `XMsgUpdate` carrying
+both `content` and `prefs` applies prefs only. Verified at
+Subscriber.hs:2087-2092.
+
 **3. `APISendComment` as a separate command instead of a parent param on
 `APISendMessages`.**
 
@@ -229,34 +244,35 @@ compared to the iOS UI work either way.
 **Decision: option (b) — keep param-threading in Haskell, embed
 `channelMsgInfo` as a third associated value of `.group` in iOS.**
 
-The Haskell as-built threads `Maybe ChannelMsgInfo` cleanly through the small
-set of paths that need it (`getGroupChat`, `getChatItemIDs`,
-`prohibitedGroupContent`, `commentsClosed`, `sendGroupContentMessages_`,
-`createNewChatItem_`, `newGroupContentMessage`). Revisiting that to make
-`ChatInfo.GroupChat` a 3-tuple would touch dozens of pattern-match sites
-across the codebase for no behavioral gain.
+The asymmetry reflects a difference in how each platform consumes
+`ChatInfo`, not a temporary compromise. Haskell call chains pass
+`Maybe ChannelMsgInfo` along function signatures explicitly because every
+caller knows whether it is in a comments context: pagination
+(`getGroupChat`, `getChatItemIDs`), filtering (`prohibitedGroupContent`,
+`commentsClosed`), persistence (`createNewChatItem_`,
+`sendGroupContentMessages_`), and receive-path resolution
+(`newGroupContentMessage`) are all entered with the parent context already
+materialized at the call site. The parameter flows along the call graph.
 
-iOS has a fundamentally different shape: `ChatInfo` flows through SwiftUI
-views and `ChatModel`, where `cInfo.groupChatScope()` is consulted at four
-gating sites in `ChatModel.swift` and inside `getCIItemsModel` to decide
-secondary-IM routing (`apps/ios/Shared/Model/ChatModel.swift:657, 679, 691,
-717, 788`). A "this Chat is a comments thread for parent X" predicate must
-be observable from `cInfo` alone at all of those sites; threading a separate
-parameter through every caller is impractical. Embedding `channelMsgInfo`
-beside the existing `groupChatScope: GroupChatScopeInfo?` mirrors the
-existing pattern.
+SwiftUI views compose hierarchically: `cInfo` flows through view bodies and
+`@Environment` propagation, with no caller chain to thread a separate
+parameter through. `ChatModel.swift` inspects `cInfo.groupChatScope()`
+inside `getCIItemsModel` and at four gating sites
+(`ChatModel.swift:657, 679, 717, 788`) to decide whether the item belongs
+to the main chat or a secondary scope. The "this Chat is a comments thread
+for parent X" predicate must be observable from `cInfo` alone for nested
+view gating, composer disabling, and secondary-IM routing to work
+uniformly. Embedding `channelMsgInfo` as a third associated value beside
+`groupChatScope: GroupChatScopeInfo?` mirrors the existing pattern.
 
 **Cross-platform JSON consequence.** The Haskell `Chat 'CTGroup` returned
 from `APIGetChat` JSON-encodes via the existing 2-parameter `GroupChat`
 constructor; the wire shape is unchanged. iOS reconstructs the embedded
 `channelMsgInfo` locally: when iOS calls `apiGetChat(parent: parentId)`, it
 already has the parent post in memory (the parent lives in the main
-channel's `ItemsModel`), so it composes the local `ChatInfo.group(_, _,
-ChannelMsgInfo(channelMsgItem: parent, channelMsgSharedId: parent.meta.itemSharedMsgId!))`
+channel's `ItemsModel`), so it composes the local
+`ChatInfo.group(_, _, ChannelMsgInfo(channelMsgItem: parent, channelMsgSharedId: sharedId))`
 on receipt. No new JSON field is needed.
-
-The asymmetry is intentional and pragmatic. Documented in `apps/ios/spec/state.md`
-under the new `getCIItemsModel` channel-msg branch.
 
 **5. `memberCanComment` defense-in-depth on receive.**
 
@@ -273,39 +289,70 @@ clients that cooperate with a faulty relay.
 
 **6. History replay for new joiners.**
 
-**Decision: defer in v2.** As built, the include-in-history admission for
-comment items already lands (Store/Messages.hs:631-635), and
-`getGroupHistoryItems` (Store/Messages.hs:3825-3846) returns the top-N items
-ordered by `item_ts DESC` with no per-parent cap and no
-`parent_chat_item_id IS NULL` filter. The behavior on a new joiner is messy:
+**Decision: defer in v2.** As built, comment items are admitted to history
+via `includeInHistory` (Store/Messages.hs:631-635), and
+`getGroupHistoryItems` (Store/Messages.hs:3825-3846) runs
+`ORDER BY item_ts DESC, chat_item_id DESC LIMIT N` and then `reverse`, so
+playback is **ASC by `item_ts`** with `chat_item_id` ASC as tiebreaker.
+Comment items have `item_ts >= parent.item_ts` (set at receive to the
+relay's `brokerTs`, which is monotone in normal operation) and
+`chat_item_id` strictly greater than the parent's (rows are inserted in
+arrival order). **Within the cap-N window, parents always precede their
+own comments in the playback stream.** The receiver's
+`resolveCommentParent` (Subscriber.hs:1989-1991) therefore resolves
+in-window comments correctly.
 
-- Comments mix into the replay stream by recency. A heavy-comment week can
-  push older parent posts out of the cap-N window.
-- The receiver's `resolveCommentParent` (Subscriber.hs:1989-1991) drops any
-  comment whose parent is not present locally. A comment that lands before
-  its parent in the replay stream is silently dropped.
-- The parent post's `commentsTotal` arrives at its current (live) value,
-  which may exceed the number of comments actually delivered to the joiner.
+The actual failure mode is narrower:
 
-This is a known limitation; v2 documents it under §6 (Forward compatibility
-& threat model) and §8 (Out of scope). The v1 sizing approach — per-parent
-cap M plus post-window cap N, both tunable constants — is on record for a
-follow-up PR. v2 explicitly excludes the helper
-`getChannelMsgCommentsForHistory` and the `getGroupHistoryItems` extension.
+- **Out-of-window comments.** Comments whose parent fell out of the cap-N
+  window are dropped at `resolveCommentParent` (the parent isn't in the
+  joiner's local DB). Those comments had no place to render anyway —
+  their parent isn't in the joiner's chat — so the visible inconsistency
+  is only `commentsTotal > delivered`, not "messages out of order".
+- **Live count vs. delivered count.** A parent post arrives carrying the
+  live `commentsTotal`, which may exceed the comments actually delivered
+  to the joiner (because heavy-comment windows displace earlier comments
+  from the cap-N).
+
+Both are user-visible inconsistencies, not data-loss bugs. v2 documents
+them under §6 (Forward compatibility & threat model) and §8 (Out of
+scope). The v1 sizing approach — replace flat cap N with **post window N
++ per-parent cap M**, both tunable constants — would ensure parents and
+recent comments are admitted together. A future PR can also optionally
+re-sort the relay's history send by parent dependency to handle the rare
+case of broker-ts reordering across SMP queues. v2 explicitly excludes
+the helper `getChannelMsgCommentsForHistory` and the
+`getGroupHistoryItems` extension.
 
 **7. Default channel preference at creation site.**
 
 **Decision: ratify.** The override `comments = CommentsGroupPreference
 {enable = FEOn, closeAfter = Nothing}` is set in `APINewPublicGroup`
 (Commands.hs:2483-2485) — the only owner-side channel-creation path that
-sets `useRelays = True`. Verified by grep: the only other `useRelays = True`
-caller is `APIPrepareGroup` (Commands.hs:2014), which is the
-**subscriber-side join** path; subscribers inherit the published prefs of
-the channel they join. There is no "import group converted to channel" path
-in the current tree, no business-channel path, and the
-`createPreparedGroup` / `createNewGroup` store helpers do not synthesize
-prefs themselves. v2 carries the verification step into Slice 1 just so a
-future addition to the tree does not silently bypass the override.
+sets `useRelays = True`. Verified by grep: the only other source-tree
+`useRelays = True` caller is `APIPrepareGroup` (Commands.hs:2011-2014),
+which is the **subscriber-side join** path; subscribers inherit the
+published prefs of the channel they join. There is no "import group
+converted to channel" path in the current tree, no business-channel path,
+and the `createPreparedGroup` / `createNewGroup` store helpers do not
+synthesize prefs themselves.
+
+**Post-creation immutability of `useRelays`.** Verified at
+`Store/Groups.hs:2244-2275`: `updateGroupProfile` updates `display_name`,
+`full_name`, `short_descr`, `description`, `image`, `group_type`,
+`group_link`, `preferences`, `member_admission`, and `updated_at`. It does
+NOT update the `groups.use_relays` column. Therefore `APIUpdateGroupProfile`
+cannot flip a regular group into a channel after creation, and there is no
+hidden override site introduced by profile edits.
+
+**Slice 1 follow-up.** Add a one-line verification at implementation time:
+grep `useRelays = True` and `useRelays = BoolDef True` across
+`src/Simplex/Chat/`. The only matches must be the two known sites
+(`APINewPublicGroup` at Commands.hs:~2484, the conditional pre-channel-link
+flow at Commands.hs:~2011, and the row-construction sites at
+`Store/Groups.hs:380, 390` and `Store/Shared.hs:685`, all of which are
+seeded by the two API paths above). Any new match is a new override site
+that must apply the comments-pref default.
 
 **8. Forward-compatibility version gating — VERIFIED GAP.**
 
@@ -371,20 +418,43 @@ must filter `parent_chat_item_id IS NULL`":
 
 - `getGroupNavInfo_.getAfterUnreadCount` (Store/Messages.hs:1875-1890) and
   `getGroupNavInfo_.getAfterTotalCount` (lines 1891-1912) — these compute
-  "items after this one" for navigation. **Must filter on the same scope as
-  the open chat.** When the open chat is a comments thread (the function
-  is called from `getGroupChatAround_` at line 1773, which receives
-  `parentChatItemId_`), the predicate must be `parent_chat_item_id = ?`
-  with the parent id; when the open chat is the main channel, the
-  predicate must be `parent_chat_item_id IS NULL`. As-built has neither
-  predicate, so navigation counts in either scope include items from the
-  other scope.
+  "items after this one" for navigation. **Must filter on the same scope
+  as the open chat.** When the open chat is a comments thread (the
+  function is called from `getGroupChatAround_` at line 1773, which
+  receives `parentChatItemId_` from the as-built work), the predicate
+  must be `parent_chat_item_id = ?` with the parent id; when the open
+  chat is the main channel, the predicate must be
+  `parent_chat_item_id IS NULL`. As-built has neither predicate, so
+  navigation counts in either scope include items from the other scope.
 
-  **Fix:** thread the existing `parentChatItemId_` (already available at
-  the `getGroupChatAround_` call site) into `getGroupNavInfo_` as a new
-  parameter, and apply the appropriate predicate inside both subqueries.
-  Mutually exclusive with the existing scope (member-support); both
-  predicates added to both subqueries.
+  **Fix.** New signature:
+
+  ```haskell
+  getGroupNavInfo_
+    :: DB.Connection
+    -> User
+    -> GroupInfo
+    -> Maybe GroupChatScopeInfo
+    -> Maybe ChatItemId          -- NEW: parent chat item id
+    -> CChatItem 'CTGroup
+    -> IO NavigationInfo
+  ```
+
+  Predicate matrix (added to both `getAfterUnreadCount` and
+  `getAfterTotalCount` subqueries; the two arguments are mutually
+  exclusive at the call site):
+
+  - `parentChatItemId_ = Just pId`:
+    `AND parent_chat_item_id = ?`  -- bound to `pId`
+  - `parentChatItemId_ = Nothing`, `scopeInfo = Nothing`:
+    `AND parent_chat_item_id IS NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL`
+  - `parentChatItemId_ = Nothing`, `scopeInfo = Just GCSIMemberSupport {groupMember_}`:
+    `AND parent_chat_item_id IS NULL AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?`
+
+  Caller `getGroupChatAround_` (Store/Messages.hs:1756-1777) already has
+  `parentChatItemId_` and `scopeInfo` in scope from the as-built work;
+  threading the parameter through is a one-line change at the call site.
+  The signature change touches no other caller.
 
 - All other `chat_items` queries in `Store/Messages.hs` were verified
   against the audit rule. Single-row lookups by `chat_item_id` (e.g.
@@ -402,43 +472,172 @@ that excludes comments under that post.
 
 ### 3.3 Relay forwarding version gate (decision 8)
 
-`src/Simplex/Chat/Library/Subscriber.hs` — `runDeliveryJobOperation` at line
-3548, specifically the per-recipient batching inside `deliver` /
-`sendLoop`. Today the per-recipient compatibility filter is the
-`compatible m` predicate at Internal.hs:1626-1627, called from
-`getGroupRecipients` for non-channel groups, and the inline
-`maxVersion (memberChatVRange m) >= groupKnockingVersion` checks in the
-member-support delivery path (lines 3593, 3631).
+The naïve "inspect the message body in the delivery worker" approach is
+**not feasible** in this architecture. `MessageDeliveryJob.body :: ByteString`
+(Delivery.hs:165) is an already-encoded, batched, encrypted blob assembled
+by `batchDeliveryTasks1` in `runDeliveryTaskOperation` (Subscriber.hs:3496).
+By the time `runDeliveryJobOperation` (Subscriber.hs:3548) picks the job
+up to send, decoding the body to inspect inner events on every send loop
+iteration would defeat batching. The version constraint must be **tagged
+at job creation time** and read alongside the body.
 
-Add a per-recipient filter for channel posts:
+This pattern is new for this codebase. The existing per-call-site checks
+for `groupKnockingVersion` and `contentReportsVersion` (Internal.hs:1627,
+Subscriber.hs:3593, 3631) operate at recipient-resolution sites that have
+the inner event in scope (`getGroupRecipients`, member-support delivery).
+The relay-batched delivery worker does not. Hence the column-on-job
+approach below.
 
-- Compute, for each `XGrpMsgForward` body about to be batched, the minimum
-  required version of any forwarded inner event:
-  - For `XMsgNew mc` with `mc.parent = Just _` → `commentsVersion`.
-  - Other inner events → existing baseline.
-- When iterating recipients in `sendLoop` / `deliver`, skip recipients
-  whose `maxVersion (memberChatVRange m)` (or `peerChatVRange` of their
-  active connection, matching the convention in
-  `getGroupRecipients.compatible`) is below that minimum.
+**Step 1 — schema migration.** Add a new SQLite + Postgres migration
+`M{YYYYMMDD}_channel_comments_version_gate` (date picked at implementation
+time, AFTER `M20260407_channel_comments`):
 
-This sits in the relay-to-subscriber path because the relay is the only
-node that fans out to many version-heterogeneous subscribers. The
-owner-to-relay leg is owner-controlled, and owners share a single
-`currentChatVersion` with their relays in practice.
+```sql
+ALTER TABLE delivery_tasks
+  ADD COLUMN min_recipient_version INTEGER;     -- NULL = no constraint
+ALTER TABLE delivery_jobs
+  ADD COLUMN min_recipient_version INTEGER;     -- NULL = no constraint
+```
 
-**Why prefs-bearing `XMsgUpdate` is intentionally NOT gated:** the
-`prefs` field is dropped silently by older parsers via `omittedField`. The
+No index is needed: the column is read alongside the row when the job is
+fetched, and used in a per-row WHERE clause on a small recipient list.
+
+Down step drops both columns. Register in both `Migrations.hs` files and
+expose in `simplex-chat.cabal`. `chat_schema.sql` regenerates from tests.
+
+**Step 2 — task creation tagging.** At task creation time
+(`createMsgDeliveryTask`, Store/Delivery.hs:75-94, called from
+Subscriber.hs:1045 inside `createDeliveryTasks`), inspect the
+`verifiedMsg`'s parsed `ChatMsgEvent`. When the event is `XMsgNew mc` with
+`mc.parent = Just _`, set `min_recipient_version = Just commentsVersion`
+on the task row. All other tasks store `Nothing`. Decision rationale:
+
+- Parent-bearing `XMsgNew` → tag at `commentsVersion`. A pre-version
+  recipient would surface the comment as a regular post in the main chat
+  (content/UX leak per §6.1).
+- `XMsgUpdate` with `prefs` set → leave `Nothing`. Prefs are an optional
+  sub-object that older parsers silently drop via `omittedField`. The
+  content part of the update is harmless; the recipient just doesn't
+  enforce `commentsDisabled` locally. Acceptable degradation
+  (rationale fully written in §6.1).
+- All other events → `Nothing`.
+
+The tagging logic is encapsulated in a small helper near
+`createDeliveryTasks`:
+
+```haskell
+taskMinRecipientVersion :: ChatMsgEvent 'Json -> Maybe VersionChat
+taskMinRecipientVersion = \case
+  XMsgNew MsgContainer {parent = Just _} -> Just commentsVersion
+  _ -> Nothing
+```
+
+Plumbed through `NewMessageDeliveryTask` so the row insert at
+`Store/Delivery.hs:81-94` writes the new column.
+
+**Step 3 — task → job batching.** In `batchDeliveryTasks1`
+(Subscriber.hs:3496) and the `DJRelayRemoved` body construction
+(Subscriber.hs:3511-3515), compute the job's `min_recipient_version` as
+the maximum (in `Just`-dominates-`Nothing` semantics) over all batched
+tasks' `min_recipient_version`. Concretely: any tagged task forces the job
+to be tagged. Encoded as:
+
+```haskell
+maxMinRecipientVersion :: NonEmpty (Maybe VersionChat) -> Maybe VersionChat
+maxMinRecipientVersion = foldr1 mergeMin
+  where
+    mergeMin Nothing y = y
+    mergeMin x Nothing = x
+    mergeMin (Just a) (Just b) = Just (max a b)
+```
+
+`createMsgDeliveryJob` (Store/Delivery.hs:248) gains the new parameter
+`minRecipientVersion :: Maybe VersionChat` and writes it into the new
+column. `MessageDeliveryJob` (Delivery.hs:161) gains the field;
+`MessageDeliveryJobRow` (Store/Delivery.hs:275) and the SELECT lists at
+Store/Delivery.hs:301-308 are extended.
+
+**Step 4 — recipient filtering at delivery.** Extend
+`getGroupMembersByCursor` (Store/Delivery.hs:335-372) to accept the job's
+`Maybe VersionChat`:
+
+```haskell
+getGroupMembersByCursor
+  :: DB.Connection -> VersionRangeChat -> User -> GroupInfo
+  -> Maybe GroupMemberId   -- cursor
+  -> Maybe GroupMemberId   -- single-sender
+  -> Maybe VersionChat     -- NEW: minimum recipient version
+  -> Int                   -- bucket size
+  -> IO [GroupMember]
+```
+
+The base query at line 363-371 acquires an additional clause when the new
+parameter is `Just v`:
+
+```sql
+  AND (
+    -- prefer peer_chat_v_max from active connection if present, else
+    -- fall back to memberChatVRange's max; both are stored at row read
+    -- time so the predicate is expressed in Haskell-side filtering.
+  )
+```
+
+The simplest implementation: keep the SQL identical, fetch candidate
+member rows, and filter post-fetch in Haskell using the same expression
+as `Internal.hs:1627`'s `compatible` predicate:
+`maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= v`.
+The `count` parameter still bounds the result. (Adding the predicate to
+SQL would require a join through `connections` for `peer_chat_v_max`,
+which complicates the cursor pagination; Haskell-side filtering keeps
+the query shape unchanged.)
+
+Pass the job's `min_recipient_version` from `runDeliveryJobOperation`
+(Subscriber.hs:3582) into `getGroupMembersByCursor`. The same parameter
+also gates the `DJSMemberSupport` path at Subscriber.hs:3590-3601 — the
+filter is applied uniformly in both `DJSGroup` and `DJSMemberSupport`
+paths because comment-bearing events do not appear on the
+member-support path today, but threading the parameter both ways is
+defensive and trivially correct.
+
+**Why this pattern is new.** The body is opaque post-encoding, so the
+version constraint must be tagged at the boundary where the inner event
+is still inspectable (task creation). The existing version-gate idioms
+(`groupKnockingVersion`, `contentReportsVersion`) are inline per-call-site
+checks at recipient-resolution sites and do not generalize: the relay's
+delivery worker is structurally further removed from the inner events.
+
+**Why prefs-bearing `XMsgUpdate` is intentionally NOT gated.** The `prefs`
+field is dropped silently by older parsers via `omittedField`. The
 content portion of `XMsgUpdate` is unaffected. Older subscribers simply
 fail to enforce `commentsDisabled` locally, which is acceptable
 degradation: the parent post still shows, the disabled state is
 non-binding for them, and the relay (which knows the disabled state) still
-prevents their comments from being accepted. Documented in §6.
+prevents their comments from being accepted on the send-side preflight.
+Documented in §6.
 
-Test: new `testChannelCommentVersionGated` (§5) sets a subscriber's
-peer chat version to `commentsVersion - 1` via existing test infrastructure
-and asserts that a comment-bearing `XMsgNew` is not delivered.
+Test: `testChannelCommentVersionGated` per §5 reads the job row's
+`min_recipient_version` after creation and asserts `Just commentsVersion`
+for parent-bearing comments and `Nothing` for plain main-channel posts;
+then verifies a recipient at `commentsVersion - 1` does not receive the
+comment but does receive subsequent posts. See §6.3 for the full recipe.
 
-### 3.4 No other backend changes
+### 3.4 Reactions on comments
+
+Reactions are routed by `(SharedMsgId, Maybe MemberId, Maybe MsgScope)`
+in `XMsgReact` (Protocol.hs ChatMsgEvent line ~436) and persisted via
+`groupMsgReaction` (Subscriber.hs:1891). Comments use **no scope** (their
+parent reference lives in the message container, not in `MsgScope`), so a
+reaction on a comment carries `scope = Nothing` and resolves to the
+comment row by `(SharedMsgId, MemberId)` lookup just like a reaction on a
+main-channel post. No code change is needed: the existing reaction path
+flows comment reactions through the relay and updates
+`chat_item_reactions` unchanged. The deletion-cascade behavior is also
+unchanged because `chat_item_reactions` is keyed on `chat_item_id`, which
+is hard-deleted by the parent-comment FK cascade.
+
+Test: `testChannelCommentReact` per §5 covers the happy path.
+
+### 3.5 No other backend changes
 
 Specifically NOT in scope of v2:
 
@@ -595,14 +794,21 @@ work refreshed for the as-built Haskell surface (decisions 3, 4, and the
 13. `ItemsModel.loadSecondaryChat(...)` gains a new branch:
     ```swift
     case .groupChannelMsgContext(let parent):
+        guard let sharedId = parent.meta.itemSharedMsgId else {
+            logger.error("loadSecondaryChat: parent has no shared msg id")
+            return
+        }
         // calls apiGetChat with parentItemId: parent.id
     ```
     The returned `Chat` has wire `chatInfo` of the form
     `.group(groupInfo, scope: nil, channelMsgInfo: nil)` because the
     Haskell side does not embed `ChannelMsgInfo` into the wire. iOS
     rewrites it locally to
-    `.group(groupInfo, scope: nil, channelMsgInfo: ChannelMsgInfo(channelMsgItem: parent, channelMsgSharedId: parent.meta.itemSharedMsgId!))`
-    before storing the `Chat` in `secondaryIM`.
+    `.group(groupInfo, scope: nil, channelMsgInfo: ChannelMsgInfo(channelMsgItem: parent, channelMsgSharedId: sharedId))`
+    before storing the `Chat` in `secondaryIM`. The guard handles the
+    defensive case where a malformed parent post has no `itemSharedMsgId`;
+    channel posts always carry one by construction, but the guard is
+    cheap and prevents a crash on bad data.
 
 14. Inbound `ChatItem` updates from the backend with `chatInfo.group`
     arrive without `channelMsgInfo` set on the wire. `getCIItemsModel`
@@ -636,14 +842,38 @@ work refreshed for the as-built Haskell surface (decisions 3, 4, and the
     used by `NavStackCompat`, `UserSupportChatNavLink`, and
     `GroupReportsChatNavLink`. The codebase has not migrated to
     `NavigationStack`/value-based navigation; the Comments view follows
-    the existing legacy `NavigationLink(isActive:)` pattern. iOS-16
-    deprecation warning is suppressed locally with `@available`.
+    the existing legacy `NavigationLink(isActive:)` pattern.
+
+    **Deprecation warning posture.** Accept the `NavigationLink(isActive:)`
+    deprecation warning. The codebase already calls
+    `NavigationLink(isActive:)` from `NavStackCompat`,
+    `UserSupportChatNavLink`, and `GroupReportsChatNavLink` with the same
+    warning; following the existing pattern means inheriting the same
+    warning. A project-wide migration to `NavigationStack` /
+    value-based navigation is a separate, out-of-scope PR. Do not invent
+    a new suppression mechanism; `@available(iOS, deprecated:)` would
+    annotate an API as deprecated, not silence call-site warnings, and
+    the codebase does not use any other suppression here.
 
 17. `openComments: (ChatItem) -> Void` closure plumbed from `ChatView`
     down through the chat-items list and into each item view. Tapping
-    the comments button sets `commentsParent = parent`, the binding
-    flips, the hidden link pushes `SecondaryChatView` for the locally-
-    constructed Chat with embedded `channelMsgInfo`.
+    the comments button sets `commentsParent = parent` only after a
+    defensive guard:
+    ```swift
+    let openComments: (ChatItem) -> Void = { parent in
+        guard parent.meta.itemSharedMsgId != nil else {
+            logger.error("openComments: parent has no shared msg id")
+            return
+        }
+        commentsParent = parent
+    }
+    ```
+    The hidden link's `destination` view also unwraps via `guard let
+    sharedId = parent.meta.itemSharedMsgId else { return EmptyView() }`
+    when constructing the local `ChannelMsgInfo`, so a force-unwrap
+    cannot crash on a malformed parent. Channel posts always carry an
+    `itemSharedMsgId` by construction; the guards are defensive against
+    bad data only.
 
 18. New `apps/ios/Shared/Views/Chat/Group/ChannelMsgChatToolbar.swift`,
     mirror of `MemberSupportChatToolbar.swift`. Shows "Comments on:"
@@ -709,7 +939,13 @@ the existing `describe "channel comments"` block at
    `unknownMemberRole` mechanism).
 2. `testChannelCommentQuoteAnotherComment` — dan's comment quotes bob's
    earlier comment AND has the same parent post; both `parent` and
-   `quote` set on the same `MsgContainer`.
+   `quote` set on the same `MsgContainer`. **Sub-test
+   `testChannelCommentQuoteCrossThreadRejected`:** alice posts P1 and
+   P2; bob comments under P1; cath calls `APISendComment groupId P2`
+   with `quotedItemId = bobCommentId`. Assert: rejected with
+   `"quoted item does not belong to the same comment section"` matching
+   the error string emitted at Commands.hs:639-642 by the
+   `quotedItemInCommentSection` check.
 3. `testChannelCommentModerationDelete` — owner deletes a subscriber's
    comment via moderation; parent's `commentsTotal` decrements once.
 4. `testChannelCommentClosingWindow` — group has `comments.closeAfter
@@ -731,14 +967,58 @@ the existing `describe "channel comments"` block at
    content edit does NOT silently reset `commentsDisabled` (Subscriber.hs:2126
    returning False on Nothing prefs is the invariant under test).
 9. `testChannelCommentMemberCanCommentReceiveGuard` — defense-in-depth
-   from §3.1: a relay forwards a comment whose author has been
-   demoted to `GRObserver` since the original send; receivers reject via
-   `memberCanComment` even though `prohibitedGroupContent` would have
-   accepted (the feature flag is on and the parent is not deleted).
-   Achieve via the existing role-change test infrastructure.
-10. `testChannelCommentVersionGated` — from §3.3: a subscriber whose
-    peer chat version is `commentsVersion - 1` does not receive
-    comment-bearing `XMsgNew` from the relay.
+   from §3.1. Concrete sequencing:
+   1. Create channel `team`; bob is `GRCommenter` (default subscriber
+      role).
+   2. Bob comments under alice's post; cath, dan, eve all receive the
+      comment with `bob.memberRole = GRCommenter` recorded in their
+      local member tables.
+   3. Alice demotes bob to `GRObserver` via `/mr team bob observer`;
+      cath, dan, eve receive the `XGrpMemRole` event and update their
+      local copy of bob's role.
+   4. New subscriber frank joins. The relay replays history via
+      `getGroupHistoryItems`, which returns rows in ASC `item_ts` order
+      (per H2 above): alice's earlier `XGrpMemRole` event for bob
+      precedes bob's earlier comment because the role-change came
+      after the comment, so by the time frank's `newGroupContentMessage`
+      processes bob's comment, frank's local copy of bob's role is
+      `GRObserver`. (If the relay sends events in mixed order on
+      different SMP queues such that the comment arrives before the
+      role-change, this test fails for an orthogonal reason — the
+      ordering invariant — and the deferred history-replay sort is
+      the proper fix.)
+   5. Assert: frank's `memberCanComment` rejects the comment with
+      `messageError "member is not allowed to comment"`; no chat item
+      is created in frank's chat under alice's post.
+
+   **Fallback.** If the test harness cannot reliably set up frank's
+   local member-role state before the comment arrives (e.g. the
+   role-change replay does not fire ahead of the comment in the test
+   broker), substitute a unit-level test that constructs a
+   `GroupMember` at `GRObserver` and calls `memberCanComment` directly,
+   asserting it returns `Nothing` and emits the expected
+   `messageError`. The defense-in-depth invariant is on the helper, not
+   on the harness behavior.
+
+10. `testChannelCommentVersionGated` — from §3.3 / §6.3:
+    1. Spawn alice (owner), bob (relay), dan (subscriber at
+       `commentsVersion`), and cath (subscriber forced to
+       `peerChatVRange.maxV = commentsVersion - 1`).
+    2. Alice posts a plain channel message; query the latest
+       `delivery_jobs` row on bob's database, assert
+       `min_recipient_version IS NULL`. Both dan and cath receive the
+       post.
+    3. Bob (subscriber session) posts a comment under alice's post.
+       Query the latest `delivery_jobs` row, assert
+       `min_recipient_version = 18` (commentsVersion). Dan receives
+       the comment; cath does NOT.
+    4. Alice posts another plain channel message. Cath receives it
+       (gate is per-job, not sticky to the recipient).
+11. `testChannelCommentReact` — bob comments under alice's post; cath
+    reacts to bob's comment with a thumbs-up (`/_react`); alice and
+    dan see the reaction count increment on bob's comment via the
+    relay; the reaction's wire scope is `Nothing` (verified in the
+    captured `XMsgReact` event).
 
 `testChannelCommentMainChatExclusion` (already landed) is extended to
 also assert that `getGroupNavInfo_` after-counts in the main chat
@@ -770,13 +1050,18 @@ exclude comments — covers §3.2.
   remote-connection clients don't fall back to `CInfoInvalidJSON`.
   Consistent with `docs/CONTRIBUTING.md` "improving compatibility for
   remote desktop connection".
-- **History replay limitation.** As built (decision 6), a new joiner can
-  receive a comment whose parent has fallen out of the cap-N replay
-  window; the comment is dropped silently on
-  `resolveCommentParent`. `commentsTotal` on the parent reflects the
-  live count, which may exceed what the joiner sees. Documented in
-  `apps/ios/product/rules.md` and `apps/ios/product/gaps.md`. Future PR
-  per the M/N sizing approach in v1 §15.
+- **History replay limitation.** As built (decision 6), in-window
+  parents always precede their own comments in the joiner's playback
+  stream because `getGroupHistoryItems` orders ASC by `item_ts` with
+  `chat_item_id` as tiebreaker, and comments have monotonically greater
+  values for both. The narrow failure mode is **out-of-window comments**:
+  a comment whose parent fell out of the cap-N replay window is dropped
+  on `resolveCommentParent` because the parent is not in the joiner's
+  local DB. The user-visible inconsistency is `commentsTotal > delivered`
+  on the parent post; the parent's chat is otherwise self-consistent.
+  Documented in `apps/ios/product/rules.md` and `apps/ios/product/gaps.md`.
+  Future PR per the v1 §15 M/N approach (post-window N + per-parent cap
+  M).
 
 ### 6.2 Threat model
 
@@ -821,9 +1106,12 @@ exclude comments — covers §3.2.
 9. Replay attack on a stale `XMsgUpdate.prefs` → if a relay re-broadcasts
    an old `commentsDisabled = false` after a newer `... = true` has
    taken effect, subscribers would silently re-enable a disabled post.
-   Mitigation for MVP: trust latest delivery. Channel governance has no
-   replay protection today; documented in
-   `apps/ios/product/rules.md`.
+   **The relay is the trust boundary chosen by the channel owner.** A
+   malicious relay re-broadcasting stale prefs is in the same threat
+   class as a malicious relay dropping or reordering messages —
+   defended by relay choice, not by the protocol. Channel governance
+   has no replay protection today; this is consistent with the existing
+   model. Documented in `apps/ios/product/rules.md`.
 10. Merged-record forward+parent injection → a message with `forward =
     Just True` and `parent = Just _` is treated as a forwarded comment
     (semantically odd but valid). Forward provenance preserved per
@@ -837,30 +1125,50 @@ exclude comments — covers §3.2.
 
 ### 6.3 Version gate verification steps
 
-For Slice 1 (§7) acceptance:
+For Slice 1 (§7) acceptance, the verification has two layers: (i) the
+column is correctly tagged at job creation, and (ii) the per-recipient
+filter actually skips below-version recipients.
 
-a. Spawn alice (chat version `commentsVersion`), bob (a relay, version
-   `commentsVersion`), and a subscriber cath whose `peerChatVRange.maxV`
-   is forced to `commentsVersion - 1` via the existing test harness
-   (used by `testGroupKnocking`/`testContentReports` patterns).
-b. Alice posts a channel message; cath receives it as a normal post
-   (the message has no `parent` field, so no gate fires).
-c. Alice posts another channel message. Bob comments under it from
-   bob's subscriber session. The comment-bearing `XMsgNew` is forwarded
-   by the relay to dan (`commentsVersion`-capable), but skipped to cath.
-d. Verify cath does NOT receive the comment, but DOES still receive
-   subsequent main-channel posts. Assertion: cath's chat with the
-   channel does not show the comment item; the main channel pagination
-   is intact.
+**Layer 1 — job-row tagging.** Use a SQLite probe on the test database:
 
-For prefs-bearing `XMsgUpdate` (intentionally NOT gated):
+a. Spawn alice (channel owner), bob (a relay), and dan (a subscriber at
+   `commentsVersion`).
+b. Alice posts a plain channel message. After the delivery worker
+   finishes, query
+   `SELECT min_recipient_version FROM delivery_jobs ORDER BY delivery_job_id DESC LIMIT 1`
+   on bob's database. **Assert: `NULL`.**
+c. Bob (acting as a subscriber) posts a comment under alice's message.
+   After the relay's delivery worker finishes, query the latest
+   `delivery_jobs` row for the comment-bearing job. **Assert:
+   `min_recipient_version = commentsVersion (18)`.**
 
-e. Alice toggles `commentsDisabled` on a post. The `XMsgUpdate` is
-   forwarded to all subscribers including cath. Cath's local parser
-   ignores the `prefs` sub-object via `omittedField`; cath's local
-   `commentsDisabled` stays `False`. A comment attempt by cath is
-   rejected by the relay (which knows the post is disabled), preserving
-   the disabled invariant despite cath's stale local view.
+**Layer 2 — per-recipient filter.** Spawn an additional subscriber cath
+whose `peerChatVRange.maxV` is forced to `commentsVersion - 1` via the
+existing test harness used by `testGroupKnocking` /
+`testContentReports`:
+
+d. Alice posts a channel message; cath receives it as a normal post
+   (the job's `min_recipient_version` is `NULL`, no gate fires).
+e. Bob (subscriber) comments under alice's message. The relay's
+   delivery worker invokes `getGroupMembersByCursor` with the job's
+   `min_recipient_version = Just commentsVersion` and filters out cath.
+   **Assert: cath does NOT receive the comment**, but dan does.
+f. Alice posts a subsequent channel message. **Assert: cath DOES
+   receive it** — the version gate is per-job, not sticky to the
+   recipient.
+
+**Prefs-bearing `XMsgUpdate` (intentionally NOT gated).**
+
+g. Alice toggles `commentsDisabled` on a post via
+   `APISetCommentsDisabled`. The `XMsgUpdate` is forwarded to all
+   subscribers including cath. Cath's local parser ignores the `prefs`
+   sub-object via `omittedField`; cath's local `commentsDisabled` stays
+   `False`. A comment attempt by cath is rejected by the relay (which
+   knows the post is disabled per the relay's own state), preserving
+   the disabled invariant despite cath's stale local view. **Assert:
+   the latest delivery_jobs row for this XMsgUpdate has
+   `min_recipient_version = NULL`** — confirming the design choice to
+   degrade silently rather than gate.
 
 ## 7. Slices
 
@@ -874,11 +1182,26 @@ are ordered by dependency: backend gaps → backend tests → iOS API/state
    `newGroupContentMessage` per §3.1.
 2. Thread `parentChatItemId_` into `getGroupNavInfo_` and apply the
    appropriate predicate inside both subqueries per §3.2.
-3. Add `commentsVersion` per-recipient gate in
-   `runDeliveryJobOperation` for `parent`-bearing `XMsgNew` per §3.3.
+3. Add the `min_recipient_version` schema migration, task / job tagging,
+   and per-recipient filter in `getGroupMembersByCursor` per §3.3:
+   - new SQLite + Postgres migration `M{YYYYMMDD}_channel_comments_version_gate`
+     adding `min_recipient_version INTEGER` (NULL by default) to
+     `delivery_tasks` and `delivery_jobs`;
+   - `taskMinRecipientVersion` helper used at task creation;
+   - `batchDeliveryTasks1` computes the job's value as the
+     `Just`-dominates-`Nothing` max over batched tasks;
+   - `MessageDeliveryJob` gets the new field and `getNextDeliveryJob`
+     reads it;
+   - `getGroupMembersByCursor` accepts `Maybe VersionChat` and
+     filters in Haskell using the same `compatible` predicate as
+     `Internal.hs:1627`;
+   - `runDeliveryJobOperation` passes the field through to
+     `getGroupMembersByCursor` for both `DJSGroup` and
+     `DJSMemberSupport`.
 4. Verify channel-creation override at `APINewPublicGroup` is the only
    `useRelays = True` owner path in the tree (one-line grep check
-   added as a comment near Commands.hs:2484).
+   added as a comment near Commands.hs:2484; `APIPrepareGroup`
+   subscriber join is the expected second match — see decision 7).
 
 Build: `cabal build --ghc-options=-O0`.
 Test: `cabal test simplex-chat-test --test-options='-m "channel comments"'`
@@ -886,9 +1209,12 @@ must continue to pass (existing 8 tests).
 
 ### Slice 2 — Remaining Haskell tests
 
-Add the 10 tests from §5 to `tests/ChatTests/Groups.hs`'s `describe
-"channel comments"` block. Extend `testChannelCommentMainChatExclusion`
-to cover `getGroupNavInfo_` scope correctness.
+Add the 11 tests from §5 (numbered 1–11 plus the cross-thread sub-test
+folded into #2) to `tests/ChatTests/Groups.hs`'s `describe "channel
+comments"` block. Test #7 (`testChannelCommentRoundtripJSON`) lives in
+`tests/JSONTests.hs` instead. Extend
+`testChannelCommentMainChatExclusion` (already landed) to cover
+`getGroupNavInfo_` scope correctness per §3.2.
 
 Build + test:
 - `cabal test simplex-chat-test --test-options='-m "channel comments"'`
@@ -985,11 +1311,15 @@ Per `apps/ios/CODE.md`:
 
 - **History replay with per-parent cap M and post-window cap N** — see
   decision 6 / §6.1. As-built admits comment items via
-  `include_in_history` but does not cap them per parent; new joiners may
-  receive comments whose parents were displaced from the cap-N window
-  and lose those comments at `resolveCommentParent`. Future PR will add
-  `getChannelMsgCommentsForHistory` and extend `getGroupHistoryItems`
-  per v1 §15.
+  `include_in_history` and orders ASC by `item_ts` (so in-window parents
+  precede their comments), but a flat cap N can displace parents and
+  drop their out-of-window comments at `resolveCommentParent`. The v1
+  §15 approach replaces flat cap N with **post-window N + per-parent
+  cap M**, ensuring parents and their recent comments are admitted
+  together. A future PR could optionally also re-sort the relay's
+  history send by parent dependency to defend against rare broker-ts
+  reordering across SMP queues. Future PR will add
+  `getChannelMsgCommentsForHistory` and extend `getGroupHistoryItems`.
 - **Kotlin Multiplatform (Android/Desktop) port** — separate follow-up.
 - **Subscriber profile dissemination** — comment authors unknown to a
   viewing subscriber appear via the existing "unknown member" path.
@@ -1006,12 +1336,30 @@ Per `apps/ios/CODE.md`:
 Backend (Slices 1–2):
 
 - `src/Simplex/Chat/Library/Subscriber.hs` — `memberCanComment` helper +
-  composition; `runDeliveryJobOperation` per-recipient version gate.
+  composition; per-job version gate threaded through
+  `runDeliveryJobOperation`, `runDeliveryTaskOperation`,
+  `batchDeliveryTasks1`, and `createDeliveryTasks`.
+- `src/Simplex/Chat/Delivery.hs` — `MessageDeliveryJob` gains
+  `minRecipientVersion :: Maybe VersionChat`; helper
+  `taskMinRecipientVersion` (or inline at the task-creation call site).
+- `src/Simplex/Chat/Store/Delivery.hs` — `createMsgDeliveryTask`,
+  `createMsgDeliveryJob`, `getNextDeliveryJob` row codecs, and
+  `getGroupMembersByCursor` extended with the new column /
+  per-recipient filter.
 - `src/Simplex/Chat/Store/Messages.hs` — `getGroupNavInfo_` signature
-  and predicate completion.
+  and predicate completion (§3.2).
 - `src/Simplex/Chat/Library/Commands.hs` — comment near `APINewPublicGroup`
-  channel-creation default override.
-- `tests/ChatTests/Groups.hs` — 10 new tests in `describe "channel
+  channel-creation default override (verification only; no behavioral
+  change).
+- `src/Simplex/Chat/Store/SQLite/Migrations/M{YYYYMMDD}_channel_comments_version_gate.hs`
+  (new).
+- `src/Simplex/Chat/Store/Postgres/Migrations/M{YYYYMMDD}_channel_comments_version_gate.hs`
+  (new).
+- `src/Simplex/Chat/Store/SQLite/Migrations.hs` and
+  `src/Simplex/Chat/Store/Postgres/Migrations.hs` — register the
+  migration.
+- `simplex-chat.cabal` — expose the new migration modules.
+- `tests/ChatTests/Groups.hs` — 11 new tests in `describe "channel
   comments"`.
 - `tests/JSONTests.hs` — `testChannelCommentRoundtripJSON` cases.
 
