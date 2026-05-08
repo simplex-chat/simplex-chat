@@ -3,8 +3,12 @@ package chat.simplex.common.ui.theme
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
+import chat.simplex.common.views.helpers.PresetWallpaper
+import chat.simplex.common.views.helpers.WallpaperType
+import chat.simplex.common.views.helpers.mixWith
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -34,3 +38,25 @@ val FileDark = Color(94, 94, 98, 255)
 
 val MenuTextColor: Color @Composable get () = if (isInDarkTheme()) LocalContentColor.current.copy(alpha = 0.8f) else Color.Black
 val NoteFolderIconColor: Color @Composable get() = MaterialTheme.appColors.primaryVariant2
+
+/** Background color for panels (top app bar, bottom nav, status bar overlay).
+ *  When current wallpaper is a preset and theme is LIGHT or DARK, panel gets a subtle hue tint
+ *  matching the wallpaper. Otherwise falls back to the existing bg.mixWith(onBg, 0.97f) elevation.
+ *  BLACK and SIMPLEX themes are not tinted (BLACK keeps pure dark, SIMPLEX has its own custom panel). */
+@Composable
+fun panelBackgroundColor(): Color =
+  currentWallpaperPanelTint()
+    ?: MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+
+@Composable
+private fun currentWallpaperPanelTint(): Color? {
+  val state = CurrentColors.collectAsState().value
+  val type = state.wallpaper.type as? WallpaperType.Preset ?: return null
+  val preset = PresetWallpaper.from(type.filename) ?: return null
+  val hue = preset.hue(state.base)
+  return when (state.base) {
+    DefaultTheme.LIGHT -> oklch(1.0f, 0.03f, hue)
+    DefaultTheme.DARK -> oklch(0.1822f, 0.01f, hue)
+    else -> null
+  }
+}
