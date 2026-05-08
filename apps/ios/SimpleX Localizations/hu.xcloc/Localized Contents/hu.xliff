@@ -2699,9 +2699,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Adatbázis-jelmondat és -exportálás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
-        <target>Az adatbázis jelmondata nem egyezik a kulcstartóba mentettől.</target>
+        <target state="translated">Az adatbázis jelmondata eltér a kulcstartóban tárolttól.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
@@ -3531,9 +3531,9 @@ chat item action</note>
         <target>Titkosított üzenet: adatbázis-átköltöztetési hiba</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
+      <trans-unit id="Encrypted message: keychain error" xml:space="preserve" approved="no">
         <source>Encrypted message: keychain error</source>
-        <target>Titkosított üzenet: kulcstartó hiba</target>
+        <target state="translated">Titkosított üzenet: kulcstartóhiba</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: no passphrase" xml:space="preserve">
@@ -3651,9 +3651,9 @@ chat item action</note>
         <target>Hiba történt a partneri kapcsolatkérés elfogadásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error accepting member" xml:space="preserve">
+      <trans-unit id="Error accepting member" xml:space="preserve" approved="no">
         <source>Error accepting member</source>
-        <target>Hiba a tag befogadásakor</target>
+        <target state="translated">Hiba történt a tag befogadásakor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -3661,9 +3661,9 @@ chat item action</note>
         <target>Hiba történt a tag(ok) hozzáadásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error adding relay" xml:space="preserve">
+      <trans-unit id="Error adding relay" xml:space="preserve" approved="no">
         <source>Error adding relay</source>
-        <target>Hiba az átjátszó hozzáadásakor</target>
+        <target state="translated">Hiba történt az átjátszó hozzáadásakor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error adding server" xml:space="preserve">
@@ -3681,9 +3681,9 @@ chat item action</note>
         <target>Hiba történt a cím módosításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing chat profile" xml:space="preserve">
+      <trans-unit id="Error changing chat profile" xml:space="preserve" approved="no">
         <source>Error changing chat profile</source>
-        <target>Hiba a csevegési profil módosításakor</target>
+        <target state="translated">Hiba történt a csevegési profil módosításakor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error changing connection profile" xml:space="preserve">
@@ -3726,9 +3726,9 @@ chat item action</note>
         <target>Hiba történt a cím létrehozásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating channel" xml:space="preserve">
+      <trans-unit id="Error creating channel" xml:space="preserve" approved="no">
         <source>Error creating channel</source>
-        <target>Hiba a csatorna létrehozásakor</target>
+        <target state="translated">Hiba történt a csatorna létrehozásakor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error creating group" xml:space="preserve">
@@ -3771,9 +3771,9 @@ chat item action</note>
         <target>Hiba történt a fájl visszafejtésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat" xml:space="preserve">
+      <trans-unit id="Error deleting chat" xml:space="preserve" approved="no">
         <source>Error deleting chat</source>
-        <target>Hiba a csevegés törlésekor</target>
+        <target state="translated">Hiba történt a csevegés törlésekor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
@@ -3911,9 +3911,9 @@ chat item action</note>
         <target>Hiba történt az ICE-kiszolgálók mentésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving channel profile" xml:space="preserve">
+      <trans-unit id="Error saving channel profile" xml:space="preserve" approved="no">
         <source>Error saving channel profile</source>
-        <target>Hiba a csatornaprofil mentésekor</target>
+        <target state="translated">Hiba történt a csatornaprofil mentésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving chat list" xml:space="preserve">
@@ -3971,9 +3971,9 @@ chat item action</note>
         <target>Hiba történt az üzenet elküldésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting auto-accept" xml:space="preserve">
+      <trans-unit id="Error setting auto-accept" xml:space="preserve" approved="no">
         <source>Error setting auto-accept</source>
-        <target>Hiba az automatikus elfogadás beállításakor</target>
+        <target state="translated">Hiba történt az automatikus elfogadás beállításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
@@ -3981,9 +3981,9 @@ chat item action</note>
         <target>Hiba történt a kézbesítési jelentések beállításakor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sharing channel" xml:space="preserve">
+      <trans-unit id="Error sharing channel" xml:space="preserve" approved="no">
         <source>Error sharing channel</source>
-        <target>Hiba a csatorna megosztásakor</target>
+        <target state="translated">Hiba történt a csatorna megosztásakor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -5271,9 +5271,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Kevesebb adatforgalom a mobilhálózatokon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Let someone connect to you" xml:space="preserve">
+      <trans-unit id="Let someone connect to you" xml:space="preserve" approved="no">
         <source>Let someone connect to you</source>
-        <target>Hagyja, hogy valaki elérje Önt</target>
+        <target state="translated">Legyen elérhető mások számára</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -12017,9 +12017,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Adatbázishiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
-        <target>Az adatbázis jelmondata nem egyezik a kulcstartóba mentettől.</target>
+        <target state="translated">Az adatbázis jelmondata eltér a kulcstartóban tárolttól.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
