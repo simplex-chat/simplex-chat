@@ -2798,4 +2798,5 @@
     <string name="one_hand_ui_bottom_bar">Menú inferior</string>
     <string name="link_previews_alert_desc_socks">Las previsualizaciones de enlaces se solicitan a través del proxy SOCKS. Las peticiónes DNS aún pueden usar el DNS local del sistema.</string>
     <string name="one_hand_ui_top_bar">Menú superior</string>
+    <string name="cancel_channel_alert_msg">Su nuevo canal %1$s está conectado a %2$d de %3$d servidores.\nSi usted cancela, el canal será eliminado - usted puede crearlo otra vez.</string>
 </resources>
