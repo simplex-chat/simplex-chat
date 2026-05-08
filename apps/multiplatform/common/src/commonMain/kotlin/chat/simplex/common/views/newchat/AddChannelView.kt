@@ -588,7 +588,7 @@ fun relayDisplayName(relay: GroupRelay): String {
   return "relay ${relay.groupRelayId}"
 }
 
-private fun chatRelayDisplayName(relay: UserChatRelay): String {
+fun chatRelayDisplayName(relay: UserChatRelay): String {
   if (relay.displayName.isNotEmpty()) return relay.displayName
   return relay.address
 }
@@ -597,7 +597,7 @@ private fun chatRelayDisplayName(relay: UserChatRelay): String {
 fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false, memberStatus: GroupMemberStatus? = null) {
   val removed = memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
   val color = if (connFailed || removed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
-  val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator) else status.text
+  val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator) else if (removed) generalGetString(MR.strings.relay_conn_status_removed) else status.text
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)

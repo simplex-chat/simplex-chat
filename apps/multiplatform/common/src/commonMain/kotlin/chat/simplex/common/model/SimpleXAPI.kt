@@ -2163,6 +2163,19 @@ object ChatController {
     return emptyList()
   }
 
+  sealed class AddGroupRelaysResult {
+    data class Added(val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): AddGroupRelaysResult()
+    data class AddFailed(val addRelayResults: List<AddRelayResult>): AddGroupRelaysResult()
+  }
+
+  suspend fun apiAddGroupRelays(groupId: Long, relayIds: List<Long>): AddGroupRelaysResult? {
+    val r = sendCmdWithRetry(null, CC.ApiAddGroupRelays(groupId, relayIds))
+    if (r is API.Result && r.res is CR.GroupRelaysAdded) return AddGroupRelaysResult.Added(r.res.groupInfo, r.res.groupLink, r.res.groupRelays)
+    if (r is API.Result && r.res is CR.GroupRelaysAddFailed) return AddGroupRelaysResult.AddFailed(r.res.addRelayResults)
+    if (r != null) throw Exception("${r.responseType}: ${r.details}")
+    return null
+  }
+
   suspend fun apiAddMember(rh: Long?, groupId: Long, contactId: Long, memberRole: GroupMemberRole): GroupMember? {
     val r = sendCmd(rh, CC.ApiAddMember(groupId, contactId, memberRole))
     if (r is API.Result && r.res is CR.SentGroupInvitation) return r.res.member
@@ -3666,6 +3679,7 @@ sealed class CC {
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiNewPublicGroup(val userId: Long, val incognito: Boolean, val relayIds: List<Long>, val groupProfile: GroupProfile): CC()
   class ApiGetGroupRelays(val groupId: Long): CC()
+  class ApiAddGroupRelays(val groupId: Long, val relayIds: List<Long>): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
   class ApiAcceptMember(val groupId: Long, val groupMemberId: Long, val memberRole: GroupMemberRole): CC()
@@ -3870,6 +3884,7 @@ sealed class CC {
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiNewPublicGroup -> "/_public group $userId incognito=${onOff(incognito)} ${relayIds.joinToString(",")} ${json.encodeToString(groupProfile)}"
     is ApiGetGroupRelays -> "/_get relays #$groupId"
+    is ApiAddGroupRelays -> "/_add relays #$groupId ${relayIds.joinToString(",")}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiAcceptMember -> "/_accept member #$groupId $groupMemberId ${memberRole.memberRole}"
@@ -4053,6 +4068,7 @@ sealed class CC {
     is ApiNewGroup -> "apiNewGroup"
     is ApiNewPublicGroup -> "apiNewPublicGroup"
     is ApiGetGroupRelays -> "apiGetGroupRelays"
+    is ApiAddGroupRelays -> "apiAddGroupRelays"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
     is ApiAcceptMember -> "apiAcceptMember"
@@ -6402,6 +6418,8 @@ sealed class CR {
   @Serializable @SerialName("publicGroupCreated") class PublicGroupCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
   @Serializable @SerialName("publicGroupCreationFailed") class PublicGroupCreationFailed(val user: UserRef, val addRelayResults: List<AddRelayResult>): CR()
   @Serializable @SerialName("groupRelays") class GroupRelays(val user: UserRef, val groupInfo: GroupInfo, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("groupRelaysAdded") class GroupRelaysAdded(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("groupRelaysAddFailed") class GroupRelaysAddFailed(val user: UserRef, val addRelayResults: List<AddRelayResult>): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("groupLinkConnecting") class GroupLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember): CR()
@@ -6591,6 +6609,8 @@ sealed class CR {
     is PublicGroupCreated -> "publicGroupCreated"
     is PublicGroupCreationFailed -> "publicGroupCreationFailed"
     is GroupRelays -> "groupRelays"
+    is GroupRelaysAdded -> "groupRelaysAdded"
+    is GroupRelaysAddFailed -> "groupRelaysAddFailed"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
     is GroupLinkConnecting -> "groupLinkConnecting"
@@ -6773,6 +6793,8 @@ sealed class CR {
     is PublicGroupCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
     is PublicGroupCreationFailed -> withUser(user, "addRelayResults: $addRelayResults")
     is GroupRelays -> withUser(user, "groupInfo: $groupInfo\ngroupRelays: $groupRelays")
+    is GroupRelaysAdded -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
+    is GroupRelaysAddFailed -> withUser(user, "addRelayResults: $addRelayResults")
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is GroupLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember")
