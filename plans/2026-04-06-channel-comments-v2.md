@@ -354,31 +354,50 @@ flow at Commands.hs:~2011, and the row-construction sites at
 seeded by the two API paths above). Any new match is a new override site
 that must apply the comments-pref default.
 
-**8. Forward-compatibility version gating — VERIFIED GAP.**
+**8. Forward-compatibility for parent-bearing `XMsgNew` — acceptable
+degradation, NO gate.**
 
-The relay-side per-recipient version filter currently only gates by
-`groupKnockingVersion` and `contentReportsVersion`
-(Internal.hs:1601-1627, Subscriber.hs:3593, 3631). It does **not** gate
-`XMsgNew` events whose `MsgContainer.parent` is `Just _`, nor `XMsgUpdate`
-events whose `prefs` is `Just _`, against `commentsVersion`.
+**Decision: do not add a relay-side version gate for comment-bearing
+`XMsgNew` or prefs-bearing `XMsgUpdate`.** The earlier "verified gap"
+framing inverted the threat: there is no privacy or content boundary
+that a degraded comment rendering would violate.
 
-Forward-compat exposure for pre-`commentsVersion` recipients:
+In a channel, all posts and all comments are visible to every
+subscriber. There is no privacy or content boundary that "comment
+renders as regular main-channel post on an older client" violates —
+the comment was already destined for that subscriber's eyes either
+way. An older parser successfully parses the `MsgContainer.parent`
+field (it is optional in the wire shape) but lacks the UI to surface
+the parent-thread context, so the message renders inline in the main
+channel chat. This is **degraded rendering, not a content leak**.
 
-- Receiving an `XMsgNew` with `parent = Just _`: the legacy parser would
-  successfully parse the container (the field is optional), but the message
-  carries comment semantics that the legacy client renders incorrectly — a
-  comment under a channel post would surface as a regular post in the main
-  channel chat. **This is a content/UX leak.**
-- Receiving an `XMsgUpdate` with `prefs = Just _`: the legacy parser ignores
-  the unknown field via `omittedField`. The client doesn't enforce
-  `commentsDisabled` locally but won't malfunction. Acceptable degradation.
+This is the same shape as prefs-bearing `XMsgUpdate`, which v2
+already classifies as acceptable degradation: older parsers ignore
+`prefs` via `omittedField`, fail to enforce `commentsDisabled`
+locally, but cannot exfiltrate anything they were not already
+authorized to see.
 
-**Decision: add `commentsVersion` gating in the relay forwarding path for
-`parent`-bearing `XMsgNew` only.** Prefs-bearing `XMsgUpdate` is allowed to
-degrade silently. The check goes in the delivery-job worker
-(Subscriber.hs:3548 / `runDeliveryJobOperation` and the per-recipient
-filtering inside `sendLoop` at line 3580) where each recipient's
-`peerChatVRange` (or `memberChatVRange`) is already in scope. See §3 step 5.
+Older clients also have no path to construct comment-bearing replies:
+they lack the UI, the `parent` field is unknown to their composer,
+and they would only be able to send a regular `XMsgNew` — which
+lands in the main channel for all clients regardless of version.
+Promotion to `commenter` is also a non-issue on the receive side: the
+default `channelSubscriberRole` was `GRObserver` pre-`commentsVersion`,
+and the `"commenter"` text encoding parses as `GRUnknown "commenter"`
+on old clients, which sits below `GRObserver` in the `Ord
+GroupMemberRole` derivation. A promoted-to-commenter old client
+therefore still cannot send to the main channel. No exposure path
+exists.
+
+Consequently §3 contains no relay-forwarding gate, no
+`min_recipient_version` schema, no task/job tagging, and no
+per-recipient filtering on `getGroupMembersByCursor`. The existing
+recipient-version filters for `groupKnockingVersion` and
+`contentReportsVersion` (Internal.hs:1601-1627, Subscriber.hs:3593,
+3631) protect different invariants — receivers without protocol
+support for those features would malfunction or miss governance
+events — and do not generalize to comments where the degradation is
+purely cosmetic.
 
 ## 3. Remaining backend work
 
@@ -470,216 +489,7 @@ Test: extend `testChannelCommentMainChatExclusion` to also assert that
 opening the main channel via `CPAround` on a parent post returns nav info
 that excludes comments under that post.
 
-### 3.3 Relay forwarding version gate (decision 8)
-
-The naïve "inspect the message body in the delivery worker" approach is
-**not feasible** in this architecture. `MessageDeliveryJob.body :: ByteString`
-(Delivery.hs:165) is an already-encoded, batched, encrypted blob assembled
-by `batchDeliveryTasks1` in `runDeliveryTaskOperation` (Subscriber.hs:3496).
-By the time `runDeliveryJobOperation` (Subscriber.hs:3548) picks the job
-up to send, decoding the body to inspect inner events on every send loop
-iteration would defeat batching. The version constraint must be **tagged
-at job creation time** and read alongside the body.
-
-This pattern is new for this codebase. The existing per-call-site checks
-for `groupKnockingVersion` and `contentReportsVersion` (Internal.hs:1627,
-Subscriber.hs:3593, 3631) operate at recipient-resolution sites that have
-the inner event in scope (`getGroupRecipients`, member-support delivery).
-The relay-batched delivery worker does not. Hence the column-on-job
-approach below.
-
-**Step 1 — schema migration.** Add a new SQLite + Postgres migration
-`M{YYYYMMDD}_channel_comments_version_gate` (date picked at implementation
-time, AFTER `M20260407_channel_comments`):
-
-```sql
-ALTER TABLE delivery_tasks
-  ADD COLUMN min_recipient_version INTEGER;     -- NULL = no constraint
-ALTER TABLE delivery_jobs
-  ADD COLUMN min_recipient_version INTEGER;     -- NULL = no constraint
-```
-
-No index is needed: the column is read alongside the row when the job is
-fetched, and used in a per-row WHERE clause on a small recipient list.
-
-Down step drops both columns. Register in both `Migrations.hs` files and
-expose in `simplex-chat.cabal`. `chat_schema.sql` regenerates from tests.
-
-**Step 2 — task creation tagging.** At task creation time
-(`createMsgDeliveryTask`, Store/Delivery.hs:75-94, called from
-Subscriber.hs:1045 inside `createDeliveryTasks`), inspect the
-`verifiedMsg`'s parsed `ChatMsgEvent`. When the event is `XMsgNew mc` with
-`mc.parent = Just _`, set `min_recipient_version = Just commentsVersion`
-on the task row. All other tasks store `Nothing`. Decision rationale:
-
-- Parent-bearing `XMsgNew` → tag at `commentsVersion`. A pre-version
-  recipient would surface the comment as a regular post in the main chat
-  (content/UX leak per §6.1).
-- `XMsgUpdate` with `prefs` set → leave `Nothing`. Prefs are an optional
-  sub-object that older parsers silently drop via `omittedField`. The
-  content part of the update is harmless; the recipient just doesn't
-  enforce `commentsDisabled` locally. Acceptable degradation
-  (rationale fully written in §6.1).
-- All other events → `Nothing`.
-
-The tagging logic is encapsulated in a small helper near
-`createDeliveryTasks`:
-
-```haskell
-taskMinRecipientVersion :: ChatMsgEvent 'Json -> Maybe VersionChat
-taskMinRecipientVersion = \case
-  XMsgNew MsgContainer {parent = Just _} -> Just commentsVersion
-  _ -> Nothing
-```
-
-Plumbed through `NewMessageDeliveryTask` so the row insert at
-`Store/Delivery.hs:81-94` writes the new column.
-
-**Step 3 — task → job batching.** In `batchDeliveryTasks1`
-(Subscriber.hs:3496) and the `DJRelayRemoved` body construction
-(Subscriber.hs:3511-3515), compute the job's `min_recipient_version` as
-the maximum (in `Just`-dominates-`Nothing` semantics) over all batched
-tasks' `min_recipient_version`. Concretely: any tagged task forces the job
-to be tagged. Encoded as:
-
-```haskell
-maxMinRecipientVersion :: NonEmpty (Maybe VersionChat) -> Maybe VersionChat
-maxMinRecipientVersion = foldr1 mergeMin
-  where
-    mergeMin Nothing y = y
-    mergeMin x Nothing = x
-    mergeMin (Just a) (Just b) = Just (max a b)
-```
-
-`createMsgDeliveryJob` (Store/Delivery.hs:248) gains the new parameter
-`minRecipientVersion :: Maybe VersionChat` and writes it into the new
-column. `MessageDeliveryJob` (Delivery.hs:161) gains the field;
-`MessageDeliveryJobRow` (Store/Delivery.hs:275) and the SELECT lists at
-Store/Delivery.hs:301-308 are extended.
-
-**Step 4 — recipient filtering at delivery.** Extend
-`getGroupMembersByCursor` (Store/Delivery.hs:335-372) to accept the job's
-`Maybe VersionChat`:
-
-```haskell
-getGroupMembersByCursor
-  :: DB.Connection -> VersionRangeChat -> User -> GroupInfo
-  -> Maybe GroupMemberId   -- cursor
-  -> Maybe GroupMemberId   -- single-sender
-  -> Maybe VersionChat     -- NEW: minimum recipient version
-  -> Int                   -- bucket size
-  -> IO [GroupMember]
-```
-
-**The filter MUST run in SQL, not post-fetch in Haskell.** Post-fetch
-filtering would be a correctness bug, not just an efficiency issue: the
-caller's existing termination check at Subscriber.hs:3587
-
-```haskell
-unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId')
-```
-
-assumes "fewer than bucketSize returned ⇒ SQL ran out". With post-fetch
-filtering, a SQL bucket of 100 rows that gets filtered down to 10 by
-Haskell would fire `10 < 100`, the loop would terminate, and any members
-past that SQL bucket would never receive the message. The cursor lives
-inside SQL; the filter must too.
-
-Extend the existing query at Store/Delivery.hs:363-371 with a JOIN
-through `connections` for the active connection's `peer_chat_max_version`
-(or fall back to the member row's `peer_chat_max_version` when no
-active connection is present). The cursor still advances on
-`group_member_id`; the join just narrows the result set per row.
-
-Concrete SQL shape (verify exact column names against the as-built tree
-at implementation time — Store/Shared.hs:282 and 729-736 show
-`peer_chat_max_version` is the column name on both `connections` and
-`group_members`):
-
-```sql
-SELECT m.group_member_id
-FROM group_members m
-LEFT JOIN connections c
-  ON c.group_member_id = m.group_member_id
-  -- pick the one active connection if any; the existing helpers
-  -- already encapsulate this selection — reuse whichever pattern
-  -- is in use elsewhere in Store/Delivery.hs (e.g. the connection-
-  -- selection subquery used by getGroupMemberById's loader).
-WHERE m.group_id = ?
-  AND m.contact_id IS DISTINCT FROM ?
-  AND m.group_member_id IS DISTINCT FROM ?
-  AND m.member_status IN (?,?,?,?,?,?)
-  AND (
-    CAST(? AS INTEGER) IS NULL
-    OR COALESCE(c.peer_chat_max_version, m.peer_chat_max_version) >= ?
-  )
-ORDER BY m.group_member_id ASC
-LIMIT ?
-```
-
-The `min_recipient_version` parameter is bound twice: once for the NULL
-guard, once for the comparison. (Postgres / SQLite both accept this
-shape; the `CAST(? AS INTEGER)` is a defensive no-op that prevents
-parameter type ambiguity in the NULL check.) When the parameter is
-`Nothing`, the predicate degenerates to `TRUE` and the query behaves
-identically to today.
-
-If the existing helpers in Store/Delivery.hs do not already select an
-active connection per member, the simplest correct shape is to join
-`connections` and let SQL choose the maximum
-`peer_chat_max_version` per member-row group:
-
-```sql
-LEFT JOIN connections c ON c.group_member_id = m.group_member_id
-...
-GROUP BY m.group_member_id
-HAVING (CAST(? AS INTEGER) IS NULL OR
-        COALESCE(MAX(c.peer_chat_max_version), m.peer_chat_max_version) >= ?)
-```
-
-Pick whichever shape matches the existing connection-selection
-convention used by `getGroupMemberById` and similar loaders in
-`Store/Shared.hs` (the `c.conn_chat_version, c.peer_chat_min_version,
-c.peer_chat_max_version` join at Store/Shared.hs:736 is the existing
-template).
-
-Pass the job's `min_recipient_version` from `runDeliveryJobOperation`
-(Subscriber.hs:3582) into `getGroupMembersByCursor`. The same parameter
-also gates the `DJSMemberSupport` path at Subscriber.hs:3590-3601 — the
-filter is applied uniformly in both `DJSGroup` and `DJSMemberSupport`
-paths because comment-bearing events do not appear on the
-member-support path today, but threading the parameter both ways is
-defensive and trivially correct.
-
-Why this matters: the version constraint lives in the same place the
-cursor lives, the cursor naturally advances past rejected members because
-they're never returned to the application, and the existing termination
-check at Subscriber.hs:3587 remains correct. Off-by-one in a Haskell
-post-filter loop is impossible because there is no post-filter loop.
-
-**Why this pattern is new.** The body is opaque post-encoding, so the
-version constraint must be tagged at the boundary where the inner event
-is still inspectable (task creation). The existing version-gate idioms
-(`groupKnockingVersion`, `contentReportsVersion`) are inline per-call-site
-checks at recipient-resolution sites and do not generalize: the relay's
-delivery worker is structurally further removed from the inner events.
-
-**Why prefs-bearing `XMsgUpdate` is intentionally NOT gated.** The `prefs`
-field is dropped silently by older parsers via `omittedField`. The
-content portion of `XMsgUpdate` is unaffected. Older subscribers simply
-fail to enforce `commentsDisabled` locally, which is acceptable
-degradation: the parent post still shows, the disabled state is
-non-binding for them, and the relay (which knows the disabled state) still
-prevents their comments from being accepted on the send-side preflight.
-Documented in §6.
-
-Test: `testChannelCommentVersionGated` per §5 reads the job row's
-`min_recipient_version` after creation and asserts `Just commentsVersion`
-for parent-bearing comments and `Nothing` for plain main-channel posts;
-then verifies a recipient at `commentsVersion - 1` does not receive the
-comment but does receive subsequent posts. See §6.3 for the full recipe.
-
-### 3.4 Reactions on comments
+### 3.3 Reactions on comments
 
 Reactions are routed by `(SharedMsgId, Maybe MemberId, Maybe MsgScope)`
 in `XMsgReact` (Protocol.hs ChatMsgEvent line ~436) and persisted via
@@ -695,10 +505,15 @@ is hard-deleted by the parent-comment FK cascade.
 
 Test: `testChannelCommentReact` per §5 covers the happy path.
 
-### 3.5 No other backend changes
+### 3.4 No other backend changes
 
 Specifically NOT in scope of v2:
 
+- **Per-recipient version gate for comment-bearing `XMsgNew` or
+  prefs-bearing `XMsgUpdate`** — intentionally absent (decision 8);
+  pre-`commentsVersion` recipients render comments inline as regular
+  posts, which is acceptable degradation in a channel context where
+  all content is public to subscribers.
 - `getChannelMsgCommentsForHistory` helper, per-parent cap M, and the
   `getGroupHistoryItems` extension (decision 6 — deferred).
 - `XGrpCommentsDisabled` as a dedicated event tag (decision 2 — replaced
@@ -1068,21 +883,7 @@ the existing `describe "channel comments"` block at
    defense-in-depth invariant is on the helper, not on the harness
    behavior.
 
-10. `testChannelCommentVersionGated` — from §3.3 / §6.3:
-    1. Spawn alice (owner), bob (relay), dan (subscriber at
-       `commentsVersion`), and cath (subscriber forced to
-       `peerChatVRange.maxV = commentsVersion - 1`).
-    2. Alice posts a plain channel message; query the latest
-       `delivery_jobs` row on bob's database, assert
-       `min_recipient_version IS NULL`. Both dan and cath receive the
-       post.
-    3. Bob (subscriber session) posts a comment under alice's post.
-       Query the latest `delivery_jobs` row, assert
-       `min_recipient_version = 18` (commentsVersion). Dan receives
-       the comment; cath does NOT.
-    4. Alice posts another plain channel message. Cath receives it
-       (gate is per-job, not sticky to the recipient).
-11. `testChannelCommentReact` — bob comments under alice's post; cath
+10. `testChannelCommentReact` — bob comments under alice's post; cath
     reacts to bob's comment with a thumbs-up (`/_react`); alice and
     dan see the reaction count increment on bob's comment via the
     relay; the reaction's wire scope is `Nothing` (verified in the
@@ -1102,10 +903,19 @@ exclude comments — covers §3.2.
   not `Just True`, matching legacy. No backwards-incompatible change
   here.
 - **`MsgContainer.parent` to a pre-`commentsVersion` recipient.** The
-  legacy parser would parse the field but render the comment as a regular
-  post in the main chat — a content/UX leak. **Mitigation: relay
-  forwarding gate at `commentsVersion`** (see §3.3). Verified absent
-  today; v2 adds it.
+  legacy parser successfully parses the optional `parent` field but
+  lacks the UI to surface it as a comment-thread context, so the
+  message renders inline in the main channel chat. No privacy or
+  content boundary is crossed: in a channel, all posts and all comments
+  are visible to every subscriber by design — the comment was destined
+  for that subscriber's eyes either way. Older clients also cannot
+  construct comment-bearing replies: they have no parent-aware
+  composer, no UI, and the default `channelSubscriberRole` was
+  `GRObserver` pre-`commentsVersion`. A subscriber promoted to
+  `commenter` parses the role as `GRUnknown "commenter"` on old
+  clients, which sits below `GRObserver` in `Ord GroupMemberRole` and
+  therefore still cannot send. Acceptable degradation; not gated
+  (decision 8).
 - **`XMsgUpdate.prefs` to a pre-`commentsVersion` recipient.** Older
   parsers ignore the optional sub-object via `omittedField`; content
   update lands. The recipient does not enforce `commentsDisabled`
@@ -1191,53 +1001,6 @@ exclude comments — covers §3.2.
     closes the gap where a malicious sender bypasses
     `allowedRole` locally.
 
-### 6.3 Version gate verification steps
-
-For Slice 1 (§7) acceptance, the verification has two layers: (i) the
-column is correctly tagged at job creation, and (ii) the per-recipient
-filter actually skips below-version recipients.
-
-**Layer 1 — job-row tagging.** Use a SQLite probe on the test database:
-
-a. Spawn alice (channel owner), bob (a relay), and dan (a subscriber at
-   `commentsVersion`).
-b. Alice posts a plain channel message. After the delivery worker
-   finishes, query
-   `SELECT min_recipient_version FROM delivery_jobs ORDER BY delivery_job_id DESC LIMIT 1`
-   on bob's database. **Assert: `NULL`.**
-c. Bob (acting as a subscriber) posts a comment under alice's message.
-   After the relay's delivery worker finishes, query the latest
-   `delivery_jobs` row for the comment-bearing job. **Assert:
-   `min_recipient_version = commentsVersion (18)`.**
-
-**Layer 2 — per-recipient filter.** Spawn an additional subscriber cath
-whose `peerChatVRange.maxV` is forced to `commentsVersion - 1` via the
-existing test harness used by `testGroupKnocking` /
-`testContentReports`:
-
-d. Alice posts a channel message; cath receives it as a normal post
-   (the job's `min_recipient_version` is `NULL`, no gate fires).
-e. Bob (subscriber) comments under alice's message. The relay's
-   delivery worker invokes `getGroupMembersByCursor` with the job's
-   `min_recipient_version = Just commentsVersion` and filters out cath.
-   **Assert: cath does NOT receive the comment**, but dan does.
-f. Alice posts a subsequent channel message. **Assert: cath DOES
-   receive it** — the version gate is per-job, not sticky to the
-   recipient.
-
-**Prefs-bearing `XMsgUpdate` (intentionally NOT gated).**
-
-g. Alice toggles `commentsDisabled` on a post via
-   `APISetCommentsDisabled`. The `XMsgUpdate` is forwarded to all
-   subscribers including cath. Cath's local parser ignores the `prefs`
-   sub-object via `omittedField`; cath's local `commentsDisabled` stays
-   `False`. A comment attempt by cath is rejected by the relay (which
-   knows the post is disabled per the relay's own state), preserving
-   the disabled invariant despite cath's stale local view. **Assert:
-   the latest delivery_jobs row for this XMsgUpdate has
-   `min_recipient_version = NULL`** — confirming the design choice to
-   degrade silently rather than gate.
-
 ## 7. Slices
 
 Each slice ends with a build + test invocation that should pass. Slices
@@ -1250,25 +1013,9 @@ are ordered by dependency: backend gaps → backend tests → iOS API/state
    `newGroupContentMessage` per §3.1.
 2. Thread `parentChatItemId_` into `getGroupNavInfo_` and apply the
    appropriate predicate inside both subqueries per §3.2.
-3. Add the `min_recipient_version` schema migration, task / job tagging,
-   and per-recipient filter in `getGroupMembersByCursor` per §3.3:
-   - new SQLite + Postgres migration `M{YYYYMMDD}_channel_comments_version_gate`
-     adding `min_recipient_version INTEGER` (NULL by default) to
-     `delivery_tasks` and `delivery_jobs`;
-   - `taskMinRecipientVersion` helper used at task creation;
-   - `batchDeliveryTasks1` computes the job's value as the
-     `Just`-dominates-`Nothing` max over batched tasks;
-   - `MessageDeliveryJob` gets the new field and `getNextDeliveryJob`
-     reads it;
-   - `getGroupMembersByCursor` accepts `Maybe VersionChat` and
-     filters in Haskell using the same `compatible` predicate as
-     `Internal.hs:1627`;
-   - `runDeliveryJobOperation` passes the field through to
-     `getGroupMembersByCursor` for both `DJSGroup` and
-     `DJSMemberSupport`.
-4. Verify channel-creation override at `APINewPublicGroup` is the only
-   `useRelays = True` owner path in the tree (one-line grep check
-   added as a comment near Commands.hs:2484; `APIPrepareGroup`
+3. Verify channel-creation override at `APINewPublicGroup` is the only
+   `useRelays = True` owner-side path in the tree (one-line grep
+   check added as a comment near Commands.hs:2484; `APIPrepareGroup`
    subscriber join is the expected second match — see decision 7).
 
 Build: `cabal build --ghc-options=-O0`.
@@ -1277,7 +1024,7 @@ must continue to pass (existing 8 tests).
 
 ### Slice 2 — Remaining Haskell tests
 
-Add the 11 tests from §5 (numbered 1–11 plus the cross-thread sub-test
+Add the 10 tests from §5 (numbered 1–10 plus the cross-thread sub-test
 folded into #2) to `tests/ChatTests/Groups.hs`'s `describe "channel
 comments"` block. Test #7 (`testChannelCommentRoundtripJSON`) lives in
 `tests/JSONTests.hs` instead. Extend
@@ -1404,30 +1151,13 @@ Per `apps/ios/CODE.md`:
 Backend (Slices 1–2):
 
 - `src/Simplex/Chat/Library/Subscriber.hs` — `memberCanComment` helper +
-  composition; per-job version gate threaded through
-  `runDeliveryJobOperation`, `runDeliveryTaskOperation`,
-  `batchDeliveryTasks1`, and `createDeliveryTasks`.
-- `src/Simplex/Chat/Delivery.hs` — `MessageDeliveryJob` gains
-  `minRecipientVersion :: Maybe VersionChat`; helper
-  `taskMinRecipientVersion` (or inline at the task-creation call site).
-- `src/Simplex/Chat/Store/Delivery.hs` — `createMsgDeliveryTask`,
-  `createMsgDeliveryJob`, `getNextDeliveryJob` row codecs, and
-  `getGroupMembersByCursor` extended with the new column /
-  per-recipient filter.
+  composition into `newGroupContentMessage` (§3.1).
 - `src/Simplex/Chat/Store/Messages.hs` — `getGroupNavInfo_` signature
   and predicate completion (§3.2).
 - `src/Simplex/Chat/Library/Commands.hs` — comment near `APINewPublicGroup`
   channel-creation default override (verification only; no behavioral
   change).
-- `src/Simplex/Chat/Store/SQLite/Migrations/M{YYYYMMDD}_channel_comments_version_gate.hs`
-  (new).
-- `src/Simplex/Chat/Store/Postgres/Migrations/M{YYYYMMDD}_channel_comments_version_gate.hs`
-  (new).
-- `src/Simplex/Chat/Store/SQLite/Migrations.hs` and
-  `src/Simplex/Chat/Store/Postgres/Migrations.hs` — register the
-  migration.
-- `simplex-chat.cabal` — expose the new migration modules.
-- `tests/ChatTests/Groups.hs` — 11 new tests in `describe "channel
+- `tests/ChatTests/Groups.hs` — 10 new tests in `describe "channel
   comments"`.
 - `tests/JSONTests.hs` — `testChannelCommentRoundtripJSON` cases.
 
