@@ -571,25 +571,77 @@ getGroupMembersByCursor
   -> IO [GroupMember]
 ```
 
-The base query at line 363-371 acquires an additional clause when the new
-parameter is `Just v`:
+**The filter MUST run in SQL, not post-fetch in Haskell.** Post-fetch
+filtering would be a correctness bug, not just an efficiency issue: the
+caller's existing termination check at Subscriber.hs:3587
 
-```sql
-  AND (
-    -- prefer peer_chat_v_max from active connection if present, else
-    -- fall back to memberChatVRange's max; both are stored at row read
-    -- time so the predicate is expressed in Haskell-side filtering.
-  )
+```haskell
+unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId')
 ```
 
-The simplest implementation: keep the SQL identical, fetch candidate
-member rows, and filter post-fetch in Haskell using the same expression
-as `Internal.hs:1627`'s `compatible` predicate:
-`maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= v`.
-The `count` parameter still bounds the result. (Adding the predicate to
-SQL would require a join through `connections` for `peer_chat_v_max`,
-which complicates the cursor pagination; Haskell-side filtering keeps
-the query shape unchanged.)
+assumes "fewer than bucketSize returned ⇒ SQL ran out". With post-fetch
+filtering, a SQL bucket of 100 rows that gets filtered down to 10 by
+Haskell would fire `10 < 100`, the loop would terminate, and any members
+past that SQL bucket would never receive the message. The cursor lives
+inside SQL; the filter must too.
+
+Extend the existing query at Store/Delivery.hs:363-371 with a JOIN
+through `connections` for the active connection's `peer_chat_max_version`
+(or fall back to the member row's `peer_chat_max_version` when no
+active connection is present). The cursor still advances on
+`group_member_id`; the join just narrows the result set per row.
+
+Concrete SQL shape (verify exact column names against the as-built tree
+at implementation time — Store/Shared.hs:282 and 729-736 show
+`peer_chat_max_version` is the column name on both `connections` and
+`group_members`):
+
+```sql
+SELECT m.group_member_id
+FROM group_members m
+LEFT JOIN connections c
+  ON c.group_member_id = m.group_member_id
+  -- pick the one active connection if any; the existing helpers
+  -- already encapsulate this selection — reuse whichever pattern
+  -- is in use elsewhere in Store/Delivery.hs (e.g. the connection-
+  -- selection subquery used by getGroupMemberById's loader).
+WHERE m.group_id = ?
+  AND m.contact_id IS DISTINCT FROM ?
+  AND m.group_member_id IS DISTINCT FROM ?
+  AND m.member_status IN (?,?,?,?,?,?)
+  AND (
+    CAST(? AS INTEGER) IS NULL
+    OR COALESCE(c.peer_chat_max_version, m.peer_chat_max_version) >= ?
+  )
+ORDER BY m.group_member_id ASC
+LIMIT ?
+```
+
+The `min_recipient_version` parameter is bound twice: once for the NULL
+guard, once for the comparison. (Postgres / SQLite both accept this
+shape; the `CAST(? AS INTEGER)` is a defensive no-op that prevents
+parameter type ambiguity in the NULL check.) When the parameter is
+`Nothing`, the predicate degenerates to `TRUE` and the query behaves
+identically to today.
+
+If the existing helpers in Store/Delivery.hs do not already select an
+active connection per member, the simplest correct shape is to join
+`connections` and let SQL choose the maximum
+`peer_chat_max_version` per member-row group:
+
+```sql
+LEFT JOIN connections c ON c.group_member_id = m.group_member_id
+...
+GROUP BY m.group_member_id
+HAVING (CAST(? AS INTEGER) IS NULL OR
+        COALESCE(MAX(c.peer_chat_max_version), m.peer_chat_max_version) >= ?)
+```
+
+Pick whichever shape matches the existing connection-selection
+convention used by `getGroupMemberById` and similar loaders in
+`Store/Shared.hs` (the `c.conn_chat_version, c.peer_chat_min_version,
+c.peer_chat_max_version` join at Store/Shared.hs:736 is the existing
+template).
 
 Pass the job's `min_recipient_version` from `runDeliveryJobOperation`
 (Subscriber.hs:3582) into `getGroupMembersByCursor`. The same parameter
@@ -598,6 +650,12 @@ filter is applied uniformly in both `DJSGroup` and `DJSMemberSupport`
 paths because comment-bearing events do not appear on the
 member-support path today, but threading the parameter both ways is
 defensive and trivially correct.
+
+Why this matters: the version constraint lives in the same place the
+cursor lives, the cursor naturally advances past rejected members because
+they're never returned to the application, and the existing termination
+check at Subscriber.hs:3587 remains correct. Off-by-one in a Haskell
+post-filter loop is impossible because there is no post-filter loop.
 
 **Why this pattern is new.** The body is opaque post-encoding, so the
 version constraint must be tagged at the boundary where the inner event
@@ -967,7 +1025,15 @@ the existing `describe "channel comments"` block at
    content edit does NOT silently reset `commentsDisabled` (Subscriber.hs:2126
    returning False on Nothing prefs is the invariant under test).
 9. `testChannelCommentMemberCanCommentReceiveGuard` — defense-in-depth
-   from §3.1. Concrete sequencing:
+   from §3.1. The mechanism is the join handshake, not history-replay
+   ordering: `XGrpMemRole` is persisted as a `CIRcvGroupEvent` whose
+   `ciMsgContent` is `Nothing`, so `mcTag_` is `Nothing` and
+   `includeInHistory` (Store/Messages.hs:632-635) evaluates to `False`.
+   Role-change events are NOT replayed by `getGroupHistoryItems`. What
+   IS replayed is bob's old comment (which has a real `MsgContent`).
+   Frank learns bob's current role at handshake time via `XGrpMemNew`.
+
+   Concrete sequencing:
    1. Create channel `team`; bob is `GRCommenter` (default subscriber
       role).
    2. Bob comments under alice's post; cath, dan, eve all receive the
@@ -976,29 +1042,31 @@ the existing `describe "channel comments"` block at
    3. Alice demotes bob to `GRObserver` via `/mr team bob observer`;
       cath, dan, eve receive the `XGrpMemRole` event and update their
       local copy of bob's role.
-   4. New subscriber frank joins. The relay replays history via
-      `getGroupHistoryItems`, which returns rows in ASC `item_ts` order
-      (per H2 above): alice's earlier `XGrpMemRole` event for bob
-      precedes bob's earlier comment because the role-change came
-      after the comment, so by the time frank's `newGroupContentMessage`
-      processes bob's comment, frank's local copy of bob's role is
-      `GRObserver`. (If the relay sends events in mixed order on
-      different SMP queues such that the comment arrives before the
-      role-change, this test fails for an orthogonal reason — the
-      ordering invariant — and the deferred history-replay sort is
-      the proper fix.)
-   5. Assert: frank's `memberCanComment` rejects the comment with
+   4. New subscriber frank joins. During the join handshake, alice (or
+      the relay on alice's behalf) introduces bob to frank via
+      `XGrpMemNew` carrying bob's CURRENT role at the time of the
+      introduction — `GRObserver`, because frank joined after the
+      demotion at step 3. Frank's local member record for bob is
+      therefore created with `memberRole = GRObserver`.
+   5. `getGroupHistoryItems` replays bob's earlier comment (made when
+      bob was `GRCommenter`) to frank. The role-change event from
+      step 3 is NOT in the replay stream because role-change items
+      have `includeInHistory = False`. By the time frank's
+      `newGroupContentMessage` processes the replayed comment,
+      frank's local copy of bob's role is `GRObserver` (set in
+      step 4).
+   6. Assert: frank's `memberCanComment` rejects the comment with
       `messageError "member is not allowed to comment"`; no chat item
       is created in frank's chat under alice's post.
 
-   **Fallback.** If the test harness cannot reliably set up frank's
-   local member-role state before the comment arrives (e.g. the
-   role-change replay does not fire ahead of the comment in the test
-   broker), substitute a unit-level test that constructs a
-   `GroupMember` at `GRObserver` and calls `memberCanComment` directly,
-   asserting it returns `Nothing` and emits the expected
-   `messageError`. The defense-in-depth invariant is on the helper, not
-   on the harness behavior.
+   **Fallback.** If the test harness cannot reliably orchestrate the
+   handshake-then-replay sequencing (e.g. the join handshake does not
+   complete before history items are forwarded in the test broker),
+   substitute a unit-level test that constructs a `GroupMember` at
+   `GRObserver` and calls `memberCanComment` directly, asserting it
+   returns `Nothing` and emits the expected `messageError`. The
+   defense-in-depth invariant is on the helper, not on the harness
+   behavior.
 
 10. `testChannelCommentVersionGated` — from §3.3 / §6.3:
     1. Spawn alice (owner), bob (relay), dan (subscriber at
