@@ -1,6 +1,24 @@
 # Multi-owner Channels — implementation plan
 
-Revision 1, 2026-05-08 · Target: SimpleX Channels v7 (full-trust, any-owner-decides)
+Revision 2, 2026-05-08 · Target: SimpleX Channels v7 (full-trust, any-owner-decides)
+
+### Changelog (since Revision 1)
+
+- Removed pin-vs-upstream discussion (both repos at master).
+- Removed `linkRootSigKey` persistence work; rootKey already covered by
+  chat-side `GroupKeys.groupRootKey` and fixed-data extraction at decode
+  time.
+- Owner roster persisted by extending `group_members` with three nullable
+  columns; no separate `channel_owners` or `channel_co_owner_creds` tables.
+- Added rationale for putting `linkDataVersion` in chat-layer JSON.
+- Promoted owners-cap-of-8 to a top-level "Design decision required"
+  callout for team discussion.
+- Owner mesh restricted to protocol events only in this delivery; non-
+  protocol messages prohibited (with TODO).
+- Added Concurrent-RKEY-recovery sub-section under Phase 4.
+- Added member-pub-key fixed-for-channel-lifetime invariant.
+- Risk register entries 10 and 11 added.
+- Open questions resolved; depth cap is the only remaining team-level call.
 
 > **Important constraint up front.** Promoting a subscriber to owner via a
 > relay-mediated offer (no direct connection between the existing owner and
@@ -27,19 +45,35 @@ surface (data plumbing is included; the tab/thread is not). See section 9.
 
 ---
 
+> **DESIGN DECISION REQUIRED — discuss with team before implementation.**
+>
+> Maximum number of owners per channel: proposed cap of 8.
+>
+> Rationale: each `OwnerAuth` encodes to ~189 bytes; 8 owners cost ~1.5 KB
+> of the 13.4 KB user-data padded budget. Cap is enforced in
+> `validateLinkOwners` on both encode and decode paths. At ≤8, prefix
+> chain validation is cheap (O(N²) ≈ 64 Ed25519 verifies maximum).
+>
+> If the team needs higher (e.g., 16, 32), the cap is a one-line constant
+> change; the cost is a larger blob and modestly more expensive validation.
+> If the team needs lower (e.g., 4), simpler still.
+>
+> **Implementation must not begin until this is resolved.** Plan defaults
+> to 8.
+
+---
+
 ## 2. Phase ordering
 
 Phases run mostly in sequence; the iOS and Kotlin UI work in phase 5 can
-parallelize after phase 4 lands. Verification work in phase 0 is a hard
-prerequisite.
+parallelize after phase 4 lands.
 
 | # | Phase | Depends on | Parallelizable |
 |---|---|---|---|
-| 0 | Verification & alignment with current code | — | no |
-| 1 | Agent: signer-agnostic encode/sign + RKEY wrapper + co-owner queue state + version field | 0 | no |
-| 2 | Chat: schema migrations + owner-roster types + owner mesh (data model + transport) | 1 | no |
+| 1 | Agent: chain depth cap, RKEY wrapper, co-owner credential bundle, tests | — | no |
+| 2 | Chat: schema migrations + owner-roster helpers + owner mesh (data model + transport) | 1 | no |
 | 3 | Chat: promote-to-owner flow (orchestrator, persistent state, idempotent steps) | 2 | no |
-| 4 | Chat: cross-owner link-sync message + LWW reconciliation + owner-removal flow | 3 | no |
+| 4 | Chat: cross-owner link-sync + LWW reconciliation + owner-removal + concurrent-RKEY recovery | 3 | no |
 | 5a | iOS UI (Swift) — owners section, add/remove flows, sync indicator | 4 | yes |
 | 5b | Kotlin multiplatform UI (Android + desktop) — same scope | 4 | yes |
 | 6 | End-to-end tests + threat-model regression suite | 5a + 5b | no |
@@ -48,15 +82,29 @@ prerequisite.
 
 ## 3. Per-phase implementation steps
 
-### Phase 0 — verification
+### Phase 1 — Agent layer (simplexmq)
 
-Files to read first:
-- `/workspace/dist-newstyle/src/simplexmq-d4b516889361a2a8/src/Simplex/Messaging/Agent/Protocol.hs`
-  (1460-1900) — vendored `OwnerAuth`, `validateLinkOwners`, `ShortLinkCreds`.
-- `/workspace/dist-newstyle/src/simplexmq-d4b516889361a2a8/src/Simplex/Messaging/Crypto/ShortLink.hs`
-  (full file) — `decryptLinkData` already accepts owner-chain signatures.
+> **Repo:** `/home/builder/code/simplexmq`. Both this repo and the chat
+> repo are at master; no pin-vs-upstream coordination is needed.
+>
+> **Phase 1 is substantially smaller than Revision 1 envisaged.** Most of
+> the verification path (chain validation, signer-agnostic encode/sign,
+> chain-aware decrypt) is already in place upstream. Phase 1 reduces to:
+> (a) chain depth cap, (b) RKEY agent wrapper, (c) co-owner credential
+> bundle format and intake API, (d) tests.
+
+**Preflight reads** (no code changes; output is a one-paragraph
+confirmation in the PR description quoting the line refs below):
+
+- `/home/builder/code/simplexmq/src/Simplex/Messaging/Crypto/ShortLink.hs:100-115`
+  — `decryptLinkData` extracts `rootKey` from FixedLinkData and accepts
+  owner-chain signatures via `validateLinkOwners`.
+- `/home/builder/code/simplexmq/src/Simplex/Messaging/Agent/Protocol.hs:1792-1835`
+  — `OwnerAuth` (3 fields) + `validateLinkOwners` (prefix-only chain
+  authorization, duplicate detection).
 - `/home/builder/code/simplexmq/src/Simplex/Messaging/Server.hs:1228-1290, 1465-1486`
-  — server-side any-of-N for SRecipient + RKEY restricted to QMContact.
+  — server-side any-of-N for `SRecipient` + `RKEY` restricted to
+  `QMContact`.
 - `/workspace/src/Simplex/Chat/Library/Internal.hs:1313-1399, 2474-2477`
   — chat-side `groupLinkData`, `setGroupLinkDataAsync`,
   `setAgentConnShortLinkAsync`.
@@ -65,30 +113,19 @@ Files to read first:
 - `/workspace/src/Simplex/Chat/Store/Groups.hs:1860-1900, 2999-3020`
   — `updateGroupMemberKeys`, `updateRelayGroupKeys`,
   `createLinkOwnerMember`.
-- `/workspace/src/Simplex/Chat/Library/Subscriber.hs:2950-3050`
-  — existing `xGrpMemIntro`/`xGrpMemInv`/`xGrpMemFwd` flow we will reuse for
-  the owner mesh.
+- `/workspace/src/Simplex/Chat/Library/Subscriber.hs:2950-3070`
+  — existing `xGrpMemIntro`/`xGrpMemInv`/`xGrpMemFwd` flow we will reuse
+  for the owner mesh.
+- `/workspace/src/Simplex/Chat/Types.hs:451-465`
+  — `GroupRootKey = GRKPrivate {rootPrivKey} | GRKPublic {rootPubKey}` and
+  `GroupKeys`. Loaded from `rootPrivKey_` / `rootPubKey_` columns by
+  `Store/Shared.hs:699-701`. The chat layer already has the state needed
+  to distinguish creator from co-owner; the agent does not need a parallel
+  notion.
 
-Outputs of phase 0:
-- a written confirmation that all six prompt assumptions still hold against
-  the vendored simplexmq the chat repo pins (see section 8).
-- a one-page note on the deltas between the vendored simplexmq and the
-  upstream HEAD that I (the planner) found, so implementing agents do not
-  rely on upstream-only APIs.
+#### 1.1 Chain validation: depth cap
 
-Acceptance: a comment in the PR description quoting the verified line refs
-above. No code changes in this phase.
-
-### Phase 1 — Agent layer (simplexmq fork)
-
-> **Repo:** `/home/builder/code/simplexmq` plus the vendored copy under
-> `/workspace/dist-newstyle/src/simplexmq-d4b516889361a2a8/`. Implementing
-> agents update simplexmq (in its own repo) and re-pin the chat repo's
-> `cabal.project` to the new commit.
-
-#### 1.1 Mutable-data verification (already largely in place)
-
-The vendored `decryptLinkData`
+The upstream `decryptLinkData`
 (`Simplex/Messaging/Crypto/ShortLink.hs:100-115`) already verifies that
 the user-data signature is valid against either `rootKey` or any
 chain-validated owner's `ownerKey`. The chain itself is checked by
@@ -105,25 +142,23 @@ chain-validated owner's `ownerKey`. The chain itself is checked by
 
 ```haskell
 -- Simplex.Messaging.Agent.Protocol
+ownerChainDepth :: Int
+ownerChainDepth = 8
+-- new constant; team decision pending (see top-level callout).
+
+-- existing function, made depth-aware
 validateLinkOwners
   :: C.PublicKeyEd25519
   -> [OwnerAuth]
   -> Either String ()
--- existing; depth/loop-safe via prefix-only authorization
-
-ownerChainDepth :: Int
-ownerChainDepth = 8
--- new constant; cap list length to keep mutable blob within
--- userDataPaddedLength = 13784 bytes (each OwnerAuth ~157 bytes encoded).
-
-validateLinkOwners' rootKey owners
+validateLinkOwners rootKey owners
   | length owners > ownerChainDepth = Left "owners list too long"
-  | otherwise = validateLinkOwners rootKey owners
--- the depth cap is enforced both on encode and decode paths.
+  | otherwise = ...   -- existing logic
 ```
 
-Plumb the cap through `validateOwners` (called when agent loads
-`ShortLinkCreds`) and through `decryptLinkData`.
+Plumb the cap so it is enforced both at encode time (the chat layer's
+`groupLinkData` rejects rosters longer than the cap before serializing)
+and at decode time (`decryptLinkData` rejects on read).
 
 **Privacy property to preserve.** The wire format is `sig64 || md_bytes`
 with no signer ID inside; an observer who has the link key and decrypts
@@ -133,13 +168,13 @@ objective #6 (sender anonymity within multi-owner channels). Ring
 signatures from RFC option 2 (Multiple owners managing queue data) remain
 deferred.
 
-#### 1.2 Encode-and-sign API for any owner
+#### 1.2 Encode-and-sign: caller-side key selection
 
-The vendored `encodeSignUserData` already accepts an arbitrary
+The upstream `encodeSignUserData` already accepts an arbitrary
 `PrivateKeyEd25519`:
 
 ```haskell
--- Simplex.Messaging.Crypto.ShortLink (already exists)
+-- Simplex.Messaging.Crypto.ShortLink (already exists upstream)
 encodeSignUserData
   :: ConnectionModeI c
   => SConnectionMode c
@@ -149,41 +184,29 @@ encodeSignUserData
   -> ByteString
 ```
 
-The function is already signer-agnostic. The only changes needed are at
-the **callers** (`Simplex.Messaging.Agent.setConnShortLink'` family),
-which today read `linkPrivSigKey` from the connection's stored
-`ShortLinkCreds`. We extend `ShortLinkCreds` so a co-owner's record on
-their own device stores their *owner* private key in `linkPrivSigKey`
-plus the (public) `linkRootSigKey` of the channel:
+The function is signer-agnostic. **No agent-side persistence change is
+required.** Instead, the chat layer chooses which key to put into
+`ShortLinkCreds.linkPrivSigKey` at the call site, using the existing
+`GroupRootKey` carried in `GroupKeys`:
 
-```haskell
--- Simplex.Messaging.Agent.Protocol (already has linkRootSigKey :: Maybe ...)
-data ShortLinkCreds = ShortLinkCreds
-  { shortLinkId    :: SMP.LinkId
-  , shortLinkKey   :: LinkKey
-  , linkPrivSigKey :: C.PrivateKeyEd25519   -- this owner's signing key
-  , linkRootSigKey :: Maybe C.PublicKeyEd25519
-                                            -- root pub key (Just for co-owners)
-  , linkEncFixedData :: SMP.EncFixedDataBytes
-  }
-```
+| Channel role this device plays | `GroupKeys.groupRootKey` | Key passed as `linkPrivSigKey` |
+|---|---|---|
+| Creator (single-owner today, also a multi-owner case) | `GRKPrivate rootPrivKey` | `rootPrivKey` (today's path) |
+| Co-owner promoted later | `GRKPublic rootPubKey` | this owner's `memberPrivKey` (= owner private key, by the invariant in 4.4) |
 
-**Persistence delta.** `linkRootSigKey` is currently dropped on load
-(see comment in `Agent.Store.AgentStore.hs:2514` —
-`linkRootSigKey = Nothing -- TODO linkRootSigKey should be stored in a separate field`).
-This TODO becomes a phase-1 requirement: persist the field.
+The chat layer already loads `GroupRootKey` for both cases via
+`Store/Shared.hs:699-701`; the integer additional work is at the chat-
+side caller of the agent's `setConnShortLink` family.
 
-Migration sketch (simplexmq agent SQLite + Postgres):
-
-```sql
--- M20260520_link_root_sig_key.hs
-ALTER TABLE rcv_queues ADD COLUMN link_root_sig_key BLOB;
--- nullable; existing root-creator queues continue to leave it NULL.
-```
-
-Add the column to the row-mapping in
-`Agent.Store.AgentStore.hs` (replacing the `linkRootSigKey = Nothing`
-literal with the loaded field).
+**`linkRootSigKey` persistence is NOT in scope.** The agent's
+`linkRootSigKey :: Maybe C.PublicKeyEd25519` field on `ShortLinkCreds`
+exists upstream as forward-compat for a future "trust anchor moved"
+scenario unrelated to this work. The TODO at
+`Agent/Store/AgentStore.hs:2514` (literal:
+`linkRootSigKey = Nothing -- TODO linkRootSigKey should be stored in a
+separate field`) stays untouched. Verification on read does not need it
+— `decryptLinkData` extracts `rootKey` from the immutable fixed-data
+block on every decode (`ShortLink.hs:104`).
 
 #### 1.3 Co-owner queue state
 
@@ -200,9 +223,13 @@ holding the co-owner's `rcvPrivateKey` and `ShortLinkCreds`.
 --   rcvId         = channel link queue's recipient ID
 --                   (identical across all owners on the SMP server)
 --   rcvPrivateKey = co-owner's recipient auth private key
---                   (its public counterpart is added to recipientKeys via RKEY)
+--                   (its public counterpart is added to recipientKeys via RKEY).
+--                   Generated fresh by C.generateAuthKeyPair on the co-owner's
+--                   device; queue-specific; NOT the same as member_pub_key.
 --   shortLink     = ShortLinkCreds with co-owner's linkPrivSigKey
---                   and Just linkRootSigKey
+--                   (= their owner private key);
+--                   linkRootSigKey stays Nothing (verification reads rootKey
+--                   from fixed data).
 --   queueMode     = Just QMContact
 --   primary       = True; this is the co-owner's only queue for this channel
 ```
@@ -219,15 +246,10 @@ in the queue's list authorizes" (verified at
 
 A small caveat surfaces: agents call `DEL` to delete the queue. If a
 co-owner DEL'd, every other co-owner's queue would suddenly be
-orphaned. This plan **prohibits the co-owner from DEL'ing** — at the
-chat layer (phase 4 owner-removal), removal of a queue is a root-only
-operation. We tag `RcvQueue` semantically:
-
-```haskell
-data RcvQueueAuthority = RQARoot | RQACoOwner
--- derived at use-site from `isJust linkRootSigKey`; we do NOT add a
--- column. Co-owner DEL/OFF are gated at the chat layer.
-```
+orphaned. This plan **prohibits the co-owner from DEL'ing** at the chat
+layer: chat-side gating uses `GroupKeys.groupRootKey` — `DEL` is
+permitted only when this device holds `GRKPrivate _` (creator role).
+No agent-side flag is added.
 
 #### 1.4 RKEY agent wrapper
 
@@ -261,7 +283,7 @@ sendSMPQueueRecipientKeys smp nm pk rcvId ks =
   okSMPCommand (Cmd SRecipient (RKEY ks)) smp nm pk rcvId
 ```
 
-Expose both at `Agent.hs`:
+Expose at `Agent.hs`:
 
 ```haskell
 setQueueRecipientKeys :: AgentClient -> NetworkRequestMode -> ConnId
@@ -272,24 +294,26 @@ setQueueRecipientKeys c = withAgentEnv c .::. setQueueRecipientKeys' c
 Single primitive (set the full key list) is preferred over RADD/RDEL —
 the SMP server's `RKEY` already takes the full list in one transaction
 (no race window between two-step add+remove). Caller responsibility:
-read current set, mutate, send.
+read current set, mutate, send. Concurrent races between owners are
+recovered by the eventual-consistency loop in Phase 4.5.
 
 #### 1.5 Co-owner setConnShortLink path
 
 The existing `setConnShortLink'`
 (`Simplex.Messaging.Agent.hs:840-871`) signs with whatever
-`linkPrivSigKey` is on the connection's `ShortLinkCreds`. With 1.2, a
-co-owner's connection has the co-owner's owner private key in that
-field — so **no code change is required at this call site** beyond the
-persistence fix in 1.2. The verifier accepts owner-signed blobs.
+`linkPrivSigKey` is on the connection's `ShortLinkCreds`. With 1.2's
+chat-side key-selection logic, a co-owner's connection has the co-
+owner's owner private key in that field — so **no code change is
+required at this call site**. The verifier accepts owner-signed blobs.
 
 **Plan note.** We considered adding a sibling
 `setCoOwnerConnShortLink` to make caller intent explicit. Rejected: the
-existing entry point already does the right thing once the credentials
-are stored correctly. Adding a parallel entry would duplicate the call
-graph for no semantic gain. Caller intent is captured at the chat
-layer's `groupLinkData` builder (phase 2), which decides which owner
-key to put in `linkPrivSigKey`.
+existing entry point already does the right thing once the chat layer
+selects the correct key. Adding a parallel entry would duplicate the
+call graph for no semantic gain. Caller intent is captured at the chat
+layer's `groupLinkData` builder (phase 2), which selects between
+`GRKPrivate.rootPrivKey` and the device's `memberPrivKey` based on
+`GroupRootKey`.
 
 #### 1.6 Co-owner credential bundle (wire format)
 
@@ -304,11 +328,17 @@ data CoOwnerCredsBundle = CoOwnerCredsBundle
   { server         :: SMPServer
   , rcvId          :: SMP.RecipientId
   , rcvDhSecret    :: RcvDhSecret      -- channel link queues do not carry
-                                       -- messages, but we include this
-                                       -- forward-compat per the prompt
+                                       -- messages, but include for forward
+                                       -- compat
   , shortLinkId    :: SMP.LinkId
   , shortLinkKey   :: LinkKey
-  , linkRootSigKey :: C.PublicKeyEd25519
+  , rootPubKey     :: C.PublicKeyEd25519
+                                       -- chat-layer destination:
+                                       -- groups.root_pub_key on B's device
+                                       -- (= GRKPublic rootPubKey).
+                                       -- Not used by the agent; the agent
+                                       -- reads rootKey from fixed data on
+                                       -- every decode.
   , linkEncFixedData :: SMP.EncFixedDataBytes
   , agentVRange    :: VersionRangeSMPA
   }
@@ -317,12 +347,16 @@ data CoOwnerCredsBundle = CoOwnerCredsBundle
 instance Encoding CoOwnerCredsBundle where
   smpEncode CoOwnerCredsBundle{..} =
     smpEncode (server, rcvId, rcvDhSecret, shortLinkId, shortLinkKey,
-               linkRootSigKey, linkEncFixedData, agentVRange)
+               rootPubKey, linkEncFixedData, agentVRange)
   smpP = ... -- mirror
 ```
 
 B's *own* `rcvPrivateKey` (recipient auth) and `ownerPrivKey` are
-generated locally on B's device — never in the bundle.
+generated locally on B's device — never in the bundle. B's
+`rcvPrivateKey` is queue-specific and unrelated to B's
+`member_pub_key`; reusing the chat-layer member key as an SMP rcv auth
+key would leak chat identity into the SMP server's `recipientKeys` list
+and is not allowed.
 
 Intake API on the agent:
 
@@ -339,22 +373,14 @@ acceptCoOwnerCreds
 ```
 
 This creates B's local `RcvQueue` + `ShortLinkCreds` row pointing at
-the shared `rcvId`, with B's keys.
+the shared `rcvId`, with B's keys. The chat layer separately stores
+`rootPubKey` into `groups.root_pub_key` and constructs
+`GroupKeys{groupRootKey = GRKPublic rootPubKey}`.
 
 #### 1.7 Mutable-blob version field
 
-Inside the encrypted user-data payload, add a `version :: Word64`
-field for last-writer-wins reconciliation. The blob layout becomes:
-
-```
-md_bytes = sig64 || smpEncode (UserContactLinkData ...)
-```
-
-The version is carried inside the chat-layer `GroupShortLinkData` JSON
-already encoded into `userData`, NOT into the agent-layer
-`UserContactData` record (which is shared with non-channel uses). Plan
-keeps the agent-layer wire format **byte-compatible** with v6.5; the
-version is a chat-layer concept.
+Add a `linkDataVersion :: Maybe Word64` field to the chat-layer
+`GroupShortLinkData` JSON for last-writer-wins reconciliation.
 
 ```haskell
 -- Simplex.Chat.Types (or co-located near GroupShortLinkData)
@@ -365,9 +391,16 @@ data GroupShortLinkData = GroupShortLinkData
   }
 ```
 
-Older clients reading channels with `linkDataVersion = Just n` simply
-ignore the field (JSON unknown-field tolerance). Newer clients reading
-older blobs default the version to 0 and reconcile from there.
+> The version field lives in the chat-layer `GroupShortLinkData` JSON,
+> encoded into the agent-layer `userData` ByteString as opaque payload.
+> Rationale: the version is a channel-feature concept (last-writer-wins
+> reconciliation between concurrent owner edits); putting it in the
+> chat-layer JSON keeps the agent-layer link blob structurally
+> unchanged, so non-channel uses (1-time invitations, normal contact
+> addresses) are untouched. Older clients reading channels with
+> `linkDataVersion = Just n` ignore the unknown JSON field; newer
+> clients reading older blobs without the field default the version to
+> 0 and reconcile from there.
 
 #### 1.8 agentVRange bump
 
@@ -380,22 +413,23 @@ currentSMPAgentVersion = multiOwnerSMPAgentVersion
 supportedSMPAgentVRange = mkVersionRange minSupportedSMPAgentVersion currentSMPAgentVersion
 ```
 
-Older clients (`< 8`) decrypt via the old verification path that only
-accepts root-signed blobs; they reject blobs signed by a chained owner.
-This is a **hard incompatibility** for older clients reading channels
-that have promoted any chained owner. The prompt accepts this; flag it
-in the release notes (section 6).
+Older clients (`< 8`) fail the chain-aware verification in
+`decryptLinkData` for blobs signed by a chained owner; this is a
+**hard incompatibility** for older clients reading channels that have
+promoted any chained owner. Acceptable per design decision; flag in
+release notes (section 5).
 
 #### Tests to add
 
 - `simplexmq/tests/AgentTests/ShortLinkTests.hs` — extend with cases:
   - sign with chained owner pk, verify with root pk → success.
   - sign with non-listed pk → reject.
-  - chain depth > 8 → reject.
+  - chain depth > `ownerChainDepth` → reject.
   - duplicate ownerId → reject (existing).
   - duplicate ownerKey → reject (existing).
   - cycle attempt → existing prefix-only authorization makes this
-    structurally impossible; add a regression test.
+    structurally impossible; add a regression test
+    (`testChainCycleStructurallyImpossible`).
 - `simplexmq/tests/AgentTests/FunctionalAPITests.hs` — co-owner LSET
   end-to-end:
   - A creates queue + uploads root-signed blob.
@@ -422,45 +456,40 @@ Files to read first:
 
 #### 2.1 Schema migrations (chat-side)
 
-Three new SQLite migrations (Postgres mirrors). All additive; existing
-single-owner channels need no data move.
+Three migrations (Postgres mirrors). All additive; existing single-
+owner channels need no data move.
+
+The owner roster lives **on `group_members`**, not in a separate
+`channel_owners` table. Members already carry a role; owners are simply
+members with `member_role = 'owner'`. Owner-specific fields hang off
+the same row. Co-owner credential storage is implicit: this device's
+own `rcv_queues` row and the chat-side `groups.root_pub_key` together
+encode the co-owner state — no new chat-side table needed.
 
 ```sql
--- M20260601_channel_owner_roster.hs
--- 1. Per-channel owner roster, one row per OwnerAuth in the link blob.
-CREATE TABLE channel_owners (
-  channel_owner_id INTEGER PRIMARY KEY,
-  group_id          INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
-  member_id         BLOB NOT NULL,            -- = OwnerAuth.ownerId
-  owner_pub_key     BLOB NOT NULL,            -- = OwnerAuth.ownerKey
-  auth_owner_member_id BLOB,                  -- NULL = root-signed
-  auth_owner_sig    BLOB NOT NULL,            -- = OwnerAuth.authOwnerSig
-  position          INTEGER NOT NULL,         -- order in the encoded list
-  created_at        TEXT NOT NULL,
-  updated_at        TEXT NOT NULL,
-  UNIQUE(group_id, member_id)
-) STRICT;
-CREATE INDEX idx_channel_owners_group_id ON channel_owners(group_id);
+-- M20260508_group_members_owner_fields.hs
+-- (Implementer note: `M20260508` matches today's date. The current head
+-- of the SQLite migrations registry is `M20260507_relay_inactive_at`;
+-- verify the actual head at the time of work and bump if a later
+-- migration has landed.)
+ALTER TABLE group_members ADD COLUMN owner_auth_sig BLOB;
+ALTER TABLE group_members ADD COLUMN owner_position INTEGER;
+ALTER TABLE group_members ADD COLUMN owner_rcv_pub_key BLOB;
+-- All three NULL when member_role <> 'owner'.
+-- owner_auth_sig    = OwnerAuth.authOwnerSig (signature authorizing this
+--                     member as an owner)
+-- owner_position    = position in the prefix-ordered OwnerAuth list
+-- owner_rcv_pub_key = the SMP recipient auth pubkey used by this owner's
+--                     device on the channel link queue (gossiped over mesh
+--                     on promotion; required for owner-removal RKEY)
 
--- 2. Co-owner credentials (this user is a chained owner of these channels).
---    Distinct from `groups.root_pub_key` / `groups.member_priv_key`, which
---    are populated when this user is the original creator.
-CREATE TABLE channel_co_owner_creds (
-  group_id          INTEGER PRIMARY KEY REFERENCES groups ON DELETE CASCADE,
-  rcv_queue_id      INTEGER NOT NULL,         -- agent rcv_queues.rowid; this
-                                              -- user's queue record for the
-                                              -- shared channel link queue
-  agent_conn_id     BLOB NOT NULL             -- denormalized for joins
-) STRICT;
-
--- 3. Mutable-blob version cursor (last-known server version + last-applied
---    local version). LWW reconciliation reads/writes this.
+-- Mutable-blob version cursor (LWW reconciliation reads/writes this).
 ALTER TABLE groups ADD COLUMN link_data_version INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE groups ADD COLUMN link_data_remote_version INTEGER NOT NULL DEFAULT 0;
 ```
 
 ```sql
--- M20260602_owner_mesh.hs
+-- M20260509_owner_mesh.hs (or whatever the next available date is)
 -- Owner-only direct mesh connections, scoped per channel.
 -- Mirrors group_member_intros for semantics; reuses x.grp.mem.intro plumbing.
 CREATE TABLE channel_owner_mesh (
@@ -478,7 +507,7 @@ CREATE TABLE channel_owner_mesh (
 ```
 
 ```sql
--- M20260603_promotion_in_progress.hs
+-- M20260510_promotion_in_progress.hs
 -- Phase-3 promotion-in-progress journal, used by the orchestrator
 -- (resume-from-step on app restart).
 CREATE TABLE channel_promotion_in_progress (
@@ -499,53 +528,117 @@ CREATE TABLE channel_promotion_in_progress (
 ) STRICT;
 ```
 
-Register the three migrations in
-`Simplex/Chat/Store/SQLite/Migrations.hs` after
-`M20260507_relay_inactive_at`. Mirror in `Postgres/Migrations.hs`.
+Place migrations in
+`/workspace/src/Simplex/Chat/Store/SQLite/Migrations/`, named by
+today's date (the implementer must verify the actual current head and
+bump if a later migration has landed). Mirror in
+`/workspace/src/Simplex/Chat/Store/Postgres/Migrations/`. Register in
+`Simplex/Chat/Store/SQLite/Migrations.hs` after the actual current
+head.
 
-#### 2.2 Owner-roster type and storage helpers
+#### 2.2 Owner-roster helpers (built on `group_members`)
+
+No new Haskell record type for "channel owner" — the on-disk
+representation is `group_members` with `member_role = 'owner'` plus
+the three new owner_* columns. Helpers:
 
 ```haskell
--- Simplex.Chat.Store.Groups
-data ChannelOwner = ChannelOwner
-  { channelOwnerId   :: Int64
-  , memberId         :: MemberId
-  , ownerPubKey      :: C.PublicKeyEd25519
-  , authOwnerMemberId :: Maybe MemberId
-  , authOwnerSig     :: C.Signature 'C.Ed25519
-  , position         :: Int
-  } deriving (Eq, Show)
+-- Simplex.Chat.Store.Groups (new helpers, alongside existing group-member
+-- accessors)
 
-getChannelOwners      :: DB.Connection -> GroupId -> IO [ChannelOwner]
-replaceChannelOwners  :: DB.Connection -> GroupId -> [ChannelOwner] -> IO ()
-addChannelOwner       :: DB.Connection -> GroupId -> ChannelOwner -> IO ()
-removeChannelOwner    :: DB.Connection -> GroupId -> MemberId -> IO ()
+-- materialize the OwnerAuth list for an LSET; ordered by owner_position.
+getChannelOwnerAuths
+  :: DB.Connection
+  -> GroupId
+  -> IO [OwnerAuth]
+
+-- shape returned by getChannelOwnerAuths, derived directly:
+--   SELECT member_id, member_pub_key, owner_auth_sig
+--   FROM group_members
+--   WHERE group_id = ? AND member_role = 'owner'
+--   ORDER BY owner_position
+-- producing OwnerAuth { ownerId = unMemberId memberId
+--                     , ownerKey = memberPubKey
+--                     , authOwnerSig = ownerAuthSig }
+
+-- apply a fresh roster received from the wire (LGET response or mesh sync):
+-- for each entry set member_role = 'owner' and update
+-- (owner_auth_sig, owner_position, owner_rcv_pub_key); demote any existing
+-- owner not in the received list to its previous role (or 'member').
+applyChannelOwnerRoster
+  :: DB.Connection
+  -> GroupId
+  -> [(MemberId, C.Signature 'C.Ed25519, Maybe C.PublicKeyEd25519 {- rcvPubKey, when known -})]
+  -> IO ()
+
+-- promote a single member (used by the orchestrator at step 4).
+markMemberAsOwner
+  :: DB.Connection
+  -> GroupId
+  -> MemberId
+  -> C.Signature 'C.Ed25519     -- authOwnerSig
+  -> Int                         -- owner_position (append to end)
+  -> Maybe C.PublicKeyEd25519    -- owner_rcv_pub_key (Just on this device for self;
+                                 -- Nothing initially for peers, filled in via mesh sync)
+  -> IO ()
+
+-- demote on owner removal; clears the three owner_* columns.
+demoteOwner
+  :: DB.Connection
+  -> GroupId
+  -> MemberId
+  -> IO ()
+
+-- LWW version cursor accessors.
 incrementLinkDataVersion :: DB.Connection -> GroupId -> IO Word64
 setLinkDataRemoteVersion :: DB.Connection -> GroupId -> Word64 -> IO ()
-getLinkDataVersions   :: DB.Connection -> GroupId -> IO (Word64, Word64)
+getLinkDataVersions      :: DB.Connection -> GroupId -> IO (Word64, Word64)
                                           -- (local, remote)
 ```
 
-`replaceChannelOwners` is invoked whenever the chat layer rebuilds the
-mutable blob; it overwrites the roster atomically (the link blob is
-the source of truth).
+`applyChannelOwnerRoster` is invoked whenever the chat layer ingests a
+fresh roster from the wire (LGET decoded, or mesh sync); it overwrites
+the in-DB owner state atomically (the link blob is the source of
+truth).
+
+Cascade-removal preview (D3) does not need a stored "who authorized
+whom" column — it's reconstructable on demand from the prefix-ordered
+list using the same loop `validateLinkOwners` runs internally:
+
+```haskell
+-- pure function, no IO; called when rendering the cascade preview
+reconstructOwnerAuthorizers
+  :: C.PublicKeyEd25519                                     -- rootKey
+  -> [(MemberId, C.PublicKeyEd25519, C.Signature 'C.Ed25519)]
+                                                            -- prefix-ordered owners
+  -> [(MemberId, Maybe MemberId)]
+                                                            -- (owner, authorizer ; Nothing = root)
+reconstructOwnerAuthorizers rootKey owners =
+  -- For each owner o in order, check whether sig(o.memberId || o.pubKey)
+  -- verifies against rootKey; if yes -> (o.memberId, Nothing). Otherwise,
+  -- find the earliest prior owner whose pubkey verifies the sig; emit
+  -- (o.memberId, Just that earlier memberId).
+  ...
+```
 
 #### 2.3 `groupLinkData` rewrite
 
 Change `groupLinkData` in `Internal.hs:1355-1370` to source the owners
-list from `channel_owners` rather than reconstructing a single-owner
-list each call:
+list from `group_members` via `getChannelOwnerAuths`, and to select the
+signing key from `GroupRootKey`:
 
 ```haskell
 groupLinkData
   :: DB.Connection
   -> GroupInfo -> GroupLink -> [GroupRelay]
-  -> IO (UserConnLinkData 'CMContact, CRClientData)
+  -> IO (UserConnLinkData 'CMContact, CRClientData, C.PrivateKeyEd25519)
+                                  -- last component is the signing key the
+                                  -- caller passes to the agent's setConnShortLink
 groupLinkData db gInfo gLink groupRelays = do
-  owners <- toOwnerAuth <$$> getChannelOwners db (groupId' gInfo)
+  owners <- getChannelOwnerAuths db (groupId' gInfo)
+  version <- incrementLinkDataVersion db (groupId' gInfo)
   let direct = not (useRelays' gInfo)
       relays = mapMaybe (\GroupRelay{relayLink} -> relayLink) groupRelays
-      version = ...                  -- bumped by caller via incrementLinkDataVersion
       groupProfile = (groupProfile gInfo)
       userData = encodeShortLinkData $
         GroupShortLinkData { groupProfile
@@ -554,26 +647,25 @@ groupLinkData db gInfo gLink groupRelays = do
       userLinkData = UserContactLinkData UserContactData
         { direct, owners, relays, userData }
       crClientData = encodeJSON $ CRDataGroup (groupLinkId gLink)
-  pure (userLinkData, crClientData)
-  where
-    toOwnerAuth ChannelOwner{..} =
-      OwnerAuth { ownerId = unMemberId memberId
-                , ownerKey = ownerPubKey
-                , authOwnerSig }
+      signingKey = case groupKeys gInfo of
+        Just GroupKeys { groupRootKey = GRKPrivate rootPriv } -> rootPriv
+        Just GroupKeys { groupRootKey = GRKPublic _,   memberPrivKey } -> memberPrivKey
+        Nothing -> error "groupLinkData: missing groupKeys"
+  pure (userLinkData, crClientData, signingKey)
 ```
 
-Note: the vendored `OwnerAuth` is the 3-field shape
-(`ownerId, ownerKey, authOwnerSig`). The `authOwnerMemberId` we store
-locally is *not* serialized into the wire — the chain is reconstructed
-purely from signatures (`validateLinkOwners` walks the prefix). We
-keep `authOwnerMemberId` locally only to support D3's cascade UI
-(showing who authorized whom).
+The upstream `OwnerAuth` is the 3-field shape
+(`ownerId, ownerKey, authOwnerSig`). The chain is reconstructed purely
+from signatures (`validateLinkOwners` walks the prefix). We do NOT
+persist a "who authorized this owner" column; the cascade UI uses
+`reconstructOwnerAuthorizers` on demand.
 
 Callers of `groupLinkData`
 (`setGroupLinkDataAsync`, `updatePublicGroupData` —
 `Internal.hs:1316-1334`) become DB-aware. Caller convention: increment
-`link_data_version` first, then write the blob, then update the
-roster's local copy. If LSET fails, version is still bumped — the
+`link_data_version` first (already done by `groupLinkData` via
+`incrementLinkDataVersion`), then pass `signingKey` into the agent's
+`setConnShortLink` family. If LSET fails, version is still bumped — the
 local cache will correct on the next LGET (still LWW-safe).
 
 #### 2.4 Owner mesh data model + transport
@@ -628,33 +720,49 @@ sendOwnerMeshMessage user gInfo mesh msg =
 Skipped peers (status ≠ `'connected'`) silently fall back to the
 LGET-on-startup safety net (4.2).
 
-##### 2.4.1 Owner-only chat data plumbing (post-MVP UI)
+##### 2.4.1 Owner-mesh content scope
 
-Per the prompt, the owner mesh is plumbed as a real chat-capable
-structure but the UI thread is not surfaced. We add the data path
-without the view:
+> **Owner-mesh content scope, this delivery.** The mesh accepts only the
+> following events; any other event arriving over a mesh connection is
+> logged and rejected (visible during testing, not silently dropped):
+>
+> - `x.grp.owner.creds` — co-owner credential bundle handover.
+> - `x.grp.link.sync` — link-data sync (4.1).
+> - `x.grp.mem.role` — owner-role-change broadcast among owners.
+> - `x.grp.mem.intro` / `x.grp.mem.inv` / `x.grp.mem.fwd` — standard
+>   member introduction flow used to bootstrap mesh edges.
+>
+> No `x.msg.new` or any other content message is accepted on the mesh in
+> this delivery.
+>
+> **TODO (post-MVP).** Enabling mesh content would unlock: a private
+> "channel owners" chat thread for governance discussion, file sharing
+> between owners, draft-content review before publishing, and out-of-band
+> coordination invisible to subscribers and relays. The data plumbing is
+> deferred until the UI ships — there is no benefit to persisting messages
+> that no UI can display.
 
-- `ChannelOwnerMesh.status = 'connected'` → record received
-  user-content events (`x.msg.new` over the mesh) into a parallel
-  chat-item table scoped to `channel_owner_mesh_id`. For MVP, only
-  protocol-level events (`x.grp.owner.creds`, `x.grp.link.sync`,
-  `x.grp.mem.role`) are processed. Insert `// TODO owner-chat UI` in:
-  - `Subscriber.hs` content dispatcher (next to `XGrpMemFwd`).
-  - `GroupChatInfoView.swift` and `GroupChatInfoView.kt` settings
-    section (no nav link in MVP).
+D6 (UI groundwork): keep the `// TODO surface owner-chat UI` markers at
+the natural insertion points in `GroupChatInfoView.swift`,
+`GroupChatInfoView.kt`, and the new Owners views. No persistence of
+owner-mesh content in this delivery.
 
 #### Tests
 
 - `tests/ChatTests/ChannelTests.hs` — extend with:
   - LWW: two simulated owners, concurrent edits, only the higher
     `linkDataVersion` survives on the third subscriber's view.
-  - Chain reconstruction: roster persisted to `channel_owners` round-
-    trips via `groupLinkData → encrypt → decrypt → validateLinkOwners`.
+  - Roster round-trip: owners persisted to `group_members` round-trip
+    via `getChannelOwnerAuths → groupLinkData → encrypt → decrypt →
+    validateLinkOwners → applyChannelOwnerRoster`.
+  - Mesh-event allowlist: `x.msg.new` received over a mesh connection
+    is logged and rejected.
 
 #### Acceptance
 
-- Single-owner channels create and operate identically to today (data
-  in `channel_owners` is one root-signed row).
+- Single-owner channels create and operate identically to today (the
+  creator's row in `group_members` carries the `owner_*` fields populated
+  lazily on first multi-owner action — see 4.4).
 - Schema migrations are idempotent and reversible.
 - Mesh connection records exist after a simulated promotion (phase 3).
 
@@ -677,20 +785,23 @@ Step 1  invitation_sent   A creates a fresh, channel-scoped direct
                           *new direct mesh link* — not the channel
                           link.
 Step 2  creds_received    B accepts; B generates rcvKeyPair locally
+                          (queue-specific; via C.generateAuthKeyPair)
                           and reuses memberPrivKey as ownerPrivKey.
                           B sends back rcvPubKey + ownerPubKey via
                           XGrpOwnerAccept on the new direct mesh
                           connection. A records both pubkeys.
-Step 3  rkey_done         A reads current recipientKeys (server side)
-                          via setQueueRecipientKeys precondition (we
-                          cache them locally in groups; phase 1.4),
-                          appends rcvPubKey, calls
-                          setQueueRecipientKeys.
+Step 3  rkey_done         A reads current recipientKeys (from a local
+                          cache populated by setQueueRecipientKeys
+                          and by mesh sync; fallback recompute from
+                          group_members.owner_rcv_pub_key over all
+                          current owners), appends rcvPubKey,
+                          calls setQueueRecipientKeys.
 Step 4  lset_done         A constructs OwnerAuth_B = (B.memberId,
                           ownerPubKey, sign(A.ownerPrivKey,
-                          memberId || ownerPubKey)), appends to
-                          channel_owners, increments link_data_version,
-                          rebuilds blob, LSET.
+                          memberId || ownerPubKey)), promotes B in
+                          group_members via markMemberAsOwner,
+                          increments link_data_version, rebuilds blob,
+                          LSET.
 Step 5  bundle_sent       A sends XGrpOwnerCreds(bundle) over the new
                           direct mesh connection.
 Step 6  mesh_introduced   For each existing owner X (other than A and
@@ -704,7 +815,8 @@ Step 7  role_announced    A signs and broadcasts an x.grp.mem.role
                           (subscribers learn that B is now an owner).
                           Also broadcast x.grp.link.sync over the
                           owner mesh so peers update their cached
-                          link blob and roster.
+                          link blob and roster (and learn B's
+                          owner_rcv_pub_key for future RKEY ops).
 ```
 
 #### 3.2 Idempotency
@@ -717,8 +829,8 @@ Each step has a "did this already happen?" check before execution:
   parses the most-recent server LGET). If `rcvPubKey` is already in
   the set, skip.
 - Step 4: read current owners list from server via LGET, check whether
-  `OwnerAuth_B` (matching ownerId == B.memberId AND ownerKey ==
-  ownerPubKey) is present; if yes, skip.
+  a row for `B.memberId` with `member_role = 'owner'` and matching
+  `member_pub_key == ownerPubKey` is present; if yes, skip.
 - Step 5: track via `channel_promotion_in_progress.step`; the bundle
   is delivered exactly-once via the underlying agent's
   `sendDirectMemberMessage` (already at-least-once + receiver-side
@@ -733,7 +845,7 @@ Each step has a "did this already happen?" check before execution:
 | Failure | State left | Recovery |
 |---|---|---|
 | Step 3 succeeds, Step 4 fails | Unused recipient key in queue's set | On retry, Step 3 detects key already present, Step 4 retries cleanly. Stale `rcvPubKey` is harmless until Step 4 either succeeds or the candidate gives up — in that case an explicit cleanup RKEY removes it. |
-| Step 4 succeeds, Step 5 fails | B is an authorized owner on-server but lacks credentials | Retry Step 5 from the journal. If A's device is destroyed first, B can detect via the next LGET on the channel (their `OwnerAuth` exists in the blob, but they have no credentials to use it) — we surface "owner credentials missing — request resend" in the UI. |
+| Step 4 succeeds, Step 5 fails | B is an authorized owner on-server but lacks credentials | Retry Step 5 from the journal. If A's device is destroyed first, B can detect via the next LGET on the channel (their owner row exists in the blob, but they have no credentials to use it) — we surface "owner credentials missing — request resend" in the UI. |
 | Step 5 succeeds, Step 6 partial | Owner mesh missing some edges | Retry per-peer at next app start. |
 | Step 6 succeeds, Step 7 fails | Subscribers don't see the new owner's role | Retry Step 7. New owner may temporarily appear as a non-owner member in subscribers' views; harmless — they cannot post anyway until the role updates. |
 
@@ -793,18 +905,17 @@ data GrpLinkSync = GrpLinkSync
 Sender: any owner that just completed an LSET. Receivers (owners only,
 mesh):
 1. Verify the `groupId` matches the channel.
-2. Decode `md_bytes`, run `validateLinkOwners` against the locally-
-   stored root pub key.
+2. Decode `md_bytes`, run `validateLinkOwners` against the rootKey
+   extracted from the channel's stored fixed-data (or, equivalently,
+   `groupRootPubKey (groupRootKey groupKeys)`).
 3. If `linkDataVersion > local`, replace the local cached blob and
-   roster (`replaceChannelOwners`); set
+   roster (`applyChannelOwnerRoster`); set
    `link_data_remote_version := linkDataVersion`.
 4. If `linkDataVersion ≤ local`, ignore (already seen or this owner
    has a newer pending edit; D4 banner will handle UX).
 
-Note in plan: the message tag `x.grp.link.sync` may collide with a
-parallel "link-data-passing" workstream. Per the prompt, we use
-`x.grp.link.sync` for this delivery and the other workstream will
-disambiguate later if it needs to.
+The tag `x.grp.link.sync` is reserved for this delivery; the parallel
+"link-data passing" workstream will use a different name.
 
 #### 4.2 LWW reconciliation
 
@@ -844,26 +955,40 @@ Existing owner R removes owner X. R must verify *before* attempting:
 ```haskell
 -- Simplex.Chat.Library.Owners
 data OwnerRemoval = OwnerRemoval
-  { directlyRemoved :: ChannelOwner
-  , cascadeRemoved  :: [ChannelOwner]   -- transitively invalidated
+  { directlyRemoved :: MemberId
+  , cascadeRemoved  :: [MemberId]   -- transitively invalidated
   }
 
-planOwnerRemoval :: [ChannelOwner] -> ChannelOwner -> ChannelOwner -> Either String OwnerRemoval
+planOwnerRemoval
+  :: C.PublicKeyEd25519                                       -- rootKey
+  -> [(MemberId, C.PublicKeyEd25519, C.Signature 'C.Ed25519)] -- prefix-ordered owners
+  -> MemberId                                                 -- remover
+  -> MemberId                                                 -- removee
+  -> Either String OwnerRemoval
 -- returns Left when the remover's chain depends on the removee.
 ```
 
 `planOwnerRemoval` performs a forward pass over the prefix-ordered
-list: any owner whose `auth_owner_member_id` is in the removed-set is
-itself removed.
+list using the same logic as `reconstructOwnerAuthorizers` (2.2): any
+owner whose authorizer is in the removed-set is itself removed.
 
 Removal steps:
+
 1. Compute `OwnerRemoval`. If any cascade member is the remover, fail.
 2. Build new owners list (= old list minus directlyRemoved minus
    cascadeRemoved). Bump version. LSET.
-3. Compute new `recipientKeys` set (= old set minus the rcv pub keys
-   of removed owners; we map by `member_id` via
-   `channel_co_owner_creds.rcv_queue_id` for the *remover's* peers).
-   Call `setQueueRecipientKeys`.
+3. Compute new `recipientKeys` set, executable directly against
+   `group_members`:
+
+   ```sql
+   SELECT owner_rcv_pub_key
+   FROM group_members
+   WHERE group_id = ?
+     AND member_role = 'owner'
+     AND member_id NOT IN (?, ?, ...)  -- removed and cascade-removed
+   ```
+
+   Then call `setQueueRecipientKeys` with the resulting list.
 4. Broadcast `x.grp.mem.role` (member or relay) for each removed
    owner via relays.
 5. Broadcast `x.grp.link.sync` over mesh.
@@ -871,8 +996,8 @@ Removal steps:
    their direct connections via `deleteAgentConnectionsAsync'`.
 
 If the remover IS being demoted (self-removal): same flow, except
-they stop seeding their own mesh edges and drop their own
-`channel_co_owner_creds` row last.
+they stop seeding their own mesh edges and clear their own row's
+`owner_*` columns last (via `demoteOwner`).
 
 ##### 4.3.1 Chain-cascade semantics, recursive validator
 
@@ -881,15 +1006,16 @@ whose chain doesn't terminate in rootKey. After a removal, if the
 remover forgets to prune cascade-invalidated entries, the next
 LGET-on-startup by a subscriber would simply drop the chained owners
 on verification — they'd be invisible. This is correctness but messy.
-**Plan: prune the cascade on the LSET writer's side** (recommended
-per prompt). Rationale: keeps the wire blob clean, makes mesh sync
-deterministic, allows the UI's roster view to match what's on the
-server byte-for-byte.
+**Plan: prune the cascade on the LSET writer's side.** Rationale:
+keeps the wire blob clean, makes mesh sync deterministic, allows the
+UI's roster view to match what's on the server byte-for-byte.
 
 ##### 4.3.2 Removing a root-signed owner
 
 Constraints:
-- Root-signed owners have `authOwnerMemberId IS NULL`.
+- Root-signed owners are those whose `authOwnerSig` verifies directly
+  against `rootKey` (i.e., `reconstructOwnerAuthorizers` returns
+  `Nothing`).
 - A root-signed owner can only be removed by another owner whose chain
   does NOT pass through them.
 - Single-owner channels: the sole root-signed owner cannot be removed.
@@ -913,10 +1039,13 @@ this preserves creator anonymity). Not part of this delivery.
 Verified: existing channels at `Internal.hs:1361-1366` build exactly
 one root-signed `OwnerAuth` whose `ownerKey = C.publicKey memberPrivKey`
 (same key reused as member signing key). Phase 2's
-`replaceChannelOwners` lazy-migrates this on the first multi-owner
-action: when A's device first calls `groupLinkData`, if
-`channel_owners` is empty AND `groups.root_pub_key`/`member_priv_key`
-are populated, we synthesize a single root-signed row from those.
+`applyChannelOwnerRoster` lazy-migrates this on the first multi-owner
+action: when A's device first calls `groupLinkData`, if no row in
+`group_members` has the `owner_*` columns populated AND
+`groups.root_pub_key`/`member_priv_key` are populated, we synthesize
+the creator's owner row in-place by setting
+`(owner_auth_sig, owner_position, owner_rcv_pub_key)` from the
+device's local state.
 
 No on-disk migration of channel data is required.
 
@@ -924,13 +1053,45 @@ After upgrade:
 - `groups.root_pub_key` (private side: `groups.member_priv_key` is
   reused as the owner private key) stays on A's device.
 - A's `member_priv_key` IS A's owner private key. The "member-key =
-  owner-key" invariant from the prompt holds and must continue to hold.
-  We add an assertion in tests.
+  owner-key" invariant holds and must continue to hold.
 - The OwnerAuth chain for any owner B added later reveals
   "creator authorized newcomer". Acceptable per the design decision
   in channels-overview.md objective #6 (a future feature could
   pre-sign N≥2 root owners at creation to preserve creator
   anonymity — out of scope here).
+
+> **Invariant: `OwnerAuth.ownerKey == group_members.member_pub_key`.**
+>
+> Member signing keys are fixed for the channel's lifetime. Independent
+> rotation of `member_pub_key` while the member is an owner is not
+> supported in this delivery — it would invalidate the stored
+> `OwnerAuth.ownerKey` in the link blob. Add an invariant test
+> (`testMemberKeyEqualsOwnerKey`) that runs on every channel-creation
+> and promotion. If a future feature introduces member-key rotation,
+> the owner roster must be rewritten in the same transaction.
+
+#### 4.5 Concurrent RKEY recovery
+
+> **Concurrent RKEY race — eventual consistency.**
+>
+> `RKEY` replaces the entire `recipientKeys` set on the SMP server in one
+> transaction. If owners A and B concurrently RKEY (e.g., each promoting
+> a different candidate), the second write clobbers the first; the
+> loser's candidate has no SMP write access until reconciliation.
+>
+> Recovery loop:
+> 1. The dropped candidate's first `LSET` returns `ERR AUTH`.
+> 2. Their device emits an event to the chat layer that bubbles to other
+>    owners over the mesh (re-broadcast `x.grp.link.sync` with their
+>    current `owner_rcv_pub_key`).
+> 3. Any current owner reconstructs the desired `recipientKeys` set from
+>    `group_members` (filter `member_role = 'owner'`, take
+>    `owner_rcv_pub_key` for each), and calls `setQueueRecipientKeys`
+>    with the merged list.
+> 4. Convergence within one mesh round-trip.
+>
+> Acceptable per the full-trust model. No write-fence, no coordination
+> protocol. Test: `testConcurrentRKEYConvergence`.
 
 #### Tests
 
@@ -942,15 +1103,18 @@ After upgrade:
 - `testRemoverCascadeBlocked` — D tries to remove the root-signed
   owner whose chain authorized D; rejected.
 - `testRootCannotBeRemovedSoloOwner`.
-- `testUpgradeSingleOwnerLazy` — synthesize roster row from
-  groups.root_pub_key/member_priv_key on first read.
+- `testUpgradeSingleOwnerLazy` — synthesize creator's owner row
+  fields from groups.root_pub_key/member_priv_key on first read.
+- `testConcurrentRKEYConvergence` — A and B race-RKEY; recovery loop
+  converges within one mesh round-trip.
+- `testMemberKeyEqualsOwnerKey` — invariant on creation and promotion.
 
 #### Acceptance
 
 - Three-owner channel: any owner can edit profile; all three converge.
 - Cascade UX correctly previews removed set in the orchestrator.
 - Existing v6.5 channels open without migration; first multi-owner
-  action lazy-populates `channel_owners`.
+  action lazy-populates the creator's owner row.
 
 ### Phase 5a — iOS UI
 
@@ -969,9 +1133,26 @@ Files to edit:
   — confirmation with cascade preview.
 - `apps/ios/Shared/Model/SimpleXAPI.swift` (or wherever group/channel
   API calls live) — add bindings for `apiPromoteToOwner`,
-  `apiRemoveOwner`, `apiCancelPromotion`.
+  `apiRemoveOwner`, `apiPlanRemoveOwner`, `apiCancelPromotion`,
+  `apiChannelOwners`.
 - Strings: append to `apps/ios/en.lproj/Localizable.strings` and
   `SimpleX Localizations/*/.../Localizable.strings`.
+
+Define a small chat-side type returned by `apiChannelOwners` — a UI-
+shaped record mirroring the columns we read from `group_members`:
+
+```swift
+struct ChannelOwner: Codable, Identifiable {
+    let memberId: MemberId
+    let displayName: String
+    let ownerPosition: Int
+    let authorizedByMemberId: MemberId?    // Nothing => root
+    var id: MemberId { memberId }
+}
+```
+
+(`authorizedByMemberId` is computed by the chat-side RPC using
+`reconstructOwnerAuthorizers`, not stored on disk.)
 
 #### D1 — Owners section in channel settings
 
@@ -1051,7 +1232,7 @@ struct ChannelOwnersView: View {
 ```
 
 `OwnerRow` shows display name + small "creator" tag when
-`authOwnerMemberId == nil`, otherwise "Authorized by <Alice>" as a
+`authorizedByMemberId == nil`, otherwise "Authorized by <Alice>" as a
 caption. Layout per `layout-swift.md`: System Image needs no
 `.resizable()` (SF Symbols size correctly); avatar uses the existing
 `MemberProfileImage` pattern with `.frame(width: 38, height: 38)`.
@@ -1166,7 +1347,8 @@ Add `// TODO: surface owner-chat UI` in:
 - `ChannelOwnersView.swift`, near the bottom — would become a
   "Owners chat" nav link.
 
-No nav link, no view, no entry in the chat list this delivery.
+No nav link, no view, no entry in the chat list this delivery. No
+mesh content is persisted.
 
 #### Strings (en.lproj/Localizable.strings)
 
@@ -1213,6 +1395,18 @@ Files to edit:
   `apiChannelOwners`.
 - `apps/multiplatform/common/src/commonMain/resources/MR/base/strings.xml`
   — strings.
+
+Define the analogous Kotlin UI-shaped type:
+
+```kotlin
+@Serializable
+data class ChannelOwner(
+  val memberId: MemberId,
+  val displayName: String,
+  val ownerPosition: Int,
+  val authorizedByMemberId: MemberId? = null,   // null => root
+)
+```
 
 #### D1 — Owners section
 
@@ -1294,10 +1488,10 @@ fun OwnerRow(owner: ChannelOwner, owners: List<ChannelOwner>, onClick: () -> Uni
     Spacer(Modifier.width(DEFAULT_PADDING_HALF))
     Column(Modifier.weight(1f)) {
       Text(owner.displayName, maxLines = 1, fontSize = 16.sp)
-      val caption = if (owner.authOwnerMemberId == null) {
+      val caption = if (owner.authorizedByMemberId == null) {
         stringResource(MR.strings.channel_owners_creator_tag)
       } else {
-        val authorizer = owners.firstOrNull { it.memberId == owner.authOwnerMemberId }
+        val authorizer = owners.firstOrNull { it.memberId == owner.authorizedByMemberId }
         stringResource(MR.strings.channel_owners_authorized_by, authorizer?.displayName ?: "—")
       }
       Text(caption, fontSize = 13.sp, color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f))
@@ -1317,7 +1511,7 @@ warning color).
 #### D5 / D6
 
 Same as iOS: silent availability, `// TODO: surface owner-chat UI`
-markers.
+markers. No mesh content persistence.
 
 #### Strings additions in
 `apps/multiplatform/common/src/commonMain/resources/MR/base/strings.xml`
@@ -1349,7 +1543,21 @@ markers.
 - `simplexmq/tests/AgentTests/FunctionalAPITests.hs` — co-owner LSET
   end-to-end.
 - New file: `tests/ChatTests/MultiOwnerTests.hs` — orchestrator
-  resume tests (3.2 idempotency cases).
+  resume tests (3.2 idempotency cases) and concurrent-RKEY recovery.
+
+Test names called out elsewhere in this plan:
+`testLWWConflictDetection`, `testCascadeRemoval`,
+`testRemoverCascadeBlocked`, `testRootCannotBeRemovedSoloOwner`,
+`testUpgradeSingleOwnerLazy`, `testConcurrentRKEYConvergence`,
+`testMemberKeyEqualsOwnerKey`, `testChainCycleStructurallyImpossible`,
+`testChainTooLong`, `testCoOwnerCannotDeleteQueue`,
+`testStaleBlobIgnored`, `testBundleCrossChannelReject`,
+`testBundleReplayRejected`,
+`testOldClientRejectsChainedOwnerBlob`,
+`testOldClientReadsRootSignedBlob`, `testRosterRaceRetry`,
+`testRelayCannotForgeOwners`, `testCascadeUiPreviewShowsAll`,
+`testPromoteOwner`, `testPromoteOwnerResumeStep<N>`,
+`testPromoteIdempotentRetry`.
 
 #### Threat-model regression suite
 
@@ -1378,35 +1586,32 @@ property test:
 ### Chat-side (SQLite)
 
 ```sql
--- M20260601_channel_owner_roster.hs
-CREATE TABLE channel_owners ( ... );             -- per-channel owner roster
-CREATE TABLE channel_co_owner_creds ( ... );     -- this user's co-owner queue
+-- M20260508_group_members_owner_fields.hs   (date matches today; bump to
+-- the actual current registry head at implementation time)
+ALTER TABLE group_members ADD COLUMN owner_auth_sig BLOB;
+ALTER TABLE group_members ADD COLUMN owner_position INTEGER;
+ALTER TABLE group_members ADD COLUMN owner_rcv_pub_key BLOB;
 ALTER TABLE groups ADD COLUMN link_data_version INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE groups ADD COLUMN link_data_remote_version INTEGER NOT NULL DEFAULT 0;
 
--- M20260602_owner_mesh.hs
+-- M20260509_owner_mesh.hs
 CREATE TABLE channel_owner_mesh ( ... );
 
--- M20260603_promotion_in_progress.hs
+-- M20260510_promotion_in_progress.hs
 CREATE TABLE channel_promotion_in_progress ( ... );
 ```
 
 Up/down-migration files in
 `/workspace/src/Simplex/Chat/Store/SQLite/Migrations/` and mirrors in
 `/workspace/src/Simplex/Chat/Store/Postgres/Migrations/`. Register in
-`Migrations.hs` after `M20260507_relay_inactive_at`.
+`Migrations.hs` after the actual current head (currently
+`M20260507_relay_inactive_at`; verify at implementation time).
 
 ### Agent-side (simplexmq)
 
-```sql
--- M20260520_link_root_sig_key.hs
-ALTER TABLE rcv_queues ADD COLUMN link_root_sig_key BLOB;
-```
-
-In `/home/builder/code/simplexmq/src/Simplex/Messaging/Agent/Store/SQLite/Migrations/`
-and Postgres mirror. Register in
-`Simplex/Messaging/Agent/Store/SQLite/Migrations/App.hs:46-50` after
-`M20250702_conn_invitations_remove_cascade_delete`.
+**No agent-side schema migrations.** `linkRootSigKey` persistence is
+not required for this work (see 1.2). All other agent changes are
+in-process only.
 
 ---
 
@@ -1420,8 +1625,10 @@ and Postgres mirror. Register in
   1471, 1483`.
 - **Agent link blob layer:** structurally unchanged. `OwnerAuth`
   already encodes 3 fields with extension headroom (length-prefixed
-  inner ByteString — see `Protocol.hs:1801-1807`); `validateLinkOwners`
-  already chain-walks. Cap depth at 8.
+  inner ByteString — see
+  `simplexmq/src/Simplex/Messaging/Agent/Protocol.hs:1801-1807`);
+  `validateLinkOwners` already chain-walks. Cap depth at 8 (subject to
+  the top-level design-decision callout).
 - **Mutable user-data payload (chat layer):** add
   `linkDataVersion :: Maybe Word64` to `GroupShortLinkData` JSON.
   JSON unknown-field tolerant on older clients; absence interpreted
@@ -1512,10 +1719,12 @@ on either side, avoiding the "only weighted children" trap from
 | 3 | **LWW data loss in concurrent roster edits.** Two owners adding/removing simultaneously can lose one mutation. | Optimistic-concurrency retry on roster mutations (4.2 step 7); D4 banner alerts user; bounded retries return error to UI on persistent contention. | `testRosterRaceRetry`. |
 | 4 | **Cascade-removal UX clarity.** User unaware that removing X also removes Y, Z. | D3 explicit list; remove disabled when remover's chain depends on removee. | UI snapshot + `testCascadeUiPreviewShowsAll`. |
 | 5 | **Co-owner credential bundle confidentiality.** Bundle leaks → impersonation. | Bundle sent only over the channel-scoped direct mesh connection (E2E ratchet, not relay-mediated); never logged; bundle replays detected by version check + roster lookup at receive time. | `testBundleCrossChannelReject`; `testBundleReplayRejected`; static check that no `logInfo`/`putStrLn` paths touch the bundle. |
-| 6 | **Member-key = owner-key invariant.** A future refactor accidentally separates them, breaking signature verification of chat messages by owners. | `testMemberKeyEqualsOwnerKey` invariant test running on every channel-creation and promotion. |
-| 7 | **Chain-cycle attempts.** Adversarial blob includes self-referential `authOwnerSig`. | `validateLinkOwners` is prefix-only — structurally cycle-free. Depth cap of 8 prevents arbitrary list inflation. | `testChainCycleStructurallyImpossible`; `testChainTooLong`. |
-| 8 | **Co-owner DELs the queue.** | Chat-layer gate: `DEL` allowed only when `linkRootSigKey == Nothing` on the local `ShortLinkCreds` (root-creator role). Co-owner record path raises `CEPermissionDenied`. | `testCoOwnerCannotDeleteQueue`. |
+| 6 | **Member-key = owner-key invariant.** A future refactor accidentally separates them, breaking signature verification of chat messages by owners. | `testMemberKeyEqualsOwnerKey` invariant test running on every channel-creation and promotion. | `testMemberKeyEqualsOwnerKey`. |
+| 7 | **Chain-cycle attempts.** Adversarial blob includes self-referential `authOwnerSig`. | `validateLinkOwners` is prefix-only — structurally cycle-free. Depth cap of 8 (pending team confirmation) prevents arbitrary list inflation. | `testChainCycleStructurallyImpossible`; `testChainTooLong`. |
+| 8 | **Co-owner DELs the queue.** | Chat-layer gate: `DEL` allowed only when this device holds `GRKPrivate _` (creator role) in `GroupKeys.groupRootKey`. Co-owner path raises `CEPermissionDenied`. | `testCoOwnerCannotDeleteQueue`. |
 | 9 | **Server returns stale blob during reconciliation.** Owner reads version N, server returns N-1. | Treat returned `linkDataVersion` as authoritative if it includes a valid signature; if version monotonicity is violated, surface a "channel state inconsistent" warning and skip the write (do not LSET an older version). | `testStaleBlobIgnored`. |
+| 10 | **RKEY race — concurrent owner promotions can drop one another's candidate.** | Eventual consistency via mesh-driven recovery (Phase 4.5); affected owner re-RKEYs on AUTH failure. | `testConcurrentRKEYConvergence`. |
+| 11 | **Member-pub-key rotation breaks owner status.** | Invariant test (4.4) plus documentation: member signing keys are fixed for the channel's lifetime; if a future feature rotates them, the owner roster must be rewritten in the same transaction. | `testMemberKeyEqualsOwnerKey`. |
 
 ### Threat-model alignment
 
@@ -1536,61 +1745,27 @@ particular:
 
 ---
 
-## 8. Open questions
+## 8. Decisions and remaining open questions
 
-1. **Vendored simplexmq pin vs. upstream.** The chat repo's
-   `cabal.project` pins simplexmq at `1f173abf6d6fccb617be1e7994629c405983c431`,
-   which is *behind* the upstream HEAD at
-   `/home/builder/code/simplexmq`. The upstream HEAD has a
-   **5-field `OwnerAuth`** (with `ownerSig` and `authOwnerId`
-   explicitly encoded), per the prompt's description, while the
-   vendored copy used by the chat repo build has the **3-field
-   shape** (`ownerId, ownerKey, authOwnerSig`) plus chain validation
-   already in place (verified at
-   `/workspace/dist-newstyle/src/simplexmq-d4b516889361a2a8/src/Simplex/Messaging/Agent/Protocol.hs:1792-1835`).
+### Resolved decisions
 
-   This plan targets the **vendored shape** the chat actually builds
-   against. Implementing agents must NOT bring in the upstream
-   5-field `OwnerAuth` unless we re-pin the chat repo.
+| Topic | Decision | Where it shows up |
+|---|---|---|
+| simplexmq pin vs. upstream | Both repos at master; no coordination needed | Phase 1 preflight reads, section 4 |
+| `linkRootSigKey` persistence | Not required; rootKey extracted from fixed data on every decode; chat already has `GroupRootKey` for both creator and co-owner cases | Phase 1.2; section 4 (no agent migration) |
+| Owner roster storage | Extend `group_members` with three nullable columns (`owner_auth_sig`, `owner_position`, `owner_rcv_pub_key`); no separate tables | Phase 2.1, 2.2 |
+| Co-owner credential storage on chat side | Implicit in agent's `rcv_queues` row + chat-side `GroupKeys.groupRootKey = GRKPublic _` + `groups.root_pub_key` | Phase 1.6, 2.1 |
+| Mesh content scope | Protocol events only (`x.grp.owner.creds`, `x.grp.link.sync`, `x.grp.mem.role`, `x.grp.mem.intro/inv/fwd`); other events logged and rejected; no `x.msg.new` persistence | Phase 2.4.1 |
+| `linkDataVersion` placement | Chat-layer `GroupShortLinkData` JSON (not agent-layer record) | Phase 1.7 |
+| `x.grp.link.sync` tag | Reserved for this delivery; the parallel link-data-passing workstream picks a different name | Phase 4.1 |
 
-   **Question for user:** is re-pinning to upstream HEAD in scope, or
-   should the plan stay on the current pin? Recommendation: stay on
-   the current pin and re-pin only when phase-1 changes are merged
-   upstream.
+### Remaining open questions
 
-2. **`linkRootSigKey` persistence TODO.** The vendored
-   `Agent.Store.AgentStore.hs:2514` literally says
-   `linkRootSigKey = Nothing -- TODO linkRootSigKey should be stored
-   in a separate field`. Phase 1.2 promotes this TODO to a hard
-   requirement (M20260520 migration). Confirm this is acceptable to
-   land in simplexmq.
-
-3. **Chain depth cap.** The prompt says depth ≤ 8. We propose
-   `ownerChainDepth = 8` enforced at both encode and decode. Is 8
-   the right cap, or do we want to budget for larger channels? At
-   ~189 bytes per OwnerAuth, 8 owners costs ~1.5 KB of the 13.4 KB
-   user-data budget — comfortable. Recommend keeping 8.
-
-4. **Owner mesh content beyond protocol events.** We plumb the
-   data path for an owners-only chat thread (D6) but do not surface
-   the UI. **Question:** should the chat model already accept and
-   persist `x.msg.new` over the mesh as chat items in the database
-   (so once D6 ships, history is intact), or should it drop them
-   silently until the UI ships? Recommendation: persist them now
-   (small storage cost, much better UX when the thread surfaces).
-
-5. **Wire-blob version field placement.** We propose putting
-   `linkDataVersion` inside the chat-layer `GroupShortLinkData` JSON
-   rather than the agent-layer `UserContactData` record, so non-
-   channel uses of `UserContactData` (1-time invitations, normal
-   contact addresses) are unaffected. Confirm this layering choice;
-   the alternative is to add it to `UserLinkData` at the agent layer.
-
-6. **`x.grp.link.sync` naming collision.** Prompt notes another
-   workstream may use the same tag for "link-data passing". We use
-   `x.grp.link.sync` for *this* delivery; the other team's later
-   tag will need to disambiguate (e.g., `x.grp.link.sync.v2`). Want
-   to coordinate now to avoid the collision?
+1. **Owner cap.** Plan defaults to `ownerChainDepth = 8` (~1.5 KB blob
+   cost; O(N²) ≈ 64 verifies on decode). The cap is a one-line
+   constant change. Promoted to a top-level "Design decision required"
+   callout above. Implementation must not begin until the team
+   confirms the value.
 
 ---
 
@@ -1604,10 +1779,17 @@ particular:
   anonymity preservation. Future feature.
 - Transfer of root creator. Future feature.
 - Owner-only chat UI (thread surface in chat list, message
-  composition view). Data plumbing in scope (D6); UI is post-MVP.
+  composition view). UI is post-MVP. Mesh content (`x.msg.new` and
+  the like) is **not persisted** in this delivery; persisting it now
+  would store data that no UI can display.
 - Owner-mesh push-style catchup for offline owners. LGET-on-startup
   is the catchup mechanism for MVP.
 - Public-groups-over-relays migration (orthogonal workstream; may
   reuse owner-mesh primitives later).
 - UX for monitoring relay-level delivery health
   (channels-overview.md "Current gap #3"; tracked separately).
+- Member-pub-key rotation while the member is an owner (would
+  invalidate stored `OwnerAuth.ownerKey`; future feature must rewrite
+  the roster in the same transaction).
+- Agent-side `linkRootSigKey` persistence. The TODO at
+  `Agent/Store/AgentStore.hs:2514` stays untouched.
