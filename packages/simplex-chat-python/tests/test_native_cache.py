@@ -67,7 +67,7 @@ def test_postgres_on_macos_rejected(monkeypatch):
 
 
 def test_atomic_install(tmp_path, monkeypatch):
-    """Build a fake libs zip, mock urlretrieve, verify extraction + atomic rename."""
+    """Build a fake libs zip, mock _stream_to_file, verify extraction + atomic rename."""
     # Build zip: libs/libsimplex.so + libs/libHS-stub.so
     src = tmp_path / "src" / "libs"
     src.mkdir(parents=True)
@@ -78,12 +78,12 @@ def test_atomic_install(tmp_path, monkeypatch):
         for f in src.iterdir():
             zf.write(f, f"libs/{f.name}")
 
-    def fake_urlretrieve(url, dest, reporthook=None):
+    def fake_stream(url, dest, *, timeout=60.0):
         import shutil
 
         shutil.copy(zip_path, dest)
 
-    monkeypatch.setattr("urllib.request.urlretrieve", fake_urlretrieve)
+    monkeypatch.setattr("simplex_chat._native._stream_to_file", fake_stream)
     monkeypatch.setattr("simplex_chat._native._platform_tag", lambda: "linux-x86_64")
 
     target = tmp_path / "out"

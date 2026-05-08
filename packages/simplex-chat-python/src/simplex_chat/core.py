@@ -132,8 +132,7 @@ async def chat_close_store(ctrl: int) -> None:
 
 async def chat_write_file(ctrl: int, path: str, data: bytes) -> CryptoArgs:
     def _call() -> str:
-        buf = (ctypes.c_uint8 * len(data)).from_buffer_copy(data)
-        ptr = _native.lib().chat_write_file(ctrl, path.encode("utf-8"), buf, len(data))
+        ptr = _native.lib().chat_write_file(ctrl, path.encode("utf-8"), data, len(data))
         return _read_and_free(ptr)
 
     raw = await asyncio.to_thread(_call)
@@ -149,7 +148,8 @@ async def chat_read_file(path: str, args: CryptoArgs) -> bytes:
         )
         if not ptr:
             raise RuntimeError("chat_read_file returned null")
-        addr = ctypes.cast(ptr, ctypes.c_void_p).value or 0
+        addr = ctypes.cast(ptr, ctypes.c_void_p).value
+        assert addr is not None  # `if not ptr` above already filtered NULL
         try:
             status = ctypes.cast(addr, ctypes.POINTER(ctypes.c_uint8))[0]
             if status == 1:

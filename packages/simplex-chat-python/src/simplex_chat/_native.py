@@ -9,7 +9,6 @@ import ctypes
 import errno
 import os
 import platform
-import socket
 import sys
 import tempfile
 import threading
@@ -91,15 +90,29 @@ def _resolve_libs_dir(backend: Backend) -> Path:
     return target
 
 
-def _download_progress(blocknum: int, blocksize: int, totalsize: int) -> None:
-    """`urlretrieve` reporthook: render `\\r download: X/Y MiB` to stderr."""
-    received = blocknum * blocksize
-    if totalsize > 0:
-        pct = min(100, received * 100 // totalsize)
-        msg = f"\r  download: {received >> 20} / {totalsize >> 20} MiB ({pct}%)"
-    else:
-        msg = f"\r  download: {received >> 20} MiB"
-    print(msg, end="", file=sys.stderr, flush=True)
+_DOWNLOAD_CHUNK = 1 << 16  # 64 KiB
+
+
+def _stream_to_file(url: str, dest: Path, *, timeout: float = 60.0) -> None:
+    """Stream `url` → `dest`, printing a carriage-return progress bar.
+
+    `timeout` is per-request; we don't touch `socket.setdefaulttimeout`
+    so other socket users in the same process aren't affected.
+    """
+    with urllib.request.urlopen(url, timeout=timeout) as resp:  # noqa: S310 - https://github.com/...
+        total = int(resp.headers.get("Content-Length") or 0)
+        received = 0
+        with dest.open("wb") as out:
+            while chunk := resp.read(_DOWNLOAD_CHUNK):
+                out.write(chunk)
+                received += len(chunk)
+                if total > 0:
+                    pct = min(100, received * 100 // total)
+                    msg = f"\r  download: {received >> 20} / {total >> 20} MiB ({pct}%)"
+                else:
+                    msg = f"\r  download: {received >> 20} MiB"
+                print(msg, end="", file=sys.stderr, flush=True)
+        print("", file=sys.stderr, flush=True)  # newline after final progress line
 
 
 def _download(target: Path, backend: Backend) -> None:
@@ -121,17 +134,7 @@ def _download(target: Path, backend: Backend) -> None:
     )
     with tempfile.TemporaryDirectory(dir=target.parent) as tmp:
         zip_path = Path(tmp) / "libs.zip"
-        # `urlretrieve` has no built-in timeout — a stalled connection would
-        # hang forever. Set a 60s socket timeout so any 60s without bytes
-        # raises `socket.timeout`. The reporthook prints a single-line
-        # carriage-return progress bar so users see the download advancing.
-        old_timeout = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(60)
-        try:
-            urllib.request.urlretrieve(url, zip_path, reporthook=_download_progress)
-            print("", file=sys.stderr, flush=True)  # newline after final progress line
-        finally:
-            socket.setdefaulttimeout(old_timeout)
+        _stream_to_file(url, zip_path, timeout=60.0)
         with zipfile.ZipFile(zip_path) as zf:
             zf.extractall(tmp)
         # zip layout: <tmp>/libs/libsimplex.* + libHS*.*
@@ -181,7 +184,10 @@ def _setup_signatures(lib: ctypes.CDLL) -> None:
     lib.chat_send_cmd.restype = c_void_p
     lib.chat_recv_msg_wait.argtypes = [c_void_p, c_int]
     lib.chat_recv_msg_wait.restype = c_void_p
-    lib.chat_write_file.argtypes = [c_void_p, c_char_p, POINTER(c_uint8), c_int]
+    # chat_write_file's payload is treated read-only by libsimplex; passing
+    # `bytes` via c_char_p avoids the from_buffer_copy doubling. ctypes pins
+    # the bytes buffer for the duration of the call.
+    lib.chat_write_file.argtypes = [c_void_p, c_char_p, c_char_p, c_int]
     lib.chat_write_file.restype = c_void_p
     lib.chat_read_file.argtypes = [c_char_p, c_char_p, c_char_p]
     lib.chat_read_file.restype = POINTER(c_uint8)

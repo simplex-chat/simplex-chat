@@ -19,15 +19,16 @@ def main(argv: list[str] | None = None) -> int:
         help="which libsimplex variant to download (default: sqlite)",
     )
     args = p.parse_args(argv)
-    if args.command == "install":
-        try:
-            path = _native._resolve_libs_dir(args.backend)
-            print(f"libsimplex installed at: {path}")
-            return 0
-        except Exception as e:
-            print(f"install failed: {e}", file=sys.stderr)
-            return 1
-    return 1
+    # `args.command` is always set: `add_subparsers(required=True)` makes
+    # argparse exit before reaching this point if no subcommand is given.
+    assert args.command == "install"
+    try:
+        path = _native._resolve_libs_dir(args.backend)
+        print(f"libsimplex installed at: {path}")
+        return 0
+    except Exception as e:
+        print(f"install failed: {e}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

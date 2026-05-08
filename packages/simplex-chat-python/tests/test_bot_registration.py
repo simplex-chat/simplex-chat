@@ -281,7 +281,7 @@ def test_dispatch_unknown_command_falls_through_to_message_handlers():
 
 def test_chat_api_status_properties():
     """`initialized` and `started` reflect lifecycle state without invoking the FFI."""
-    api = ChatApi(ctrl=12345, backend="sqlite")
+    api = ChatApi(ctrl=12345)
     assert api.initialized is True
     assert api.started is False
     assert api.ctrl == 12345

@@ -10,7 +10,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, Generic, Literal, TypeVar, overload
 
-from . import _native  # noqa: F401  # re-exported by `from simplex_chat import _native` for tests
+from . import util
 from .api import ChatApi, Db
 from .core import MigrationConfirmation
 from .filters import compile_message_filter
@@ -367,6 +367,9 @@ class Bot:
                 raise
             except Exception:
                 log.exception("recv_chat_event failed")
+                # Bound the spin rate when the FFI is wedged on a persistent
+                # error (vs the timeout path, which already paces itself).
+                await asyncio.sleep(0.5)
                 continue
             if event is None:
                 continue
@@ -419,6 +422,15 @@ class Bot:
                 return
 
     async def _invoke_with_middleware(self, handler: MessageHandler, message: Message[Any]) -> None:
+        # Fast path: most bots register no middleware. Skip the closure-chain
+        # construction and the empty-data dict on every dispatch.
+        if not self._middleware:
+            try:
+                await handler(message)
+            except Exception:
+                log.exception("message handler failed")
+            return
+
         async def call(m: Message[Any], _data: dict[str, object]) -> None:
             await handler(m)
 
@@ -444,6 +456,13 @@ class Bot:
     async def _invoke_command_with_middleware(
         self, handler: CommandHandler, message: Message[Any], cmd: ParsedCommand
     ) -> None:
+        if not self._middleware:
+            try:
+                await handler(message, cmd)
+            except Exception:
+                log.exception("command handler failed")
+            return
+
         async def call(m: Message[Any], _data: dict[str, object]) -> None:
             await handler(m, cmd)
 
@@ -468,8 +487,6 @@ class Bot:
 
     @staticmethod
     def _parse_command(msg: Message[Any]) -> ParsedCommand | None:
-        from . import util
-
         parsed = util.ci_bot_command(msg.chat_item["chatItem"])
         if parsed is None:
             return None
@@ -513,9 +530,8 @@ class Bot:
                 log.warning("Bot has no address")
 
         # Always announce the address — matches Node bot.ts:60.
+        link: str | None = None
         if address is not None:
-            from . import util
-
             link = util.contact_address_str(address["connLinkContact"])
             log.info("Bot address: %s", link)
 
@@ -531,8 +547,7 @@ class Bot:
                     if isinstance(self._welcome, str)
                     else self._welcome
                 )
-            cur_settings = address.get("addressSettings", {})  # type: ignore[arg-type]
-            if cur_settings != desired:
+            if address["addressSettings"] != desired:
                 log.info("Bot address settings changed, updating...")
                 await api.api_set_address_settings(user_id, desired)
 
@@ -541,6 +556,11 @@ class Bot:
         # fields profileId, localAlias, preferences, peerType) so a full-dict
         # equality would always differ.
         new_profile = self._bot_profile_to_wire()
+        if link is not None and self._opts["use_bot_profile"]:
+            # Mirrors bot.ts:62 — embed the connection link in the bot's profile
+            # so contacts that resolve the bot via stored profile data see the
+            # current address.
+            new_profile["contactLink"] = link
         cur = user["profile"]
         changed = (
             cur["displayName"] != new_profile["displayName"]
@@ -549,6 +569,7 @@ class Bot:
             or cur.get("image") != new_profile.get("image")
             or cur.get("preferences") != new_profile.get("preferences")
             or cur.get("peerType") != new_profile.get("peerType")
+            or cur.get("contactLink") != new_profile.get("contactLink")
         )
         if changed and self._opts["update_profile"]:
             log.info("Bot profile changed, updating...")

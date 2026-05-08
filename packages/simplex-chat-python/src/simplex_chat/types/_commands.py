@@ -113,7 +113,7 @@ class APIDeleteChatItem(TypedDict):
 
 
 def APIDeleteChatItem_cmd_string(self: APIDeleteChatItem) -> str:
-    return '/_delete item ' + T.ChatRef_cmd_string(self['chatRef']) + ' ,'.join(map(str, self['chatItemIds'])) + ' ' + str(self['deleteMode'])
+    return '/_delete item ' + T.ChatRef_cmd_string(self['chatRef']) + ' ' + ','.join(map(str, self['chatItemIds'])) + ' ' + str(self['deleteMode'])
 
 APIDeleteChatItem_Response = CR.ChatItemsDeleted | CR.ChatCmdError
 
@@ -126,7 +126,7 @@ class APIDeleteMemberChatItem(TypedDict):
 
 
 def APIDeleteMemberChatItem_cmd_string(self: APIDeleteMemberChatItem) -> str:
-    return '/_delete member item #' + str(self['groupId']) + ' ,'.join(map(str, self['chatItemIds']))
+    return '/_delete member item #' + str(self['groupId']) + ' ' + ','.join(map(str, self['chatItemIds']))
 
 APIDeleteMemberChatItem_Response = CR.ChatItemsDeleted | CR.ChatCmdError
 
@@ -229,7 +229,7 @@ class APIMembersRole(TypedDict):
 
 
 def APIMembersRole_cmd_string(self: APIMembersRole) -> str:
-    return '/_member role #' + str(self['groupId']) + ' ,'.join(map(str, self['groupMemberIds'])) + ' ' + str(self['memberRole'])
+    return '/_member role #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + ' ' + str(self['memberRole'])
 
 APIMembersRole_Response = CR.MembersRoleUser | CR.ChatCmdError
 
@@ -243,7 +243,7 @@ class APIBlockMembersForAll(TypedDict):
 
 
 def APIBlockMembersForAll_cmd_string(self: APIBlockMembersForAll) -> str:
-    return '/_block #' + str(self['groupId']) + ' ,'.join(map(str, self['groupMemberIds'])) + ' blocked=' + ('on' if self['blocked'] else 'off')
+    return '/_block #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + ' blocked=' + ('on' if self['blocked'] else 'off')
 
 APIBlockMembersForAll_Response = CR.MembersBlockedForAllUser | CR.ChatCmdError
 
@@ -257,7 +257,7 @@ class APIRemoveMembers(TypedDict):
 
 
 def APIRemoveMembers_cmd_string(self: APIRemoveMembers) -> str:
-    return '/_remove #' + str(self['groupId']) + ' ,'.join(map(str, self['groupMemberIds'])) + (' messages=on' if self['withMessages'] else '')
+    return '/_remove #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + (' messages=on' if self['withMessages'] else '')
 
 APIRemoveMembers_Response = CR.UserDeletedMembers | CR.ChatCmdError
 
@@ -310,7 +310,7 @@ class APINewPublicGroup(TypedDict):
 
 
 def APINewPublicGroup_cmd_string(self: APINewPublicGroup) -> str:
-    return '/_public group ' + str(self['userId']) + (' incognito=on' if self['incognito'] else '') + ' ,'.join(map(str, self['relayIds'])) + ' ' + json.dumps(self['groupProfile'])
+    return '/_public group ' + str(self['userId']) + (' incognito=on' if self['incognito'] else '') + ' ' + ','.join(map(str, self['relayIds'])) + ' ' + json.dumps(self['groupProfile'])
 
 APINewPublicGroup_Response = CR.PublicGroupCreated | CR.PublicGroupCreationFailed | CR.ChatCmdError
 
@@ -419,7 +419,7 @@ class APIConnectPlan(TypedDict):
 
 
 def APIConnectPlan_cmd_string(self: APIConnectPlan) -> str:
-    return '/_connect plan ' + str(self['userId']) + ' ' + self.get('connectionLink')
+    return '/_connect plan ' + str(self['userId']) + ((' ' + self.get('connectionLink')) if self.get('connectionLink') is not None else '')
 
 APIConnectPlan_Response = CR.ConnectionPlan | CR.ChatCmdError
 

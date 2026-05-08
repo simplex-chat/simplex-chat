@@ -155,7 +155,7 @@ typeCmdStringCode CTDoc {typeDef = td@APITypeDef {typeName' = name, typeDef}, ty
 -- @_types.py@, where peer type cmd_string calls don't need a namespace.
 pyTypeSyntaxText :: String -> TypeAndFields -> Expr -> Text
 pyTypeSyntaxText typeNamespace r expr =
-  T.replace "' + '" "" $ rewriteParams accessors (pySyntaxText typeNamespace r expr)
+  rewriteParams accessors (pySyntaxText typeNamespace r expr)
   where
     accessors = filter ((/= "self") . fst) (paramAccessors r)
 
@@ -278,12 +278,16 @@ fieldsCodePy indent namespace = foldMap render
 -- @typeNamespace@ is prepended to any `<TypeName>_cmd_string(...)` calls
 -- emitted for params whose type has its own syntax (e.g. @"T."@ from
 -- @_commands.py@, or @""@ from within @_types.py@).
+--
+-- Unlike the JS variant, we do NOT collapse adjacent string literals via
+-- `T.replace "' + '" ""`: that pattern incorrectly matches `' ' + ','`
+-- (the space-then-comma sequence between a literal and `','.join(...)`),
+-- producing `' ,'.join(...)` which uses ` ,` as the join separator and
+-- swallows the leading space. The `intercalate " + "` output is correct
+-- without further string fixups.
 pySelfSyntaxText :: String -> TypeAndFields -> Expr -> Text
 pySelfSyntaxText typeNamespace r expr =
-  T.replace "' + '" "" $ rewriteParams (paramAccessors r) (pySyntaxText typeNamespace r expr)
-
-paramNames :: TypeAndFields -> [String]
-paramNames (_, fields) = map (\(APIRecordField n _) -> n) fields
+  rewriteParams (paramAccessors r) (pySyntaxText typeNamespace r expr)
 
 -- | Map field name to the Python access expression: `self['<name>']` for
 -- required fields, `self.get('<name>')` for optional ones (since
