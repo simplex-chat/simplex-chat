@@ -89,8 +89,10 @@ A `GSMemLeft` historical row for the same `relay_link` is left in place
 ## Test surface
 - Owner adds relay → existing subscribers (online) receive `XGrpRelayNew` and
   connect without channel open.
-- Multiple relays forward `XGrpRelayNew` → shared-msg-id dedup leaves only one
-  copy reaching the helper.
+- Channel with two existing relays: owner adds a third relay; both existing
+  relays forward `XGrpRelayNew` for the new relay to subscribers in parallel
+  → shared-msg-id dedup leaves only one copy reaching the helper; subscriber
+  connects to the announced relay exactly once.
 - `XGrpRelayNew` arrives while subscriber is mid-`APIGetUpdatedGroupLinkData`
   for the same relay → group lock serializes; no double connection.
 - Subscriber re-add scenario: previous `GSMemLeft` row for same `relay_link`
