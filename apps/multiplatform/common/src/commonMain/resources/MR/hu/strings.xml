@@ -1926,7 +1926,7 @@
     <string name="app_check_for_updates_button_skip">Ezen verzió kihagyása</string>
     <string name="app_check_for_updates_notice_desc">Ha értesítést szeretne kapni az új kiadásokról, kapcsolja be a stabil vagy béta verziók időszakos ellenőrzését.</string>
     <string name="app_check_for_updates_update_available">Új verzió érhető el: %s</string>
-    <string name="app_check_for_updates_canceled">A frissítés letöltése megszakítva</string>
+    <string name="app_check_for_updates_canceled">Frissítésletöltés visszavonva</string>
     <string name="app_check_for_updates_beta">Béta</string>
     <string name="app_check_for_updates_notice_disable">Letiltás</string>
     <string name="app_check_for_updates_disabled">Letiltva</string>
@@ -2350,7 +2350,7 @@
     <string name="network_smp_web_port_off">Kikapcsolva</string>
     <string name="network_smp_web_port_preset">Előre beállított kiszolgálók</string>
     <string name="network_smp_web_port_preset_footer">A 443-as TCP-port használata kizárólag az előre beállított kiszolgálókhoz.</string>
-    <string name="error_accepting_member">Hiba a tag befogadásakor</string>
+    <string name="error_accepting_member">Hiba történt a tag befogadásakor</string>
     <string name="group_new_support_chats">%d csevegés a tagokkal</string>
     <string name="group_new_support_messages">%d üzenet</string>
     <string name="group_new_support_chat_one">1 csevegés egy taggal</string>
@@ -2407,7 +2407,7 @@
     <string name="error_rejecting_contact_request">Hiba történt a partneri kapcsolatkérés elutasításakor</string>
     <string name="error_preparing_contact">Hiba történt a csevegés megnyitásakor</string>
     <string name="error_preparing_group">Hiba történt a csoport megnyitásakor</string>
-    <string name="error_changing_user">Hiba a profil módosításakor</string>
+    <string name="error_changing_user">Hiba történt a profil módosításakor</string>
     <string name="group_preview_open_to_join">Megnyitás a csatlakozáshoz</string>
     <string name="open_to_connect">Megnyitás a kapcsolódáshoz</string>
     <string name="open_to_accept">Megnyitás az elfogadáshoz</string>
@@ -2496,7 +2496,7 @@
     <string name="privacy_chat_list_open_full_web_link">Teljes hivatkozás megnyitása</string>
     <string name="sanitize_links_toggle">Nyomonkövetési paraméterek eltávolítása a hivatkozásokból</string>
     <string name="simplex_link_relay">SimpleX-átjátszó címe</string>
-    <string name="error_marking_member_support_chat_read">Hiba a csevegés olvasottként való megjelölésekor</string>
+    <string name="error_marking_member_support_chat_read">Hiba történt a csevegés olvasottként való megjelölésekor</string>
     <string name="proxy_destination_error_unknown_ca">A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">A továbbító kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="network_error_unknown_ca">A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
@@ -2597,7 +2597,7 @@
     <string name="check_relay_name">Ellenőrizze az átjátszó nevét, és próbálja újra.</string>
     <string name="invalid_relay_address">Érvénytelen az átjátszó címe!</string>
     <string name="check_relay_address">Ellenőrizze az átjátszó címét, és próbálja újra.</string>
-    <string name="error_adding_relay">Hiba az átjátszó hozzáadásakor</string>
+    <string name="error_adding_relay">Hiba történt az átjátszó hozzáadásakor</string>
     <string name="chat_relays">Csevegési átjátszók</string>
     <string name="chat_relays_forward_messages_in_channels">A csevegési átjátszók továbbítják az üzeneteket az Ön által létrehozott csatornákban.</string>
     <string name="channel_relays_title">Csevegési átjátszók</string>
@@ -2616,7 +2616,7 @@
     <string name="relay_section_footer_subscriber">Ön ezen az átjátszóhivatkozáson keresztül kapcsolódott a csatornához.</string>
     <string name="button_remove_subscriber">Feliratkozó eltávolítása</string>
     <string name="block_subscriber_for_all_question">Az összes feliratkozó számára letiltja a feliratkozót?</string>
-    <string name="error_creating_channel">Hiba a csatorna létrehozásakor</string>
+    <string name="error_creating_channel">Hiba történt a csatorna létrehozásakor</string>
     <string name="cancel_creating_channel_question">Visszavonja a csatorna létrehozását?</string>
     <string name="enable_at_least_one_chat_relay">Engedélyezzen legalább egy csevegési átjátszót a csatorna létrehozásához.</string>
     <string name="your_profile_shared_with_channel_relays">A(z) %1$s nevű profilja meg lesz osztva a csatorna átjátszóival és feliratkozóival.\nAz átjátszók hozzáférhetnek a csatornaüzenetekhez.</string>
@@ -2627,7 +2627,7 @@
     <string name="relay_address_alert_title">Átjátszó címe</string>
     <string name="relay_address_alert_message">Ez egy csevegési átjátszó címe, nem használható kapcsolódásra.</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Ez a saját hivatkozása a(z) <b>%1$s</b> nevű csatornához!]]></string>
-    <string name="error_opening_channel">Hiba a csatorna megnyitásakor</string>
+    <string name="error_opening_channel">Hiba történt a csatorna megnyitásakor</string>
     <string name="unblock_subscriber_for_all_question">Az összes feliratkozó számára feloldja a feliratkozó letiltását?</string>
     <string name="test_relay_to_retrieve_name"><![CDATA[<b>Átjátszó tesztelése</b> a nevének lekéréséhez.]]></string>
     <string name="channel_full_name_field">Csatorna teljes neve:</string>
@@ -2636,7 +2636,7 @@
     <string name="rcv_channel_events_count">%d csatornaesemény</string>
     <string name="rcv_channel_event_channel_deleted">törölt csatorna</string>
     <string name="rcv_msg_error_parse">hiba: %s</string>
-    <string name="error_saving_channel_profile">Hiba a csatornaprofil mentésekor</string>
+    <string name="error_saving_channel_profile">Hiba történt a csatornaprofil mentésekor</string>
     <string name="alert_title_msg_error">Üzenethiba</string>
     <string name="save_and_notify_channel_subscribers">Mentés és a csatorna feliratkozóinak értesítése</string>
     <string name="save_channel_profile">Csatornaprofil mentése</string>
@@ -2663,7 +2663,7 @@
     <string name="chat_link_business_address">Üzleti cím</string>
     <string name="chat_link_channel">Csatornahivatkozás</string>
     <string name="chat_link_contact_address">Kapcsolattartási cím</string>
-    <string name="error_sharing_channel">Hiba a csatorna megosztásakor</string>
+    <string name="error_sharing_channel">Hiba történt a csatorna megosztásakor</string>
     <string name="chat_link_from_owner">(a tulajdonostól)</string>
     <string name="chat_link_group">Csoporthivatkozás</string>
     <string name="owner_verification_passed">Hivatkozás aláírása ellenőrizve.</string>
@@ -2692,7 +2692,7 @@
     <string name="connect_with_someone">Saját hivatkozás létrehozása</string>
     <string name="for_anyone_to_reach_you">Bárki számára, aki el szeretné érni Önt</string>
     <string name="invite_someone_privately">Partner meghívása privátban</string>
-    <string name="let_someone_connect_to_you">Hagyja, hogy valaki elérje Önt</string>
+    <string name="let_someone_connect_to_you">Legyen elérhető mások számára</string>
     <string name="onboarding_or_show_qr_code">Vagy mutassa meg a QR-kódot személyesen vagy videóhíváson keresztül.</string>
     <string name="onboarding_or_use_qr_code">Vagy használja ezt a QR-kódot – nyomtassa ki vagy mutassa meg online.</string>
     <string name="onboarding_send_1_time_link">Küldje el a hivatkozást bármilyen üzenetváltó alkalmazáson keresztül – ez egy biztonságos módszer – és kérje meg a partnerét, hogy illessze be a SimpleX alkalmazásba.</string>
@@ -2766,5 +2766,6 @@
     <string name="one_hand_ui_bottom_bar">Alsó sáv</string>
     <string name="link_previews_alert_desc_socks">A hivatkozások előnézetét SOCKS proxyn keresztül kéri le a kliens. A DNS-lekérdezés viszont továbbra is történhet helyi szinten, a saját DNS-kiszolgálón keresztül.</string>
     <string name="one_hand_ui_top_bar">Felső sáv</string>
-    <string name="cancel_channel_alert_msg">Az új %1$s nevű csatornája %3$d átjátszóból %2$d átjátszóhoz kapcsolódik.\nHa megszakítja, akkor a csatorna törlődni fog – de később újra létrehozhatja.</string>
+    <string name="cancel_channel_alert_msg">Az új %1$s nevű csatornája %3$d átjátszóból %2$d átjátszóhoz kapcsolódik.\nHa visszavonja, akkor a csatorna törlődni fog – de később újra létrehozhatja.</string>
+    <string name="button_cancel_and_delete_channel">Visszavonás és a csatorna törlése</string>
 </resources>
