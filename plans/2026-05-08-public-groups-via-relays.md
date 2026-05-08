@@ -84,15 +84,20 @@ Mostly inert. The `GroupType` ADT (`Types.hs:767-771`) already has `GTGroup` —
 no change. The `PublicGroupProfile`/`GroupProfile` definitions
 (`Types.hs:787-804`) are unchanged.
 
-Two small additions:
+Two helper additions, both included in this MVP and used everywhere the
+audit touches a `groupType` decision (no inline `groupProfile.publicGroup
+.groupType` walks anywhere in the new code):
 
-- `Types.hs` — derive `groupType' :: GroupInfo -> Maybe GroupType` helper
-  alongside `useRelays' :: GroupInfo -> Bool` (line 494). Lets call sites read
-  governance without inlining the `groupProfile.publicGroup.groupType` walk.
-  Optional but reduces site-by-site verbosity in `Subscriber.hs`/`Commands.hs`.
-- `Types.hs` — derive `isPublicGroup' :: GroupInfo -> Bool` (true iff
-  `useRelays' && groupType' == Just GTGroup`). One helper, used at the
-  joiner-role derivation site and the DM-invite gate.
+- `Types.hs` — `groupType' :: GroupInfo -> Maybe GroupType`, alongside
+  `useRelays' :: GroupInfo -> Bool` (line 494). Returns `Nothing` for P2P
+  secret groups (no `publicGroup` field).
+- `Types.hs` — `isPublicGroup' :: GroupInfo -> Bool` (true iff
+  `useRelays' && groupType' == Just GTGroup`). Used at the joiner-role
+  derivation site and the DM-invite gate.
+
+Both helpers live in `Types.hs` (not `Subscriber/Roles.hs` or any new
+module) — same file as `useRelays'`, same single-line definitions,
+zero new module dependencies.
 
 `Types/Shared.hs` (the `GroupMemberRole` ADT, lines 18-51) is unchanged.
 `Protocol.hs` `requiresSignature` (line 1221) is unchanged for the MVP — see
@@ -125,8 +130,9 @@ two parsers, one constructor field, one downstream substitution.
     `let subRole = subscriberRoleFor gType` where `subscriberRoleFor GTChannel
     = GRObserver; subscriberRoleFor GTGroup = GRMember; subscriberRoleFor
     (GTUnknown _) = GRObserver` (defensive: unknown means do not let posting
-    happen). Place `subscriberRoleFor` next to the helpers in `Types.hs` or in
-    a small `Subscriber/Roles.hs` if you want a single canonical site.
+    happen). `subscriberRoleFor` lives in `Types.hs`, alongside `useRelays'`
+    and the new `groupType'` / `isPublicGroup'` helpers — single canonical
+    site, no new module.
 - Line 2024-2040, `APIPrepareGroup` handler. Line 2029:
   `subRole <- if useRelays then asks $ channelSubscriberRole . config else
   pure GRMember` becomes `subRole = if useRelays then subscriberRoleFor (case
@@ -152,6 +158,67 @@ two parsers, one constructor field, one downstream substitution.
   to test members sending messages` — remove. Tests that need members to
   post will create Public groups (`GTGroup`) explicitly; tests that exercise
   channels keep `GTChannel` defaults.
+
+#### 3.3.1 Default group preferences for Public groups
+
+The CLI / API create handler builds the initial `GroupPreferences` that
+ship in the channel link's `groupProfile`. Today there are two parsers:
+`groupProfile` at `Library/Commands.hs:5371-5379` (used by `/group`,
+secret-group default) and `channelProfile` at `Library/Commands.hs:5380-
+5383` (used by `/public group`, channel default — overrides
+`support = OFF` on top of the secret-group base). Public groups need a
+third resolution.
+
+Implementation: extend the existing parser by parameterization rather
+than introducing a third sibling. `channelProfile` becomes
+`relayGroupProfile :: GroupType -> Parser GroupProfile`, and the
+overrides are decided from `gType`. The `/_public group` API path
+threads the same `GroupType` from the new `APINewPublicGroup` field
+(§3.3) into the prefs-resolution helper.
+
+The table below names every preference, gives the secret-group, channel,
+and Public-group defaults, and (where Public-group deviates from
+secret-group) the reason. "Secret group" = output of the `groupProfile`
+parser; "Channel" = output of `channelProfile`; both are grounded in
+`Types/Preferences.hs:479-495` (`defaultGroupPrefs`) overlaid with the
+parser-level overrides.
+
+| Preference         | Secret group | Channel | **Public group** | Notes                                                                                          |
+|--------------------|--------------|---------|------------------|------------------------------------------------------------------------------------------------|
+| `timedMessages`    | OFF          | OFF     | **OFF**          | Match secret group. Owners can turn on per-channel.                                            |
+| `directMessages`   | ON           | ON      | **ON**           | Default ON. Members expect to DM each other in a "group". Help text surfaces the metadata implication (see threat-model §6.A.1). |
+| `fullDelete`       | OFF          | OFF     | **OFF**          | Match secret group.                                                                            |
+| `reactions`        | ON           | ON      | **ON**           | Match.                                                                                         |
+| `voice`            | ON           | ON      | **ON**           | Match.                                                                                         |
+| `files`            | ON           | ON      | **ON**           | Match.                                                                                         |
+| `simplexLinks`     | ON           | ON      | **ON**           | Match.                                                                                         |
+| `reports`          | ON           | ON      | **ON**           | Match secret group. Public groups can grow to thousands of members and need member-flagging from day one — disabling reports here would force owners to add them later. |
+| `history`          | ON           | ON      | **ON**           | Match. New members joining via relay get recent history (relay path in `Subscriber.hs:888`).  |
+| `support`          | ON           | OFF     | **ON**           | **Deviates from channel.** Channels disable support because broadcast publishers do not want a subscriber-to-owner side channel by default. Public groups are governed groups with members; member-to-moderator escalation is expected. Match secret group. |
+| `sessions`         | OFF          | OFF     | **OFF**          | Match.                                                                                         |
+| `comments`         | OFF          | OFF     | **OFF**          | Channels-specific feature; not part of the Public-group MVP.                                   |
+
+Concretely: Public-group defaults equal secret-group defaults
+(`directMessages`/`history` ON via parser overlay, `support` ON from
+`defaultGroupPrefs`). The only Public-group-specific override needed at
+the parser level is **none** — the existing `groupProfile` parser at
+`Library/Commands.hs:5371-5379` already produces the correct shape.
+The `relayGroupProfile` parameterization above collapses to:
+
+```haskell
+relayGroupProfile :: GroupType -> Parser GroupProfile
+relayGroupProfile = \case
+  GTChannel -> channelProfile  -- existing: support = OFF
+  GTGroup   -> groupProfile    -- existing: support = ON
+  GTUnknown _ -> groupProfile  -- defensive
+```
+
+This is a one-binding change to the parser; the `APINewPublicGroup`
+JSON path is unchanged because the caller (mobile client, §4.3 / §5.3)
+constructs `groupPreferences` explicitly. Mobile callers must construct
+the right preferences for their chosen `groupType`; the iOS / Kotlin
+create-flow sub-sections (§4.3, §5.3) gain a `groupType`-aware default-
+prefs builder that mirrors this table.
 
 ### 3.4 Message processing changes
 
@@ -224,13 +291,45 @@ two parsers, one constructor field, one downstream substitution.
      `Subscriber.hs:990-1027`, `XGrpDirectInv` arm).
 
   Edge case: `xGrpDirectInv` (line 3249+) currently writes a `Connection`
-  record and creates a contact. When the message is forwarded and
-  arrives via `processForwardedMsg`, the `conn'` argument the existing
-  handler expects is the relay's connection — wrong. Either pass a
-  marker/None and adapt `xGrpDirectInv` to handle the forwarded case,
-  or introduce `xGrpDirectInvForwarded` that diverges only where it
-  needs to. Prefer the latter — keeps the existing direct path
-  unchanged.
+  record and creates a contact, using the `conn'` argument as the
+  member-side connection on which the invitation arrived. The
+  forwarded path has no such direct member connection — the message
+  arrived through the relay. The two paths share ~95% of their body
+  (preference gate, blocked-member check, contact creation, item
+  rendering), differing only in (i) the source of the `Connection`
+  record persisted with the new contact and (ii) which member-record
+  lookup applies.
+
+  Approach: **parameterize the existing handler.** Per `good-code-v4`
+  §`<good-diff>` ("extend existing functions by parameterization
+  rather than parallel implementations") — duplicating the body
+  doubles the surface for blocked-member, preference, and contact-
+  creation bugs. Introduce a discriminator parameter and route the
+  two cases at the one site that actually differs:
+
+  ```haskell
+  data DirectInvSource
+    = DISDirect Connection            -- existing path: A→B over group conn
+    | DISForwarded ForwardedMeta      -- new path: A→relay→B
+                                      -- ForwardedMeta carries what
+                                      -- the forwarded path knows
+                                      -- instead of the direct conn
+                                      -- (sender memberId, broker ts,
+                                      -- relay member record, etc.)
+
+  xGrpDirectInv
+    :: GroupInfo -> GroupMember -> DirectInvSource -> ConnReqInvitation
+    -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
+  ```
+
+  Existing callers at `Subscriber.hs:1026` pass `DISDirect conn'`;
+  the new arm in `processForwardedMsg` passes `DISForwarded
+  forwardedMeta`. The body branches once at the contact-creation
+  site (where `conn'` is consumed), and the rest of the function is
+  unchanged. If during implementation the `DirectInvSource` split
+  produces more conditionals than a duplicated body would (more than
+  ~3 case-arms outside the contact-creation site), document the
+  discovery and split — but the default is parameterization.
 
 - Line 1240-1249, `unverifiedAllowed`. Current behaviour: subscribers may
   pass unsigned `XGrpLeave` and `XInfo` between each other when the
@@ -240,7 +339,27 @@ two parsers, one constructor field, one downstream substitution.
   subscriber-to-subscriber message has a known sender key, and the
   unverified path can be tightened. **For the Public groups MVP, leave
   `unverifiedAllowed` as-is** — tightening it is gated on the
-  dissemination plan landing first. Track it as a follow-up.
+  dissemination plan landing first.
+
+  Concrete handoff: as part of this MVP, update the existing TODO
+  comment at `Protocol.hs:1233-1235` to reference both this plan and
+  the dissemination plan, naming the precondition for tightening:
+
+  ```haskell
+  -- TODO [public-groups]: tighten unverifiedAllowed for GTGroup once
+  -- 2026-04-29-member-profile-sending-channels.md lands — keys for
+  -- all members will be known via XGrpMemNew sidecar (step 6),
+  -- making MSSSignedNoKey unnecessary for XGrpLeave/XInfo between
+  -- subscribers. See plans/2026-05-08-public-groups-via-relays.md
+  -- §3.4 and the dissemination plan §6.
+  ```
+
+  No separate plan file is created — the precondition and the action
+  are both small, and the inline TODO with cross-references is enough
+  for a future contributor to pick up. If the team later wants a full
+  plan instead, name it `plans/{date-after-dissemination-lands}-
+  tighten-unverified-allowed.md` and update the comment to point to
+  it.
 
 - Line 985-989 / 2087-2089, `checkSendAsGroup`. Already restricts
   `asGroup = True` to `GROwner`. Public group members are `GRMember`, so
@@ -276,7 +395,7 @@ two parsers, one constructor field, one downstream substitution.
   (3) it applies to channels equally — it is a generic "admission in
   relay-mediated groups" gap, not a Public-groups gap.
   Document this as a known limitation in the release notes and surface
-  in §7 Open questions. The first review-sensitive Public group
+  in §8 Open questions. The first review-sensitive Public group
   deployment will force the design conversation.
 
 ### 3.5 Database migrations
@@ -339,6 +458,19 @@ a new sibling `describe "public groups"`):
 11. **Older-client refusal.** Channel link with `groupType = "group"`;
     older client (chat version 17) sees `GTUnknown "group"` and
     refuses to join with a clear message.
+12. **Incognito member posting.** Create a Public group; have a member
+    join with `incognito = on`; member posts a content message;
+    verify other members receive it attributed to the incognito
+    profile name (not the member's real profile). Mirror the
+    incognito-join helper used in `memberJoinChannelIncognito`
+    (`tests/ChatTests/Groups.hs:8690`).
+13. **Incognito member-to-member DM.** With member-DMs enabled on the
+    Public group, member A (joined incognito) creates a direct contact
+    with member B via `XGrpDirectInv` (the test 4 path); verify the
+    resulting P2P connection presents A's incognito profile to B and
+    that A's subsequent direct messages preserve the incognito
+    profile (no leak of the real user profile through the new direct
+    contact, even after the connection moves off the relay).
 
 ## 4. iOS changes (Swift, in `apps/ios/Shared`)
 
@@ -441,6 +573,28 @@ existing call, around `Model/SimpleXAPI.swift:1880-1882`) gains a
 `groupType: GroupType` parameter; default `.channel` for a one-line
 diff at unaffected call sites.
 
+The Public-group create-flow screen carries two pieces of help text
+that surface the threat-model trade-offs (§6.A.1, §6.A.2):
+
+- Beneath the "Create public group" title, in the same position the
+  "Create channel" screen uses for its description: *"In a Public
+  group, every member can post and DM. Messages are delivered through
+  relays you choose, which means a malicious relay could change or
+  fabricate messages from any member. Pick relays you trust."*
+- On the `directMessages` preference toggle (in the prefs section of
+  the create flow and in `GroupPreferencesView.swift`, see §4.6), as
+  the off-state hint: *"If members can DM each other, your relay can
+  see who started a conversation with whom — but not what they say.
+  Turn off to keep DM-graph metadata private."*
+
+Both strings are listed in §4.4 as new entries.
+
+`groupPreferences` defaults builder: extend the existing builder used
+by `AddChannelView.swift` to take a `groupType` and produce the
+preferences from the table in §3.3.1 (`directMessages = ON`,
+`history = ON`, `support = ON` for `groupType = .group`; existing
+`support = OFF` override stays for `.channel`).
+
 ### 4.4 Strings
 
 `apps/ios/Shared/en.lproj/Localizable.strings` — for each existing
@@ -456,6 +610,10 @@ strings, not 50. Strings to add (illustrative, names only):
 - `public_group_no_active_relays_try_later`
   (parallel to `channel_no_active_relays_try_later`)
 - `public_group_temporarily_unavailable`
+- `create_public_group_threat_model_note` — the create-flow paragraph
+  from §4.3 (relay-can-fabricate framing).
+- `direct_messages_metadata_note` — the off-state hint on the
+  `directMessages` toggle from §4.3 (DM-graph metadata framing).
 
 The connect-plan-resolved message ("ok to connect via relays") needs
 a Public-group form. See §4.6.
@@ -582,10 +740,26 @@ Mirrors §4. Same order: model → audit → create flow → views.
 - Pass `groupType` to `apiNewPublicGroup`. The Haskell command parser
   defaults to channel if absent (§3.3), so the Kotlin call site
   passes the chosen value directly.
-- `groupPreferences` defaults: for Public groups,
-  `directMessages = ON`, `history = ON`, `support = OFF`. Today's
-  channel defaults are at line 115-117 — add a `when (groupType)`.
+- `groupPreferences` defaults: drive from the table in §3.3.1.
+  Today's channel defaults are at line 115-117. Replace with a
+  `groupType`-keyed builder:
+  - `GroupType.Channel` → `directMessages = ON, history = ON,
+    support = OFF` (today's behaviour, unchanged).
+  - `GroupType.Group` → `directMessages = ON, history = ON,
+    support = ON`.
 - Title string and progress messages: thread through the choice.
+- **Help text on the create screen**, mirroring iOS (§4.3):
+  - Below the screen title, when `groupType = GroupType.Group`:
+    *"In a Public group, every member can post and DM. Messages are
+    delivered through relays you choose, which means a malicious
+    relay could change or fabricate messages from any member. Pick
+    relays you trust."* (See §6.A.2.)
+  - On the `directMessages` toggle in the prefs section and in
+    `views/chat/group/GroupPreferences.kt`: as the off-state hint,
+    *"If members can DM each other, your relay can see who started
+    a conversation with whom — but not what they say. Turn off to
+    keep DM-graph metadata private."* (See §6.A.1.)
+  Both strings are listed in §5.5 as new MR keys.
 
 Either rename `AddChannelView` to `AddRelayedGroupView` or keep the
 name and let it cover both kinds. Recommend keep the name to
@@ -627,6 +801,10 @@ strategy as iOS: ~5-10 new keys, mostly mirroring the channel ones with a
   `public_group_no_active_relays_try_later`
 - `public_group_link`,
   `you_can_share_public_group_link_anybody_will_be_able_to_connect`
+- `create_public_group_threat_model_note` — the create-flow
+  paragraph from §5.3 (relay-can-fabricate framing).
+- `direct_messages_metadata_note` — the off-state hint on the
+  `directMessages` toggle from §5.3 (DM-graph metadata framing).
 
 For "subscribers" → "members" framing, prefer reusing the existing
 `group_members_*` strings rather than introducing new public-group
@@ -644,7 +822,172 @@ variants. Channels keep their `_subscriber*` strings.
 - `!useRelays && businessChat == null` → existing
   `ic_supervised_user_circle_filled`.
 
-## 6. Migration / compatibility
+## 6. Threat model: changes from channels
+
+This section assumes the channel threat model
+(`docs/protocol/channels-overview.md` §"Threat model"). Public groups
+inherit every property listed there. Two threats are *new* (channels do
+not have them) and one is *broader* (channels have a narrower form of
+the same threat). The relay's "can / cannot" framing matches the
+existing doc style; the items below are written so they can be folded
+directly into a future revision of `channels-overview.md` once Public
+groups ship.
+
+### 6.A.1 A relay observes the member DM graph
+
+When a Public-group member initiates a DM with another member, the
+client emits `XGrpDirectInv` and the relay forwards it (§3.4 sub-section
+on member-to-member DM forwarding). The relay sees the (sender memberId,
+target memberId) pair on every initial DM invitation. The resulting
+Contact establishes a peer-to-peer SMP connection — the *content* of
+subsequent direct messages never crosses the relay — but the *fact that
+A wanted to talk to B* does. Over time, the relay accumulates a partial
+DM graph of the Public group.
+
+This is metadata the relay does not see in channels (members do not DM
+in channels) and that no operator sees in secret groups (DM
+invitations travel between members directly, no relay in the path).
+
+**A single compromised relay**
+
+*can:*
+
+- Build a partial DM graph of the Public group from forwarded
+  `XGrpDirectInv` events: every member who initiated a DM, every
+  target member, and the time of initiation.
+- Correlate that DM-initiation graph with the content authorship the
+  relay already sees, deriving who-talks-to-whom signals beyond the
+  group's public messages.
+- Drop or selectively forward DM invitations, partitioning members
+  who attempt to coordinate off-channel.
+
+*cannot:*
+
+- Read DM content. Once the recipient accepts the invitation, the
+  resulting Contact uses an ordinary SMP queue pair — end-to-end
+  encrypted at the agent layer, relay not in the data path.
+- Observe DM activity after the initial invitation: subsequent
+  messages, edits, reactions on the direct contact pass through SMP
+  routers, not the relay.
+- Determine the real-world identities of A or B. Each carries only
+  their group-member profile (or an incognito profile if the member
+  joined incognito — see Test 13 in §3.6). The relay sees member
+  IDs, not user identities.
+- Forge a DM invitation as if from a different member. The forwarded
+  `XGrpDirectInv` is delivered with the original sender's memberId,
+  and the recipient's client validates the in-group membership before
+  accepting the contact.
+
+**Mitigations.** Members who care about DM-graph privacy can join the
+group incognito (the relay then sees only the incognito profile's
+memberId, not anything correlatable across groups). Owners can
+disable the `directMessages` group preference, removing the
+forwarding path entirely (the relay rejects `XGrpDirectInv` at the
+DM-preference gate, §3.4 sub-section step 4).
+
+The owner-side default for `directMessages` in a new Public group is
+**ON** (matches secret groups, §3.3.1). The create-flow help text
+on iOS (§4.3, §4.4) and Kotlin (§5.3, §5.5) surfaces the metadata
+implication in plain language: "If members can DM each other, your
+relay can see who started a conversation with whom — but not what
+they say. To prevent the relay from seeing this, turn off member-to-
+member messages."
+
+### 6.A.2 A relay can fabricate content as any member
+
+Content messages (`XMsgNew`, `XMsgUpdate`, `XMsgDel`, `XMsgReact`,
+`XFileCancel`) are unsigned in both channels and Public groups
+(`Protocol.hs:1221`, `requiresSignature` lists only roster /
+administrative events). In channels this gives a compromised relay
+the ability to fabricate content attributed to owners — already
+documented in `channels-overview.md` §"Threat model" ("Substitute
+unsigned content or selectively drop messages for its subscribers").
+In Public groups, the same property has a **broader blast radius**:
+the relay can fabricate content attributed to *any* member, not just
+to owners.
+
+This matches the channel deniability property by design (see
+`channels-overview.md` §"Signing scope: roster only, content
+optional"): unsigned content is precisely what enables cryptographic
+deniability — no third party can prove a member authored anything.
+The trade-off is that the operator on the delivery path cannot be
+prevented from forging in the same channel.
+
+**A single compromised relay**
+
+*can:*
+
+- Fabricate content messages attributed to any member, not just to
+  owners. Detectable by other members through cross-relay
+  consistency (same TODO as the channel case: difference detection
+  not yet implemented).
+- Modify the text or content of messages in transit and re-attribute
+  the modified message to its original author.
+- Drop content messages selectively — same property as channels.
+
+*cannot:*
+
+- Forge signed administrative events: `XGrpInfo`, `XGrpPrefs`,
+  `XGrpMemRole`, `XGrpMemRestrict`, `XGrpMemDel`, `XGrpDel`,
+  `XGrpLeave`, `XInfo` (`Protocol.hs:1221`). Roster manipulation,
+  profile changes, and member-attributed leave / profile-update
+  events all require valid signatures.
+- Substitute the channel profile or impersonate an owner — the
+  channel's entity ID and owner authorization chain are validated
+  by every recipient against the channel link.
+- Alter authoritative state on owner devices.
+
+**Mitigation.** No code change for the MVP. The future-work fix is
+opt-in content signing per the channel roadmap
+(`channels-overview.md` §"Future work" / "Transcript integrity" /
+"Opt-in content signing"). When that ships, owners of Public groups
+will be able to require all content (member or owner) to carry a
+signature; member keys are already disseminated to other members
+via the prior plan (`2026-04-29-member-profile-sending-channels.md`),
+so verification on the recipient side is not a separate effort.
+
+In the meantime, the create-flow help text for "Public group" on
+both platforms (§4.3, §5.3) includes a one-line trade-off framing:
+"In a Public group, the relay forwards messages on behalf of every
+member. A compromised relay could change message text or attribute
+fabricated messages to any member. Use a secret group if you need
+non-repudiable peer-to-peer messaging." This is the same trade-off
+that channels make for owner posts; making it explicit at create
+time lets users choose Public-group-via-relay vs secret-group based
+on whether they value scale or content integrity.
+
+### 6.A.3 What is unchanged from channels
+
+Every other property of the channel threat model carries over
+without change. In particular:
+
+- A relay cannot impersonate an owner or substitute the channel
+  profile (signed events, validated entity ID).
+- A relay cannot determine subscriber / member real identity or
+  network address (inherited from SMP transport).
+- All-relays-compromised-and-colluding cannot forge signed events
+  or alter owner-authoritative state.
+- A passive network observer cannot determine which Public group a
+  member is in, or correlate Public-group activity with other
+  SimpleX activity.
+
+Public-group members get the same participant-privacy guarantees as
+channel subscribers, and Public-group owners get the same key-loss
+risk profile as channel owners (see `channels-overview.md`
+§"Compromise of owner keys" and §"Loss of all owner devices").
+
+### 6.A.4 Release-notes line
+
+For the Public-groups release notes, include a one-line summary of
+both new properties:
+
+> "In a Public group, the relay you choose can see who initiates
+> direct conversations between members (but not message content),
+> and could in principle alter or fabricate group messages
+> attributed to any member. Pick relays you trust, or use a secret
+> group if you need peer-to-peer message integrity."
+
+## 7. Migration / compatibility
 
 - **Existing channels are unaffected.** Channel profiles continue to
   carry `groupType = "channel"`; the new code path produces
@@ -680,7 +1023,7 @@ variants. Channels keep their `_subscriber*` strings.
   warning is not a hard block — the owner may proceed knowing that
   some relays will reject member posts.
 
-## 7. Open questions
+## 8. Open questions
 
 1. **Forwarding scope for `XGrpDirectInv`.** The relay needs to deliver a
    single-target message. Reuse `MSMember` / `DJSMemberSupport`, or
@@ -731,7 +1074,7 @@ variants. Channels keep their `_subscriber*` strings.
      is in flight; flip the flag once dissemination lands.
    Recommend (A) — fewer states to support, less user confusion.
 
-## 8. Sequencing
+## 9. Sequencing
 
 1. **Prerequisite: member-profile dissemination plan**
    (`2026-04-29-member-profile-sending-channels.md`). Lands first,
@@ -754,7 +1097,7 @@ variants. Channels keep their `_subscriber*` strings.
    iOS.
 7. **Kotlin views, icons, ConnectPlan** (§5.4-§5.6).
 8. **Older-client refusal, version bump release notes, docs
-   updates** (§3.1, §6).
+   updates** (§3.1, §7).
 
 Steps 4-5 and 6-7 ship independently per platform — iOS can ship
 Public groups without waiting on Kotlin and vice versa, as long as
@@ -764,7 +1107,7 @@ Steps 2 and 3 ship in either order; step 3 has no dependency on
 step 2 other than the existence of `GTGroup` rows in the wild,
 which step 2 enables.
 
-## 9. Adjacent work (one paragraph, not planned here)
+## 10. Adjacent work (one paragraph, not planned here)
 
 Two pre-existing channel-protocol disparities are deliberately
 untouched. (1) **Owner→relay communication of joiner role and
