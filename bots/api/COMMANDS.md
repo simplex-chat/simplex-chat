@@ -52,6 +52,7 @@ This file is generated automatically.
 [Chat commands](#chat-commands)
 - [APIListContacts](#apilistcontacts)
 - [APIListGroups](#apilistgroups)
+- [APIGetChats](#apigetchats)
 - [APIDeleteChat](#apideletechat)
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
@@ -1612,6 +1613,46 @@ GroupsList: Groups.
 - type: "groupsList"
 - user: [User](./TYPES.md#user)
 - groups: [[GroupInfo](./TYPES.md#groupinfo)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetChats
+
+Get chat previews. Supports time-based pagination — use this instead of APIListContacts / APIListGroups when scanning at scale (those load every record into memory and fail on large databases).
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- pendingConnections: bool
+- pagination: [PaginationByTime](./TYPES.md#paginationbytime)
+- query: [ChatListQuery](./TYPES.md#chatlistquery)
+
+**Syntax**:
+
+```
+/_get chats <userId>[ pcc=on] <str(pagination)> <json(query)>
+```
+
+```javascript
+'/_get chats ' + userId + (pendingConnections ? ' pcc=on' : '') + ' ' + PaginationByTime.cmdString(pagination) + ' ' + JSON.stringify(query) // JavaScript
+```
+
+```python
+'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + str(pagination) + ' ' + json.dumps(query) # Python
+```
+
+**Responses**:
+
+ApiChats: Chat previews (paginated). Use this instead of CRContactsList / CRGroupsList when scanning at scale..
+- type: "apiChats"
+- user: [User](./TYPES.md#user)
+- chats: [[AChat](./TYPES.md#achat)]
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

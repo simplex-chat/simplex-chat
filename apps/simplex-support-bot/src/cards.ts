@@ -2,7 +2,7 @@ import {T} from "@simplex-chat/types"
 import {api, util} from "simplex-chat"
 import {Mutex} from "async-mutex"
 import {Config} from "./config.js"
-import {profileMutex, log, logError} from "./util.js"
+import {profileMutex, log, logError, getGroupInfo} from "./util.js"
 
 // State derivation types
 export type ConversationState = "WELCOME" | "QUEUE" | "GROK" | "TEAM-PENDING" | "TEAM"
@@ -117,8 +117,7 @@ export class CardManager {
 
   // Dispatches to create-path when cardItemId is absent so a failed createCard retries.
   private async flushOne(groupId: number): Promise<void> {
-    const groups = await this.withMainProfile(() => this.chat.apiListGroups(this.mainUserId))
-    const groupInfo = groups.find(g => g.groupId === groupId)
+    const groupInfo = await this.withMainProfile(() => getGroupInfo(this.chat, groupId))
     if (!groupInfo) return
     const data = groupInfo.customData as Record<string, unknown> | undefined
     if (typeof data?.cardItemId === "number") {
@@ -129,12 +128,22 @@ export class CardManager {
   }
 
   async refreshAllCards(): Promise<void> {
-    const groups = await this.withMainProfile(() => this.chat.apiListGroups(this.mainUserId))
+    // Scan the most recently active 1000 chats. Active cards live on
+    // recently-active customer chats by definition — a card stays open
+    // while the conversation is in flight. If the bot has been offline
+    // long enough that an active card has fallen outside this window, the
+    // card refreshes lazily on the next customer message (which moves the
+    // chat back into the recent window).
+    const chats = await this.withMainProfile(() =>
+      this.chat.apiGetChats(this.mainUserId, {type: "last", count: 1000})
+    )
     const activeCards: {groupId: number; cardItemId: number}[] = []
-    for (const group of groups) {
-      const customData = group.customData as Record<string, unknown> | undefined
+    for (const c of chats) {
+      if (c.chatInfo.type !== "group") continue
+      const groupInfo = c.chatInfo.groupInfo
+      const customData = groupInfo.customData as Record<string, unknown> | undefined
       if (customData && typeof customData.cardItemId === "number" && !customData.complete) {
-        activeCards.push({groupId: group.groupId, cardItemId: customData.cardItemId})
+        activeCards.push({groupId: groupInfo.groupId, cardItemId: customData.cardItemId})
       }
     }
     if (activeCards.length === 0) return
@@ -210,8 +219,7 @@ export class CardManager {
   // --- Custom data ---
 
   async getRawCustomData(groupId: number): Promise<Partial<CardData> | null> {
-    const groups = await this.withMainProfile(() => this.chat.apiListGroups(this.mainUserId))
-    const group = groups.find(g => g.groupId === groupId)
+    const group = await this.withMainProfile(() => getGroupInfo(this.chat, groupId))
     if (!group?.customData) return null
     const data = group.customData as Record<string, unknown>
     const result: Partial<CardData> = {}
@@ -247,9 +255,7 @@ export class CardManager {
   // --- Internal ---
 
   private async updateCard(groupId: number): Promise<void> {
-    // Read customData and groupInfo in one apiListGroups call
-    const groups = await this.withMainProfile(() => this.chat.apiListGroups(this.mainUserId))
-    const groupInfo = groups.find(g => g.groupId === groupId)
+    const groupInfo = await this.withMainProfile(() => getGroupInfo(this.chat, groupId))
     if (!groupInfo) return
 
     const customData = groupInfo.customData as Record<string, unknown> | undefined

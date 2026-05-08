@@ -338,6 +338,9 @@ struct AddChannelView: View {
             .compactSectionSpacing()
 
             Section {
+                Button("Cancel and delete channel", role: .destructive) {
+                    showCancelChannelAlert(gInfo)
+                }
                 Button("Continue") {
                     if activeCount >= total {
                         showLinkStep = true
@@ -365,11 +368,6 @@ struct AddChannelView: View {
         }
         .navigationTitle("Creating channel")
         .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Delete channel") { showCancelChannelAlert(gInfo) }
-            }
-        }
         .onDisappear {
             if !showLinkStep && m.creatingChannelId == gInfo.id {
                 showCancelChannelAlert(gInfo)

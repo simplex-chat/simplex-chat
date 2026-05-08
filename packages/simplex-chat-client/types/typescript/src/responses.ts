@@ -57,6 +57,7 @@ export type ChatResponse =
   | CR.UserProfileUpdated
   | CR.UserProfileNoChange
   | CR.UsersList
+  | CR.ApiChats
 
 export namespace CR {
   export type Tag = 
@@ -113,6 +114,7 @@ export namespace CR {
     | "userProfileUpdated"
     | "userProfileNoChange"
     | "usersList"
+    | "apiChats"
 
   interface Interface {
     type: Tag
@@ -460,5 +462,11 @@ export namespace CR {
   export interface UsersList extends Interface {
     type: "usersList"
     users: T.UserInfo[]
+  }
+
+  export interface ApiChats extends Interface {
+    type: "apiChats"
+    user: T.User
+    chats: T.AChat[]
   }
 }

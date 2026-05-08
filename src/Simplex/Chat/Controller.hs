@@ -999,7 +999,7 @@ data ChatPagination
   deriving (Show)
 
 data PaginationByTime
-  = PTLast Int
+  = PTLast {count :: Int}
   | PTAfter UTCTime Int
   | PTBefore UTCTime Int
   deriving (Show)

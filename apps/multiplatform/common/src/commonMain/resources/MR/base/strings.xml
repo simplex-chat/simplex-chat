@@ -1887,6 +1887,7 @@
   <string name="group_info_member_you">you: %1$s</string>
   <string name="button_delete_group">Delete group</string>
   <string name="button_delete_channel">Delete channel</string>
+  <string name="button_cancel_and_delete_channel">Cancel and delete channel</string>
   <string name="button_delete_chat">Delete chat</string>
   <string name="delete_group_question">Delete group?</string>
   <string name="delete_channel_question">Delete channel?</string>

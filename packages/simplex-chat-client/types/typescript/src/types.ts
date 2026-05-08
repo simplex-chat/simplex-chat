@@ -1577,6 +1577,27 @@ export interface ChatItemDeletion {
   toChatItem?: AChatItem
 }
 
+export type ChatListQuery = ChatListQuery.Filters | ChatListQuery.Search
+
+export namespace ChatListQuery {
+  export type Tag = "filters" | "search"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Filters extends Interface {
+    type: "filters"
+    favorite: boolean
+    unread: boolean
+  }
+
+  export interface Search extends Interface {
+    type: "search"
+    search: string
+  }
+}
+
 export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
@@ -3187,6 +3208,25 @@ export namespace OwnerVerification {
   export interface Failed extends Interface {
     type: "failed"
     reason: string
+  }
+}
+
+export type PaginationByTime = PaginationByTime.Last
+
+export namespace PaginationByTime {
+  export type Tag = "last"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Last extends Interface {
+    type: "last"
+    count: number // int
+  }
+
+  export function cmdString(self: PaginationByTime): string {
+    return 'count=' + self.count
   }
 }
 
