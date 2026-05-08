@@ -50,12 +50,11 @@ data class ItemContext(
 
 val LocalItemContext = compositionLocalOf { ItemContext() }
 
-// Selection is anchored to ChatItem IDs, not list positions, so it survives list mutations
-// (new message arrives, item deleted, etc.). Positional indices are derived from the current
-// items list on read — see SelectionManager.startIndex / endIndex.
 data class SelectionRange(
+    val startIndex: Int,
     val startItemId: Long,
     val startOffset: Int,
+    val endIndex: Int,
     val endItemId: Long,
     val endOffset: Int
 )
@@ -68,10 +67,6 @@ class SelectionManager {
 
     var range by mutableStateOf<SelectionRange?>(null)
         private set
-
-    // Current merged-items list, kept in sync by SelectionHandler so the manager can resolve
-    // item-id-anchored positions without callers threading the list through every call site.
-    var items by mutableStateOf<List<MergedItem>>(emptyList())
 
     var anchorWindowY by mutableStateOf(0f)
         private set
@@ -86,20 +81,13 @@ class SelectionManager {
     var viewportPosition by mutableStateOf(Offset.Zero)
     var focusCharRect by mutableStateOf(Rect.Zero) // X: absolute window, Y: relative to item
     var listState: State<LazyListState>? = null
+    var mergedItemsState: State<MergedItems>? = null
     var onCopySelection: (() -> Unit)? = null
     private var autoScrollJob: Job? = null
 
-    // Positional indices derived from anchored item IDs against the current list.
-    // Cached via derivedStateOf so the O(n) scan runs once per items/range change, not once per
-    // per-item composable read (which would be O(n²)). Returns -1 if the anchored item is gone.
-    private val startIndexState = derivedStateOf { items.indexOfItemId(range?.startItemId) }
-    private val endIndexState = derivedStateOf { items.indexOfItemId(range?.endItemId) }
-    val startIndex: Int get() = startIndexState.value
-    val endIndex: Int get() = endIndexState.value
-
     fun startSelection(startIndex: Int, anchorY: Float, anchorX: Float) {
-        val id = items.getOrNull(startIndex)?.newest()?.item?.id ?: return
-        range = SelectionRange(id, -1, id, -1)
+        val id = mergedItemsState?.value?.items?.getOrNull(startIndex)?.newest()?.item?.id ?: return
+        range = SelectionRange(startIndex, id, -1, startIndex, id, -1)
         selectionState = SelectionState.Selecting
         anchorWindowY = anchorY
         anchorWindowX = anchorX
@@ -112,8 +100,8 @@ class SelectionManager {
 
     fun updateFocusIndex(index: Int) {
         val r = range ?: return
-        val id = items.getOrNull(index)?.newest()?.item?.id ?: return
-        range = r.copy(endItemId = id)
+        val id = mergedItemsState?.value?.items?.getOrNull(index)?.newest()?.item?.id ?: return
+        range = r.copy(endIndex = index, endItemId = id)
     }
 
     fun updateFocusOffset(offset: Int, charRect: Rect = Rect.Zero) {
@@ -129,20 +117,17 @@ class SelectionManager {
     }
 
     // Snaps boundary offsets to include full transformed segments (mentions, links with showText).
-    fun snapSelection(linkMode: SimplexLinkMode) {
+    fun snapSelection(items: List<MergedItem>, linkMode: SimplexLinkMode) {
         val r = range ?: return
-        val s = startIndex
-        val e = endIndex
-        if (s < 0 || e < 0) return
-        val startCi = items[s].newest().item
-        val endCi = items[e].newest().item
+        val startCi = items.getOrNull(r.startIndex)?.newest()?.item
+        val endCi = items.getOrNull(r.endIndex)?.newest()?.item
         // expandRight: snap in the direction that grows the selection
-        val startExpandRight = if (s == e) r.startOffset > r.endOffset else s < e
-        val endExpandRight = if (s == e) r.endOffset > r.startOffset else e < s
-        val snappedStart = if (r.startOffset >= 0)
+        val startExpandRight = if (r.startIndex == r.endIndex) r.startOffset > r.endOffset else r.startIndex < r.endIndex
+        val endExpandRight = if (r.startIndex == r.endIndex) r.endOffset > r.startOffset else r.endIndex < r.startIndex
+        val snappedStart = if (startCi != null && r.startOffset >= 0)
             snapOffset(startCi, r.startOffset, linkMode, expandRight = startExpandRight)
         else r.startOffset
-        val snappedEnd = if (r.endOffset >= 0)
+        val snappedEnd = if (endCi != null && r.endOffset >= 0)
             snapOffset(endCi, r.endOffset, linkMode, expandRight = endExpandRight)
         else r.endOffset
         if (snappedStart != r.startOffset || snappedEnd != r.endOffset) {
@@ -160,10 +145,9 @@ class SelectionManager {
     // Dragging up: button above focus char (bottom-right at char's top-left corner).
     // focusCharRect X is absolute window coords, Y is relative to item.
     fun copyButtonOffset(draggingDown: Boolean, gap: Float, buttonSize: IntSize): IntOffset {
-        val e = endIndex
-        if (e < 0) return IntOffset.Zero
+        val r = range ?: return IntOffset.Zero
         val ls = listState?.value ?: return IntOffset.Zero
-        val itemInfo = ls.layoutInfo.visibleItemsInfo.find { it.index == e }
+        val itemInfo = ls.layoutInfo.visibleItemsInfo.find { it.index == r.endIndex }
             ?: return IntOffset(-10000, -10000) // focus item scrolled off screen
         // Item top in viewport coords (reversed layout: viewportEnd - offset - size)
         val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
@@ -196,6 +180,15 @@ class SelectionManager {
         updateFocusIndex(idx)
     }
 
+    fun resyncIndices() {
+        val r = range ?: return
+        val items = mergedItemsState?.value?.items ?: return
+        val newStartIndex = items.indexOfFirst { it.newest().item.id == r.startItemId }
+        val newEndIndex = items.indexOfFirst { it.newest().item.id == r.endItemId }
+        if (newStartIndex < 0 || newEndIndex < 0) clearSelection()
+        else range = r.copy(startIndex = newStartIndex, endIndex = newEndIndex)
+    }
+
     fun updateAutoScroll(draggingDown: Boolean, pointerY: Float, scope: CoroutineScope) {
         val edgeDistance = if (draggingDown) viewportBottom - pointerY else pointerY - viewportTop
         if (edgeDistance !in 0f..AUTO_SCROLL_ZONE_PX) {
@@ -217,55 +210,48 @@ class SelectionManager {
         }
     }
 
-    fun getSelectedCopiedText(revealedItems: Set<Long>, linkMode: SimplexLinkMode): String {
-        val s = startIndex
-        val e = endIndex
-        if (s < 0 || e < 0) return ""
-        val lo = minOf(s, e)
-        val hi = maxOf(s, e)
+    fun getSelectedCopiedText(items: List<MergedItem>, revealedItems: Set<Long>, linkMode: SimplexLinkMode): String {
+        val r = range ?: return ""
+        val lo = minOf(r.startIndex, r.endIndex)
+        val hi = maxOf(r.startIndex, r.endIndex)
         return (lo..hi).mapNotNull { idx ->
-            val ci = items[idx].newest().item
+            val ci = items.getOrNull(idx)?.newest()?.item ?: return@mapNotNull null
             if (ci.meta.itemDeleted != null && (!revealedItems.contains(ci.id) || ci.isDeletedContent)) return@mapNotNull null
-            val sel = selectedRange(idx) ?: return@mapNotNull null
+            val sel = selectedRange(range, idx) ?: return@mapNotNull null
             selectedItemCopiedText(ci, sel, linkMode)
         }.reversed().joinToString("\n")
     }
-
-    // Returns the character range selected within the item at [index] in the current items list.
-    // Offsets are cursor positions (between characters); selected characters are between min and max
-    // cursors: range is min..(max - 1). In reversed layout: higher index = higher on screen.
-    // startItemId/startOffset = anchor, endItemId/endOffset = focus.
-    fun selectedRange(index: Int): IntRange? {
-        val r = range ?: return null
-        val s = startIndex
-        val e = endIndex
-        if (s < 0 || e < 0) return null
-        val lo = minOf(s, e)
-        val hi = maxOf(s, e)
-        if (index < lo || index > hi) return null
-        return when {
-            // Single-item selection: characters between the two cursor positions
-            index == s && index == e ->
-                if (r.startOffset < 0 || r.endOffset < 0 || r.startOffset == r.endOffset) null
-                else minOf(r.startOffset, r.endOffset) .. (maxOf(r.startOffset, r.endOffset) - 1)
-            // Anchor item in multi-item selection: from cursor to end, or from start to cursor
-            index == s ->
-                if (r.startOffset < 0) null
-                else if (s > e) r.startOffset until Int.MAX_VALUE
-                else 0 until r.startOffset
-            // Focus item in multi-item selection: symmetric to anchor
-            index == e ->
-                if (r.endOffset < 0) null
-                else if (e < s) 0 until r.endOffset
-                else r.endOffset until Int.MAX_VALUE
-            // Interior items: fully selected
-            else -> 0 until Int.MAX_VALUE
-        }
-    }
 }
 
-private fun List<MergedItem>.indexOfItemId(id: Long?): Int =
-    if (id == null) -1 else indexOfFirst { it.newest().item.id == id }
+// Returns the character range selected within a given item.
+// Offsets are cursor positions (between characters), so the selected characters
+// are those between min and max cursors: range is min..(max - 1).
+// In reversed layout: higher index = higher on screen.
+// startIndex/startOffset = anchor, endIndex/endOffset = focus.
+fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
+    val r = range ?: return null
+    val lo = minOf(r.startIndex, r.endIndex)
+    val hi = maxOf(r.startIndex, r.endIndex)
+    if (index < lo || index > hi) return null
+    return when {
+        // Single-item selection: characters between the two cursor positions
+        index == r.startIndex && index == r.endIndex ->
+            if (r.startOffset < 0 || r.endOffset < 0 || r.startOffset == r.endOffset) null
+            else minOf(r.startOffset, r.endOffset) .. (maxOf(r.startOffset, r.endOffset) - 1)
+        // Anchor item in multi-item selection: from cursor to end, or from start to cursor
+        index == r.startIndex ->
+            if (r.startOffset < 0) null
+            else if (r.startIndex > r.endIndex) r.startOffset until Int.MAX_VALUE
+            else 0 until r.startOffset
+        // Focus item in multi-item selection: symmetric to anchor
+        index == r.endIndex ->
+            if (r.endOffset < 0) null
+            else if (r.endIndex < r.startIndex) 0 until r.endOffset
+            else r.endOffset until Int.MAX_VALUE
+        // Interior items: fully selected
+        else -> 0 until Int.MAX_VALUE
+    }
+}
 
 // Extracts source text for the selected range within one item.
 // Selection offsets are in display-text space. For transformed segments (mentions, links with showText),
@@ -340,19 +326,14 @@ fun BoxScope.SelectionHandler(
     }
 
     manager.listState = listState
+    manager.mergedItemsState = mergedItems
     manager.onCopySelection = {
-        clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(revealedItems.value, linkMode)))
+        clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(mergedItems.value.items, revealedItems.value, linkMode)))
         showToast(generalGetString(MR.strings.copied))
     }
 
-    // Keep the manager's view of the items list in sync, then clear the selection synchronously
-    // (same frame, no visible flash) if either anchored item no longer exists — e.g. it was deleted.
-    SideEffect {
-        manager.items = mergedItems.value.items
-        if (manager.range != null && (manager.startIndex < 0 || manager.endIndex < 0)) {
-            manager.clearSelection()
-        }
-    }
+    // Resync after the items list mutates (new message arrives, item deleted).
+    SideEffect { manager.resyncIndices() }
 
     return Modifier
         .focusRequester(focusRequester)
@@ -411,7 +392,7 @@ fun BoxScope.SelectionHandler(
                         SelectionState.Selecting -> {
                             if (!event.pressed) {
                                 manager.endSelection()
-                                manager.snapSelection(linkMode)
+                                manager.snapSelection(mergedItems.value.items, linkMode)
                                 return@awaitEachGesture
                             }
                             val windowPos = event.position + manager.viewportPosition
@@ -448,7 +429,7 @@ fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int,
 
     if (selectionManager != null && selectionIndex >= 0 && !isLive) {
         val isAnchor = remember(selectionIndex) {
-            derivedStateOf { selectionManager.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+            derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
         }
         LaunchedEffect(isAnchor.value) {
             if (!isAnchor.value) return@LaunchedEffect
@@ -461,7 +442,7 @@ fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int,
         }
 
         val isFocus = remember(selectionIndex) {
-            derivedStateOf { selectionManager.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+            derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
         }
         if (isFocus.value) {
             LaunchedEffect(Unit) {
@@ -489,7 +470,7 @@ fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int,
     }
 
     val highlightRange = if (selectionManager != null && selectionIndex >= 0) {
-        remember(selectionIndex) { derivedStateOf { selectionManager.selectedRange(selectionIndex) } }.value
+        remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) } }.value
     } else null
 
     val positionModifier = if (selectionManager != null) {
@@ -512,7 +493,7 @@ fun setupEmojiSelection(selectionManager: SelectionManager?, selectionIndex: Int
     if (selectionManager == null || selectionIndex < 0) return false
 
     val isAnchor = remember(selectionIndex) {
-        derivedStateOf { selectionManager.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+        derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
     }
     LaunchedEffect(isAnchor.value) {
         if (!isAnchor.value) return@LaunchedEffect
@@ -520,7 +501,7 @@ fun setupEmojiSelection(selectionManager: SelectionManager?, selectionIndex: Int
     }
 
     val isFocus = remember(selectionIndex) {
-        derivedStateOf { selectionManager.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+        derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
     }
     if (isFocus.value) {
         LaunchedEffect(Unit) {
@@ -529,7 +510,7 @@ fun setupEmojiSelection(selectionManager: SelectionManager?, selectionIndex: Int
         }
     }
 
-    return remember(selectionIndex) { derivedStateOf { selectionManager.selectedRange(selectionIndex) != null } }.value
+    return remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) != null } }.value
 }
 
 @Composable
@@ -537,10 +518,7 @@ fun SelectionCopyButton() {
     val manager = LocalSelectionManager.current ?: return
     val range = manager.range ?: return
     if (manager.selectionState != SelectionState.Selected || manager.focusCharRect == Rect.Zero) return
-    val s = manager.startIndex
-    val e = manager.endIndex
-    if (s < 0 || e < 0) return
-    val draggingDown = s > e || (s == e && range.startOffset < range.endOffset)
+    val draggingDown = range.startIndex > range.endIndex || (range.startIndex == range.endIndex && range.startOffset < range.endOffset)
     val gap = with(LocalDensity.current) { 4.dp.toPx() }
     var buttonSize by remember { mutableStateOf(IntSize.Zero) }
     Row(
