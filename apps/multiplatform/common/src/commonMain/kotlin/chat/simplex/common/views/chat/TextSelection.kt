@@ -53,8 +53,10 @@ val LocalItemContext = compositionLocalOf { ItemContext() }
 
 data class SelectionRange(
     val startIndex: Int,
+    val startItemId: Long,
     val startOffset: Int,
     val endIndex: Int,
+    val endItemId: Long,
     val endOffset: Int
 )
 
@@ -80,11 +82,13 @@ class SelectionManager {
     var viewportPosition by mutableStateOf(Offset.Zero)
     var focusCharRect by mutableStateOf(Rect.Zero) // X: absolute window, Y: relative to item
     var listState: State<LazyListState>? = null
+    var mergedItemsState: State<MergedItems>? = null
     var onCopySelection: (() -> Unit)? = null
     private var autoScrollJob: Job? = null
 
     fun startSelection(startIndex: Int, anchorY: Float, anchorX: Float) {
-        range = SelectionRange(startIndex, -1, startIndex, -1)
+        val id = mergedItemsState?.value?.items?.getOrNull(startIndex)?.newest()?.item?.id ?: return
+        range = SelectionRange(startIndex, id, -1, startIndex, id, -1)
         selectionState = SelectionState.Selecting
         anchorWindowY = anchorY
         anchorWindowX = anchorX
@@ -97,7 +101,8 @@ class SelectionManager {
 
     fun updateFocusIndex(index: Int) {
         val r = range ?: return
-        range = r.copy(endIndex = index)
+        val id = mergedItemsState?.value?.items?.getOrNull(index)?.newest()?.item?.id ?: return
+        range = r.copy(endIndex = index, endItemId = id)
     }
 
     fun updateFocusOffset(offset: Int, charRect: Rect = Rect.Zero) {
@@ -174,6 +179,15 @@ class SelectionManager {
         val ls = listState?.value ?: return
         val idx = resolveIndexAtY(ls, localY) ?: return
         updateFocusIndex(idx)
+    }
+
+    fun resyncIndices() {
+        val r = range ?: return
+        val items = mergedItemsState?.value?.items ?: return
+        val newStartIndex = items.indexOfFirst { it.newest().item.id == r.startItemId }
+        val newEndIndex = items.indexOfFirst { it.newest().item.id == r.endItemId }
+        if (newStartIndex < 0 || newEndIndex < 0) clearSelection()
+        else range = r.copy(startIndex = newStartIndex, endIndex = newEndIndex)
     }
 
     fun updateAutoScroll(draggingDown: Boolean, pointerY: Float, scope: CoroutineScope) {
@@ -320,10 +334,14 @@ fun BoxScope.SelectionHandler(
     }
 
     manager.listState = listState
+    manager.mergedItemsState = mergedItems
     manager.onCopySelection = {
         clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(mergedItems.value.items, revealedItems.value, linkMode)))
         showToast(generalGetString(MR.strings.copied))
     }
+
+    // Resync after the items list mutates (new message arrives, item deleted).
+    SideEffect { manager.resyncIndices() }
 
     return Modifier
         .focusRequester(focusRequester)
