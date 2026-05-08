@@ -2755,7 +2755,7 @@
     <string name="relay_bar_relays_failed">%1$d Relais fehlgeschlagen</string>
     <string name="relay_bar_relays_not_active">%1$d Relais nicht aktiv</string>
     <string name="relay_bar_relays_removed">%1$d Relais entfernt</string>
-    <string name="relay_bar_owner_no_delivery">Das Hinzufügen von Relais wird zu einem späteren Zeitpunkt unterstützt.</string>
+    <string name="relay_bar_owner_no_delivery">Relais hinzufügen, um die Nachrichtenübermittlung wiederherzustellen.</string>
     <string name="relay_bar_all_relays_failed">Alle Relais fehlgeschlagen</string>
     <string name="relay_bar_all_relays_removed">Alle Relais entfernt</string>
     <string name="cant_broadcast_message">Broadcast nicht möglich</string>
@@ -2872,4 +2872,20 @@
     <string name="link_previews_alert_desc_socks">Die Linkvorschau wird über einen SOCKS-Proxy angefordert. DNS-Abfragen können dennoch lokal über Ihren DNS-Resolver erfolgen.</string>
     <string name="one_hand_ui_top_bar">Obere Leiste</string>
     <string name="cancel_channel_alert_msg">Ihr neuer Kanal %1$s ist mit %2$d von %3$d Relais verbunden.\nBei Abbruch, wird der Kanal gelöscht. Sie können ihn später neu erstellen.</string>
+    <string name="add_button">Hinzufügen</string>
+    <string name="add_relay_button">Relais hinzufügen</string>
+    <string name="add_relays_title">Relais hinzufügen</string>
+    <string name="button_cancel_and_delete_channel">Kanal abbrechen und löschen</string>
+    <string name="num_relays_selected">%d Relais ausgewählt</string>
+    <string name="error_adding_relays">Fehler beim Hinzufügen von Relais</string>
+    <string name="no_available_relays">Keine verfügbaren Relais</string>
+    <string name="relay_bar_no_relays">Keine Relais</string>
+    <string name="no_relays_selected">Keine Relais ausgewählt</string>
+    <string name="relays_added_format">%1$s Relais hinzugefügt.</string>
+    <string name="relay_will_be_removed_from_channel">Relais wird aus dem Kanal entfernt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="relay_conn_status_removed">Entfernt</string>
+    <string name="button_remove_relay">Relais entfernen</string>
+    <string name="button_remove_relay_question">Relais entfernen?</string>
+    <string name="select_relays">Relais auswählen</string>
+    <string name="last_active_relay_warning">Dies ist das letzte aktive Relais. Wenn Sie es entfernen, können keine Nachrichten mehr an Abonnenten zugestellt werden.</string>
 </resources>
