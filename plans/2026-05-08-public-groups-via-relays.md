@@ -61,12 +61,12 @@ encoded value for the existing `GroupType` field on `PublicGroupProfile`
 
 What does change:
 
-- **Chat protocol version bump.** Add `publicGroupsVersion :: VersionChat =
-  VersionChat 18` in `src/Simplex/Chat/Protocol.hs` (currently
-  `currentChatVersion = VersionChat 17`, line 90). The new version signals
-  that the peer understands `groupType = "group"` semantically. `Protocol.hs`
-  already has the version-bump idiom (`shortLinkDataVersion = 16`,
-  `memberSupportVoiceVersion = 17`).
+- **Chat protocol version bump.** Add `publicGroupsVersion :: VersionChat`
+  set to the next available version (one higher than the current
+  `currentChatVersion`) in `src/Simplex/Chat/Protocol.hs`. The new version
+  signals that the peer understands `groupType = "group"` semantically.
+  `Protocol.hs` already has the version-bump idiom (`shortLinkDataVersion`,
+  `memberSupportVoiceVersion`).
 - **Older-client behaviour.** Older clients decode the channel link's
   `groupType` field as `GTUnknown "group"` (lossless tag preservation in
   `textDecode`, `Types.hs:778-781`). They must refuse to join with a clear
@@ -274,15 +274,15 @@ prefs builder that mirrors this table.
      mContent_ rcvMsg msgTs`. Note that `xGrpDirectInv` (line 3249+)
      already gates on `groupFeatureMemberAllowed SGFDirectMessages`, so
      the DM preference is honored.
-  3. The sender-side currently produces `XGrpDirectInv` with
-     `msgScope = Just (MSMember recipientMemberId)`. Verify that the
-     relay's delivery-task creation (`infoToDeliveryContext`,
-     `Subscriber.hs:1811`/`2394`/`2115`) yields a `DJSMemberSupport`
-     scope so the relay routes only to the target member, not to all
-     members. If the existing support-scope path is the right substrate,
-     reuse it; if support-scope semantics conflict, introduce a sibling
-     `DJSDirectInv` scope. Decide during implementation by tracing one
-     end-to-end DM flow with logging.
+  3. Introduce a new `DJSDirectInv` job scope, parallel to
+     `DJSMemberSupport` but delivering only to the target member with
+     no moderator broadcast. Reusing `DJSMemberSupport` would leak a
+     DM intention to all moderators, which is the exact opposite of
+     the privacy property the DM-graph threat model (§6.A.1) requires.
+     Wire the scope into `infoToDeliveryContext`
+     (`Subscriber.hs:1811`, `2394`, `2115`) so an `XGrpDirectInv`
+     with `msgScope = Just (MSMember recipientMemberId)` resolves to
+     `DJSDirectInv` rather than `DJSMemberSupport`.
   4. Relay-side gate: only forward `XGrpDirectInv` when
      `groupFeatureMemberAllowed SGFDirectMessages senderMember gInfo`
      holds. The DM preference is already in `groupPreferences`; the
@@ -428,10 +428,11 @@ a new sibling `describe "public groups"`):
 1. **Member sends content; all members receive it.** Mirror
    `testChannels1RelayDeliver` (line 8523), but with cath as a Public
    group member, not a channel subscriber. Verify dan and eve receive
-   cath's message attributed to cath (no "unknown member record"
-   line — assumes the dissemination plan has landed).
-2. **Profile dissemination integration.** With dissemination on, assert
-   no "unknown member" lines appear.
+   cath's message attributed to cath (no "unknown member record" line
+   — profile dissemination is active per §3.5 prerequisite).
+2. **Profile dissemination integration.** Assert that no "unknown
+   member" lines appear at any point in a multi-author Public-group
+   session.
 3. **Member edit / delete / react.** Each forwarded by the relay,
    each visible to all members.
 4. **Member-to-member DM creation.** Member A sends `/_create direct
@@ -456,8 +457,8 @@ a new sibling `describe "public groups"`):
     members; verify `aChatMsgHasReceipt` does not produce a receipt
     request.
 11. **Older-client refusal.** Channel link with `groupType = "group"`;
-    older client (chat version 17) sees `GTUnknown "group"` and
-    refuses to join with a clear message.
+    older client (chat version below `publicGroupsVersion`) sees
+    `GTUnknown "group"` and refuses to join with a clear message.
 12. **Incognito member posting.** Create a Public group; have a member
     join with `incognito = on`; member posts a content message;
     verify other members receive it attributed to the incognito
@@ -639,13 +640,15 @@ if it gates transport (e.g., owner-only relay-management hooks).
   an enum `LinkVariant { secret, publicGroup, channel }`, or (ii)
   pass `groupInfo` and read variant inside. Pick (ii) — fewer call
   sites to update.
-- `GroupPreferencesView.swift` — preferences UI is unchanged for
-  Public groups; the directMessages preference, which is
-  channel-default-off, channel-Public-group-default-on, is already
-  controlled by `groupPreferences`. Verify that creating a Public
-  group sets `directMessages` to its default-on value (the existing
-  default for non-channel groups). Pick this default at the
-  `Commands.hs` create site (§3.3).
+- `GroupPreferencesView.swift` — the `directMessages` preference is
+  `ON` by parser inheritance in both channels and Public groups
+  (§3.3.1), but is *dormant* in channels because `XGrpDirectInv` is
+  not forwarded for `GTChannel` (§3.4 sub-section on member-to-member
+  DM forwarding). In Public groups it becomes active via the new
+  forwarding arm. The toggle on `GroupPreferencesView.swift` gains
+  the off-state help text from §4.4
+  (`direct_messages_metadata_note`); the rest of the preferences UI
+  is unchanged.
 - `chatIconName` (`ChatTypes.swift:2472-2482`):
   - `useRelays && isChannel` → existing antenna icon
     (`antenna.radiowaves.left.and.right.circle.fill`).
@@ -659,8 +662,8 @@ if it gates transport (e.g., owner-only relay-management hooks).
 - Members view in `GroupChatInfoView`. Channels show the relay-known
   list which is thin (post-dissemination it grows). Public groups
   use the same list — once dissemination ships, the list is
-  populated for any member who has interacted in the group. **MVP
-  decision**: show all members the relay has announced (the same
+  populated for any member who has interacted in the group.
+  **Decision**: show all members the relay has announced (the same
   list as channels post-dissemination). Show "subscribers" for
   channels, "members" for Public groups in the section header. No
   separate "owner+moderators only" filter for the MVP; defer
@@ -715,8 +718,9 @@ Mirrors §4. Same order: model → audit → create flow → views.
   **Use `isChannel`** except line 1578 which is "subscriber count
   for relay-mediated groups" — that should also display for Public
   groups (member count from relay-side dissemination), so generalise
-  to `useRelays` and rename the field `publicMemberCount` → display
-  it as "subscribers" for channels and "members" for Public groups.
+  to `useRelays`; the field name `publicMemberCount` stays as-is;
+  the display label varies — "subscribers" for channels, "members"
+  for Public groups.
 - `model/ChatModel.kt` line 4617, 4624, 4631 — group icons in
   `chatIconName`/`chatLinkText`. Add a third arm for Public groups
   with the chosen distinct icon (mirror iOS).
@@ -992,7 +996,7 @@ both new properties:
 - **Existing channels are unaffected.** Channel profiles continue to
   carry `groupType = "channel"`; the new code path produces
   `GTGroup` only when explicitly requested.
-- **Older clients** (chat version ≤ 17) decode `groupType = "group"`
+- **Older clients** (chat version below `publicGroupsVersion`) decode `groupType = "group"`
   as `GTUnknown "group"`. They should not silently treat it as a
   channel — that would let owners post but block members and break
   the UX. Required client behavior: when about to join a link
@@ -1001,10 +1005,11 @@ both new properties:
   block the join. Add this alert in `ConnectPlan.kt` /
   `NewChatView.swift` as part of §4.7/§5.4. The Haskell side does
   not need to refuse — the client decides.
-- **Minimum versions.** Chat protocol version 18 (`publicGroupsVersion`)
-  is the new floor. Owner client must be at least 18 to *create* a
-  Public group. Member clients must be at least 18 to *join*. Older
-  clients that are already members of a channel are unaffected.
+- **Minimum versions.** `publicGroupsVersion` is the new floor.
+  Owner client must be at least `publicGroupsVersion` to *create* a
+  Public group. Member clients must be at least `publicGroupsVersion`
+  to *join*. Older clients that are already members of a channel are
+  unaffected.
   Older relays — currently relays accept any `groupType` and forward
   by `useRelays`, so they will forward Public-group traffic
   correctly without an upgrade. The relay-side type-driven
@@ -1018,68 +1023,52 @@ both new properties:
   to joiners — members joining via that relay cannot post, but
   members joining via an upgraded relay can. The owner sees a
   partial-functionality state. Mitigation: warn at create time if
-  any selected relay's chat version is < 18 (`Commands.hs` already
+  any selected relay's chat version is below `publicGroupsVersion`
+  (`Commands.hs` already
   has access to relay versions via the relay request flow). The
   warning is not a hard block — the owner may proceed knowing that
   some relays will reject member posts.
 
 ## 8. Open questions
 
-1. **Forwarding scope for `XGrpDirectInv`.** The relay needs to deliver a
-   single-target message. Reuse `MSMember` / `DJSMemberSupport`, or
-   introduce a sibling scope for direct-invite delivery? The two
-   semantics overlap (deliver to a specific member) but support-scope
-   is also delivered to all moderators, which would leak a DM
-   intention. Likely answer: introduce a new `DJSDirectInv` scope
-   that delivers only to the target member. **Decide before
-   implementing §3.4 step 3.**
-2. **Member-DM consent.** P2P groups gate `XGrpDirectInv` by the
+1. **Member-DM consent.** P2P groups gate `XGrpDirectInv` by the
    `directMessages` group preference. Public groups inherit the
    same gate. Should owners get a per-channel additional toggle ("DMs
    between members allowed") or should the existing preference
    suffice? Recommend: existing preference is enough for MVP.
-3. **`memberAdmission` (review/captcha) on relay-mediated join.**
+2. **`memberAdmission` (review/captcha) on relay-mediated join.**
    Today, relay-side join short-circuits `GAAccepted` regardless of
    the channel's `memberAdmission` setting. This is a generic
    relay-side gap (channels and Public groups equally), out of scope
    for this feature. Surface in release notes; defer until a
    separate plan.
-4. **Distinct icon for Public groups.** Pending design review on
+3. **Distinct icon for Public groups.** Pending design review on
    both platforms. The set must distinguish Public groups from
    channels (which use the broadcast/antenna metaphor) and from
    secret groups (which use a plain people metaphor). A "people +
    wedge" composite is the obvious candidate.
-5. **Removing `channelSubscriberRole` from config.** The field has no
+4. **Removing `channelSubscriberRole` from config.** The field has no
    callers after §3.3. Tests at `tests/ChatClient.hs:214` already
    override it for member-posting scenarios; those tests should
    become Public-group tests. Confirm that no out-of-tree consumer
    (CLI scripts, embedded clients) reads this config.
-6. **Subscribed/unsubscribed roster filter in members view.** With
+5. **Subscribed/unsubscribed roster filter in members view.** With
    100K+ Public-group members the relay-known list grows large.
    Should the client paginate / filter (e.g., "recently active
    only")? Out of scope for the MVP — the existing channel members
    view already handles this case for subscribers.
-7. **Wording for connect plan**: "ok to join via relays" (Public group)
+6. **Wording for connect plan**: "ok to join via relays" (Public group)
    vs "ok to subscribe via relays" (channel) vs "ok to connect via
    relays" (current, ambiguous). The CLI string in `View.hs:2105`
    is read by tests — update test expectations alongside the new
    wording. Mobile clients can derive their own.
-8. **Adopt-the-prior-plan timing.** `2026-04-29-member-profile-sending-channels.md`
-   is approved but unmerged at the time of writing. Public groups
-   are *usable* without it but feel broken ("unknown member" lines
-   on every member-authored message). Two ship orders:
-   - (A) Land the dissemination plan first, then ship Public groups
-     when it is in.
-   - (B) Ship Public groups behind a feature flag while dissemination
-     is in flight; flip the flag once dissemination lands.
-   Recommend (A) — fewer states to support, less user confusion.
 
 ## 9. Sequencing
 
 1. **Prerequisite: member-profile dissemination plan**
    (`2026-04-29-member-profile-sending-channels.md`). Lands first,
-   independently. Public groups are a soft dependency: usable without
-   it but UX-poor.
+   independently. Hard prerequisite — Public groups do not ship
+   until dissemination has landed.
 2. **Backend types + command + role derivation** (§3.2, §3.3, §3.4
    except DM forwarding). Single PR. Adds `GTGroup`-producing path,
    replaces config with `groupType`-based derivation, removes
