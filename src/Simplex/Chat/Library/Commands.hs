@@ -4783,9 +4783,8 @@ deleteInProgressGroup user gInfo = do
 
 runRelayGroupLinkChecks :: User -> CM ()
 runRelayGroupLinkChecks user = do
-  initialDelay <- asks (relayChecksInitialDelay . config)
-  liftIO $ threadDelay' initialDelay
   interval <- asks (relayChecksInterval . config)
+  liftIO $ threadDelay' $ diffToMicroseconds interval
   forever $ do
     flip catchAllErrors eToView $ do
       lift waitChatStartedAndActivated
