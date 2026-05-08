@@ -2658,7 +2658,7 @@
     <string name="relay_bar_active_with_errors">%1$d/%2$d átjátszó aktív, %3$d hiba</string>
     <string name="relay_bar_connected_with_failures">%1$d/%2$d átjátszó kapcsolódott, %3$d átjátszóhoz nem sikerült kapcsolódni</string>
     <string name="relay_bar_connected_with_removed">%1$d/%2$d átjátszó kapcsolódott, %3$d eltávolítva</string>
-    <string name="relay_bar_owner_no_delivery">Az átjátszók hozzáadása később lesz támogatott.</string>
+    <string name="relay_bar_owner_no_delivery">Átjátszók hozzáadása az üzenetküldés helyreállításához.</string>
     <string name="relay_bar_subscriber_waiting">Várakozás a csatorna tulajdonosára az átjátszók hozzáadásához.</string>
     <string name="chat_link_business_address">Üzleti cím</string>
     <string name="chat_link_channel">Csatornahivatkozás</string>
@@ -2768,4 +2768,19 @@
     <string name="one_hand_ui_top_bar">Felső sáv</string>
     <string name="cancel_channel_alert_msg">Az új %1$s nevű csatornája %3$d átjátszóból %2$d átjátszóhoz kapcsolódik.\nHa visszavonja, akkor a csatorna törlődni fog – de később újra létrehozhatja.</string>
     <string name="button_cancel_and_delete_channel">Visszavonás és a csatorna törlése</string>
+    <string name="add_button">Hozzáadás</string>
+    <string name="add_relay_button">Átjátszó hozzáadása</string>
+    <string name="add_relays_title">Átjátszók hozzáadása</string>
+    <string name="num_relays_selected">%d átjátszó kiválasztva</string>
+    <string name="error_adding_relays">Hiba történt az átjátszók hozzáadásakor</string>
+    <string name="no_available_relays">Nincsenek elérhető átjátszók</string>
+    <string name="relay_bar_no_relays">Nincsenek átjátszók</string>
+    <string name="no_relays_selected">Nincsenek átjátszók kiválasztva</string>
+    <string name="relays_added_format">Átjátszók hozzáadva: %1$s.</string>
+    <string name="relay_will_be_removed_from_channel">Az átjátszó el lesz távolítva a csatornából – ez a művelet nem vonható vissza!</string>
+    <string name="relay_conn_status_removed">eltávolítva</string>
+    <string name="button_remove_relay">Átjátszó eltávolítása</string>
+    <string name="button_remove_relay_question">Eltávolítja az átjátszót?</string>
+    <string name="select_relays">Átjátszók kiválasztása</string>
+    <string name="last_active_relay_warning">Ez az utolsó aktív átjátszó. Ha eltávolítja, akkor azzal megakadályozza az üzenetek eljuttatását a feliratkozóknak.</string>
 </resources>
