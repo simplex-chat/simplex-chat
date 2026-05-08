@@ -404,11 +404,6 @@ private fun ProgressStepView(
   ModalView(
     close = { showCancelAlert() },
     showClose = false,
-    endButtons = {
-      TextButton(onClick = { showCancelAlert() }) {
-        Text(generalGetString(MR.strings.button_delete_channel))
-      }
-    }
   ) {
     ColumnWithScrollBar {
       AppBarTitle(generalGetString(MR.strings.creating_channel))
@@ -481,9 +476,16 @@ private fun ProgressStepView(
       Spacer(Modifier.height(16.dp))
 
       SectionView {
+        SettingsActionItem(
+          painterResource(MR.images.ic_delete),
+          generalGetString(MR.strings.button_cancel_and_delete_channel),
+          click = { showCancelAlert() },
+          textColor = Color.Red,
+          iconColor = Color.Red,
+        )
         val enabled = activeCount > 0
         SettingsActionItem(
-          painterResource(MR.images.ic_link),
+          painterResource(MR.images.ic_check),
           generalGetString(MR.strings.continue_to_next_step),
           click = {
             if (activeCount >= total) {
