@@ -728,7 +728,7 @@
     <string name="v5_2_message_delivery_receipts">إيصالات تسليم الرسائل!</string>
     <string name="custom_time_unit_minutes">دقائق</string>
     <string name="custom_time_unit_months">شهور</string>
-    <string name="v5_2_more_things_descr">- توصيل رسائل أكثر استقرارًا.\n- مجموعات أفضل قليلاً.\n- و اكثر!</string>
+    <string name="v5_2_more_things_descr">- تسليم رسائل أكثر استقرارًا.\n- مجموعات أفضل قليلاً.\n- و اكثر!</string>
     <string name="network_status">حالة الشبكة</string>
     <string name="user_mute">كتم</string>
     <string name="message_reactions_are_prohibited">ردود الفعل الرسائل ممنوعة.</string>
@@ -1306,7 +1306,7 @@
     <string name="send_receipts_disabled_alert_title">الإيصالات مُعطَّلة</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled_alert_msg">تضم هذه المجموعة أكثر من %1$d عضو، ولا يتم إرسال إيصالات التسليم.</string>
-    <string name="delivery">التوصيل</string>
+    <string name="delivery">التسليم</string>
     <string name="send_receipts_disabled">مُعطَّل</string>
     <string name="receipts_groups_title_disable">تعطيل الإيصالات للمجموعات؟</string>
     <string name="receipts_groups_enable_keep_overrides">فعّل (الاحتفاظ بتجاوزات المجموعة)</string>
@@ -1348,7 +1348,7 @@
     <string name="open_database_folder">افتح مجلد قاعدة البيانات</string>
     <string name="passphrase_will_be_saved_in_settings">سيتم تخزين عبارة المرور في الإعدادات كنص عادي بعد تغييرها أو إعادة تشغيل التطبيق.</string>
     <string name="settings_is_storing_in_clear_text">عبارة المرور مخزنة في الإعدادات كنص عادي.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>يُرجى الملاحظة</b>: يتم توصيل مُرحلات الرسائل والملفات عبر وسيط SOCKS. تستخدم المكالمات الاتصال المباشر.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>يُرجى الملاحظة</b>: يتم تسليم مُرحلات الرسائل والملفات عبر وسيط SOCKS. تستخدم المكالمات الاتصال المباشر.]]></string>
     <string name="encrypt_local_files">عَمِّ الملفات المحلية</string>
     <string name="v5_3_encrypt_local_files">عمِّ الملفات والوسائط المخزنة</string>
     <string name="v5_3_new_desktop_app">تطبيق سطح المكتب الجديد!</string>
@@ -2197,7 +2197,7 @@
     <string name="button_delete_chat">احذف الدردشة</string>
     <string name="connect_plan_chat_already_exists">الدردشة موجودة بالفعل!</string>
     <string name="delete_chat_question">حذف الدردشة؟</string>
-    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[لقد تم توصيلك بالفعل بـ <b>%1$s</b>.]]></string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[أنت متصل بالفعل بـ <b>%1$s</b>.]]></string>
     <string name="chat_archive">أو استورد ملف الأرشيف</string>
     <string name="onboarding_notifications_mode_off_desc_short">لا توجد خدمة خلفية</string>
     <string name="onboarding_notifications_mode_battery">الإشعارات والبطارية</string>
@@ -2661,7 +2661,7 @@
     <string name="relay_bar_relays_failed">فشل %1$d مُرحلات</string>
     <string name="relay_bar_relays_not_active">%1$d مُرحلات غير نشطة</string>
     <string name="relay_bar_relays_removed">%1$d مُرحلات أُزيلت</string>
-    <string name="relay_bar_owner_no_delivery">سيتم دعم إضافة المُرحلات في وقتٍ لاحق.</string>
+    <string name="relay_bar_owner_no_delivery">أضف مُرحلات لاستعادة تسليم الرسائل.</string>
     <string name="a_link_for_one_person">رابط اتصال لشخص واحد</string>
     <string name="allow_chat_with_admins">اسمح للأعضاء بالدردشة مع المُدراء.</string>
     <string name="allow_direct_messages_channel">اسمح بإرسال رسائل مباشرة للمشتركين.</string>
@@ -2777,4 +2777,20 @@
     <string name="your_public_address">عنوانك العام</string>
     <string name="why_built_heading">لقد وُلدت دون حساب تعريفي.</string>
     <string name="cancel_channel_alert_msg">قناتك الجديدة %1$s متصلة بـ %2$d من أصل %3$d مُرحلات. إذا ألغيت، ستُحذف القناة - يمكنك إنشاؤها مرة أخرى.</string>
+    <string name="add_button">أضف</string>
+    <string name="add_relay_button">أضف مُرحل</string>
+    <string name="add_relays_title">أضف مُرحلات</string>
+    <string name="button_cancel_and_delete_channel">ألغِ واحذف القناة</string>
+    <string name="num_relays_selected">%d مُرحل/ات مُحدّدة</string>
+    <string name="error_adding_relays">خطأ في إضافة المُرحلات</string>
+    <string name="no_available_relays">لا مُرحلات متاحة</string>
+    <string name="relay_bar_no_relays">لا مُرحلات</string>
+    <string name="no_relays_selected">لا مُرحلات مُحدّدة</string>
+    <string name="relays_added_format">المُرحلات المُضافة: %1$s.</string>
+    <string name="relay_will_be_removed_from_channel">سيُزيل المُرحل من القناة - لا يمكن التراجع عن هذا الإجراء!</string>
+    <string name="relay_conn_status_removed">أُزيل</string>
+    <string name="button_remove_relay">أزِل المُرحل</string>
+    <string name="button_remove_relay_question">إزالة المُرحل؟</string>
+    <string name="select_relays">حدّد المُرحلات</string>
+    <string name="last_active_relay_warning">هذا هو آخر مُرحل نشط. إزالته ستمنع تسليم الرسائل للمشتركين.</string>
 </resources>
