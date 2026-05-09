@@ -2670,7 +2670,7 @@
     <string name="relay_bar_relays_failed">%1$d 个中继失灵</string>
     <string name="relay_bar_relays_not_active">%1$d 个中继不活跃</string>
     <string name="relay_bar_relays_removed">删除了 %1$d 个中继</string>
-    <string name="relay_bar_owner_no_delivery">目前不支持添加中继。</string>
+    <string name="relay_bar_owner_no_delivery">添加恢复消息传输的中继。</string>
     <string name="relay_bar_all_relays_failed">所有中继均失灵</string>
     <string name="relay_bar_all_relays_removed">删除了所有中继</string>
     <string name="cant_broadcast_message">无法广播</string>
@@ -2786,4 +2786,20 @@
     <string name="link_previews_alert_desc_socks">将通过 SOCKS5 代理请求链接预览。DNS 查询仍可能通过你的 DNS 解析器在本地发生。</string>
     <string name="one_hand_ui_top_bar">顶部栏</string>
     <string name="cancel_channel_alert_msg">你的新频道 %1$s 已连接到 %3$d 个中继中的 %2$d 个中继。\n如果取消，频道将被删除 —— 你可以再次创建它。</string>
+    <string name="last_active_relay_warning">这是上次活跃的中继。删除它会阻止给订阅者传送消息。</string>
+    <string name="add_button">添加</string>
+    <string name="add_relay_button">添加中继</string>
+    <string name="add_relays_title">添加中继</string>
+    <string name="button_cancel_and_delete_channel">取消并删除频道</string>
+    <string name="num_relays_selected">选中了 %d 个中继</string>
+    <string name="error_adding_relays">添加中继出错</string>
+    <string name="no_available_relays">无可用中继</string>
+    <string name="relay_bar_no_relays">无中继</string>
+    <string name="no_relays_selected">未选中中继</string>
+    <string name="relays_added_format">已添加的中继：%1$s。</string>
+    <string name="relay_will_be_removed_from_channel">将从频道删除中继 — 这无法撤销！</string>
+    <string name="relay_conn_status_removed">已删除</string>
+    <string name="button_remove_relay">删除中继</string>
+    <string name="button_remove_relay_question">删除中继？</string>
+    <string name="select_relays">选择中继</string>
 </resources>
