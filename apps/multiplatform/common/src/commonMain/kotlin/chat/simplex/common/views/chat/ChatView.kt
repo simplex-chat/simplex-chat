@@ -211,7 +211,7 @@ fun ChatView(
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
-                } else {
+                } else if (cInfo.groupInfo.membership.memberCurrent) {
                   val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(chatRh, cInfo.groupInfo.groupId)
                   if (gInfo != null) {
                     withContext(Dispatchers.Main) {
@@ -3597,7 +3597,6 @@ fun providerForGallery(
 
     override fun scrollToStart() {
       initialIndex = 0
-      initialChatId = chatItems.firstOrNull { canShowMedia(it) }?.id ?: return
     }
 
     override fun onDismiss(index: Int) {

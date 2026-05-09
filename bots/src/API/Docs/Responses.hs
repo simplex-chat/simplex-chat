@@ -71,6 +71,8 @@ chatResponsesDocsData =
     ("CRPublicGroupCreated", ""),
     ("CRPublicGroupCreationFailed", ""),
     ("CRGroupRelays", ""),
+    ("CRGroupRelaysAdded", ""),
+    ("CRGroupRelaysAddFailed", ""),
     ("CRGroupMembers", ""),
     ("CRGroupUpdated", ""),
     ("CRGroupsList", "Groups"),

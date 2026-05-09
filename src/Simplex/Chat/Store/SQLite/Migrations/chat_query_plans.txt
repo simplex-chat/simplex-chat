@@ -6808,6 +6808,10 @@ Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
 
+Query: SELECT local_display_name FROM group_members
+Plan:
+SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
+
 Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users

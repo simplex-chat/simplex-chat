@@ -1778,11 +1778,14 @@ processChatCommand vr nm = \case
     gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
     case p of
       GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk}} | useRelays' gInfo -> do
-        (_, cData) <- getShortLinkConnReq nm user sLnk
+        (_, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks})) <- getShortLinkConnReq' nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
           Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData
           _ -> pure gInfo
+        when (memberRole' (membership gInfo) /= GROwner && memberCurrent (membership gInfo)) $
+          withGroupLock "syncSubscriberRelays" groupId $
+            syncSubscriberRelays user gInfo' currentRelayLinks
         pure $ CRGroupInfo user gInfo'
       _ -> throwCmdError "group link data not available"
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
@@ -2135,7 +2138,7 @@ processChatCommand vr nm = \case
                   _ -> Nothing
             void $ createLinkOwnerMember db vr user gInfo' ctId_ (MemberId ownerId) ownerKey
           pure gInfo'
-        rs <- mapConcurrently (connectToRelay gInfo') relays
+        rs <- mapConcurrently (connectToRelay user gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
         if null succeeded
@@ -2162,23 +2165,6 @@ processChatCommand vr nm = \case
           isTempErr = \case
             (_, _, Left ChatErrorAgent {agentError = e}) -> temporaryOrHostError e
             _ -> False
-          connectToRelay gInfo' relayLink = do
-            gVar <- asks random
-            -- Save relayLink to re-use relay member record on retry (check by relayLink)
-            relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
-            r <- tryAllErrors $ do
-              (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <- getShortLinkConnReq nm user relayLink
-              relayLinkData_ <- liftIO $ decodeLinkUserData cData
-              case (relayLinkData_, linkEntityId) of
-                (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
-                  withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
-                _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
-              let cReq = linkConnReq fd
-                  relayLinkToConnect = CCLink cReq (Just relayLink)
-              void $ connectViaContact user (Just $ PCEGroup gInfo' relayMember) incognito relayLinkToConnect Nothing Nothing
-            -- Re-read member to get updated activeConn and updated data (from updateRelayMemberData)
-            relayMember' <- withFastStore $ \db -> getGroupMember db vr user groupId (groupMemberId' relayMember)
-            pure (relayLink, relayMember', r)
           retryRelayConnectionAsync gInfo' relayLink relayMember@GroupMember {activeConn} = do
             forM_ activeConn $ \conn -> do
               deleteAgentConnectionAsync $ aConnId conn
@@ -2547,6 +2533,37 @@ processChatCommand vr nm = \case
       relays <- liftIO $ getGroupRelays db gInfo
       pure (gInfo, relays)
     pure $ CRGroupRelays user gInfo relays
+  APIAddGroupRelays groupId relayIds -> withUser $ \user -> withGroupLock "addGroupRelays" groupId $ do
+    (gInfo, existingRelays) <- withFastStore $ \db -> do
+      gi <- getGroupInfo db vr user groupId
+      rs <- liftIO $ getGroupRelays db gi
+      pure (gi, rs)
+    assertUserGroupRole gInfo GROwner
+    unless (useRelays' gInfo) $ throwCmdError "group does not use relays"
+    let existingRelayIds = map (\GroupRelay {userChatRelay = UserChatRelay {chatRelayId = DBEntityId rId}} -> rId) existingRelays
+    when (any (`elem` existingRelayIds) relayIds) $ throwCmdError "some relays are already in the group"
+    gLink@GroupLink {connLinkContact = ccLink} <- withFastStore $ \db -> getGroupLink db user gInfo
+    sLnk <- case connShortLink' ccLink of
+      Just sl -> pure sl
+      Nothing -> throwChatError $ CEException "group link has no short link"
+    relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
+    results <- addRelays user gInfo sLnk relays
+    case partitionEithers (map snd results) of
+      ([], _) -> do
+        relays' <- withFastStore $ \db -> liftIO $ getGroupRelays db gInfo
+        pure $ CRGroupRelaysAdded user gInfo gLink relays'
+      (errors@(e : _), _) -> do
+        if all isTempErr errors
+          then throwError e
+          else do
+            let toRelayResult (r, Left e') = AddRelayResult r (Just e')
+                toRelayResult (r, Right _) = AddRelayResult r Nothing
+            pure $ CRGroupRelaysAddFailed user (map toRelayResult results)
+    where
+      isTempErr :: ChatError -> Bool
+      isTempErr = \case
+        ChatErrorAgent {agentError = e} -> temporaryOrHostError e
+        _ -> False
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
@@ -3577,6 +3594,44 @@ processChatCommand vr nm = \case
               ct' <- withStore $ \db -> getContact db vr user contactId
               pure $ CRSentInvitationToContact user ct' incognitoProfile
             _ -> throwCmdError "contact already has connection"
+    connectToRelay :: User -> GroupInfo -> ShortLinkContact -> CM (ShortLinkContact, GroupMember, Either ChatError ())
+    connectToRelay user gInfo relayLink = do
+      gVar <- asks random
+      -- Save relayLink to re-use relay member record on retry (check by relayLink)
+      relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink
+      r <- tryAllErrors $ do
+        (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <- getShortLinkConnReq nm user relayLink
+        relayLinkData_ <- liftIO $ decodeLinkUserData cData
+        case (relayLinkData_, linkEntityId) of
+          (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
+            withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
+          _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
+        let cReq = linkConnReq fd
+            relayLinkToConnect = CCLink cReq (Just relayLink)
+        void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
+      relayMember' <- withFastStore $ \db -> getGroupMember db vr user (groupId' gInfo) (groupMemberId' relayMember)
+      pure (relayLink, relayMember', r)
+    syncSubscriberRelays :: User -> GroupInfo -> [ShortLinkContact] -> CM ()
+    syncSubscriberRelays user gInfo currentRelayLinks = void . tryAllErrors $ do
+      localRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
+      let activeRelayMembers = filter memberCurrent localRelayMembers
+          memberRelayLink GroupMember {relayLink = rl} = rl
+          localRelayLinks = mapMaybe memberRelayLink activeRelayMembers
+          newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
+      forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
+        connectToRelay user gInfo rlnk
+      forM_ localRelayMembers $ \m ->
+        case memberRelayLink m of
+          -- Remove relay if its link is no longer in the current link data.
+          -- Inactive relays (e.g. left) are only cleaned up when no active relays remain,
+          -- as that is the only case where the owner's relay removal can't be forwarded.
+          Just rlnk | rlnk `notElem` currentRelayLinks,
+                      memberCurrent m || null activeRelayMembers ->
+            void . tryAllErrors $ do
+              deleteMemberConnection m
+              deleteOrUpdateMemberRecord user gInfo m
+          _ -> pure ()
+
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
       -- 0) toggle disabled - PQSupportOff
@@ -4727,12 +4782,41 @@ deleteInProgressGroup user gInfo = do
   withFastStore' $ \db -> deleteGroup db user gInfo
 
 runRelayGroupLinkChecks :: User -> CM ()
-runRelayGroupLinkChecks _user = do
-  -- TODO [relays] relay: periodically check presence of relay link in group links of served groups
-  -- TODO   - retrieve group link data
-  -- TODO   - if relay link is present, update relay status to RSActive
-  -- TODO   - if relay link is absent and status was RSActive -> update to new "Removed" status?
-  pure ()
+runRelayGroupLinkChecks user = do
+  interval <- asks (relayChecksInterval . config)
+  liftIO $ threadDelay' $ diffToMicroseconds interval
+  forever $ do
+    flip catchAllErrors eToView $ do
+      lift waitChatStartedAndActivated
+      checkRelayServedGroups
+      checkRelayInactiveGroups
+    liftIO $ threadDelay' $ diffToMicroseconds interval
+  where
+    checkRelayServedGroups = do
+      vr <- chatVersionRange
+      relayGroups <- withStore' $ \db -> getRelayServedGroups db vr user
+      forM_ relayGroups $ \gInfo@GroupInfo {groupProfile = gp} -> flip catchAllErrors eToView $ do
+        case publicGroup gp of
+          Just PublicGroupProfile {groupLink = sLnk} -> do
+            (_, ContactLinkData _ UserContactData {relays = relayLinks}) <-
+              getShortLinkConnReq' NRMBackground user sLnk
+            gLink_ <- withStore' $ \db -> runExceptT $ getGroupLink db user gInfo
+            case gLink_ of
+              Right GroupLink {connLinkContact = CCLink _ (Just ourLink)} ->
+                if ourLink `elem` relayLinks
+                  then do
+                    -- TODO [relays] emit event to UI when relay own status promoted to RSActive
+                    -- CEvtGroupRelayUpdated requires GroupRelay (owner-side), not available on relay side
+                    void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAccepted RSActive
+                  else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
+              _ -> pure ()
+          _ -> pure ()
+    checkRelayInactiveGroups = do
+      vr <- chatVersionRange
+      ttl <- asks (relayInactiveTTL . config)
+      inactiveGroups <- withStore' $ \db -> getRelayInactiveGroups db vr user ttl
+      forM_ inactiveGroups $ \gInfo -> flip catchAllErrors eToView $
+        deleteGroupConnections user gInfo False
 
 expireChatItems :: User -> Int64 -> Bool -> CM ()
 expireChatItems user@User {userId} globalTTL sync = do
@@ -5026,6 +5110,7 @@ chatCommandP =
       ("/public group" <|> "/pg") *> (NewPublicGroup <$> incognitoP <* " relays=" <*> strP <* A.space <* char_ '#' <*> channelProfile),
       "/_public group " *> (APINewPublicGroup <$> A.decimal <*> incognitoOnOffP <*> _strP <* A.space <*> jsonP),
       "/_get relays #" *> (APIGetGroupRelays <$> A.decimal),
+      "/_add relays #" *> (APIAddGroupRelays <$> A.decimal <*> _strP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
       "/accept member " *> char_ '#' *> (AcceptMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),

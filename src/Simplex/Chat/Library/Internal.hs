@@ -1808,9 +1808,12 @@ deleteOrUpdateMemberRecord user gInfo m =
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
 deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
   (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
-  checkGroupMemberHasItems db user m' >>= \case
-    Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-    Nothing -> deleteGroupMember db user m'
+  if isRelay m'
+    then deleteGroupMember db user m'
+    else
+      checkGroupMemberHasItems db user m' >>= \case
+        Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
+        Nothing -> deleteGroupMember db user m'
   pure gInfo'
 
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo
@@ -1818,7 +1821,14 @@ updateMemberRecordDeleted user@User {userId} gInfo m newStatus =
   withStore' $ \db -> do
     (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
     updateGroupMemberStatus db userId m' newStatus
+    deactivateRelay_ db m
     pure gInfo'
+
+deactivateRelay_ :: DB.Connection -> GroupMember -> IO ()
+deactivateRelay_ db m =
+  when (isRelay m) $ do
+    relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
+    forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
 
 deleteSupportChatIfExists :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
 deleteSupportChatIfExists db user gInfo m = do

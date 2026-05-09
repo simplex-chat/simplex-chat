@@ -94,6 +94,9 @@ module Simplex.Chat.Store.Groups
     setGroupInProgressDone,
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
+    updateRelayOwnStatus_,
+    getRelayServedGroups,
+    getRelayInactiveGroups,
     createNewContactMemberAsync,
     createJoiningMember,
     getMemberJoinRequest,
@@ -188,7 +191,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
@@ -1585,7 +1588,29 @@ updateRelayOwnStatusFromTo db gInfo@GroupInfo {groupId} fromStatus toStatus = do
 updateRelayOwnStatus_ :: DB.Connection -> GroupInfo -> RelayStatus -> IO ()
 updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   currentTs <- getCurrentTime
-  DB.execute db "UPDATE groups SET relay_own_status = ?, updated_at = ? WHERE group_id = ?" (relayStatus, currentTs, groupId)
+  let inactiveAt_ = if relayStatus == RSInactive then Just currentTs else Nothing
+  DB.execute db "UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?" (relayStatus, inactiveAt_, currentTs, groupId)
+
+getRelayServedGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
+getRelayServedGroups db vr User {userId, userContactId} = do
+  map (toGroupInfo vr userContactId [])
+    <$> DB.query
+      db
+      ( groupInfoQuery
+          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?)"
+      )
+      (userId, userContactId, RSAccepted, RSActive)
+
+getRelayInactiveGroups :: DB.Connection -> VersionRangeChat -> User -> NominalDiffTime -> IO [GroupInfo]
+getRelayInactiveGroups db vr User {userId, userContactId} ttl = do
+  cutoffTs <- addUTCTime (- ttl) <$> getCurrentTime
+  map (toGroupInfo vr userContactId [])
+    <$> DB.query
+      db
+      ( groupInfoQuery
+          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status = ? AND g.relay_inactive_at IS NOT NULL AND g.relay_inactive_at <= ?"
+      )
+      (userId, userContactId, RSInactive, cutoffTs)
 
 createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> SubscriptionMode -> ExceptT StoreError IO ()
 createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo {groupId, membership} Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) chatV peerChatVRange subMode =
