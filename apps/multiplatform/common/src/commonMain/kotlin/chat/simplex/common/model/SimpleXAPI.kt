@@ -91,6 +91,11 @@ enum class SimplexLinkMode {
   }
 }
 
+enum class CloseBehavior {
+  Ask, Quit, MinimizeToTray;
+  companion object { val default = Ask }
+}
+
 // Spec: spec/state.md#AppPreferences
 class AppPreferences {
   // deprecated, remove in 2024
@@ -99,6 +104,10 @@ class AppPreferences {
     SHARED_PREFS_NOTIFICATIONS_MODE,
     if (!runServiceInBackground.get()) NotificationsMode.OFF else NotificationsMode.default
   )  { NotificationsMode.values().firstOrNull { it.name == this } }
+  val closeBehavior = mkEnumPreference(
+    SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR,
+    CloseBehavior.default
+  ) { CloseBehavior.values().firstOrNull { it.name == this } }
   val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
   val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
@@ -479,6 +488,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
+    private const val SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR = "DesktopCloseBehavior"
     private const val SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
     private const val SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
     private const val SHARED_PREFS_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
