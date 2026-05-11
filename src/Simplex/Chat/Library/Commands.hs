@@ -3611,27 +3611,6 @@ processChatCommand vr nm = \case
         void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
       relayMember' <- withFastStore $ \db -> getGroupMember db vr user (groupId' gInfo) (groupMemberId' relayMember)
       pure (relayLink, relayMember', r)
-    syncSubscriberRelays :: User -> GroupInfo -> [ShortLinkContact] -> CM ()
-    syncSubscriberRelays user gInfo currentRelayLinks = void . tryAllErrors $ do
-      localRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
-      let activeRelayMembers = filter memberCurrent localRelayMembers
-          memberRelayLink GroupMember {relayLink = rl} = rl
-          localRelayLinks = mapMaybe memberRelayLink activeRelayMembers
-          newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
-      forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
-        connectToRelay user gInfo rlnk
-      forM_ localRelayMembers $ \m ->
-        case memberRelayLink m of
-          -- Remove relay if its link is no longer in the current link data.
-          -- Inactive relays (e.g. left) are only cleaned up when no active relays remain,
-          -- as that is the only case where the owner's relay removal can't be forwarded.
-          Just rlnk | rlnk `notElem` currentRelayLinks,
-                      memberCurrent m || null activeRelayMembers ->
-            void . tryAllErrors $ do
-              deleteMemberConnection m
-              deleteOrUpdateMemberRecord user gInfo m
-          _ -> pure ()
-
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
       -- 0) toggle disabled - PQSupportOff

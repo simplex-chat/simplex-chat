@@ -1029,6 +1029,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' sharedMsgId chunk msgMeta
+              XGrpRelayNew _ -> pure $ Just (DeliveryTaskContext (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}) False)
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
@@ -1303,23 +1304,33 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CFSetShortLink ->
               case (ucGroupId_, auData) of
                 (Just groupId, UserContactLinkData UserContactData {relays = relayLinks}) -> do
-                  (gInfo, gLink, relays, relaysChanged) <- withStore $ \db -> do
+                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db vr user groupId
                     gLink <- getGroupLink db user gInfo
                     relays <- liftIO $ getGroupRelays db gInfo
-                    (relays', changed) <- liftIO $ foldrM (updateRelay db) ([], False) relays
+                    (relays', changed, newlyActive) <- liftIO $ foldrM (updateRelay db) ([], False, []) relays
                     liftIO $ setGroupInProgressDone db gInfo
-                    pure (gInfo, gLink, relays', changed)
+                    pure (gInfo, gLink, relays', changed, newlyActive)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
+                  forM_ (L.nonEmpty newlyActiveLinks) $ \newlyActive -> do
+                    allRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
+                    let recipients =
+                          filter
+                            (\GroupMember {memberStatus, relayLink} ->
+                               memberStatus == GSMemConnected && relayLink `notElem` map Just newlyActiveLinks)
+                            allRelayMembers
+                        events = XGrpRelayNew <$> newlyActive
+                    unless (null recipients) $
+                      void $ sendGroupMessages user gInfo Nothing False recipients events
                   where
-                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool) -> IO ([GroupRelay], Bool)
-                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
+                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
+                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed, newlyActive) =
                       case relayLink of
                         Just rLink
                           | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
                               relay' <- updateRelayStatus db relay RSActive
-                              pure (relay' : acc, True)
-                          | rLink `elem` relayLinks -> pure (relay : acc, changed)
+                              pure (relay' : acc, True, rLink : newlyActive)
+                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActive)
                           | relayStatus == RSActive -> do
                               -- Relay link absent from link data — deactivate.
                               -- RSAccepted relays are not deactivated: their own link data update
@@ -1328,8 +1339,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               -- TODO   the SMP server, but this owner won't receive a LINK callback for it
                               -- TODO   (LINK only fires in response to own setConnShortLink calls).
                               relay' <- updateRelayStatus db relay RSInactive
-                              pure (relay' : acc, True)
-                        _ -> pure (relay : acc, changed)
+                              pure (relay' : acc, True, newlyActive)
+                        _ -> pure (relay : acc, changed, newlyActive)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do
@@ -3375,6 +3386,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs gInfo author ps' rcvMsg
+            XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \_author -> connectToRelayAsync user gInfo rl
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
           where
             withAuthor :: CMEventTag e -> (GroupMember -> CM ()) -> CM ()

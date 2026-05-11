@@ -1381,8 +1381,11 @@ getCreateRelayForMember db vr gVar user@User {userId, userContactId} GroupInfo {
       maybeFirstRow (toContactMember vr user) $
         DB.query
           db
-          (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ?")
-          (groupId, relayLink)
+          (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ? AND m.member_status IN (?,?,?,?,?,?,?)")
+          ( (groupId, relayLink)
+              :. (GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced)
+              :. (GSMemConnected, GSMemComplete, GSMemCreator)
+          )
     createRelayMember = do
       currentTs <- liftIO getCurrentTime
       randRelayId <- liftIO $ encodedRandomBytes gVar 12

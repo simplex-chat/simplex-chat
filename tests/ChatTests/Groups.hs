@@ -270,6 +270,7 @@ chatGroupTests = do
       it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
       it "should deliver support scope messages via relay" testChannelSupportScope
       it "should add relay to existing channel" testChannelAddRelay
+      it "relay announce: online subscriber connects to new relay" testRelayAnnounceOnlineSubscriber
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
     describe "channel message operations" $ do
@@ -9755,6 +9756,52 @@ testChannelAddRelay ps =
             alice #> "#team hello"
             [bob, cath] *<# "#team> hello"
             [dan, eve] *<# "#team> hello [>>]"
+
+testRelayAnnounceOnlineSubscriber :: HasCallStack => TestParams -> IO ()
+testRelayAnnounceOnlineSubscriber ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          cath ##> "/ad"
+          (cathSLink, _cLink) <- getContactLinks cath True
+          alice ##> ("/relays name=cath " <> cathSLink)
+          alice <## "ok"
+
+          alice ##> "/_add relays #1 2"
+          alice <## "#team: group relays:"
+          alice <## "  - relay id 1: active"
+          alice <## "  - relay id 2: invited"
+
+          concurrentlyN_
+            [ do
+                alice <## "#team: group link relays updated, current relays:"
+                alice
+                  <### [ "  - relay id 1: active",
+                         "  - relay id 2: active"
+                       ]
+                alice <## "group link:"
+                void $ getTermLine alice,
+              cath <## "#team: you joined the group as relay"
+            ]
+
+          -- dan must auto-connect via XGrpRelayNew without calling /_get group link data
+          concurrentlyN_
+            [ do
+                dan <## "#team: joining the group (connecting to relay cath)..."
+                dan <## "#team: you joined the group (connected to relay cath)",
+              do
+                cath <## "dan (Daniel): accepting request to join group #team..."
+                cath <## "#team: dan joined the group"
+            ]
+
+          threadDelay 100000
+          alice #> "#team hello"
+          [bob, cath] *<# "#team> hello"
+          dan <# "#team> hello [>>]"
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =
