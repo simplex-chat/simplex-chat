@@ -73,6 +73,7 @@ fun showApp() {
           }
         }
       ) {
+        SimplexTray(closedByError)
         CloseBehaviorDialog()
         AppWindow(closedByError)
       }
@@ -250,8 +251,12 @@ private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Bool
       )
     }
     CloseBehavior.MinimizeToTray -> {
-      // Tray-availability guard added in Task 5 once trayIsAvailable exists.
-      simplexWindowState.windowVisible.value = false
+      if (trayIsAvailable) {
+        simplexWindowState.windowVisible.value = false
+      } else {
+        closedByError.value = false
+        exitApplication()
+      }
     }
   }
 }
