@@ -587,6 +587,9 @@ export class SupportBot {
       await this.withGrokProfile(() =>
         this.chat.apiSendTextMessage([T.ChatType.Group, grokGroupId], response)
       )
+
+      // Grok asked for the team → escalate as if the customer sent /team
+      if (mainGroupId !== undefined && response.includes("/team")) await this.activateTeam(mainGroupId)
     } catch (err) {
       logError(`Grok per-message error for grokGroup ${grokGroupId}`, err)
       try {
@@ -722,6 +725,9 @@ export class SupportBot {
         await this.withGrokProfile(() =>
           this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], response)
         )
+
+        // Grok asked for the team → escalate as if the customer sent /team
+        if (response.includes("/team")) await this.activateTeam(groupId)
       } catch (err) {
         logError(`Grok initial response failed for group ${groupId}`, err)
         await this.sendToGroup(groupId, grokUnavailableMessage)
