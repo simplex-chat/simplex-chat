@@ -36,10 +36,8 @@ enum class CloseBehavior {
 }
 
 // In AppPreferences:
-val closeBehavior = mkEnumPreference(
-  SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR,
-  CloseBehavior.default
-) { CloseBehavior.values().firstOrNull { it.name == this } }
+val closeBehavior: SharedPreference<CloseBehavior> =
+  mkSafeEnumPreference(SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR, CloseBehavior.default)
 ```
 
 Add the constant at the bottom of `AppPreferences` next to other `SHARED_PREFS_*` constants:
@@ -218,16 +216,14 @@ Click "Minimize to tray" → window hides; the app process keeps running but is 
 ### Task 4 — Tray icon resources
 
 **Files**
-- `apps/multiplatform/common/src/commonMain/resources/MR/images/ic_simplex_tray.xml` (or `.png`)
-- `apps/multiplatform/common/src/commonMain/resources/MR/images/ic_simplex_tray_dot.xml` (or `.png`)
+- `apps/multiplatform/common/src/commonMain/resources/MR/images/ic_simplex_tray_dot.svg`
 - `apps/multiplatform/common/src/commonMain/resources/MR/base/strings.xml`
 
-**Icons.** Two assets at 64×64 source size (per spec — single bitmap, OS handles downscale):
+**Icons.** Reuse the existing `MR.images.ic_simplex` for the no-unread case and add a single new asset for the unread case:
 
-- `ic_simplex_tray` — base SimpleX glyph; same silhouette as `ic_simplex` but flat-coloured, no background, suitable for menu-bar/tray panels of various themes.
-- `ic_simplex_tray_dot` — `ic_simplex_tray` with a small red filled circle in the bottom-right (~18×18 in the 64×64 frame).
+- `ic_simplex_tray_dot` — copy of `ic_simplex.svg` with a small red filled circle added in the bottom-right (~6px radius in the 40×40 viewBox).
 
-Easiest: drop two PNGs into `MR/images/`. Moko picks them up; refer to as `MR.images.ic_simplex_tray` etc. Run a build to check generation: `./gradlew :common:generateMRcommonMain`.
+Drop the SVG into `MR/images/`. Moko picks it up; refer to as `MR.images.ic_simplex_tray_dot`. Run a build to check generation: `./gradlew :common:generateMRcommonMain`.
 
 **Strings.** Tray menu items + tooltip strings:
 
@@ -238,7 +234,7 @@ Easiest: drop two PNGs into `MR/images/`. Moko picks them up; refer to as `MR.im
 <string name="tray_tooltip_unread">SimpleX — %d unread</string>
 ```
 
-**Verify.** Build succeeds; the generated `MR.images.ic_simplex_tray` and `MR.strings.tray_*` symbols compile when referenced from a temporary scratch file (delete after).
+**Verify.** Build succeeds; the generated `MR.images.ic_simplex_tray_dot` and `MR.strings.tray_*` symbols compile when referenced from a temporary scratch file (delete after).
 
 **Commit.** `desktop: tray icon assets and menu strings`
 
@@ -260,8 +256,16 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import java.awt.SystemTray
 
-// Probed once at startup. Returns false on stock GNOME ≥ JDK 21.0.3 per JDK-8322750.
-val trayIsAvailable: Boolean by lazy { SystemTray.isSupported() }
+// Probed once at startup. Performs a real add/remove of a transparent TrayIcon
+// because SystemTray.isSupported() can return true while add() throws (JDK-8322750).
+val trayIsAvailable: Boolean by lazy {
+  if (!SystemTray.isSupported()) return@lazy false
+  try {
+    val tray = SystemTray.getSystemTray()
+    val probe = TrayIcon(BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB))
+    tray.add(probe); tray.remove(probe); true
+  } catch (e: AWTException) { false } catch (e: SecurityException) { false }
+}
 
 fun showWindow() {
   simplexWindowState.windowVisible.value = true
@@ -328,10 +332,11 @@ The order doesn't affect rendering — the tray and dialog are top-level surface
 **Change `SimplexTray`.** Replace the static icon and tooltip with reactive ones:
 
 ```kotlin
+// UserInfo.unreadCount is incremented only when ntfsEnabled(item) — see SimpleXAPI.kt:2781-2783.
 val unread by remember {
-  derivedStateOf { ChatModel.chats.value.sumOf { it.chatStats.unreadCount } }
+  derivedStateOf { ChatModel.users.sumOf { it.unreadCount } }
 }
-val iconRes = if (unread > 0) MR.images.ic_simplex_tray_dot else MR.images.ic_simplex_tray
+val iconRes = if (unread > 0) MR.images.ic_simplex_tray_dot else MR.images.ic_simplex
 val tooltip =
   if (unread > 0) stringResource(MR.strings.tray_tooltip_unread, unread)
   else stringResource(MR.strings.tray_tooltip)

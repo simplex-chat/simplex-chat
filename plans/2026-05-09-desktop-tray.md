@@ -34,10 +34,8 @@ Add an enum preference:
 enum class CloseBehavior { Ask, Quit, MinimizeToTray }
 
 // in AppPreferences:
-val closeBehavior = mkEnumPreference(
-  SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR,
-  CloseBehavior.Ask
-) { CloseBehavior.entries }
+val closeBehavior: SharedPreference<CloseBehavior> =
+  mkSafeEnumPreference(SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR, CloseBehavior.default)
 ```
 
 `Ask` is the default for fresh installs and for users upgrading from a version that did not have this preference.
@@ -68,16 +66,33 @@ The Compose application loop already runs with `exitProcessOnExit = false`, so h
 
 No new dependency. We use `androidx.compose.ui.window.Tray` (built into Compose Multiplatform, already on the classpath). It wraps `java.awt.SystemTray` under the hood — works wherever AWT's tray works, returns silently when it doesn't.
 
-**Tray availability probe.** `java.awt.SystemTray.isSupported()` is the gate. On stock GNOME (no AppIndicator extension), modern JDKs return `false` here per JDK-8322750. We expose this as a `desktopMain` value, e.g. `val trayIsAvailable: Boolean = SystemTray.isSupported()`, computed once at startup. The dialog branches on it (only shows "Minimize to tray" if available) and the Appearance toggle is hidden entirely when it's not.
+**Tray availability probe.** `java.awt.SystemTray.isSupported()` alone is not reliable — there is a JDK pattern where it returns `true` but `SystemTray.add()` then throws `AWTException` (and Compose-MP does not catch it). We expose a `desktopMain` value that runs a real add/remove of a transparent `TrayIcon` inside a `try/catch` and caches the result:
+
+```kotlin
+val trayIsAvailable: Boolean by lazy {
+  if (!SystemTray.isSupported()) return@lazy false
+  try {
+    val tray = SystemTray.getSystemTray()
+    val probe = TrayIcon(BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB))
+    tray.add(probe)
+    tray.remove(probe)
+    true
+  } catch (e: AWTException) { false }
+    catch (e: SecurityException) { false }
+}
+```
+
+The probe is force-evaluated at the top of `showApp()` (off the EDT) so the JDK-8322750 GNOME detection subprocess does not block composition. When `false`: the Appearance toggle is hidden, the first-close dialog is skipped (`Ask` migrates silently to `Quit`), and the close handler treats `MinimizeToTray` as `Quit` (in case the preference was carried over from a tray-capable machine).
 
 The tray composable lives next to `AppWindow` inside `application(exitProcessOnExit = false) { … }` in `showApp()`. It is gated by the preference AND by tray availability:
 
 ```kotlin
 if (trayIsAvailable && appPrefs.closeBehavior.state.value == CloseBehavior.MinimizeToTray) {
+  // UserInfo.unreadCount is the pre-aggregated, ntfs-filtered counter — see SimpleXAPI.kt:2781-2783.
   val unread by remember { derivedStateOf {
-    ChatModel.chats.value.sumOf { it.chatStats.unreadCount }
+    ChatModel.users.sumOf { it.unreadCount }
   } }
-  val iconRes = if (unread > 0) MR.images.ic_simplex_tray_dot else MR.images.ic_simplex_tray
+  val iconRes = if (unread > 0) MR.images.ic_simplex_tray_dot else MR.images.ic_simplex
   val tooltip = if (unread > 0)
     stringResource(MR.strings.tray_tooltip_unread, unread)
   else
@@ -89,7 +104,7 @@ if (trayIsAvailable && appPrefs.closeBehavior.state.value == CloseBehavior.Minim
     menu = {
       Item(stringResource(MR.strings.tray_show), onClick = ::showWindow)
       Separator()
-      Item(stringResource(MR.strings.tray_quit), onClick = ::quitApp)
+      Item(stringResource(MR.strings.tray_quit), onClick = { exitApplication() })
     }
   )
 }
@@ -97,13 +112,12 @@ if (trayIsAvailable && appPrefs.closeBehavior.state.value == CloseBehavior.Minim
 
 Note: Compose's `Tray` takes `icon: Painter` (not `iconContent`), `onAction` (not `primaryAction`), and the menu DSL uses `Separator()` (not `Divider()`). These are the right names for the built-in API.
 
-`showWindow()` sets `windowVisible.value = true` and calls `window?.toFront()` + `window?.requestFocus()`. `quitApp()` sets `closedByError.value = false` and `exitApplication()`.
+`showWindow()` sets `windowVisible.value = true` and calls `window?.toFront()` + `window?.requestFocus()`. Quitting from the tray menu just calls `exitApplication()` — `closedByError` is already `false` in the non-crash path, so the outer loop in `showApp()` terminates cleanly.
 
-**Unread indicator.** Icon swap based on `hasUnread`: plain `ic_simplex_tray` when zero, `ic_simplex_tray_dot` (same icon with a red dot overlay in the bottom-right) otherwise. Compose passes the `Painter` into AWT via `Painter.toAwtImage(density, layoutDirection, size)` — a single bitmap per state. Two new image resources:
-- `MR.images.ic_simplex_tray` — base tray icon.
-- `MR.images.ic_simplex_tray_dot` — same icon with the red-dot overlay.
+**Unread indicator.** Icon swap based on `hasUnread`: reuse `ic_simplex` when zero, `ic_simplex_tray_dot` (same icon with a red dot overlay in the bottom-right) otherwise. Compose passes the `Painter` into AWT via `Painter.toAwtImage(density, layoutDirection, size)` — a single bitmap per state. One new image resource is enough:
+- `MR.images.ic_simplex_tray_dot` — base icon with the red-dot overlay.
 
-**Icon size.** Compose `Tray` rasterises the `Painter` once at a per-platform target size: Linux 22×22, Windows 16×16, macOS 22×22 (with retina 2×). It's a single bitmap, so we source the painter at a comfortable size (e.g. via a `painterResource(MR.images.ic_simplex_tray)` from a 64×64 PNG) and let the conversion handle the scale. We accept the slight scaling cost on 16×16 Windows panels rather than ship multiple size variants.
+**Icon size.** Compose `Tray` rasterises the `Painter` once at a per-platform target size: Linux 22×22, Windows 16×16, macOS 22×22 (with retina 2×). It's a single bitmap, so we source the painter at a comfortable size (e.g. via a `painterResource(MR.images.ic_simplex)` from the 40×40 SVG already shipped) and let the conversion handle the scale. We accept the slight scaling cost on 16×16 Windows panels rather than ship multiple size variants.
 
 **Tooltip.** Plain "SimpleX" when unread is zero; "SimpleX — N unread" otherwise.
 
@@ -113,7 +127,7 @@ Note: Compose's `Tray` takes `icon: Painter` (not `iconContent`), `onAction` (no
 
 **Toggling at runtime.** The `Tray { … }` composable is gated on `closeBehavior.state.value == MinimizeToTray`; Compose's recomposition lifecycle handles install/uninstall when the user flips the setting. No `LaunchedEffect` is needed.
 
-**Android isolation.** All tray code (the `Tray` composable, the close-behavior dialog, `showWindow`/`quitApp`, the `trayIsAvailable` probe) lives in `desktopMain` only. The Android target compiles none of it — there are no expect/actual surfaces from `commonMain` calling into tray functionality. The only shared piece is the `CloseBehavior` enum + `closeBehavior` preference in `SimpleXAPI.kt`, which is plain data and never references tray APIs.
+**Android isolation.** All tray code (the `Tray` composable, the close-behavior dialog, `showWindow`, the `trayIsAvailable` probe) lives in `desktopMain` only. The Android target compiles none of it — there are no expect/actual surfaces from `commonMain` calling into tray functionality. The only shared piece is the `CloseBehavior` enum + `closeBehavior` preference in `SimpleXAPI.kt`, which is plain data and never references tray APIs.
 
 ### Appearance settings row
 
@@ -129,7 +143,7 @@ The toggle maps to the preference:
 
 Flipping on writes `MinimizeToTray`. Flipping off writes `Quit`. Touching the toggle resolves the `Ask` state to a definitive value — so a fresh-install user who opens Appearance settings, flips the row off, and then closes the window will *not* see the dialog (their preference is now `Quit`). This matches the user's apparent intent (they made a choice in settings) and avoids the surprise of a dialog appearing for a setting they thought they had already configured.
 
-When `trayIsAvailable` is `false` (stock GNOME without AppIndicator extension), the entire row is omitted from Appearance settings, the first-close dialog skips the "Minimize to tray" button, and the close handler treats `MinimizeToTray` as `Quit` (in case the user previously enabled it on a different machine).
+When `trayIsAvailable` is `false` (stock GNOME without AppIndicator extension), the entire row is omitted from Appearance settings, the first-close dialog is skipped (`Ask` migrates silently to `Quit`), and the close handler treats `MinimizeToTray` as `Quit` (in case the user previously enabled it on a different machine).
 
 The wording "Minimize to tray" is used uniformly across all platforms, including macOS where the more native term would be "menu bar". A consistent in-app term is more important here than per-platform purity.
 
@@ -139,7 +153,7 @@ The wording "Minimize to tray" is used uniformly across all platforms, including
 |---|---|
 | `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` | Add `CloseBehavior` enum, `closeBehavior` preference, `SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR` constant. *(already in this branch as commit 1)* |
 | `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt` | Replace inline `onCloseRequest`; add `windowVisible` to `SimplexWindowState`; wire `Window(visible = …)`; host the `Tray` composable conditionally on `trayIsAvailable && closeBehavior == MinimizeToTray`. |
-| `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopTray.kt` *(new)* | `trayIsAvailable` probe, `showCloseBehaviorDialog`, `SimplexTray` composable, `showWindow`, `quitApp` helpers. |
+| `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopTray.kt` *(new)* | `trayIsAvailable` probe, `requestCloseBehavior` + `CloseBehaviorDialog`, `SimplexTray` composable, `showWindow` helper. |
 | `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/usersettings/Appearance.desktop.kt` | Add the toggle row (gated on `trayIsAvailable`). |
 | `apps/multiplatform/common/src/commonMain/resources/MR/base/strings.xml` | Add 8 new strings (dialog title/body/buttons, settings row, tray menu). |
 | `apps/multiplatform/common/src/commonMain/resources/MR/images/` | Add `ic_simplex_tray` + `ic_simplex_tray_dot`. |
