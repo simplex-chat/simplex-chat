@@ -1,17 +1,21 @@
 package chat.simplex.common
 
+import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.CloseBehavior
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
-import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.views.helpers.AlertManager
+import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -75,55 +79,42 @@ fun ApplicationScope.SimplexTray() {
   )
 }
 
-// Top-level state so handleCloseRequest (non-Composable) can set it. Buttons act on
-// the current ApplicationScope, not a captured one — otherwise a crash-recovery
-// iteration would resurrect the dialog with closures bound to a torn-down scope.
-private val isAskingCloseBehavior = mutableStateOf(false)
-
-fun requestCloseBehavior() {
-  isAskingCloseBehavior.value = true
-}
-
-// Called at the start of each showApp iteration so a crash that leaves the dialog
-// open does not resurface it after recovery.
-fun resetAskCloseBehavior() {
-  isAskingCloseBehavior.value = false
-}
-
-@Composable
-fun ApplicationScope.CloseBehaviorDialog() {
-  if (!isAskingCloseBehavior.value) return
+// Renders in the main app window via AlertManager (same surface as e.g. the link
+// previews confirmation). Lambdas close over the calling ApplicationScope; if the
+// app crashes while the dialog is open, the crash handler's alert replaces it, so
+// stale closures never get clicked.
+fun ApplicationScope.requestCloseBehavior() {
   val pref = appPrefs.closeBehavior
-  DialogWindow(
-    onCloseRequest = { /* non-dismissible: ignore X */ },
-    state = rememberDialogState(width = 420.dp, height = 220.dp),
-    title = stringResource(MR.strings.close_behavior_dialog_title),
-    resizable = false,
-  ) {
-    // DialogWindow opens a separate Compose tree; MaterialTheme must be re-applied
-    // so the buttons use the app theme rather than Compose's default lightColors.
-    SimpleXTheme {
-      Column(Modifier.padding(24.dp)) {
-        Text(stringResource(MR.strings.close_behavior_dialog_text))
-        Spacer(Modifier.height(24.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-          Button(
-            onClick = {
-              isAskingCloseBehavior.value = false
-              pref.set(CloseBehavior.Quit)
-              exitApplication()
-            },
-            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error),
-          ) { Text(stringResource(MR.strings.close_behavior_dialog_close)) }
-          Button(
-            onClick = {
-              isAskingCloseBehavior.value = false
-              pref.set(CloseBehavior.MinimizeToTray)
-              simplexWindowState.windowVisible.value = false
-            },
-          ) { Text(stringResource(MR.strings.close_behavior_dialog_minimize)) }
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.close_behavior_dialog_title),
+    text = AnnotatedString(generalGetString(MR.strings.close_behavior_dialog_text)),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          pref.set(CloseBehavior.Quit)
+          exitApplication()
+        }) {
+          Text(
+            stringResource(MR.strings.close_behavior_dialog_close),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = Color.Red
+          )
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          pref.set(CloseBehavior.MinimizeToTray)
+          simplexWindowState.windowVisible.value = false
+        }) {
+          Text(
+            stringResource(MR.strings.close_behavior_dialog_minimize),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary
+          )
         }
       }
     }
-  }
+  )
 }

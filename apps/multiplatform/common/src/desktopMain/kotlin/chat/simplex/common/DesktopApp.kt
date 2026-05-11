@@ -36,7 +36,6 @@ fun showApp() {
   trayIsAvailable
   while (true) {
     val closedByError = mutableStateOf(false)
-    resetAskCloseBehavior()
     application(exitProcessOnExit = false) {
       CompositionLocalProvider(
         LocalWindowExceptionHandlerFactory provides WindowExceptionHandlerFactory { window ->
@@ -79,7 +78,6 @@ fun showApp() {
         }
       ) {
         SimplexTray()
-        CloseBehaviorDialog()
         AppWindow(closedByError)
       }
     }
