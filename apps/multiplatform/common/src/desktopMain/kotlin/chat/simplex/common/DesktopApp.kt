@@ -31,8 +31,12 @@ import kotlin.system.exitProcess
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() {
-  val closedByError = mutableStateOf(true)
-  while (closedByError.value) {
+  // Probe SystemTray off the EDT — the lazy's first read would otherwise block the
+  // EDT during composition; JDK-8322750's GNOME detection forks a subprocess.
+  trayIsAvailable
+  while (true) {
+    val closedByError = mutableStateOf(false)
+    resetAskCloseBehavior()
     application(exitProcessOnExit = false) {
       CompositionLocalProvider(
         LocalWindowExceptionHandlerFactory provides WindowExceptionHandlerFactory { window ->
@@ -43,8 +47,9 @@ fun showApp() {
               shareText = true
             )
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
-            window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
+            // Must precede dispatchEvent — handleCloseRequest reads this flag.
             closedByError.value = true
+            window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
             includeMoreFailedComposables()
             // If the left side of screen has open modal, it's probably caused the crash
             if (ModalManager.start.hasModalsOpen()) {
@@ -73,11 +78,12 @@ fun showApp() {
           }
         }
       ) {
-        SimplexTray(closedByError)
+        SimplexTray()
         CloseBehaviorDialog()
         AppWindow(closedByError)
       }
     }
+    if (!closedByError.value) break
   }
   exitProcess(0)
 }
@@ -226,37 +232,26 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   }
 }
 
+// Not invoked for macOS Cmd+Q — that goes through AWT's default QuitHandler and
+// exits the process directly. Intentional: Cmd+Q is canonical "always quit" on macOS.
 private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Boolean>) {
+  // Crash dispatch — bypass user-facing policy and exit; outer loop will restart.
   if (closedByError.value) {
-    closedByError.value = false
     exitApplication()
     return
   }
-  when (ChatController.appPrefs.closeBehavior.get()) {
-    CloseBehavior.Quit -> {
-      closedByError.value = false
+  val pref = ChatController.appPrefs.closeBehavior
+  when (pref.get()) {
+    CloseBehavior.Quit -> exitApplication()
+    CloseBehavior.MinimizeToTray -> if (trayIsAvailable) {
+      simplexWindowState.windowVisible.value = false
+    } else exitApplication()
+    CloseBehavior.Ask -> if (trayIsAvailable) {
+      requestCloseBehavior()
+    } else {
+      // Tray unavailable — Minimize is not a real option; remember Quit and exit.
+      pref.set(CloseBehavior.Quit)
       exitApplication()
-    }
-    CloseBehavior.Ask -> {
-      requestCloseBehavior(
-        onClose = {
-          ChatController.appPrefs.closeBehavior.set(CloseBehavior.Quit)
-          closedByError.value = false
-          exitApplication()
-        },
-        onMinimize = {
-          ChatController.appPrefs.closeBehavior.set(CloseBehavior.MinimizeToTray)
-          simplexWindowState.windowVisible.value = false
-        }
-      )
-    }
-    CloseBehavior.MinimizeToTray -> {
-      if (trayIsAvailable) {
-        simplexWindowState.windowVisible.value = false
-      } else {
-        closedByError.value = false
-        exitApplication()
-      }
     }
   }
 }

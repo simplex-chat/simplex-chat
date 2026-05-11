@@ -22,8 +22,8 @@
      fill="url(#paint0_linear_40_164)"
      id="path2"
      style="fill:url(#paint0_linear_40_164);stroke-width:0.866122" />
-  <!-- Unread dot in bottom-right -->
-  <circle cx="155" cy="35" r="6" fill="#e53935" />
+  <!-- Unread dot in bottom-right; cy ≤ 34 to keep it inside the 40×40 viewBox bottom edge -->
+  <circle cx="155" cy="34" r="6" fill="#e53935" />
   <defs
      id="defs3">
     <linearGradient

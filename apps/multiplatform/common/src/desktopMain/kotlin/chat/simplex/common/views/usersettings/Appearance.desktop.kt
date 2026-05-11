@@ -3,6 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionSpacer
+import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -96,26 +97,14 @@ private fun MinimizeToTraySection() {
   val pref = remember { appPrefs.closeBehavior.state }
   val on = pref.value == CloseBehavior.MinimizeToTray
   SectionView {
-    Row(
-      Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = 12.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Column(Modifier.weight(1f)) {
-        Text(stringResource(MR.strings.appearance_minimize_to_tray))
-        Text(
-          stringResource(MR.strings.appearance_minimize_to_tray_desc),
-          style = MaterialTheme.typography.caption,
-          color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
-        )
-      }
-      Switch(
-        checked = on,
-        onCheckedChange = { checked ->
-          appPrefs.closeBehavior.set(if (checked) CloseBehavior.MinimizeToTray else CloseBehavior.Quit)
-        }
-      )
+    PreferenceToggle(
+      stringResource(MR.strings.appearance_minimize_to_tray),
+      checked = on,
+    ) { checked ->
+      appPrefs.closeBehavior.set(if (checked) CloseBehavior.MinimizeToTray else CloseBehavior.Quit)
     }
   }
+  SectionTextFooter(stringResource(MR.strings.appearance_minimize_to_tray_desc))
 }
 
 @Composable
