@@ -275,16 +275,6 @@ SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
           SELECT user_id FROM users u
-          WHERE u.deleted = ?
-            AND NOT EXISTS (SELECT c.conn_id FROM connections c WHERE c.user_id = u.user_id)
-        
-Plan:
-SCAN u
-CORRELATED SCALAR SUBQUERY 1
-SEARCH c USING COVERING INDEX idx_connections_user (user_id=?)
-
-Query: 
-          SELECT user_id FROM users u
           WHERE u.user_id = ?
             AND u.deleted = ?
             AND NOT EXISTS (SELECT c.conn_id FROM connections c WHERE c.user_id = u.user_id)
@@ -534,21 +524,6 @@ Query:
     
 Plan:
 SEARCH conn_confirmations USING COVERING INDEX idx_conn_confirmations_conn_id (conn_id=?)
-
-Query: 
-      DELETE FROM encrypted_rcv_message_hashes
-      WHERE encrypted_rcv_message_hash_id IN (
-        SELECT encrypted_rcv_message_hash_id
-        FROM encrypted_rcv_message_hashes
-        WHERE created_at < ?
-        ORDER BY created_at ASC
-        LIMIT ?
-      )
-    
-Plan:
-SEARCH encrypted_rcv_message_hashes USING INTEGER PRIMARY KEY (rowid=?)
-LIST SUBQUERY 1
-SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_created_at (created_at<?)
 
 Query: 
       INSERT INTO connections
@@ -1110,14 +1085,6 @@ Query: SELECT conn_id FROM connections WHERE deleted = 0
 Plan:
 SCAN connections
 
-Query: SELECT conn_id FROM connections WHERE deleted = ?
-Plan:
-SCAN connections
-
-Query: SELECT conn_id FROM connections WHERE deleted_at_wait_delivery IS NOT NULL
-Plan:
-SCAN connections
-
 Query: SELECT conn_id FROM connections WHERE user_id = ?
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
@@ -1230,6 +1197,10 @@ Query: UPDATE connections SET smp_agent_version = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
+Query: UPDATE deleted_snd_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE deleted_snd_chunk_replica_id = ?
+Plan:
+SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE messages SET msg_body = x'' WHERE conn_id = ? AND internal_id = ?
 Plan:
 SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
@@ -1237,10 +1208,6 @@ SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
 Query: UPDATE ratchets SET ratchet_state = ? WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
-
-Query: UPDATE rcv_file_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
-Plan:
-SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE rcv_file_chunk_replicas SET received = 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
 Plan:
