@@ -1,9 +1,13 @@
 import {describe, test, expect, beforeEach, vi} from "vitest"
+import {mkdtempSync, writeFileSync} from "fs"
+import {tmpdir} from "os"
+import {join} from "path"
 import {core} from "simplex-chat"
 import {SupportBot} from "./src/bot.js"
 import {CardManager} from "./src/cards.js"
 import {parseConfig} from "./src/config.js"
 import {GrokApiClient} from "./src/grok.js"
+import {loadGrokContext} from "./src/context.js"
 import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage, teamAlreadyInvitedMessage} from "./src/messages.js"
 
 // Silence console output during tests
@@ -2427,7 +2431,7 @@ describe("GrokApiClient HTTP timeout", () => {
       new Response(JSON.stringify({choices: [{message: {content: "ok"}}]}), {status: 200}),
     )
 
-    const client = new GrokApiClient("test-key", "system prompt")
+    const client = new GrokApiClient("test-key", [{role: "system", content: "system prompt"}])
     await client.chat([], "hello")
 
     expect(timeoutSpy).toHaveBeenCalledWith(60_000)
@@ -2502,5 +2506,120 @@ describe("Command sync in sendToGroup", () => {
     expect(prefs.commands).toEqual(DESIRED_COMMANDS)
     expect(prefs.files).toEqual({enable: "on"})
     expect(prefs.reactions).toEqual({enable: "on"})
+  })
+})
+
+// loadGrokContext: documented behavior is "plain text → single system
+// message". A `.yaml` / `.yml` extension is an undocumented alternative
+// that parses the harness transcript format and surfaces only `system`
+// and `assistant` turns; `user` entries are dropped so they don't merge
+// with the customer's runtime message.
+describe("loadGrokContext", () => {
+  const dir = mkdtempSync(join(tmpdir(), "support-bot-context-"))
+  const writeFile = (name: string, content: string): string => {
+    const p = join(dir, name)
+    writeFileSync(p, content)
+    return p
+  }
+
+  test("plain text (.txt) → single system message with full file content", () => {
+    const path = writeFile("ctx.txt", "You are Grok.\n\nBe concise.")
+    expect(loadGrokContext(path)).toEqual([
+      {role: "system", content: "You are Grok.\n\nBe concise."},
+    ])
+  })
+
+  test("no extension → treated as plain text", () => {
+    const path = writeFile("plain", "raw context")
+    expect(loadGrokContext(path)).toEqual([{role: "system", content: "raw context"}])
+  })
+
+  test(".md → treated as plain text (does not look like YAML)", () => {
+    const path = writeFile("ctx.md", "# Heading\n\nbody")
+    expect(loadGrokContext(path)).toEqual([
+      {role: "system", content: "# Heading\n\nbody"},
+    ])
+  })
+
+  test(".yaml → parses transcript and keeps only system + assistant turns", () => {
+    const path = writeFile("ctx.yaml",
+      "- role: system\n  message: Be terse.\n" +
+      "- role: user\n  message: What is async?\n" +
+      "- role: assistant\n  message: Cooperative concurrency.\n",
+    )
+    expect(loadGrokContext(path)).toEqual([
+      {role: "system", content: "Be terse."},
+      {role: "assistant", content: "Cooperative concurrency."},
+    ])
+  })
+
+  test(".yml extension also triggers YAML parsing", () => {
+    const path = writeFile("ctx.yml",
+      "- role: system\n  message: hi\n",
+    )
+    expect(loadGrokContext(path)).toEqual([{role: "system", content: "hi"}])
+  })
+
+  test("YAML parsing is case-insensitive on extension", () => {
+    const path = writeFile("ctx.YAML",
+      "- role: system\n  message: hi\n",
+    )
+    expect(loadGrokContext(path)).toEqual([{role: "system", content: "hi"}])
+  })
+
+  test("YAML preserves multi-line literal block scalars verbatim", () => {
+    const path = writeFile("multiline.yaml",
+      "- role: assistant\n  message: |\n    line one\n    line two\n",
+    )
+    expect(loadGrokContext(path)).toEqual([
+      {role: "assistant", content: "line one\nline two\n"},
+    ])
+  })
+
+  test("YAML with only user-role entries → empty array", () => {
+    const path = writeFile("only-user.yaml",
+      "- role: user\n  message: a\n" +
+      "- role: user\n  message: b\n",
+    )
+    expect(loadGrokContext(path)).toEqual([])
+  })
+
+  test("empty YAML file → empty array", () => {
+    const path = writeFile("empty.yaml", "")
+    expect(loadGrokContext(path)).toEqual([])
+  })
+
+  test("YAML non-list top level throws", () => {
+    const path = writeFile("not-list.yaml", "role: system\nmessage: x\n")
+    expect(() => loadGrokContext(path)).toThrow(/top-level must be a list/)
+  })
+
+  test("YAML entry with unknown role throws", () => {
+    const path = writeFile("bad-role.yaml", "- role: bogus\n  message: x\n")
+    expect(() => loadGrokContext(path)).toThrow(/entry 0 has invalid role/)
+  })
+
+  test("YAML entry missing role throws", () => {
+    const path = writeFile("no-role.yaml", "- message: x\n")
+    expect(() => loadGrokContext(path)).toThrow(/entry 0 has invalid role/)
+  })
+
+  test("YAML entry with non-string message throws", () => {
+    const path = writeFile("bad-message.yaml", "- role: user\n  message: 42\n")
+    expect(() => loadGrokContext(path)).toThrow(/entry 0 has non-string message/)
+  })
+
+  test("YAML entry that is not a mapping throws", () => {
+    const path = writeFile("bad-entry.yaml", "- just a string\n- role: user\n  message: x\n")
+    expect(() => loadGrokContext(path)).toThrow(/entry 0 is not a mapping/)
+  })
+
+  test("malformed YAML throws", () => {
+    const path = writeFile("malformed.yaml", "- role: user\n  message: [unclosed\n")
+    expect(() => loadGrokContext(path)).toThrow(/failed to parse YAML/)
+  })
+
+  test("missing file throws ENOENT", () => {
+    expect(() => loadGrokContext(join(dir, "does-not-exist.yaml"))).toThrow()
   })
 })
