@@ -24,8 +24,8 @@ PR 1 — wire format (compiles, no behaviour change)
 
 PR 2 — receive + send + forward (one logical change)
 
-- S4 `Store/Groups.hs`: split lookup into `getRelayMemberByRelayLink` (active rows only,
-  `Maybe`) used by the new path; rewire `getCreateRelayForMember` to use it.
+- S4 `Store/Groups.hs`: add active-status filter in place to the inner
+  `getGroupMemberByRelayLink` lookup inside `getCreateRelayForMember`.
 - S5 `Library/Internal.hs`: introduce `connectToRelayAsync`. Move `syncSubscriberRelays`
   from `Commands.hs` to `Internal.hs` and pivot its add-half to `connectToRelayAsync`.
 - S6 `Library/Commands.hs`: drop the now-unused sync `connectToRelay`; `APIConnectPreparedGroup`
@@ -108,65 +108,65 @@ must reuse the existing required-signature gate. Without this, `withVerifiedMsg`
 
 ---
 
-## 3. `Store/Groups.hs` — lookup-by-active-row (S4)
+## 3. `Store/Groups.hs` — active-status filter on relay-link lookup (S4)
 
 ### 3.1 The current shape (Store/Groups.hs:1376-1407)
 
 `getCreateRelayForMember` runs `getGroupMemberByRelayLink` (an inner `let` at 1380-1385),
 falls back to `createRelayMember`. The inner SQL filters on `group_id = ? AND relay_link
-= ?` only — no status filter. For the subscriber's initial-join flow this is fine
-(`APIConnectPreparedGroup` → `connectToRelay`, Commands.hs:2141 / 3597-3613 — re-uses
-the row on retry), but for the subscriber receive path we must filter to *active* rows
-so that a re-add after a `GSMemLeft` creates a fresh row instead of resurrecting the
-old one.
+= ?` only — no status filter. The schema permits multiple rows with the same
+`(group_id, relay_link)` over time: when a relay is removed by the owner, its row is
+preserved with `GSMemLeft` (this drives the "removed by operator" UI on the subscriber
+side). For the existing subscriber-join flow (`APIConnectPreparedGroup → connectToRelay`,
+Commands.hs:2141 / 3597-3613) the unfiltered lookup happens to work because rows in that
+path are recent and active. For the new subscriber receive path we must filter to *active*
+rows so that a re-add after a `GSMemLeft` creates a fresh row instead of resurrecting the
+historical one.
 
 ### 3.2 The change
 
-Extract `getGroupMemberByRelayLink` to a top-level function and add a status filter at
-the SQL level so callers do not have to re-filter:
+Add an active-status filter in place to the existing inner `let`. No extraction, no new
+top-level function:
 
 ```
-getRelayMemberByRelayLink :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ShortLinkContact -> IO (Maybe GroupMember)
+getGroupMemberByRelayLink =
+  maybeFirstRow (toContactMember vr user) $
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ? AND m.member_status IN (?,?,?,?,?,?,?)")
+      ( (groupId, relayLink)
+          :. (GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced)
+          :. (GSMemConnected, GSMemComplete, GSMemCreator)
+      )
 ```
 
-SQL: `groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ? AND m.member_status IN (?, ?, ?, ?, ?, ?, ?)"` with the seven `memberCurrent'`-true statuses
-(`GSMemIntroduced`, `GSMemIntroInvited`, `GSMemAccepted`, `GSMemAnnounced`,
-`GSMemConnected`, `GSMemComplete`, `GSMemCreator`) from Types.hs:1318-1334. Statuses are
-listed explicitly in the query rather than checked in Haskell because the lookup is in
-the `IO`-direct path and callers expect at most one row.
+The seven statuses are the `memberCurrent'`-true set from Types.hs:1318-1334:
+`GSMemIntroduced`, `GSMemIntroInvited`, `GSMemAccepted`, `GSMemAnnounced`,
+`GSMemConnected`, `GSMemComplete`, `GSMemCreator`. Tuple shape is illustrative — match the
+existing `:.` chaining convention used elsewhere in the module.
 
-Justification for SQL-level filter (vs. Haskell post-filter): the schema permits multiple
-rows with the same `(group_id, relay_link)` over time (`GSMemLeft` history rows preserved
-per overview §"Subscriber re-add scenario"). Filtering in SQL gives `Maybe` directly,
-matches `maybeFirstRow` semantics, and is less error-prone than `find memberCurrent` in
-Haskell. The list of statuses is tiny and stable.
+Justification for SQL-level filter (vs. Haskell post-filter): `maybeFirstRow` returns
+whatever row the engine yields first. With `GSMemLeft` history rows preserved alongside
+active rows, an unfiltered query is non-deterministic without `ORDER BY`. Filtering in
+SQL eliminates the ambiguity at the query level. The list of statuses is tiny and
+stable.
 
-### 3.3 Rewire `getCreateRelayForMember` (Store/Groups.hs:1376-1378)
+### 3.3 Existing call site unaffected
 
-Change body to:
+`getCreateRelayForMember`'s lone existing caller is `connectToRelay` (Commands.hs:3597-3613),
+invoked from `APIConnectPreparedGroup` (Commands.hs:2141). Rows it creates are inserted
+with `GSMemAccepted` (line 1403), which is `memberCurrent`. The filtered lookup still
+finds them on retry, so the subscriber-join flow's reuse-on-retry behaviour is preserved.
+No signature or call-site change is needed in `Commands.hs`.
 
-```
-getCreateRelayForMember db vr gVar user gInfo@GroupInfo {groupId} relayLink =
-  liftIO (getRelayMemberByRelayLink db vr user groupId relayLink) >>= maybe createRelayMember pure
-  where
-    createRelayMember = ...  -- unchanged from current 1386-1407
-```
+### 3.4 What NOT to change
 
-The subscriber's initial-join flow (`APIConnectPreparedGroup → connectToRelay`,
-Commands.hs:2141 / 3597-3613) is preserved: the lookup will still find the relay
-member row because the row is created with `GSMemAccepted` (1403), which is
-`memberCurrent`.
-
-### 3.4 Re-export
-
-Add `getRelayMemberByRelayLink` to the export list at the top of `Store/Groups.hs` (line
-~80, beside `getCreateRelayForMember`). Also `simplex-chat.cabal` does not need updating
-— `Store.Groups` is already exposed.
-
-### 3.5 What NOT to change
-
+- Do not extract `getGroupMemberByRelayLink` to a top-level function. The
+  filter-in-place shape is the minimal diff; both call sites (existing
+  `APIConnectPreparedGroup → connectToRelay` and new `connectToRelayAsync`) share one
+  definition by going through `getCreateRelayForMember`.
 - Do not modify `getGroupMember`, `getGroupMembers`, or other lookups. The change is
-  scoped to relay-link lookup.
+  scoped to the relay-link lookup inside `getCreateRelayForMember`.
 - Do not delete the historical `GSMemLeft` row when re-adding a relay. The
   delete-or-update logic in `syncSubscriberRelays` removes only when the link is no
   longer in the channel's link data (Commands.hs:3623-3633); on re-add it remains in
@@ -190,19 +190,18 @@ Body — described, not coded:
 
 1. `vr <- chatVersionRange`.
 2. `gVar <- asks random` — needed by `getCreateRelayForMember` via the create branch.
-3. `existing_ <- withFastStore' $ \db -> getRelayMemberByRelayLink db vr user (groupId' gInfo) relayLink`.
-4. Decide based on the lookup result and `activeConn`:
+3. `relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink`.
+   With the active-status filter from §3.2, this atomically returns the existing active
+   row (if any) or creates a fresh `GSMemAccepted` row. `GSMemLeft` history rows are
+   invisible to the lookup, so re-add after removal creates a new row beside the
+   historical one.
+4. Idempotence check on `activeConn relayMember`:
 
-   - `Just m | isJust (activeConn m)` → `pure ()` (idempotent skip;
-     a present `activeConn` means an earlier path is in flight or
-     already done; the agent layer handles transient failures
-     internally; permanent-failure recovery is deferred to explicit
-     retry paths and channel re-join).
-   - `Just m` (no `activeConn` — leftover row from an attempt that
-     never bound a connection) → reuse `m`; proceed to step 5.
-   - `Nothing` → `withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink`
-     to create the row. `getCreateRelayForMember` re-runs the lookup atomically inside
-     the same transaction, so the create branch is taken only when no active row exists.
+   - `Just _` → `pure ()` (skip; an earlier path already bound a connection on this
+     row. The agent layer handles transient failures internally; permanent-failure
+     recovery is deferred to explicit retry paths and channel re-join.)
+   - `Nothing` → either a freshly created row or a leftover row from an attempt that
+     never bound a connection; proceed to step 5.
 5. `subMode <- chatReadVar subscriptionMode`.
 6. `newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink`
    (Commands.hs:2479 — already returns `(CommandId, ConnId)` for binding).
@@ -211,11 +210,10 @@ Body — described, not coded:
 8. Return. Continuation is the existing `CFGetRelayDataJoin` LDATA callback at
    Subscriber.hs:1131-1160 — unchanged.
 
-Store-call conventions: `getRelayMemberByRelayLink` is `IO`, so use `withFastStore'`
-(no error wrapping). `getCreateRelayForMember` is `ExceptT StoreError IO`, so use
-`withFastStore`. `createRelayMemberConnectionAsync` is `IO`, so `withFastStore'`. All
-three calls match what `retryRelayConnectionAsync` (Commands.hs:2168-2174) and
-`connectToRelay` (Commands.hs:3597-3613) already use.
+Store-call conventions: `getCreateRelayForMember` is `ExceptT StoreError IO`, so use
+`withFastStore`. `createRelayMemberConnectionAsync` is `IO`, so `withFastStore'`. Both
+match what `retryRelayConnectionAsync` (Commands.hs:2168-2174) and `connectToRelay`
+(Commands.hs:3597-3613) already use.
 
 ### 4.2 Locking argument
 
@@ -226,12 +224,12 @@ three calls match what `retryRelayConnectionAsync` (Commands.hs:2168-2174) and
 - `syncSubscriberRelays`, called from `APIGetUpdatedGroupLinkData` inside
   `withGroupLock "syncSubscriberRelays" groupId` (Commands.hs:1787) — also `CLGroup groupId`.
 
-Both paths therefore hold the same lock for the same group. The active-row lookup
-(`getRelayMemberByRelayLink`) and the `activeConn` check inside the helper are performed
-under that lock, and any subsequent agent commands (`getAgentConnShortLinkAsync`,
-`createRelayMemberConnectionAsync`) only persist state that will be observed under the
-same lock by the next event's check. No additional lock is needed. No `justCreated`
-flag, no per-link mutex.
+Both paths therefore hold the same lock for the same group. The `getCreateRelayForMember`
+call (lookup-or-create, atomic within its own transaction) and the `activeConn` check on
+its result are performed under that lock, and any subsequent agent commands
+(`getAgentConnShortLinkAsync`, `createRelayMemberConnectionAsync`) only persist state
+that will be observed under the same lock by the next event's check. No additional lock
+is needed. No `justCreated` flag, no per-link mutex.
 
 ### 4.3 Move `syncSubscriberRelays` from `Commands.hs:3614-3633` to `Internal.hs`
 
@@ -266,7 +264,7 @@ syncSubscriberRelays :: User -> GroupInfo -> [ShortLinkContact] -> CM ()
 ### 4.4 Imports / exports
 
 - `Internal.hs` likely already imports the relevant `Store.Groups`/`Store.Direct`
-  symbols; if `getRelayMemberByRelayLink` or `createRelayMemberConnectionAsync` are not
+  symbols; if `getCreateRelayForMember` or `createRelayMemberConnectionAsync` are not
   imported, add them.
 - Export `connectToRelayAsync` and `syncSubscriberRelays` from `Internal.hs` (it is a
   module without an explicit export list — see "module Simplex.Chat.Library.Internal where"
@@ -625,12 +623,12 @@ length (filter (isJust . activeConn) relayRows) `shouldBe` 1
    failed: `activeConn = Just _`, chat layer skips by Option A;
    agent layer retries internally on subscription resume.
 
-7. **Schema-change to lookup breaks other call sites.** The active-row filter is added
-   in a new function `getRelayMemberByRelayLink`. `getCreateRelayForMember` is rewired
-   to use it but its observable behaviour is unchanged for the subscriber-join path
-   (`APIConnectPreparedGroup` → `connectToRelay`, Commands.hs:2141 / 3597-3613 — the
-   row created there is `GSMemAccepted`, which is `memberCurrent`).
-   Audit done in §3.3; reviewer to confirm.
+7. **Active-status filter on lookup breaks other call sites.** The filter is added in
+   place on `getCreateRelayForMember`'s inner lookup. Its lone existing caller is the
+   subscriber-join path (`APIConnectPreparedGroup` → `connectToRelay`, Commands.hs:2141
+   / 3597-3613); rows there are created with `GSMemAccepted`, which is `memberCurrent`,
+   so the filtered lookup still finds them on retry. Observable behaviour unchanged for
+   the existing caller. Audit done in §3.3; reviewer to confirm.
 
 8. **Multiple owners (future).** `LINK` callback only fires for the local owner's own
    `setConnShortLink` calls (per existing TODO at Subscriber.hs:1327-1329). A second
