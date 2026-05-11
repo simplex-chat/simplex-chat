@@ -1381,6 +1381,8 @@ getCreateRelayForMember db vr gVar user@User {userId, userContactId} GroupInfo {
       maybeFirstRow (toContactMember vr user) $
         DB.query
           db
+          -- statuses matching memberCurrent' (Types.hs:1318); skips GSMemLeft historical rows so
+          -- re-add allocates a fresh row instead of resurrecting.
           (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ? AND m.member_status IN (?,?,?,?,?,?,?)")
           ( (groupId, relayLink)
               :. (GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced)

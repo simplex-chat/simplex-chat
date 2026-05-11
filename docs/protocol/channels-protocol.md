@@ -60,13 +60,13 @@ TODO: Periodic monitoring where the relay retrieves channel link data to verify 
 
 ### Relay addition
 
-When the owner has accepted a new relay (see [Relay acceptance](#relay-acceptance)) and the agent confirms the link-data update by delivering the LINK event, the owner promotes the relay locally to active and sends `x.grp.relay.new` to every other currently-connected relay of the channel (excluding the relay being announced).
+When the owner has accepted a new relay (see [Relay acceptance](#relay-acceptance)) and the agent confirms the link-data update by delivering the LINK event, the owner promotes the relay locally to active. If the channel has at least one subscriber, the owner then sends `x.grp.relay.new` to every other currently-connected relay of the channel (excluding the relay being announced).
 
 The wire shape is a single-field JSON object: `{"relayLink": "<short link>"}`. The message is owner-signed using the same `CBGroup` binding prefix as all administrative events (see [Message signing](#message-signing)).
 
 Each relay forwards `x.grp.relay.new` verbatim to all of its subscribers via the standard delivery pipeline (`delivery_task` / `delivery_job`, see [Delivery pipeline](#delivery-pipeline)). The relay does **not** create a member record for the announced relay — relays do not connect to other relays of the same channel.
 
-On receipt, the subscriber resolves the announced short link asynchronously, creates a relay-member row (or reuses an existing active row), and binds the resulting agent connection without blocking the receive loop. If the subscriber's client does not recognise the event (older version), it is parsed as unknown and ignored; the next channel open reaches the same end state via the subscriber's relay sync.
+On receipt, the subscriber resolves the announced short link asynchronously, creates a relay-member row (or reuses an existing active row), and binds the resulting agent connection without blocking the receive loop. The owner-pushed announce is an optimisation: whenever it does not reach a subscriber — because no subscribers existed at announce time, because the subscriber's client or an intermediate relay is older than this protocol revision, or because of a transient network failure — the subscriber reaches the same end state on the next channel open via its relay sync against the channel's link data.
 
 The receive loop wraps each agent message in a per-group entity lock (`CLGroup groupId`); the same lock is held by the subscriber's relay sync. A duplicate `x.grp.relay.new` arriving from a second relay finds an active row plus active connection and is a no-op.
 
