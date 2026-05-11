@@ -59,3 +59,6 @@ While the double-ratchet protocol provides forward secrecy, there is no UI indic
 The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages.hs`, etc.) are referenced by function name but not fully specified with parameter types and return types.
 
 **REC:** Expand database spec with key Store function signatures as the specification matures.
+
+---
+

@@ -66,6 +66,23 @@ Each row rendered by `ChatPreviewView` inside `ChatListNavLink`:
 | Incognito indicator | Shows when connected via incognito profile |
 | Connection status | Shows connecting/pending state for incomplete connections |
 
+### Channel Adaptations
+
+When a group has `groupInfo.useRelays == true` (channel):
+
+| Element | Channel behavior |
+|---|---|
+| Chat icon | Antenna icon (`antenna.radiowaves.left.and.right.circle.fill`) instead of group icon |
+| Swipe "Leave" | Hidden for channel owners (`useRelays && isOwner`) |
+| Context menu "Leave" | Hidden for channel owners |
+| Delete alert | "Delete channel?" (not "Delete group?") |
+| Leave alert title | "Leave channel?" (not "Leave group?") |
+| Leave alert message | "You will stop receiving messages from this channel. Chat history will be preserved." |
+
+### Relay URL Handling
+
+When a relay address link (`/r` path) is opened via URL deep link, `ContentView.connectViaUrl_()` intercepts it and shows an alert: "Relay address" / "This is a chat relay address, it cannot be used to connect." The link is not processed further.
+
 ### Swipe Actions
 
 - **Trailing swipe**: Mute/unmute, pin/unpin, tag management

@@ -79,12 +79,25 @@ struct DatabaseErrorView: View {
                         fileNameText(dbFile)
                     }
                 case let .downgrade(downMigrations):
+                    let warnings = downMigrationWarnings(downMigrations).reversed()
                     titleText("Database downgrade")
+                    Spacer()
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .resizable()
+                        .frame(width: 40, height: 36)
+                        .foregroundColor(.red)
                     Text("Warning: you may lose some data!")
                         .bold()
                         .padding(.horizontal, 25)
                         .multilineTextAlignment(.center)
-
+                    if !warnings.isEmpty {
+                        ForEach(warnings, id: \.self) { warning in
+                            Text(warning)
+                                .bold()
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 25)
+                        }
+                    }
                     migrationsText(downMigrations)
                     Spacer()
                     VStack(spacing: 10) {

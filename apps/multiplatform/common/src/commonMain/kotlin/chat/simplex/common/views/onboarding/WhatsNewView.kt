@@ -59,7 +59,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
       Icon(
         painterResource(MR.images.ic_open_in_new), stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
-          .clickable { if (link.startsWith("simplex:")) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openUriCatching(link) }
+          .clickable { if (link.startsWith("simplex:")) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openExternalLink(link) }
       )
     }
 
@@ -229,7 +229,7 @@ fun ReadMoreButton(url: String) {
           interactionSource = remember { MutableInteractionSource() },
           indication = null
         ) {
-          uriHandler.openUriCatching(url)
+          uriHandler.openExternalLink(url)
         }
     )
     Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
@@ -877,6 +877,38 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_translate,
         titleId = MR.strings.v6_4_1_new_interface_languages,
         descrId = MR.strings.v6_4_1_new_interface_languages_descr,
+      ),
+    )
+  ),
+  VersionDescription(
+    version = "v6.5",
+    post = "https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v6_5_public_channels,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_wifi_tethering to MR.strings.v6_5_reliability,
+          MR.images.ic_dns to MR.strings.v6_5_ownership,
+          MR.images.ic_vpn_key_filled to MR.strings.v6_5_security,
+          MR.images.ic_shield to MR.strings.v6_5_privacy,
+        )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_add_link,
+        titleId = MR.strings.v6_5_invite_friends,
+        descrId = MR.strings.v6_5_invite_friends_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_security,
+        titleId = MR.strings.v6_5_safe_web_links,
+        descrId = MR.strings.v6_5_safe_web_links_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_verified_user,
+        titleId = MR.strings.v6_5_non_profit_governance,
+        descrId = MR.strings.v6_5_non_profit_governance_descr
       ),
     )
   ),

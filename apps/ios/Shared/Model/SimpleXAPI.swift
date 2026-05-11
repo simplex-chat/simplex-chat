@@ -458,7 +458,7 @@ func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTa
 
 func apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope? = nil) async throws -> [MsgContentTag] {
     let r: ChatResponse0 = try await chatSendCmd(.apiGetChatContentTypes(chatId: chatId, scope: scope))
-    if case let .chatContentTypes(types) = r { return types }
+    if case let .chatContentTypes(types) = r { return types.filter { if case .unknown = $0 { return false }; return true } }
     throw r.unexpected
 }
 
@@ -503,8 +503,14 @@ func apiPlanForwardChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, 
     throw r.unexpected
 }
 
-func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
+func apiShareChatMsgContent(shareChatType: ChatType, shareChatId: Int64, toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool) async throws -> MsgContent {
+    let r: ChatResponse1 = try await chatSendCmd(.apiShareChatMsgContent(shareChatType: shareChatType, shareChatId: shareChatId, toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup))
+    if case let .chatMsgContent(_, mc) = r { return mc }
+    throw r.unexpected
+}
+
+func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool = false, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
 }
 
@@ -536,8 +542,8 @@ func apiReorderChatTags(tagIds: [Int64]) async throws {
     try await sendCommandOkResp(.apiReorderChatTags(tagIds: tagIds))
 }
 
-func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, live: live, ttl: ttl, composedMessages: composedMessages)
+func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool = false, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, sendAsGroup: sendAsGroup, live: live, ttl: ttl, composedMessages: composedMessages)
     return await processSendMessageCmd(toChatType: type, cmd: cmd)
 }
 
@@ -758,6 +764,15 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r.unexpected
 }
 
+func testChatRelay(address: String) async throws -> (RelayProfile?, RelayTestFailure?) {
+    let userId = try currentUserId("testChatRelay")
+    let r: ChatResponse0 = try await chatSendCmd(.apiTestChatRelay(userId: userId, address: address))
+    if case let .chatRelayTestResult(_, relayProfile, relayTestFailure) = r {
+        return (relayProfile, relayTestFailure)
+    }
+    throw r.unexpected
+}
+
 func getServerOperators() async throws -> ServerOperatorConditions {
     let r: ChatResponse0 = try await chatSendCmd(.apiGetServerOperators)
     if case let .serverOperatorConditions(conditions) = r { return conditions }
@@ -795,10 +810,10 @@ func setUserServers(userServers: [UserOperatorServers]) async throws {
     throw r.unexpected
 }
 
-func validateServers(userServers: [UserOperatorServers]) async throws -> [UserServersError] {
+func validateServers(userServers: [UserOperatorServers]) async throws -> ([UserServersError], [UserServersWarning]) {
     let userId = try currentUserId("validateServers")
     let r: ChatResponse0 = try await chatSendCmd(.apiValidateServers(userId: userId, userServers: userServers))
-    if case let .userServersValidation(_, serverErrors) = r { return serverErrors }
+    if case let .userServersValidation(_, serverErrors, serverWarnings) = r { return (serverErrors, serverWarnings) }
     logger.error("validateServers error: \(String(describing: r))")
     throw r.unexpected
 }
@@ -888,6 +903,12 @@ func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) a
 
 func apiSetMemberSettings(_ groupId: Int64, _ groupMemberId: Int64, _ memberSettings: GroupMemberSettings) async throws {
     try await sendCommandOkResp(.apiSetMemberSettings(groupId: groupId, groupMemberId: groupMemberId, memberSettings: memberSettings))
+}
+
+func apiGetUpdatedGroupLinkData(_ groupId: Int64) async -> GroupInfo? {
+    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiGetUpdatedGroupLinkData(groupId: groupId))
+    if case let .result(.groupInfo(_, groupInfo)) = r { return groupInfo }
+    return nil
 }
 
 func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
@@ -1005,12 +1026,12 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
-func apiConnectPlan(connLink: String, inProgress: BoxedValue<Bool>) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
+func apiConnectPlan(connLink: String, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return (nil, nil)
     }
-    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink), inProgress: inProgress)
+    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink, linkOwnerSig: linkOwnerSig), inProgress: inProgress)
     if case let .result(.connectionPlan(_, connLink, connPlan)) = r { return ((connLink, connPlan), nil) }
     let alert: Alert? = if let r { apiConnectResponseAlert(r) } else { nil }
     return (nil, alert)
@@ -1096,6 +1117,27 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
     }
 }
 
+func connErrorText(_ e: ChatError) -> String {
+    switch e {
+    case .error(.invalidConnReq):
+        NSLocalizedString("Invalid connection link", comment: "conn error description")
+    case .error(.unsupportedConnReq):
+        NSLocalizedString("Unsupported connection link", comment: "conn error description")
+    case .errorAgent(.SMP(_, .AUTH)):
+        NSLocalizedString("Connection error (AUTH)", comment: "conn error description")
+    case let .errorAgent(.SMP(_, .BLOCKED(info))):
+        NSLocalizedString("Connection blocked: \(info.reason.text)", comment: "conn error description")
+    case .errorAgent(.SMP(_, .QUOTA)):
+        NSLocalizedString("The connection reached the limit of undelivered messages", comment: "conn error description")
+    default:
+        if getNetworkErrorAlert(e) != nil {
+            NSLocalizedString("Network error", comment: "conn error description")
+        } else {
+            "\(NSLocalizedString("Error", comment: "conn error description")): \(responseError(e))"
+        }
+    }
+}
+
 func contactAlreadyExistsAlert(_ contact: Contact) -> Alert {
     mkAlert(
         title: "Contact already exists",
@@ -1121,9 +1163,9 @@ func apiPrepareContact(connLink: CreatedConnLink, contactShortLinkData: ContactS
     throw r.unexpected
 }
 
-func apiPrepareGroup(connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
+func apiPrepareGroup(connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
     let userId = try currentUserId("apiPrepareGroup")
-    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, groupShortLinkData: groupShortLinkData))
+    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, directLink: directLink, groupShortLinkData: groupShortLinkData))
     if case let .newPreparedChat(_, chat) = r { return chat }
     throw r.unexpected
 }
@@ -1147,9 +1189,9 @@ func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgConten
     return nil
 }
 
-func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async -> GroupInfo? {
+func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async -> (GroupInfo, [RelayConnectionResult])? {
     let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito, msg: msg))
-    if case let .result(.startedConnectionToGroup(_, groupInfo)) = r { return groupInfo }
+    if case let .result(.startedConnectionToGroup(_, groupInfo, relayResults)) = r { return (groupInfo, relayResults) }
     if let r { AlertManager.shared.showAlert(apiConnectResponseAlert(r)) }
     return nil
 }
@@ -1826,6 +1868,45 @@ func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInf
     throw r.unexpected
 }
 
+enum PublicGroupCreationResult {
+    case created(GroupInfo, GroupLink, [GroupRelay])
+    case creationFailed([AddRelayResult])
+}
+
+func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> PublicGroupCreationResult? {
+    let userId = try currentUserId("apiNewPublicGroup")
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
+    switch r {
+    case let .result(.publicGroupCreated(_, groupInfo, groupLink, groupRelays)):
+        return .created(groupInfo, groupLink, groupRelays)
+    case let .result(.publicGroupCreationFailed(_, addRelayResults)):
+        return .creationFailed(addRelayResults)
+    default: if let r { throw r.unexpected } else { return nil }
+    }
+}
+
+func apiGetGroupRelays(_ groupId: Int64) async -> [GroupRelay] {
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiGetGroupRelays(groupId: groupId))
+    if case let .result(.groupRelays(_, _, relays)) = r { return relays }
+    return []
+}
+
+enum AddGroupRelaysResult {
+    case added(GroupInfo, GroupLink, [GroupRelay])
+    case addFailed([AddRelayResult])
+}
+
+func apiAddGroupRelays(_ groupId: Int64, relayIds: [Int64]) async throws -> AddGroupRelaysResult? {
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiAddGroupRelays(groupId: groupId, relayIds: relayIds))
+    switch r {
+    case let .result(.groupRelaysAdded(_, groupInfo, groupLink, groupRelays)):
+        return .added(groupInfo, groupLink, groupRelays)
+    case let .result(.groupRelaysAddFailed(_, addRelayResults)):
+        return .addFailed(addRelayResults)
+    default: if let r { throw r.unexpected } else { return nil }
+    }
+}
+
 func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
     let r: ChatResponse2 = try await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
     if case let .sentGroupInvitation(_, _, _, member) = r { return member }
@@ -2118,7 +2199,7 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
             withAnimation {
                 let savedOnboardingStage = onboardingStageDefault.get()
                 m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
-                ? .step3_ChooseServerOperators
+                ? .step4_NetworkCommitments
                 : savedOnboardingStage
                 if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
                     m.setDeliveryReceipts = true
@@ -2461,9 +2542,9 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .groupLinkConnecting(user, groupInfo, hostMember):
         if !active(user) { return }
-
         await MainActor.run {
             m.updateGroup(groupInfo)
+            _ = m.upsertGroupMember(groupInfo, hostMember)
             if let hostConn = hostMember.activeConn {
                 m.dismissConnReqView(hostConn.id)
                 m.removeChat(hostConn.id)
@@ -2526,10 +2607,11 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateGroup(groupInfo)
             }
         }
-    case let .userJoinedGroup(user, groupInfo):
+    case let .userJoinedGroup(user, groupInfo, hostMember):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+                _ = m.upsertGroupMember(groupInfo, hostMember)
             }
             if m.chatId == groupInfo.id {
                 if groupInfo.membership.memberPending {
@@ -2559,6 +2641,23 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if active(user) {
             await MainActor.run {
                 m.updateGroup(toGroup)
+            }
+        }
+    case let .groupLinkDataUpdated(user, groupInfo, _, groupRelays, _):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroup(groupInfo)
+                let relaysModel = ChannelRelaysModel.shared
+                if relaysModel.groupId == groupInfo.groupId {
+                    relaysModel.set(groupId: groupInfo.groupId, groupRelays: groupRelays)
+                }
+            }
+        }
+    case let .groupRelayUpdated(user, groupInfo, member, groupRelay):
+        if active(user) {
+            await MainActor.run {
+                _ = m.upsertGroupMember(groupInfo, member)
+                ChannelRelaysModel.shared.updateRelay(groupInfo, groupRelay)
             }
         }
     case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):

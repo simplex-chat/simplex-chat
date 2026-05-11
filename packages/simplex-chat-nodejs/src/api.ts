@@ -57,6 +57,41 @@ interface EventSubscriber<K extends CEvt.Tag> {
 }
 
 /**
+ * Database configuration. The native library is built against exactly one
+ * backend (see `simplex_backend` / `SIMPLEX_BACKEND` at install time); this
+ * type makes the caller state which one they are targeting so field names
+ * can't lie about their meaning.
+ */
+export type DbConfig =
+  | {
+      /** SQLite backend (default). */
+      type: "sqlite"
+      /** File prefix — two schema files are named `<prefix>_chat.db` and `<prefix>_agent.db`. */
+      filePrefix: string
+      /** Optional SQLCipher encryption key. Empty/omitted = unencrypted. */
+      encryptionKey?: string
+    }
+  | {
+      /** PostgreSQL backend (Linux x86_64 only, libpq5 required). */
+      type: "postgres"
+      /** Schema prefix used to namespace tables. Defaults to `"simplex_v1"` when omitted. */
+      schemaPrefix?: string
+      /** PostgreSQL connection string (e.g. `postgres://user:pass@host/db`). */
+      connectionString: string
+    }
+
+function dbConfigToMigrateArgs(db: DbConfig): [string, string] {
+  switch (db.type) {
+    case "sqlite":
+      return [db.filePrefix, db.encryptionKey ?? ""]
+    case "postgres":
+      return [db.schemaPrefix ?? "", db.connectionString]
+    default:
+      throw new Error(`Invalid DbConfig: ${JSON.stringify(db satisfies never)}`)
+  }
+}
+
+/**
  * Main API class for interacting with the chat core library.
  */
 export class ChatApi {
@@ -64,21 +99,20 @@ export class ChatApi {
   private eventsLoop: Promise<void> | undefined = undefined
   private subscribers: {[K in CEvt.Tag]?: EventSubscriber<K>[]} = {}
   private receivers: EventSubscriberFunc<CEvt.Tag>[] = []
-  
+
   private constructor(protected ctrl_: bigint | undefined) {}
 
   /**
    * Initializes the ChatApi.
-   * @param {string} dbFilePrefix - File prefix for the database files.
-   * @param {string} [dbKey=""] - Database encryption key.
+   * @param {DbConfig} db - Database configuration (sqlite or postgres).
    * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
    */
   static async init(
-    dbFilePrefix: string,
-    dbKey: string = "",
+    db: DbConfig,
     confirm = core.MigrationConfirmation.YesUp
   ): Promise<ChatApi> {
-    const ctrl = await core.chatMigrateInit(dbFilePrefix, dbKey, confirm)
+    const [path, key] = dbConfigToMigrateArgs(db)
+    const ctrl = await core.chatMigrateInit(path, key, confirm)
     return new ChatApi(ctrl)
   }
 
@@ -654,7 +688,7 @@ export class ChatApi {
    * Network usage: interactive.
    */
   async apiConnectPlan(userId: number, connectionLink: string): Promise<[T.ConnectionPlan, T.CreatedConnLink]> {
-    const r = await this.sendChatCmd(CC.APIConnectPlan.cmdString({userId, connectionLink}))
+    const r = await this.sendChatCmd(CC.APIConnectPlan.cmdString({userId, connectionLink, resolveKnown: false}))
     if (r.type === "connectionPlan") return [r.connectionPlan, r.connLink]
     throw new ChatCommandError("error getting connect plan", r)
   }
@@ -731,6 +765,25 @@ export class ChatApi {
   }
 
   /**
+   * Get chat previews (paginated).
+   * Network usage: no.
+   *
+   * Prefer this over apiListContacts / apiListGroups for any scan: those
+   * methods load every record into memory in a single response and will fail
+   * on large databases.
+   */
+  async apiGetChats(
+    userId: number,
+    pagination: T.PaginationByTime,
+    query: T.ChatListQuery = {type: "filters", favorite: false, unread: false},
+    pendingConnections = false,
+  ): Promise<T.AChat[]> {
+    const r = await this.sendChatCmd(CC.APIGetChats.cmdString({userId, pendingConnections, pagination, query}))
+    if (r.type === "apiChats") return r.chats
+    throw new ChatCommandError("error getting chats", r)
+  }
+
+  /**
    * Delete chat.
    * Network usage: background.
    */
@@ -745,6 +798,47 @@ export class ChatApi {
         break
     }
     throw new ChatCommandError("error deleting chat", r)
+  }
+
+  /**
+   * Set group custom data.
+   * Network usage: no.
+   */
+  async apiSetGroupCustomData(groupId: number, customData?: object): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetGroupCustomData.cmdString({groupId, customData}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting group custom data", r)
+  }
+
+  /**
+   * Set contact custom data.
+   * Network usage: no.
+   */
+  async apiSetContactCustomData(contactId: number, customData?: object): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetContactCustomData.cmdString({contactId, customData}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting contact custom data", r)
+  }
+
+  /**
+   * Set auto-accept member contacts.
+   * Network usage: no.
+   */
+  async apiSetAutoAcceptMemberContacts(userId: number, onOff: boolean): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetUserAutoAcceptMemberContacts.cmdString({userId, onOff}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting auto-accept member contacts", r)
+  }
+
+  /**
+   * Get chat items.
+   * Network usage: no.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async apiGetChat(chatType: T.ChatType, chatId: number, count: number): Promise<any> {
+    const r: any = await this.sendChatCmd(`/_get chat ${T.ChatType.cmdString(chatType)}${chatId} count=${count}`)
+    if (r.type === "apiChat") return r.chat
+    throw new ChatCommandError("error getting chat", r)
   }
 
   /**
@@ -772,7 +866,7 @@ export class ChatApi {
    * Network usage: no.
    */
   async apiCreateActiveUser(profile?: T.Profile): Promise<T.User> {
-    const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false}}))
+    const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false, userChatRelay: false}}))
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
   }
@@ -830,5 +924,35 @@ export class ChatApi {
   async apiSetContactPrefs(contactId: number, preferences: T.Preferences): Promise<void> {
     const r = await this.sendChatCmd(CC.APISetContactPrefs.cmdString({contactId, preferences}))
     if (r.type !== "contactPrefsUpdated") throw new ChatCommandError("error setting contact prefs", r)
+  }
+
+  /**
+   * Create a direct message contact with a group member.
+   * Returns the created contact.
+   * Network usage: interactive.
+   */
+  async apiCreateMemberContact(groupId: number, groupMemberId: number): Promise<T.Contact> {
+    const r: any = await this.sendChatCmd(`/_create member contact #${groupId} ${groupMemberId}`)
+    if (r.type === "newMemberContact") return r.contact
+    throw new ChatCommandError("error creating member contact", r)
+  }
+
+  /**
+   * Send a direct message invitation to a group member contact.
+   * The contact must have been created with {@link apiCreateMemberContact}.
+   * Network usage: interactive.
+   */
+  async apiSendMemberContactInvitation(contactId: number, message?: T.MsgContent | string): Promise<T.Contact> {
+    let cmd = `/_invite member contact @${contactId}`
+    if (message !== undefined) {
+      if (typeof message === "string") {
+        cmd += ` text ${message}`
+      } else {
+        cmd += ` json ${JSON.stringify(message)}`
+      }
+    }
+    const r: any = await this.sendChatCmd(cmd)
+    if (r.type === "newMemberContactSentInv") return r.contact
+    throw new ChatCommandError("error sending member contact invitation", r)
   }
 }

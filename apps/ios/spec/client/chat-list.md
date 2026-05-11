@@ -134,6 +134,22 @@ Wraps `ChatPreviewView` in a navigation link with tap and swipe behavior:
 - Sets `ChatModel.chatId` to trigger navigation
 - `ItemsModel.loadOpenChat()` loads messages with a 250ms navigation delay for smooth animation
 
+### Channel Adaptations in ChatListNavLink
+
+When `groupInfo.useRelays == true`:
+
+| Change | Behavior |
+|--------|----------|
+| Swipe "Leave" | Hidden when `useRelays && isOwner` |
+| Context menu "Leave" | Hidden under same condition |
+| `deleteGroupAlert` label | "Delete channel?" |
+| `leaveGroupAlert` title | "Leave channel?" |
+| `leaveGroupAlert` message | "You will stop receiving messages from this channel. Chat history will be preserved." |
+
+### ServerSettings
+
+`ServerSettings` struct (defined in `ChatListView.swift`) includes `serverWarnings: [UserServersWarning]` field, initialized to `[]`. This field stores validation warnings from `validateServers` and is consumed by NetworkAndServers views.
+
 ---
 
 ## 5. Filtering & Tags

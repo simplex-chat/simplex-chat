@@ -549,7 +549,6 @@
     <string name="smp_servers_configured">Διαμορφωμένοι SMP διακομιστές</string>
     <string name="xftp_servers_configured">Διαμορφωμένοι XFTP διακομιστές</string>
     <string name="configure_ICE_servers">Διαμορφωμένοι ICE διακομιστές</string>
-    <string name="onboarding_conditions_configure_server_operators">Διαμόρφωση χειριστών διακομιστή</string>
     <string name="confirm_verb">Επιβεβαίωσε</string>
     <string name="confirm_delete_contact_question">Επιβεβαίωση διαγραφής επαφής;</string>
     <string name="confirm_database_upgrades">Επιβεβαίωση αναβαθμίσεων βάσης δεδομένων</string>
@@ -1007,7 +1006,6 @@
     <string name="onboarding_notifications_mode_subtitle">Πως επηρεάζει τη μπαταρία</string>
     <string name="how_it_helps_privacy">Πως βοηθάει την ιδιωτικότητα</string>
     <string name="how_it_works">Πως δουλεύει</string>
-    <string name="how_simplex_works">Πως δουλεύει το SimpleX</string>
     <string name="how_to">Πως να</string>
     <string name="how_to_use_simplex_chat">Πως να το χρησιμοποιήσεις</string>
     <string name="how_to_use_markdown">Πως να χρησιμοποιήσεις markdown σύνταξη</string>
@@ -1387,7 +1385,6 @@
     <string name="app_check_for_updates_notice_desc">Για να λαμβάνεις ειδοποιήσεις σχετικά με τις νέες εκδόσεις, ενεργοποίησε τον περιοδικό έλεγχο για σταθερές ή δοκιμαστικές εκδόσεις.</string>
     <string name="to_connect_via_link_title">Για να συνδεθείς μέσω συνδέσμου</string>
     <string name="scan_qr_to_connect_to_contact">Για να συνδεθείς, η επαφή σου μπορεί να σαρώσει τον κωδικό QR ή να χρησιμοποιήσει τον σύνδεσμο στην εφαρμογή.</string>
-    <string name="one_hand_ui_card_title">Εναλλαγή λίστας συνομιλιών:</string>
     <string name="v5_3_simpler_incognito_mode_descr">Ενεργοποίηση ανώνυμης λειτουργίας κατά τη σύνδεση.</string>
     <string name="v5_4_block_group_members_descr">Για απόκρυψη ανεπιθύμητων μηνυμάτων.</string>
     <string name="call_desktop_permission_denied_title">Για να πραγματοποιήσεις κλήσεις, επέτρεψε τη χρήση του μικροφώνου σου. Τερμάτισε την κλήση και προσπάθησε να καλέσεις ξανά.</string>
@@ -2521,4 +2518,7 @@
     <string name="placeholder_search_voice_messages">Αναζήτηση φωνητικών μηνυμάτων</string>
     <string name="content_filter_videos">Βίντεο</string>
     <string name="content_filter_voice_messages">Φωνητικά μηνύματα</string>
+    <string name="info_row_connection_failed">Η σύνδεση απέτυχε</string>
+    <string name="member_info_member_failed">απέτυχε</string>
+    <string name="down_migration_warning_chat_relays">Αν έχετε συμμετάσχει ή δημιουργήσει κανάλια, θα σταματήσουν να λειτουργούν μόνιμα.</string>
 </resources>

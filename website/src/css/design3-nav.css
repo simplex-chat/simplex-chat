@@ -497,6 +497,14 @@ button#cross-btn {
     height: auto;
 }
 
+@media (min-width: 960px) {
+    @media (max-width: 1050px) {
+        header#navbar nav#menu .nav-link.send-file {
+            display: none;
+        }
+    }
+}
+
 @media (max-width: 959px) {
     #mobile-header {
         position: fixed;
@@ -585,7 +593,7 @@ button#cross-btn {
     }
 
     header#navbar nav#menu .nav-link a {
-        font-family: "Manrope", "GT-Walsheim", sans-serif;
+        font-family: "Manrope", sans-serif;
         font-weight: 300;
         font-size: 18px;
         width: 100%;
@@ -638,7 +646,7 @@ button#cross-btn {
     }
 
     header#navbar nav#menu .sub-menu li a {
-        font-family: "Manrope", "GT-Walsheim", sans-serif;
+        font-family: "Manrope", sans-serif;
         font-weight: 300;
         width: 100%;
     }

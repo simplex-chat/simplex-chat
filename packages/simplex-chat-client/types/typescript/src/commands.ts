@@ -341,6 +341,52 @@ export namespace APINewGroup {
   }
 }
 
+// Create public group.
+// Network usage: interactive.
+export interface APINewPublicGroup {
+  userId: number // int64
+  incognito: boolean
+  relayIds: number[] // int64, non-empty
+  groupProfile: T.GroupProfile
+}
+
+export namespace APINewPublicGroup {
+  export type Response = CR.PublicGroupCreated | CR.PublicGroupCreationFailed | CR.ChatCmdError
+
+  export function cmdString(self: APINewPublicGroup): string {
+    return '/_public group ' + self.userId + (self.incognito ? ' incognito=on' : '') + ' ' + self.relayIds.join(',') + ' ' + JSON.stringify(self.groupProfile)
+  }
+}
+
+// Get group relays.
+// Network usage: no.
+export interface APIGetGroupRelays {
+  groupId: number // int64
+}
+
+export namespace APIGetGroupRelays {
+  export type Response = CR.GroupRelays | CR.ChatCmdError
+
+  export function cmdString(self: APIGetGroupRelays): string {
+    return '/_get relays #' + self.groupId
+  }
+}
+
+// Add relays to group.
+// Network usage: interactive.
+export interface APIAddGroupRelays {
+  groupId: number // int64
+  relayIds: number[] // int64, non-empty
+}
+
+export namespace APIAddGroupRelays {
+  export type Response = CR.GroupRelaysAdded | CR.GroupRelaysAddFailed | CR.ChatCmdError
+
+  export function cmdString(self: APIAddGroupRelays): string {
+    return '/_add relays #' + self.groupId + ' ' + self.relayIds.join(',')
+  }
+}
+
 // Update group profile.
 // Network usage: background.
 export interface APIUpdateGroupProfile {
@@ -440,6 +486,8 @@ export namespace APIAddContact {
 export interface APIConnectPlan {
   userId: number // int64
   connectionLink?: string
+  resolveKnown: boolean
+  linkOwnerSig?: T.LinkOwnerSig
 }
 
 export namespace APIConnectPlan {
@@ -542,6 +590,23 @@ export namespace APIListGroups {
   }
 }
 
+// Get chat previews. Supports time-based pagination — use this instead of APIListContacts / APIListGroups when scanning at scale (those load every record into memory and fail on large databases).
+// Network usage: no.
+export interface APIGetChats {
+  userId: number // int64
+  pendingConnections: boolean
+  pagination: T.PaginationByTime
+  query: T.ChatListQuery
+}
+
+export namespace APIGetChats {
+  export type Response = CR.ApiChats | CR.ChatCmdError
+
+  export function cmdString(self: APIGetChats): string {
+    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + ' ' + T.PaginationByTime.cmdString(self.pagination) + ' ' + JSON.stringify(self.query)
+  }
+}
+
 // Delete chat.
 // Network usage: background.
 export interface APIDeleteChat {
@@ -554,6 +619,51 @@ export namespace APIDeleteChat {
 
   export function cmdString(self: APIDeleteChat): string {
     return '/_delete ' + T.ChatRef.cmdString(self.chatRef) + ' ' + T.ChatDeleteMode.cmdString(self.chatDeleteMode)
+  }
+}
+
+// Set group custom data.
+// Network usage: no.
+export interface APISetGroupCustomData {
+  groupId: number // int64
+  customData?: object
+}
+
+export namespace APISetGroupCustomData {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetGroupCustomData): string {
+    return '/_set custom #' + self.groupId + (self.customData ? ' ' + JSON.stringify(self.customData) : '')
+  }
+}
+
+// Set contact custom data.
+// Network usage: no.
+export interface APISetContactCustomData {
+  contactId: number // int64
+  customData?: object
+}
+
+export namespace APISetContactCustomData {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetContactCustomData): string {
+    return '/_set custom @' + self.contactId + (self.customData ? ' ' + JSON.stringify(self.customData) : '')
+  }
+}
+
+// Set auto-accept member contacts.
+// Network usage: no.
+export interface APISetUserAutoAcceptMemberContacts {
+  userId: number // int64
+  onOff: boolean
+}
+
+export namespace APISetUserAutoAcceptMemberContacts {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetUserAutoAcceptMemberContacts): string {
+    return '/_set accept member contacts ' + self.userId + ' ' + (self.onOff ? 'on' : 'off')
   }
 }
 

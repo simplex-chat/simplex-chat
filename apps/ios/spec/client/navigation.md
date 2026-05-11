@@ -198,7 +198,7 @@ SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Sh
 }
 ```
 
-URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1169).
+URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1181).
 
 ### Call Deep Link
 
@@ -293,6 +293,72 @@ Migration state (`ChatModel.migrationState != nil`) takes precedence over onboar
 
 ---
 
+## 9. Channel Creation Flow (`AddChannelView`)
+
+**Source:** [`Shared/Views/NewChat/AddChannelView.swift`](../../Shared/Views/NewChat/AddChannelView.swift)
+
+### Entry Point
+
+`NewChatMenuButton` includes a NavigationLink "Create channel (BETA)" with antenna icon, navigating to `AddChannelView`.
+
+### Three-Step Wizard
+
+| Step | Function | Description |
+|------|----------|-------------|
+| 1. Profile | `profileStepView()` | Channel name input (`channelNameTextField()`), profile image picker. "Configure relays" link to `NetworkAndServers`. Validates via `canCreateProfile()` (non-empty + valid display name) and `checkHasRelays()`. |
+| 2. Progress | `progressStepView(_:)` | Relay connection progress with `RelayProgressIndicator` (circular active/total or spinner). Expandable relay list with `relayStatusIndicator(_:)` (green/red/orange dots). Cancel via `cancelChannelCreation(_:)` which calls `apiDeleteChat`. |
+| 3. Link | `linkStepView(_:)` | Wraps `GroupLinkView(isChannel: true)` for channel link sharing. |
+
+### Key Functions
+
+| Function | Scope | Description |
+|----------|-------|-------------|
+| `createChannel()` | private | Calls `apiNewPublicGroup(incognito:relayIds:groupProfile:)`, sets `ChannelRelaysModel` |
+| `getEnabledRelays()` | private | Filters enabled/non-deleted relays, selects random 3 |
+| `checkHasRelays()` | private | Validates at least one relay exists |
+| `relayDisplayName(_:)` | module | name > domain > link host > fallback |
+| `relayStatusIndicator(_:)` | module | Green/red/orange dot + status text |
+| `RelayProgressIndicator` | module | Circular progress (active/total) or spinner |
+
+## 10. Relay URL Interception
+
+**Source:** [`Shared/ContentView.swift`](../../Shared/ContentView.swift#L454)
+
+In `connectViaUrl_()`, relay address links (URL path `/r`) are intercepted before processing:
+
+```swift
+if path == "/r" {
+    showAlert(NSLocalizedString("Relay address", ...),
+              message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", ...))
+    return
+}
+```
+
+Similarly, in `planAndConnect()` (`NewChatView.swift`), `.simplexLink(_, .relay, _, _)` patterns trigger the same alert and block connection.
+
+## 11. Channel-Specific NewChatView Behavior
+
+**Source:** [`Shared/Views/NewChat/NewChatView.swift`](../../Shared/Views/NewChat/NewChatView.swift)
+
+### Prepared Group Alert (`showPrepareGroupAlert`)
+
+When `groupShortLinkInfo?.direct == false` (channel relay link), the prepare alert uses:
+- Channel icon: `antenna.radiowaves.left.and.right.circle.fill`
+- Title: "Open new channel"
+- Error: "Error opening channel"
+- `apiPrepareGroup` call passes `directLink: false`
+- Stores `groupShortLinkInfo.groupRelays` in `ChatModel.shared.channelRelayHostnames`
+
+### Own Link Confirmation (`showOwnGroupLinkConfirmConnectSheet`)
+
+For channels: shows "This is your link for channel" with only "Open channel" + "Cancel" buttons. No incognito or profile selection options.
+
+### Known Group Alert (`showOpenKnownGroupAlert`)
+
+For channels (`groupInfo.useRelays`): titles become "Open channel" / "Open new channel".
+
+---
+
 ## Source Files
 
 | File | Path |
@@ -304,6 +370,8 @@ Migration state (`ChatModel.migrationState != nil`) takes precedence over onboar
 | Nav link wrapper | `Shared/Views/ChatList/ChatListNavLink.swift` |
 | User picker | `Shared/Views/ChatList/UserPicker.swift` |
 | New chat view | [`Shared/Views/NewChat/NewChatView.swift`](../../Shared/Views/NewChat/NewChatView.swift) |
+| Channel creation | [`Shared/Views/NewChat/AddChannelView.swift`](../../Shared/Views/NewChat/AddChannelView.swift) |
+| New chat menu | [`Shared/Views/NewChat/NewChatMenuButton.swift`](../../Shared/Views/NewChat/NewChatMenuButton.swift) |
 | Settings view | [`Shared/Views/UserSettings/SettingsView.swift`](../../Shared/Views/UserSettings/SettingsView.swift) |
 | User profiles | [`Shared/Views/UserSettings/UserProfilesView.swift`](../../Shared/Views/UserSettings/UserProfilesView.swift) |
 | Onboarding view | [`Shared/Views/Onboarding/OnboardingView.swift`](../../Shared/Views/Onboarding/OnboardingView.swift) |

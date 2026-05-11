@@ -39,6 +39,7 @@ struct MsgContentView: View {
     var userMemberId: String? = nil
     var rightToLeft = false
     var prefix: NSAttributedString? = nil
+    var stripLink: String? = nil
     @State private var showSecrets: Set<Int> = []
     @State private var typingIdx = 0
     @State private var timer: Timer?
@@ -105,7 +106,8 @@ struct MsgContentView: View {
             showSecrets: showSecrets,
             commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
             backgroundColor: containerBackground,
-            prefix: prefix
+            prefix: prefix,
+            stripLink: stripLink
         )
         let s = r.string
         let t: Text
@@ -289,8 +291,11 @@ func messageText(
     showSecrets: Set<Int>?,
     commands: Bool = false,
     backgroundColor: UIColor,
-    prefix: NSAttributedString? = nil
+    prefix: NSAttributedString? = nil,
+    stripLink: String? = nil
 ) -> MsgTextResult {
+    let text = if let stripLink { stripTextLink(text, stripLink) } else { text }
+    let formattedText = if let stripLink { stripFormattedTextLink(formattedText, stripLink) } else { formattedText }
     let res = NSMutableAttributedString()
     let descr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle)
     let font = UIFont.preferredFont(forTextStyle: textStyle)
@@ -322,6 +327,7 @@ func messageText(
         var bold: UIFont?
         var italic: UIFont?
         var snippet: UIFont?
+        var small: UIFont?
         var mention: UIFont?
         var secretIdx: Int = 0
         for ft in fts {
@@ -353,6 +359,10 @@ func messageText(
                     attrs[.backgroundColor] = secretColor
                 }
                 hasSecrets = true
+            case .small:
+                small = small ?? UIFont.preferredFont(forTextStyle: .footnote)
+                attrs[.font] = small
+                attrs[.foregroundColor] = UIColor.secondaryLabel
             case let .colored(color):
                 if let c = color.uiColor {
                     attrs[.foregroundColor] = UIColor(c)
@@ -458,6 +468,24 @@ func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> Strin
 
 func viaHost(_ smpHosts: [String]) -> String {
     "(via \(smpHosts.first ?? "?"))"
+}
+
+func stripTextLink(_ text: String, _ link: String) -> String {
+    text == link
+        ? ""
+        : text.hasSuffix("\n" + link)
+        ? String(text.dropLast(link.count + 1))
+        : text
+}
+
+func stripFormattedTextLink(_ ft: [FormattedText]?, _ link: String) -> [FormattedText]? {
+    guard var ft, ft.last?.text == link else { return ft }
+    ft.removeLast()
+    if let i = ft.indices.last, ft[i].format == nil, ft[i].text.hasSuffix("\n") {
+        ft[i].text = String(ft[i].text.dropLast())
+        if ft[i].text.isEmpty { ft.removeLast() }
+    }
+    return ft.isEmpty ? nil : ft
 }
 
 struct MsgContentView_Previews: PreviewProvider {

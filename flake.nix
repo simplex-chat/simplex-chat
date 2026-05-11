@@ -93,6 +93,7 @@
         for pkg in $out/_pkg/*.a; do
           chmod +w $pkg
           ${mac2ios.packages.${system}.mac2ios}/bin/mac2ios $pkg
+          [[ "$pkg" == *simplex-chat* ]] && ${pkgs.stdenv.cc.targetPrefix}strip -x $pkg
           chmod -w $pkg
         done
 

@@ -46,7 +46,7 @@ echo -e "trust\n5\ny\nquit" | gpg --command-fd 0 --edit-key build@simplex.chat
 
 ## Verify release signature
 
-**Linux dekstop apps and CLI**:
+**Linux desktop apps and CLI**:
 
 Download the file with executable hashes and the signature. For example, to verify the `v6.5.0-beta.3` release:
 
@@ -149,13 +149,13 @@ To reproduce the build you must have:
 
    The script executes these steps (please review the script to confirm):
 
-   1) builds all Linux CLI and Dekstop binaries for the release in docker container.
+   1) builds all Linux CLI and Desktop binaries for the release in docker container.
    2) downloads binaries from the same GitHub release and compares them with the built binaries.
    3) if they all match, generates _sha256sums file with their checksums.
 
    This will take a while.
 
-4. After compilation, you should see the folder named as the tag and reprository name (e.g., `v6.4.8-simplex-chat`) with two subfolders:
+4. After compilation, you should see the folder named as the tag and repository name (e.g., `v6.4.8-simplex-chat`) with two subfolders:
 
    ```sh
    ls v6.4.8-simplex-chat
@@ -169,7 +169,7 @@ To reproduce the build you must have:
 
 ### Android apps
 
-In addition to basic requirments, Android build will:
+In addition to basic requirements, Android build will:
 
 - Take ~150gb of disc space
 - Take ~20h to build all the architectures (depends on core count)

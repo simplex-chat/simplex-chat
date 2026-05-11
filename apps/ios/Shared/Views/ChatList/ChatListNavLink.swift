@@ -244,7 +244,7 @@ struct ChatListNavLink: View {
                 }
                 .swipeActions(edge: .trailing) {
                     tagChatButton(chat)
-                    if (groupInfo.membership.memberCurrentOrPending) {
+                    if groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner) {
                         leaveGroupChatButton(groupInfo)
                     }
                     if groupInfo.canDelete {
@@ -269,7 +269,7 @@ struct ChatListNavLink: View {
                 let showReportsButton = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator
                 let showClearButton = !chat.chatItems.isEmpty
                 let showDeleteGroup = groupInfo.canDelete
-                let showLeaveGroup = groupInfo.membership.memberCurrentOrPending
+                let showLeaveGroup = groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)
                 let totalNumberOfButtons = 1 + (showReportsButton ? 1 : 0) + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
 
                 if showClearButton && totalNumberOfButtons <= 3 {
@@ -565,7 +565,7 @@ struct ChatListNavLink: View {
     }
 
     private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
-        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
+        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
         return Alert(
             title: Text(label),
             message: deleteGroupAlertMessage(groupInfo),
@@ -620,9 +620,11 @@ struct ChatListNavLink: View {
     }
 
     private func leaveGroupAlert(_ groupInfo: GroupInfo) -> Alert {
-        let titleLabel: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
+        let titleLabel: LocalizedStringKey = groupInfo.useRelays ? "Leave channel?" : groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
         let messageLabel: LocalizedStringKey = (
-            groupInfo.businessChat == nil
+            groupInfo.useRelays
+            ? "You will stop receiving messages from this channel. Chat history will be preserved."
+            : groupInfo.businessChat == nil
             ? "You will stop receiving messages from this group. Chat history will be preserved."
             : "You will stop receiving messages from this chat. Chat history will be preserved."
         )

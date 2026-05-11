@@ -74,7 +74,7 @@ Defined in: [node\_modules/typescript/lib/lib.es5.d.ts:1076](../node_modules/typ
 
 ### stack?
 
-> `optional` **stack**: `string`
+> `optional` **stack?**: `string`
 
 Defined in: [node\_modules/typescript/lib/lib.es5.d.ts:1078](../node_modules/typescript/lib/lib.es5.d.ts#L1078)
 

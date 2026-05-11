@@ -38,9 +38,11 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
-import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
+import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..), defaultFileExpiration)
+import Simplex.FileTransfer.Server.Store
 import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
@@ -149,11 +151,15 @@ testCoreOpts =
       logFile = Nothing,
       tbqSize = 16,
       deviceName = Nothing,
+      chatRelay = False,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
       maintenance = False      
     }
+
+relayTestOpts :: ChatOpts
+relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
@@ -164,7 +170,7 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 20, width = 6000},
+      virtualWindowSize = pure C.Size {height = 24, width = 6000},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
@@ -205,6 +211,7 @@ testCfg =
       shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
       tbqSize = 16,
+      channelSubscriberRole = GRMember, -- starting role is GRMember to test members sending messages
       confirmMigrations = MCYesUp
     }
 
@@ -275,10 +282,10 @@ nextVersion :: Version v -> Version v
 nextVersion (Version v) = Version (v + 1)
 
 createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix profile = do
+createTestChat ps cfg opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {chatRelay}} dbPrefix profile = do
   Right db@ChatDatabase {chatStore, agentStore} <- createDatabase ps coreOptions dbPrefix
   insertUser agentStore
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile chatRelay True
   startTestChat_ ps db cfg opts user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
@@ -308,7 +315,7 @@ startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {coreOptions = Core
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") 0 `runReaderT` cc
-  chatAsync <- async $ runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
+  chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
@@ -583,11 +590,12 @@ xftpTestPort = "7002"
 xftpServerFiles :: FilePath
 xftpServerFiles = "tests/tmp/xftp-server-files"
 
-xftpServerConfig :: XFTPServerConfig
+xftpServerConfig :: XFTPServerConfig STMFileStore
 xftpServerConfig =
   XFTPServerConfig
     { xftpPort = xftpTestPort,
       fileIdSize = 16,
+      serverStoreCfg = XSCMemory $ Just "tests/tmp/xftp-server-store.log",
       storeLogFile = Just "tests/tmp/xftp-server-store.log",
       filesPath = xftpServerFiles,
       fileSizeQuota = Nothing,
@@ -622,7 +630,7 @@ xftpServerConfig =
 withXFTPServer :: IO () -> IO ()
 withXFTPServer = withXFTPServer' xftpServerConfig
 
-withXFTPServer' :: XFTPServerConfig -> IO () -> IO ()
+withXFTPServer' :: XFTPServerConfig STMFileStore -> IO () -> IO ()
 withXFTPServer' cfg =
   serverBracket
     ( \started -> do

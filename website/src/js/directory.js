@@ -18,16 +18,55 @@ async function initDirectory() {
   const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderEntries('top', bySortPriority, topBtn)
-  searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim()));
+
+  applyHash();
+
+  searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim(), true));
   liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn));
   newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn));
   topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn));
+  window.addEventListener('popstate', applyHash);
+
+  function applyHash() {
+    const hash = location.hash;
+    let mode, comparator, btn, search = '';
+    switch (hash) {
+      case '#active':
+        mode = 'live';
+        comparator = byActiveAtDesc;
+        btn = liveBtn;
+        break;
+      case '#new':
+        mode = 'new';
+        comparator = byCreatedAtDesc;
+        btn = newBtn;
+        break;
+      default:
+        mode = 'top';
+        comparator = bySortPriority;
+        btn = topBtn;
+        try {
+          if (hash.startsWith('#q=')) {
+            search = decodeURIComponent(hash.slice(3));
+            if (search) searchInput.value = search;
+          }
+        } catch(e) {}
+      }
+    currentSortMode = '';
+    currentSearch = '';
+    currentPage = 1;
+    renderEntries(mode, comparator, btn, search);
+  }
 
   function renderEntries(mode, comparator, btn, search = '') {
     if (currentSortMode === mode && search == currentSearch) return;
     currentSortMode = mode;
-    if (location.hash) location.hash = '';
+    const hash = search ? '#q=' + encodeURIComponent(search)
+              : mode === 'live' ? '#active'
+              : mode === 'new' ? '#new'
+              : '';
+    const url = hash || (location.pathname + location.search);
+    history.replaceState(null, '', url);
     liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
@@ -128,7 +167,7 @@ function entrySortPriority(entry) {
 
 function entryMemberCount(entry) {
   return entry.entryType.type == 'group'
-    ? (entry.entryType.summary?.currentMembers ?? 0)
+    ? (entry.entryType.summary?.publicMemberCount ?? entry.entryType.summary?.currentMembers ?? 0)
     : 0
 }
 
@@ -226,6 +265,13 @@ function displayEntries(entries) {
         }, 0);
       }
 
+      if (entryType?.groupType) {
+        const noteElement = document.createElement('p');
+        noteElement.innerHTML = 'You need <a href="https://simplex.chat/downloads/">SimpleX Chat app v6.5</a> to join.';
+        noteElement.className = 'text-sm';
+        textContainer.appendChild(noteElement);
+      }
+
       const entryTimestamp = currentSortMode === 'new' && entry.createdAt
         ? showCreatedOn(entry.createdAt)
         : entry.activeAt
@@ -241,12 +287,21 @@ function displayEntries(entries) {
       const memberCount = entryMemberCount(entry);
       if (typeof memberCount == 'number' && memberCount > 0) {
         const memberCountElement = document.createElement('p');
-        memberCountElement.textContent = `${memberCount} members`;
+        const isChannel = entryType?.groupType === 'channel';
+        memberCountElement.textContent = `${memberCount} ${isChannel ? 'subscribers' : 'members'}`;
         memberCountElement.className = 'text-sm';
         textContainer.appendChild(memberCountElement);
       }
 
+      if (entryType?.admission?.review === "all") {
+        const knockingElement = document.createElement('p');
+        knockingElement.textContent = 'New members are reviewed by admins';
+        knockingElement.className = 'text-sm';
+        textContainer.appendChild(knockingElement);
+      }
+
       const imgLinkElement = document.createElement('a');
+      imgLinkElement.className = 'img-link';
       const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
       try {
         imgLinkElement.href = platformSimplexUri(groupLinkUri);
@@ -432,6 +487,9 @@ function renderMarkdown(fts) {
           break;
         case 'secret':
           html += `<span class="secret">${escapeHtml(text)}</span>`;
+          break;
+        case 'small':
+          html += `<span class="small-text">${escapeHtml(text)}</span>`;
           break;
         case 'colored':
           html += `<span class="${format.color}">${escapeHtml(text)}</span>`;
