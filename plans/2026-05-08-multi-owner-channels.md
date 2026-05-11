@@ -1,6 +1,6 @@
 # Multi-owner Channels — implementation plan
 
-Revision 4, 2026-05-11 · Target: SimpleX Channels v7 (full-trust, any-owner-decides)
+Revision 5, 2026-05-11 · Target: SimpleX Channels v7 (full-trust, any-owner-decides)
 
 > **DESIGN DECISION REQUIRED — discuss with team before implementation.**
 > Maximum number of owners per channel: proposed cap of 8 (default
@@ -12,6 +12,18 @@ Revision 4, 2026-05-11 · Target: SimpleX Channels v7 (full-trust, any-owner-dec
 > relay-mediated offer (no direct connection between existing owner and
 > candidate) is not supported in this delivery. Promotion always uses a
 > fresh, channel-scoped direct mesh connection.
+
+### Changelog (since Revision 4)
+
+- **N1** — Removed `x.grp.owner.invite` from the Phase 2.4.1 mesh
+  receive allowlist (it is sent over A↔B's personal contact, before
+  the mesh edge exists). Added a clarifying sentence.
+- **N2** — Replaced the vague "thin wrapper over the existing
+  rcv-queue read" description of `getChannelLinkRcvPubKey` with a
+  precise one (Phase 4.4).
+- **N3** — Replaced "handler takes a mesh-scoped variant" with an
+  explicit implementation shape: early-branch inside the existing
+  `xGrpMemIntro` / `Inv` / `Fwd` handlers (Phase 2.4).
 
 ### Changelog (since Revision 3)
 
@@ -293,12 +305,12 @@ among owners. Reuses `x.grp.mem.intro` / `inv` / `fwd` at
 `XGrpMemIntro` / `Inv` / `Fwd` MUST verify both that `ownerRcvPubKey`
 is present AND that the introducer is a current owner of that group
 locally. If either fails, downgrade to a standard intro (drop the
-field; existing handler applies). When both hold, the handler takes a
-**mesh-scoped variant**: skip the `GCHostMember` category check, skip
-`createIntroReMember` / `updatePreparedChannelMember` /
-`createNewGroupMember`, and create only the new direct mesh connection
-+ a `channel_owner_mesh` row. B is already a known member; the intro
-creates a new direct mesh edge between B and X without re-creating B's
+field; existing handler applies). In the existing `xGrpMemIntro` /
+`Inv` / `Fwd` handlers, add an early-branch gated by (`ownerRcvPubKey`
+present ∧ introducer is owner). The branch creates the direct
+connection and `channel_owner_mesh` row only; the standard flow runs
+on the else-branch. B is already a known member; the intro creates a
+new direct mesh edge between B and X without re-creating B's
 chat-side member state. Test: `testMeshScopeRequiresOwnerIntroducer`.
 
 `sendOwnerMeshMessage :: User -> GroupInfo -> [ChannelOwnerMesh] ->
@@ -308,11 +320,14 @@ ChatMsgEvent 'Json -> CM ()` walks connected mesh rows and reuses
 **2.4.1 Mesh receive allowlist (G9, I3).** A `Connection` referenced
 by `channel_owner_mesh.direct_conn_id` (joined at message-receive
 time) is mesh; otherwise standard chat allowlist applies. Allowed
-events on mesh: `x.grp.owner.invite`, `x.grp.owner.accept`,
-`x.grp.owner.creds`, `x.grp.link.sync`, `x.grp.mem.role`,
-`x.grp.mem.intro`, `x.grp.mem.inv`, `x.grp.mem.fwd`. Anything else
-over a mesh connection is logged and rejected (visible in tests;
-includes `x.msg.new` — not in this delivery). Test: roster
+events on mesh: `x.grp.owner.accept`, `x.grp.owner.creds`,
+`x.grp.link.sync`, `x.grp.mem.role`, `x.grp.mem.intro`,
+`x.grp.mem.inv`, `x.grp.mem.fwd`. Anything else over a mesh connection
+is logged and rejected (visible in tests; includes `x.msg.new` — not
+in this delivery). `XGrpOwnerInvite` is the only new chat-protocol
+event delivered over the standard personal-contact path (pre-mesh);
+it is registered in the chat-protocol parser like any other `x.*`
+event but does not appear in the mesh allowlist. Test: roster
 round-trip, mesh-allowlist rejection of `x.msg.new`.
 
 ---
@@ -415,8 +430,10 @@ startup backfill in `Simplex.Chat.Library.Owners`, wired into
 `Simplex.Chat.Core` startup: iterate groups whose creator owner row
 has `owner_auth_sig IS NOT NULL` and `owner_rcv_pub_key IS NULL`;
 query the agent via a new `getChannelLinkRcvPubKey :: AgentClient ->
-ConnId -> AE SMP.RcvPublicAuthKey` (thin wrapper over the existing
-rcv-queue read); write it. Idempotent; one pass per device.
+ConnId -> AE SMP.RcvPublicAuthKey` (derives the pubkey from
+`rcvPrivateKey` stored in the `RcvQueue` row, accessible via the
+agent's existing connection-by-connId lookup; no new SMP command);
+write it. Idempotent; one pass per device.
 Post-upgrade the **member-key = owner-key invariant** holds and must
 continue to hold; member signing keys are fixed for the channel's
 lifetime. Tests: `testUpgradeCreatorOwnerRowBackfilled`,
