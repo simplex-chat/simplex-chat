@@ -1008,6 +1008,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfo p -> fmap ctx <$> xInfoMember gInfo' m'' p msg brokerTs
               XGrpLinkMem p -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
+              XGrpRelayNew rl -> fmap ctx <$> xGrpRelayNew gInfo' m'' rl
               XGrpMemNew memInfo msgScope -> fmap ctx <$> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> Nothing <$ xGrpMemInv gInfo' m'' memId introInv
@@ -1029,7 +1030,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' sharedMsgId chunk msgMeta
-              XGrpRelayNew _ -> pure $ Just (ctx (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}))
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
@@ -3262,6 +3262,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         let cd = CDGroupRcv g'' scopeInfo m'
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
 
+    xGrpRelayNew :: GroupInfo -> GroupMember -> ShortLinkContact -> CM (Maybe DeliveryJobScope)
+    xGrpRelayNew gInfo GroupMember {memberRole} rl
+      | memberRole < GROwner = messageError "x.grp.relay.new with insufficient member permissions" $> Nothing
+      | otherwise = do
+          unless (isUserGrpFwdRelay gInfo) $ connectToRelayAsync user gInfo rl
+          pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
     xGrpDirectInv g@GroupInfo {groupId, groupProfile = gp} m mConn@Connection {connId = mConnId} connReq mContent_ msg brokerTs
       | not (groupFeatureMemberAllowed SGFDirectMessages m g) = messageError "x.grp.direct.inv: direct messages not allowed"
@@ -3383,6 +3390,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
+            XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \author -> void $ xGrpRelayNew gInfo author rl
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
@@ -3391,7 +3399,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs gInfo author ps' rcvMsg
-            XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \_author -> connectToRelayAsync user gInfo rl
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
           where
             withAuthor :: CMEventTag e -> (GroupMember -> CM ()) -> CM ()

@@ -2138,7 +2138,8 @@ processChatCommand vr nm = \case
                   _ -> Nothing
             void $ createLinkOwnerMember db vr user gInfo' ctId_ (MemberId ownerId) ownerKey
           pure gInfo'
-        rs <- mapConcurrently (connectToRelay user gInfo') relays
+        rs <- withGroupLock "connectPreparedGroup" groupId $
+          mapConcurrently (connectToRelay user gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
         if null succeeded
