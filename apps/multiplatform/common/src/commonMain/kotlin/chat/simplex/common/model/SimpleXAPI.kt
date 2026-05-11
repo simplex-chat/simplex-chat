@@ -96,6 +96,8 @@ enum class CloseBehavior {
   companion object { val default = Ask }
 }
 
+class HintPref(val reset: () -> Unit, val isUnchanged: () -> Boolean)
+
 // Spec: spec/state.md#AppPreferences
 class AppPreferences {
   // deprecated, remove in 2024
@@ -263,17 +265,23 @@ class AppPreferences {
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
   val chatBottomBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_BAR, true)
 
-  val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
-    laNoticeShown to false,
-    oneHandUICardShown to false,
-    addressCreationCardShown to false,
-    liveMessageAlertShown to false,
-    showHiddenProfilesNotice to true,
-    showMuteProfileAlert to true,
-    showReportsInSupportChatAlert to true,
-    showDeleteConversationNotice to true,
-    showDeleteContactNotice to true,
-    privacyLinkPreviewsShowAlert to true,
+  val hintPreferences: List<HintPref> = listOf(
+    hintPref(laNoticeShown, false),
+    hintPref(oneHandUICardShown, false),
+    hintPref(addressCreationCardShown, false),
+    hintPref(liveMessageAlertShown, false),
+    hintPref(showHiddenProfilesNotice, true),
+    hintPref(showMuteProfileAlert, true),
+    hintPref(showReportsInSupportChatAlert, true),
+    hintPref(showDeleteConversationNotice, true),
+    hintPref(showDeleteContactNotice, true),
+    hintPref(privacyLinkPreviewsShowAlert, true),
+    hintPref(closeBehavior, CloseBehavior.default),
+  )
+
+  private fun <T> hintPref(pref: SharedPreference<T>, default: T) = HintPref(
+    reset = { pref.set(default) },
+    isUnchanged = { pref.state.value == default },
   )
 
   private fun mkIntPreference(prefName: String, default: Int) =
