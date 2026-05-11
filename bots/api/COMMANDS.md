@@ -32,6 +32,7 @@ This file is generated automatically.
 - [APINewGroup](#apinewgroup)
 - [APINewPublicGroup](#apinewpublicgroup)
 - [APIGetGroupRelays](#apigetgrouprelays)
+- [APIAddGroupRelays](#apiaddgrouprelays)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -51,6 +52,7 @@ This file is generated automatically.
 [Chat commands](#chat-commands)
 - [APIListContacts](#apilistcontacts)
 - [APIListGroups](#apilistgroups)
+- [APIGetChats](#apigetchats)
 - [APIDeleteChat](#apideletechat)
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
@@ -983,6 +985,11 @@ PublicGroupCreated: Public group created.
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
 
+PublicGroupCreationFailed: Public group creation failed.
+- type: "publicGroupCreationFailed"
+- user: [User](./TYPES.md#user)
+- addRelayResults: [[AddRelayResult](./TYPES.md#addrelayresult)]
+
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
@@ -1020,6 +1027,51 @@ GroupRelays: Group relays.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIAddGroupRelays
+
+Add relays to group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- relayIds: [int64]
+
+**Syntax**:
+
+```
+/_add relays #<groupId> <relayIds[0]>[,<relayIds[1]>...]
+```
+
+```javascript
+'/_add relays #' + groupId + ' ' + relayIds.join(',') // JavaScript
+```
+
+```python
+'/_add relays #' + str(groupId) + ' ' + ','.join(map(str, relayIds)) # Python
+```
+
+**Responses**:
+
+GroupRelaysAdded: Group relays added.
+- type: "groupRelaysAdded"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+GroupRelaysAddFailed: Group relays add failed.
+- type: "groupRelaysAddFailed"
+- user: [User](./TYPES.md#user)
+- addRelayResults: [[AddRelayResult](./TYPES.md#addrelayresult)]
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -1280,6 +1332,8 @@ Determine SimpleX link type and if the bot is already connected via this link.
 **Parameters**:
 - userId: int64
 - connectionLink: string?
+- resolveKnown: bool
+- linkOwnerSig: [LinkOwnerSig](./TYPES.md#linkownersig)?
 
 **Syntax**:
 
@@ -1559,6 +1613,46 @@ GroupsList: Groups.
 - type: "groupsList"
 - user: [User](./TYPES.md#user)
 - groups: [[GroupInfo](./TYPES.md#groupinfo)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetChats
+
+Get chat previews. Supports time-based pagination — use this instead of APIListContacts / APIListGroups when scanning at scale (those load every record into memory and fail on large databases).
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- pendingConnections: bool
+- pagination: [PaginationByTime](./TYPES.md#paginationbytime)
+- query: [ChatListQuery](./TYPES.md#chatlistquery)
+
+**Syntax**:
+
+```
+/_get chats <userId>[ pcc=on] <str(pagination)> <json(query)>
+```
+
+```javascript
+'/_get chats ' + userId + (pendingConnections ? ' pcc=on' : '') + ' ' + PaginationByTime.cmdString(pagination) + ' ' + JSON.stringify(query) // JavaScript
+```
+
+```python
+'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + str(pagination) + ' ' + json.dumps(query) # Python
+```
+
+**Responses**:
+
+ApiChats: Chat previews (paginated). Use this instead of CRContactsList / CRGroupsList when scanning at scale..
+- type: "apiChats"
+- user: [User](./TYPES.md#user)
+- chats: [[AChat](./TYPES.md#achat)]
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

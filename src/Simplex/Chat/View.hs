@@ -22,7 +22,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intercalate, intersperse, sortOn)
+import Data.List (groupBy, intercalate, intersperse, nub, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -148,8 +148,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz
-  CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
+  CRNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz testView
+  CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item <> viewTestInfo testView item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
@@ -180,7 +180,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
+  CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
   CRGroupRelays u g relays -> ttyUser u $ viewGroupRelays g relays
+  CRGroupRelaysAdded u g _groupLink relays -> ttyUser u $ viewGroupRelays g relays
+  CRGroupRelaysAddFailed u results -> ttyUser u $ viewGroupRelaysAddFailed results
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
   -- CRGroupConversationsArchived u _g _conversations -> ttyUser u []
@@ -222,6 +225,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g signed -> ttyUser u [ttyGroup' g <> ": you deleted the group" <> signedStr signed]
   CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
+  CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc <> viewMsgTestInfo testView mc
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
@@ -407,7 +411,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
   CEvtGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
   CEvtChatInfoUpdated _ _ -> []
-  CEvtNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz
+  CEvtNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz testView
   CEvtChatItemsStatusesUpdated u chatItems
     | length chatItems <= 20 ->
         concatMap
@@ -648,11 +652,12 @@ viewChatItems ::
   [AChatItem] ->
   UTCTime ->
   TimeZone ->
+  Bool ->
   [StyledString]
-viewChatItems ttyUser unmuted u chatItems ts tz
+viewChatItems ttyUser unmuted u chatItems ts tz testView
   | length chatItems <= 20 =
       concatMap
-        (\(AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item)
+        (\(AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item <> viewTestInfo testView item)
         chatItems
   | all (\aci -> aChatItemDir aci == MDRcv) chatItems = ttyUser u [sShow (length chatItems) <> " new messages"]
   | all (\aci -> aChatItemDir aci == MDSnd) chatItems = ttyUser u [sShow (length chatItems) <> " messages sent"]
@@ -673,6 +678,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
         CIDirectRcv -> case content of
           CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+          CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
           CIRcvGroupEvent {} -> showRcvItemProhibited from
           _ -> showRcvItem from
           where
@@ -696,6 +702,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           rcvGroupItem m_ = case content of
             CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
             CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+            CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
             CIRcvGroupInvitation {} | isJust m_ -> showRcvItemProhibited from
             CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
             CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
@@ -717,6 +724,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
         CILocalRcv -> case content of
           CIRcvMsgContent mc -> withLocalFile from $ rcvMsg from context mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+          CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
           CIRcvGroupEvent {} -> showRcvItemProhibited from
           _ -> showRcvItem from
           where
@@ -948,6 +956,14 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
+viewTestInfo :: Bool -> ChatItem c d -> [StyledString]
+viewTestInfo testView ChatItem {content} = maybe [] (viewMsgTestInfo testView) $ ciMsgContent content
+
+viewMsgTestInfo :: Bool -> MsgContent -> [StyledString]
+viewMsgTestInfo testView = \case
+  MCChat {ownerSig = Just sig} | testView -> [viewJSON sig]
+  _ -> []
+
 viewReactionMembers :: [MemberReaction] -> [StyledString]
 viewReactionMembers memberReactions = [sShow (length memberReactions) <> " member(s) reacted"]
 
@@ -992,6 +1008,9 @@ viewRcvIntegrityError from msgErr ts tz meta = receivedWithTime_ ts tz from [] m
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = [ttyError $ msgIntegrityError err]
+
+viewRcvMsgError :: StyledString -> RcvMsgError -> CurrentTime -> TimeZone -> CIMeta c 'MDRcv -> [StyledString]
+viewRcvMsgError from rcvErr ts tz meta = receivedWithTime_ ts tz from [] meta [ttyError $ rcvMsgErrorText rcvErr] False
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =
@@ -1223,6 +1242,18 @@ viewGroupCreated g testView =
           | otherwise = "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
   where
     relaysInstruction = "wait for selected relay(s) to join, then you can invite members via group link"
+
+viewRelayResults :: StyledString -> [AddRelayResult] -> [StyledString]
+viewRelayResults header results = [header] <> map showRelayResult results
+  where
+    showRelayResult (AddRelayResult UserChatRelay {chatRelayId = DBEntityId i} err_) =
+      "  relay " <> sShow i <> ": " <> maybe "ok" (plain . tshow) err_
+
+viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
+viewPublicGroupCreationFailed = viewRelayResults "channel not created, results:"
+
+viewGroupRelaysAddFailed :: [AddRelayResult] -> [StyledString]
+viewGroupRelaysAddFailed = viewRelayResults "relays not added, results:"
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
@@ -2045,7 +2076,7 @@ viewGroupUserChanged
 viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk contactSLinkData -> [invOrBiz contactSLinkData "ok to connect"] <> [viewJSON contactSLinkData | testView]
+    ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
@@ -2063,7 +2094,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk contactSLinkData -> [addrOrBiz contactSLinkData "ok to connect"] <> [viewJSON contactSLinkData | testView]
+    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -2081,15 +2112,16 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
   CPGroupLink glp -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData ->
+    GLPOk groupSLinkInfo_ groupSLinkData ov ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
        in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
+            <> viewSigVerification ov
             <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
     GLPConnectingProhibit (Just g) -> connecting g
-    GLPKnown g@GroupInfo {preparedGroup, membership = m} -> case preparedGroup of
+    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
       Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
         GSMemUnknown
           | connLinkStartedConnection -> connecting g
@@ -2105,6 +2137,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
             "use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"
           ]
         knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
+    GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
     where
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
@@ -2119,6 +2152,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
+    viewSigVerification = \case
+      Just OVVerified -> ["owner signature: verified"]
+      Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
+      Nothing -> []
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
@@ -2218,7 +2255,26 @@ sentWithTime_ ts tz styledMsg CIMeta {itemTs} =
   prependFirst (ttyMsgTime ts tz itemTs <> " ") styledMsg
 
 ttyMsgContent :: MsgContent -> [StyledString]
-ttyMsgContent = msgPlain . msgContentText
+ttyMsgContent = \case
+  MCChat {text, chatLink, ownerSig} ->
+    let (linkInfo, name, links) = viewChatLink chatLink
+        signed = if isJust ownerSig then " (signed)" else ""
+        body = if T.null text || text `elem` links then [] else msgPlain text
+     in [plain $ linkInfo <> viewName name <> signed <> ":"] <> map plain links <> body
+  mc -> msgPlain $ msgContentText mc
+  where
+    viewChatLink = \case
+      MCLGroup {connLink, groupProfile = GroupProfile {displayName, publicGroup}} ->
+        let (ref, links) = case publicGroup of
+              Just PublicGroupProfile {groupType, groupLink} -> (textEncode groupType, nub [enc connLink, enc groupLink])
+              Nothing -> ("group", [enc connLink])
+         in ("link to join " <> ref <> " #", displayName, links)
+      MCLContact {connLink, profile = Profile {displayName}} ->
+        ("contact address of @", displayName, [enc connLink])
+      MCLInvitation {invLink, profile = Profile {displayName}} ->
+        ("one-time link of @", displayName, [enc invLink])
+    enc :: StrEncoding a => a -> Text
+    enc = safeDecodeUtf8 . strEncode
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
@@ -2667,7 +2723,7 @@ viewChatError isCmd logLevel testView = \case
           BRContent -> "content violates conditions of use"
     BROKER _ (NETWORK _) | not isCmd -> []
     BROKER _ TIMEOUT | not isCmd -> []
-    AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]
+    AGENT A_DUPLICATE {} -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]
     AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning || isCmd]
     CONN NOT_FOUND _ -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning || isCmd]
     CRITICAL restart e -> [plain $ "critical error: " <> e] <> ["please restart the app" | restart]

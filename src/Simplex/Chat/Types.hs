@@ -52,7 +52,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -496,9 +496,6 @@ data GroupInfo = GroupInfo
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
 
-sendAsGroup' :: GroupInfo -> Bool
-sendAsGroup' gInfo@GroupInfo {membership} = useRelays' gInfo && memberRole' membership == GROwner
-
 groupId' :: GroupInfo -> GroupId
 groupId' GroupInfo {groupId} = groupId
 
@@ -519,6 +516,18 @@ instance TextEncoding BusinessChatType where
 instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
 instance ToField BusinessChatType where toField = toField . textEncode
+
+class HasShortLink l where
+  connShortLink' :: l c -> Maybe (ConnShortLink c)
+
+instance HasShortLink CreatedConnLink where
+  connShortLink' (CCLink _ sl) = sl
+
+setShortLinkType :: ContactConnType -> CreatedLinkContact -> CreatedLinkContact
+setShortLinkType ct (CCLink cReq sl) = CCLink cReq (setShortLinkType_ ct <$> sl)
+
+setShortLinkType_ :: ContactConnType -> ShortLinkContact -> ShortLinkContact
+setShortLinkType_ ct (CSLContact sch _ srv k) = CSLContact sch ct srv k
 
 data PreparedGroup = PreparedGroup
   { connLinkToConnect :: CreatedLinkContact,
@@ -759,15 +768,18 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contact
 
 data GroupType
   = GTChannel
+  | GTGroup
   | GTUnknown Text
   deriving (Eq, Show)
 
 instance TextEncoding GroupType where
   textEncode = \case
     GTChannel -> "channel"
+    GTGroup -> "group"
     GTUnknown tag -> tag
   textDecode s = Just $ case s of
     "channel" -> GTChannel
+    "group" -> GTGroup
     tag -> GTUnknown tag
 
 instance FromField GroupType where fromField = fromTextField_ textDecode
@@ -1035,7 +1047,11 @@ data GroupMember = GroupMember
 data RelayRequestData = RelayRequestData
   { relayInvId :: InvitationId,
     reqGroupLink :: ShortLinkContact,
-    reqChatVRange :: VersionRangeChat
+    reqChatVRange :: VersionRangeChat,
+    reqDelay :: Int64,
+    reqRetries :: Int,
+    reqCreatedAt :: UTCTime,
+    reqExecuteAt :: UTCTime
   }
   deriving (Eq, Show)
 

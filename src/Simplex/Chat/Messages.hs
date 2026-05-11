@@ -119,6 +119,11 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
 data GroupChatScope = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
   deriving (Eq, Show, Ord)
 
+sendAsGroup' :: GroupInfo -> Maybe GroupChatScope -> Bool
+sendAsGroup' gInfo@GroupInfo {membership} scope = case scope of
+  Nothing -> useRelays' gInfo && memberRole' membership == GROwner
+  Just (GCSMemberSupport _) -> False
+
 data GroupChatScopeTag
   = GCSTMemberSupport_
   deriving (Eq, Show)
@@ -1307,11 +1312,6 @@ data CIForwardedFrom
   | CIFFContact {chatName :: Text, msgDir :: MsgDirection, contactId :: Maybe ContactId, chatItemId :: Maybe ChatItemId}
   | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId}
   deriving (Show)
-
-cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom
-cmForwardedFrom = \case
-  ACME _ (XMsgNew (MCForward _)) -> Just CIFFUnknown
-  _ -> Nothing
 
 data CIForwardedFromTag
   = CIFFUnknown_

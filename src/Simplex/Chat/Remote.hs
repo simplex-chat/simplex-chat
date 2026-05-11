@@ -79,7 +79,7 @@ minRemoteCtrlVersion = AppVersion [6, 5, 0, 12]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 4, 6, 0]
+minRemoteHostVersion = AppVersion [6, 5, 0, 12]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version

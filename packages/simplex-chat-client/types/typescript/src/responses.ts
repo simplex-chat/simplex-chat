@@ -28,7 +28,10 @@ export type ChatResponse =
   | CR.GroupLinkDeleted
   | CR.GroupCreated
   | CR.PublicGroupCreated
+  | CR.PublicGroupCreationFailed
   | CR.GroupRelays
+  | CR.GroupRelaysAdded
+  | CR.GroupRelaysAddFailed
   | CR.GroupMembers
   | CR.GroupUpdated
   | CR.GroupsList
@@ -54,6 +57,7 @@ export type ChatResponse =
   | CR.UserProfileUpdated
   | CR.UserProfileNoChange
   | CR.UsersList
+  | CR.ApiChats
 
 export namespace CR {
   export type Tag = 
@@ -81,7 +85,10 @@ export namespace CR {
     | "groupLinkDeleted"
     | "groupCreated"
     | "publicGroupCreated"
+    | "publicGroupCreationFailed"
     | "groupRelays"
+    | "groupRelaysAdded"
+    | "groupRelaysAddFailed"
     | "groupMembers"
     | "groupUpdated"
     | "groupsList"
@@ -107,6 +114,7 @@ export namespace CR {
     | "userProfileUpdated"
     | "userProfileNoChange"
     | "usersList"
+    | "apiChats"
 
   interface Interface {
     type: Tag
@@ -258,11 +266,31 @@ export namespace CR {
     groupRelays: T.GroupRelay[]
   }
 
+  export interface PublicGroupCreationFailed extends Interface {
+    type: "publicGroupCreationFailed"
+    user: T.User
+    addRelayResults: T.AddRelayResult[]
+  }
+
   export interface GroupRelays extends Interface {
     type: "groupRelays"
     user: T.User
     groupInfo: T.GroupInfo
     groupRelays: T.GroupRelay[]
+  }
+
+  export interface GroupRelaysAdded extends Interface {
+    type: "groupRelaysAdded"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupLink: T.GroupLink
+    groupRelays: T.GroupRelay[]
+  }
+
+  export interface GroupRelaysAddFailed extends Interface {
+    type: "groupRelaysAddFailed"
+    user: T.User
+    addRelayResults: T.AddRelayResult[]
   }
 
   export interface GroupMembers extends Interface {
@@ -434,5 +462,11 @@ export namespace CR {
   export interface UsersList extends Interface {
     type: "usersList"
     users: T.UserInfo[]
+  }
+
+  export interface ApiChats extends Interface {
+    type: "apiChats"
+    user: T.User
+    chats: T.AChat[]
   }
 }

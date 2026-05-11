@@ -35,10 +35,12 @@ async function initDirectory() {
         mode = 'live';
         comparator = byActiveAtDesc;
         btn = liveBtn;
+        break;
       case '#new':
         mode = 'new';
         comparator = byCreatedAtDesc;
         btn = newBtn;
+        break;
       default:
         mode = 'top';
         comparator = bySortPriority;
@@ -165,7 +167,7 @@ function entrySortPriority(entry) {
 
 function entryMemberCount(entry) {
   return entry.entryType.type == 'group'
-    ? (entry.entryType.summary?.currentMembers ?? 0)
+    ? (entry.entryType.summary?.publicMemberCount ?? entry.entryType.summary?.currentMembers ?? 0)
     : 0
 }
 
@@ -263,6 +265,13 @@ function displayEntries(entries) {
         }, 0);
       }
 
+      if (entryType?.groupType) {
+        const noteElement = document.createElement('p');
+        noteElement.innerHTML = 'You need <a href="https://simplex.chat/downloads/">SimpleX Chat app v6.5</a> to join.';
+        noteElement.className = 'text-sm';
+        textContainer.appendChild(noteElement);
+      }
+
       const entryTimestamp = currentSortMode === 'new' && entry.createdAt
         ? showCreatedOn(entry.createdAt)
         : entry.activeAt
@@ -278,7 +287,8 @@ function displayEntries(entries) {
       const memberCount = entryMemberCount(entry);
       if (typeof memberCount == 'number' && memberCount > 0) {
         const memberCountElement = document.createElement('p');
-        memberCountElement.textContent = `${memberCount} members`;
+        const isChannel = entryType?.groupType === 'channel';
+        memberCountElement.textContent = `${memberCount} ${isChannel ? 'subscribers' : 'members'}`;
         memberCountElement.className = 'text-sm';
         textContainer.appendChild(memberCountElement);
       }
@@ -291,6 +301,7 @@ function displayEntries(entries) {
       }
 
       const imgLinkElement = document.createElement('a');
+      imgLinkElement.className = 'img-link';
       const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
       try {
         imgLinkElement.href = platformSimplexUri(groupLinkUri);

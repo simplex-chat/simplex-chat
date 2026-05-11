@@ -38,6 +38,55 @@
   </description>
 
   <releases>
+    <release version="6.5.1" date="2026-05-02">
+      <url type="details">https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html</url>
+      <description>
+        <p>New in v6.5.1:</p>
+        <ul>
+          <li>additional preset chat relay.</li>
+          <li>fixed a rare bug when receiving files.</li>
+        </ul>
+        <p>New in v6.5:</p>
+        <p>Public channels - speak freely!</p>
+        <ul>
+          <li>Reliability: many relays per channel.</li>
+          <li>Ownership: you can run your own relays.</li>
+          <li>Security: owners hold channel keys.</li>
+          <li>Privacy: for owners and subscribers.</li>
+        </ul>
+        <p>Easier to invite your friends: we made connecting simpler for new users.</p>
+        <p>Safe web links:</p>
+        <ul>
+          <li>opt-in to send link previews.</li>
+          <li>use SOCKS proxy for previews (if enabled).</li>
+          <li>prevent hyperlink phishing.</li>
+          <li>remove link tracking.</li>
+        </ul>
+        <p>Non-profit governance: to make SimpleX Network last.</p>
+      </description>
+    </release>
+    <release version="6.5.0" date="2026-04-30">
+      <url type="details">https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html</url>
+      <description>
+        <p>New in v6.5.</p>
+        <p>Public channels - speak freely!</p>
+        <ul>
+          <li>Reliability: many relays per channel.</li>
+          <li>Ownership: you can run your own relays.</li>
+          <li>Security: owners hold channel keys.</li>
+          <li>Privacy: for owners and subscribers.</li>
+        </ul>
+        <p>Easier to invite your friends: we made connecting simpler for new users.</p>
+        <p>Safe web links:</p>
+        <ul>
+          <li>opt-in to send link previews.</li>
+          <li>use SOCKS proxy for previews (if enabled).</li>
+          <li>prevent hyperlink phishing.</li>
+          <li>remove link tracking.</li>
+        </ul>
+        <p>Non-profit governance: to make SimpleX Network last.</p>
+      </description>
+    </release>
     <release version="6.4.11" date="2026-03-30">
       <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
       <description>
