@@ -716,9 +716,9 @@ swipe action</note>
         <target>Elfogadott feltételek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Acknowledged" xml:space="preserve">
+      <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
         <source>Acknowledged</source>
-        <target>Visszaigazolt</target>
+        <target state="translated">Visszaigazolva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Acknowledgement errors" xml:space="preserve">
@@ -1121,14 +1121,14 @@ swipe action</note>
         <target>A csatlakozás folyamatban van a csoporthoz!</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="Always use private routing." xml:space="preserve">
+      <trans-unit id="Always use private routing." xml:space="preserve" approved="no">
         <source>Always use private routing.</source>
-        <target>Mindig legyen használva privát útválasztás.</target>
+        <target state="translated">Privát útválasztás használata minden esetben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Always use relay" xml:space="preserve">
+      <trans-unit id="Always use relay" xml:space="preserve" approved="no">
         <source>Always use relay</source>
-        <target>Mindig legyen használva átjátszó</target>
+        <target state="translated">Átjátszó használata minden esetben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve">
@@ -3240,9 +3240,9 @@ alert button</note>
         <target>NE használja a SimpleXet segélyhívásokhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use private routing." xml:space="preserve">
+      <trans-unit id="Do NOT use private routing." xml:space="preserve" approved="no">
         <source>Do NOT use private routing.</source>
-        <target>NE legyen használva privát útválasztás.</target>
+        <target state="translated">Privát útválasztás használatának elkerülése.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
