@@ -73,6 +73,7 @@ fun showApp() {
           }
         }
       ) {
+        CloseBehaviorDialog()
         AppWindow(closedByError)
       }
     }
@@ -231,9 +232,22 @@ private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Bool
     return
   }
   when (ChatController.appPrefs.closeBehavior.get()) {
-    CloseBehavior.Quit, CloseBehavior.Ask -> {
+    CloseBehavior.Quit -> {
       closedByError.value = false
       exitApplication()
+    }
+    CloseBehavior.Ask -> {
+      requestCloseBehavior(
+        onClose = {
+          ChatController.appPrefs.closeBehavior.set(CloseBehavior.Quit)
+          closedByError.value = false
+          exitApplication()
+        },
+        onMinimize = {
+          ChatController.appPrefs.closeBehavior.set(CloseBehavior.MinimizeToTray)
+          simplexWindowState.windowVisible.value = false
+        }
+      )
     }
     CloseBehavior.MinimizeToTray -> {
       // Tray-availability guard added in Task 5 once trayIsAvailable exists.
