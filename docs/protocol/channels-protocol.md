@@ -9,6 +9,7 @@ For architecture, design rationale, security properties, and threat model, see [
 - [Protocol](#protocol)
   - [Channel creation](#channel-creation)
   - [Relay acceptance](#relay-acceptance)
+  - [Relay addition](#relay-addition)
   - [Subscriber connection](#subscriber-connection)
   - [Message signing](#message-signing)
   - [Message forwarding](#message-forwarding)
@@ -57,6 +58,18 @@ When a relay receives an invitation to serve a channel, it validates the channel
 
 TODO: Periodic monitoring where the relay retrieves channel link data to verify its relay link is still listed is planned but not yet implemented.
 
+### Relay addition
+
+When the owner has accepted a new relay (see [Relay acceptance](#relay-acceptance)) and the agent confirms the link-data update by delivering the LINK event, the owner promotes the relay locally to active and sends `x.grp.relay.new` to every other currently-connected relay of the channel (excluding the relay being announced).
+
+The wire shape is a single-field JSON object: `{"relayLink": "<short link>"}`. The message is owner-signed using the same `CBGroup` binding prefix as all administrative events (see [Message signing](#message-signing)).
+
+Each relay forwards `x.grp.relay.new` verbatim to all of its subscribers via the standard delivery pipeline (`delivery_task` / `delivery_job`, see [Delivery pipeline](#delivery-pipeline)). The relay does **not** create a member record for the announced relay — relays do not connect to other relays of the same channel.
+
+On receipt, the subscriber resolves the announced short link asynchronously, creates a relay-member row (or reuses an existing active row), and binds the resulting agent connection without blocking the receive loop. If the subscriber's client does not recognise the event (older version), it is parsed as unknown and ignored; the next channel open reaches the same end state via the subscriber's relay sync.
+
+The receive loop wraps each agent message in a per-group entity lock (`CLGroup groupId`); the same lock is held by the subscriber's relay sync. A duplicate `x.grp.relay.new` arriving from a second relay finds an active row plus active connection and is a no-op.
+
 ### Subscriber connection
 
 A subscriber joins a channel through the following flow:
@@ -89,6 +102,7 @@ Messages that alter the channel's roster, profile, or administrative state are c
 | `x.grp.mem.del` | Remove member | Required |
 | `x.grp.mem.role` | Change member role | Required |
 | `x.grp.mem.restrict` | Restrict member | Required |
+| `x.grp.relay.new` | Announce new relay to subscribers | Required |
 | `x.grp.leave` | Leave channel | Required (unverified allowed between subscribers) |
 | `x.info` | Update member profile | Required (unverified allowed between subscribers) |
 | `x.msg.new` | Content message | Not signed |
