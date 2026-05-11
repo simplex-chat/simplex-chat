@@ -3085,4 +3085,8 @@
   <string name="close_behavior_dialog_text">If you choose Close, messages won\'t be received.\nYou can change it later in Appearance settings.</string>
   <string name="close_behavior_dialog_close">Close the app</string>
   <string name="close_behavior_dialog_minimize">Minimize to tray</string>
+  <string name="tray_show">Show SimpleX</string>
+  <string name="tray_quit">Quit SimpleX</string>
+  <string name="tray_tooltip">SimpleX</string>
+  <string name="tray_tooltip_unread">SimpleX — %d unread</string>
 </resources>
