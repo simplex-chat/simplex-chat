@@ -263,63 +263,47 @@ Admins receive a notification whenever a group enters the PendingApproval state.
 
 ### 6. Group Lifecycle
 
+Forward path, from invitation to being listed:
+
 ```
-                     Invited by owner
-                            │
-               ┌────────────┴────────────┐
-         unique name                duplicate name*
-               │                          │
-               │                          ▼
-               │                  PendingConfirmation
-               │                          │
-               │                      (/confirm)
-               │                          │
-               └────────────┬─────────────┘
-                            ▼
-                         Proposed
-                            │   (bot joins the group, creates the link)
-                            ▼
-                      PendingUpdate  ◀────── (Active group, if its bot
-               (owner adds the link to welcome)   link is removed)
-                            │
-                            ▼
-                     PendingApproval ◀────── (Active group, on most
-                     (admin reviews)            profile changes**)
-                            │
-                        (/approve)
-                            │
-                            ▼
-         ┌──────────────── Active ──────────────┐
-         │                (listed)              │
-         ▼                   │                  ▼
-    Suspended                │           SuspendedBadRoles
-   (by admin;                │          (bot/owner role lost;
-    /resume re-lists)        │           auto-restored to
-         │                   │           Active when fixed)
-         │                   │                  │
-         └───────────────────┼──────────────────┘
-                             ▼
-                          Removed
-         (owner /delete; owner removed from / left the
-          group; bot removed from group; or group deleted)
+                       Invited by owner
+                              │
+                 ┌────────────┴────────────┐
+           unique name                duplicate name*
+                 │                          │
+                 │                          ▼
+                 │                  PendingConfirmation
+                 │                          │  owner runs /confirm
+                 └────────────┬─────────────┘
+                              ▼
+                          Proposed
+                              │  bot joins the group and creates the link
+                              ▼
+                        PendingUpdate
+                              │  owner adds the link to the group welcome
+                              ▼
+                       PendingApproval
+                              │  admin runs /approve
+                              ▼
+                            Active            (listed; visible in search)
 ```
 
-\* Only when the duplicate is registered but not yet listed or suspended.
-If the name is already listed or suspended, registration is blocked entirely.
+**Transitions out of Active:**
 
-\*\* Profile changes only trigger re-approval when fields other than the
-directory bot link are modified. If the only change is swapping the old bot
-link for the new one, or changing only whitespace in the description, the
-group stays Active. If the link is removed entirely, the group returns to
-PendingUpdate instead.
+- → **PendingUpdate** — the directory bot link is removed from the welcome message.
+- → **PendingApproval** — most other profile changes (see ** below); the `approval-id` shown to admins is bumped each time, so stale `/approve` commands are rejected.
+- → **Suspended** — an admin runs `/suspend`; `/resume` re-lists the group.
+- → **SuspendedBadRoles** — the directory bot loses its `admin` role, or the registering owner loses their `owner` role, in the group; automatically restored to **Active** once the roles are corrected.
+- → **Removed** — the owner runs `/delete`, the owner is removed from or leaves the group, the bot is removed from the group, or the group is deleted. The group can be re-registered afterwards.
+
+\* Only when the duplicate is registered but not yet listed or suspended. If the name is already listed or suspended, registration is blocked entirely.
+
+\*\* Profile changes only trigger re-approval when fields other than the directory bot link are modified. If the only change is swapping the old bot link for the new one, or changing only whitespace in the description, the group stays Active.
 
 **State notes:**
 
-- **PendingConfirmation** — bot has been invited but a group with the same display name is already registered (in a pending state). Owner must run `/confirm` to proceed. If a group with the same name is already listed or suspended, registration is blocked entirely.
-- **Proposed** — name is unique (or duplicate confirmed via `/confirm`); bot is joining the group.
-- **PendingUpdate** — bot has joined the group and created the group link; owner must add it to the group's welcome message. An Active group also returns here if the directory bot link is later removed from the welcome message.
-- **PendingApproval** — submitted for review. The `approval-id` shown to admins increments each time the group re-enters this state (e.g. after a profile change). An Active group re-enters this state when its profile is modified, unless the only change is swapping the old directory bot link for the new one or changing only whitespace in the description, in which case the group stays Active.
-- **Active** — listed in directory; visible in search results.
-- **Suspended** — hidden from directory by admin action (`/suspend`); restored with `/resume`; owner is notified.
-- **SuspendedBadRoles** — hidden automatically when the directory bot loses its `admin` role, or the registering owner loses their `owner` role, in the group; automatically restored to Active once the roles are corrected.
-- **Removed** — delisted permanently: by owner via `/delete`, when the registering owner is removed from or leaves the group, when the bot is removed from the group, or when the group is deleted. The group can be re-registered afterwards.
+- **PendingConfirmation** — the bot was invited but a group with the same display name is already registered (in a pending state); the owner must run `/confirm` to proceed.
+- **Proposed** — the name is unique (or the duplicate was confirmed via `/confirm`); the bot is joining the group.
+- **PendingUpdate** — the bot has joined the group and created the join link; the owner must add it to the group's welcome message.
+- **PendingApproval** — submitted for admin review. The join link works even before approval.
+- **Active** — listed in the directory and visible in search results.
