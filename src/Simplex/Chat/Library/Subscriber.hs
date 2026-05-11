@@ -1029,7 +1029,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' sharedMsgId chunk msgMeta
-              XGrpRelayNew _ -> pure $ Just (DeliveryTaskContext (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}) False)
+              XGrpRelayNew _ -> pure $ Just (ctx (DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}))
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
@@ -1312,16 +1312,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     liftIO $ setGroupInProgressDone db gInfo
                     pure (gInfo, gLink, relays', changed, newlyActive)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
-                  forM_ (L.nonEmpty newlyActiveLinks) $ \newlyActive -> do
-                    allRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
-                    let recipients =
-                          filter
-                            (\GroupMember {memberStatus, relayLink} ->
-                               memberStatus == GSMemConnected && relayLink `notElem` map Just newlyActiveLinks)
-                            allRelayMembers
-                        events = XGrpRelayNew <$> newlyActive
-                    unless (null recipients) $
-                      void $ sendGroupMessages user gInfo Nothing False recipients events
+                  let GroupSummary {publicMemberCount} = groupSummary gInfo
+                  -- Owner is counted in publicMemberCount; > 1 means at least one subscriber.
+                  -- TODO [relays] multi-owner: with N owners, threshold should be > N (or use a
+                  -- dedicated subscriber count).
+                  when (fromMaybe 0 publicMemberCount > 1) $
+                    forM_ (L.nonEmpty newlyActiveLinks) $ \newlyActive -> do
+                      allRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
+                      let recipients =
+                            filter
+                              (\GroupMember {memberStatus, relayLink} ->
+                                 memberStatus == GSMemConnected && relayLink `notElem` map Just newlyActiveLinks)
+                              allRelayMembers
+                          events = XGrpRelayNew <$> newlyActive
+                      unless (null recipients) $
+                        void $ sendGroupMessages user gInfo Nothing False recipients events
                   where
                     updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
                     updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed, newlyActive) =

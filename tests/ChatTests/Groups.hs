@@ -9757,6 +9757,11 @@ testChannelAddRelay ps =
             [bob, cath] *<# "#team> hello"
             [dan, eve] *<# "#team> hello [>>]"
 
+-- TODO [relays] testRelayAnnounceReAddPreservesHistory deferred: current
+-- production paths don't combine GSMemLeft (only produced by xGrpLeave at
+-- Subscriber.hs:3206) with owner re-add of the same link (blocked by
+-- existingRelayIds guard in APIAddGroupRelays). Re-introduce this test if
+-- a future flow produces that state.
 testRelayAnnounceOnlineSubscriber :: HasCallStack => TestParams -> IO ()
 testRelayAnnounceOnlineSubscriber ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
