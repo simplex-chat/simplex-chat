@@ -18,7 +18,9 @@ Today, closing the SimpleX desktop window quits the process and the user stops r
 
 We want this to be opt-in rather than a behavior change for existing users — hence the dialog on first close. Users who prefer the current quit-on-close behavior get exactly that with one click and never see the dialog again. Users who want background message delivery get it with one click and can manage it from settings.
 
-We are using `kdroidFilter/ComposeNativeTray` rather than `java.awt.SystemTray` / Compose's built-in `Tray` because the latter is a no-op on stock GNOME (the JDK deliberately disables it; see JDK-8322750) and is unmaintained. ComposeNativeTray uses platform-native APIs — `Shell_NotifyIcon` on Windows, `NSStatusItem` on macOS, and StatusNotifierItem over D-Bus on Linux — and is actively maintained.
+We are using Compose Multiplatform's built-in `androidx.compose.ui.window.Tray` rather than a third-party library. It works cleanly on Windows, macOS, and Linux desktops with a system tray host (KDE Plasma, XFCE, Cinnamon, MATE, GNOME with the AppIndicator extension). The trade-off is that on stock GNOME the JDK deliberately returns `false` from `SystemTray.isSupported()` (per JDK-8322750), so we **probe at startup and disable the feature entirely** when the OS reports no tray support — the dialog hides the "Minimize to tray" option and the Appearance toggle is hidden too. Users with a working tray get the feature; users without never see broken/invisible UI.
+
+All tray-specific code lives in `desktopMain` only. The Android target compiles none of it — there are no expect/actual surfaces calling into tray functionality from `commonMain`.
 
 Users upgrading from a prior version will see the dialog on their first window-close after the update — that is intentional. The dialog is the chosen mechanism for getting consent before keeping a process running in the background, and an existing user has no way to give that consent in advance.
 
@@ -64,59 +66,58 @@ The Compose application loop already runs with `exitProcessOnExit = false`, so h
 
 ### Tray icon
 
-Add `io.github.kdroidfilter:composenativetray-jvm:1.3.0` to `common/build.gradle.kts` (desktopMain). The classpath needs exactly one of the two JNA artifacts (classic `net.java.dev.jna:jna` or modular `net.java.dev.jna:jna-jpms`) — both ship the same `com.sun.jna.*` classes, and having both produces duplicate-class errors.
+No new dependency. We use `androidx.compose.ui.window.Tray` (built into Compose Multiplatform, already on the classpath). It wraps `java.awt.SystemTray` under the hood — works wherever AWT's tray works, returns silently when it doesn't.
 
-The existing build already depends on classic `jna` (5.14.0) via `net.java.dev.jna:jna-platform:5.14.0` (used by `jSystemThemeDetector`). ComposeNativeTray brings `jna-jpms`. **Align by excluding `jna-jpms` from ComposeNativeTray's transitive deps** rather than excluding classic `jna` — the latter would break `jna-platform` and `jSystemThemeDetector`. Scope the exclusion to the desktop dependency block (not `configurations.all`):
+**Tray availability probe.** `java.awt.SystemTray.isSupported()` is the gate. On stock GNOME (no AppIndicator extension), modern JDKs return `false` here per JDK-8322750. We expose this as a `desktopMain` value, e.g. `val trayIsAvailable: Boolean = SystemTray.isSupported()`, computed once at startup. The dialog branches on it (only shows "Minimize to tray" if available) and the Appearance toggle is hidden entirely when it's not.
 
-```kotlin
-implementation("io.github.kdroidfilter:composenativetray-jvm:1.3.0") {
-  exclude(group = "net.java.dev.jna", module = "jna-jpms")
-}
-```
-
-Verify after change with `./gradlew :common:dependencies` — there should be exactly one `com.sun.jna` provider on the desktop classpath.
-
-The tray composable lives next to `AppWindow` inside `application(exitProcessOnExit = false) { … }` in `showApp()`. It is gated by the preference, so installing or removing the OS-level tray icon happens automatically when the user toggles the setting:
+The tray composable lives next to `AppWindow` inside `application(exitProcessOnExit = false) { … }` in `showApp()`. It is gated by the preference AND by tray availability:
 
 ```kotlin
-if (appPrefs.closeBehavior.state.value == CloseBehavior.MinimizeToTray) {
+if (trayIsAvailable && appPrefs.closeBehavior.state.value == CloseBehavior.MinimizeToTray) {
   val unread by remember { derivedStateOf {
     ChatModel.chats.value.sumOf { it.chatStats.unreadCount }
   } }
+  val iconRes = if (unread > 0) MR.images.ic_simplex_tray_dot else MR.images.ic_simplex_tray
+  val tooltip = if (unread > 0)
+    stringResource(MR.strings.tray_tooltip_unread, unread)
+  else
+    stringResource(MR.strings.tray_tooltip)
   Tray(
-    iconContent = { TrayIcon(hasUnread = unread > 0) },
-    tooltip = trayTooltip(unread),
-    primaryAction = ::showWindow,
+    icon = painterResource(iconRes),
+    tooltip = tooltip,
+    onAction = ::showWindow,
     menu = {
       Item(stringResource(MR.strings.tray_show), onClick = ::showWindow)
-      Divider()
+      Separator()
       Item(stringResource(MR.strings.tray_quit), onClick = ::quitApp)
     }
   )
 }
 ```
 
+Note: Compose's `Tray` takes `icon: Painter` (not `iconContent`), `onAction` (not `primaryAction`), and the menu DSL uses `Separator()` (not `Divider()`). These are the right names for the built-in API.
+
 `showWindow()` sets `windowVisible.value = true` and calls `window?.toFront()` + `window?.requestFocus()`. `quitApp()` sets `closedByError.value = false` and `exitApplication()`.
 
-**Unread indicator.** `TrayIcon` is a small Compose `Painter` that draws the base SimpleX icon, plus, when `hasUnread` is true, a red dot overlay in the bottom-right corner. ComposeNativeTray re-rasterises on each recomposition, so swapping the icon when unread state changes is automatic.
-
-Two new image resources:
+**Unread indicator.** Icon swap based on `hasUnread`: plain `ic_simplex_tray` when zero, `ic_simplex_tray_dot` (same icon with a red dot overlay in the bottom-right) otherwise. Compose passes the `Painter` into AWT via `Painter.toAwtImage(density, layoutDirection, size)` — a single bitmap per state. Two new image resources:
 - `MR.images.ic_simplex_tray` — base tray icon.
 - `MR.images.ic_simplex_tray_dot` — same icon with the red-dot overlay.
 
-**Icon size.** ComposeNativeTray rasterises a `Painter` into a single bitmap that the OS then scales to whatever size the panel/menu bar requests. Different OSes ask for different sizes (Windows 16, KDE/GNOME 22, macOS 22, retina 2×). To keep the source large enough that downscale stays sharp without fuzzing the dot at small sizes, render the source at **64×64**. We accept the slight scaling cost on 16×16 Windows panels rather than maintaining four pre-rendered size variants. If users report the icon looking poor on small panels, we can later switch to ComposeNativeTray's multi-size API and ship 16/22/32/48 PNGs.
+**Icon size.** Compose `Tray` rasterises the `Painter` once at a per-platform target size: Linux 22×22, Windows 16×16, macOS 22×22 (with retina 2×). It's a single bitmap, so we source the painter at a comfortable size (e.g. via a `painterResource(MR.images.ic_simplex_tray)` from a 64×64 PNG) and let the conversion handle the scale. We accept the slight scaling cost on 16×16 Windows panels rather than ship multiple size variants.
 
 **Tooltip.** Plain "SimpleX" when unread is zero; "SimpleX — N unread" otherwise.
 
 **Window restore is best-effort.** Compose Multiplatform issue [#4231](https://github.com/JetBrains/compose-multiplatform/issues/4231) documents that `toFront()` does not always pull the restored window above other windows on Linux/Windows — the OS may flash the taskbar entry instead. Acceptable for v1; if it bites users we can add the `isAlwaysOnTop = true; toFront(); isAlwaysOnTop = false` workaround in a follow-up.
 
-**No collision with the existing notification path.** `NtfManager.desktop.kt:178-188` contains an `java.awt.SystemTray` hack inside a private helper that turns out to be unreachable — the live notification path is `displayNotificationViaLib` (TwoSlices). The hack will not fire and cannot conflict with our ComposeNativeTray icon. Cleaning up that dead code is out of scope here.
+**No collision with the existing notification path.** `NtfManager.desktop.kt:178-188` contains an `java.awt.SystemTray` hack inside a private helper that turns out to be unreachable — the live notification path is `displayNotificationViaLib` (TwoSlices). The hack will not fire and cannot conflict with our tray icon. Cleaning up that dead code is out of scope here.
 
 **Toggling at runtime.** The `Tray { … }` composable is gated on `closeBehavior.state.value == MinimizeToTray`; Compose's recomposition lifecycle handles install/uninstall when the user flips the setting. No `LaunchedEffect` is needed.
 
+**Android isolation.** All tray code (the `Tray` composable, the close-behavior dialog, `showWindow`/`quitApp`, the `trayIsAvailable` probe) lives in `desktopMain` only. The Android target compiles none of it — there are no expect/actual surfaces from `commonMain` calling into tray functionality. The only shared piece is the `CloseBehavior` enum + `closeBehavior` preference in `SimpleXAPI.kt`, which is plain data and never references tray APIs.
+
 ### Appearance settings row
 
-In `Appearance.desktop.kt`, add one row to the existing settings section:
+In `Appearance.desktop.kt`, add one row to the existing settings section — **only when `trayIsAvailable`**:
 
 > ☑ **Minimize to tray when closing window**
 > *Keep SimpleX running in the background to receive messages.*
@@ -128,19 +129,22 @@ The toggle maps to the preference:
 
 Flipping on writes `MinimizeToTray`. Flipping off writes `Quit`. Touching the toggle resolves the `Ask` state to a definitive value — so a fresh-install user who opens Appearance settings, flips the row off, and then closes the window will *not* see the dialog (their preference is now `Quit`). This matches the user's apparent intent (they made a choice in settings) and avoids the surprise of a dialog appearing for a setting they thought they had already configured.
 
+When `trayIsAvailable` is `false` (stock GNOME without AppIndicator extension), the entire row is omitted from Appearance settings, the first-close dialog skips the "Minimize to tray" button, and the close handler treats `MinimizeToTray` as `Quit` (in case the user previously enabled it on a different machine).
+
 The wording "Minimize to tray" is used uniformly across all platforms, including macOS where the more native term would be "menu bar". A consistent in-app term is more important here than per-platform purity.
 
 ### Files changed
 
 | File | Change |
 |---|---|
-| `apps/multiplatform/common/build.gradle.kts` | Add ComposeNativeTray dep; exclude its transitive `jna-jpms` so the existing classic `jna` from `jna-platform` stays the single JNA provider. |
-| `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` | Add `CloseBehavior` enum, `closeBehavior` preference, `SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR` constant. |
-| `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt` | Replace inline `onCloseRequest`; add `windowVisible` to `SimplexWindowState`; wire `Window(visible = …)`; host the `Tray` composable conditionally. |
-| `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopTray.kt` *(new)* | `TrayIcon` painter, `showCloseBehaviorDialog`, `showWindow`, `quitApp` helpers. |
-| `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/usersettings/Appearance.desktop.kt` | Add the toggle row. |
+| `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` | Add `CloseBehavior` enum, `closeBehavior` preference, `SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR` constant. *(already in this branch as commit 1)* |
+| `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt` | Replace inline `onCloseRequest`; add `windowVisible` to `SimplexWindowState`; wire `Window(visible = …)`; host the `Tray` composable conditionally on `trayIsAvailable && closeBehavior == MinimizeToTray`. |
+| `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopTray.kt` *(new)* | `trayIsAvailable` probe, `showCloseBehaviorDialog`, `SimplexTray` composable, `showWindow`, `quitApp` helpers. |
+| `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/usersettings/Appearance.desktop.kt` | Add the toggle row (gated on `trayIsAvailable`). |
 | `apps/multiplatform/common/src/commonMain/resources/MR/base/strings.xml` | Add 8 new strings (dialog title/body/buttons, settings row, tray menu). |
 | `apps/multiplatform/common/src/commonMain/resources/MR/images/` | Add `ic_simplex_tray` + `ic_simplex_tray_dot`. |
+
+No `build.gradle.kts` change — Compose's `Tray` is already on the classpath via the existing `org.jetbrains.compose` plugin.
 
 ### New strings
 
@@ -162,8 +166,8 @@ The following are deliberately not in this PR:
 - **Run on system startup / autostart entries.** Per-platform integration (Windows registry Run key, Linux `~/.config/autostart/*.desktop`, macOS LaunchAgents) is its own design.
 - **Number-on-icon unread badges.** Cross-platform text rendering on tray icons is fragile across DPIs and macOS menu bar tinting.
 - **Per-profile switcher / mute / mark-all-read** in the tray menu. Keep the menu to Show / Quit for now.
-- **Linux tray-availability probing.** ComposeNativeTray is trusted to handle this; if a particular GNOME setup has no AppIndicator host, the icon will be invisible. Documented as a known limitation.
-- **macOS template (auto-tinting) icon.** ComposeNativeTray does not expose `NSImage.setTemplate:` today; the tray icon will be a colored bitmap on macOS. Acceptable initial cost.
+- **macOS template (auto-tinting) icon.** Compose `Tray` doesn't expose `NSImage.setTemplate:`; the tray icon will be a colored bitmap on macOS. Acceptable initial cost.
+- **GNOME workaround documentation.** Users on stock GNOME won't see the option at all (probe returns false). We don't bundle or recommend the AppIndicator extension from the app itself; if we want to surface that guidance, it goes in the website/help docs, not in this PR.
 
 ### Test plan
 

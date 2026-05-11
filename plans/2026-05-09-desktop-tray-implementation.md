@@ -4,7 +4,7 @@ Companion to the design at `plans/2026-05-09-desktop-tray.md`. Read that first.
 
 ## What
 
-Eight small commits that build the feature incrementally. After each commit the build is green and the app still runs; only the last commit makes the feature visible to the user end-to-end.
+Seven small commits that build the feature incrementally. After each commit the build is green and the app still runs; only the last commit makes the feature visible to the user end-to-end.
 
 ## Why
 
@@ -54,35 +54,9 @@ private const val SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR = "DesktopCloseBehavior"
 
 ---
 
-### Task 2 — Add `ComposeNativeTray` dependency
+### Task 2 — Window-visibility state + branching close handler (no dialog, no tray yet)
 
-**Files**
-- `apps/multiplatform/common/build.gradle.kts`
-
-**What to add.** In the `desktopMain` dependencies block (around line 140), add:
-
-```kotlin
-implementation("io.github.kdroidfilter:composenativetray-jvm:1.3.0") {
-  exclude(group = "net.java.dev.jna", module = "jna-jpms")
-}
-```
-
-**Why this exclusion direction.** Existing build pulls `net.java.dev.jna:jna:5.14.0` and `net.java.dev.jna:jna-platform:5.14.0` directly (lines ~149–151). `jna-platform` requires classic `jna`. ComposeNativeTray brings `jna-jpms`, which collides because both ship the same `com.sun.jna.*` classes. We keep classic `jna` (existing) and drop `jna-jpms` (transitive from the new dep).
-
-**Verify.**
-
-```
-./gradlew :common:desktopMainClasses
-./gradlew :common:dependencies --configuration desktopRuntimeClasspath | grep -i jna
-```
-
-Expect: exactly one of `jna` and `jna-jpms` (the classic one) on the desktop classpath; build succeeds.
-
-**Commit.** `desktop: add ComposeNativeTray dependency`
-
----
-
-### Task 3 — Window-visibility state + branching close handler (no dialog, no tray yet)
+**(Note: a `Task 2 — Add ComposeNativeTray dependency` is removed. We now use Compose Multiplatform's built-in `androidx.compose.ui.window.Tray`, already on the classpath via the `org.jetbrains.compose` plugin. No new dep.)**
 
 **Files**
 - `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt`
@@ -110,7 +84,7 @@ Window(
 )
 ```
 
-3. Add the handler at file scope (or near `showApp`). Temporarily make `Ask` fall through to `Quit` — the dialog comes in Task 4:
+3. Add the handler at file scope (or near `showApp`). Temporarily make `Ask` fall through to `Quit` — the dialog comes in Task 3:
 
 ```kotlin
 private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Boolean>) {
@@ -127,6 +101,8 @@ private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Bool
 }
 ```
 
+The `MinimizeToTray` branch will get a tray-availability guard in Task 5 (defensive: a user could have set the pref on a different machine where tray works).
+
 (Imports: `chat.simplex.common.model.CloseBehavior`, `chat.simplex.common.model.ChatController.appPrefs`.)
 
 **Verify.** Build + run desktop:
@@ -141,7 +117,7 @@ Click X — app exits exactly as today. No dialog, no tray. (Internal preference
 
 ---
 
-### Task 4 — First-close dialog
+### Task 3 — First-close dialog
 
 **Files**
 - `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopTray.kt` *(new)*
@@ -196,6 +172,10 @@ fun CloseBehaviorDialog() {
           onClick = { pendingCloseChoice.value = null; choice.onClose() },
           colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error),
         ) { Text(stringResource(MR.strings.close_behavior_dialog_close)) }
+        // Hide the Minimize button when tray isn't supported (stock GNOME).
+        // The dialog still asks once so the user gets a definitive Quit answer
+        // and doesn't see the dialog again. trayIsAvailable is defined in Task 5;
+        // until then, the button is always shown.
         Button(
           onClick = { pendingCloseChoice.value = null; choice.onMinimize() },
           colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary),
@@ -235,7 +215,7 @@ Click "Minimize to tray" → window hides; the app process keeps running but is 
 
 ---
 
-### Task 5 — Tray icon resources
+### Task 4 — Tray icon resources
 
 **Files**
 - `apps/multiplatform/common/src/commonMain/resources/MR/images/ic_simplex_tray.xml` (or `.png`)
@@ -264,17 +244,24 @@ Easiest: drop two PNGs into `MR/images/`. Moko picks them up; refer to as `MR.im
 
 ---
 
-### Task 6 — Tray composable (no unread indicator yet)
+### Task 5 — Tray composable (no unread indicator yet)
 
 **Files**
 - `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopTray.kt`
 - `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt`
 
-**Add to `DesktopTray.kt`.** Functions to show window and quit; the Tray composable itself.
+**Add to `DesktopTray.kt`.** Tray-availability probe, functions to show window and quit, the Tray composable itself.
 
 ```kotlin
-import com.kdroid.composetray.tray.api.Tray
-import com.kdroid.composetray.utils.SingleInstanceManager  // optional; only if we adopt single-instance later
+import androidx.compose.ui.window.ApplicationScope
+import androidx.compose.ui.window.Tray
+import androidx.compose.ui.window.MenuBar
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
+import java.awt.SystemTray
+
+// Probed once at startup. Returns false on stock GNOME ≥ JDK 21.0.3 per JDK-8322750.
+val trayIsAvailable: Boolean by lazy { SystemTray.isSupported() }
 
 fun showWindow() {
   simplexWindowState.windowVisible.value = true
@@ -282,21 +269,17 @@ fun showWindow() {
   simplexWindowState.window?.requestFocus()
 }
 
-fun quitApp(onQuit: () -> Unit) {
-  pendingCloseChoice.value = null
-  onQuit()
-}
-
 @Composable
 fun ApplicationScope.SimplexTray(closedByError: MutableState<Boolean>) {
+  if (!trayIsAvailable) return
   if (appPrefs.closeBehavior.state.value != CloseBehavior.MinimizeToTray) return
   Tray(
-    iconContent = { Image(painterResource(MR.images.ic_simplex_tray), contentDescription = null) },
+    icon = painterResource(MR.images.ic_simplex_tray),
     tooltip = stringResource(MR.strings.tray_tooltip),
-    primaryAction = ::showWindow,
+    onAction = ::showWindow,
     menu = {
       Item(stringResource(MR.strings.tray_show), onClick = ::showWindow)
-      Divider()
+      Separator()
       Item(stringResource(MR.strings.tray_quit), onClick = {
         closedByError.value = false
         exitApplication()
@@ -306,7 +289,20 @@ fun ApplicationScope.SimplexTray(closedByError: MutableState<Boolean>) {
 }
 ```
 
-(Verify exact import paths and DSL element names against `composenativetray-jvm:1.3.0`'s README at https://github.com/kdroidFilter/ComposeNativeTray — the names above match the README at the time of writing but check if the build fails.)
+(Note: this uses Compose Multiplatform's built-in `androidx.compose.ui.window.Tray`. The API is `icon: Painter`, `onAction` (not `primaryAction`), menu DSL uses `Separator()` (not `Divider()`).)
+
+**Update `DesktopApp.kt`'s close handler** to add the defensive tray-availability check from Task 2's TODO:
+
+```kotlin
+CloseBehavior.MinimizeToTray -> {
+  if (trayIsAvailable) {
+    simplexWindowState.windowVisible.value = false
+  } else {
+    closedByError.value = false
+    exitApplication()
+  }
+}
+```
 
 **Wire into `DesktopApp.kt`.** Inside `application(exitProcessOnExit = false) { … }`:
 
@@ -324,7 +320,7 @@ The order doesn't affect rendering — the tray and dialog are top-level surface
 
 ---
 
-### Task 7 — Unread indicator + tooltip count
+### Task 6 — Unread indicator + tooltip count
 
 **Files**
 - `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopTray.kt`
@@ -341,9 +337,9 @@ val tooltip =
   else stringResource(MR.strings.tray_tooltip)
 
 Tray(
-  iconContent = { Image(painterResource(iconRes), contentDescription = null) },
+  icon = painterResource(iconRes),
   tooltip = tooltip,
-  // primaryAction + menu unchanged
+  // onAction + menu unchanged
 )
 ```
 
@@ -357,7 +353,7 @@ Tray(
 
 ---
 
-### Task 8 — Appearance settings toggle
+### Task 7 — Appearance settings toggle
 
 **Files**
 - `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/usersettings/Appearance.desktop.kt`
@@ -370,27 +366,29 @@ Tray(
 <string name="appearance_minimize_to_tray_desc">Keep SimpleX running in the background to receive messages.</string>
 ```
 
-**UI row.** In `AppearanceLayout` (the Composable around line ~38), add a new section row using the existing `SectionItemView` / `SettingsActionItemWithContent` / similar patterns visible in this file. Read the surrounding rows for the exact convention; the snippet below is illustrative:
+**UI row.** In `AppearanceLayout` (the Composable around line ~38), add a new section row using the existing `SectionItemView` / `SettingsActionItemWithContent` / similar patterns visible in this file. The entire row is gated on `trayIsAvailable` — if the OS has no tray host, the toggle is omitted. Read the surrounding rows for the exact convention; the snippet below is illustrative:
 
 ```kotlin
-val pref = remember { appPrefs.closeBehavior.state }
-val on = pref.value == CloseBehavior.MinimizeToTray
-SectionItemView {
-  Row(verticalAlignment = Alignment.CenterVertically) {
-    Column(Modifier.weight(1f)) {
-      Text(stringResource(MR.strings.appearance_minimize_to_tray))
-      Text(
-        stringResource(MR.strings.appearance_minimize_to_tray_desc),
-        style = MaterialTheme.typography.caption,
-        color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+if (trayIsAvailable) {
+  val pref = remember { appPrefs.closeBehavior.state }
+  val on = pref.value == CloseBehavior.MinimizeToTray
+  SectionItemView {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Column(Modifier.weight(1f)) {
+        Text(stringResource(MR.strings.appearance_minimize_to_tray))
+        Text(
+          stringResource(MR.strings.appearance_minimize_to_tray_desc),
+          style = MaterialTheme.typography.caption,
+          color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+        )
+      }
+      Switch(
+        checked = on,
+        onCheckedChange = { checked ->
+          appPrefs.closeBehavior.set(if (checked) CloseBehavior.MinimizeToTray else CloseBehavior.Quit)
+        }
       )
     }
-    Switch(
-      checked = on,
-      onCheckedChange = { checked ->
-        appPrefs.closeBehavior.set(if (checked) CloseBehavior.MinimizeToTray else CloseBehavior.Quit)
-      }
-    )
   }
 }
 ```
