@@ -64,7 +64,7 @@ When the owner adds a relay to an existing channel:
 
 1. **Acceptance.** The new relay accepts the invitation following the [Relay acceptance](#relay-acceptance) flow. The owner promotes the relay to active when the channel link's updated relay list is confirmed.
 
-2. **Announce.** If the channel has at least one subscriber, the owner sends `x.grp.relay.new` to every other currently-connected relay of the channel. The message is a single-field JSON object `{"relayLink": "<short link>"}`, owner-signed under `CBGroup` (see [Message signing](#message-signing)).
+2. **Announce.** If the channel has at least one subscriber, the owner sends `x.grp.relay.new` (carrying the new relay's short link) to every other currently-connected relay of the channel.
 
 3. **Forward.** Each relay forwards `x.grp.relay.new` to its subscribers. The relay does not create a member record for the announced relay — relays do not connect to other relays of the same channel.
 
