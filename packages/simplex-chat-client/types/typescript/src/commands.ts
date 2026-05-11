@@ -494,7 +494,7 @@ export namespace APIConnectPlan {
   export type Response = CR.ConnectionPlan | CR.ChatCmdError
 
   export function cmdString(self: APIConnectPlan): string {
-    return '/_connect plan ' + self.userId + ' ' + self.connectionLink
+    return '/_connect plan ' + self.userId + (self.connectionLink ? ' ' + self.connectionLink : '')
   }
 }
 

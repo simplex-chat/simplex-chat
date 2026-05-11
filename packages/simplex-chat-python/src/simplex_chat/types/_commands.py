@@ -327,6 +327,19 @@ def APIGetGroupRelays_cmd_string(self: APIGetGroupRelays) -> str:
 APIGetGroupRelays_Response = CR.GroupRelays | CR.ChatCmdError
 
 
+# Add relays to group.
+# Network usage: interactive.
+class APIAddGroupRelays(TypedDict):
+    groupId: int  # int64
+    relayIds: list[int]  # int64, non-empty
+
+
+def APIAddGroupRelays_cmd_string(self: APIAddGroupRelays) -> str:
+    return '/_add relays #' + str(self['groupId']) + ' ' + ','.join(map(str, self['relayIds']))
+
+APIAddGroupRelays_Response = CR.GroupRelaysAdded | CR.GroupRelaysAddFailed | CR.ChatCmdError
+
+
 # Update group profile.
 # Network usage: background.
 class APIUpdateGroupProfile(TypedDict):
