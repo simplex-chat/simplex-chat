@@ -176,13 +176,29 @@ render below the title:
 
 ## 5. Kotlin changes
 
-Mirror of §4 across the Compose surface: ≈74-site audit by the same rule;
-single-view create flow with toggle driving `groupType`+`memberRole`;
-same `directMessages` hide, DM-affordance suppression, ConnectPlan
-three-way branch with `GTUnknown` rejection. Strings mirror §4.4; icon
-mirrored across platforms. In chat-list filter chips, Public groups go
-in the "groups" bucket (mental model: "things I can post in"), not
-"channels".
+Mirror of §4 across the Compose surface. Subsections parallel §4 and
+note divergences only.
+
+### 5.1 Model
+
+`GroupType` gains `Group`; `memberRole` / `isPublicGroup` accessors on
+`GroupInfo` / `GroupProfile`.
+
+### 5.2 Audit `useRelays` vs `isChannel` (≈74 sites)
+
+Same transport-vs-governance rule as §4.2; ~70% flip to `isChannel`.
+
+### 5.3 Create flow
+
+Single-view create with Channel / Public-group toggle driving
+`groupType`+`memberRole`; threat-model note below the title;
+`directMessages` toggle hidden under `useRelays`.
+
+### 5.4 Strings, views, icons, ConnectPlan
+
+Strings, views, icons, and ConnectPlan mirror §4.4. **Kotlin-only:**
+chat-list filter chips place Public groups in the "groups" bucket
+(mental model: "things I can post in"), not "channels".
 
 ## 6. Threat model: changes from channels
 
