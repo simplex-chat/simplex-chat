@@ -18,7 +18,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.CloseBehavior
 import chat.simplex.common.model.SharedPreference
+import chat.simplex.common.trayIsAvailable
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
@@ -65,6 +67,11 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
 
+    if (trayIsAvailable) {
+      SectionDividerSpaced()
+      MinimizeToTraySection()
+    }
+
     SectionDividerSpaced()
     AppToolbarsSection()
 
@@ -81,6 +88,33 @@ fun AppearanceScope.AppearanceLayout(
     DensityScaleSection()
 
     SectionBottomSpacer()
+  }
+}
+
+@Composable
+private fun MinimizeToTraySection() {
+  val pref = remember { appPrefs.closeBehavior.state }
+  val on = pref.value == CloseBehavior.MinimizeToTray
+  SectionView {
+    Row(
+      Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = 12.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Column(Modifier.weight(1f)) {
+        Text(stringResource(MR.strings.appearance_minimize_to_tray))
+        Text(
+          stringResource(MR.strings.appearance_minimize_to_tray_desc),
+          style = MaterialTheme.typography.caption,
+          color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+        )
+      }
+      Switch(
+        checked = on,
+        onCheckedChange = { checked ->
+          appPrefs.closeBehavior.set(if (checked) CloseBehavior.MinimizeToTray else CloseBehavior.Quit)
+        }
+      )
+    }
   }
 }
 
