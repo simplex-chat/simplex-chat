@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
+import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.CloseBehavior
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.res.MR
@@ -28,9 +29,16 @@ fun showWindow() {
 fun ApplicationScope.SimplexTray(closedByError: MutableState<Boolean>) {
   if (!trayIsAvailable) return
   if (appPrefs.closeBehavior.state.value != CloseBehavior.MinimizeToTray) return
+  val unread by remember {
+    derivedStateOf { ChatModel.chats.value.sumOf { it.chatStats.unreadCount } }
+  }
+  val iconRes = if (unread > 0) MR.images.ic_simplex_tray_dot else MR.images.ic_simplex_tray
+  val tooltip =
+    if (unread > 0) stringResource(MR.strings.tray_tooltip_unread, unread)
+    else stringResource(MR.strings.tray_tooltip)
   Tray(
-    icon = painterResource(MR.images.ic_simplex_tray),
-    tooltip = stringResource(MR.strings.tray_tooltip),
+    icon = painterResource(iconRes),
+    tooltip = tooltip,
     onAction = ::showWindow,
     menu = {
       Item(stringResource(MR.strings.tray_show), onClick = ::showWindow)
