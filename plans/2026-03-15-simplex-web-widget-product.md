@@ -127,48 +127,144 @@ Signal could build a widget, but their conversations are 1:1. Customer wouldn't 
 - Can I continue this conversation later?
 - Can I take this conversation with me to the app?
 
-**Requirements:**
+**Requirements (MVP):**
 
 - No app install, no account creation
-- Clear privacy indicator -- "encrypted" badge or similar
-- Standard chat UX -- typing indicators, read receipts
-- File/image sharing for support scenarios
-- Notification when response arrives (browser notification permission)
-- Session persistence across page navigation on same site
-- Migration path to SimpleX app via QR code
-- Graceful degradation -- clear message if connection fails
-- Accessibility -- screen readers, keyboard navigation
+- Clear privacy indicator -- "via SimpleX Network"
+- Standard chat UX -- sent/delivered checkmarks
+- File sharing via upload page link
+- Session persistence across tabs and sessions
+- Graceful degradation -- retry on failure
+
+**Requirements (Post-MVP):**
+
+- Migration path to SimpleX app
+- In-widget file upload
+- Typing indicators
+- Full accessibility support
 
 
 ## Product Flow
 
 ### Site Owner Setup
 
-1. Create SimpleX contact address or deploy support bot
+1. Create SimpleX business address or deploy support bot
 2. Add script tag to site with address parameter and version hash
-3. Optionally customize appearance
+3. Optionally set accent color and dark mode sync
 4. Done
 
 Recommended: Deploy open-source support bot that auto-accepts contact requests and routes to agents. We provide the bot.
 
 ### Visitor Experience
 
-1. Visit site, see chat bubble
-2. Click bubble, chat window opens
-3. Type message, send
-4. If bot: immediate connection, conversation starts
-5. If manual address: widget shows "connecting..." with option to enable notification
-6. Conversation proceeds in browser
-7. If visitor wants to continue on app: scan QR code to migrate conversation
+**Widget closed:**
+- Chat bubble with shield icon in bottom-right
+- Text: "Talk to us privately via SimpleX Network"
 
-### Migration to App
+**Widget opens (not connected yet):**
+- Business name, logo, welcome message (from address data)
+- Name field with placeholder "name or pseudonym"
+- Incognito button (mask icon) to generate random name
+- Message entry field
+- Visitor sees name before sending -- conscious choice
 
-Visitor can scan QR code from browser widget. This transfers:
-- Conversation history
-- Connection to site owner
-- Encryption keys
+**Send tapped:**
+- First message included in connection request (single action)
+- Single checkmark = sent, double checkmark = delivered
+- "Keep this tab open to receive replies" instruction
+- "Notify me when [Business] replies" button (browser notification)
+- If SMP router down: retry button
 
-Conversation continues in SimpleX Chat app with full durability.
+**Conversation:**
+- Standard chat UI
+- Agent joins shown as pronounced system message
+- Replies/reactions from site owner displayed (visitor can't create in MVP)
+- Conversation persists across sessions and tabs
+- Same conversation in all tabs on same site
+
+**Mobile:**
+- Full screen when expanded
+- Back button to return to bubble
+
+**Ending conversation:**
+- Visitor can delete -- always notifies owner, reverts to fresh state
+- Owner deletes -- visitor sees notification (if sent) or delivery fails on next send
+- History preserved on visitor side until visitor deletes
+
+
+## UX Specification
+
+### Widget Closed (Bubble)
+
+- Pointy bubble shape with shield icon, no SimpleX logo
+- Text: "Talk to us privately via SimpleX Network"
+- Position: bottom-right
+- Unread indicator when response waiting
+
+### Widget Opens
+
+Connection happens on SEND, not on open. Widget shows:
+
+- Business name, logo, welcome message (from address data)
+- Name field with placeholder "name or pseudonym"
+- Incognito button (mask icon) fills random name from reduced dictionary
+- User sees random name before sending -- transparency, conscious choice
+- Message entry field
+
+### Send Tapped
+
+- First message included in connection request (single action)
+- "Notify me when [Business] replies" button above entry
+- "Keep this tab open to receive replies" instruction
+- If SMP router down: retry button
+
+### Conversation
+
+- Single checkmark = sent, double checkmark = delivered
+- No typing indicators (bot is instant, mental model is async)
+- No read receipts (SimpleX doesn't support them)
+- Agent joins: pronounced system message ("Alex joined the conversation")
+- Replies and reactions from site owner displayed; visitor cannot create them in MVP
+- File sharing: link to simplex.chat/file upload page
+
+### Persistence
+
+- Conversation persists across sessions until visitor explicitly deletes
+- Same conversation across all tabs on same site
+- Return visitor sees history immediately
+
+### Conversation End
+
+**Owner ends:**
+- Owner "deletes contact" in SimpleX Chat
+- If owner notifies: visitor sees notification
+- If owner deletes quietly: visitor discovers on next send (delivery fails)
+- Visitor still sees history until they delete
+
+**Visitor ends:**
+- Always notifies owner (no quiet removal)
+- Reverts to fresh state
+- Can start new conversation immediately
+
+### Mobile
+
+- Full screen when expanded
+- Chat bubble when closed
+- Standard touch targets (48px minimum)
+- Back button / X to return to bubble
+
+### Customization
+
+- Accent color matches site
+- Dark mode with API to sync with site's dark mode
+- Welcome message from business address data
+- Position: bottom-right (configurable post-MVP)
+
+### Notifications (MVP)
+
+- "Keep this tab open to receive replies"
+- Browser notification permission for in-tab alerts
+- Web Push via notification router is post-MVP
 
 
 ## Trust Model
@@ -188,63 +284,127 @@ Site owner controls the JS. Visitor trusts site owner not to exfiltrate messages
 The architectural guarantee: no party other than visitor and site owner can read the messages. SimpleX network, hosting providers, CDNs, ad networks -- none of them have access.
 
 
+## MVP Scope
+
+### In MVP
+
+**Widget UI:**
+- Chat bubble with shield icon, "Talk to us privately via SimpleX Network"
+- Business name, logo, welcome message from address data
+- Name field with incognito button (mask icon)
+- First message in connection request
+- Single/double checkmark for sent/delivered
+- Agent join notifications (pronounced)
+- Display replies and reactions from site owner
+- "Keep this tab open" instruction
+- Dark mode with API to sync with site
+- Accent color customization
+- Full screen on mobile
+
+**Persistence:**
+- Same conversation across sessions and tabs
+- History preserved until visitor deletes
+- Visitor deletion notifies owner
+
+**File sharing:**
+- Link to simplex.chat/file or site's upload page
+
+**Documentation:**
+- Setup guide for JS integration
+- Bot setup guide
+
+### Post-MVP
+
+- Web Push notifications (via notification router + UnifiedPush protocol)
+- Migration to app (QR code transfer)
+- In-widget file upload
+- Visitor replies and reactions
+- Typing indicators
+- Full accessibility support
+- Full theme customization
+- Position options
+
+### First Adopters
+
+1. simplex.chat
+2. Evgeny's personal site
+3. Friendly community sites
+
+
+## Resolved Questions
+
+### Spam/Abuse
+Bot with captcha protection, same as directory groups. Not immediate concern at current network stage.
+
+### Multi-tab
+Same conversation across all tabs. Tech design will determine storage mechanism.
+
+### Notifications (MVP)
+"Keep this tab open" instruction. Web Push is post-MVP.
+
+### Branding
+"via SimpleX Network" visible. No white-label option -- branding IS the value.
+
+
+## Business Model
+
+The widget can be free or paid, at the discretion of each SMP router operator.
+
+**How it works**: Browser WebSocket connections include an `Origin` header (browser-enforced, not spoofable). The SMP server sees which website is embedding the widget. The server controls access via CORS — it returns `Access-Control-Allow-Origin` only for allowed domains. Without the correct CORS header, the browser blocks the connection.
+
+**What the server sees**: origin domain (which site) and usage volume (number of connections/commands). The server does NOT see who the users are, message content, or any per-user information.
+
+**Billing model options for router operators**:
+- Free for all domains (open access)
+- Free with trial period, paid after (per-domain)
+- Paid from start (per-domain, usage-based)
+- Allowlist only (specific domains)
+
+**Implementation**: server checks `Origin` header against configured domain list during WebSocket upgrade. Allowed domains get CORS headers and proceed. Unknown domains are rejected. Trial expiry, usage limits, and billing are operator concerns — the protocol layer just provides the access control mechanism.
+
+This enables SimpleX router operators to monetize widget hosting without compromising user privacy — billing is per-site, not per-user.
+
+## Privacy Model
+
+**What SMP router operators can observe**:
+- Which sites embed the widget (Origin header)
+- Usage volume per site (connection/command counts)
+- Visitor IP addresses (from TCP connections)
+- Connection timing and patterns
+
+**What they cannot observe**:
+- Message content (end-to-end encrypted)
+- User identities (no accounts, no cookies)
+- Which queues belong to which visitors
+
+**Visitor IP addresses**: SMP servers can observe visitor IP addresses from WebSocket connections. Visitors concerned about IP privacy should use Tor or a VPN.
+
 ## Open Questions
 
-### Spam/Abuse Mitigation
-
-Open contact is open to abuse. Primary mitigation: bot with captcha protection, same pattern as directory groups.
-
-Current network state: spam happens in groups but not in direct contacts yet. This may change as network grows, but not an immediate concern.
-
-Additional options if needed:
-- Rate limiting at widget level
-- Proof-of-work before connect
-
 ### Team Workflow
-
-Real support teams have multiple agents, shifts, handoffs. The bot handles routing. But:
-- Are all agents using SimpleX Chat app?
-- Is there a dashboard for teams?
-- How do handoffs work?
-
-### Multi-tab / Multi-device
-
-Visitor opens site in two tabs, or switches from phone to desktop. What happens?
-- Ephemeral keys per tab? Conversation isolated.
-- Shared keys via localStorage? Tabs can conflict.
-- Server-side session? Adds complexity.
-
-### Offline Message Queueing
-
-Visitor sends message, site owner offline. Options:
-- Message queued at SMP router (standard SimpleX behavior)
-- Widget shows "message sent, waiting for response"
-- Visitor enables notification, closes tab, gets notified when response arrives
+- Agents use SimpleX Chat app
+- Bot handles routing and escalation
+- Dashboard is out of scope (agents use app)
 
 ### Trust Verification
-
-Visitor sees chat bubble. How do they know this is actually SimpleX?
-- Visual indicator in widget
-- Link to verify on simplex.chat
-- Certificate/signature verification (complex in browser)
+- "via SimpleX Network" text provides some verification
+- Link to simplex.chat for more info
+- Full verification is complex in browser -- acceptable tradeoff
 
 
 ## Success Metrics
 
-**Site Owner:**
+**Measurable without tracking:**
+- Number of sites embedding widget (observable)
 - Integration time < 5 minutes
 - Zero support requests for setup
-- Uptime > 99.9%
 
-**Visitor:**
-- Time to first message < 10 seconds
-- Conversion to app install (tracked via QR scan)
-- Return visitor rate
+**Not measurable (would require tracking that contradicts value proposition):**
+- Message counts
+- App conversion rates
+- Visitor behavior
 
-**Ecosystem:**
-- Number of sites using widget
-- Messages per day through widget
-- New SimpleX app installs attributed to widget
+We accept limited visibility as a feature, not a bug.
 
 
 ## Competitive Landscape
@@ -357,10 +517,10 @@ The customers we refuse are as important as the customers we serve. Trying to se
 
 1. **Browser limitations** -- No TLS certificate pinning. Trust browser's CA system. Acceptable for threat model.
 
-2. **Ephemeral by default** -- Visitor closes browser, conversation gone (unless migrated). Feature or bug depends on use case.
+2. **Persistence complexity** -- Conversation must persist across sessions and sync across tabs. Storage mechanism TBD in tech design.
 
 3. **JS supply chain** -- Site owner embeds our JS. Mitigated by including hash in script tag (Subresource Integrity). Browser refuses to execute if hash doesn't match. Self-host option also available.
 
-4. **Adoption chicken-egg** -- Visitors don't know what SimpleX is. Widget must explain value without friction.
+4. **Adoption chicken-egg** -- Visitors don't know what SimpleX is. "via SimpleX Network" text helps, but brand recognition takes time.
 
-5. **Support complexity** -- We're building infrastructure for support teams. They have expectations from Intercom/Zendesk. We can't match feature parity, shouldn't try.
+5. **Background tab limitations** -- Browsers throttle/suspend background tabs. MVP uses "keep tab open" instruction. Post-MVP may add Web Push via notification router.
