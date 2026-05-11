@@ -115,7 +115,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   simplexWindowState.windowState = windowState
   // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
-    Window(state = windowState, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { closedByError.value = false; exitApplication() }, onKeyEvent = {
+    Window(state = windowState, visible = simplexWindowState.windowVisible.value, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { handleCloseRequest(closedByError) }, onKeyEvent = {
       if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
         simplexWindowState.backstack.lastOrNull()?.invoke() != null
       } else {
@@ -224,6 +224,24 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   }
 }
 
+private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Boolean>) {
+  if (closedByError.value) {
+    closedByError.value = false
+    exitApplication()
+    return
+  }
+  when (ChatController.appPrefs.closeBehavior.get()) {
+    CloseBehavior.Quit, CloseBehavior.Ask -> {
+      closedByError.value = false
+      exitApplication()
+    }
+    CloseBehavior.MinimizeToTray -> {
+      // Tray-availability guard added in Task 5 once trayIsAvailable exists.
+      simplexWindowState.windowVisible.value = false
+    }
+  }
+}
+
 class SimplexWindowState {
   lateinit var windowState: WindowState
   val backstack = mutableStateListOf<() -> Unit>()
@@ -232,6 +250,7 @@ class SimplexWindowState {
   val saveDialog = DialogState<File?>()
   val toasts = mutableStateListOf<Pair<String, Long>>()
   var windowFocused = mutableStateOf(true)
+  val windowVisible = mutableStateOf(true)
   var window: ComposeWindow? = null
 }
 
