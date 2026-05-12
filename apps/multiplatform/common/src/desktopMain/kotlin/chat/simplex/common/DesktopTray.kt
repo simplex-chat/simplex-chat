@@ -57,11 +57,13 @@ fun ApplicationScope.SimplexTray() {
   if (!trayIsAvailable) return
   if (remember { appPrefs.closeBehavior.state }.value != CloseBehavior.MinimizeToTray) return
   // Sum of per-profile unread (UserInfo.unreadCount, the same field UserPicker renders
-  // per row). Inactive profiles honor per-chat notification filters
-  // (SimpleXAPI.kt:2781-2783); the active profile does not (ChatModel.kt:556-561) —
-  // muted-chat unreads in the active profile still count here.
+  // per row). Skip muted profiles unless they're the active one.
   val unread by remember {
-    derivedStateOf { ChatModel.users.sumOf { it.unreadCount } }
+    derivedStateOf {
+      ChatModel.users.sumOf {
+        if (!it.user.showNtfs && !it.user.activeUser) 0 else it.unreadCount
+      }
+    }
   }
   val iconRes = if (unread > 0) MR.images.ic_simplex_tray_dot else MR.images.ic_simplex
   val tooltip =
