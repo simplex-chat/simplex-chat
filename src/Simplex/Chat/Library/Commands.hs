@@ -2138,7 +2138,8 @@ processChatCommand vr nm = \case
                   _ -> Nothing
             void $ createLinkOwnerMember db vr user gInfo' ctId_ (MemberId ownerId) ownerKey
           pure gInfo'
-        rs <- mapConcurrently (connectToRelay user gInfo') relays
+        rs <- withGroupLock "connectPreparedGroup" groupId $
+          mapConcurrently (connectToRelay user gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
         if null succeeded
@@ -3619,7 +3620,7 @@ processChatCommand vr nm = \case
           localRelayLinks = mapMaybe memberRelayLink activeRelayMembers
           newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
       forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
-        connectToRelay user gInfo rlnk
+        connectToRelayAsync user gInfo rlnk
       forM_ localRelayMembers $ \m ->
         case memberRelayLink m of
           -- Remove relay if its link is no longer in the current link data.
@@ -3631,7 +3632,6 @@ processChatCommand vr nm = \case
               deleteMemberConnection m
               deleteOrUpdateMemberRecord user gInfo m
           _ -> pure ()
-
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
       -- 0) toggle disabled - PQSupportOff
