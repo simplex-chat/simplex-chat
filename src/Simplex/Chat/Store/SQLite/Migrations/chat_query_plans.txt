@@ -7152,7 +7152,7 @@ Query: UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id 
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET relay_own_status = ?, updated_at = ? WHERE group_id = ?
+Query: UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
