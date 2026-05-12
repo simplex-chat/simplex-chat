@@ -1027,7 +1027,7 @@ object AppearanceScope {
         ThemeColor.SECONDARY_VARIANT -> MaterialTheme.colors.secondaryVariant
         ThemeColor.BACKGROUND -> MaterialTheme.colors.background
         ThemeColor.SURFACE -> MaterialTheme.colors.surface
-        ThemeColor.TOOLBAR -> MaterialTheme.appColors.toolbar.let { if (it.alpha > 0f) it else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f).copy(alpha = 0f) }
+        ThemeColor.TOOLBAR -> panelBackgroundColor()
         ThemeColor.TITLE -> MaterialTheme.appColors.title
         ThemeColor.PRIMARY_VARIANT2 -> MaterialTheme.appColors.primaryVariant2
         ThemeColor.SENT_MESSAGE -> MaterialTheme.appColors.sentMessage
@@ -1216,8 +1216,7 @@ object AppearanceScope {
       SectionItemViewSpaceBetween({ editColor(ThemeColor.TOOLBAR) }) {
         val title = "Toolbar"
         Text(title)
-        val tint = currentTheme.appColors.toolbar.let { if (it.alpha > 0f) it else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f) }
-        Icon(painterResource(MR.images.ic_circle_filled), title, tint = tint)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = panelBackgroundColor())
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE) }) {
         val title = generalGetString(MR.strings.color_title)
@@ -1327,11 +1326,13 @@ object AppearanceScope {
           val H = Math.toDegrees(kotlin.math.atan2(b.toDouble(), a.toDouble())).toFloat().let { if (it < 0) it + 360f else it }
           "toolbar = oklch(${L}f, ${C}f, ${H}f, ${currentColor.alpha}f),"
         } else "// toolbar: no tint (transparent)"
+        val preset = (wallpaperType as? WallpaperType.Preset)?.let { PresetWallpaper.from(it.filename) }
+        val pasteHint = if (preset != null) "Paste to ChatWallpaper.kt line ${wallpaperSourceLine(preset)}" else "Paste to ChatWallpaper.kt → ResolvedColors"
         SectionItemView({ clipboard.shareText(toolbarCode) }) {
           Text("Copy toolbar code", color = colors.primary)
         }
         Text(
-          "Paste to ChatWallpaper.kt → ResolvedColors\n$toolbarCode",
+          "$pasteHint\n$toolbarCode",
           Modifier.padding(horizontal = DEFAULT_PADDING),
           style = MaterialTheme.typography.caption.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 9.sp),
           color = MaterialTheme.colors.onBackground.copy(alpha = 0.5f),

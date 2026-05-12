@@ -40,7 +40,8 @@ fun DefaultAppBar(
   } else if (!onTop) Modifier.imePadding()
   else Modifier
 
-  val themeBackgroundMix = panelBackgroundColor()
+  val toolbarTint = MaterialTheme.appColors.toolbar
+  val themeBackgroundMix = if (toolbarTint.alpha > 0f) toolbarTint else panelBackgroundColor()
   val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }
   val handler = LocalAppBarHandler.current
   val connection = LocalAppBarHandler.current?.connection

@@ -56,9 +56,10 @@ val NoteFolderIconColor: Color @Composable get() = MaterialTheme.appColors.prima
  *  matching the wallpaper. Otherwise falls back to the existing bg.mixWith(onBg, 0.97f) elevation.
  *  BLACK and SIMPLEX themes are not tinted (BLACK keeps pure dark, SIMPLEX has its own custom panel). */
 @Composable
-fun panelBackgroundColor(): Color =
-  currentWallpaperPanelTint()
+fun panelBackgroundColor(): Color {
+  return currentWallpaperPanelTint()
     ?: MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+}
 
 @Composable
 private fun currentWallpaperPanelTint(): Color? {
