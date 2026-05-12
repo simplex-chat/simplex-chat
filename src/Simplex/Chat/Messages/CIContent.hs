@@ -105,7 +105,7 @@ msgDirectionIntP = \case
   1 -> Just MDSnd
   _ -> Nothing
 
-data CIDeleteMode = CIDMBroadcast | CIDMInternal | CIDMInternalMark
+data CIDeleteMode = CIDMBroadcast | CIDMInternal | CIDMInternalMark | CIDMHistory
   deriving (Show)
 
 instance StrEncoding CIDeleteMode where
@@ -113,11 +113,13 @@ instance StrEncoding CIDeleteMode where
     CIDMBroadcast -> "broadcast"
     CIDMInternal -> "internal"
     CIDMInternalMark -> "internalMark"
+    CIDMHistory -> "history"
   strP =
     A.takeTill (== ' ') >>= \case
       "broadcast" -> pure CIDMBroadcast
       "internal" -> pure CIDMInternal
       "internalMark" -> pure CIDMInternalMark
+      "history" -> pure CIDMHistory
       _ -> fail "bad CIDeleteMode"
 
 instance ToJSON CIDeleteMode where
@@ -132,6 +134,7 @@ ciDeleteModeToText = \case
   CIDMBroadcast -> "this item is deleted (broadcast)"
   CIDMInternal -> "this item is deleted (locally)"
   CIDMInternalMark -> "this item is deleted (locally)"
+  CIDMHistory -> "this item is deleted (from history)"
 
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! Nested sum types also have to use different encodings for database and API

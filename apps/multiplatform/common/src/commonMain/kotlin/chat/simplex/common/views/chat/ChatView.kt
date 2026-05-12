@@ -317,6 +317,7 @@ fun ChatView(
                         itemIds.sorted(),
                         questionText = questionText,
                         forAll = canDeleteForAll,
+                        editorial = chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator,
                         deleteMessages = { ids, forAll ->
                           deleteMessages(chatRh, chatInfo, ids, forAll, moderate = false) {
                             selectedChatItems.value = null
@@ -3351,7 +3352,9 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           id = chatInfo.apiId,
           scope = chatInfo.groupChatScope(),
           itemIds = itemIds,
-          mode = if (forAll) CIDeleteMode.cidmBroadcast else CIDeleteMode.cidmInternal
+          mode = if (forAll) CIDeleteMode.cidmBroadcast
+            else if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) CIDeleteMode.cidmHistory
+            else CIDeleteMode.cidmInternal
         )
       }
       if (deleted != null) {

@@ -374,7 +374,7 @@ fun ChatItemView(
             @Composable
             fun DeleteItemMenu() {
               DefaultDropdownMenu(showMenu) {
-                DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -392,7 +392,7 @@ fun ChatItemView(
                     if (cItem.chatDir !is CIDirection.GroupSnd && cInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
                       ArchiveReportItemAction(cItem.id, cInfo.groupInfo.membership.memberActive, showMenu, archiveReports)
                     }
-                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages, buttonText = stringResource(MR.strings.delete_report))
+                    DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages, buttonText = stringResource(MR.strings.delete_report))
                     Divider()
                     SelectItemAction(showMenu, selectChatItem)
                   }
@@ -482,7 +482,7 @@ fun ChatItemView(
                       CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
                     }
                     if (!(live && cItem.meta.isLive) && !preview) {
-                      DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                      DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     }
                     if (cItem.chatDir !is CIDirection.GroupSnd) {
                       val groupInfo = cItem.memberToModerate(cInfo)?.first
@@ -508,7 +508,7 @@ fun ChatItemView(
                       ExpandItemAction(revealed, showMenu, reveal)
                     }
                     ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                    DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
                       SelectItemAction(showMenu, selectChatItem)
@@ -518,7 +518,7 @@ fun ChatItemView(
                 cItem.isDeletedContent -> {
                   DefaultDropdownMenu(showMenu) {
                     ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                    DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
                       SelectItemAction(showMenu, selectChatItem)
@@ -532,7 +532,7 @@ fun ChatItemView(
                     } else {
                       ExpandItemAction(revealed, showMenu, reveal)
                     }
-                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                    DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
                       SelectItemAction(showMenu, selectChatItem)
@@ -541,7 +541,7 @@ fun ChatItemView(
                 }
                 else -> {
                   DefaultDropdownMenu(showMenu) {
-                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                    DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (selectedChatItems.value == null) {
                       Divider()
                       SelectItemAction(showMenu, selectChatItem)
@@ -558,7 +558,7 @@ fun ChatItemView(
                   RevealItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -587,7 +587,7 @@ fun ChatItemView(
               DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
               DefaultDropdownMenu(showMenu) {
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -661,7 +661,7 @@ fun ChatItemView(
                   ExpandItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
+                DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -866,6 +866,7 @@ fun ItemInfoAction(
 @Composable
 fun DeleteItemAction(
   chatsCtx: ChatModel.ChatsContext,
+  cInfo: ChatInfo,
   cItem: ChatItem,
   revealed: State<Boolean>,
   showMenu: MutableState<Boolean>,
@@ -898,13 +899,13 @@ fun DeleteItemAction(
               deleteMessages = { ids, _ -> deleteMessages(ids) }
             )
           } else {
-            deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
+            deleteMessageAlertDialog(cItem, questionText, cInfo, deleteMessage = deleteMessage)
           }
         } else {
-          deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
+          deleteMessageAlertDialog(cItem, questionText, cInfo, deleteMessage = deleteMessage)
         }
       } else {
-        deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
+        deleteMessageAlertDialog(cItem, questionText, cInfo, deleteMessage = deleteMessage)
       }
     },
     color = Color.Red
@@ -1371,7 +1372,24 @@ fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction
   )
 }
 
-fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+fun deleteOptions(chatItem: ChatItem, chatInfo: ChatInfo): List<Pair<CIDeleteMode, String>> {
+  val canDeleteForEveryone = chatItem.meta.deletable && !chatItem.localNote && !chatItem.isReport
+  val editorial = chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator
+  return if (editorial) {
+    buildList {
+      add(CIDeleteMode.cidmHistory to generalGetString(MR.strings.from_history))
+      if (canDeleteForEveryone) add(CIDeleteMode.cidmBroadcast to generalGetString(MR.strings.for_everybody))
+    }
+  } else {
+    buildList {
+      add(CIDeleteMode.cidmInternal to generalGetString(MR.strings.for_me_only))
+      if (canDeleteForEveryone) add(CIDeleteMode.cidmBroadcast to generalGetString(MR.strings.for_everybody))
+    }
+  }
+}
+
+fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, chatInfo: ChatInfo, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+  val options = deleteOptions(chatItem, chatInfo)
   AlertManager.shared.showAlertDialogButtons(
     title = generalGetString(MR.strings.delete_message__question),
     text = questionText,
@@ -1382,23 +1400,19 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
           .padding(horizontal = 8.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.Center,
       ) {
-        TextButton(onClick = {
-          deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
-          AlertManager.shared.hideAlert()
-        }) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
-        if (chatItem.meta.deletable && !chatItem.localNote && !chatItem.isReport) {
-          Spacer(Modifier.padding(horizontal = 4.dp))
+        options.forEachIndexed { index, (mode, label) ->
+          if (index > 0) Spacer(Modifier.padding(horizontal = 4.dp))
           TextButton(onClick = {
-            deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
+            deleteMessage(chatItem.id, mode)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(MR.strings.for_everybody), color = MaterialTheme.colors.error) }
+          }) { Text(label, color = MaterialTheme.colors.error) }
         }
       }
     }
   )
 }
 
-fun deleteMessagesAlertDialog(itemIds: List<Long>, questionText: String, forAll: Boolean, deleteMessages: (List<Long>, Boolean) -> Unit) {
+fun deleteMessagesAlertDialog(itemIds: List<Long>, questionText: String, forAll: Boolean, editorial: Boolean = false, deleteMessages: (List<Long>, Boolean) -> Unit) {
   AlertManager.shared.showAlertDialogButtons(
     title = generalGetString(MR.strings.delete_messages__question).format(itemIds.size),
     text = questionText,
@@ -1412,7 +1426,7 @@ fun deleteMessagesAlertDialog(itemIds: List<Long>, questionText: String, forAll:
         TextButton(onClick = {
           deleteMessages(itemIds, false)
           AlertManager.shared.hideAlert()
-        }) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
+        }) { Text(stringResource(if (editorial) MR.strings.from_history else MR.strings.for_me_only), color = MaterialTheme.colors.error) }
 
         if (forAll) {
           TextButton(onClick = {

@@ -2175,8 +2175,15 @@ struct ChatView: View {
                 )
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                    Button("Delete for me", role: .destructive) {
-                        deleteMessage(.cidmInternal, moderate: false)
+                    let editorial = publicGroupEditorialRole(chat)
+                    if editorial {
+                        Button("From history", role: .destructive) {
+                            deleteMessage(.cidmHistory, moderate: false)
+                        }
+                    } else {
+                        Button("Delete for me", role: .destructive) {
+                            deleteMessage(.cidmInternal, moderate: false)
+                        }
                     }
                     if let di = deletingItem, di.meta.deletable && !di.localNote && !di.isReport {
                         Button(broadcastDeleteButtonText(chat), role: .destructive) {
@@ -2185,8 +2192,14 @@ struct ChatView: View {
                     }
                 }
                 .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
-                    Button("Delete for me", role: .destructive) {
-                        deleteMessages(chat, deletingItems, moderate: false)
+                    if publicGroupEditorialRole(chat) {
+                        Button("From history", role: .destructive) {
+                            deleteMessages(chat, deletingItems, .cidmHistory, moderate: false)
+                        }
+                    } else {
+                        Button("Delete for me", role: .destructive) {
+                            deleteMessages(chat, deletingItems, moderate: false)
+                        }
                     }
                 }
                 .confirmationDialog(archivingReports?.count == 1 ? "Archive report?" : "Archive \(archivingReports?.count ?? 0) reports?", isPresented: $showArchivingReports, titleVisibility: .visible) {
@@ -2961,6 +2974,13 @@ class FloatingButtonModel: ObservableObject {
         }
     }
 
+}
+
+private func publicGroupEditorialRole(_ chat: Chat) -> Bool {
+    if case let .group(groupInfo, _) = chat.chatInfo {
+        return groupInfo.useRelays && groupInfo.membership.memberRole >= .moderator
+    }
+    return false
 }
 
 private func broadcastDeleteButtonText(_ chat: Chat) -> LocalizedStringKey {

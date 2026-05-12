@@ -424,6 +424,7 @@
   <string name="moderate_messages_will_be_marked_warning">The messages will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
+  <string name="from_history">From history</string>
   <string name="stop_file__action">Stop file</string>
   <string name="stop_snd_file__title">Stop sending file?</string>
   <string name="stop_snd_file__message">Sending file will be stopped.</string>

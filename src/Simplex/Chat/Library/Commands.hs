@@ -748,11 +748,12 @@ processChatCommand vr nm = \case
       deletions <- case mode of
         CIDMInternal -> deleteDirectCIs user ct items
         CIDMInternalMark -> markDirectCIsDeleted user ct items =<< liftIO getCurrentTime
+        CIDMHistory -> throwChatError CEInvalidChatItemDelete
         CIDMBroadcast -> do
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
           let msgIds = itemsMsgIds items
-              events = map (\msgId -> XMsgDel msgId Nothing Nothing) msgIds
+              events = map (\msgId -> XMsgDel msgId Nothing Nothing False) msgIds
           forM_ (L.nonEmpty events) $ \events' ->
             sendDirectContactMessages user ct events'
           if featureAllowed SCFFullDelete forUser ct
@@ -764,8 +765,9 @@ processChatCommand vr nm = \case
       -- TODO [knocking] check scope for all items?
       chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
       deletions <- case mode of
-        CIDMInternal -> do
-          deleteGroupCIs user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
+        CIDMInternal
+          | publicGroupItemDeletable gInfo (membership gInfo) -> throwChatError CEInvalidChatItemDelete
+          | otherwise -> deleteGroupCIs user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
         CIDMInternalMark -> do
           markGroupCIsDeleted user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
         CIDMBroadcast -> do
@@ -773,9 +775,16 @@ processChatCommand vr nm = \case
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
-              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing $ toMsgScope gInfo <$> chatScopeInfo) msgIds
+              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) False) msgIds
           mapM_ (sendGroupMessages user gInfo Nothing False recipients) events
-          -- TODO delGroupChatItems sends deletion events too. Are they needed?
+          delGroupChatItems user gInfo chatScopeInfo items False
+        CIDMHistory -> do
+          unless (publicGroupItemDeletable gInfo (membership gInfo)) $ throwChatError CEInvalidChatItemDelete
+          recipients <- getGroupRecipients vr user gInfo chatScopeInfo groupKnockingVersion
+          assertUserGroupRole gInfo GRObserver
+          let msgIds = itemsMsgIds items
+              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) True) msgIds
+          mapM_ (sendGroupMessages user gInfo Nothing False recipients) events
           delGroupChatItems user gInfo chatScopeInfo items False
       pure $ CRChatItemsDeleted user deletions True False
     CTLocal -> do
@@ -817,6 +826,7 @@ processChatCommand vr nm = \case
     deletions <- case mode of
       CIDMInternal -> deleteGroupCIs user gInfo Nothing items Nothing =<< liftIO getCurrentTime
       CIDMInternalMark -> markGroupCIsDeleted user gInfo Nothing items Nothing =<< liftIO getCurrentTime
+      CIDMHistory -> throwChatError CEInvalidChatItemDelete
       CIDMBroadcast -> do
         ms <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
         let recipients = filter memberCurrent ms
@@ -3814,7 +3824,7 @@ processChatCommand vr nm = \case
       assertDeletable gInfo items
       assertUserGroupRole gInfo GRModerator
       let msgMemIds = itemsMsgMemIds gInfo items
-          events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId memId $ toMsgScope gInfo <$> chatScopeInfo) msgMemIds
+          events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId memId (toMsgScope gInfo <$> chatScopeInfo) False) msgMemIds
       mapM_ (sendGroupMessages_ user gInfo ms) events
       delGroupChatItems user gInfo chatScopeInfo items True
       where
