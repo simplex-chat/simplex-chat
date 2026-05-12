@@ -1381,13 +1381,13 @@ getCreateRelayForMember db vr gVar user@User {userId, userContactId} GroupInfo {
       maybeFirstRow (toContactMember vr user) $
         DB.query
           db
-          -- statuses matching memberCurrent; skips GSMemLeft historical rows so
-          -- re-add allocates a fresh row instead of resurrecting.
-          (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ? AND m.member_status IN (?,?,?,?,?,?,?)")
-          ( (groupId, relayLink)
-              :. (GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced)
-              :. (GSMemConnected, GSMemComplete, GSMemCreator)
-          )
+#if defined(dbPostgres)
+          (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ? AND is_current_member(m.member_status)")
+#else
+          -- skips GSMemLeft historical rows so re-add allocates a fresh row instead of resurrecting
+          (groupMemberQuery <> " JOIN group_member_status_predicates p ON m.member_status = p.member_status WHERE m.group_id = ? AND m.relay_link = ? AND p.current_member = 1")
+#endif
+          (groupId, relayLink)
     createRelayMember = do
       currentTs <- liftIO getCurrentTime
       randRelayId <- liftIO $ encodedRandomBytes gVar 12
@@ -1844,12 +1844,12 @@ updatePublicMemberCount db vr user GroupInfo {groupId} = do
     relayCount <- fromMaybe 0 <$> maybeFirstRow fromOnly
       (DB.query
         db
-        [sql|
-          SELECT COUNT(1) FROM group_members
-          WHERE group_id = ? AND member_role = ?
-            AND member_status IN (?,?,?,?,?,?,?)
-        |]
-        (groupId, GRRelay, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, GSMemCreator))
+#if defined(dbPostgres)
+        "SELECT COUNT(1) FROM group_members WHERE group_id = ? AND member_role = ? AND is_current_member(member_status)"
+#else
+        "SELECT COUNT(1) FROM group_members m JOIN group_member_status_predicates p ON m.member_status = p.member_status WHERE m.group_id = ? AND m.member_role = ? AND p.current_member = 1"
+#endif
+        (groupId, GRRelay))
     let publicCount = max 0 (totalCount - relayCount) :: Int64
     currentTs <- getCurrentTime
     DB.execute db "UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id = ?" (publicCount, currentTs, groupId)
