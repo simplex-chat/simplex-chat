@@ -416,6 +416,10 @@ testSanitizeUri = describe "sanitizeUri" $ do
     "https://example.com/page/a123?source=abc" `safeSanitized` Nothing -- source is in unsafe blacklist
     "https://example.com/page/a123?name=abc" `eagerSanitized` Just "https://example.com/page/a123"
     "https://example.com/page/a123?name=abc" `safeSanitized` Nothing -- name is not in a whitelist
+  it "should keep whitelisted parameters in safe mode even if they match a blacklist prefix" $ do
+    "https://example.com/playlist?list=abc" `sanitized` Nothing -- "list" is whitelisted, "li" is blacklisted
+    "https://example.com/playlist?list=abc&si=def" `sanitized` Just "https://example.com/playlist?list=abc"
+    "https://github.com/owner/repo?ref=main" `sanitized` Nothing -- "ref" is whitelisted for github.com
   where
     s `eagerSanitized` res = sanitized_ False s res
     s `safeSanitized` res = sanitized_ True s res
