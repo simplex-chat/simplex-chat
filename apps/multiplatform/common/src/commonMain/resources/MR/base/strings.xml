@@ -207,6 +207,7 @@
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_note_folder">Error deleting private notes</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
+  <string name="error_deleting_message">Error deleting message</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
   <string name="error_changing_address">Error changing address</string>
   <string name="error_aborting_address_change">Error aborting address change</string>
