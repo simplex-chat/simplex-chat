@@ -216,13 +216,15 @@ const GROK_LOCAL_GROUP_ID = 200
 const CUSTOMER_ID = "customer-1"
 
 // Commands passed into SupportBot; matches what index.ts constructs when
-// Grok is enabled. Tests that disable grokApi still pass the full list
-// because the ctor doesn't care; the value is pushed to a group's
-// groupPreferences on the first sendToGroup() call.
+// Grok is enabled. The ctor uses this to decide which `/keyword` messages
+// from customers are commands vs. plain text — tests that disable grokApi
+// should pass a list that excludes "grok" to mirror production wiring (see
+// index.ts where `grokEnabled` gates that entry).
 const DESIRED_COMMANDS = [
   {type: "command" as const, keyword: "grok", label: "Ask Grok"},
   {type: "command" as const, keyword: "team", label: "Switch to team"},
 ]
+const DESIRED_COMMANDS_NO_GROK = [DESIRED_COMMANDS[1]]
 
 // ─── Member factories ───
 
@@ -733,6 +735,28 @@ describe("Grok Conversation", () => {
     expect(grokApi.calls.length).toBe(0)
   })
 
+  test("Grok answers messages containing a slash mid-word", async () => {
+    // Regression: an unanchored regex in ciBotCommand once parsed `/read`
+    // inside "follow/read" as a command, causing Grok to skip the message.
+    grokApi.willRespond("We post on X and Mastodon.")
+    await bot.onGrokNewChatItems(grokViewCustomerMessage(
+      "What social media do you use? Anything I can follow/read for updates?"
+    ))
+    expect(grokApi.calls.length).toBe(1)
+    expect(grokApi.calls[0].message).toBe(
+      "What social media do you use? Anything I can follow/read for updates?"
+    )
+  })
+
+  test("Grok answers an unknown slash-prefixed message", async () => {
+    // `/help` is not in desiredCommands, so it should be treated as plain
+    // text and reach Grok rather than being silently dropped.
+    grokApi.willRespond("Sure, here's what I can do.")
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("/help me with groups"))
+    expect(grokApi.calls.length).toBe(1)
+    expect(grokApi.calls[0].message).toBe("/help me with groups")
+  })
+
   test("Grok per-message: history includes prior Grok sent response as assistant", async () => {
     addCustomerMessageToHistory("How do I create a group?", GROK_LOCAL_GROUP_ID)
     addBotMessage("To create a group, tap + then New Group.", GROK_LOCAL_GROUP_ID)
@@ -976,6 +1000,17 @@ describe("One-Way Gate with Grok Disabled", () => {
     await bot.onNewChatItems(customerMessage("How do I use SimpleX?"))
     // Grok should not respond (grokApi is null)
     expect(grokApi.calls.length).toBe(0)
+  })
+
+  test("Grok disabled: customer /grok is treated as text and queued", async () => {
+    // When Grok is disabled, index.ts excludes "grok" from desiredCommands,
+    // so /grok from a customer parses as an unknown command → routed as
+    // plain text → first-message-in-WELCOME transitions to QUEUE.
+    setup()
+    bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null, DESIRED_COMMANDS_NO_GROK)
+    bot.cards = cards
+    await bot.onNewChatItems(customerMessage("/grok"))
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
   })
 })
 

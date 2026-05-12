@@ -1321,6 +1321,18 @@ setGroupLinkDataAsync user gInfo gLink = do
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
+connectToRelayAsync :: User -> GroupInfo -> ShortLinkContact -> CM ()
+connectToRelayAsync user gInfo relayLink = do
+  vr <- chatVersionRange
+  gVar <- asks random
+  relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink
+  case activeConn of
+    Just _ -> pure ()
+    Nothing -> do
+      subMode <- chatReadVar subscriptionMode
+      newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
+      withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+
 updatePublicGroupData :: User -> GroupInfo -> CM GroupInfo
 updatePublicGroupData user gInfo
   | useRelays' gInfo && memberRole' (membership gInfo) == GROwner = do

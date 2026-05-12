@@ -9,6 +9,7 @@ For architecture, design rationale, security properties, and threat model, see [
 - [Protocol](#protocol)
   - [Channel creation](#channel-creation)
   - [Relay acceptance](#relay-acceptance)
+  - [Relay addition](#relay-addition)
   - [Subscriber connection](#subscriber-connection)
   - [Message signing](#message-signing)
   - [Message forwarding](#message-forwarding)
@@ -57,6 +58,20 @@ When a relay receives an invitation to serve a channel, it validates the channel
 
 TODO: Periodic monitoring where the relay retrieves channel link data to verify its relay link is still listed is planned but not yet implemented.
 
+### Relay addition
+
+When the owner adds a relay to an existing channel:
+
+1. **Acceptance.** The new relay accepts the invitation following the [Relay acceptance](#relay-acceptance) flow. The owner promotes the relay to active when the channel link's updated relay list is confirmed.
+
+2. **Announce.** If the channel has at least one subscriber, the owner sends `x.grp.relay.new` (carrying the new relay's short link) to every other currently-connected relay of the channel.
+
+3. **Forward.** Each relay forwards `x.grp.relay.new` to its subscribers. The relay does not create a member record for the announced relay — relays do not connect to other relays of the same channel.
+
+4. **Connect.** On receipt, the subscriber resolves the announced short link and connects to the new relay asynchronously.
+
+The announce is an optimisation. When it does not reach a subscriber — because the channel had no subscribers at announce time, because an older client or relay sits in the path, or because of a transient network failure — the subscriber reaches the same end state on the next channel open via its relay sync against the channel's link data.
+
 ### Subscriber connection
 
 A subscriber joins a channel through the following flow:
@@ -89,6 +104,7 @@ Messages that alter the channel's roster, profile, or administrative state are c
 | `x.grp.mem.del` | Remove member | Required |
 | `x.grp.mem.role` | Change member role | Required |
 | `x.grp.mem.restrict` | Restrict member | Required |
+| `x.grp.relay.new` | Announce new relay to subscribers | Required |
 | `x.grp.leave` | Leave channel | Required (unverified allowed between subscribers) |
 | `x.info` | Update member profile | Required (unverified allowed between subscribers) |
 | `x.msg.new` | Content message | Not signed |

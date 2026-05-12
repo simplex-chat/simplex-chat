@@ -10,6 +10,22 @@ import {
 } from "./messages.js"
 import {profileMutex, log, logError, getGroupInfo} from "./util.js"
 
+// Collects the keyword of every "command" entry in the bot's registered
+// commands tree, descending into "menu" entries. Used to distinguish real
+// commands from arbitrary text that happens to start with `/` (e.g. URLs,
+// "/help" the user invented).
+function commandKeywords(commands: T.ChatBotCommand[]): Set<string> {
+  const out = new Set<string>()
+  const visit = (cmds: T.ChatBotCommand[]): void => {
+    for (const c of cmds) {
+      if (c.type === "command") out.add(c.keyword)
+      else if (c.type === "menu") visit(c.commands)
+    }
+  }
+  visit(commands)
+  return out
+}
+
 // True for any non-terminal status — invited but not yet accepted, through
 // connected. Used to decide whether a contact is already in the group so we
 // don't trigger a re-invite (the SimpleX API resends the invitation for a
@@ -62,6 +78,11 @@ export class SupportBot {
   // send to each group.
   private syncedGroups = new Set<number>()
 
+  // Keywords from desiredCommands. A customer message is treated as a
+  // command only when its parsed keyword is in this set; anything else
+  // (URLs, "/help", arbitrary slashes) is routed as plain text.
+  private readonly customerKeywords: ReadonlySet<string>
+
   constructor(
     private chat: api.ChatApi,
     private grokApi: GrokApiClient | null,
@@ -71,6 +92,12 @@ export class SupportBot {
     private desiredCommands: T.ChatBotCommand[],
   ) {
     this.cards = new CardManager(chat, config, mainUserId, config.cardFlushSeconds * 1000)
+    this.customerKeywords = commandKeywords(desiredCommands)
+  }
+
+  private customerCommand(chatItem: T.ChatItem): util.BotCommand | undefined {
+    const cmd = util.ciBotCommand(chatItem)
+    return cmd && this.customerKeywords.has(cmd.keyword) ? cmd : undefined
   }
 
   private get grokEnabled(): boolean {
@@ -357,7 +384,7 @@ export class SupportBot {
       if (chatInfo.type !== "group") continue
       if (chatItem.chatDir.type !== "groupRcv") continue
       if (!util.ciContentText(chatItem)?.trim()) continue
-      if (util.ciBotCommand(chatItem)) continue
+      if (this.customerCommand(chatItem)) continue
       const bc = chatInfo.groupInfo.businessChat
       if (!bc) continue
       if (chatItem.chatDir.groupMember.memberId !== bc.customerId) continue
@@ -444,9 +471,7 @@ export class SupportBot {
 
     // 8. Customer message → derive state and dispatch
     const state = await this.cards.deriveState(groupId)
-    const rawCmd = util.ciBotCommand(chatItem)
-    // When Grok is disabled, ignore /grok so it behaves like an unknown command
-    const cmd = rawCmd?.keyword === "grok" && !this.grokEnabled ? null : rawCmd
+    const cmd = this.customerCommand(chatItem)
     const text = util.ciContentText(chatItem)?.trim() || null
 
     switch (state) {
@@ -547,7 +572,7 @@ export class SupportBot {
     if (!text) return // ignore non-text
 
     // Ignore bot commands
-    if (util.ciBotCommand(chatItem)) return
+    if (this.customerCommand(chatItem)) return
 
     // Only respond in business groups (survives restart without in-memory maps)
     const bc = groupInfo.businessChat
@@ -569,7 +594,7 @@ export class SupportBot {
           history.push({role: "assistant", content: histText})
         } else if (histCi.chatDir.type === "groupRcv"
           && histCi.chatDir.groupMember.memberId === bc.customerId
-          && !util.ciBotCommand(histCi)) {
+          && !this.customerCommand(histCi)) {
           history.push({role: "user", content: histText})
         }
       }
@@ -706,7 +731,7 @@ export class SupportBot {
           if (ci.chatDir.type !== "groupRcv") continue
           if (!grokBc || ci.chatDir.groupMember.memberId !== grokBc.customerId) continue
           const t = util.ciContentText(ci)?.trim()
-          if (t && !util.ciBotCommand(ci)) customerMessages.push(t)
+          if (t && !this.customerCommand(ci)) customerMessages.push(t)
         }
 
         if (customerMessages.length === 0) {
