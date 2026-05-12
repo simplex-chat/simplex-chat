@@ -1338,15 +1338,15 @@ Determine SimpleX link type and if the bot is already connected via this link.
 **Syntax**:
 
 ```
-/_connect plan <userId>[ <connectionLink>]
+/_connect plan <userId> <connectionLink>
 ```
 
 ```javascript
-'/_connect plan ' + userId + (connectionLink ? ' ' + connectionLink : '') // JavaScript
+'/_connect plan ' + userId + ' ' + connectionLink // JavaScript
 ```
 
 ```python
-'/_connect plan ' + str(userId) + ((' ' + connectionLink) if connectionLink is not None else '') # Python
+'/_connect plan ' + str(userId) + ' ' + connectionLink # Python
 ```
 
 **Responses**:

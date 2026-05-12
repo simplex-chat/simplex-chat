@@ -432,7 +432,7 @@ class APIConnectPlan(TypedDict):
 
 
 def APIConnectPlan_cmd_string(self: APIConnectPlan) -> str:
-    return '/_connect plan ' + str(self['userId']) + ((' ' + self.get('connectionLink')) if self.get('connectionLink') is not None else '')
+    return '/_connect plan ' + str(self['userId']) + ' ' + self.get('connectionLink')
 
 APIConnectPlan_Response = CR.ConnectionPlan | CR.ChatCmdError
 
