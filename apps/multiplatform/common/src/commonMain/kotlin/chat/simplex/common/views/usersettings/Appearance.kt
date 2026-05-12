@@ -841,7 +841,7 @@ object AppearanceScope {
         FormulaSlider("Chroma", bgC, 0f..0.10f)
         FormulaSlider("Contrast", step, 0.01f..0.10f)
         FormulaSlider("Received tint", receivedTint, 0f..0.07f)
-        FormulaSlider("Pattern depth", patternDepth, 0f..5f)
+        FormulaSlider("Pattern depth", patternDepth, 0f..10f)
         FormulaSlider("Pattern chroma", patternChromaVal, 0f..0.15f)
       } else {
         FormulaSlider("Hue", hue, 0f..360f)
