@@ -1372,24 +1372,9 @@ fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction
   )
 }
 
-fun deleteOptions(chatItem: ChatItem, chatInfo: ChatInfo): List<Pair<CIDeleteMode, String>> {
+fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, chatInfo: ChatInfo, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   val canDeleteForEveryone = chatItem.meta.deletable && !chatItem.localNote && !chatItem.isReport
   val editorial = chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator
-  return if (editorial) {
-    buildList {
-      add(CIDeleteMode.cidmHistory to generalGetString(MR.strings.from_history))
-      if (canDeleteForEveryone) add(CIDeleteMode.cidmBroadcast to generalGetString(MR.strings.for_everybody))
-    }
-  } else {
-    buildList {
-      add(CIDeleteMode.cidmInternal to generalGetString(MR.strings.for_me_only))
-      if (canDeleteForEveryone) add(CIDeleteMode.cidmBroadcast to generalGetString(MR.strings.for_everybody))
-    }
-  }
-}
-
-fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, chatInfo: ChatInfo, deleteMessage: (Long, CIDeleteMode) -> Unit) {
-  val options = deleteOptions(chatItem, chatInfo)
   AlertManager.shared.showAlertDialogButtons(
     title = generalGetString(MR.strings.delete_message__question),
     text = questionText,
@@ -1400,12 +1385,23 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, chatInfo:
           .padding(horizontal = 8.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.Center,
       ) {
-        options.forEachIndexed { index, (mode, label) ->
-          if (index > 0) Spacer(Modifier.padding(horizontal = 4.dp))
+        if (editorial) {
           TextButton(onClick = {
-            deleteMessage(chatItem.id, mode)
+            deleteMessage(chatItem.id, CIDeleteMode.cidmHistory)
             AlertManager.shared.hideAlert()
-          }) { Text(label, color = MaterialTheme.colors.error) }
+          }) { Text(stringResource(MR.strings.from_history), color = MaterialTheme.colors.error) }
+        } else {
+          TextButton(onClick = {
+            deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
+            AlertManager.shared.hideAlert()
+          }) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
+        }
+        if (canDeleteForEveryone) {
+          Spacer(Modifier.padding(horizontal = 4.dp))
+          TextButton(onClick = {
+            deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
+            AlertManager.shared.hideAlert()
+          }) { Text(stringResource(MR.strings.for_everybody), color = MaterialTheme.colors.error) }
         }
       }
     }
