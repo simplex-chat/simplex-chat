@@ -417,6 +417,7 @@ Reads: `Library/Internal.hs:1313-1399, 2474-2477`,
   cannot compute Ed25519 signatures or read the agent DB.
 - `M<DATE>_owner_mesh` — `channel_owner_mesh` (`channel_owner_mesh_id`,
   `group_id`, `peer_group_member_id`, `direct_conn_id`, `status TEXT`,
+  `pending_inv_conn_req BLOB NULL`, `promoter_member_id INTEGER NULL`,
   timestamps; `UNIQUE(group_id, peer_group_member_id)`). FKs:
   `group_id REFERENCES groups ON DELETE CASCADE`,
   `peer_group_member_id REFERENCES group_members ON DELETE CASCADE`
@@ -424,20 +425,37 @@ Reads: `Library/Internal.hs:1313-1399, 2474-2477`,
   `direct_conn_id REFERENCES connections ON DELETE SET NULL` —
   when `deleteAgentConnectionsAsync'` deletes the connection (per
   4.3 closure), the FK transitions to NULL while the mesh row is
-  preserved with `status = 'closed'`. `status` ∈ {`'pending'`,
-  `'connected'`, `'closed'`}. Rows are **not deleted** on owner removal;
-  status transitions to `'closed'` and the referenced `direct_conn_id`
-  is invalidated via `deleteAgentConnectionsAsync'`. Preserved for
-  audit and to avoid race-window re-establishment from a stale intro.
+  preserved with `status = 'closed'`,
+  `promoter_member_id REFERENCES group_members ON DELETE SET NULL`.
+  `status` ∈ {`'pending'`, `'connected'`, `'closed'`}.
+  `pending_inv_conn_req` carries the X-side `IntroInvitation`
+  `groupConnReq` while `status = 'pending'` so retried
+  `xGrpMemIntro` events can re-send the same invitation without
+  re-creating the agent connection (per §2.4); cleared to NULL on
+  transition to `'connected'` or `'closed'`.
+  `promoter_member_id` is populated only on B's local row to A
+  (the row B creates when accepting `XGrpOwnerInvite`) and is the
+  basis for B's `XGrpOwnerCreds` sender verification (per §2.4
+  item 3); A's rows leave it NULL. Rows are **not deleted** on
+  owner removal; status transitions to `'closed'` and the
+  referenced `direct_conn_id` is invalidated via
+  `deleteAgentConnectionsAsync'`. Preserved for audit and to avoid
+  race-window re-establishment from a stale intro.
 - `M<DATE>_promotion_in_progress` — `channel_promotion_in_progress`
   (`promotion_id`, `group_id`, `candidate_member_id`,
   `candidate_pub_key`, `candidate_rcv_pub_key`, `step TEXT`,
-  `direct_conn_id`, `last_error`, timestamps; `UNIQUE(group_id,
-  candidate_member_id)`). FKs: `group_id REFERENCES groups ON
-  DELETE CASCADE`, `direct_conn_id REFERENCES connections ON
-  DELETE SET NULL` (cancellation may delete the mesh connection
-  while the journal row still exists in a terminal state).
-  Orchestrator journal.
+  `direct_conn_id`, `last_error`,
+  `mesh_intros_completed TEXT NOT NULL DEFAULT '[]'`, timestamps;
+  `UNIQUE(group_id, candidate_member_id)`). FKs:
+  `group_id REFERENCES groups ON DELETE CASCADE`,
+  `direct_conn_id REFERENCES connections ON DELETE SET NULL`
+  (cancellation may delete the mesh connection while the journal
+  row still exists in a terminal state). `mesh_intros_completed`
+  is a JSON array of MemberId — A's per-promotion record of
+  existing-owner peers (X) whose Step 6 `XGrpMemFwd` has been
+  delivered to B; consulted by A's `xGrpMemInv` mesh handler to
+  avoid re-forwarding on Step 6 retry (per §2.4). Orchestrator
+  journal.
 
 **2.2 Owner-roster helpers.** Representation IS `group_members` with
 `member_role = 'owner'` + owner_* columns. New helpers in
@@ -510,13 +528,48 @@ groupLinkData
 Reads owners via `getChannelOwnerAuths`; calls
 `incrementLinkDataVersion`; embeds version in `GroupShortLinkData`
 JSON. Signing key stays on the agent's `ShortLinkCreds` — not threaded
-through. Enforce `length owners ≤ ownerChainDepth` before encode. Call
-sites (both already inside a DB action): `setGroupLinkData`
-(`Internal.hs:1306-1314`), `setGroupLinkDataAsync`
-(`Internal.hs:1316-1322`). `incrementLinkDataVersion` may run ahead
-of successful `setGroupLinkData` on transient failure; this is
-acceptable — local version is allowed to drift ahead of server, and
-the LWW `max(local, serverV) + 1` reconciliation is unaffected.
+through. Enforce `length owners ≤ ownerChainDepth` before encode.
+
+**Call-site refactor.** Both call sites today
+(`Internal.hs:1306-1322`) fetch `(conn, groupRelays)` inside
+`withFastStore` / `withStore` and then call the **pure**
+`groupLinkData` outside the transaction (e.g., `Internal.hs:1311`,
+`Internal.hs:1321`). Once `groupLinkData` is `IO`, both calls must
+be moved **into** the existing transaction — same `DB.Connection`,
+no second `withFastStore`. The IO-only operations
+(`getChannelOwnerAuths`, `incrementLinkDataVersion`,
+`getConnectedGroupRelays`) are composed via `liftIO` inside the
+`ExceptT StoreError IO` wrapper (`Controller.hs:1630`); no new
+transaction is opened. The diff is a structural reshape of two
+callers, not a new code path.
+
+- `setGroupLinkData` (`Internal.hs:1306-1314`): replace the
+  `(conn, groupRelays) <- withFastStore $ \db -> ...` /
+  `let (userLinkData, crClientData) = groupLinkData ...` pair with
+  one `withFastStore` block that returns
+  `(conn, userLinkData, crClientData)`. Inside the block:
+  `getGroupLinkConnection` (ExceptT) followed by `liftIO` of
+  `getConnectedGroupRelays` and `groupLinkData`. `groupRelays`
+  becomes a transaction-local `let`; it does not escape.
+- `setGroupLinkDataAsync` (`Internal.hs:1316-1322`): same shape,
+  using `withStore` (the existing call already uses `withStore`,
+  not `withFastStore`).
+
+Trade-off considered and rejected: option (b) — keep
+`groupLinkData` outside and add a second `withFastStore` to wrap
+it. That doubles the transaction count per LSET-style update and
+offers no clarity gain; the data flow is one straight line from
+`getChannelOwnerAuths`/`incrementLinkDataVersion` through encode to
+the LSET payload. Option (a) — single transaction — is the minimal
+diff and matches the surrounding pattern in `Internal.hs`.
+
+`incrementLinkDataVersion` may run ahead of successful
+`setGroupLinkData` on transient failure (the agent call
+`setConnShortLink` runs **after** the `withFastStore` block, so
+network failure leaves the version bumped but the server unchanged);
+this is acceptable — local version is allowed to drift ahead of
+server, and the LWW `max(local, serverV) + 1` reconciliation is
+unaffected.
 
 **2.4 Owner-mesh transport.** Channel-scoped, fully-connected sub-graph
 among owners. Reuses `x.grp.mem.intro` / `inv` / `fwd` at
@@ -538,14 +591,59 @@ immutable (per `Types.hs:790`). Six additions:
    ownerPubKey :: C.PublicKeyEd25519, rcvPubKey ::
    SMP.RcvPublicAuthKey }`. A records both for Step 3.
 3. **`x.grp.owner.creds`** — `XGrpOwnerCreds (CoOwnerCredsBundleEnvelope
-   { groupId, bundle })`. A → B direct mesh only; never relay-forwarded.
-   Receiver rejects unless `groupId` matches. **Sender verification:**
-   receiver additionally verifies the mesh sender is the
-   orchestrator A — i.e. the device with the matching
-   `channel_promotion_in_progress` row identifying that sender as the
-   promoter. `XGrpOwnerCreds` from any other mesh peer is rejected even
-   when `groupId` matches; prevents same-channel cross-peer bundle
-   replay or impersonation.
+   { groupId, bundle })`. A → B direct mesh only; never relay-
+   forwarded. Receiver rejects unless `groupId` matches. **Sender
+   verification on B's side:** B records the promoter at invite-
+   acceptance time (Step 1 → 2) and consults this record on bundle
+   receipt.
+
+   Storage: `channel_owner_mesh.promoter_member_id INTEGER NULL`
+   (per §2.1). The column is meaningful only on B's local mesh row
+   to A — the row B creates when accepting `XGrpOwnerInvite`. A's
+   mesh rows to its peers leave this column NULL (A's source of
+   truth is its `channel_promotion_in_progress` journal). A's
+   `channel_promotion_in_progress` row is **not needed** for
+   verification — only B's local state matters at receive time,
+   since the journal is per-device.
+
+   Write site (B): when B's `xGrpOwnerInvite` handler creates the
+   mesh `ContactConnection` from `meshConnReq` and INSERTs the
+   `channel_owner_mesh` row for `(group, A)`, populate
+   `promoter_member_id` with A's `groupMemberId` (resolvable from
+   the personal-contact connection over which `XGrpOwnerInvite`
+   arrived; A is a known group member of B since the channel
+   pre-dates the promotion).
+
+   Read site (B): in `xGrpOwnerCreds` handler, before invoking
+   `acceptCoOwnerCreds` (chat-side §1.5):
+
+   ```sql
+   SELECT promoter_member_id
+     FROM channel_owner_mesh
+     WHERE group_id = ?           -- envelope groupId resolved to local groupId
+       AND direct_conn_id = ?     -- the mesh connection delivering this event
+   ```
+
+   Reject unless the row exists AND `promoter_member_id` is
+   non-NULL AND the sender's groupMemberId (resolved from the mesh
+   `Connection`'s peer member) equals `promoter_member_id`. Any
+   mismatch ⇒ log + drop; B does not proceed to intake. Prevents
+   same-channel cross-peer bundle replay or impersonation: a
+   different mesh peer C cannot supply bundle bytes to B even if C
+   somehow obtained them, because C's `groupMemberId` won't match
+   B's recorded promoter.
+
+   Lifecycle: `promoter_member_id` is NOT cleared after Step 5 ack
+   succeeds — mesh rows are preserved for audit per §2.1, and the
+   column has no downside in being left in place. If B is later
+   re-promoted by a different peer (after a removal cycle), the
+   re-acceptance updates `promoter_member_id` in place via B's
+   xGrpOwnerInvite handler when it transitions a `'closed'` row
+   back to `'pending'`. Test: `testBundleSenderMustBePromoter` (B
+   sets up a mesh edge to A as the promoter; a second mesh peer C
+   sends `XGrpOwnerCreds` for the same `groupId` over a separate
+   mesh edge; assert B rejects without invoking
+   `acceptCoOwnerCreds`).
 4. **`x.grp.owner.creds.ack`** — B → A over the mesh edge,
    after `acceptCoOwnerCreds` succeeds and local state is persisted.
    `XGrpOwnerCredsAck { groupId :: B64UrlByteString }`. A's
@@ -568,27 +666,118 @@ immutable (per `Types.hs:790`). Six additions:
 is present AND that the introducer is a current owner of that group
 locally. If either fails, downgrade to the standard intro path
 (drop the field; existing handler applies). When both hold, each
-handler takes an early-branch (the mesh edge IS the chat-layer
-ratchet connection that modern group members already share;
-`directConnReq` stays `Nothing` — legacy, unused in modern channels):
+handler takes a mesh-scoped early-branch.
 
-- **`xGrpMemIntro`** — skip the `GCHostMember` check
-  (`Subscriber.hs:2956, 2986`) and the chat-side member-creation writes
-  (`createIntroReMember`, `updatePreparedChannelMember`,
-  `createNewGroupMember`); reuse `groupConnReq` for the connection;
-  add a `channel_owner_mesh` row.
-- **`xGrpMemInv`** — the existing handler requires `GCInviteeMember`
-  (`Subscriber.hs:3004`); skip this check; forward the
-  `IntroInvitation` to B via `XGrpMemFwd` carrying X's `ownerRcvPubKey`.
-- **`xGrpMemFwd`** — reuse `joinAgentConnectionAsync` on `groupConnReq`;
-  skip both `createNewGroupMember` (missing-member branch) and
-  `createIntroToMemberContact` (normal-group chat-side state); add the
-  `channel_owner_mesh` row.
+**Mesh edges are NEW connections, not pre-existing ratchets.** In
+`useRelays'` channels (the only mode this delivery targets), members
+do NOT share direct double-ratchet connections — they communicate
+via relays. The non-relays code path in `xGrpMemIntro`
+(`Subscriber.hs:2972-2984`) creates an agent connection via
+`createAgentConnectionAsync` (line 2980, helper `createConn` at
+2988); the relays branch at lines 2965-2971 does NOT — for normal
+relay-mediated members, no direct connection is needed. Multi-owner
+channels reverse that for owners only: the mesh edge IS a fresh
+agent ContactConnection created specifically for inter-owner mesh
+delivery, regardless of the relays mode. **The mesh-scoped branch
+must therefore call `createAgentConnectionAsync` explicitly**, then
+record the resulting `connId` in `channel_owner_mesh.direct_conn_id`.
+`directConnReq` in the `IntroInvitation` payload stays `Nothing` —
+legacy, unused in modern channels.
 
-Else-branch runs the standard flow. B is already a known member; the
-intro creates a new direct mesh edge between B and X without
-re-creating B's chat-side state. Test:
-`testMeshScopeRequiresOwnerIntroducer`.
+Per-handler behavior, with explicit receiver-side idempotency to
+make the Step 6 retry cadence (Phase 3) safe:
+
+- **`xGrpMemIntro` (mesh path on X, receiving intro about
+  introduced peer B from introducer A).** Skip the `GCHostMember`
+  check (`Subscriber.hs:2956, 2986`) and the chat-side member-
+  creation writes (`createIntroReMember`,
+  `updatePreparedChannelMember`, `createNewGroupMember`). De-dup
+  query, by `(group_id, peer_group_member_id)` keyed on B's
+  locally-known `groupMemberId` (resolved by
+  `getGroupMemberByMemberId` using the `MemberInfo.memId` from the
+  wire):
+
+  ```sql
+  SELECT status, direct_conn_id, pending_inv_conn_req
+    FROM channel_owner_mesh
+    WHERE group_id = ? AND peer_group_member_id = ?
+  ```
+
+  Branches:
+  - No row → INSERT row with `status = 'pending'`; call
+    `createAgentConnectionAsync user CFCreateConnGrpMemInv
+    (chatHasNtfs chatSettings) SCMInvitation subMode` (mirrors
+    `Subscriber.hs:2988`); store the resulting `connId` in
+    `direct_conn_id` and the agent's invitation `groupConnReq` in
+    `pending_inv_conn_req`; emit `XGrpMemInv` to A carrying the
+    `groupConnReq`.
+  - Row with `status = 'pending'` → **do NOT call
+    `createAgentConnectionAsync` again**; re-emit `XGrpMemInv` to
+    A using the stored `pending_inv_conn_req` (re-sends the same
+    invitation A would have received on the first attempt; safe
+    against retry).
+  - Row with `status = 'connected'` → no-op (the mesh edge to B is
+    established; A's orchestrator will observe completion via
+    Step 7's `XGrpLinkSync`).
+  - Row with `status = 'closed'` → reject (the peer was previously
+    removed — the row preservation per §2.1 is load-bearing here;
+    do not re-establish).
+
+- **`xGrpMemInv` (mesh path on A, receiving inv from X about
+  introduced peer B).** Skip the `GCInviteeMember` check
+  (`Subscriber.hs:3004`). The intro IS A's own (re-)retry, so the
+  natural de-dup site is A's orchestrator journal, not the
+  `channel_owner_mesh` row (A's row to B exists since Step 1-2 and
+  A's row to X exists from prior promotions; neither indicates
+  Step 6 fwd-completion). The
+  `channel_promotion_in_progress.mesh_intros_completed` JSON-array
+  column (per §2.1) holds X member IDs whose fwd has been delivered
+  to B. Query:
+
+  ```sql
+  SELECT mesh_intros_completed
+    FROM channel_promotion_in_progress
+    WHERE group_id = ? AND candidate_member_id = ?
+  ```
+
+  Branches:
+  - X's member ID present in the JSON array → no-op (already
+    forwarded; A's prior `XGrpMemFwd` to B succeeded or B is
+    handling its own dedup; either way, do not re-forward).
+  - X's member ID absent → emit `XGrpMemFwd` to B carrying X's
+    `ownerRcvPubKey`; on send success, append X's member ID to the
+    JSON array.
+
+- **`xGrpMemFwd` (mesh path on B, receiving fwd from A with X's
+  introInvitation).** Skip both `createNewGroupMember`
+  (missing-member branch) and `createIntroToMemberContact`
+  (normal-group chat-side state). De-dup query, keyed on X's
+  `groupMemberId` (resolved via `getGroupMemberByMemberId` from
+  the wire's `MemberInfo.memId` — X is an existing owner, B has
+  known X for some time):
+
+  ```sql
+  SELECT status FROM channel_owner_mesh
+    WHERE group_id = ? AND peer_group_member_id = ?
+  ```
+
+  Branches:
+  - No row → INSERT `status = 'pending'`; call
+    `joinAgentConnectionAsync user Nothing (chatHasNtfs
+    chatSettings) groupConnReq dm subMode` (mirrors
+    `Subscriber.hs:3032`); store the resulting `connId` in
+    `direct_conn_id`. Critically: this is the only path on which
+    `joinAgentConnectionAsync` runs — preventing the orphan-edge
+    accumulation that would otherwise occur on Step 6 retry.
+  - Row with `status` ∈ {`'pending'`, `'connected'`} → no-op (the
+    mesh edge to X is in flight or established).
+  - Row with `status = 'closed'` → reject.
+
+Else-branch (downgrade) runs the standard flow. Tests:
+`testMeshScopeRequiresOwnerIntroducer`,
+`testMeshIntroIdempotentOnRetry`,
+`testMeshInvNotReforwarded`,
+`testMeshFwdIdempotentOnRetry`.
 
 **Transient roster lag.** If the introducer is not yet visible
 as an owner in the receiver's local roster (transient lag after a
@@ -660,6 +849,18 @@ UI on hour-long persistent failure. The standard chat-protocol
 delivery layer does not retry `messageError` rejections at the
 receiver (`Subscriber.hs:1746` is fire-and-forget toView), so the
 orchestrator drives retry from its own journal.
+
+**Retry safety.** Re-emission is non-destructive because each
+mesh-scoped handler in §2.4 short-circuits on receiver-side state:
+X's `xGrpMemIntro` re-uses the stored `pending_inv_conn_req` (no
+duplicate `createAgentConnectionAsync`); A's `xGrpMemInv` consults
+`channel_promotion_in_progress.mesh_intros_completed` (no duplicate
+`XGrpMemFwd` emission); B's `xGrpMemFwd` skips if a `(group, X)`
+mesh row already exists (no duplicate `joinAgentConnectionAsync`).
+The 30s/5min/1h cadence is unchanged; only the receiver-side
+guarantees are new. Tests for the safety property:
+`testMeshIntroIdempotentOnRetry`, `testMeshInvNotReforwarded`,
+`testMeshFwdIdempotentOnRetry` (all defined in §2.4).
 
 **Failure modes.** 3→4 fail: stale rcv key sits in queue's set; Step 3
 retry detects, Step 4 retries cleanly. 4→5 fail: B is on-server owner
