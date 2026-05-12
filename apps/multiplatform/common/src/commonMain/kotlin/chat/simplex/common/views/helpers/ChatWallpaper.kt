@@ -68,7 +68,7 @@ enum class PresetWallpaper(
         receivedMessage = oklch(0.12f, 0f, 0f),
         receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
   FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.5f, 130f, 1.3553f,
     wallpaperBackgrounds(
@@ -106,7 +106,7 @@ enum class PresetWallpaper(
         receivedMessage = oklch(0.12f, 0f, 0f),
         receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
   HEARTS(MR.images.wallpaper_hearts, "hearts", 0.5f, 15f, 1.0504f,
     wallpaperBackgrounds(
@@ -144,7 +144,7 @@ enum class PresetWallpaper(
         receivedMessage = oklch(0.12f, 0f, 0f),
         receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
   KIDS(MR.images.wallpaper_kids, "kids", 0.5f, 200f, 0.7723f,
     wallpaperBackgrounds(
@@ -182,7 +182,7 @@ enum class PresetWallpaper(
         receivedMessage = oklch(0.12f, 0f, 0f),
         receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
   SCHOOL(MR.images.wallpaper_school, "school", 0.5f, 239f, 0.7950f,
     wallpaperBackgrounds(
@@ -220,7 +220,7 @@ enum class PresetWallpaper(
         receivedMessage = oklch(0.12f, 0f, 0f),
         receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
   TRAVEL(MR.images.wallpaper_travel, "travel", 0.5f, 315f, 1.2099f,
     wallpaperBackgrounds(
@@ -258,7 +258,7 @@ enum class PresetWallpaper(
         receivedMessage = oklch(0.12f, 0f, 0f),
         receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   );
 
   val background: Map<DefaultTheme, Color> get() = _background
@@ -441,8 +441,7 @@ sealed class WallpaperType {
   }
 }
 
-private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, size: Size, density: Float, layoutDirection: LayoutDirection): ImageBitmap {
-  val quality = if (appPlatform.isAndroid) FilterQuality.High else FilterQuality.Low
+private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, size: Size, density: Float, layoutDirection: LayoutDirection, highQuality: Boolean = false): ImageBitmap {
   val drawScope = CanvasDrawScope()
   // Don't allow to make zero size because it crashes the app when reducing a size of a window on desktop
   val bitmap = ImageBitmap(size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
@@ -454,14 +453,17 @@ private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, siz
     size = size,
   ) {
     val scale = imageScale * density
-    for (h in 0..(size.height / image.height / scale).roundToInt()) {
-      for (w in 0..(size.width / image.width / scale).roundToInt()) {
+    val tileW = (image.width * scale).roundToInt().coerceAtLeast(1)
+    val tileH = (image.height * scale).roundToInt().coerceAtLeast(1)
+    // Pre-scale: Compose Desktop ignores FilterQuality in drawImage, scale via platform API instead
+    val tile = if (tileW == image.width && tileH == image.height) image else image.scale(tileW, tileH, highQuality)
+
+    for (h in 0..(size.height / tileH).roundToInt()) {
+      for (w in 0..(size.width / tileW).roundToInt()) {
         drawImage(
-          image,
-          dstOffset = IntOffset(x = (w * image.width * scale).roundToInt(), y = (h * image.height * scale).roundToInt()),
-          dstSize = IntSize((image.width * scale).roundToInt(), (image.height * scale).roundToInt()),
+          tile,
+          topLeft = Offset(w * tileW.toFloat(), h * tileH.toFloat()),
           colorFilter = ColorFilter.tint(tint, BlendMode.SrcIn),
-          filterQuality = quality
         )
       }
     }
@@ -475,17 +477,19 @@ fun CacheDrawScope.chatViewBackground(
   background: Color,
   tint: Color,
   graphicsLayerSize: MutableState<IntSize>? = null,
-  backgroundGraphicsLayer: GraphicsLayer? = null
+  backgroundGraphicsLayer: GraphicsLayer? = null,
+  highQuality: Boolean = true
 ): DrawResult {
+  val desktopPatternScale = if (appPlatform.isDesktop) 0.55f else 1f
   val imageScale = if (imageType is WallpaperType.Preset) {
-    (imageType.scale ?: 1f) * imageType.predefinedImageScale
+    (imageType.scale ?: 1f) * imageType.predefinedImageScale * desktopPatternScale
   } else if (imageType is WallpaperType.Image && imageType.scaleType == WallpaperScaleType.REPEAT) {
     imageType.scale ?: 1f
   } else {
     1f
   }
   val image = if (imageType is WallpaperType.Preset || (imageType is WallpaperType.Image && imageType.scaleType == WallpaperScaleType.REPEAT)) {
-    drawToBitmap(image, imageScale, tint, size, density, layoutDirection)
+    drawToBitmap(image, imageScale, tint, size, density, layoutDirection, highQuality)
   } else {
     image
   }

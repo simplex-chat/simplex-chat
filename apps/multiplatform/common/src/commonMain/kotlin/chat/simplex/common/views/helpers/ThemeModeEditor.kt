@@ -284,6 +284,7 @@ fun ModalData.ChatWallpaperEditor(
           ThemeColor.SECONDARY_VARIANT -> currentTheme.colors.secondaryVariant
           ThemeColor.BACKGROUND -> currentTheme.colors.background
           ThemeColor.SURFACE -> currentTheme.colors.surface
+          ThemeColor.TOOLBAR -> currentTheme.appColors.toolbar
           ThemeColor.TITLE -> currentTheme.appColors.title
           ThemeColor.PRIMARY_VARIANT2 -> currentTheme.appColors.primaryVariant2
           ThemeColor.SENT_MESSAGE -> currentTheme.appColors.sentMessage
