@@ -2165,7 +2165,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             in case sndMemberId_ of
               -- regular deletion
               Nothing
-                | sameMemberId memberId mem && (publicGroupItemDeletable mem || rcvItemDeletable ci brokerTs) ->
+                | sameMemberId memberId mem && rcvItemDeletable ci brokerTs ->
                     delete cci False Nothing
                 | otherwise ->
                     messageError "x.msg.del: member attempted invalid message delete" $> Nothing
@@ -2201,7 +2201,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             messageError ("x.msg.del: channel message not found, " <> tshow e) $> Nothing
       where
         isOwner = maybe True (\m -> memberRole' m == GROwner) m_
-        publicGroupItemDeletable mem = useRelays' gInfo && memberRole' mem >= GRModerator
         RcvMessage {msgId} = rcvMsg
         findItem = do
           let tryMemberLookup mId =
