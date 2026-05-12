@@ -894,6 +894,52 @@ describe("Grok Conversation", () => {
   })
 })
 
+describe("Grok requests /team", () => {
+  beforeEach(() => setup())
+
+  test("Grok per-message reply containing /team → team added, teamAddedMessage sent, reply still sent", async () => {
+    await reachGrok()
+    await bot.flush()
+    grokApi.willRespond("I can't help with billing — please send /team for a human.")
+    addCustomerMessageToHistory("Can you refund me?", GROK_LOCAL_GROUP_ID)
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("Can you refund me?"))
+
+    expectAnySent("I can't help with billing")
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_2_ID)
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
+  })
+
+  test("Grok per-message reply without /team → no team members added", async () => {
+    await reachGrok()
+    await bot.flush()
+    grokApi.willRespond("To create a group, tap +, then New Group.")
+    addCustomerMessageToHistory("How do I create a group?", GROK_LOCAL_GROUP_ID)
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("How do I create a group?"))
+
+    expect(chat.added.some(a => a.groupId === CUSTOMER_GROUP_ID && a.contactId === TEAM_MEMBER_1_ID)).toBe(false)
+  })
+
+  test("/team in Grok's initial reply after /grok → escalates", async () => {
+    await reachQueue()
+    addBotMessage("The team will reply to your message")
+    // Customer's question visible in Grok's view → activateGrok reads it for the initial reply
+    chat.groups.set(GROK_LOCAL_GROUP_ID, makeGroupInfo(GROK_LOCAL_GROUP_ID))
+    addCustomerMessageToHistory("I'm really stuck, please help", GROK_LOCAL_GROUP_ID)
+    grokApi.willRespond("That sounds urgent — send /team to reach a person.")
+
+    const grokJoinPromise = simulateGrokJoinSuccess()
+    await bot.onNewChatItems(customerMessage("/grok"))
+    await grokJoinPromise
+    await bot.flush()
+
+    expectAnySent("That sounds urgent")
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_2_ID)
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
+  })
+})
+
 describe("/team Activation", () => {
   beforeEach(() => setup())
 
