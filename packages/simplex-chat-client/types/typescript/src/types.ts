@@ -527,6 +527,7 @@ export enum CIDeleteMode {
   Broadcast = "broadcast",
   Internal = "internal",
   InternalMark = "internalMark",
+  History = "history",
 }
 
 export type CIDeleted = CIDeleted.Deleted | CIDeleted.Blocked | CIDeleted.BlockedByAdmin | CIDeleted.Moderated

@@ -8458,7 +8458,7 @@ testSupportPreferenceGroup =
 testSupportPreferenceChannel :: HasCallStack => TestParams -> IO ()
 testSupportPreferenceChannel ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "relay" relayProfile $ \relay ->
+    withNewTestChatOpts ps relayTestOpts "relay" chatRelayProfile $ \relay ->
       withNewTestChat ps "bob" bobProfile $ \bob ->
         withNewTestChat ps "cath" cathProfile $ \cath -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
@@ -9951,7 +9951,7 @@ testChannelCreateDeletedRelay ps =
 testChannelSupportScope :: HasCallStack => TestParams -> IO ()
 testChannelSupportScope ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "relay" relayProfile $ \relay ->
+    withNewTestChatOpts ps relayTestOpts "relay" chatRelayProfile $ \relay ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
