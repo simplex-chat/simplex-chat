@@ -10030,31 +10030,32 @@ testChannelMessageDelete ps =
 
 testChannelMessageDeleteFromHistory :: HasCallStack => TestParams -> IO ()
 testChannelMessageDeleteFromHistory ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
-      withNewTestChat ps "cath" cathProfile $ \cath ->
-        withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> do
-            createChannel1Relay "team" alice bob cath dan eve
+  testChat4 aliceProfile bobProfile cathProfile danProfile test ps
+  where
+    test alice bob cath dan = withRelay ps $ \relay -> do
+      (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink bob
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink cath
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
 
-            alice #> "#team hello"
-            bob <# "#team> hello"
-            [cath, dan, eve] *<# "#team> hello [>>]"
+      alice #> "#team hello"
+      relay <# "#team> hello"
+      [bob, cath, dan] *<# "#team> hello [>>]"
 
-            -- owner deletes from history (relay processes locally but doesn't forward)
-            msgId <- lastItemId alice
-            alice #$> ("/_delete item #1 " <> msgId <> " history", id, "message marked deleted")
-            bob <# "#team> [marked deleted] hello"
+      -- owner deletes from history (relay processes locally but doesn't forward)
+      msgId <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> msgId <> " history", id, "message marked deleted")
+      relay <# "#team> [marked deleted] hello"
 
-            -- subscribers don't receive deletion - next message arrives cleanly
-            alice #> "#team still here"
-            bob <# "#team> still here"
-            [cath, dan, eve] *<# "#team> still here [>>]"
+      -- subscribers don't receive deletion - next message arrives cleanly
+      alice #> "#team still here"
+      relay <# "#team> still here"
+      [bob, cath, dan] *<# "#team> still here [>>]"
 
-            -- internal delete rejected for channel owner
-            msgId2 <- lastItemId alice
-            alice ##> ("/_delete item #1 " <> msgId2 <> " internal")
-            alice <## "cannot delete this item"
+      -- internal delete rejected for channel owner
+      msgId2 <- lastItemId alice
+      alice ##> ("/_delete item #1 " <> msgId2 <> " internal")
+      alice <## "cannot delete this item"
 
 testChannelMessageFile :: HasCallStack => TestParams -> IO ()
 testChannelMessageFile ps =
