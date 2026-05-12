@@ -82,7 +82,20 @@ Register at `Migrations/App.hs:98`. Postgres mirror with `BYTEA` in `Postgres/Mi
 
 Unblocks: 1.5; Phase 3 Step 4; 4.1 / 4.3 / 4.4.
 
-**1.5 Co-owner credential bundle.** New `CoOwnerCredsBundle` in `Simplex.Messaging.Agent.Protocol`. Fields: `server`, `rcvId`, `sndId :: SMP.SenderId` (queue-level, shared across all co-owners; satisfies `rcv_queues.snd_id NOT NULL` at `agent_schema.sql:41`), `rcvDhSecret`, `shortLinkId`, `shortLinkKey`, `rootPubKey`, `linkEncFixedData`, `agentVRange`, **`ownerRcvPubKey :: SMP.RcvPublicAuthKey`** (A's own SMP rcv pubkey, delivered one-off to B at first-promotion bootstrap; chat writes it to `group_members.owner_rcv_pub_key` for A on B's device at intake). B's `rcvPrivateKey` is generated locally (`C.generateAuthKeyPair`); queue-specific; never derived from `member_pub_key`. Intake API:
+**1.5 Co-owner credential bundle.** New `CoOwnerCredsBundle` in `Simplex.Messaging.Agent.Protocol`. Fields:
+
+- `server`
+- `rcvId`
+- `sndId :: SMP.SenderId` — queue-level, shared across all co-owners; satisfies `rcv_queues.snd_id NOT NULL` at `agent_schema.sql:41`.
+- `rcvDhSecret`
+- `shortLinkId`
+- `shortLinkKey`
+- `rootPubKey`
+- `linkEncFixedData`
+- `agentVRange`
+- **`ownerRcvPubKey :: SMP.RcvPublicAuthKey`** — A's own SMP rcv pubkey, delivered one-off to B at first-promotion bootstrap; chat writes it to `group_members.owner_rcv_pub_key` for A on B's device at intake.
+
+B's `rcvPrivateKey` is generated locally (`C.generateAuthKeyPair`); queue-specific; never derived from `member_pub_key`. Intake API:
 
 ```haskell
 acceptCoOwnerCreds
@@ -125,11 +138,40 @@ What pre-v7 cannot do: produce chained-owner blobs (no orchestrator in Phase 3) 
 
 Reads: `Library/Internal.hs:1313-1399, 2474-2477`, `Library/Commands.hs:2496-2527, 4042-4238`, `Store/Groups.hs:1860-1900, 2999-3020`, `Library/Subscriber.hs:2953-3070`, `Protocol.hs:422-470, 980-1320`, `Store/SQLite/Migrations.hs`.
 
-**2.1 Schema migrations.** Additive; SQLite + Postgres mirrors; `M<DATE>_<name>.hs` (current head is `M20260507_relay_inactive_at`).
+**2.1 Schema migration.** Single chat-side migration `M<DATE>_multi_owner_channels` — additive; SQLite + Postgres mirrors; current head is `M20260507_relay_inactive_at`. SQL is DDL only because the framework type is `Migration { up :: Text }` (`Agent/Store/Shared.hs:30-32`) and cannot compute Ed25519 signatures or read the agent DB; Haskell-side backfill of creator rows (chain fields **and** `owner_rcv_pub_key`) runs at startup per §4.4.
 
-- `M<DATE>_group_members_owner_fields` — DDL only: `group_members` += `owner_auth_sig BLOB`, `owner_position INTEGER`, `owner_rcv_pub_key BLOB`, `wire_owner_key BLOB` (all nullable); `groups` += `link_data_version`, `link_data_remote_version` (`INTEGER NOT NULL DEFAULT 0`). `wire_owner_key` carries the wire-asserted ownerKey when it diverges from local `member_pub_key`; NULL when they agree. Creator-row backfill (chain fields **and** `owner_rcv_pub_key`) runs Haskell-side at startup (4.4); SQL is DDL only because the framework type is `Migration { up :: Text }` (`Agent/Store/Shared.hs:30-32`) and cannot compute Ed25519 signatures or read the agent DB.
-- `M<DATE>_owner_mesh` — `channel_owner_mesh` (`channel_owner_mesh_id`, `group_id`, `peer_group_member_id`, `direct_conn_id`, `status TEXT`, `pending_inv_conn_req BLOB NULL`, `promoter_member_id INTEGER NULL`, timestamps; `UNIQUE(group_id, peer_group_member_id)`). FKs: `group_id REFERENCES groups ON DELETE CASCADE`, `peer_group_member_id REFERENCES group_members ON DELETE CASCADE`, `direct_conn_id REFERENCES connections ON DELETE SET NULL` (when `deleteAgentConnectionsAsync'` deletes the connection per 4.3 closure, the FK transitions to NULL while the row is preserved with `status = 'closed'`), `promoter_member_id REFERENCES group_members ON DELETE SET NULL`. `status` ∈ {`'pending'`, `'connected'`, `'closed'`}. `pending_inv_conn_req` carries the X-side `IntroInvitation` `groupConnReq` while `status = 'pending'` so retried `xGrpMemIntro` events re-send the same invitation without re-creating the agent connection (per §2.4); cleared to NULL on transition to `'connected'` or `'closed'`. `promoter_member_id` is populated only on B's local row to A (the row B creates when accepting `XGrpOwnerInvite`) and is the basis for B's `XGrpOwnerCreds` sender verification (per §2.4 item 3); A's rows leave it NULL. Rows are **not deleted** on owner removal — preserved for audit and to avoid race-window re-establishment from a stale intro.
-- `M<DATE>_promotion_in_progress` — `channel_promotion_in_progress` (`promotion_id`, `group_id`, `candidate_member_id`, `candidate_pub_key`, `candidate_rcv_pub_key`, `step TEXT`, `direct_conn_id`, `last_error`, `mesh_intros_completed TEXT NOT NULL DEFAULT '[]'`, timestamps; `UNIQUE(group_id, candidate_member_id)`). FKs: `group_id REFERENCES groups ON DELETE CASCADE`, `direct_conn_id REFERENCES connections ON DELETE SET NULL` (cancellation may delete the mesh connection while the journal row still exists in a terminal state). `mesh_intros_completed` is a JSON array of MemberId — A's per-promotion record of existing-owner peers (X) whose Step 6 `XGrpMemFwd` has been delivered to B; consulted by A's `xGrpMemInv` mesh handler to avoid re-forwarding on Step 6 retry (per §2.4). Orchestrator journal.
+`ALTER TABLE group_members` adds (all nullable):
+
+- `owner_auth_sig BLOB`
+- `owner_position INTEGER`
+- `owner_rcv_pub_key BLOB`
+- `wire_owner_key BLOB` — wire-asserted ownerKey when it diverges from local `member_pub_key`; NULL when they agree.
+
+`ALTER TABLE groups` adds:
+
+- `link_data_version INTEGER NOT NULL DEFAULT 0`
+- `link_data_remote_version INTEGER NOT NULL DEFAULT 0`
+
+`CREATE TABLE channel_owner_mesh`:
+
+- Columns: `channel_owner_mesh_id` (PK), `group_id`, `peer_group_member_id`, `direct_conn_id`, `status TEXT`, `pending_inv_conn_req BLOB NULL`, `promoter_member_id INTEGER NULL`, timestamps.
+- `UNIQUE(group_id, peer_group_member_id)`.
+- FK `group_id → groups ON DELETE CASCADE`.
+- FK `peer_group_member_id → group_members ON DELETE CASCADE`.
+- FK `direct_conn_id → connections ON DELETE SET NULL` — when `deleteAgentConnectionsAsync'` deletes the connection per §4.3 closure, the FK clears while the row is preserved with `status = 'closed'`.
+- FK `promoter_member_id → group_members ON DELETE SET NULL`.
+- `status` ∈ {`'pending'`, `'connected'`, `'closed'`}.
+- `pending_inv_conn_req` carries the X-side `IntroInvitation` `groupConnReq` while `status = 'pending'` so retried `xGrpMemIntro` events re-send the same invitation without re-creating the agent connection (per §2.4); cleared to NULL on transition to `'connected'` or `'closed'`.
+- `promoter_member_id` is populated only on B's local row to A (the row B creates when accepting `XGrpOwnerInvite`); the basis for B's `XGrpOwnerCreds` sender verification (per §2.4 item 3). A's rows leave it NULL.
+- Rows are **not deleted** on owner removal — preserved for audit and to avoid race-window re-establishment from a stale intro.
+
+`CREATE TABLE channel_promotion_in_progress` (orchestrator journal):
+
+- Columns: `promotion_id` (PK), `group_id`, `candidate_member_id`, `candidate_pub_key`, `candidate_rcv_pub_key`, `step TEXT`, `direct_conn_id`, `last_error`, `mesh_intros_completed TEXT NOT NULL DEFAULT '[]'`, timestamps.
+- `UNIQUE(group_id, candidate_member_id)`.
+- FK `group_id → groups ON DELETE CASCADE`.
+- FK `direct_conn_id → connections ON DELETE SET NULL` — cancellation may delete the mesh connection while the journal row still exists in a terminal state.
+- `mesh_intros_completed` is a JSON array of MemberId — A's per-promotion record of existing-owner peers (X) whose Step 6 `XGrpMemFwd` has been delivered to B; consulted by A's `xGrpMemInv` mesh handler to avoid re-forwarding on retry (per §2.4).
 
 **2.2 Owner-roster helpers.** Representation IS `group_members` with `member_role = 'owner'` + owner_* columns. New helpers in `Simplex.Chat.Store.Groups`:
 
@@ -185,7 +227,14 @@ Both call sites today (`Internal.hs:1306-1322`) call the **pure** `groupLinkData
 
 1. **`x.grp.owner.invite`** — A → B before the mesh edge exists, over A↔B's personal contact (or one-time link). `XGrpOwnerInvite { groupId :: B64UrlByteString, meshConnReq :: ConnReqContact }`. On accept, B establishes the channel-scoped direct mesh ContactConnection from `meshConnReq`.
 2. **`x.grp.owner.accept`** — B → A over the now-established mesh edge. `XGrpOwnerAccept { groupId, ownerPubKey :: C.PublicKeyEd25519, rcvPubKey :: SMP.RcvPublicAuthKey }`. A records both for Step 3.
-3. **`x.grp.owner.creds`** — `XGrpOwnerCreds (CoOwnerCredsBundleEnvelope { groupId, bundle })`. A → B direct mesh only; never relay-forwarded. Receiver rejects unless `groupId` matches. Sender verification on B's side via `channel_owner_mesh.promoter_member_id` (per §2.1): write site is B's `xGrpOwnerInvite` handler, populating `promoter_member_id` from the delivering personal-contact connection's peer member; read site is B's `xGrpOwnerCreds` handler, which rejects unless the sending mesh peer's `groupMemberId` equals the recorded `promoter_member_id`. Test: `testBundleSenderMustBePromoter`.
+3. **`x.grp.owner.creds`** — `XGrpOwnerCreds (CoOwnerCredsBundleEnvelope { groupId, bundle })`. A → B direct mesh only; never relay-forwarded. Receiver rejects unless `groupId` matches.
+
+    Sender verification on B's side via `channel_owner_mesh.promoter_member_id` (per §2.1):
+
+    - Write site: B's `xGrpOwnerInvite` handler populates `promoter_member_id` from the delivering personal-contact connection's peer member.
+    - Read site: B's `xGrpOwnerCreds` handler rejects unless the sending mesh peer's `groupMemberId` equals the recorded `promoter_member_id`.
+
+    Test: `testBundleSenderMustBePromoter`.
 4. **`x.grp.owner.creds.ack`** — B → A over the mesh edge, after `acceptCoOwnerCreds` succeeds and local state is persisted. `XGrpOwnerCredsAck { groupId }`. A's orchestrator advances `step = bundle_sent` only on receipt; re-emitted by B on intake idempotency (1.5).
 5. **`ownerRcvPubKey :: Maybe SMP.RcvPublicAuthKey`** — optional JSON field on `XGrpMemIntro`, `XGrpMemInv`, **and** `XGrpMemFwd` (unknown-field tolerant). Populated **only** when the introducer is invoking Phase 3 Step 6; standard intros leave it `Nothing`. Per-edge flow for A introducing already-promoted B to existing owner X: intro A→X carries B's rcv pubkey; inv X→A carries X's rcv pubkey; fwd A→B carries X's rcv pubkey.
 6. **`XGrpLinkSync`** for link-blob propagation (4.1). Does NOT carry rcv pubkeys — SMP rcv keys are fixed for the channel lifetime (mirrors 4.4 invariant); they travel only via path 2.
@@ -216,7 +265,18 @@ Else-branch (downgrade) runs the standard flow. Tests: `testMeshScopeRequiresOwn
 
 `sendOwnerMeshMessage :: User -> GroupInfo -> [ChannelOwnerMesh] -> ChatMsgEvent 'Json -> CM ()` walks connected mesh rows and reuses `sendDirectMemberMessage`; skipped peers fall back to LGET-on-startup.
 
-**2.4.1 Mesh receive allowlist.** A `Connection` referenced by `channel_owner_mesh.direct_conn_id` (joined at message-receive time) is mesh; otherwise standard chat allowlist applies. Allowed events on mesh: `x.grp.owner.accept`, `x.grp.owner.creds`, `x.grp.owner.creds.ack`, `x.grp.link.sync`, `x.grp.mem.role`, `x.grp.mem.intro`, `x.grp.mem.inv`, `x.grp.mem.fwd`. Anything else over a mesh connection is logged and rejected (`x.msg.new` is NOT in this delivery). `XGrpOwnerInvite` is the only new chat-protocol event delivered over the standard personal-contact path (pre-mesh); registered in the chat-protocol parser but not in the mesh allowlist. Test: roster round-trip, mesh-allowlist rejection of `x.msg.new`.
+**2.4.1 Mesh receive allowlist.** A `Connection` referenced by `channel_owner_mesh.direct_conn_id` (joined at message-receive time) is mesh; otherwise the standard chat allowlist applies. Allowed events on a mesh connection:
+
+- `x.grp.owner.accept`
+- `x.grp.owner.creds`
+- `x.grp.owner.creds.ack`
+- `x.grp.link.sync`
+- `x.grp.mem.role`
+- `x.grp.mem.intro`
+- `x.grp.mem.inv`
+- `x.grp.mem.fwd`
+
+Anything else over a mesh connection is logged and rejected (`x.msg.new` is NOT in this delivery). `XGrpOwnerInvite` is the only new chat-protocol event delivered over the standard personal-contact path (pre-mesh); registered in the chat-protocol parser but not in the mesh allowlist. Test: roster round-trip, mesh-allowlist rejection of `x.msg.new`.
 
 ---
 
@@ -297,7 +357,14 @@ Tests: `testCascadeRemoval`, `testRemoverCascadeBlocked`, `testRootCannotBeRemov
 
 **4.4 Single-owner → multi-owner upgrade and convergence pre-flight.** Single unified startup pass in `Simplex.Chat.Library.Owners`, wired into `Simplex.Chat.Core` startup. SQL migration in 2.1 adds columns only; all backfill is Haskell-side. Two parts:
 
-*Backfill.* Iterate groups with non-null `member_priv_key` and a creator row lacking `owner_auth_sig`; for each: set `member_role = 'owner'`; write `owner_auth_sig = sign(rootPrivKey, memberId ‖ encodePubKey(publicKey memberPrivKey))`; write `owner_position = 0`; query the agent via `getChannelLinkRcvPubKey :: AgentClient -> ConnId -> AE SMP.RcvPublicAuthKey` (derives the pubkey from `rcvPrivateKey` stored in the `RcvQueue` row; no new SMP command) and write `owner_rcv_pub_key`. Idempotent; one pass per device. If `getChannelLinkRcvPubKey` fails for a specific channel, skip with a logged warning and surface to UI; do not block chat startup.
+*Backfill.* Iterate groups with non-null `member_priv_key` and a creator row lacking `owner_auth_sig`. For each:
+
+- Set `member_role = 'owner'`.
+- Write `owner_auth_sig = sign(rootPrivKey, memberId ‖ encodePubKey(publicKey memberPrivKey))`.
+- Write `owner_position = 0`.
+- Query the agent via `getChannelLinkRcvPubKey :: AgentClient -> ConnId -> AE SMP.RcvPublicAuthKey` (derives the pubkey from `rcvPrivateKey` stored in the `RcvQueue` row; no new SMP command) and write `owner_rcv_pub_key`.
+
+Idempotent; one pass per device. If `getChannelLinkRcvPubKey` fails for a specific channel, skip with a logged warning and surface to UI; do not block chat startup.
 
 *Convergence pre-flight.* For each multi-owner channel on this device, run one Risk #12 pre-flight pass at startup: compute the desired `recipientKeys` from the chain (via `getChannelOwnerAuths`) ∪ locally-known `owner_rcv_pub_key` mappings; compare against the previous desired set persisted from this device's last `setQueueRecipientKeys`; if they differ, push the new desired set (bounded retry as 4.2). Idempotent. Resolves both 4.5 Case 3 (re-adds a chain-valid owner whose key was dropped) and 4.5 Case 4 (drops an orphaned key + emits a demotion `XGrpLinkSync` over the existing A↔B mesh edge if reachable) without waiting for a manual trigger. Note: server-side `recipientKeys` is unreadable per G3, so the comparison is against the device's last-known desired set.
 
