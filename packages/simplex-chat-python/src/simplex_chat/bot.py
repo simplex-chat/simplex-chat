@@ -12,7 +12,7 @@ from typing import Any, Generic, Literal, TypeVar, overload
 
 from . import util
 from .api import ChatApi, Db
-from .core import MigrationConfirmation
+from .core import ChatAPIError, MigrationConfirmation
 from .filters import compile_message_filter
 from .types import CEvt, T
 
@@ -365,6 +365,26 @@ class Bot:
                 event = await self.api.recv_chat_event(wait_us=500_000)
             except asyncio.CancelledError:
                 raise
+            except ChatAPIError as e:
+                # Async chat errors emitted via the Haskell `eToView` path —
+                # routine soft errors (stale connections after a peer deletes
+                # a chat, file cleanup failures, etc.) intermixed with
+                # CRITICAL agent failures the operator must see. Mirror the
+                # desktop policy in SimpleXAPI.kt:3332-3340: escalate
+                # CRITICAL agent errors, keep everything else at debug.
+                chat_err: Any = e.chat_error or {}
+                agent_err: Any = (
+                    chat_err.get("agentError", {}) if chat_err.get("type") == "errorAgent" else {}
+                )
+                if agent_err.get("type") == "CRITICAL":
+                    log.error(
+                        "chat agent CRITICAL: %s (offerRestart=%s)",
+                        agent_err.get("criticalErr"),
+                        agent_err.get("offerRestart"),
+                    )
+                else:
+                    log.debug("chat event error: %s", chat_err.get("type"))
+                continue
             except Exception:
                 log.exception("recv_chat_event failed")
                 # Bound the spin rate when the FFI is wedged on a persistent
