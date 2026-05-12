@@ -9,7 +9,7 @@ function ciContentText(chatItem) {
 function ciBotCommand(chatItem) {
   const text = ciContentText(chatItem)?.trim()
   if (text) {
-    const r = text.match(/\/([^\s]+)(.*)/)
+    const r = text.match(/^\/([^\s]+)(.*)/)
     if (r && r.length >= 3) return {keyword: r[1], params: r[2].trim()}
   }
   return undefined
