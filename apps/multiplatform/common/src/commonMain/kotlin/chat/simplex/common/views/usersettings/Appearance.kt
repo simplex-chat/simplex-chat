@@ -795,6 +795,7 @@ object AppearanceScope {
     val patternDepth = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("patternDepth") ?: defaults["patternDepth"] ?: 0f) }
     val patternChromaVal = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("patternChroma") ?: defaults["patternChroma"] ?: 0f) }
     val receivedTint = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("receivedTint") ?: defaults["receivedTint"] ?: 0.005f) }
+    val bgLOffset = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("bgLOffset") ?: 0f) }
     val mutedChroma = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("mutedChroma") ?: defaults["mutedChroma"] ?: 0f) }
     val colorChroma = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("colorChroma") ?: defaults["colorChroma"] ?: 0f) }
 
@@ -803,6 +804,7 @@ object AppearanceScope {
       isLight -> generateSchemeLight(
         hue.floatValue, bgL.floatValue, bgC.floatValue, step.floatValue,
         patternDepth.floatValue, patternChromaVal.floatValue, receivedTint.floatValue,
+        bgLOffset.floatValue,
       )
       isBlack -> generateSchemeBlack(
         hue.floatValue, step.floatValue, colorChroma.floatValue,
@@ -830,6 +832,7 @@ object AppearanceScope {
       savedParams["${pk}patternDepth"] = patternDepth.floatValue
       savedParams["${pk}patternChroma"] = patternChromaVal.floatValue
       savedParams["${pk}receivedTint"] = receivedTint.floatValue
+      savedParams["${pk}bgLOffset"] = bgLOffset.floatValue
       savedParams["${pk}mutedChroma"] = mutedChroma.floatValue
       savedParams["${pk}colorChroma"] = colorChroma.floatValue
     }
@@ -838,6 +841,7 @@ object AppearanceScope {
       if (isLight) {
         FormulaSlider("Hue", hue, 0f..360f)
         FormulaSlider("Lightness", bgL, 0.85f..1f)
+        FormulaSlider("BG Lightness", bgLOffset, -0.05f..0.05f)
         FormulaSlider("Chroma", bgC, 0f..0.10f)
         FormulaSlider("Contrast", step, 0.01f..0.10f)
         FormulaSlider("Received tint", receivedTint, 0f..0.07f)

@@ -222,6 +222,7 @@ fun generateSchemeLight(
   patternDepth: Float = 2.5f,
   patternChroma: Float? = null,
   receivedTint: Float = 0.005f,
+  bgLOffset: Float = 0f,
   saturationScale: Float = 1f,
   contrastScale: Float = 1f,
   patternIntensity: Float = 1f,
@@ -239,7 +240,7 @@ fun generateSchemeLight(
     Raw("receivedMessage", 1f - receivedTint),
     Raw("receivedQuote", 1f - effStep),
     Raw("sentMessage", bgL + effStep / 3f),
-    Raw("background", bgL),
+    Raw("background", (bgL + bgLOffset).coerceIn(0f, 1f)),
     Raw("sentQuote", bgL - effStep),
     Raw("pattern", bgL - effDepth * effStep),
   )
