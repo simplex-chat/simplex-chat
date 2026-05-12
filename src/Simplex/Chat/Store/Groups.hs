@@ -1385,7 +1385,7 @@ getCreateRelayForMember db vr gVar user@User {userId, userContactId} GroupInfo {
           (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ? AND is_current_member(m.member_status)")
 #else
           -- skips GSMemLeft historical rows so re-add allocates a fresh row instead of resurrecting
-          (groupMemberQuery <> " JOIN group_member_status_predicates p ON m.member_status = p.member_status WHERE m.group_id = ? AND m.relay_link = ? AND p.current_member = 1")
+          (groupMemberQuery <> " JOIN group_member_status_predicates sp ON m.member_status = sp.member_status WHERE m.group_id = ? AND m.relay_link = ? AND sp.current_member = 1")
 #endif
           (groupId, relayLink)
     createRelayMember = do
@@ -1847,7 +1847,7 @@ updatePublicMemberCount db vr user GroupInfo {groupId} = do
 #if defined(dbPostgres)
         "SELECT COUNT(1) FROM group_members WHERE group_id = ? AND member_role = ? AND is_current_member(member_status)"
 #else
-        "SELECT COUNT(1) FROM group_members m JOIN group_member_status_predicates p ON m.member_status = p.member_status WHERE m.group_id = ? AND m.member_role = ? AND p.current_member = 1"
+        "SELECT COUNT(1) FROM group_members m JOIN group_member_status_predicates sp ON m.member_status = sp.member_status WHERE m.group_id = ? AND m.member_role = ? AND sp.current_member = 1"
 #endif
         (groupId, GRRelay))
     let publicCount = max 0 (totalCount - relayCount) :: Int64
