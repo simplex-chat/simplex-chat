@@ -62,15 +62,16 @@ Wire `sig64 || md_bytes` carries no signer ID — observers cannot
 identify which owner pushed an update (preserves objective #6). Tests:
 `testChainCycleStructurallyImpossible`, `testChainTooLong`.
 
-**1.2 Signer selection (no agent change).** `encodeSignUserData` takes
-any `PrivateKeyEd25519`. Channel link queue's signing key lives in
-`ShortLinkCreds.linkPrivSigKey` (set at creation for creator, at
+**1.2 Signer selection (no signer-path change).** `encodeSignUserData`
+takes any `PrivateKeyEd25519`. Channel link queue's signing key lives
+in `ShortLinkCreds.linkPrivSigKey` (set at creation for creator, at
 intake 1.5 for co-owner), sourced chat-side from
 `GroupKeys.groupRootKey` (`GRKPrivate rootPrivKey` ⇒ creator;
 `memberPrivKey` ⇒ co-owner). Existing `setConnShortLink` already signs
 correctly once `linkPrivSigKey` carries the right key — no code change
 at that call site. Upstream `linkRootSigKey` TODO at
-`AgentStore.hs:2514` untouched.
+`AgentStore.hs:2514` resolved by 1.4a (its persistence is required
+for co-owner LSET to validate against the chain root).
 
 **1.3 Co-owner RcvQueue.** Each device holds one `rcv_queues`
 row for the shared channel link queue with its own `rcv_private_key`
@@ -91,6 +92,213 @@ setQueueRecipientKeys
 ```
 
 Concurrent races recovered by Phase 4.5 + Risk #12 pre-flight.
+
+**1.4a Upstream simplexmq: persist `linkRootSigKey`.** Numbered
+`1.4a` to avoid renumbering existing references to 1.5/1.6/1.7
+throughout the plan; sequenced before 1.5 because the chat-side
+intake in 1.5 (`acceptCoOwnerCreds`) depends on the agent's
+persistence layer accepting a non-`Nothing` `linkRootSigKey`.
+
+**Bug.** `ShortLinkCreds.linkRootSigKey` is in-memory only. On every
+load from `rcv_queues`, `toRcvQueue` (`AgentStore.hs:2513-2514`)
+hardcodes `linkRootSigKey = Nothing` (`-- TODO linkRootSigKey
+should be stored in a separate field`). For a co-owner B,
+`validateOwners` (`Agent/Protocol.hs:1809-1819`) at every
+`setConnShortLink'` (`Agent.hs:1042-1055`) then reduces to
+`validateLinkOwners (publicKey linkPrivSigKey) owners` — i.e., it
+treats B's own pubkey as the root. The chain's first entry was
+signed by the actual root, not by B → `signedBy` fails → `Left` →
+`CMD PROHIBITED` before the LSET reaches the wire. **Co-owners ≠
+creator cannot LSET, ever, across all sessions.** This breaks
+promote, remove, link-data update, LWW reconciliation, and the
+Phase 4.4 startup pre-flight. Fix is purely persistence; do NOT
+modify `validateOwners` or `validateLinkOwners`.
+
+**1.4a.1 Schema migration.** Additive, nullable column on
+`rcv_queues`. Migration name `M20260512_rcv_queues_link_root_sig_key`
+(matches simplexmq's `M<DATE>_<name>` convention; current head is
+`M20260410_receive_attempts`).
+
+- *SQLite* (`Migrations/M20260512_rcv_queues_link_root_sig_key.hs`):
+
+  ```haskell
+  m20260512_rcv_queues_link_root_sig_key :: Query
+  m20260512_rcv_queues_link_root_sig_key =
+    [sql|ALTER TABLE rcv_queues ADD COLUMN link_root_sig_key BLOB;|]
+
+  down_m20260512_rcv_queues_link_root_sig_key :: Query
+  down_m20260512_rcv_queues_link_root_sig_key =
+    [sql|ALTER TABLE rcv_queues DROP COLUMN link_root_sig_key;|]
+  ```
+
+  Register at `Migrations/App.hs:98` (after the
+  `m20260410_receive_attempts` row):
+  `("m20260512_rcv_queues_link_root_sig_key",
+  m20260512_rcv_queues_link_root_sig_key,
+  Just down_m20260512_rcv_queues_link_root_sig_key)`. The
+  `rcv_queues` table is `STRICT` (`agent_schema.sql:32-70`); `BLOB`
+  is a permitted STRICT type, no further annotation required.
+
+- *Postgres* (`Postgres/Migrations/M20260512_rcv_queues_link_root_sig_key.hs`):
+
+  ```haskell
+  m20260512_rcv_queues_link_root_sig_key :: Text
+  m20260512_rcv_queues_link_root_sig_key =
+    [r|ALTER TABLE rcv_queues ADD COLUMN link_root_sig_key BYTEA;|]
+
+  down_m20260512_rcv_queues_link_root_sig_key :: Text
+  down_m20260512_rcv_queues_link_root_sig_key =
+    [r|ALTER TABLE rcv_queues DROP COLUMN link_root_sig_key;|]
+  ```
+
+  Register at `Postgres/Migrations/App.hs:26` (after
+  `m20260410_receive_attempts`):
+  `("20260512_rcv_queues_link_root_sig_key",
+  m20260512_rcv_queues_link_root_sig_key,
+  Just down_m20260512_rcv_queues_link_root_sig_key)`. (Postgres
+  registry uses the bare date prefix without the leading `m`,
+  matching the existing `"20260410_receive_attempts"` entry; SQLite
+  registry uses the `m`-prefixed identifier.)
+
+  Update `agent_schema.sql` (the canonical-state mirror of all
+  applied SQLite migrations) to add `link_root_sig_key BLOB,`
+  immediately after `link_enc_fixed_data BLOB,` (currently line 61),
+  to keep the schema dump in sync with applied migrations.
+
+- *Backfill.* None. The column is nullable; existing rows
+  retain `link_root_sig_key = NULL`, which corresponds to the
+  pre-fix in-memory behavior of `linkRootSigKey = Nothing` for the
+  creator's own queue (creator has no chained-owner authorizer).
+  Co-owners did not exist before this change, so no co-owner row
+  needs backfill.
+
+**1.4a.2 Loader update — `toRcvQueue`.** Extend the SQL projection,
+the tuple type, and the destructuring; populate
+`ShortLinkCreds.linkRootSigKey` from the new column; remove the
+TODO.
+
+- `rcvQueueQuery` (`AgentStore.hs:2483-2494`): append
+  `q.link_root_sig_key` to the SELECT — last column of the last
+  `(... link_id, link_key, link_priv_sig_key, link_enc_fixed_data)`
+  group.
+- `toRcvQueue` (`AgentStore.hs:2496-2518`): widen the final tuple
+  segment from
+  `(Maybe SMP.LinkId, Maybe LinkKey, Maybe C.PrivateKeyEd25519, Maybe EncDataBytes)`
+  to
+  `(Maybe SMP.LinkId, Maybe LinkKey, Maybe C.PrivateKeyEd25519, Maybe EncDataBytes, Maybe C.PublicKeyEd25519)`.
+  Bind the new value as `linkRootSigKey_` and replace the
+  hardcoded `linkRootSigKey = Nothing` in the `ShortLinkCreds`
+  construction with `linkRootSigKey = linkRootSigKey_`. Delete the
+  trailing `-- TODO linkRootSigKey should be stored in a separate
+  field` comment.
+- The semantics for `shortLink` reconstruction stay
+  all-or-nothing on the four NOT-NULL-when-set fields
+  (`shortLinkId`, `shortLinkKey`, `linkPrivSigKey`,
+  `linkEncFixedData`); `linkRootSigKey_` is consumed inside the
+  `Just` branch and may be `Nothing` (creator) or `Just rootPubKey`
+  (co-owner). Pre-fix rows decode to `linkRootSigKey = Nothing`,
+  preserving prior behavior for creators.
+
+**1.4a.3 Writers — `updateShortLinkCreds` + `insertRcvQueue_`.**
+Both write sites must thread the new field. Smaller and clearer
+than adding a separate setter — `linkRootSigKey` is already a
+field of `ShortLinkCreds`, and there are exactly two writers.
+
+- `updateShortLinkCreds` (`AgentStore.hs:862-871`): destructure
+  `linkRootSigKey` alongside the other four `ShortLinkCreds`
+  fields; extend the `UPDATE` SET list to write
+  `link_root_sig_key = ?`; thread `linkRootSigKey` into the
+  parameter tuple. Existing creator call site
+  (`Agent.hs:1072-1073`) constructs
+  `ShortLinkCreds linkId linkKey privSigKey Nothing (fst srvData)`
+  — it passes `Nothing`, which now writes a SQL `NULL` (preserving
+  prior behavior for creators).
+- `insertRcvQueue_` (`AgentStore.hs:2077-2099`): add
+  `link_root_sig_key` to the INSERT column list (after
+  `link_enc_fixed_data`); extend the `VALUES` placeholder count
+  from 25 to 26; bind `linkRootSigKey =<< shortLink` in the
+  parameter tuple alongside the existing
+  `linkPrivSigKey <$> shortLink` etc. (`=<<` collapses
+  `Maybe (Maybe k)` → `Maybe k`, since `linkRootSigKey` is itself
+  `Maybe`.)
+
+No other writers touch `link_priv_sig_key` (verified via
+`grep -n "link_priv_sig_key" AgentStore.hs`); the new column is
+covered by exactly the two sites above.
+
+**1.4a.4 Intake API for co-owner persistence.** The chat-side
+plan's 1.5 declares
+`acceptCoOwnerCreds :: AgentClient -> NetworkRequestMode -> UserId
+-> CoOwnerCredsBundle -> RcvPrivateAuthKey ->
+C.PrivateKeyEd25519 -> AE ConnId`. It constructs a `ShortLinkCreds`
+populated from the bundle:
+
+```haskell
+ShortLinkCreds
+  { shortLinkId       = bundle.shortLinkId
+  , shortLinkKey      = bundle.shortLinkKey
+  , linkPrivSigKey    = ownerPrivKey  -- B's owner = member signing key
+  , linkRootSigKey    = Just (bundle.rootPubKey)
+  , linkEncFixedData  = bundle.linkEncFixedData
+  }
+```
+
+The `Just (bundle.rootPubKey)` is the load-bearing change — the
+chat-side `CoOwnerCredsBundle.rootPubKey` already carries the
+value; only the persistence side was missing. `acceptCoOwnerCreds`
+constructs `NewRcvQueue { ..., shortLink = Just slCreds, ... }` and
+persists via `insertRcvQueue_` (1.4a.3 above), which now writes the
+fifth `link_root_sig_key` column. After this, every subsequent
+`getConn`/`toRcvQueue` reload returns `linkRootSigKey = Just
+rootPubKey`, and `validateOwners` at the next
+`setConnShortLink` calls `validateLinkOwners rootPubKey owners` —
+the chain's first entry verifies, B's LSET is permitted.
+
+`acceptCoOwnerCreds` is the only intake API that ever supplies a
+non-`Nothing` `linkRootSigKey`. The creator path
+(`prepareContactLinkData` at `Agent.hs:1065-1074`, which calls
+`updateShortLinkCreds` with `linkRootSigKey = Nothing`) is
+unchanged in semantics — it now writes a SQL `NULL` instead of
+relying on the loader's hardcoded `Nothing`.
+
+**1.4a.5 Tests.** New tests in
+`simplexmq/tests/AgentTests/ShortLinkTests.hs` (round-trip) and
+`tests/AgentTests/FunctionalAPITests.hs` (LSET regression).
+
+- `testLinkRootSigKeyRoundTrip` — insert an `rcv_queues` row via
+  `insertRcvQueue_` with
+  `shortLink = Just ShortLinkCreds { linkRootSigKey = Just k, ... }`
+  for a randomly-generated Ed25519 pubkey `k`; reload via
+  `getRcvQueuesByConnId_`; assert
+  `linkRootSigKey (fromJust (shortLink rq)) == Just k`. Repeat
+  with `linkRootSigKey = Nothing` and assert the round-trip is
+  also `Nothing` (creator regression).
+- `testCoOwnerLSETAfterReload` — full loop:
+  1. Set up A as a creator via the existing short-link creation
+     path; LSET initial blob with one `OwnerAuth` for B
+     (signed by A's root key).
+  2. On B's `AgentClient`, call `acceptCoOwnerCreds` with a
+     `CoOwnerCredsBundle` carrying `rootPubKey = A_rootPub`,
+     B's locally-generated rcv private key, and B's owner
+     (= member) signing private key.
+  3. Restart B's agent or otherwise force a fresh `getConn` on
+     the channel link queue.
+  4. Have B call `setConnShortLink` with new
+     `UserContactLinkData`.
+  5. Assert success — pre-fix this fails with `CMD PROHIBITED`
+     (`validateOwners` rejects); post-fix it reaches
+     `addQueueLink` and the wire LSET succeeds.
+- `testUpdateShortLinkCredsPreservesRootSigKey` — call
+  `updateShortLinkCreds` with a `ShortLinkCreds` whose
+  `linkRootSigKey = Just k`; reload and assert preservation.
+  Then call again with `linkRootSigKey = Nothing` and assert the
+  column is now SQL `NULL`. Guards against future drift between
+  the in-memory type and the writer.
+
+This section unblocks: 1.5 (`acceptCoOwnerCreds` can now persist
+`linkRootSigKey`); Phase 3 Step 4 (B's first LSET as part of
+subsequent promotions); 4.1 / 4.3 / 4.4 (any LSET driven by a
+co-owner).
 
 **1.5 Co-owner credential bundle.** New `CoOwnerCredsBundle` in
 `Simplex.Messaging.Agent.Protocol`. Fields: `server`, `rcvId`,
@@ -748,5 +956,3 @@ chained-owner cases), `testMeshScopeRequiresOwnerIntroducer`.
   the old device. The migrated user is silently locked out of
   channel-owner write access until a separate device-migration flow
   is added (post-MVP).
-- Agent-side `linkRootSigKey` persistence; TODO at `AgentStore.hs:2514`
-  stays untouched.
