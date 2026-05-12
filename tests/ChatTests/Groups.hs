@@ -275,6 +275,7 @@ chatGroupTests = do
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
+      it "should delete channel message from history" testChannelMessageDeleteFromHistory
       it "should send and receive channel message file" testChannelMessageFile
       it "should cancel channel message file" testChannelMessageFileCancel
       it "should quote channel message" testChannelMessageQuote
@@ -10026,6 +10027,34 @@ testChannelMessageDelete ps =
             alice #$> ("/_delete item #1 " <> msgId <> " broadcast", id, "message marked deleted")
             bob <# "#team> [marked deleted] hello"
             [cath, dan, eve] *<# "#team> [marked deleted] hello" -- TODO show as forwarded
+
+testChannelMessageDeleteFromHistory :: HasCallStack => TestParams -> IO ()
+testChannelMessageDeleteFromHistory ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- owner deletes from history (relay processes locally but doesn't forward)
+            msgId <- lastItemId alice
+            alice #$> ("/_delete item #1 " <> msgId <> " history", id, "message marked deleted")
+            bob <# "#team> [marked deleted] hello"
+
+            -- subscribers don't receive deletion - next message arrives cleanly
+            alice #> "#team still here"
+            bob <# "#team> still here"
+            [cath, dan, eve] *<# "#team> still here [>>]"
+
+            -- internal delete rejected for channel owner
+            msgId2 <- lastItemId alice
+            alice ##> ("/_delete item #1 " <> msgId2 <> " internal")
+            alice <## "cannot delete this item"
 
 testChannelMessageFile :: HasCallStack => TestParams -> IO ()
 testChannelMessageFile ps =
