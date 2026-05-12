@@ -2176,7 +2176,7 @@ struct ChatView: View {
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     if publicGroupEditorialRole(chat) {
-                        Button("From history", role: .destructive) {
+                        Button("Delete from history", role: .destructive) {
                             deleteMessage(.cidmHistory, moderate: false)
                         }
                     } else {
@@ -2192,7 +2192,7 @@ struct ChatView: View {
                 }
                 .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
                     if publicGroupEditorialRole(chat) {
-                        Button("From history", role: .destructive) {
+                        Button("Delete from history", role: .destructive) {
                             deleteMessages(chat, deletingItems, .cidmHistory, moderate: false)
                         }
                     } else {
@@ -2829,6 +2829,9 @@ struct ChatView: View {
                     }
                 } catch {
                     logger.error("ChatView.deleteMessage error: \(error)")
+                    await MainActor.run {
+                        showAlert(NSLocalizedString("Error deleting message", comment: "alert title"), message: responseError(error))
+                    }
                 }
             }
         }
@@ -3030,6 +3033,9 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                 await onSuccess()
             } catch {
                 logger.error("ChatView.deleteMessages error: \(error.localizedDescription)")
+                await MainActor.run {
+                    showAlert(NSLocalizedString("Error deleting message", comment: "alert title"), message: responseError(error))
+                }
             }
         }
     }

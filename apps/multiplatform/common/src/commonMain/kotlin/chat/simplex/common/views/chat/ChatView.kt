@@ -570,8 +570,6 @@ fun ChatView(
                       chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
                   }
-                } else {
-                  AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_message))
                 }
               }
             },
@@ -3388,8 +3386,6 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           }
         }
         onSuccess()
-      } else {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_message))
       }
     }
   }
