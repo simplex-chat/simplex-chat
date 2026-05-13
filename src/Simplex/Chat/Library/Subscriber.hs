@@ -2183,9 +2183,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             in case sndMemberId_ of
               -- regular deletion
               Nothing
-                | onlyHistory && isAuthor && publicGroupItemDeletable gInfo m ->
+                | isAuthor && onlyHistory && publicGroupItemDeletable gInfo m ->
                     delete cci False Nothing $> Nothing
-                | isAuthor && rcvItemDeletable ci brokerTs ->
+                | isAuthor && not onlyHistory && rcvItemDeletable ci brokerTs ->
                     delete cci False Nothing
                 | otherwise ->
                     messageError "x.msg.del: member attempted invalid message delete" $> Nothing
