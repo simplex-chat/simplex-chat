@@ -2711,11 +2711,11 @@
     <string name="v6_5_invite_friends_descr">Az új felhasználók számára egyszerűbbé tettük a kapcsolatok létrehozását.</string>
     <string name="why_built_heading">Fiók nélkül születtünk.</string>
     <string name="why_built_p1">Senki sem követte nyomon a beszélgetéseinket. Senki sem készített térképet arról, hogy merre jártunk. A magánéletünk nem csak egy funkció volt, hanem az életmódunk.</string>
-    <string name="why_built_p2">Aztán felléptünk az internetre, és minden platform kért belőlünk egy darabot - nevet, telefonszámot, baráti kapcsolatokat. Elfogadtuk, hogy a kommunikáció ára az, hogy mások megtudják, hogy kivel beszélünk. Minden generáció, az emberek és a technológia is eddig így működött - telefon, e-mail, üzenetküldő programok, közösségi média. Úgy tűnt, ez az egyetlen lehetséges mód.</string>
+    <string name="why_built_p2">Aztán felléptünk az internetre, és minden platform kért belőlünk egy darabot– nevet, telefonszámot, baráti kapcsolatokat. Elfogadtuk, hogy a kommunikáció ára az, hogy mások megtudják, hogy kivel beszélünk. Minden generáció, az emberek és a technológia is eddig így működött – telefon, e-mail, üzenetküldő programok, közösségi média. Úgy tűnt, ez az egyetlen lehetséges mód.</string>
     <string name="why_built_p3">De van egy másik lehetőség is. Egy hálózat, amelyben nincsenek telefonszámok. Nincsenek felhasználónevek. Nincsenek fiókok. Nincsenek semmiféle felhasználói azonosítók. Egy hálózat, amely összeköti az embereket és titkosított üzeneteket továbbít, anélkül, hogy tudná, ki csatlakozik hozzá.</string>
-    <string name="why_built_p4">Nem egy jobb zár mások ajtaján. Nem egy kedvesebb házmester, aki tiszteletben tartja az Ön magánéletét, de mégis nyilvántartást vezet minden látogatójáról. Ön itt nem csak egy vendég. Ön itt otthon van. Nincs az a hatalom, amely beléphetne ide - Ön itt szuverén.</string>
+    <string name="why_built_p4">Nem egy jobb zár mások ajtaján. Nem egy kedvesebb házmester, aki tiszteletben tartja az Ön magánéletét, de mégis nyilvántartást vezet minden látogatójáról. Ön itt nem csak egy vendég. Ön itt otthon van. Nincs az a hatalom, amely beléphetne ide – Ön itt szuverén.</string>
     <string name="why_built_p5">A beszélgetései Önhöz tartoznak, ahogy az internet megjelenése előtt is mindig így volt. A hálózat nem egy hely, amelyet meglátogat. Ez egy olyan hely, amelyet Ön hoz létre saját magának. És senki sem veheti el Öntől, függetlenül attól, hogy privát vagy nyilvános.</string>
-    <string name="why_built_p6">A legrégebbi emberi szabadság - beszélgetni az emberekkel, anélkül, hogy mások megfigyelnének - olyan infrastruktúrán alapul, amely nem tudja elárulni.</string>
+    <string name="why_built_p6">A legrégebbi emberi szabadság – beszélgetni az emberekkel, anélkül, hogy mások megfigyelnének – olyan infrastruktúrán alapul, amely nem tudja elárulni.</string>
     <string name="why_built_p7">Mert felszámoltuk a lehetőségét is annak, hogy megtudjuk, Ön kicsoda. Így az önrendelkezése soha nem kerülhet idegen kezekbe.</string>
     <string name="why_built_tagline">Legyen szabad a saját hálózatában.</string>
     <!-- channel preferences (subscribers) -->
@@ -2783,4 +2783,14 @@
     <string name="button_remove_relay_question">Eltávolítja az átjátszót?</string>
     <string name="select_relays">Átjátszók kiválasztása</string>
     <string name="last_active_relay_warning">Ez az utolsó aktív átjátszó. Ha eltávolítja, akkor azzal megakadályozza az üzenetek eljuttatását a feliratkozóknak.</string>
+    <string name="close_behavior_dialog_close">Alkalmazás bezárása</string>
+    <string name="close_behavior_dialog_text">Ha a bezárás mellett dönt, az üzenetek nem fognak megérkezni.\nEzt később a „Megjelenés” beállításaiban módosíthatja.</string>
+    <string name="appearance_minimize_to_tray_desc">Hagyja a SimpleX-et a háttérben futni az üzenetek fogadásához.</string>
+    <string name="tray_quit">Kilépés a SimpleXből</string>
+    <string name="tray_show">SimpleX megjelenítése</string>
+    <string name="tray_tooltip">SimpleX</string>
+    <string name="tray_tooltip_unread">SimpleX – %d olvasatlan üzenet</string>
+    <string name="close_behavior_dialog_minimize">Kicsinyítés az értesítési területre</string>
+    <string name="close_behavior_dialog_title">Biztosan kicsinyíteni szeretné az értesítési területre?</string>
+    <string name="appearance_minimize_to_tray">Kicsinyítés az értesítési területre az ablak bezárásakor</string>
 </resources>
