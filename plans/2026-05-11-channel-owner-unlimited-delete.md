@@ -23,7 +23,7 @@ New `CIDMHistory` delete mode alongside `CIDMBroadcast`, `CIDMInternal`, `CIDMIn
 ### Commands.hs
 
 `APIDeleteChatItem` group path:
-- `CIDMHistory` - validates `publicGroupItemDeletable` (channel + role >= GRModerator), sends `XMsgDel` with `onlyHistory = True`, no time check. Rejected for non-channels and insufficient role.
+- `CIDMHistory` - validates `publicGroupEditor` (channel + role >= GRModerator), sends `XMsgDel` with `onlyHistory = True`, no time check. Rejected for non-channels and insufficient role.
 - `CIDMInternal` - rejected for channel editorial roles (they should use `CIDMHistory` instead).
 - `CIDMBroadcast` - unchanged (24-hour time check applies to everyone).
 
@@ -35,7 +35,7 @@ Subscriber `processForwardedMsg`: ignores the `onlyHistory` flag (wildcard match
 
 ### Types.hs
 
-`publicGroupItemDeletable :: GroupInfo -> GroupMember -> Bool` - shared predicate for channel editorial role check.
+`publicGroupEditor :: GroupInfo -> GroupMember -> Bool` - shared predicate for channel editorial role check.
 
 ### UI (iOS + Kotlin)
 
