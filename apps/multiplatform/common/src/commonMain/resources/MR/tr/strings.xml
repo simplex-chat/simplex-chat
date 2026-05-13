@@ -611,7 +611,6 @@
     <string name="user_hide">Gizle</string>
     <string name="notification_display_mode_hidden_desc">Konuşulan kişileri ve mesajları gizle</string>
     <string name="v4_3_improved_privacy_and_security_desc">Uygulamayı, son kullanılanlar kısmından gizle.</string>
-    <string name="how_simplex_works">SimpleX nasıl çalışıyor</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Eğer yüz yüze görüşemiyorsanız <b>bir görüntülü aramada karşıdakine karekodunu gösterebilir</b> ya da konuştuğun kişiye bir katılım bağlantısı paylaşabilirsin.]]></string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Eğer yüz yüze görüşemiyorsanız <b>bir görüntülü aramada karşıdakinin karekodunu okutabilirsin</b> ya da konuştuğun kişi seninle bir katılım bağlantısı paylaşabilir.]]></string>
     <string name="if_you_cant_meet_in_person">Eğer yüz yüze görüşemiyorsanız bir görüntülü aramada karşıdakine karekodunu gösterebilir ya da konuştuğun kişiye bir katılım bağlantısı paylaşabilirsin.</string>
@@ -2055,7 +2054,6 @@
     <string name="servers_info_reset_stats_alert_message">Sunucu istatistikleri sıfırlanacaktır - bu geri alınamaz!</string>
     <string name="one_hand_ui">Erişilebilir uygulama araç çubukları</string>
     <string name="one_hand_ui_change_instruction">Görünüm ayarlarından değiştirebilirsiniz.</string>
-    <string name="one_hand_ui_card_title">Sohbet listesini değiştir:</string>
     <string name="system_mode_toast">Sistem modu</string>
     <string name="v6_0_reachable_chat_toolbar">Erişilebilir sohbet araç çubuğu</string>
     <string name="servers_info_target">İçin bilgi gösteriliyor</string>
@@ -2270,7 +2268,6 @@
     <string name="onboarding_notifications_mode_off_desc_short">Arkaplan servisi yok</string>
     <string name="onboarding_conditions_accept">Kabul Et</string>
     <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat\'i kullanarak şunları kabul etmiş olursunuz:\n- genel gruplarda sadece yasal içerik göndermeyi.\n- diğer kullanıcılara saygı göstermeyi - spam yapmamayı.</string>
-    <string name="onboarding_conditions_configure_server_operators">Sunucu operatörlerini yapılandırma</string>
     <string name="leave_chat_question">Sohbetten çıkılsın mı?</string>
     <string name="group_member_role_moderator">yönetici</string>
     <string name="network_smp_web_port_all">Bütün sunucular</string>

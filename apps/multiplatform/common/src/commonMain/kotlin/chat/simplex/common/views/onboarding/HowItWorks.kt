@@ -1,8 +1,7 @@
 package chat.simplex.common.views.onboarding
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -15,7 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
@@ -24,21 +23,26 @@ import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
-  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(stringResource(MR.strings.how_simplex_works), withPadding = false)
-    ReadableText(MR.strings.to_protect_privacy_simplex_has_ids_for_queues)
-    ReadableText(MR.strings.only_client_devices_store_contacts_groups_e2e_encrypted_messages)
-    ReadableText(MR.strings.all_message_and_files_e2e_encrypted)
-    if (onboardingStage == null) {
-      ReadableTextWithLink(MR.strings.read_more_in_github_with_link, "https://github.com/simplex-chat/simplex-chat#readme")
+  Column(Modifier.fillMaxSize().padding(horizontal = if (appPlatform.isDesktop) DEFAULT_PADDING * 2 else DEFAULT_PADDING)) {
+    Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+    val paraPadding = PaddingValues(bottom = if (appPlatform.isDesktop) 10.dp else 12.dp)
+    Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
+      Text(stringResource(MR.strings.why_built_heading), style = MaterialTheme.typography.h1, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
+      ReadableText(MR.strings.why_built_p1, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p2, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p3, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p4, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p5, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p6, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p7, padding = paraPadding)
+      ReadableText(MR.strings.why_built_tagline, padding = paraPadding)
     }
-
-    Spacer(Modifier.fillMaxHeight().weight(1f))
-
     if (onboardingStage != null) {
-      Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+      Column(
+        Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
         OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.fullscreen.closeModal() })
-        // Reserve space
         TextButtonBelowOnboardingButton("", null)
       }
     }
@@ -67,7 +71,7 @@ fun ReadableTextWithLink(stringResId: StringResource, link: String, textAlign: T
     newStyles
   }
   val uriHandler = LocalUriHandler.current
-  Text(AnnotatedString(annotated.text, newStyles), modifier = Modifier.padding(padding).clickable { if (simplexLink) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openUriCatching(link) }, textAlign = textAlign, lineHeight = 22.sp)
+  Text(AnnotatedString(annotated.text, newStyles), modifier = Modifier.padding(padding).clickable { if (simplexLink) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openExternalLink(link) }, textAlign = textAlign, lineHeight = 22.sp)
 }
 
 @Composable

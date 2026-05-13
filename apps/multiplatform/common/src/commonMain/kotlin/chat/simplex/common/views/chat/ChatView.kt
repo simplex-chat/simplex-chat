@@ -211,7 +211,7 @@ fun ChatView(
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
-                } else {
+                } else if (cInfo.groupInfo.membership.memberCurrent) {
                   val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(chatRh, cInfo.groupInfo.groupId)
                   if (gInfo != null) {
                     withContext(Dispatchers.Main) {
@@ -1953,7 +1953,7 @@ fun BoxScope.ChatItemsList(
           }
           false
         }
-        val swipeableModifier = if (appPlatform.isDesktop) Modifier else SwipeToDismissModifier(
+        val swipeableModifier = if (appPlatform.isDesktop || !chatInfo.sendMsgEnabled) Modifier else SwipeToDismissModifier(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
@@ -2339,7 +2339,7 @@ fun BoxScope.ChatItemsList(
   }
 
   val manager = LocalSelectionManager.current
-  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, linkMode) else Modifier
+  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, revealedItems, linkMode) else Modifier
 
   LazyColumnWithScrollBar(
     modifier.align(Alignment.BottomCenter),
@@ -3204,7 +3204,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
     ModalManager.end.showModalCloseable(true) {
-      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays)
+      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo)
     }
   }
 }
@@ -3597,7 +3597,6 @@ fun providerForGallery(
 
     override fun scrollToStart() {
       initialIndex = 0
-      initialChatId = chatItems.firstOrNull { canShowMedia(it) }?.id ?: return
     }
 
     override fun onDismiss(index: Int) {

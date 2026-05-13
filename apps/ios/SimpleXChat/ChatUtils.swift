@@ -25,6 +25,7 @@ extension ChatLike {
             case .files: p.files.on(for: groupInfo.membership)
             case .simplexLinks: p.simplexLinks.on(for: groupInfo.membership)
             case .history: p.history.on
+            case .support: p.support.on
             case .reports: p.reports.on
             }
         } else {

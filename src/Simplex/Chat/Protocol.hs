@@ -56,7 +56,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
-import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
+import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -332,7 +332,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data ChatBinding = CBGroup
+data ChatBinding = CBGroup | CBDirect | CBChannel
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
@@ -395,10 +395,15 @@ instance Encoding KeyRef where
       c -> fail $ "invalid KeyRef tag: " <> show c
 
 instance Encoding ChatBinding where
-  smpEncode CBGroup = "G"
+  smpEncode = \case
+    CBGroup -> "G"
+    CBDirect -> "D"
+    CBChannel -> "C"
   smpP =
     A.anyChar >>= \case
       'G' -> pure CBGroup
+      'D' -> pure CBDirect
+      'C' -> pure CBChannel
       c -> fail $ "invalid ChatBinding: " <> show c
 
 instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode
@@ -425,7 +430,8 @@ data MsgSigning = MsgSigning
     privKey :: C.PrivateKeyEd25519
   }
 
-
+encodeChatBinding :: ChatBinding -> ByteString -> ByteString
+encodeChatBinding cb bindingData = smpEncode cb <> bindingData
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -451,6 +457,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
   XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
   XGrpRelayTest :: ByteString -> Maybe ByteString -> ChatMsgEvent 'Json
+  XGrpRelayNew :: ShortLinkContact -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -499,6 +506,7 @@ isForwardedGroupMsg ev = case ev of
   XMsgReact {} -> True
   XFileCancel _ -> True
   XInfo _ -> True
+  XGrpRelayNew _ -> True
   XGrpMemNew {} -> True
   XGrpMemRole {} -> True
   XGrpMemRestrict {} -> True
@@ -654,7 +662,7 @@ data MsgContainer = MsgContainer
     -- the key used in mentions is a locally (per message) unique display name of member.
     -- Suffixes _1, _2 should be appended to make names locally unique.
     -- It should be done in the UI, as they will be part of the text, and validated in the API.
-    mentions :: Map MemberName MsgMention,
+    mentions :: MsgMentions,
     file :: Maybe FileInvitation,
     ttl :: Maybe Int,
     live :: Maybe Bool,
@@ -673,7 +681,7 @@ mcEmpty :: MsgContainer
 mcEmpty =
   MsgContainer
     { content = MCText "",
-      mentions = M.empty,
+      mentions = MsgMentions M.empty,
       file = Nothing,
       ttl = Nothing,
       live = Nothing,
@@ -707,7 +715,7 @@ data MsgContent
   | MCVoice {text :: Text, duration :: Int}
   | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
-  | MCChat {text :: Text, chatLink :: MsgChatLink}
+  | MCChat {text :: Text, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
@@ -715,6 +723,13 @@ data MsgChatLink
   = MCLContact {connLink :: ShortLinkContact, profile :: Profile, business :: Bool}
   | MCLInvitation {invLink :: ShortLinkInvitation, profile :: Profile}
   | MCLGroup {connLink :: ShortLinkContact, groupProfile :: GroupProfile}
+  deriving (Eq, Show)
+
+data LinkOwnerSig = LinkOwnerSig
+  { ownerId :: Maybe B64UrlByteString,
+    chatBinding :: B64UrlByteString,
+    ownerSig :: C.Signature 'C.Ed25519
+  }
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
@@ -774,11 +789,94 @@ msgContentTag = \case
 data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
 
+newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
+  deriving (Eq, Show)
+
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
+
+$(JQ.deriveJSON defaultJSON ''LinkOwnerSig)
 
 $(JQ.deriveJSON defaultJSON ''MsgMention)
 
+instance FromJSON MsgMentions where
+  parseJSON v = MsgMentions <$> parseJSON v
+  omittedField = Just $ MsgMentions M.empty
+
+instance ToJSON MsgMentions where
+  toJSON (MsgMentions m) = toJSON $ toMaybeMap m
+  toEncoding (MsgMentions m) = toEncoding $ toMaybeMap m
+  omitField (MsgMentions m) = M.null m
+
+toMaybeMap :: Map k v -> Maybe (Map k v)
+toMaybeMap m = if M.null m then Nothing else Just m
+{-# INLINE toMaybeMap #-}
+
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
+
+instance FromJSON MsgContent where
+  parseJSON (J.Object v) =
+    v .: "type" >>= \case
+      MCText_ -> MCText <$> v .: "text"
+      MCLink_ -> do
+        text <- v .: "text"
+        preview <- v .: "preview"
+        pure MCLink {text, preview}
+      MCImage_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        pure MCImage {text, image}
+      MCVideo_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        duration <- v .: "duration"
+        pure MCVideo {text, image, duration}
+      MCVoice_ -> do
+        text <- v .: "text"
+        duration <- v .: "duration"
+        pure MCVoice {text, duration}
+      MCFile_ -> MCFile <$> v .: "text"
+      MCReport_ -> do
+        text <- v .: "text"
+        reason <- v .: "reason"
+        pure MCReport {text, reason}
+      MCChat_ -> do
+        text <- v .: "text"
+        chatLink <- v .: "chatLink"
+        ownerSig <- v .:? "ownerSig"
+        pure MCChat {text, chatLink, ownerSig}
+      MCUnknown_ tag -> do
+        text <- fromMaybe unknownMsgType <$> v .:? "text"
+        pure MCUnknown {tag, text, json = v}
+  parseJSON invalid =
+    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
+
+unknownMsgType :: Text
+unknownMsgType = "unknown message type"
+
+(.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
+key .=? value = maybe id ((:) . (key .=)) value
+
+instance ToJSON MsgContent where
+  toJSON = \case
+    MCUnknown {json} -> J.Object json
+    MCText t -> J.object ["type" .= MCText_, "text" .= t]
+    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
+    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
+    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
+    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
+    MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
+    MCChat {text, chatLink, ownerSig} -> J.object $ ("ownerSig" .=? ownerSig) ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
+  toEncoding = \case
+    MCUnknown {json} -> JE.value $ J.Object json
+    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
+    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
+    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
+    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
+    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
+    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
+    MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
+    MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, - 16 for block encryption ("rounded" to 15602)
@@ -834,7 +932,11 @@ parseChatMessages msg = case B.head msg of
     decodeCompressed :: ByteString -> [Either String AParsedMsg]
     decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
-      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
+      Right (compressed :: L.NonEmpty Compressed) -> case traverse decompressedSize compressed of
+        Nothing -> [Left "compressed size not specified"]
+        Just sizes
+          | sum sizes > maxDecompressedMsgLength -> [Left "decompressed size exceeds limit"]
+          | otherwise -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1) compressed
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s
     -- Binary batch format: '=' <count:1> (<len:2> <body>)*
@@ -872,7 +974,7 @@ parseMsgContainer v = do
   file <- v .:? "file"
   ttl <- v .:? "ttl"
   live <- v .:? "live"
-  mentions <- fromMaybe M.empty <$> (v .:? "mentions")
+  mentions <- MsgMentions . fromMaybe M.empty <$> (v .:? "mentions")
   scope <- v .:? "scope"
   asGroup <- v .:? "asGroup"
   quote <- v .:? "quote"
@@ -892,47 +994,8 @@ justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
 justTrue False = Nothing
 
-instance FromJSON MsgContent where
-  parseJSON (J.Object v) =
-    v .: "type" >>= \case
-      MCText_ -> MCText <$> v .: "text"
-      MCLink_ -> do
-        text <- v .: "text"
-        preview <- v .: "preview"
-        pure MCLink {text, preview}
-      MCImage_ -> do
-        text <- v .: "text"
-        image <- v .: "image"
-        pure MCImage {text, image}
-      MCVideo_ -> do
-        text <- v .: "text"
-        image <- v .: "image"
-        duration <- v .: "duration"
-        pure MCVideo {text, image, duration}
-      MCVoice_ -> do
-        text <- v .: "text"
-        duration <- v .: "duration"
-        pure MCVoice {text, duration}
-      MCFile_ -> MCFile <$> v .: "text"
-      MCReport_ -> do
-        text <- v .: "text"
-        reason <- v .: "reason"
-        pure MCReport {text, reason}
-      MCChat_ -> do
-        text <- v .: "text"
-        chatLink <- v .: "chatLink"
-        pure MCChat {text, chatLink}
-      MCUnknown_ tag -> do
-        text <- fromMaybe unknownMsgType <$> v .:? "text"
-        pure MCUnknown {tag, text, json = v}
-  parseJSON invalid =
-    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
-
-unknownMsgType :: Text
-unknownMsgType = "unknown message type"
-
 msgContainerJSON :: MsgContainer -> J.Object
-msgContainerJSON MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward} =
+msgContainerJSON MsgContainer {content, mentions = MsgMentions mentions, file, ttl, live, scope, asGroup, quote, parent, forward} =
   JM.fromList $
     discriminators
       <> ("file" .=? file) (("ttl" .=? ttl) (("live" .=? live) (("mentions" .=? nonEmptyMap mentions) (("scope" .=? scope) (("asGroup" .=? asGroup) ["content" .= content])))))
@@ -945,28 +1008,6 @@ msgContainerJSON MsgContainer {content, mentions, file, ttl, live, scope, asGrou
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
 {-# INLINE nonEmptyMap #-}
-
-instance ToJSON MsgContent where
-  toJSON = \case
-    MCUnknown {json} -> J.Object json
-    MCText t -> J.object ["type" .= MCText_, "text" .= t]
-    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
-    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
-    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
-    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
-    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
-    MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
-    MCChat {text, chatLink} -> J.object ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
-  toEncoding = \case
-    MCUnknown {json} -> JE.value $ J.Object json
-    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
-    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
-    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
-    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
-    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
-    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
-    MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
-    MCChat {text, chatLink} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink
 
 instance ToField MsgContent where
   toField = toField . encodeJSON
@@ -1000,6 +1041,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpRelayInv_ :: CMEventTag 'Json
   XGrpRelayAcpt_ :: CMEventTag 'Json
   XGrpRelayTest_ :: CMEventTag 'Json
+  XGrpRelayNew_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
   XGrpMemIntro_ :: CMEventTag 'Json
   XGrpMemInv_ :: CMEventTag 'Json
@@ -1057,6 +1099,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpRelayInv_ -> "x.grp.relay.inv"
     XGrpRelayAcpt_ -> "x.grp.relay.acpt"
     XGrpRelayTest_ -> "x.grp.relay.test"
+    XGrpRelayNew_ -> "x.grp.relay.new"
     XGrpMemNew_ -> "x.grp.mem.new"
     XGrpMemIntro_ -> "x.grp.mem.intro"
     XGrpMemInv_ -> "x.grp.mem.inv"
@@ -1115,6 +1158,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.relay.inv" -> XGrpRelayInv_
         "x.grp.relay.acpt" -> XGrpRelayAcpt_
         "x.grp.relay.test" -> XGrpRelayTest_
+        "x.grp.relay.new" -> XGrpRelayNew_
         "x.grp.mem.new" -> XGrpMemNew_
         "x.grp.mem.intro" -> XGrpMemIntro_
         "x.grp.mem.inv" -> XGrpMemInv_
@@ -1169,6 +1213,7 @@ toCMEventTag msg = case msg of
   XGrpRelayInv _ -> XGrpRelayInv_
   XGrpRelayAcpt _ -> XGrpRelayAcpt_
   XGrpRelayTest {} -> XGrpRelayTest_
+  XGrpRelayNew _ -> XGrpRelayNew_
   XGrpMemNew {} -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -1241,6 +1286,7 @@ requiresSignature = \case
   XGrpMemRole_ -> True
   XGrpMemRestrict_ -> True
   XGrpLeave_ -> True
+  XGrpRelayNew_ -> True
   XInfo_ -> True
   _ -> False
 
@@ -1326,6 +1372,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         B64UrlByteString challenge <- p "challenge"
         sig_ <- fmap (\(B64UrlByteString s) -> s) <$> opt "signature"
         pure $ XGrpRelayTest challenge sig_
+      XGrpRelayNew_ -> XGrpRelayNew <$> p "relayLink"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1357,9 +1404,6 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XCallEnd_ -> XCallEnd <$> p "callId"
       XOk_ -> pure XOk
       XUnknown_ t -> pure $ XUnknown t params
-
-(.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
-key .=? value = maybe id ((:) . (key .=)) value
 
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
 chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
@@ -1396,6 +1440,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpRelayTest challenge sig_ -> o $
         ("signature" .=? (B64UrlByteString <$> sig_))
         ["challenge" .= B64UrlByteString challenge]
+      XGrpRelayNew relayLink -> o ["relayLink" .= relayLink]
       XGrpMemNew memInfo scope -> o $ ("scope" .=? scope) ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]

@@ -58,6 +58,7 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import java.util.concurrent.atomic.AtomicBoolean
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
@@ -90,6 +91,13 @@ enum class SimplexLinkMode {
   }
 }
 
+enum class CloseBehavior {
+  Ask, Quit, MinimizeToTray;
+  companion object { val default = Ask }
+}
+
+class HintPref(val reset: () -> Unit, val isUnchanged: () -> Boolean)
+
 // Spec: spec/state.md#AppPreferences
 class AppPreferences {
   // deprecated, remove in 2024
@@ -98,6 +106,7 @@ class AppPreferences {
     SHARED_PREFS_NOTIFICATIONS_MODE,
     if (!runServiceInBackground.get()) NotificationsMode.OFF else NotificationsMode.default
   )  { NotificationsMode.values().firstOrNull { it.name == this } }
+  val closeBehavior: SharedPreference<CloseBehavior> = mkSafeEnumPreference(SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR, CloseBehavior.default)
   val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
   val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
@@ -212,7 +221,7 @@ class AppPreferences {
   val shouldImportAppSettings = mkBoolPreference(SHARED_PREFS_SHOULD_IMPORT_APP_SETTINGS, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM_THEME_NAME)
-  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.DARK.themeName)
   val currentThemeIds = mkMapPreference(SHARED_PREFS_CURRENT_THEME_IDs, mapOf(), encode = {
     json.encodeToString(MapSerializer(String.serializer(), String.serializer()), it)
   }, decode = {
@@ -256,16 +265,23 @@ class AppPreferences {
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
   val chatBottomBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_BAR, true)
 
-  val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
-    laNoticeShown to false,
-    oneHandUICardShown to false,
-    addressCreationCardShown to false,
-    liveMessageAlertShown to false,
-    showHiddenProfilesNotice to true,
-    showMuteProfileAlert to true,
-    showReportsInSupportChatAlert to true,
-    showDeleteConversationNotice to true,
-    showDeleteContactNotice to true,
+  val hintPreferences: List<HintPref> = listOf(
+    hintPref(laNoticeShown, false),
+    hintPref(oneHandUICardShown, false),
+    hintPref(addressCreationCardShown, false),
+    hintPref(liveMessageAlertShown, false),
+    hintPref(showHiddenProfilesNotice, true),
+    hintPref(showMuteProfileAlert, true),
+    hintPref(showReportsInSupportChatAlert, true),
+    hintPref(showDeleteConversationNotice, true),
+    hintPref(showDeleteContactNotice, true),
+    hintPref(privacyLinkPreviewsShowAlert, true),
+    hintPref(closeBehavior, CloseBehavior.default),
+  )
+
+  private fun <T> hintPref(pref: SharedPreference<T>, default: T) = HintPref(
+    reset = { pref.set(default) },
+    isUnchanged = { pref.state.value == default },
   )
 
   private fun mkIntPreference(prefName: String, default: Int) =
@@ -477,6 +493,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
+    private const val SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR = "DesktopCloseBehavior"
     private const val SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
     private const val SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
     private const val SHARED_PREFS_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
@@ -722,14 +739,20 @@ object ChatController {
     val alert = if (r is API.Error) retryableNetworkErrorAlert(r.err) else null
     if ((inProgress == null || inProgress.value) && alert != null) {
       return suspendCancellableCoroutine { cont ->
+        val resumed = AtomicBoolean(false)
+        fun safeResume(result: Result<API?>) {
+          if (resumed.compareAndSet(false, true)) {
+            cont.resumeWith(result)
+          }
+        }
         showRetryAlert(
           alert,
           onCancel = {
-            cont.resumeWith(Result.success(null))
+            safeResume(Result.success(null))
           },
           onRetry = {
             withLongRunningApi {
-              cont.resumeWith(
+              safeResume(
                 runCatching {
                   coroutineScope {
                     sendCmdWithRetry(rhId, cmd, inProgress = inProgress, retryNum = retryNum + 1)
@@ -741,7 +764,7 @@ object ChatController {
         )
 
         cont.invokeOnCancellation {
-          cont.resumeWith(Result.success(null))
+          safeResume(Result.success(null))
         }
       }
     } else {
@@ -1043,7 +1066,7 @@ object ChatController {
 
   suspend fun apiGetChatContentTypes(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?): List<MsgContentTag>? {
     val r = sendCmd(rh, CC.ApiGetChatContentTypes(type, id, scope))
-    if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes
+    if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes.filter { it !is MsgContentTag.Unknown }
     Log.e(TAG, "apiGetChatContentTypes bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_details), "${r.responseType}: ${r.details}")
     return null
@@ -1133,6 +1156,13 @@ object ChatController {
   suspend fun apiForwardChatItems(rh: Long?, toChatType: ChatType, toChatId: Long, toScope: GroupChatScope?, sendAsGroup: Boolean = false, fromChatType: ChatType, fromChatId: Long, fromScope: GroupChatScope?, itemIds: List<Long>, ttl: Int?): List<ChatItem>? {
     val cmd = CC.ApiForwardChatItems(toChatType, toChatId, toScope, sendAsGroup, fromChatType, fromChatId, fromScope, itemIds, ttl)
     return processSendMessageCmd(rh, cmd)?.map { it.chatItem }
+  }
+
+  suspend fun apiShareChatMsgContent(rh: Long?, shareChatType: ChatType, shareChatId: Long, toChatType: ChatType, toChatId: Long, toScope: GroupChatScope?, sendAsGroup: Boolean): MsgContent? {
+    val r = sendCmd(rh, CC.ApiShareChatMsgContent(shareChatType, shareChatId, toChatType, toChatId, toScope, sendAsGroup))
+    if (r is API.Result && r.res is CR.ChatMsgContent) return r.res.msgContent
+    apiErrorAlert("apiShareChatMsgContent", generalGetString(MR.strings.error_sharing_channel), r)
+    return null
   }
 
   suspend fun apiPlanForwardChatItems(rh: Long?, fromChatType: ChatType, fromChatId: Long, fromScope: GroupChatScope?, chatItemIds: List<Long>): CR.ForwardPlan? {
@@ -1485,9 +1515,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnectPlan(rh: Long?, connLink: String, inProgress: MutableState<Boolean>): Pair<CreatedConnLink, ConnectionPlan>? {
+  suspend fun apiConnectPlan(rh: Long?, connLink: String, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): Pair<CreatedConnLink, ConnectionPlan>? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
-    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink), inProgress = inProgress)
+    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, linkOwnerSig), inProgress = inProgress)
     if (r is API.Result && r.res is CR.CRConnectionPlan) return r.res.connLink to r.res.connectionPlan
     if (inProgress.value && r != null) apiConnectResponseAlert(r)
     return null
@@ -1555,6 +1585,23 @@ object ChatController {
         }
       }
     }
+  }
+
+  fun connErrorText(e: ChatError): String = when {
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.InvalidConnReq ->
+      generalGetString(MR.strings.invalid_connection_link)
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.UnsupportedConnReq ->
+      generalGetString(MR.strings.unsupported_connection_link)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH ->
+      generalGetString(MR.strings.connection_error_auth)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.BLOCKED ->
+      "${generalGetString(MR.strings.connection_error_blocked)}: ${e.agentError.smpErr.blockInfo.reason.text}"
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.QUOTA ->
+      generalGetString(MR.strings.connection_reached_limit_of_undelivered_messages)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.BROKER ->
+      generalGetString(MR.strings.network_error)
+    else ->
+      "${generalGetString(MR.strings.error_prefix)}: ${e.string}"
   }
 
   suspend fun apiPrepareContact(rh: Long?, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData): Chat? {
@@ -2111,10 +2158,16 @@ object ChatController {
     return null
   }
 
-  suspend fun apiNewPublicGroup(rh: Long?, incognito: Boolean, relayIds: List<Long>, groupProfile: GroupProfile): Triple<GroupInfo, GroupLink, List<GroupRelay>>? {
+  sealed class PublicGroupCreationResult {
+    data class Created(val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): PublicGroupCreationResult()
+    data class CreationFailed(val addRelayResults: List<AddRelayResult>): PublicGroupCreationResult()
+  }
+
+  suspend fun apiNewPublicGroup(rh: Long?, incognito: Boolean, relayIds: List<Long>, groupProfile: GroupProfile): PublicGroupCreationResult? {
     val userId = kotlin.runCatching { currentUserId("apiNewPublicGroup") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.ApiNewPublicGroup(userId, incognito, relayIds, groupProfile))
-    if (r is API.Result && r.res is CR.PublicGroupCreated) return Triple(r.res.groupInfo, r.res.groupLink, r.res.groupRelays)
+    if (r is API.Result && r.res is CR.PublicGroupCreated) return PublicGroupCreationResult.Created(r.res.groupInfo, r.res.groupLink, r.res.groupRelays)
+    if (r is API.Result && r.res is CR.PublicGroupCreationFailed) return PublicGroupCreationResult.CreationFailed(r.res.addRelayResults)
     if (r != null) throw Exception("${r.responseType}: ${r.details}")
     return null
   }
@@ -2123,6 +2176,19 @@ object ChatController {
     val r = sendCmd(null, CC.ApiGetGroupRelays(groupId))
     if (r is API.Result && r.res is CR.GroupRelays) return r.res.groupRelays
     return emptyList()
+  }
+
+  sealed class AddGroupRelaysResult {
+    data class Added(val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): AddGroupRelaysResult()
+    data class AddFailed(val addRelayResults: List<AddRelayResult>): AddGroupRelaysResult()
+  }
+
+  suspend fun apiAddGroupRelays(groupId: Long, relayIds: List<Long>): AddGroupRelaysResult? {
+    val r = sendCmdWithRetry(null, CC.ApiAddGroupRelays(groupId, relayIds))
+    if (r is API.Result && r.res is CR.GroupRelaysAdded) return AddGroupRelaysResult.Added(r.res.groupInfo, r.res.groupLink, r.res.groupRelays)
+    if (r is API.Result && r.res is CR.GroupRelaysAddFailed) return AddGroupRelaysResult.AddFailed(r.res.addRelayResults)
+    if (r != null) throw Exception("${r.responseType}: ${r.details}")
+    return null
   }
 
   suspend fun apiAddMember(rh: Long?, groupId: Long, contactId: Long, memberRole: GroupMemberRole): GroupMember? {
@@ -3624,9 +3690,11 @@ sealed class CC {
   class ApiGetReactionMembers(val userId: Long, val groupId: Long, val itemId: Long, val reaction: MsgReaction): CC()
   class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val chatItemIds: List<Long>): CC()
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean, val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val itemIds: List<Long>, val ttl: Int?): CC()
+  class ApiShareChatMsgContent(val shareChatType: ChatType, val shareChatId: Long, val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiNewPublicGroup(val userId: Long, val incognito: Boolean, val relayIds: List<Long>, val groupProfile: GroupProfile): CC()
   class ApiGetGroupRelays(val groupId: Long): CC()
+  class ApiAddGroupRelays(val groupId: Long, val relayIds: List<Long>): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
   class ApiAcceptMember(val groupId: Long, val groupMemberId: Long, val memberRole: GroupMemberRole): CC()
@@ -3683,7 +3751,7 @@ sealed class CC {
   class APIAddContact(val userId: Long, val incognito: Boolean): CC()
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class ApiChangeConnectionUser(val connId: Long, val userId: Long): CC()
-  class APIConnectPlan(val userId: Long, val connLink: String): CC()
+  class APIConnectPlan(val userId: Long, val connLink: String, val linkOwnerSig: LinkOwnerSig? = null): CC()
   class APIPrepareContact(val userId: Long, val connLink: CreatedConnLink, val contactShortLinkData: ContactShortLinkData): CC()
   class APIPrepareGroup(val userId: Long, val connLink: CreatedConnLink, val directLink: Boolean, val groupShortLinkData: GroupShortLinkData): CC()
   class APIChangePreparedContactUser(val contactId: Long, val newUserId: Long): CC()
@@ -3790,7 +3858,7 @@ sealed class CC {
       val tag = if (contentTag == null) {
         ""
       } else {
-        " content=${contentTag.name.lowercase()}"
+        " content=${contentTag.cmdString}"
       }
       "/_get chat ${chatRef(type, id, scope)}$tag ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     }
@@ -3822,12 +3890,16 @@ sealed class CC {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_forward ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) " as_group=on" else ""} ${chatRef(fromChatType, fromChatId, fromScope)} ${itemIds.joinToString(",")} ttl=${ttlStr}"
     }
+    is ApiShareChatMsgContent -> {
+      "/_share chat content ${chatRef(shareChatType, shareChatId, null)} ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) "(as_group=on)" else ""}"
+    }
     is ApiPlanForwardChatItems -> {
       "/_forward plan ${chatRef(fromChatType, fromChatId, fromScope)} ${chatItemIds.joinToString(",")}"
     }
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiNewPublicGroup -> "/_public group $userId incognito=${onOff(incognito)} ${relayIds.joinToString(",")} ${json.encodeToString(groupProfile)}"
     is ApiGetGroupRelays -> "/_get relays #$groupId"
+    is ApiAddGroupRelays -> "/_add relays #$groupId ${relayIds.joinToString(",")}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiAcceptMember -> "/_accept member #$groupId $groupMemberId ${memberRole.memberRole}"
@@ -3884,7 +3956,10 @@ sealed class CC {
     is APIAddContact -> "/_connect $userId incognito=${onOff(incognito)}"
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
     is ApiChangeConnectionUser -> "/_set conn user :$connId $userId"
-    is APIConnectPlan -> "/_connect plan $userId $connLink"
+    is APIConnectPlan -> {
+      val sigStr = if (linkOwnerSig != null) " sig=${json.encodeToString(linkOwnerSig)}" else ""
+      "/_connect plan $userId $connLink$sigStr"
+    }
     is APIPrepareContact -> "/_prepare contact $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} ${json.encodeToString(contactShortLinkData)}"
     is APIPrepareGroup -> "/_prepare group $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} direct=${onOff(directLink)} ${json.encodeToString(groupShortLinkData)}"
     is APIChangePreparedContactUser -> "/_set contact user @$contactId $newUserId"
@@ -4003,10 +4078,12 @@ sealed class CC {
     is ApiChatItemReaction -> "apiChatItemReaction"
     is ApiGetReactionMembers -> "apiGetReactionMembers"
     is ApiForwardChatItems -> "apiForwardChatItems"
+    is ApiShareChatMsgContent -> "apiShareChatMsgContent"
     is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
     is ApiNewGroup -> "apiNewGroup"
     is ApiNewPublicGroup -> "apiNewPublicGroup"
     is ApiGetGroupRelays -> "apiGetGroupRelays"
+    is ApiAddGroupRelays -> "apiAddGroupRelays"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
     is ApiAcceptMember -> "apiAcceptMember"
@@ -4551,6 +4628,12 @@ sealed class UserServersWarning {
 @Serializable
 data class RelayConnectionResult(
   val relayMember: GroupMember,
+  val relayError: ChatError? = null
+)
+
+@Serializable
+data class AddRelayResult(
+  val relay: UserChatRelay,
   val relayError: ChatError? = null
 )
 
@@ -5641,7 +5724,8 @@ enum class GroupFeature: Feature {
   @SerialName("files") Files,
   @SerialName("simplexLinks") SimplexLinks,
   @SerialName("reports") Reports,
-  @SerialName("history") History;
+  @SerialName("history") History,
+  @SerialName("support") Support;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -5659,10 +5743,12 @@ enum class GroupFeature: Feature {
       SimplexLinks -> true
       Reports -> false
       History -> false
+      Support -> false
     }
 
-  override val text: String
-    get() = when(this) {
+  override val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when(this) {
       TimedMessages -> generalGetString(MR.strings.timed_messages)
       DirectMessages -> generalGetString(MR.strings.direct_messages)
       FullDelete -> generalGetString(MR.strings.full_deletion)
@@ -5670,8 +5756,9 @@ enum class GroupFeature: Feature {
       Voice -> generalGetString(MR.strings.voice_messages)
       Files -> generalGetString(MR.strings.files_and_media)
       SimplexLinks -> generalGetString(MR.strings.simplex_links)
-      Reports -> generalGetString(MR.strings.group_reports_member_reports)
+      Reports -> generalGetString(if (isChannel) MR.strings.group_reports_subscriber_reports else MR.strings.group_reports_member_reports)
       History -> generalGetString(MR.strings.recent_history)
+      Support -> generalGetString(MR.strings.chat_with_admins)
     }
 
   val icon: Painter
@@ -5685,6 +5772,7 @@ enum class GroupFeature: Feature {
       SimplexLinks -> painterResource(MR.images.ic_link)
       Reports -> painterResource(MR.images.ic_flag)
       History -> painterResource(MR.images.ic_schedule)
+      Support -> painterResource(MR.images.ic_help)
     }
 
   @Composable
@@ -5698,9 +5786,10 @@ enum class GroupFeature: Feature {
     SimplexLinks -> painterResource(MR.images.ic_link)
     Reports -> painterResource(MR.images.ic_flag_filled)
     History -> painterResource(MR.images.ic_schedule_filled)
+    Support -> painterResource(MR.images.ic_help_filled)
   }
 
-  fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
+  fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean, isChannel: Boolean = false): String =
     if (canEdit) {
       when(this) {
         TimedMessages -> when(enabled) {
@@ -5708,8 +5797,8 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_disappearing)
         }
         DirectMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_direct_messages)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_direct_messages)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.allow_direct_messages_channel else MR.strings.allow_direct_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.prohibit_direct_messages_channel else MR.strings.prohibit_direct_messages)
         }
         FullDelete -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_delete_messages)
@@ -5736,47 +5825,55 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_member_reports)
         }
         History -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_recent_history)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.enable_sending_recent_history_channel else MR.strings.enable_sending_recent_history)
+          GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.disable_sending_recent_history_channel else MR.strings.disable_sending_recent_history)
+        }
+        Support -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.allow_chat_with_admins_channel else MR.strings.allow_chat_with_admins)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_chat_with_admins)
         }
       }
     } else {
       when(this) {
         TimedMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_disappearing)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_disappearing_channel else MR.strings.group_members_can_send_disappearing)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disappearing_messages_are_prohibited)
         }
         DirectMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_dms)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.direct_messages_are_prohibited)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_dms_channel else MR.strings.group_members_can_send_dms)
+          GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.direct_messages_are_prohibited_channel else MR.strings.direct_messages_are_prohibited)
         }
         FullDelete -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_delete)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_delete_channel else MR.strings.group_members_can_delete)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.message_deletion_prohibited_in_chat)
         }
         Reactions -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_add_message_reactions)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_add_message_reactions_channel else MR.strings.group_members_can_add_message_reactions)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.message_reactions_are_prohibited)
         }
         Voice -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_voice)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_voice_channel else MR.strings.group_members_can_send_voice)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.voice_messages_are_prohibited)
         }
         Files -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_files)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_files_channel else MR.strings.group_members_can_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.files_are_prohibited_in_group)
         }
         SimplexLinks -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_simplex_links)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_simplex_links_channel else MR.strings.group_members_can_send_simplex_links)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.simplex_links_are_prohibited_in_group)
         }
         Reports -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_reports)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_reports_channel else MR.strings.group_members_can_send_reports)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.member_reports_are_prohibited)
         }
         History -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.recent_history_is_not_sent_to_new_members)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.recent_history_is_sent_to_new_members_channel else MR.strings.recent_history_is_sent_to_new_members)
+          GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.recent_history_is_not_sent_to_new_members_channel else MR.strings.recent_history_is_not_sent_to_new_members)
+        }
+        Support -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.members_can_chat_with_admins_channel else MR.strings.members_can_chat_with_admins)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.chat_with_admins_is_prohibited)
         }
       }
     }
@@ -5903,6 +6000,7 @@ data class FullGroupPreferences(
   val simplexLinks: RoleGroupPreference,
   val reports: GroupPreference,
   val history: GroupPreference,
+  val support: GroupPreference,
   val commands: List<ChatBotCommand>,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -5916,6 +6014,7 @@ data class FullGroupPreferences(
       simplexLinks = simplexLinks,
       reports = reports,
       history = history,
+      support = support,
       commands = commands,
     )
 
@@ -5930,6 +6029,7 @@ data class FullGroupPreferences(
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       reports = GroupPreference(GroupFeatureEnabled.ON),
       history = GroupPreference(GroupFeatureEnabled.ON),
+      support = GroupPreference(GroupFeatureEnabled.ON),
       commands = listOf()
     )
   }
@@ -5946,6 +6046,7 @@ data class GroupPreferences(
   val simplexLinks: RoleGroupPreference? = null,
   val reports: GroupPreference? = null,
   val history: GroupPreference? = null,
+  val support: GroupPreference? = null,
   val commands: List<ChatBotCommand>? = null
 ) {
   companion object {
@@ -6318,6 +6419,7 @@ sealed class CR {
   @Serializable @SerialName("subscriptionStatus") class SubscriptionStatusEvt(val subscriptionStatus: SubscriptionStatus, val connections: List<String>): CR()
   @Serializable @SerialName("chatInfoUpdated") class ChatInfoUpdated(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
+  @Serializable @SerialName("chatMsgContent") class ChatMsgContent(val user: UserRef, val msgContent: MsgContent): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
@@ -6329,7 +6431,10 @@ sealed class CR {
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("publicGroupCreated") class PublicGroupCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("publicGroupCreationFailed") class PublicGroupCreationFailed(val user: UserRef, val addRelayResults: List<AddRelayResult>): CR()
   @Serializable @SerialName("groupRelays") class GroupRelays(val user: UserRef, val groupInfo: GroupInfo, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("groupRelaysAdded") class GroupRelaysAdded(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("groupRelaysAddFailed") class GroupRelaysAddFailed(val user: UserRef, val addRelayResults: List<AddRelayResult>): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("groupLinkConnecting") class GroupLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember): CR()
@@ -6506,6 +6611,7 @@ sealed class CR {
     is SubscriptionStatusEvt -> "subscriptionStatus"
     is ChatInfoUpdated -> "chatInfoUpdated"
     is NewChatItems -> "newChatItems"
+    is ChatMsgContent -> "chatMsgContent"
     is ChatItemsStatusesUpdated -> "chatItemsStatusesUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemNotChanged -> "chatItemNotChanged"
@@ -6516,7 +6622,10 @@ sealed class CR {
     is ForwardPlan -> "forwardPlan"
     is GroupCreated -> "groupCreated"
     is PublicGroupCreated -> "publicGroupCreated"
+    is PublicGroupCreationFailed -> "publicGroupCreationFailed"
     is GroupRelays -> "groupRelays"
+    is GroupRelaysAdded -> "groupRelaysAdded"
+    is GroupRelaysAddFailed -> "groupRelaysAddFailed"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
     is GroupLinkConnecting -> "groupLinkConnecting"
@@ -6686,6 +6795,7 @@ sealed class CR {
     is SubscriptionStatusEvt -> "subscriptionStatus $subscriptionStatus\nconnections: $connections"
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
+    is ChatMsgContent -> withUser(user, msgContent.toString())
     is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
@@ -6696,7 +6806,10 @@ sealed class CR {
     is ForwardPlan -> withUser(user, "itemsCount: $itemsCount\nchatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation: ${json.encodeToString(forwardConfirmation)}")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is PublicGroupCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
+    is PublicGroupCreationFailed -> withUser(user, "addRelayResults: $addRelayResults")
     is GroupRelays -> withUser(user, "groupInfo: $groupInfo\ngroupRelays: $groupRelays")
+    is GroupRelaysAdded -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
+    is GroupRelaysAddFailed -> withUser(user, "addRelayResults: $addRelayResults")
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is GroupLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember")
@@ -6841,6 +6954,12 @@ fun simplexChatLink(uri: String): String =
   else uri
 
 @Serializable
+sealed class OwnerVerification {
+  @Serializable @SerialName("verified") object Verified : OwnerVerification()
+  @Serializable @SerialName("failed") class Failed(val reason: String) : OwnerVerification()
+}
+
+@Serializable
 sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
   @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
@@ -6850,7 +6969,7 @@ sealed class ConnectionPlan {
 
 @Serializable
 sealed class InvitationLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null): InvitationLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): InvitationLinkPlan()
   @Serializable @SerialName("ownLink") object OwnLink: InvitationLinkPlan()
   @Serializable @SerialName("connecting") class Connecting(val contact_: Contact? = null): InvitationLinkPlan()
   @Serializable @SerialName("known") class Known(val contact: Contact): InvitationLinkPlan()
@@ -6858,7 +6977,7 @@ sealed class InvitationLinkPlan {
 
 @Serializable
 sealed class ContactAddressPlan {
-  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null): ContactAddressPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): ContactAddressPlan()
   @Serializable @SerialName("ownLink") object OwnLink: ContactAddressPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
@@ -6868,11 +6987,12 @@ sealed class ContactAddressPlan {
 
 @Serializable
 sealed class GroupLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null): GroupLinkPlan()
   @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
   @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
+  @Serializable @SerialName("noRelays") class NoRelays(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
 }
 
 abstract class TerminalItem {

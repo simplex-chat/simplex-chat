@@ -81,6 +81,9 @@ frankProfile = mkProfile "frank" "Frank" Nothing
 businessProfile :: Profile
 businessProfile = mkProfile "biz" "Biz Inc" Nothing
 
+relayProfile :: Profile
+relayProfile = mkProfile "relay" "Relay" Nothing
+
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
 mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
 
@@ -287,10 +290,13 @@ groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 
 groupFeaturesNoE2E :: [(Int, String)]
-groupFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0
+groupFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0 False
 
 channelFeaturesNoE2E :: [(Int, String)]
-channelFeaturesNoE2E = map (\(d, s) -> if s == "Comments: off" then (d, "Comments: on") else (d, s)) groupFeaturesNoE2E
+channelFeaturesNoE2E =
+  map (\(d, s) -> if s == "Comments: off" then (d, "Comments: on") else (d, s))
+    . map (\(a, _, _) -> a)
+    $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0 True
 
 sndGroupFeatures :: [(Int, String)]
 sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
@@ -299,10 +305,10 @@ groupFeatureStrs :: [String]
 groupFeatureStrs = map (\(a, _, _) -> snd a) $ groupFeatures'' 0
 
 groupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
+groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir False
 
-groupFeatures_ :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures_ dir =
+groupFeatures_ :: Int -> Bool -> [((Int, String), Maybe (Int, String), Maybe String)]
+groupFeatures_ dir isChannel =
   [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
     ((dir, "Direct messages: on"), Nothing, Nothing),
     ((dir, "Full deletion: off"), Nothing, Nothing),
@@ -312,6 +318,7 @@ groupFeatures_ dir =
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: on"), Nothing, Nothing),
     ((dir, "Recent history: on"), Nothing, Nothing),
+    ((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing),
     ((dir, "Comments: off"), Nothing, Nothing)
   ]
 
@@ -330,7 +337,8 @@ businessGroupFeatures'' dir =
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: off"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing)
+    ((dir, "Recent history: on"), Nothing, Nothing),
+    ((dir, "Chat with admins: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String

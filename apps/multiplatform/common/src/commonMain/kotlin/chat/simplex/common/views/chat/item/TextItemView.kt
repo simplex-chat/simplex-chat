@@ -85,6 +85,13 @@ fun itemDisplayText(ci: ChatItem, linkMode: SimplexLinkMode): String {
   return formattedText.joinToString("") { itemSegmentDisplayText(it, ci, linkMode) }
 }
 
+// Display-only prefix rendered before ci.text (e.g. "Spam: " for reports).
+// Renderers and selection code MUST share this string — otherwise selection offsets drift from screen.
+fun itemPrefixText(ci: ChatItem): String = when (val mc = ci.content.msgContent) {
+  is MsgContent.MCReport -> if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: "
+  else -> ""
+}
+
 // Text transformations in MarkdownText must match itemSegmentDisplayText above
 @Composable
 fun MarkdownText (
@@ -109,9 +116,12 @@ fun MarkdownText (
   showViaProxy: Boolean = false,
   showTimestamp: Boolean = true,
   prefix: AnnotatedString? = null,
+  stripLink: String? = null,
   selectionRange: IntRange? = null,
   onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
+  val text = if (stripLink != null) stripTextLink(text.toString(), stripLink) else text
+  val formattedText = if (stripLink != null) stripFormattedTextLink(formattedText, stripLink) else formattedText
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
@@ -299,7 +309,7 @@ fun MarkdownText (
       }
       val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
-        val icon = remember { mutableStateOf(PointerIcon.Default) }
+        val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             if (hasLinks) {
@@ -336,7 +346,7 @@ fun MarkdownText (
               if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
                 PointerIcon.Hand
               } else {
-                PointerIcon.Default
+                PointerIcon.Text
               }
           },
           shouldConsumeEvent = { offset ->
@@ -431,7 +441,7 @@ private fun SelectableText(
 
   BasicText(
     text = text,
-    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)),
+    modifier = modifier.pointerHoverIcon(PointerIcon.Text).then(selectionHighlight(selectionRange, text.length, layoutResult)),
     style = style,
     maxLines = maxLines,
     overflow = overflow,
@@ -532,3 +542,20 @@ private fun isRtl(s: CharSequence): Boolean {
 }
 
 fun mentionText(name: String): String = if (name.contains(" @"))  "@'$name'" else "@$name"
+
+fun stripTextLink(text: String, link: String): String =
+  if (text == link) ""
+  else if (text.endsWith("\n$link")) text.dropLast(link.length + 1)
+  else text
+
+fun stripFormattedTextLink(ft: List<FormattedText>?, link: String): List<FormattedText>? {
+  if (ft == null || ft.isEmpty() || ft.last().text != link) return ft
+  val result = ft.toMutableList()
+  result.removeAt(result.lastIndex)
+  val i = result.lastIndex
+  if (i >= 0 && result[i].format == null && result[i].text.endsWith("\n")) {
+    result[i] = FormattedText(result[i].text.dropLast(1), null)
+    if (result[i].text.isEmpty()) result.removeLast()
+  }
+  return result.ifEmpty { null }
+}

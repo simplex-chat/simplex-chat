@@ -225,9 +225,9 @@ actual class VideoPlayer actual constructor(
       player.media().startPaused(uri.toFile().absolutePath)
       val start = System.currentTimeMillis()
       var snap: BufferedImage? = null
-      while (snap == null && start + 5000 > System.currentTimeMillis()) {
+      while (snap == null && start + 1500 > System.currentTimeMillis()) {
         snap = player.snapshots()?.get()
-        delay(10)
+        delay(50)
       }
       val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()
       if (orientation == null) {
@@ -265,7 +265,9 @@ actual class VideoPlayer actual constructor(
         mediaPlayer().events().addMediaPlayerEventListener(object: MediaPlayerEventAdapter() {
           override fun mediaPlayerReady(mediaPlayer: MediaPlayer?) {
             playerThread.execute {
-              mediaPlayer?.audio()?.setVolume(100)
+              // Do not call setVolume here: on Windows VLCJ routes it through WASAPI ISimpleAudioVolume,
+              // which resets SimpleX Chat's per-app volume in the Windows Volume Mixer on every playback
+              // (VLCJ issue #985). A fresh VLCJ MediaPlayer already defaults to volume 100, so this was redundant.
               mediaPlayer?.audio()?.isMute = false
             }
           }
@@ -278,7 +280,7 @@ actual class VideoPlayer actual constructor(
 
     private fun putPlayer(player: Component) = playersPool.add(player)
 
-    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcFactory) })
+    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) })
     private fun putHelperPlayer(player: CallbackMediaPlayerComponent) = helperPlayersPool.add(player)
   }
 }

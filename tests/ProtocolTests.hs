@@ -102,7 +102,7 @@ testChatPreferences :: Maybe Preferences
 testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, sessions = Nothing, comments = Nothing, commands = Nothing}
+testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, commands = Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences}
@@ -170,7 +170,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"file\"},\"file\":{\"fileSize\":12345,\"fileName\":\"file.txt\"}}}"
       #==# XMsgNew (mcSimple (MCFile "")) {file = Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}}
   it "x.msg.new quote with file" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
+    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")

@@ -37,7 +37,7 @@ struct GroupProfileView: View {
 
     var body: some View {
         List {
-            EditProfileImage(profileImage: $groupProfile.image, showChooseSource: $showChooseSource)
+            EditProfileImage(profileImage: $groupProfile.image, iconName: groupInfo.chatIconName, showChooseSource: $showChooseSource)
                 .if(!focusDisplayName) { $0.padding(.top) }
 
             Section {
