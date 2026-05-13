@@ -284,7 +284,21 @@ class Client:
 
         return deco
 
-    def on_event(self, event: CEvt.ChatEvent_Tag, /) -> Callable[[EventHandler], EventHandler]:
+    # `on_event` is exposed as a property typed as the generated
+    # `OnEventDecorator` Protocol so per-tag narrowing applies — e.g.
+    # `@client.on_event("contactConnected")` types the handler's event
+    # parameter as `CEvt.ContactConnected`, not the unnarrowed
+    # `CEvt.ChatEvent` union. The Protocol's overload chain lives in
+    # generated code (one entry per event tag) so it stays in sync with
+    # the wire schema automatically. The runtime implementation is the
+    # plain handler-registration below.
+    @property
+    def on_event(self) -> CEvt.OnEventDecorator:
+        return self._register_event_handler  # type: ignore[return-value]
+
+    def _register_event_handler(
+        self, event: str, /
+    ) -> Callable[[EventHandler], EventHandler]:
         def deco(fn: EventHandler) -> EventHandler:
             self._event_handlers.setdefault(event, []).append(fn)
             return fn
