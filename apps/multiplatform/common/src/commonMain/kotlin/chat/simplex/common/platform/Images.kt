@@ -25,7 +25,7 @@ expect fun GrayU8.toImageBitmap(): ImageBitmap
 
 expect fun ImageBitmap.hasAlpha(): Boolean
 expect fun ImageBitmap.addLogo(size: Float): ImageBitmap
-expect fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap
+expect fun ImageBitmap.scale(width: Int, height: Int, highQuality: Boolean = false): ImageBitmap
 
 expect fun isImage(uri: URI): Boolean
 expect fun isAnimImage(uri: URI, drawable: Any?): Boolean

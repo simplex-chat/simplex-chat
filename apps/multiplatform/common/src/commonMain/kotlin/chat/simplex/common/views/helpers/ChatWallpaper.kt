@@ -32,29 +32,29 @@ enum class PresetWallpaper(
   private val _tint: Map<DefaultTheme, Color>,
   private val _colors: Map<DefaultTheme, ResolvedColors>,
 ) {
-  CATS(MR.images.wallpaper_cats, "cats", 0.63f, 88.34f, 0.8172f,
+  CATS(MR.images.wallpaper_cats, "cats", 0.5f, 77f, 0.8172f,
     wallpaperBackgrounds(
-      light = oklch(0.95f, 0.053f, 77f),
-      dark = oklch(0.166f, 0.018f, 77f),
+      light = oklch(0.97393197f, 0.04026258f, 94.315125f),
+      dark = oklch(0.1800f, 0.0250f, 77f),
     ),
     _tint = mapOf(
-      DefaultTheme.LIGHT to oklch(0.8625f, 0.08f, 77f),
-      DefaultTheme.DARK to oklch(0.261f, 0.0628f, 77f),
+      DefaultTheme.LIGHT to oklch(0.9049206f, 0.07393196f, 94.315125f),
+      DefaultTheme.DARK to oklch(0.2940f, 0.0567f, 77f),
       DefaultTheme.SIMPLEX to oklch(0.3797781f, 0.06842897f, 88.88896f), // #ff51400f
-      DefaultTheme.BLACK to oklch(0.3603656f, 0.0643012f, 88.54155f) // #ff4b3b0e
+      DefaultTheme.BLACK to oklch(0.3600f, 0.0866f, 77f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
-        sentMessage = oklch(0.9617f, 0.0404f, 77f),
-        sentQuote = oklch(0.915f, 0.068f, 77f),
-        receivedMessage = oklch(1f, 0f, 0f),
-        receivedQuote = oklch(0.965f, 0.0368f, 77f),
+        sentMessage = oklch(0.97874475f, 0.03285575f, 94.315125f),
+        sentQuote = oklch(0.95411396f, 0.05781051f, 94.315125f),
+        receivedMessage = oklch(0.9946289f, 0.00832808f, 94.315125f),
+        receivedQuote = oklch(0.9815269f, 0.028569698f, 94.315125f),
       ),
       DefaultTheme.DARK to ResolvedColors(
-        sentMessage = oklch(0.299f, 0.0719f, 77f),
-        sentQuote = oklch(0.356f, 0.0855f, 77f),
-        receivedMessage = oklch(0.242f, 0.0205f, 77f),
-        receivedQuote = oklch(0.280f, 0.0242f, 77f),
+        sentMessage = oklch(0.3130f, 0.0630f, 77f),
+        sentQuote = oklch(0.3700f, 0.0725f, 77f),
+        receivedMessage = oklch(0.2560f, 0.0278f, 77f),
+        receivedQuote = oklch(0.2940f, 0.0320f, 77f),
       ),
       DefaultTheme.SIMPLEX to ResolvedColors(
         sentMessage = oklch(0.3402031f, 0.04537511f, 90.2498f), // #ff41371b
@@ -63,36 +63,36 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.332832f, 0.005361989f, 91.54412f), // #ff373633
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3402031f, 0.04537511f, 90.2498f), // #ff41371b
-        sentQuote = oklch(0.4398707f, 0.0737883f, 85.23908f), // #ff654f1c
-        receivedMessage = oklch(0.2349937f, 0.005828091f, 91.60813f), // #ff1f1e1b
-        receivedQuote = oklch(0.2971596f, 0.01092985f, 91.6846f), // #ff2f2d27
+        sentMessage = oklch(0.24f, 0.0596f, 70f),
+        sentQuote = oklch(0.33f, 0.0815f, 70f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
-  FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f, 143.42f, 1.3553f,
+  FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.5f, 130f, 1.3553f,
     wallpaperBackgrounds(
-      light = oklch(0.95f, 0.035f, 130f),
-      dark = oklch(0.166f, 0.018f, 130f),
+      light = oklch(0.9506836f, 0.035730995f, 129.80244f),
+      dark = oklch(0.1800f, 0.0250f, 130f),
     ),
     _tint = mapOf(
-      DefaultTheme.LIGHT to oklch(0.8047f, 0.1328f, 130f),
-      DefaultTheme.DARK to oklch(0.3237f, 0.1019f, 130f),
+      DefaultTheme.LIGHT to oklch(0.85039175f, 0.09360638f, 129.80244f),
+      DefaultTheme.DARK to oklch(0.3130f, 0.0567f, 130f),
       DefaultTheme.SIMPLEX to oklch(0.4415422f, 0.1170956f, 133.8571f), // #ff36600f
-      DefaultTheme.BLACK to oklch(0.409874f, 0.1074549f, 133.4271f) // #ff31560D
+      DefaultTheme.BLACK to oklch(0.3600f, 0.1133f, 130f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
-        sentMessage = oklch(0.9617f, 0.0259f, 130f),
-        sentQuote = oklch(0.915f, 0.0757f, 130f),
-        receivedMessage = oklch(1f, 0f, 0f),
-        receivedQuote = oklch(0.965f, 0.0234f, 130f),
+        sentMessage = oklch(0.96106595f, 0.027363745f, 129.80244f),
+        sentQuote = oklch(0.9195365f, 0.06853871f, 129.80244f),
+        receivedMessage = oklch(0.9946289f, 0.011358023f, 129.80244f),
+        receivedQuote = oklch(0.9688529f, 0.021421315f, 129.80244f),
       ),
       DefaultTheme.DARK to ResolvedColors(
-        sentMessage = oklch(0.299f, 0.0941f, 130f),
-        sentQuote = oklch(0.356f, 0.1120f, 130f),
-        receivedMessage = oklch(0.242f, 0.0215f, 130f),
-        receivedQuote = oklch(0.280f, 0.0266f, 130f),
+        sentMessage = oklch(0.3130f, 0.0630f, 130f),
+        sentQuote = oklch(0.3700f, 0.0725f, 130f),
+        receivedMessage = oklch(0.2560f, 0.0278f, 130f),
+        receivedQuote = oklch(0.2940f, 0.0320f, 130f),
       ),
       DefaultTheme.SIMPLEX to ResolvedColors(
         sentMessage = oklch(0.3611755f, 0.05678164f, 170.3752f), // #ff184739
@@ -101,36 +101,36 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.3334174f, 0.007411477f, 128.7105f), // #ff353733
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3611755f, 0.05678164f, 170.3752f), // #ff184739
-        sentQuote = oklch(0.484029f, 0.09629127f, 159.5568f), // #ff1F6F4B
-        receivedMessage = oklch(0.2342548f, 0.01039849f, 132.6996f), // #ff1c1f1a
-        receivedQuote = oklch(0.2838948f, 0.01154375f, 128.9221f), // #ff282b25
+        sentMessage = oklch(0.24f, 0.0756f, 130f),
+        sentQuote = oklch(0.33f, 0.1029f, 130f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
-  HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f, 17.95f, 1.0504f,
+  HEARTS(MR.images.wallpaper_hearts, "hearts", 0.5f, 15f, 1.0504f,
     wallpaperBackgrounds(
-      light = oklch(0.96f, 0.0259f, 15f),
-      dark = oklch(0.166f, 0.018f, 5f),
+      light = oklch(0.9560547f, 0.021765456f, 13.841402f),
+      dark = oklch(0.1800f, 0.0250f, 5f),
     ),
     _tint = mapOf(
-      DefaultTheme.LIGHT to oklch(0.9187f, 0.0440f, 15f),
-      DefaultTheme.DARK to oklch(0.2182f, 0.0673f, 5f),
+      DefaultTheme.LIGHT to oklch(0.90485084f, 0.04976797f, 13.841402f),
+      DefaultTheme.DARK to oklch(0.2940f, 0.0567f, 5f),
       DefaultTheme.SIMPLEX to oklch(0.2574974f, 0.07614605f, 24.19117f), // #ff411010
-      DefaultTheme.BLACK to oklch(0.2458526f, 0.07098409f, 23.94782f) // #ff3C0F0F
+      DefaultTheme.BLACK to oklch(0.3600f, 0.1630f, 5f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
-        sentMessage = oklch(0.97f, 0.0193f, 15f),
-        sentQuote = oklch(0.93f, 0.0344f, 15f),
-        receivedMessage = oklch(1f, 0f, 0f),
-        receivedQuote = oklch(0.97f, 0.0193f, 15f),
+        sentMessage = oklch(0.96500653f, 0.017198082f, 13.841402f),
+        sentQuote = oklch(0.9291992f, 0.026614813f, 13.841402f),
+        receivedMessage = oklch(0.99560547f, 0.002124548f, 13.841402f),
+        receivedQuote = oklch(0.97314453f, 0.013107679f, 13.841402f),
       ),
       DefaultTheme.DARK to ResolvedColors(
-        sentMessage = oklch(0.299f, 0.1221f, 5f),
-        sentQuote = oklch(0.356f, 0.1440f, 5f),
-        receivedMessage = oklch(0.242f, 0.0226f, 5f),
-        receivedQuote = oklch(0.280f, 0.0296f, 5f),
+        sentMessage = oklch(0.3130f, 0.0630f, 5f),
+        sentQuote = oklch(0.3700f, 0.0725f, 5f),
+        receivedMessage = oklch(0.2560f, 0.0278f, 5f),
+        receivedQuote = oklch(0.2940f, 0.0320f, 5f),
       ),
       DefaultTheme.SIMPLEX to ResolvedColors(
         sentMessage = oklch(0.2941874f, 0.07322977f, 4.102547f), // #ff491A28
@@ -139,36 +139,36 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.3352158f, 0.008515606f, 17.58481f), // #ff3b3535
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.2941874f, 0.07322977f, 4.102547f), // #ff491A28
-        sentQuote = oklch(0.3831088f, 0.1201278f, 18.61089f), // #ff761F29
-        receivedMessage = oklch(0.2267386f, 0.00626924f, 17.6236f), // #ff1f1b1b
-        receivedQuote = oklch(0.2776199f, 0.012034f, 17.89987f), // #ff2e2626
+        sentMessage = oklch(0.24f, 0.1087f, 5f),
+        sentQuote = oklch(0.33f, 0.1480f, 5f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
-  KIDS(MR.images.wallpaper_kids, "kids", 0.53f, 200.75f, 0.7723f,
+  KIDS(MR.images.wallpaper_kids, "kids", 0.5f, 200f, 0.7723f,
     wallpaperBackgrounds(
-      light = oklch(0.95f, 0.0371f, 192f),
-      dark = oklch(0.166f, 0.018f, 192f),
+      light = oklch(0.9628906f, 0.023496835f, 198.73976f),
+      dark = oklch(0.1800f, 0.0250f, 200f),
     ),
     _tint = mapOf(
-      DefaultTheme.LIGHT to oklch(0.8380f, 0.1024f, 192f),
-      DefaultTheme.DARK to oklch(0.2876f, 0.0665f, 192f),
+      DefaultTheme.LIGHT to oklch(0.8909232f, 0.055181965f, 198.73976f),
+      DefaultTheme.DARK to oklch(0.2560f, 0.0567f, 200f),
       DefaultTheme.SIMPLEX to oklch(0.3716418f, 0.05389406f, 217.7104f), // #ff184753
-      DefaultTheme.BLACK to oklch(0.3473769f, 0.04958945f, 218.0525f) // #ff16404B
+      DefaultTheme.BLACK to oklch(0.3000f, 0.0684f, 200f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
-        sentMessage = oklch(0.9617f, 0.0279f, 192f),
-        sentQuote = oklch(0.915f, 0.062f, 192f),
-        receivedMessage = oklch(1f, 0f, 0f),
-        receivedQuote = oklch(0.965f, 0.058f, 192f),
+        sentMessage = oklch(0.9716797f, 0.017883832f, 198.73976f),
+        sentQuote = oklch(0.93652344f, 0.036067758f, 198.73976f),
+        receivedMessage = oklch(0.9946289f, 0.0069881678f, 198.73976f),
+        receivedQuote = oklch(0.9736328f, 0.016644018f, 198.73976f),
       ),
       DefaultTheme.DARK to ResolvedColors(
-        sentMessage = oklch(0.299f, 0.0691f, 192f),
-        sentQuote = oklch(0.356f, 0.0823f, 192f),
-        receivedMessage = oklch(0.242f, 0.0204f, 192f),
-        receivedQuote = oklch(0.280f, 0.0239f, 192f),
+        sentMessage = oklch(0.3130f, 0.0630f, 200f),
+        sentQuote = oklch(0.3700f, 0.0725f, 200f),
+        receivedMessage = oklch(0.2560f, 0.0278f, 200f),
+        receivedQuote = oklch(0.2940f, 0.0320f, 200f),
       ),
       DefaultTheme.SIMPLEX to ResolvedColors(
         sentMessage = oklch(0.3662882f, 0.04909204f, 191.2229f), // #ff1a4745
@@ -177,74 +177,74 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.3451987f, 0.004436687f, 174.2088f), // #ff373a39
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3662882f, 0.04909204f, 191.2229f), // #ff1a4745
-        sentQuote = oklch(0.4817563f, 0.07299667f, 192.4874f), // #ff1d6b69
-        receivedMessage = oklch(0.2382215f, 0.001508911f, 197.0555f), // #ff1e1f1f
-        receivedQuote = oklch(0.2833724f, 0.007955636f, 169.798f), // #ff262b29
+        sentMessage = oklch(0.24f, 0.0555f, 192f),
+        sentQuote = oklch(0.33f, 0.0756f, 192f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
-  SCHOOL(MR.images.wallpaper_school, "school", 0.53f, 243.37f, 0.7950f,
+  SCHOOL(MR.images.wallpaper_school, "school", 0.5f, 239f, 0.7950f,
     wallpaperBackgrounds(
-      light = oklch(0.95f, 0.0296f, 239f),
-      dark = oklch(0.166f, 0.018f, 249f),
+      light = oklch(0.9604492f, 0.025148988f, 225.3911f),
+      dark = oklch(0.1800f, 0.0250f, 249f),
     ),
     _tint = mapOf(
-      DefaultTheme.LIGHT to oklch(0.8940f, 0.0512f, 239f),
-      DefaultTheme.DARK to oklch(0.2268f, 0.0576f, 249f),
+      DefaultTheme.LIGHT to oklch(0.9019366f, 0.04948576f, 225.3911f),
+      DefaultTheme.DARK to oklch(0.2560f, 0.0567f, 249f),
       DefaultTheme.SIMPLEX to oklch(0.2929108f, 0.05102392f, 240.8139f), // #ff112f43
-      DefaultTheme.BLACK to oklch(0.2700986f, 0.04630937f, 241.5568f) // #ff0F293B
+      DefaultTheme.BLACK to oklch(0.3000f, 0.1070f, 249f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
-        sentMessage = oklch(0.9617f, 0.0226f, 239f),
-        sentQuote = oklch(0.915f, 0.0376f, 239f),
-        receivedMessage = oklch(1f, 0f, 0f),
-        receivedQuote = oklch(0.965f, 0.0207f, 239f),
+        sentMessage = oklch(0.96875f, 0.019812047f, 225.3911f),
+        sentQuote = oklch(0.9355469f, 0.036309462f, 225.3911f),
+        receivedMessage = oklch(0.99560547f, 0.0027611256f, 225.3911f),
+        receivedQuote = oklch(0.97509766f, 0.015755296f, 225.3911f),
       ),
       DefaultTheme.DARK to ResolvedColors(
-        sentMessage = oklch(0.299f, 0.0900f, 249f),
-        sentQuote = oklch(0.356f, 0.1051f, 249f),
-        receivedMessage = oklch(0.242f, 0.0212f, 249f),
-        receivedQuote = oklch(0.280f, 0.0260f, 249f),
+        sentMessage = oklch(0.3130f, 0.0630f, 249f),
+        sentQuote = oklch(0.3700f, 0.0725f, 249f),
+        receivedMessage = oklch(0.2560f, 0.0278f, 249f),
+        receivedQuote = oklch(0.2940f, 0.0320f, 249f),
       ),
       DefaultTheme.SIMPLEX to ResolvedColors(
-        sentMessage = oklch(0.3481476f, 0.07023845f, 249.9259f), // #ff1A3C5D
-        sentQuote = oklch(0.4520089f, 0.08394516f, 241.1934f), // #ff235b80
-        receivedMessage = oklch(0.2764251f, 0.007910622f, 264.4375f), // #ff26282c
-        receivedQuote = oklch(0.3548081f, 0.008034593f, 255.5451f), // #ff393c40
+        sentMessage = oklch(0.4187f, 0.1388f, 262.50f), // #204797
+        sentQuote = oklch(0.4766f, 0.1487f, 262.58f), // #2c57af
+        receivedMessage = oklch(0.2314f, 0.0685f, 268.59f), // #101a3d
+        receivedQuote = oklch(0.3023f, 0.0900f, 267.90f), // #1b2a5b
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3481476f, 0.07023845f, 249.9259f), // #ff1A3C5D
-        sentQuote = oklch(0.4520089f, 0.08394516f, 241.1934f), // #ff235b80
-        receivedMessage = oklch(0.2356588f, 0.007789041f, 274.6063f), // #ff1d1e22
-        receivedQuote = oklch(0.2886546f, 0.007823012f, 264.445f), // #ff292b2f
+        sentMessage = oklch(0.24f, 0.0856f, 249f),
+        sentQuote = oklch(0.33f, 0.1166f, 249f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   ),
-  TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f, 304.95f, 1.2099f,
+  TRAVEL(MR.images.wallpaper_travel, "travel", 0.5f, 315f, 1.2099f,
     wallpaperBackgrounds(
-      light = oklch(0.95f, 0.0389f, 315f),
-      dark = oklch(0.166f, 0.018f, 315f),
+      light = oklch(0.95996094f, 0.023496835f, 322.59464f),
+      dark = oklch(0.1800f, 0.0250f, 315f),
     ),
     _tint = mapOf(
-      DefaultTheme.LIGHT to oklch(0.8896f, 0.0552f, 315f),
-      DefaultTheme.DARK to oklch(0.2411f, 0.0791f, 315f),
+      DefaultTheme.LIGHT to oklch(0.9120599f, 0.056131333f, 322.59464f),
+      DefaultTheme.DARK to oklch(0.2750f, 0.0567f, 315f),
       DefaultTheme.SIMPLEX to oklch(0.2948376f, 0.08277514f, 302.7197f), // #ff35204e
-      DefaultTheme.BLACK to oklch(0.2817417f, 0.07665313f, 302.6645f) // #ff311E48
+      DefaultTheme.BLACK to oklch(0.3000f, 0.1579f, 315f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
-        sentMessage = oklch(0.9617f, 0.0297f, 315f),
-        sentQuote = oklch(0.915f, 0.0495f, 315f),
-        receivedMessage = oklch(1f, 0f, 0f),
-        receivedQuote = oklch(0.965f, 0.0271f, 315f),
+        sentMessage = oklch(0.96809894f, 0.01866399f, 322.59464f),
+        sentQuote = oklch(0.9355469f, 0.030384803f, 322.59464f),
+        receivedMessage = oklch(0.99560547f, 0.0035372972f, 322.59464f),
+        receivedQuote = oklch(0.97558594f, 0.014230033f, 322.59464f),
       ),
       DefaultTheme.DARK to ResolvedColors(
-        sentMessage = oklch(0.299f, 0.1080f, 315f),
-        sentQuote = oklch(0.356f, 0.1269f, 315f),
-        receivedMessage = oklch(0.242f, 0.0220f, 315f),
-        receivedQuote = oklch(0.280f, 0.0280f, 315f),
+        sentMessage = oklch(0.3130f, 0.0630f, 315f),
+        sentQuote = oklch(0.3700f, 0.0725f, 315f),
+        receivedMessage = oklch(0.2560f, 0.0278f, 315f),
+        receivedQuote = oklch(0.2940f, 0.0320f, 315f),
       ),
       DefaultTheme.SIMPLEX to ResolvedColors(
         sentMessage = oklch(0.3234681f, 0.09690244f, 299.9634f), // #ff3C255D
@@ -253,17 +253,28 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.355058f, 0.03791292f, 286.3773f), // #ff3A394F
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3234681f, 0.09690244f, 299.9634f), // #ff3C255D
-        sentQuote = oklch(0.4226042f, 0.1341495f, 307.8573f), // #ff623485
-        receivedMessage = oklch(0.2454222f, 0.009540156f, 325.8636f), // #ff231f23
-        receivedQuote = oklch(0.2874049f, 0.0149843f, 302.5009f), // #ff2c2931
+        sentMessage = oklch(0.24f, 0.1263f, 315f),
+        sentQuote = oklch(0.33f, 0.1721f, 315f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
-    )
+    ),
   );
 
   val background: Map<DefaultTheme, Color> get() = _background
   val tint: Map<DefaultTheme, Color> get() = _tint
   val colors: Map<DefaultTheme, ResolvedColors> get() = _colors
+
+  /** Hue for a given theme. Most wallpapers use the same hue across all themes,
+   *  but hearts (15→5) and school (239→249) shift hue in dark themes for perceptual correction on AMOLED. */
+  fun hue(theme: DefaultTheme): Float = when (theme) {
+    DefaultTheme.DARK, DefaultTheme.BLACK -> when (this) {
+      HEARTS -> 5f
+      SCHOOL -> 249f
+      else -> hue
+    }
+    else -> hue
+  }
 
   fun toType(base: DefaultTheme, scale: Float? = null): WallpaperType =
     WallpaperType.Preset(
@@ -285,7 +296,7 @@ fun wallpaperBackgrounds(
     DefaultTheme.LIGHT to light,
     DefaultTheme.DARK to dark,
     DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f), // #ff111528
-    DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f) // #ff070707
+    DefaultTheme.BLACK to oklch(0f, 0f, 0f) // #ff000000 — pure black for hyper-contrast theme
   )
 
 // ===== Theme color formula =====
@@ -430,8 +441,7 @@ sealed class WallpaperType {
   }
 }
 
-private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, size: Size, density: Float, layoutDirection: LayoutDirection): ImageBitmap {
-  val quality = if (appPlatform.isAndroid) FilterQuality.High else FilterQuality.Low
+private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, size: Size, density: Float, layoutDirection: LayoutDirection, highQuality: Boolean = false): ImageBitmap {
   val drawScope = CanvasDrawScope()
   // Don't allow to make zero size because it crashes the app when reducing a size of a window on desktop
   val bitmap = ImageBitmap(size.width.toInt().coerceAtLeast(1), size.height.toInt().coerceAtLeast(1))
@@ -443,14 +453,17 @@ private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, siz
     size = size,
   ) {
     val scale = imageScale * density
-    for (h in 0..(size.height / image.height / scale).roundToInt()) {
-      for (w in 0..(size.width / image.width / scale).roundToInt()) {
+    val tileW = (image.width * scale).roundToInt().coerceAtLeast(1)
+    val tileH = (image.height * scale).roundToInt().coerceAtLeast(1)
+    // Pre-scale: Compose Desktop ignores FilterQuality in drawImage, scale via platform API instead
+    val tile = if (tileW == image.width && tileH == image.height) image else image.scale(tileW, tileH, highQuality)
+
+    for (h in 0..(size.height / tileH).roundToInt()) {
+      for (w in 0..(size.width / tileW).roundToInt()) {
         drawImage(
-          image,
-          dstOffset = IntOffset(x = (w * image.width * scale).roundToInt(), y = (h * image.height * scale).roundToInt()),
-          dstSize = IntSize((image.width * scale).roundToInt(), (image.height * scale).roundToInt()),
+          tile,
+          topLeft = Offset(w * tileW.toFloat(), h * tileH.toFloat()),
           colorFilter = ColorFilter.tint(tint, BlendMode.SrcIn),
-          filterQuality = quality
         )
       }
     }
@@ -464,17 +477,19 @@ fun CacheDrawScope.chatViewBackground(
   background: Color,
   tint: Color,
   graphicsLayerSize: MutableState<IntSize>? = null,
-  backgroundGraphicsLayer: GraphicsLayer? = null
+  backgroundGraphicsLayer: GraphicsLayer? = null,
+  highQuality: Boolean = true
 ): DrawResult {
+  val desktopPatternScale = if (appPlatform.isDesktop) 0.55f else 1f
   val imageScale = if (imageType is WallpaperType.Preset) {
-    (imageType.scale ?: 1f) * imageType.predefinedImageScale
+    (imageType.scale ?: 1f) * imageType.predefinedImageScale * desktopPatternScale
   } else if (imageType is WallpaperType.Image && imageType.scaleType == WallpaperScaleType.REPEAT) {
     imageType.scale ?: 1f
   } else {
     1f
   }
   val image = if (imageType is WallpaperType.Preset || (imageType is WallpaperType.Image && imageType.scaleType == WallpaperScaleType.REPEAT)) {
-    drawToBitmap(image, imageScale, tint, size, density, layoutDirection)
+    drawToBitmap(image, imageScale, tint, size, density, layoutDirection, highQuality)
   } else {
     image
   }

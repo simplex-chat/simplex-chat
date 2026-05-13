@@ -57,6 +57,7 @@ class AppColors(
   sentQuote: Color,
   receivedMessage: Color,
   receivedQuote: Color,
+  toolbar: Color = Color.Transparent,
 ) {
   var title by mutableStateOf(title, structuralEqualityPolicy())
     internal set
@@ -70,6 +71,8 @@ class AppColors(
     internal set
   var receivedQuote by mutableStateOf(receivedQuote, structuralEqualityPolicy())
     internal set
+  var toolbar by mutableStateOf(toolbar, structuralEqualityPolicy())
+    internal set
 
   fun copy(
     title: Color = this.title,
@@ -78,6 +81,7 @@ class AppColors(
     sentQuote: Color = this.sentQuote,
     receivedMessage: Color = this.receivedMessage,
     receivedQuote: Color = this.receivedQuote,
+    toolbar: Color = this.toolbar,
   ): AppColors = AppColors(
     title,
     primaryVariant2,
@@ -85,6 +89,7 @@ class AppColors(
     sentQuote,
     receivedMessage,
     receivedQuote,
+    toolbar,
   )
 
   override fun toString(): String {
@@ -95,7 +100,8 @@ class AppColors(
       append("sentMessage=$sentMessage, ")
       append("sentQuote=$sentQuote, ")
       append("receivedMessage=$receivedMessage, ")
-      append("receivedQuote=$receivedQuote")
+      append("receivedQuote=$receivedQuote, ")
+      append("toolbar=$toolbar")
       append(")")
     }
   }
@@ -138,7 +144,7 @@ class AppWallpaper(
 
 // Spec: spec/services/theme.md#ThemeColor
 enum class ThemeColor {
-  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TITLE, SENT_MESSAGE, SENT_QUOTE, RECEIVED_MESSAGE, RECEIVED_QUOTE, PRIMARY_VARIANT2, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
+  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TOOLBAR, TITLE, SENT_MESSAGE, SENT_QUOTE, RECEIVED_MESSAGE, RECEIVED_QUOTE, PRIMARY_VARIANT2, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
 
   fun fromColors(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Color? {
     return when (this) {
@@ -148,6 +154,7 @@ enum class ThemeColor {
       SECONDARY_VARIANT -> colors.secondaryVariant
       BACKGROUND -> colors.background
       SURFACE -> colors.surface
+      TOOLBAR -> appColors.toolbar
       TITLE -> appColors.title
       PRIMARY_VARIANT2 -> appColors.primaryVariant2
       SENT_MESSAGE -> appColors.sentMessage
@@ -167,6 +174,7 @@ enum class ThemeColor {
       SECONDARY_VARIANT -> generalGetString(MR.strings.color_secondary_variant)
       BACKGROUND -> generalGetString(MR.strings.color_background)
       SURFACE -> generalGetString(MR.strings.color_surface)
+      TOOLBAR -> "Toolbar"
       TITLE -> generalGetString(MR.strings.color_title)
       PRIMARY_VARIANT2 -> generalGetString(MR.strings.color_primary_variant2)
       SENT_MESSAGE -> generalGetString(MR.strings.color_sent_message)
@@ -190,6 +198,7 @@ data class ThemeColors(
   val background: String? = null,
   @SerialName("menus")
   val surface: String? = null,
+  val toolbar: String? = null,
   val title: String? = null,
   @SerialName("accentVariant2")
   val primaryVariant2: String? = null,
@@ -209,6 +218,7 @@ data class ThemeColors(
         secondaryVariant = colors.secondaryVariant.toReadableHex(),
         background = colors.background.toReadableHex(),
         surface = colors.surface.toReadableHex(),
+        toolbar = if (appColors.toolbar.alpha > 0f) appColors.toolbar.toReadableHex() else null,
         title = appColors.title.toReadableHex(),
         primaryVariant2 = appColors.primaryVariant2.toReadableHex(),
         sentMessage = appColors.sentMessage.toReadableHex(),
@@ -227,6 +237,7 @@ data class ResolvedColors(
   val secondaryVariant: Color? = null,
   val background: Color? = null,
   val surface: Color? = null,
+  val toolbar: Color? = null,
   val title: Color? = null,
   val primaryVariant2: Color? = null,
   val sentMessage: Color? = null,
@@ -243,6 +254,7 @@ data class ResolvedColors(
       secondaryVariant = tc.secondaryVariant?.colorFromReadableHex(),
       background = tc.background?.colorFromReadableHex(),
       surface = tc.surface?.colorFromReadableHex(),
+      toolbar = tc.toolbar?.colorFromReadableHex(),
       title = tc.title?.colorFromReadableHex(),
       primaryVariant2 = tc.primaryVariant2?.colorFromReadableHex(),
       sentMessage = tc.sentMessage?.colorFromReadableHex(),
@@ -358,6 +370,7 @@ data class ThemeOverrides (
         ThemeColor.SECONDARY_VARIANT -> colors.copy(secondaryVariant = color)
         ThemeColor.BACKGROUND -> colors.copy(background = color)
         ThemeColor.SURFACE -> colors.copy(surface = color)
+        ThemeColor.TOOLBAR -> colors.copy(toolbar = color)
         ThemeColor.TITLE -> colors.copy(title = color)
         ThemeColor.PRIMARY_VARIANT2 -> colors.copy(primaryVariant2 = color)
         ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
@@ -406,6 +419,7 @@ data class ThemeOverrides (
     return baseColors.copy(
       title = perChatTheme?.title?.colorFromReadableHex() ?: perUserTheme?.title?.colorFromReadableHex() ?: colors.title?.colorFromReadableHex() ?: presetWallpaperTheme?.title ?: baseColors.title,
       primaryVariant2 = perChatTheme?.primaryVariant2?.colorFromReadableHex() ?: perUserTheme?.primaryVariant2?.colorFromReadableHex() ?: colors.primaryVariant2?.colorFromReadableHex() ?: presetWallpaperTheme?.primaryVariant2 ?: baseColors.primaryVariant2,
+      toolbar = perChatTheme?.toolbar?.colorFromReadableHex() ?: perUserTheme?.toolbar?.colorFromReadableHex() ?: colors.toolbar?.colorFromReadableHex() ?: presetWallpaperTheme?.toolbar ?: baseColors.toolbar,
       sentMessage = if (perChatTheme?.sentMessage != null) perChatTheme.sentMessage.colorFromReadableHex()
         else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.sentMessage?.colorFromReadableHex() ?: sentMessageFallback
         else sentMessageFallback,
@@ -460,6 +474,7 @@ data class ThemeOverrides (
       secondaryVariant = c.secondaryVariant.toReadableHex(),
       background = c.background.toReadableHex(),
       surface = c.surface.toReadableHex(),
+      toolbar = if (ac.toolbar.alpha > 0f) ac.toolbar.toReadableHex() else null,
       title = ac.title.toReadableHex(),
       primaryVariant2 = ac.primaryVariant2.toReadableHex(),
       sentMessage = ac.sentMessage.toReadableHex(),
@@ -535,6 +550,7 @@ data class ThemeModeOverride (
       ThemeColor.SECONDARY_VARIANT -> colors.copy(secondaryVariant = color)
       ThemeColor.BACKGROUND -> colors.copy(background = color)
       ThemeColor.SURFACE -> colors.copy(surface = color)
+      ThemeColor.TOOLBAR -> colors.copy(toolbar = color)
       ThemeColor.TITLE -> colors.copy(title = color)
       ThemeColor.PRIMARY_VARIANT2 -> colors.copy(primaryVariant2 = color)
       ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
@@ -601,6 +617,7 @@ data class ThemeModeOverride (
         secondaryVariant = if (colors.secondaryVariant?.colorFromReadableHex() != c.secondaryVariant) colors.secondaryVariant else null,
         background = if (colors.background?.colorFromReadableHex() != c.background) colors.background else null,
         surface = if (colors.surface?.colorFromReadableHex() != c.surface) colors.surface else null,
+        toolbar = if (colors.toolbar?.colorFromReadableHex() != ac.toolbar) colors.toolbar else null,
         title = if (colors.title?.colorFromReadableHex() != ac.title) colors.title else null,
         primaryVariant2 = if (colors.primaryVariant2?.colorFromReadableHex() != ac.primaryVariant2) colors.primary else null,
         sentMessage = if (colors.sentMessage?.colorFromReadableHex() != ac.sentMessage) colors.sentMessage else null,
@@ -788,6 +805,7 @@ fun AppColors.updateColorsFrom(other: AppColors) {
   sentQuote = other.sentQuote
   receivedMessage = other.receivedMessage
   receivedQuote = other.receivedQuote
+  toolbar = other.toolbar
 }
 
 fun AppWallpaper.updateWallpaperFrom(other: AppWallpaper) {
