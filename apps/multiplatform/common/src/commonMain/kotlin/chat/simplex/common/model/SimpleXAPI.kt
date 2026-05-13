@@ -8042,6 +8042,7 @@ data class AppSettings(
   var privacyAskToApproveRelays: Boolean? = null,
   var privacyAcceptImages: Boolean? = null,
   var privacyLinkPreviews: Boolean? = null,
+  var privacySanitizeLinks: Boolean? = null,
   var privacyChatListOpenLinks: PrivacyChatListOpenLinksMode? = null,
   var privacyShowChatPreviews: Boolean? = null,
   var privacySaveLastDraft: Boolean? = null,
@@ -8078,6 +8079,7 @@ data class AppSettings(
     if (privacyAskToApproveRelays != def.privacyAskToApproveRelays) { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
     if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
     if (privacyLinkPreviews != def.privacyLinkPreviews) { empty.privacyLinkPreviews = privacyLinkPreviews }
+    if (privacySanitizeLinks != def.privacySanitizeLinks) { empty.privacySanitizeLinks = privacySanitizeLinks }
     if (privacyChatListOpenLinks != def.privacyChatListOpenLinks) { empty.privacyChatListOpenLinks = privacyChatListOpenLinks }
     if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
     if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
@@ -8125,6 +8127,7 @@ data class AppSettings(
     privacyAskToApproveRelays?.let { def.privacyAskToApproveRelays.set(it) }
     privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
     privacyLinkPreviews?.let { def.privacyLinkPreviews.set(it) }
+    privacySanitizeLinks?.let { def.privacySanitizeLinks.set(it) }
     privacyChatListOpenLinks?.let { def.privacyChatListOpenLinks.set(it) }
     privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
     privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
@@ -8162,6 +8165,7 @@ data class AppSettings(
         privacyAskToApproveRelays = true,
         privacyAcceptImages = true,
         privacyLinkPreviews = true,
+        privacySanitizeLinks = false,
         privacyChatListOpenLinks = PrivacyChatListOpenLinksMode.ASK,
         privacyShowChatPreviews = true,
         privacySaveLastDraft = true,
@@ -8200,6 +8204,7 @@ data class AppSettings(
           privacyAskToApproveRelays = def.privacyAskToApproveRelays.get(),
           privacyAcceptImages = def.privacyAcceptImages.get(),
           privacyLinkPreviews = def.privacyLinkPreviews.get(),
+          privacySanitizeLinks = def.privacySanitizeLinks.get(),
           privacyChatListOpenLinks = def.privacyChatListOpenLinks.get(),
           privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
           privacySaveLastDraft = def.privacySaveLastDraft.get(),
