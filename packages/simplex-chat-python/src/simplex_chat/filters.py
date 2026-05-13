@@ -37,6 +37,15 @@ def compile_message_filter(kw: dict[str, Any]) -> Callable[[Any], bool]:
 
         predicates.append(gid_match)
 
+    if (cid := kw.get("contact_id")) is not None:
+        cid_set: tuple[int, ...] = (cid,) if isinstance(cid, int) else tuple(cid)
+
+        def cid_match(m: Any) -> bool:
+            ci = m.chat_item["chatInfo"]
+            return ci["type"] == "direct" and ci["contact"]["contactId"] in cid_set
+
+        predicates.append(cid_match)
+
     if (when := kw.get("when")) is not None:
         predicates.append(when)
 
