@@ -781,7 +781,6 @@ processChatCommand vr nm = \case
         CIDMHistory -> do
           unless (publicGroupEditor gInfo (membership gInfo)) $ throwChatError CEInvalidChatItemDelete
           recipients <- getGroupRecipients vr user gInfo chatScopeInfo groupKnockingVersion
-          assertUserGroupRole gInfo GRObserver
           let msgIds = itemsMsgIds items
               events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) True) msgIds
           mapM_ (sendGroupMessages user gInfo Nothing False recipients) events
