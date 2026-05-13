@@ -792,6 +792,7 @@ expect fun isSystemInDarkTheme(): Boolean
 
 internal val LocalAppColors = staticCompositionLocalOf { LightColorPaletteApp }
 internal val LocalAppWallpaper = staticCompositionLocalOf { AppWallpaper() }
+internal val LocalActiveTheme = staticCompositionLocalOf { CurrentColors.value }
 
 val MaterialTheme.appColors: AppColors
   @Composable
@@ -873,6 +874,7 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
         LocalContentColor provides MaterialTheme.colors.onBackground,
         LocalAppColors provides rememberedAppColors,
         LocalAppWallpaper provides rememberedWallpaper,
+        LocalActiveTheme provides theme,
         LocalDensity provides density,
         content = content
       )
@@ -901,6 +903,7 @@ fun SimpleXThemeOverride(theme: ThemeManager.ActiveTheme, content: @Composable (
         LocalContentColor provides MaterialTheme.colors.onBackground,
         LocalAppColors provides rememberedAppColors,
         LocalAppWallpaper provides rememberedWallpaper,
+        LocalActiveTheme provides theme,
         content = content)
     }
   )

@@ -3,7 +3,6 @@ package chat.simplex.common.ui.theme
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import chat.simplex.common.platform.appPlatform
@@ -57,13 +56,12 @@ val NoteFolderIconColor: Color @Composable get() = MaterialTheme.appColors.prima
  *  BLACK and SIMPLEX themes are not tinted (BLACK keeps pure dark, SIMPLEX has its own custom panel). */
 @Composable
 fun panelBackgroundColor(): Color {
-  return currentWallpaperPanelTint()
-    ?: MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+  val state = LocalActiveTheme.current
+  return currentWallpaperPanelTint(state)
+    ?: state.colors.background.mixWith(state.colors.onBackground, 0.97f)
 }
 
-@Composable
-private fun currentWallpaperPanelTint(): Color? {
-  val state = CurrentColors.collectAsState().value
+private fun currentWallpaperPanelTint(state: ThemeManager.ActiveTheme): Color? {
   val type = state.wallpaper.type as? WallpaperType.Preset ?: return null
   val preset = PresetWallpaper.from(type.filename) ?: return null
   val hue = preset.hue(state.base)

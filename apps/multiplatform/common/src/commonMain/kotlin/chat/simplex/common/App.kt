@@ -203,7 +203,9 @@ fun MainScreen() {
     }
     if (appPlatform.isAndroid) {
       AndroidWrapInCallLayout {
-        ModalManager.fullscreen.showInView()
+        ActiveChatThemeProvider {
+          ModalManager.fullscreen.showInView()
+        }
       }
       SwitchingUsersView()
     }
@@ -422,45 +424,68 @@ fun EndPartOfScreen() {
   ModalManager.end.showInView()
 }
 
+// Toolbars rendered alongside or on behalf of the active chat (the chatlist column
+// in desktop two-pane, modals opened from a chat on Android) need to share that
+// chat's theme. Wrap such UI surfaces with this so panelBackgroundColor() reads
+// the right tint via LocalActiveTheme.
+@Composable
+private fun ActiveChatThemeProvider(content: @Composable () -> Unit) {
+  val theme by CurrentColors.collectAsState()
+  val chatId by chatModel.chatId
+  val activeChat = chatId?.let { id -> chatModel.chats.value.firstOrNull { it.chatInfo.id == id } }
+  val effectiveTheme = remember(activeChat?.chatInfo, theme) {
+    val perChatTheme = when (val ci = activeChat?.chatInfo) {
+      is ChatInfo.Direct -> ci.contact.uiThemes?.preferredMode(!theme.colors.isLight)
+      is ChatInfo.Group -> ci.groupInfo.uiThemes?.preferredMode(!theme.colors.isLight)
+      else -> null
+    }
+    if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    else theme
+  }
+  CompositionLocalProvider(LocalActiveTheme provides effectiveTheme, content = content)
+}
+
 // Spec: spec/client/navigation.md#DesktopScreen
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
-  Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-    StartPartOfScreen(userPickerState)
-    tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
+  ActiveChatThemeProvider {
+    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+      StartPartOfScreen(userPickerState)
+      tryOrShowError("UserPicker", error = {}) {
+        UserPicker(chatModel, userPickerState, setPerformLA = AppLock::setPerformLA)
+      }
     }
-  }
-  Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-    ModalManager.start.showInView()
-    SwitchingUsersView()
-  }
-  Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-    Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
-      CenterPartOfScreen()
+    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+      ModalManager.start.showInView()
+      SwitchingUsersView()
     }
-    if (ModalManager.end.hasModalsOpen()) {
-      VerticalDivider()
+    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+      Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
+        CenterPartOfScreen()
+      }
+      if (ModalManager.end.hasModalsOpen()) {
+        VerticalDivider()
+      }
+      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
+        EndPartOfScreen()
+      }
     }
-    Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
-      EndPartOfScreen()
+    if (userPickerState.collectAsState().value.isVisible() || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
+      Box(
+        Modifier
+          .fillMaxSize()
+          .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
+          .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
+            if (chatModel.centerPanelBackgroundClickHandler == null || chatModel.centerPanelBackgroundClickHandler?.invoke() == false) {
+              ModalManager.start.closeModals()
+              userPickerState.value = AnimatedViewState.HIDING
+            }
+          })
+      )
     }
+    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+    ModalManager.fullscreen.showInView()
   }
-  if (userPickerState.collectAsState().value.isVisible() || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
-    Box(
-      Modifier
-        .fillMaxSize()
-        .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
-        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
-          if (chatModel.centerPanelBackgroundClickHandler == null || chatModel.centerPanelBackgroundClickHandler?.invoke() == false) {
-            ModalManager.start.closeModals()
-            userPickerState.value = AnimatedViewState.HIDING
-          }
-        })
-    )
-  }
-  VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
-  ModalManager.fullscreen.showInView()
 }
 
 @Composable
