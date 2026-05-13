@@ -42,11 +42,14 @@ import chat.simplex.common.views.newchat.darkStops
 import chat.simplex.common.views.newchat.gradientPoints
 import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.common.views.onboarding.*
+import chat.simplex.common.views.usersettings.DeleteImageButton
+import chat.simplex.common.views.usersettings.EditImageButton
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import java.net.URI
 
 const val MAX_BIO_LENGTH_BYTES = 160
 
@@ -60,18 +63,63 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(top = 20.dp)
-    ) {
-      val displayName = rememberSaveable { mutableStateOf("") }
-      val shortDescr = rememberSaveable { mutableStateOf("") }
-      val focusRequester = remember { FocusRequester() }
+  val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+  val displayName = rememberSaveable { mutableStateOf("") }
+  val shortDescr = rememberSaveable { mutableStateOf("") }
+  val chosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
+  val profileImage = rememberSaveable { mutableStateOf<String?>(null) }
+  val focusRequester = remember { FocusRequester() }
 
+  ModalBottomSheetLayout(
+    scrimColor = Color.Black.copy(alpha = 0.12F),
+    modifier = Modifier.imePadding(),
+    sheetContent = {
+      GetImageBottomSheet(
+        chosenImage,
+        onImageChange = { bitmap -> profileImage.value = resizeImageToStrSize(cropToSquare(bitmap), maxDataSize = 12500) },
+        hideBottomSheet = {
+          scope.launch { bottomSheetModalState.hide() }
+        })
+    },
+    sheetState = bottomSheetModalState,
+    sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+  ) {
+    Box(
+      modifier = Modifier.fillMaxSize()
+    ) {
       ColumnWithScrollBar {
+        AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING_HALF)
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .padding(vertical = DEFAULT_PADDING_HALF),
+          horizontalArrangement = Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Box(
+            modifier = if (BuildConfigCommon.SIMPLEX_ASSETS) Modifier.padding(horizontal = 3.dp) else Modifier,
+            contentAlignment = Alignment.Center
+          ) {
+            Box(contentAlignment = Alignment.TopEnd) {
+              Box(contentAlignment = Alignment.Center) {
+                ProfileImage(128.dp, image = profileImage.value)
+                EditImageButton { scope.launch { bottomSheetModalState.show() } }
+              }
+              if (profileImage.value != null) {
+                DeleteImageButton { profileImage.value = null }
+              }
+            }
+          }
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Image(
+              painterResource(if (isInDarkTheme()) MR.images.create_profile_light else MR.images.create_profile),
+              contentDescription = null,
+              contentScale = ContentScale.Fit,
+              modifier = Modifier.height(140.dp)
+            )
+          }
+        }
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-          AppBarTitle(stringResource(MR.strings.create_profile), withPadding = false, bottomPadding = DEFAULT_PADDING)
           Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
               stringResource(MR.strings.display_name),
@@ -114,9 +162,9 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           iconColor = MaterialTheme.colors.primary,
           click = {
             if (chatModel.localUserCreated.value == true) {
-              createProfileInProfiles(chatModel, displayName.value, shortDescr.value, close)
+              createProfileInProfiles(chatModel, displayName.value, shortDescr.value, profileImage.value, close)
             } else {
-              createProfileInNoProfileSetup(displayName.value, close)
+              createProfileInNoProfileSetup(displayName.value, profileImage.value, close)
             }
           },
         )
@@ -137,6 +185,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         }
       }
     }
+  }
 }
 
 @Composable
@@ -304,9 +353,9 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
-fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
+fun createProfileInNoProfileSetup(displayName: String, image: String? = null, close: () -> Unit) {
   withBGApi {
-    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null, null)) ?: return@withBGApi
+    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null, image)) ?: return@withBGApi
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
@@ -317,11 +366,11 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
   }
 }
 
-fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDescr: String, close: () -> Unit) {
+fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDescr: String, image: String? = null, close: () -> Unit) {
   withBGApi {
     val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
-      rhId, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, null)
+      rhId, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image)
     ) ?: return@withBGApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {

@@ -2424,7 +2424,6 @@
     <string name="message_deleted_or_not_received_error_desc">این پیام حذف شده یا هنوز دریافت نشده است.</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">زمان ناپدید شدن فقط برای مخاطبان جدید تنظیم شده است.</string>
     <string name="app_check_for_updates_notice_desc">برای مطلع شدن از نسخه‌های جدید، بررسی دوره‌ای برای نسخه‌های Stable یا Beta را فعال کنید.</string>
-    <string name="one_hand_ui_card_title">تغییر لیست چت:</string>
     <string name="call_desktop_permission_denied_title">برای برقراری تماس، اجازه دهید از میکروفن شما استفاده شود. تماس را پایان دهید و دوباره تلاش کنید.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">برای جلوگیری از جایگزینی لینک شما، می‌توانید کدهای امنیتی مخاطب را مقایسه کنید.</string>
     <string name="operator_use_for_messages_receiving">برای دریافت</string>

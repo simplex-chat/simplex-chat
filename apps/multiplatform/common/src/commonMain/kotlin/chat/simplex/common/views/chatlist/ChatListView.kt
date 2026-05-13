@@ -90,41 +90,85 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 
 @Composable
 fun ToggleChatListCard() {
-  ChatListCard(
-    close = {
-      appPrefs.oneHandUICardShown.set(true)
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.one_hand_ui),
-        text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val onClose = {
+    appPrefs.oneHandUICardShown.set(true)
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.one_hand_ui),
+      text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+    )
+  }
+  val activeBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+    .copy(alpha = appPrefs.inAppBarsAlpha.get())
+  val selectedBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
+  Row(
+    Modifier
+      .padding(horizontal = 16.dp, vertical = 12.dp)
+      .fillMaxWidth()
+      .height(IntrinsicSize.Min)
+      .clip(RoundedCornerShape(percent = 50)),
+    horizontalArrangement = Arrangement.spacedBy(2.dp)
+  ) {
+    ToolbarSegment(
+      icon = MR.images.ic_mobile_3,
+      text = stringResource(MR.strings.one_hand_ui_bottom_bar),
+      isSelected = oneHandUI.value,
+      selectedBg = selectedBg,
+      activeBg = activeBg,
+      modifier = Modifier.weight(1f)
+    ) { appPrefs.oneHandUI.set(true) }
+    Box(Modifier.weight(1f).fillMaxHeight()) {
+      ToolbarSegment(
+        icon = MR.images.ic_mobile_4,
+        text = stringResource(MR.strings.one_hand_ui_top_bar),
+        isSelected = !oneHandUI.value,
+        selectedBg = selectedBg,
+        activeBg = activeBg,
+        modifier = Modifier.fillMaxSize()
+      ) { appPrefs.oneHandUI.set(false) }
+      Icon(
+        painterResource(MR.images.ic_close), null,
+        Modifier
+          .align(Alignment.CenterEnd)
+          .padding(end = 4.dp)
+          .clip(CircleShape)
+          .clickable(onClick = onClose)
+          .padding(8.dp)
+          .size(16.dp),
+        tint = MaterialTheme.colors.secondary
       )
     }
+  }
+}
+
+@Composable
+private fun ToolbarSegment(
+  icon: ImageResource,
+  text: String,
+  isSelected: Boolean,
+  selectedBg: Color,
+  activeBg: Color,
+  modifier: Modifier = Modifier,
+  onClick: () -> Unit
+) {
+  Row(
+    modifier
+      .fillMaxHeight()
+      .background(if (isSelected) selectedBg else activeBg)
+      .then(if (!isSelected) Modifier.clickable(onClick = onClick) else Modifier)
+      .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
   ) {
-    Column(
-      modifier = Modifier
-        .padding(horizontal = DEFAULT_PADDING)
-        .padding(top = DEFAULT_PADDING)
-    ) {
-      Row(
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
-      }
-      Row(
-        Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
-
-        Spacer(Modifier.fillMaxWidth().weight(1f))
-
-        SharedPreferenceToggle(
-          appPrefs.oneHandUI,
-          enabled = true
-        )
-      }
-    }
+    Icon(
+      painterResource(icon), null, Modifier.size(20.dp),
+      tint = if (isSelected) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.width(8.dp))
+    Text(
+      text,
+      color = if (isSelected) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground,
+      style = MaterialTheme.typography.body1
+    )
   }
 }
 
@@ -307,7 +351,7 @@ private fun ConnectBannerCard() {
             painterResource(if (isDark) MR.images.banner_create_link_light else MR.images.banner_create_link),
             contentDescription = null,
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO)
           )
         } else {
           BannerGradientBox(isDark) {
@@ -338,7 +382,7 @@ private fun ConnectBannerCard() {
             painterResource(if (isDark) MR.images.banner_paste_link_light else MR.images.banner_paste_link),
             contentDescription = null,
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO)
           )
         } else {
           BannerGradientBox(isDark) {
@@ -918,13 +962,18 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         }
       }
     }
+    if (!oneHandUICardShown.value) {
+      item {
+        ToggleChatListCard()
+      }
+    }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!oneHandUICardShown.value || !addressCreationCardShown.value) {
+    if (!addressCreationCardShown.value) {
       item {
         ChatListFeatureCards()
       }
@@ -989,19 +1038,11 @@ private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
 
 @Composable
 private fun ChatListFeatureCards() {
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
 
-  Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-    if (!oneHandUICardShown.value && !oneHandUI.value) {
-      ToggleChatListCard()
-    }
-    if (!addressCreationCardShown.value && hasConversations(chatModel.chats.value)) {
+  if (!addressCreationCardShown.value && hasConversations(chatModel.chats.value)) {
+    Column(modifier = Modifier.padding(16.dp)) {
       ConnectBannerCard()
-    }
-    if (!oneHandUICardShown.value && oneHandUI.value) {
-      ToggleChatListCard()
     }
   }
 }

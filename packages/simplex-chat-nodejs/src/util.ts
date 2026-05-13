@@ -78,7 +78,7 @@ export interface BotCommand {
 export function ciBotCommand(chatItem: T.ChatItem): BotCommand | undefined {
   const msg = ciContentText(chatItem)?.trim()
   if (msg) {
-    const r = msg.match(/\/([^\s]+)(.*)/)
+    const r = msg.match(/^\/([^\s]+)(.*)/)
     if (r && r.length >= 3) {
       return {keyword: r[1], params: r[2].trim()}
     }

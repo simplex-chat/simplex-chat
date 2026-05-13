@@ -207,6 +207,7 @@
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_note_folder">Error deleting private notes</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
+  <string name="error_deleting_message">Error deleting message</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
   <string name="error_changing_address">Error changing address</string>
   <string name="error_aborting_address_change">Error aborting address change</string>
@@ -424,6 +425,7 @@
   <string name="moderate_messages_will_be_marked_warning">The messages will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
+  <string name="from_history">From history</string>
   <string name="stop_file__action">Stop file</string>
   <string name="stop_snd_file__title">Stop sending file?</string>
   <string name="stop_snd_file__message">Sending file will be stopped.</string>
@@ -469,7 +471,7 @@
   <string name="talk_to_someone">Talk to someone</string>
   <string name="let_someone_connect_to_you">Let someone connect to you</string>
   <string name="connect_via_link_or_qr_code">Connect via link or QR code</string>
-  <string name="connect_with_someone">Connect with someone</string>
+  <string name="connect_with_someone">Create your link</string>
   <string name="invite_someone_privately">Invite someone privately</string>
   <string name="a_link_for_one_person">A link for one person to connect</string>
   <string name="create_your_public_address">Create your public address</string>
@@ -1067,7 +1069,7 @@
   <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
-  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
+  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls use direct connection.]]></string>
   <string name="network_smp_proxy_mode_private_routing">Private routing</string>
   <string name="network_smp_proxy_mode_always">Always</string>
   <string name="network_smp_proxy_mode_unknown">Unknown servers</string>
@@ -1298,7 +1300,7 @@
   <string name="get_started">Get started</string>
   <string name="why_simplex_is_built">Why SimpleX is built.</string>
   <string name="onboarding_your_profile">Your profile</string>
-  <string name="onboarding_on_your_phone">On your phone, not on any server.</string>
+  <string name="onboarding_on_your_phone">On your phone, not on servers.</string>
   <string name="onboarding_no_account">No account. No phone. No email. No ID.\nThe most secure encryption.</string>
   <string name="enter_profile_name">Enter profile name…</string>
   <string name="migrate">Migrate</string>
@@ -1701,7 +1703,8 @@
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
   <string name="one_hand_ui">Reachable app toolbars</string>
   <string name="chat_bottom_bar">Reachable chat toolbar</string>
-  <string name="one_hand_ui_card_title">Toggle chat list:</string>
+  <string name="one_hand_ui_bottom_bar">Bottom bar</string>
+  <string name="one_hand_ui_top_bar">Top bar</string>
   <string name="one_hand_ui_change_instruction">You can change it in Appearance settings.</string>
   <string name="terminal_always_visible">Show console in new window</string>
   <string name="chat_list_always_visible">Show chat list in new window</string>
@@ -1886,6 +1889,7 @@
   <string name="group_info_member_you">you: %1$s</string>
   <string name="button_delete_group">Delete group</string>
   <string name="button_delete_channel">Delete channel</string>
+  <string name="button_cancel_and_delete_channel">Cancel and delete channel</string>
   <string name="button_delete_chat">Delete chat</string>
   <string name="delete_group_question">Delete group?</string>
   <string name="delete_channel_question">Delete channel?</string>
@@ -2645,7 +2649,7 @@
   <string name="v6_5_invite_friends">Easier to invite your friends 👋</string>
   <string name="v6_5_invite_friends_descr">We made connecting simpler for new users.</string>
   <string name="v6_5_safe_web_links">Safe web links</string>
-  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
+  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- use SOCKS proxy if enabled.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
   <string name="v6_5_non_profit_governance">Non-profit governance</string>
   <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
   <string name="view_updated_conditions">View updated conditions</string>
@@ -2984,6 +2988,7 @@
   <string name="relay_conn_status_deleted">deleted</string>
   <string name="relay_conn_status_failed">failed</string>
   <string name="relay_conn_status_removed_by_operator">removed by operator</string>
+  <string name="relay_conn_status_removed">removed</string>
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
@@ -3005,7 +3010,8 @@
   <string name="relay_bar_connected_with_failures">%1$d/%2$d relays connected, %3$d failed</string>
   <string name="relay_bar_connected_with_removed">%1$d/%2$d relays connected, %3$d removed</string>
   <string name="relay_bar_connected">%1$d/%2$d relays connected</string>
-  <string name="relay_bar_owner_no_delivery">Adding relays will be supported later.</string>
+  <string name="relay_bar_no_relays">No relays</string>
+  <string name="relay_bar_owner_no_delivery">Add relays to restore message delivery.</string>
   <string name="relay_bar_subscriber_waiting">Waiting for channel owner to add relays.</string>
 
   <!-- GroupMemberInfoView.kt channel-related -->
@@ -3020,6 +3026,10 @@
   <string name="relay_section_footer_owner">Subscribers use relay link to connect to the channel.\nRelay address was used to set up this relay for the channel.</string>
   <string name="relay_section_footer_subscriber">You connected to the channel via this relay link.</string>
   <string name="button_remove_subscriber">Remove subscriber</string>
+  <string name="button_remove_relay">Remove relay</string>
+  <string name="button_remove_relay_question">Remove relay?</string>
+  <string name="relay_will_be_removed_from_channel">Relay will be removed from channel - this cannot be undone!</string>
+  <string name="last_active_relay_warning">This is the last active relay. Removing it will prevent message delivery to subscribers.</string>
   <string name="block_subscriber_for_all_question">Block subscriber for all?</string>
 
   <!-- AddChannelView.kt -->
@@ -3034,16 +3044,24 @@
   <string name="network_error">Network error</string>
   <string name="error_prefix">Error</string>
   <string name="cancel_creating_channel_question">Cancel creating channel?</string>
-  <string name="cancel_creating_channel_confirm">Cancel</string>
+  <string name="cancel_channel_alert_msg">Your new channel %1$s is connected to %2$d of %3$d relays.\nIf you cancel, the channel will be deleted - you can create it again.</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
   <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.\nRelays can access channel messages.</string>
   <string name="configure_relays">Configure relays</string>
   <string name="relay_status_failed">failed</string>
+  <string name="add_button">Add</string>
+  <string name="add_relay_button">Add relay</string>
+  <string name="add_relays_title">Add relays</string>
+  <string name="no_available_relays">No available relays</string>
+  <string name="error_adding_relays">Error adding relays</string>
+  <string name="relays_added_format">Relays added: %1$s.</string>
+  <string name="select_relays">Select relays</string>
+  <string name="no_relays_selected">No relays selected</string>
+  <string name="num_relays_selected">%d relay(s) selected</string>
   <string name="relay_connection_failed">Relay connection failed</string>
   <string name="not_all_relays_connected">Not all relays connected</string>
   <string name="wait_verb">Wait</string>
-  <string name="proceed_verb">Proceed</string>
-  <string name="channel_will_start_with_relays">Channel will start working with %1$d of %2$d relays. Proceed?</string>
+  <string name="channel_will_start_with_relays">Channel will start working with %1$d of %2$d relays. Continue?</string>
 
   <!-- ConnectPlan.kt channel-related -->
   <string name="relay_address_alert_title">Relay address</string>
@@ -3060,7 +3078,19 @@
   <!-- ComposeView.kt link previews opt-in alert -->
   <string name="link_previews_alert_title">Enable link previews?</string>
   <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
+  <string name="link_previews_alert_desc_socks">Link preview will be requested via SOCKS proxy. DNS lookup may still happen locally via your DNS resolver.</string>
   <string name="link_previews_alert_enable">Enable</string>
   <string name="link_previews_alert_disable">Disable</string>
-  <!-- <string name="link_previews_alert_dont_ask_again">Don't ask again</string> -->
+
+  <!-- Desktop tray / minimize-to-tray -->
+  <string name="close_behavior_dialog_title">Minimize to tray?</string>
+  <string name="close_behavior_dialog_text">If you choose Close, messages won\'t be received.\nYou can change it later in Appearance settings.</string>
+  <string name="close_behavior_dialog_close">Close the app</string>
+  <string name="close_behavior_dialog_minimize">Minimize to tray</string>
+  <string name="tray_show">Show SimpleX</string>
+  <string name="tray_quit">Quit SimpleX</string>
+  <string name="tray_tooltip">SimpleX</string>
+  <string name="tray_tooltip_unread">SimpleX — %d unread</string>
+  <string name="appearance_minimize_to_tray">Minimize to tray when closing window</string>
+  <string name="appearance_minimize_to_tray_desc">Keep SimpleX running in the background to receive messages.</string>
 </resources>

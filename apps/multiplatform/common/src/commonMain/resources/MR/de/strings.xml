@@ -28,7 +28,7 @@
     <string name="connection_local_display_name">verbindung %1$d</string>
     <string name="display_name_connection_established">verbindung hergestellt</string>
     <string name="display_name_invited_to_connect">für eine Verbindung eingeladen</string>
-    <string name="display_name_connecting">verbinde…</string>
+    <string name="display_name_connecting">Verbinde…</string>
     <string name="description_you_shared_one_time_link">sie haben einen Einmal-Link geteilt</string>
     <string name="description_you_shared_one_time_link_incognito">sie haben einen Einmal-Link inkognito geteilt</string>
     <string name="description_via_group_link">über einen Gruppen-Link</string>
@@ -80,7 +80,7 @@
     <string name="error_smp_test_server_auth">Der Server erfordert zum Erstellen von Warteschlangen eine Autorisierung. Bitte überprüfen Sie das Passwort.</string>
     <string name="error_smp_test_certificate">Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein.</string>
     <string name="smp_server_test_connect">Verbinde</string>
-    <string name="smp_server_test_create_queue">Erzeuge Warteschlange</string>
+    <string name="smp_server_test_create_queue">Warteschlange erstellen</string>
     <string name="smp_server_test_secure_queue">Sichere Warteschlange</string>
     <string name="smp_server_test_delete_queue">Lösche Warteschlange</string>
     <string name="smp_server_test_disconnect">Trenne Verbindung</string>
@@ -172,10 +172,10 @@
     <string name="welcome">Willkommen!</string>
     <string name="this_text_is_available_in_settings">Dieser Text ist in den Einstellungen verfügbar.</string>
     <string name="your_chats">Chats</string>
-    <string name="contact_connection_pending">verbinde …</string>
+    <string name="contact_connection_pending">Verbinde…</string>
     <string name="group_preview_you_are_invited">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_preview_join_as">Beitreten als %s</string>
-    <string name="group_connection_pending">verbinde …</string>
+    <string name="group_connection_pending">Verbinde…</string>
     <string name="tap_to_start_new_chat">Tippen, um einen neuen Chat zu starten</string>
     <string name="chat_with_developers">Chatten Sie mit den Entwicklern</string>
     <string name="you_have_no_chats">Sie haben keine Chats</string>
@@ -469,7 +469,7 @@
     <string name="people_can_connect_only_via_links_you_share">Sie entscheiden, wer sich mit Ihnen verbinden kann.</string>
     <string name="decentralized">Dezentral</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Jeder kann seine eigenen Server aufsetzen.</string>
-    <string name="create_your_profile">Erstellen Sie Ihr Profil</string>
+    <string name="create_your_profile">Ihr Profil erstellen</string>
     <string name="make_private_connection">Stellen Sie eine private Verbindung her</string>
     <string name="how_it_works">Wie es funktioniert</string>
     <!-- How SimpleX Works -->
@@ -694,7 +694,7 @@
     <string name="group_invitation_expired">Die Gruppeneinladung ist abgelaufen</string>
     <!-- Group event chat items -->
     <string name="rcv_group_event_member_added">hat %1$s eingeladen.</string>
-    <string name="rcv_group_event_member_connected">verbunden</string>
+    <string name="rcv_group_event_member_connected">Verbunden</string>
     <string name="rcv_group_event_member_left">hat die Gruppe verlassen</string>
     <string name="rcv_group_event_changed_member_role">änderte die Rolle von %s auf %s</string>
     <string name="rcv_group_event_changed_your_role">änderte Ihre Rolle auf %s</string>
@@ -725,13 +725,13 @@
     <string name="group_member_status_group_deleted">Gruppe gelöscht</string>
     <string name="group_member_status_invited">Eingeladen</string>
     <string name="group_member_status_introduced">Verbindung (erstellt)</string>
-    <string name="group_member_status_intro_invitation">Verbinde (nach einer Einladung)</string>
+    <string name="group_member_status_intro_invitation">Verbindung (nach einer Einladung)</string>
     <string name="group_member_status_accepted">Verbindung (angenommen)</string>
     <string name="group_member_status_announced">Verbindung (angekündigt)</string>
     <string name="group_member_status_connected">Verbunden</string>
     <string name="group_member_status_complete">Vollständig</string>
     <string name="group_member_status_creator">Ersteller</string>
-    <string name="group_member_status_connecting">verbinden</string>
+    <string name="group_member_status_connecting">Verbinde</string>
     <!-- AddGroupMembersView.kt -->
     <string name="no_contacts_to_add">Keine Kontakte zum Hinzufügen</string>
     <string name="new_member_role">Neue Mitgliedsrolle</string>
@@ -756,7 +756,7 @@
     <string name="button_leave_group">Gruppe verlassen</string>
     <string name="button_edit_group_profile">Gruppenprofil bearbeiten</string>
     <string name="group_link">Gruppen-Link</string>
-    <string name="button_create_group_link">Link erzeugen</string>
+    <string name="button_create_group_link">Link erstellen</string>
     <string name="delete_link_question">Link löschen?</string>
     <string name="delete_link">Link löschen</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Sie können diesen Link oder QR-Code teilen – damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
@@ -943,7 +943,7 @@
     <string name="v4_2_security_assessment">Sicherheits-Gutachten</string>
     <string name="v4_2_security_assessment_desc">Die Sicherheit von SimpleX Chat wurde von Trail of Bits überprüft.</string>
     <string name="whats_new">Was ist neu</string>
-    <string name="v4_2_group_links_desc">Administratoren können Links für den Beitritt zu Gruppen erzeugen.</string>
+    <string name="v4_2_group_links_desc">Administratoren können Links für den Beitritt zu Gruppen erstellen.</string>
     <string name="v4_2_auto_accept_contact_requests">Kontaktanfragen automatisch annehmen</string>
     <string name="v4_4_verify_connection_security_desc">Vergleichen Sie die Sicherheitscodes mit Ihren Kontakten.</string>
     <string name="v4_3_improved_privacy_and_security_desc">App-Bildschirm in aktuellen Anwendungen verbergen.</string>
@@ -1397,7 +1397,7 @@
     <string name="receipts_groups_override_disabled">Das Senden von Bestätigungen ist für %d Gruppen deaktiviert</string>
     <string name="receipts_groups_override_enabled">Das Senden von Bestätigungen ist für %d Gruppen aktiviert</string>
     <string name="receipts_groups_disable_for_all">Für alle Gruppen deaktivieren</string>
-    <string name="send_receipts_disabled">deaktiviert</string>
+    <string name="send_receipts_disabled">Deaktiviert</string>
     <string name="send_receipts_disabled_alert_title">Bestätigungen sind deaktiviert</string>
     <string name="no_info_on_delivery">Keine Information über die Zustellung</string>
     <string name="delivery">Zustellung</string>
@@ -1437,7 +1437,7 @@
     <string name="open_database_folder">Datenbank-Ordner öffnen</string>
     <string name="passphrase_will_be_saved_in_settings">Das Passwort wird in Klartext in den Einstellungen gespeichert, nachdem Sie es geändert oder die App neu gestartet haben.</string>
     <string name="settings_is_storing_in_clear_text">Das Passwort wurde in Klartext in den Einstellungen gespeichert.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Relais sind per SOCKS-Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Relais sind per SOCKS-Proxy verbunden. Anrufe nutzen eine direkte Verbindung.]]></string>
     <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
     <string name="rcv_group_event_open_chat">Öffnen</string>
     <string name="v5_3_encrypt_local_files">Gespeicherte Dateien &amp; Medien verschlüsseln</string>
@@ -1510,7 +1510,7 @@
     <string name="encryption_renegotiation_error">Fehler bei der Neuverhandlung der Verschlüsselung</string>
     <string name="alert_text_encryption_renegotiation_failed">Neuverhandlung der Verschlüsselung fehlgeschlagen</string>
     <string name="v5_4_block_group_members">Gruppenmitglieder blockieren</string>
-    <string name="v5_4_incognito_groups_descr">Erstellen Sie eine Gruppe mit einem zufälligen Profil.</string>
+    <string name="v5_4_incognito_groups_descr">Gruppe mit einem zufälligen Profil erstellen.</string>
     <string name="connected_desktop">Verbundener Desktop</string>
     <string name="desktop_address">Desktop-Adresse</string>
     <string name="v5_4_better_groups">Bessere Gruppen</string>
@@ -1989,7 +1989,7 @@
     <string name="chunks_downloaded">Daten-Pakete heruntergeladen</string>
     <string name="servers_info_connected_servers_section_header">Verbundene Server</string>
     <string name="deleted">Gelöscht</string>
-    <string name="member_info_member_disabled">deaktiviert</string>
+    <string name="member_info_member_disabled">Deaktiviert</string>
     <string name="servers_info_reconnect_server_error">Fehler beim Wiederherstellen der Verbindung zum Server</string>
     <string name="message_forwarded_title">Nachricht weitergeleitet</string>
     <string name="servers_info_files_tab">Dateien</string>
@@ -2107,7 +2107,6 @@
     <string name="create_address_button">Erstellen</string>
     <string name="v6_0_upgrade_app_descr">Laden Sie neue Versionen von GitHub herunter.</string>
     <string name="v6_0_chat_list_media">Direkt aus der Chat-Liste abspielen.</string>
-    <string name="one_hand_ui_card_title">Chat-Liste umschalten:</string>
     <string name="one_hand_ui_change_instruction">Kann von Ihnen in den Erscheinungsbild-Einstellungen geändert werden.</string>
     <string name="v6_0_your_contacts_descr">Kontakte für spätere Chats archivieren.</string>
     <string name="v6_0_private_routing_descr">Ihre IP-Adresse und Verbindungen werden geschützt.</string>
@@ -2446,10 +2445,10 @@
     <string name="feature_roles_moderators">Moderatoren</string>
     <string name="block_members_for_all_question">Mitglieder für Alle blockieren?</string>
     <string name="block_members_desc">Alle neuen Nachrichten dieser Mitglieder werden nicht angezeigt!</string>
-    <string name="onboarding_conditions_by_using_you_agree">Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden.\n- andere Nutzer zu respektieren - kein Spam.</string>
+    <string name="onboarding_conditions_by_using_you_agree">Sie verpflichten sich dazu:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden.\n- andere Nutzer zu respektieren - kein Spam.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Datenschutz- und Nutzungsbedingungen.</string>
     <string name="onboarding_conditions_accept">Annehmen</string>
-    <string name="onboarding_conditions_private_chats_not_accessible">Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Betreiber verpflichten sich:\n- Unabhängig zu bleiben\n- Metadaten auf ein Minimum zu reduzieren\n- Geprüften Open‑Source‑Code einzusetzen</string>
     <string name="unsupported_connection_link">Verbindungs-Link wird nicht unterstützt</string>
     <string name="short_link_button_text">Verkürzter Link</string>
     <string name="full_link_button_text">Vollständiger Link</string>
@@ -2640,7 +2639,6 @@
     <string name="relay_status_active">Aktiv</string>
     <string name="block_subscriber_for_all_question">Abonnent für alle blockieren?</string>
     <string name="compose_view_broadcast">Broadcast</string>
-    <string name="cancel_creating_channel_confirm">Abbrechen</string>
     <string name="cancel_creating_channel_question">Kanalerstellung abbrechen?</string>
     <string name="test_relay_to_retrieve_name"><![CDATA[<b>Relais testen</b>, um dessen Namen abzurufen.]]></string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Dies ist Ihr Link für den Kanal <b>%1$s</b>!]]></string>
@@ -2663,8 +2661,8 @@
     <string name="check_relay_name">Relais-Name überprüfen und erneut versuchen.</string>
     <string name="configure_relays">Relais konfigurieren</string>
     <string name="relay_test_step_connect">Verbinden</string>
-    <string name="relay_conn_status_connected">verbunden</string>
-    <string name="relay_conn_status_connecting">verbinden</string>
+    <string name="relay_conn_status_connected">Verbunden</string>
+    <string name="relay_conn_status_connecting">Verbinde</string>
     <string name="create_channel_title">Öffentlichen Kanal erstellen</string>
     <string name="create_channel_button">Öffentlichen Kanal erstellen</string>
     <string name="create_channel_beta_button">Öffentlichen Kanal erstellen (BETA)</string>
@@ -2701,7 +2699,6 @@
     <string name="channel_members_section_owners">Eigentümer</string>
     <string name="preset_relay_address">Voreingestellte Relais-Adresse</string>
     <string name="preset_relay_name">Voreingestellter Relais-Name</string>
-    <string name="proceed_verb">Fortfahren</string>
     <string name="group_member_role_relay">Relais</string>
     <string name="member_info_section_title_relay">RELAIS</string>
     <string name="info_row_relay_address">Relais-Adresse</string>
@@ -2780,7 +2777,7 @@
     <string name="error_sharing_channel">Fehler beim Teilen des Kanals</string>
     <string name="chat_link_from_owner">(vom Eigentümer)</string>
     <string name="chat_link_group">Gruppen-Link</string>
-    <string name="owner_verification_passed">Linksignatur erfolgreich verifiziert.</string>
+    <string name="owner_verification_passed">Linksignatur erfolgreich überprüft.</string>
     <string name="network_error">Netzwerk-Fehler</string>
     <string name="chat_link_one_time">Einmal-Link</string>
     <string name="relay_results">Relay‑Status:</string>
@@ -2793,28 +2790,28 @@
     <string name="connection_reached_limit_of_undelivered_messages">Die Verbindung hat das Limit für nicht zugestellte Nachrichten erreicht</string>
     <string name="channel_preferences">Kanal-Präferenzen</string>
     <string name="only_channel_owners_can_change_prefs">Kanal-Präferenzen können nur von Kanal-Eigentümern geändert werden.</string>
-    <string name="a_link_for_one_person">Ein Link für eine einzelne Person zum Verbinden.</string>
+    <string name="a_link_for_one_person">Verbindungs-Link für eine Person</string>
     <string name="chat_list_channels">Kanäle</string>
     <string name="connect_via_link_or_qr_code">Über einen Link oder QR-Code verbinden</string>
-    <string name="connect_with_someone">Mit jemandem verbinden</string>
-    <string name="create_your_public_address">Erstellen Sie Ihre öffentliche Adresse</string>
+    <string name="connect_with_someone">Ihren Link erstellen</string>
+    <string name="create_your_public_address">Ihre öffentliche Adresse erstellen</string>
     <string name="v6_5_invite_friends">Freunde einladen – jetzt noch einfacher 👋</string>
     <string name="for_anyone_to_reach_you">Damit Sie jeder erreichen kann</string>
-    <string name="invite_someone_privately">Jemanden privat einladen</string>
-    <string name="let_someone_connect_to_you">Damit sich jemand mit Ihnen verbinden kann</string>
+    <string name="invite_someone_privately">Für privaten Chat einladen</string>
+    <string name="let_someone_connect_to_you">Jemand mit Ihnen verbinden lassen</string>
     <string name="new_1_time_link">Neuer Einmal-Link</string>
     <string name="v6_5_non_profit_governance">Non‑Profit‑Governance</string>
-    <string name="v6_5_safe_web_links_descr">- Opt‑in zum Senden von Linkvorschauen.\n- Hyperlink‑Phishing verhindern.\n- Link‑Tracking entfernen.</string>
+    <string name="v6_5_safe_web_links_descr">- Opt‑in zum Senden von Linkvorschauen.\n- SOCKS-Proxy verwenden, falls aktiviert.\n- Hyperlink‑Phishing verhindern.\n- Link‑Tracking entfernen.</string>
     <string name="onboarding_or_show_qr_code">Oder den QR‑Code persönlich oder per Videoanruf zeigen.</string>
     <string name="onboarding_or_use_qr_code">Oder diesen QR‑Code verwenden – ausgedruckt oder online.</string>
     <string name="v6_5_ownership">Volle Kontrolle: Sie können Ihre eigenen Relais betreiben.</string>
     <string name="v6_5_privacy">Privatsphäre: für Besitzer und Abonnenten.</string>
-    <string name="v6_5_public_channels">Öffentliche Kanäle – freies Kommunizieren 🚀</string>
+    <string name="v6_5_public_channels">Öffentliche Kanäle – frei sprechen 🚀</string>
     <string name="v6_5_reliability">Zuverlässigkeit: mehrere Relais pro Kanal.</string>
     <string name="v6_5_safe_web_links">Sichere Web-Links</string>
     <string name="v6_5_security">Sicherheit: Eigentümer besitzen die Kanalschlüssel.</string>
     <string name="onboarding_send_1_time_link">Den Link über einen beliebigen Messenger versenden – es ist sicher. Bitte in SimpleX einfügen.</string>
-    <string name="talk_to_someone">Mit jemandem sprechen</string>
+    <string name="talk_to_someone">Mit Jemandem sprechen</string>
     <string name="v6_5_non_profit_governance_descr">Für ein dauerhaftes SimpleX-Netzwerk.</string>
     <string name="onboarding_post_address">Diese Adresse in Ihrem Social‑Media‑Profil, auf Ihrer Webseite oder in Ihrer E‑Mail‑Signatur verwenden.</string>
     <string name="v6_5_invite_friends_descr">Wir haben das Verbinden für neue Nutzer vereinfacht.</string>
@@ -2828,7 +2825,6 @@
     <string name="why_built_p6">Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.</string>
     <string name="why_built_p7">Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.</string>
     <string name="why_built_tagline">Genießen Sie die Freiheit in Ihrem Netzwerk.</string>
-
     <!-- channel preferences (subscribers) -->
     <string name="group_reports_subscriber_reports">Abonnenten-Meldungen</string>
     <string name="allow_direct_messages_channel">Das Senden von Direktnachrichten an Abonnenten erlauben.</string>
@@ -2846,4 +2842,35 @@
     <string name="group_members_can_send_reports_channel">Abonnenten können Nachrichten an Moderatoren melden.</string>
     <string name="recent_history_is_sent_to_new_members_channel">Bis zu 100 der letzten Nachrichten werden an neue Abonnenten gesendet.</string>
     <string name="recent_history_is_not_sent_to_new_members_channel">Der Nachrichtenverlauf wird nicht an neue Abonnenten gesendet.</string>
+    <string name="allow_chat_with_admins">Mitgliedern den Chat mit Administratoren erlauben.</string>
+    <string name="allow_chat_with_admins_channel">Abonnenten den Chat mit Administratoren erlauben.</string>
+    <string name="onboarding_be_free">Seien Sie frei\nin Ihrem Netzwerk</string>
+    <string name="chat_with_admins_is_prohibited">Chats mit Administratoren sind nicht erlaubt.</string>
+    <string name="chat_with_admins_relay_note">Chats mit Administratoren in öffentlichen Kanälen sind nicht Ende‑zu‑Ende‑verschlüsselt – bitte nur über vertrauenswürdige Chat‑Relais nutzen.</string>
+    <string name="support_chats_disabled">Chats mit Mitgliedern sind deaktiviert</string>
+    <string name="chat_with_admins">Chat mit Administratoren</string>
+    <string name="enable_chats_with_admins">Aktivieren</string>
+    <string name="enable_chats_with_admins_question">Chats mit Administratoren aktivieren?</string>
+    <string name="enter_profile_name">Geben Sie einen Profilnamen ein…</string>
+    <string name="get_started">Jetzt starten</string>
+    <string name="members_can_chat_with_admins">Mitglieder können mit Administratoren chatten.</string>
+    <string name="e2ee_info_no_e2ee"><![CDATA[Nachrichten in diesem Kanal sind <b>nicht Ende‑zu‑Ende‑verschlüsselt</b>. Chat‑Relais können sie einsehen.]]></string>
+    <string name="migrate">Migrieren</string>
+    <string name="onboarding_network_commitments">Netzwerk‑Verpflichtungen</string>
+    <string name="onboarding_network_routers_cannot_know">Netzwerk‑Router können nicht erkennen,\nwer mit wem kommuniziert</string>
+    <string name="onboarding_no_account">Kein Account. Keine Telefonnummer. Keine E‑Mail. Keine ID.\nDie sicherste Verschlüsselung.</string>
+    <string name="onboarding_on_your_phone">Auf Ihrem Gerät, nicht auf Servern.</string>
+    <string name="open_external_link_title">Externen Link öffnen?</string>
+    <string name="onboarding_private_and_secure">Private und sichere Kommunikation.</string>
+    <string name="prohibit_chat_with_admins">Chat mit Administratoren nicht erlauben.</string>
+    <string name="onboarding_configure_notifications">Benachrichtigungen einrichten</string>
+    <string name="onboarding_configure_routers">Router einrichten</string>
+    <string name="members_can_chat_with_admins_channel">Abonnenten können mit Administratoren chatten.</string>
+    <string name="onboarding_first_network">Das erste Netzwerk,\nin dem Sie Ihre Kontakte und Gruppen besitzen.</string>
+    <string name="why_simplex_is_built">Warum SimpleX entwickelt wurde.</string>
+    <string name="onboarding_your_network">Ihr Netzwerk</string>
+    <string name="onboarding_your_profile">Ihr Profil</string>
+    <string name="one_hand_ui_bottom_bar">Untere Leiste</string>
+    <string name="link_previews_alert_desc_socks">Die Linkvorschau wird über einen SOCKS-Proxy angefordert. DNS-Abfragen können dennoch lokal über Ihren DNS-Resolver erfolgen.</string>
+    <string name="one_hand_ui_top_bar">Obere Leiste</string>
 </resources>

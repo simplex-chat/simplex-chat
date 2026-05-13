@@ -81,8 +81,8 @@ frankProfile = mkProfile "frank" "Frank" Nothing
 businessProfile :: Profile
 businessProfile = mkProfile "biz" "Biz Inc" Nothing
 
-relayProfile :: Profile
-relayProfile = mkProfile "relay" "Relay" Nothing
+chatRelayProfile :: Profile
+chatRelayProfile = mkProfile "relay" "Relay" Nothing
 
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
 mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
@@ -148,6 +148,9 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest ps =
     withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
+
+withRelay :: HasCallStack => TestParams -> (TestCC -> IO ()) -> IO ()
+withRelay ps = withNewTestChatOpts ps relayTestOpts "relay" chatRelayProfile
 
 -- | test sending direct messages
 (<##>) :: HasCallStack => TestCC -> TestCC -> IO ()

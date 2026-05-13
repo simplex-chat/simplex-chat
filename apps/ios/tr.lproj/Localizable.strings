@@ -2029,9 +2029,6 @@ chat item action */
 "Enable lock" = "Kilidi etkinleştir";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "Bildirimleri etkinleştir";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "Periyodik bildirimler etkinleştirilsin mi?";
 
 /* No comment provided by engineer. */
@@ -5498,9 +5495,6 @@ server test failure */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Kişinizle uçtan uca şifrelemeyi doğrulamak için cihazlarınızdaki kodu karşılaştırın (veya tarayın).";
 
 /* No comment provided by engineer. */
-"Toggle chat list:" = "Sohbet listesini değiştir:";
-
-/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Bağlanırken gizli moda geçiş yap.";
 
 /* token status */
@@ -5691,9 +5685,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use %@" = "%@ kullan";
-
-/* No comment provided by engineer. */
-"Use chat" = "Sohbeti kullan";
 
 /* new chat action */
 "Use current profile" = "Şu anki profili kullan";

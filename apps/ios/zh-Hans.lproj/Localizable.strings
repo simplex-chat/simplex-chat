@@ -2041,9 +2041,6 @@ chat item action */
 "Enable lock" = "启用锁定";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "启用通知";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "启用定期通知？";
 
 /* No comment provided by engineer. */
@@ -5553,9 +5550,6 @@ server test failure */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "要与您的联系人验证端到端加密，请比较（或扫描）您设备上的代码。";
 
 /* No comment provided by engineer. */
-"Toggle chat list:" = "切换聊天列表：";
-
-/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "在连接时切换隐身模式。";
 
 /* No comment provided by engineer. */
@@ -5746,9 +5740,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use %@" = "使用 %@";
-
-/* No comment provided by engineer. */
-"Use chat" = "使用聊天";
 
 /* new chat action */
 "Use current profile" = "使用当前配置文件";

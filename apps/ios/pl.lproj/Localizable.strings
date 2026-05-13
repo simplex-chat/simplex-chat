@@ -2050,9 +2050,6 @@ chat item action */
 "Enable lock" = "Włącz blokadę";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "Włącz powiadomienia";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "Włączyć okresowe powiadomienia?";
 
 /* No comment provided by engineer. */
@@ -5592,9 +5589,6 @@ server test failure */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Aby zweryfikować szyfrowanie end-to-end z Twoim kontaktem porównaj (lub zeskanuj) kod na waszych urządzeniach.";
 
 /* No comment provided by engineer. */
-"Toggle chat list:" = "Przełącz listę czatów:";
-
-/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Przełącz incognito przy połączeniu.";
 
 /* token status */
@@ -5788,9 +5782,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use %@" = "Użyj %@";
-
-/* No comment provided by engineer. */
-"Use chat" = "Użyj czatu";
 
 /* new chat action */
 "Use current profile" = "Użyj obecnego profilu";

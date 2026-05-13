@@ -1807,9 +1807,6 @@ chat item action */
 "Enable lock" = "Активирай заключване";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "Активирай известията";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "Активирай периодични известия?";
 
 /* No comment provided by engineer. */
@@ -4204,9 +4201,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Използвай .onion хостове";
-
-/* No comment provided by engineer. */
-"Use chat" = "Използвай чата";
 
 /* new chat action */
 "Use current profile" = "Използвай текущия профил";

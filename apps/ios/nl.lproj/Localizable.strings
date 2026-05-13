@@ -1972,9 +1972,6 @@ chat item action */
 "Enable lock" = "Vergrendeling inschakelen";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "Meldingen aanzetten";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "Periodieke meldingen inschakelen?";
 
 /* No comment provided by engineer. */
@@ -5270,9 +5267,6 @@ server test failure */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contact te verifiëren.";
 
 /* No comment provided by engineer. */
-"Toggle chat list:" = "Chatlijst wisselen:";
-
-/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Schakel incognito in tijdens het verbinden.";
 
 /* token status */
@@ -5445,9 +5439,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use %@" = "Gebruik %@";
-
-/* No comment provided by engineer. */
-"Use chat" = "Gebruik chat";
 
 /* new chat action */
 "Use current profile" = "Gebruik het huidige profiel";

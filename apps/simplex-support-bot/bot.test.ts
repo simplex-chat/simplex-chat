@@ -1,9 +1,14 @@
 import {describe, test, expect, beforeEach, vi} from "vitest"
+import {mkdtempSync, writeFileSync} from "fs"
+import {tmpdir} from "os"
+import {join} from "path"
+import {core} from "simplex-chat"
 import {SupportBot} from "./src/bot.js"
 import {CardManager} from "./src/cards.js"
 import {parseConfig} from "./src/config.js"
 import {GrokApiClient} from "./src/grok.js"
-import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage} from "./src/messages.js"
+import {loadGrokContext} from "./src/context.js"
+import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage, teamAlreadyInvitedMessage} from "./src/messages.js"
 
 // Silence console output during tests
 vi.spyOn(console, "log").mockImplementation(() => {})
@@ -83,14 +88,38 @@ class MockChatApi {
   async apiListMembers(groupId: number) {
     return this.members.get(groupId) || []
   }
-  async apiGetChat(_chatType: string, chatId: number, _count: number) {
+  async apiGetChat(chatType: string, chatId: number, _count: number) {
+    if (chatType === ChatType.Direct) {
+      // Tests don't exercise direct lookups; throw the same shape production
+      // would so getContact() resolves to null instead of synthesizing a contact.
+      throw new core.ChatAPIError("contact not found", {
+        type: "errorStore",
+        storeError: {type: "contactNotFound", contactId: chatId},
+      } as any)
+    }
+    const baseGroupInfo = this.groups.get(chatId)
+    if (!baseGroupInfo) {
+      // Mirror production behavior: the real apiGetChat throws "groupNotFound"
+      // for an unknown id; getGroupInfo() catches and returns null.
+      throw new core.ChatAPIError("group not found", {
+        type: "errorStore",
+        storeError: {type: "groupNotFound", groupId: chatId},
+      } as any)
+    }
     const items = this.chatItems.get(chatId) || []
-    const groupInfo = this.groups.get(chatId)
+    const groupInfo = {...baseGroupInfo, customData: this.customData.get(chatId)}
     return {
-      chatInfo: {type: "group", groupInfo: groupInfo || makeGroupInfo(chatId)},
+      chatInfo: {type: "group", groupInfo},
       chatItems: items,
       chatStats: {unreadCount: 0, unreadMentions: 0, reportsCount: 0, minUnreadItemId: 0, unreadChat: false},
     }
+  }
+  async apiGetChats(_userId: number, _pagination: any, _query?: any, _pcc?: boolean) {
+    return [...this.groups.values()].map(g => ({
+      chatInfo: {type: "group", groupInfo: {...g, customData: this.customData.get(g.groupId)}},
+      chatItems: [],
+      chatStats: {unreadCount: 0, unreadMentions: 0, reportsCount: 0, minUnreadItemId: 0, unreadChat: false},
+    }))
   }
   async apiListGroups(_userId: number) {
     return [...this.groups.values()].map(g => ({...g, customData: this.customData.get(g.groupId)}))
@@ -187,13 +216,15 @@ const GROK_LOCAL_GROUP_ID = 200
 const CUSTOMER_ID = "customer-1"
 
 // Commands passed into SupportBot; matches what index.ts constructs when
-// Grok is enabled. Tests that disable grokApi still pass the full list
-// because the ctor doesn't care; the value is pushed to a group's
-// groupPreferences on the first sendToGroup() call.
+// Grok is enabled. The ctor uses this to decide which `/keyword` messages
+// from customers are commands vs. plain text — tests that disable grokApi
+// should pass a list that excludes "grok" to mirror production wiring (see
+// index.ts where `grokEnabled` gates that entry).
 const DESIRED_COMMANDS = [
   {type: "command" as const, keyword: "grok", label: "Ask Grok"},
   {type: "command" as const, keyword: "team", label: "Switch to team"},
 ]
+const DESIRED_COMMANDS_NO_GROK = [DESIRED_COMMANDS[1]]
 
 // ─── Member factories ───
 
@@ -638,7 +669,7 @@ describe("/grok Activation", () => {
     await joinPromise
     await bot.flush()
     expectMemberAdded(CUSTOMER_GROUP_ID, GROK_CONTACT_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
   })
 
   test("/grok as first message → WELCOME→GROK directly, no queue message", async () => {
@@ -646,7 +677,7 @@ describe("/grok Activation", () => {
     await bot.onNewChatItems(customerMessage("/grok"))
     await joinPromise
     await bot.flush()
-    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
@@ -654,7 +685,7 @@ describe("/grok Activation", () => {
   test("/grok in TEAM → rejected with teamLockedMessage", async () => {
     await reachTeam()
     await bot.onNewChatItems(customerMessage("/grok"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team mode")
+    expectSentToGroup(CUSTOMER_GROUP_ID, teamLockedMessage)
   })
 
   test("/grok when grokContactId is null → grokUnavailableMessage", async () => {
@@ -702,6 +733,28 @@ describe("Grok Conversation", () => {
   test("Grok ignores bot commands from customer", async () => {
     await bot.onGrokNewChatItems(grokViewCustomerMessage("/team"))
     expect(grokApi.calls.length).toBe(0)
+  })
+
+  test("Grok answers messages containing a slash mid-word", async () => {
+    // Regression: an unanchored regex in ciBotCommand once parsed `/read`
+    // inside "follow/read" as a command, causing Grok to skip the message.
+    grokApi.willRespond("We post on X and Mastodon.")
+    await bot.onGrokNewChatItems(grokViewCustomerMessage(
+      "What social media do you use? Anything I can follow/read for updates?"
+    ))
+    expect(grokApi.calls.length).toBe(1)
+    expect(grokApi.calls[0].message).toBe(
+      "What social media do you use? Anything I can follow/read for updates?"
+    )
+  })
+
+  test("Grok answers an unknown slash-prefixed message", async () => {
+    // `/help` is not in desiredCommands, so it should be treated as plain
+    // text and reach Grok rather than being silently dropped.
+    grokApi.willRespond("Sure, here's what I can do.")
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("/help me with groups"))
+    expect(grokApi.calls.length).toBe(1)
+    expect(grokApi.calls[0].message).toBe("/help me with groups")
   })
 
   test("Grok per-message: history includes prior Grok sent response as assistant", async () => {
@@ -841,6 +894,52 @@ describe("Grok Conversation", () => {
   })
 })
 
+describe("Grok requests /team", () => {
+  beforeEach(() => setup())
+
+  test("Grok per-message reply containing /team → team added, teamAddedMessage sent, reply still sent", async () => {
+    await reachGrok()
+    await bot.flush()
+    grokApi.willRespond("I can't help with billing — please send /team for a human.")
+    addCustomerMessageToHistory("Can you refund me?", GROK_LOCAL_GROUP_ID)
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("Can you refund me?"))
+
+    expectAnySent("I can't help with billing")
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_2_ID)
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
+  })
+
+  test("Grok per-message reply without /team → no team members added", async () => {
+    await reachGrok()
+    await bot.flush()
+    grokApi.willRespond("To create a group, tap +, then New Group.")
+    addCustomerMessageToHistory("How do I create a group?", GROK_LOCAL_GROUP_ID)
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("How do I create a group?"))
+
+    expect(chat.added.some(a => a.groupId === CUSTOMER_GROUP_ID && a.contactId === TEAM_MEMBER_1_ID)).toBe(false)
+  })
+
+  test("/team in Grok's initial reply after /grok → escalates", async () => {
+    await reachQueue()
+    addBotMessage("The team will reply to your message")
+    // Customer's question visible in Grok's view → activateGrok reads it for the initial reply
+    chat.groups.set(GROK_LOCAL_GROUP_ID, makeGroupInfo(GROK_LOCAL_GROUP_ID))
+    addCustomerMessageToHistory("I'm really stuck, please help", GROK_LOCAL_GROUP_ID)
+    grokApi.willRespond("That sounds urgent — send /team to reach a person.")
+
+    const grokJoinPromise = simulateGrokJoinSuccess()
+    await bot.onNewChatItems(customerMessage("/grok"))
+    await grokJoinPromise
+    await bot.flush()
+
+    expectAnySent("That sounds urgent")
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_2_ID)
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
+  })
+})
+
 describe("/team Activation", () => {
   beforeEach(() => setup())
 
@@ -864,7 +963,7 @@ describe("/team Activation", () => {
     addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "already been invited")
+    expectSentToGroup(CUSTOMER_GROUP_ID, teamAlreadyInvitedMessage)
   })
 
   test("/team with no team members → noTeamMembersMessage", async () => {
@@ -898,7 +997,7 @@ describe("One-Way Gate", () => {
   test("/grok after gate → teamLockedMessage", async () => {
     await reachTeam()
     await bot.onNewChatItems(customerMessage("/grok"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team mode")
+    expectSentToGroup(CUSTOMER_GROUP_ID, teamLockedMessage)
   })
 
   test("customer text in TEAM → card update scheduled, no bot reply", async () => {
@@ -947,6 +1046,17 @@ describe("One-Way Gate with Grok Disabled", () => {
     await bot.onNewChatItems(customerMessage("How do I use SimpleX?"))
     // Grok should not respond (grokApi is null)
     expect(grokApi.calls.length).toBe(0)
+  })
+
+  test("Grok disabled: customer /grok is treated as text and queued", async () => {
+    // When Grok is disabled, index.ts excludes "grok" from desiredCommands,
+    // so /grok from a customer parses as an unknown command → routed as
+    // plain text → first-message-in-WELCOME transitions to QUEUE.
+    setup()
+    bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null, DESIRED_COMMANDS_NO_GROK)
+    bot.cards = cards
+    await bot.onNewChatItems(customerMessage("/grok"))
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
   })
 })
 
@@ -1456,7 +1566,7 @@ describe("Error Handling", () => {
     // Only the "Inviting Grok" message is sent — no activated/unavailable result
     expect(chat.sent.length).toBe(sentBefore + 1)
     expectSentToGroup(CUSTOMER_GROUP_ID, "Inviting Grok")
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
   })
 
@@ -1646,7 +1756,7 @@ describe("Grok Join Flow", () => {
     await bot.flush()
 
     expect(chat.joined).toContain(GROK_LOCAL_GROUP_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
   })
 
   test("per-message responses suppressed during activateGrok initial response", async () => {
@@ -1794,7 +1904,7 @@ describe("End-to-End Flows", () => {
     await joinPromise
     await bot.flush()
 
-    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, grokActivatedMessage)
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
@@ -1834,8 +1944,8 @@ describe("Message Templates", () => {
     expect(grokActivatedMessage).toContain("chatting with Grok")
   })
 
-  test("teamLockedMessage mentions team mode", () => {
-    expect(teamLockedMessage).toContain("team mode")
+  test("teamLockedMessage tells customer the team will handle the conversation", () => {
+    expect(teamLockedMessage).toContain("team")
   })
 
   test("queueMessage mentions hours", () => {
@@ -2402,7 +2512,7 @@ describe("GrokApiClient HTTP timeout", () => {
       new Response(JSON.stringify({choices: [{message: {content: "ok"}}]}), {status: 200}),
     )
 
-    const client = new GrokApiClient("test-key", "system prompt")
+    const client = new GrokApiClient("test-key", [{role: "system", content: "system prompt"}])
     await client.chat([], "hello")
 
     expect(timeoutSpy).toHaveBeenCalledWith(60_000)
@@ -2477,5 +2587,120 @@ describe("Command sync in sendToGroup", () => {
     expect(prefs.commands).toEqual(DESIRED_COMMANDS)
     expect(prefs.files).toEqual({enable: "on"})
     expect(prefs.reactions).toEqual({enable: "on"})
+  })
+})
+
+// loadGrokContext: documented behavior is "plain text → single system
+// message". A `.yaml` / `.yml` extension is an undocumented alternative
+// that parses the harness transcript format and surfaces only `system`
+// and `assistant` turns; `user` entries are dropped so they don't merge
+// with the customer's runtime message.
+describe("loadGrokContext", () => {
+  const dir = mkdtempSync(join(tmpdir(), "support-bot-context-"))
+  const writeFile = (name: string, content: string): string => {
+    const p = join(dir, name)
+    writeFileSync(p, content)
+    return p
+  }
+
+  test("plain text (.txt) → single system message with full file content", () => {
+    const path = writeFile("ctx.txt", "You are Grok.\n\nBe concise.")
+    expect(loadGrokContext(path)).toEqual([
+      {role: "system", content: "You are Grok.\n\nBe concise."},
+    ])
+  })
+
+  test("no extension → treated as plain text", () => {
+    const path = writeFile("plain", "raw context")
+    expect(loadGrokContext(path)).toEqual([{role: "system", content: "raw context"}])
+  })
+
+  test(".md → treated as plain text (does not look like YAML)", () => {
+    const path = writeFile("ctx.md", "# Heading\n\nbody")
+    expect(loadGrokContext(path)).toEqual([
+      {role: "system", content: "# Heading\n\nbody"},
+    ])
+  })
+
+  test(".yaml → parses transcript and keeps only system + assistant turns", () => {
+    const path = writeFile("ctx.yaml",
+      "- role: system\n  message: Be terse.\n" +
+      "- role: user\n  message: What is async?\n" +
+      "- role: assistant\n  message: Cooperative concurrency.\n",
+    )
+    expect(loadGrokContext(path)).toEqual([
+      {role: "system", content: "Be terse."},
+      {role: "assistant", content: "Cooperative concurrency."},
+    ])
+  })
+
+  test(".yml extension also triggers YAML parsing", () => {
+    const path = writeFile("ctx.yml",
+      "- role: system\n  message: hi\n",
+    )
+    expect(loadGrokContext(path)).toEqual([{role: "system", content: "hi"}])
+  })
+
+  test("YAML parsing is case-insensitive on extension", () => {
+    const path = writeFile("ctx.YAML",
+      "- role: system\n  message: hi\n",
+    )
+    expect(loadGrokContext(path)).toEqual([{role: "system", content: "hi"}])
+  })
+
+  test("YAML preserves multi-line literal block scalars verbatim", () => {
+    const path = writeFile("multiline.yaml",
+      "- role: assistant\n  message: |\n    line one\n    line two\n",
+    )
+    expect(loadGrokContext(path)).toEqual([
+      {role: "assistant", content: "line one\nline two\n"},
+    ])
+  })
+
+  test("YAML with only user-role entries → empty array", () => {
+    const path = writeFile("only-user.yaml",
+      "- role: user\n  message: a\n" +
+      "- role: user\n  message: b\n",
+    )
+    expect(loadGrokContext(path)).toEqual([])
+  })
+
+  test("empty YAML file → empty array", () => {
+    const path = writeFile("empty.yaml", "")
+    expect(loadGrokContext(path)).toEqual([])
+  })
+
+  test("YAML non-list top level throws", () => {
+    const path = writeFile("not-list.yaml", "role: system\nmessage: x\n")
+    expect(() => loadGrokContext(path)).toThrow(/top-level must be a list/)
+  })
+
+  test("YAML entry with unknown role throws", () => {
+    const path = writeFile("bad-role.yaml", "- role: bogus\n  message: x\n")
+    expect(() => loadGrokContext(path)).toThrow(/entry 0 has invalid role/)
+  })
+
+  test("YAML entry missing role throws", () => {
+    const path = writeFile("no-role.yaml", "- message: x\n")
+    expect(() => loadGrokContext(path)).toThrow(/entry 0 has invalid role/)
+  })
+
+  test("YAML entry with non-string message throws", () => {
+    const path = writeFile("bad-message.yaml", "- role: user\n  message: 42\n")
+    expect(() => loadGrokContext(path)).toThrow(/entry 0 has non-string message/)
+  })
+
+  test("YAML entry that is not a mapping throws", () => {
+    const path = writeFile("bad-entry.yaml", "- just a string\n- role: user\n  message: x\n")
+    expect(() => loadGrokContext(path)).toThrow(/entry 0 is not a mapping/)
+  })
+
+  test("malformed YAML throws", () => {
+    const path = writeFile("malformed.yaml", "- role: user\n  message: [unclosed\n")
+    expect(() => loadGrokContext(path)).toThrow(/failed to parse YAML/)
+  })
+
+  test("missing file throws ENOENT", () => {
+    expect(() => loadGrokContext(join(dir, "does-not-exist.yaml"))).toThrow()
   })
 })

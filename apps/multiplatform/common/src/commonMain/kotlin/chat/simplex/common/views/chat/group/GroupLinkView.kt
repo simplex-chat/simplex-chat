@@ -258,7 +258,7 @@ fun GroupLinkLayout(
           iconColor = MaterialTheme.colors.primary,
           textColor = MaterialTheme.colors.primary,
         )
-        if (shareGroupInfo != null) {
+        if (shareGroupInfo != null && isChannel) {
           SettingsActionItem(
             painterResource(MR.images.ic_forward),
             stringResource(MR.strings.share_via_chat),
@@ -281,8 +281,13 @@ fun GroupLinkLayout(
           )
         }
         if (creatingGroup && close != null) {
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-          ContinueButton(close)
+          SettingsActionItem(
+            painterResource(MR.images.ic_check),
+            stringResource(MR.strings.continue_to_next_step),
+            click = close,
+            iconColor = MaterialTheme.colors.primary,
+            textColor = MaterialTheme.colors.primary,
+          )
         }
       }
     }
