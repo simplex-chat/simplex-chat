@@ -433,15 +433,7 @@ private fun ActiveChatThemeProvider(content: @Composable () -> Unit) {
   val theme by CurrentColors.collectAsState()
   val chatId by chatModel.chatId
   val activeChat = chatId?.let { id -> chatModel.chats.value.firstOrNull { it.chatInfo.id == id } }
-  val effectiveTheme = remember(activeChat?.chatInfo, theme) {
-    val perChatTheme = when (val ci = activeChat?.chatInfo) {
-      is ChatInfo.Direct -> ci.contact.uiThemes?.preferredMode(!theme.colors.isLight)
-      is ChatInfo.Group -> ci.groupInfo.uiThemes?.preferredMode(!theme.colors.isLight)
-      else -> null
-    }
-    if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
-    else theme
-  }
+  val effectiveTheme = rememberActiveChatTheme(activeChat?.chatInfo, theme)
   CompositionLocalProvider(LocalActiveTheme provides effectiveTheme, content = content)
 }
 

@@ -252,11 +252,11 @@ fun ChatView(
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
         var groupMembersJob: Job = remember { Job() }
-        val perChatTheme = remember(chatInfo, CurrentColors.value.base) { if (chatInfo is ChatInfo.Direct) chatInfo.contact.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else null }
-        val overrides = if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get()) else null
+        val theme by CurrentColors.collectAsState()
+        val effectiveTheme = rememberActiveChatTheme(chatInfo, theme)
         val fullDeleteAllowed = remember(chatInfo) { chatInfo.featureEnabled(ChatFeature.FullDelete) }
 
-        SimpleXThemeOverride(overrides ?: CurrentColors.collectAsState().value) {
+        SimpleXThemeOverride(effectiveTheme) {
           val onSearchValueChanged: (String) -> Unit = onSearchValueChanged@{ value ->
             val sameText = searchText.value == value
             // showSearch can be false with empty text when it was closed manually after clicking on message from search to load .around it

@@ -1332,10 +1332,7 @@ object AppearanceScope {
       if (name == ThemeColor.TOOLBAR && appPrefs.developerTools.get()) {
         SectionSpacer()
         val toolbarCode = if (currentColor.alpha >= 0.01f) {
-          val oklab = currentColor.convert(androidx.compose.ui.graphics.colorspace.ColorSpaces.Oklab)
-          val L = oklab.component1(); val a = oklab.component2(); val b = oklab.component3()
-          val C = kotlin.math.sqrt(a * a + b * b)
-          val H = Math.toDegrees(kotlin.math.atan2(b.toDouble(), a.toDouble())).toFloat().let { if (it < 0) it + 360f else it }
+          val (L, C, H) = currentColor.toOklch()
           "toolbar = oklch(${L}f, ${C}f, ${H}f, ${currentColor.alpha}f),"
         } else "// toolbar: no tint (transparent)"
         val preset = (wallpaperType as? WallpaperType.Preset)?.let { PresetWallpaper.from(it.filename) }

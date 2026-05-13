@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
@@ -345,6 +346,22 @@ data class ThemesFile(
   val themes: List<ThemeOverrides> = emptyList()
 )
 
+// Theme color priority: per-chat → per-user → this override's own colors →
+// preset-wallpaper-derived theme → base palette. Used by toColors / toAppColors
+// for every non-bubble field; bubble colors have wallpaper-aware logic that
+// can't share this chain.
+private fun resolveColor(
+  perChatColor: String?,
+  perUserColor: String?,
+  ownColor: String?,
+  presetColor: Color?,
+  baseColor: Color,
+): Color = perChatColor?.colorFromReadableHex()
+  ?: perUserColor?.colorFromReadableHex()
+  ?: ownColor?.colorFromReadableHex()
+  ?: presetColor
+  ?: baseColor
+
 // Spec: spec/services/theme.md#ThemeOverrides
 @Serializable
 data class ThemeOverrides (
@@ -395,12 +412,12 @@ data class ThemeOverrides (
       DefaultTheme.BLACK -> BlackColorPalette
     }
     return baseColors.copy(
-      primary = perChatTheme?.primary?.colorFromReadableHex() ?: perUserTheme?.primary?.colorFromReadableHex() ?: colors.primary?.colorFromReadableHex() ?: presetWallpaperTheme?.primary ?: baseColors.primary,
-      primaryVariant = perChatTheme?.primaryVariant?.colorFromReadableHex() ?: perUserTheme?.primaryVariant?.colorFromReadableHex() ?: colors.primaryVariant?.colorFromReadableHex() ?: presetWallpaperTheme?.primaryVariant ?: baseColors.primaryVariant,
-      secondary = perChatTheme?.secondary?.colorFromReadableHex() ?: perUserTheme?.secondary?.colorFromReadableHex() ?: colors.secondary?.colorFromReadableHex() ?: presetWallpaperTheme?.secondary ?: baseColors.secondary,
-      secondaryVariant = perChatTheme?.secondaryVariant?.colorFromReadableHex() ?: perUserTheme?.secondaryVariant?.colorFromReadableHex() ?: colors.secondaryVariant?.colorFromReadableHex() ?: presetWallpaperTheme?.secondaryVariant ?: baseColors.secondaryVariant,
-      background = perChatTheme?.background?.colorFromReadableHex() ?: perUserTheme?.background?.colorFromReadableHex() ?: colors.background?.colorFromReadableHex() ?: presetWallpaperTheme?.background ?: baseColors.background,
-      surface = perChatTheme?.surface?.colorFromReadableHex() ?: perUserTheme?.surface?.colorFromReadableHex() ?: colors.surface?.colorFromReadableHex() ?: presetWallpaperTheme?.surface ?: baseColors.surface,
+      primary = resolveColor(perChatTheme?.primary, perUserTheme?.primary, colors.primary, presetWallpaperTheme?.primary, baseColors.primary),
+      primaryVariant = resolveColor(perChatTheme?.primaryVariant, perUserTheme?.primaryVariant, colors.primaryVariant, presetWallpaperTheme?.primaryVariant, baseColors.primaryVariant),
+      secondary = resolveColor(perChatTheme?.secondary, perUserTheme?.secondary, colors.secondary, presetWallpaperTheme?.secondary, baseColors.secondary),
+      secondaryVariant = resolveColor(perChatTheme?.secondaryVariant, perUserTheme?.secondaryVariant, colors.secondaryVariant, presetWallpaperTheme?.secondaryVariant, baseColors.secondaryVariant),
+      background = resolveColor(perChatTheme?.background, perUserTheme?.background, colors.background, presetWallpaperTheme?.background, baseColors.background),
+      surface = resolveColor(perChatTheme?.surface, perUserTheme?.surface, colors.surface, presetWallpaperTheme?.surface, baseColors.surface),
     )
   }
 
@@ -417,9 +434,9 @@ data class ThemeOverrides (
     val receivedMessageFallback = colors.receivedMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedMessage ?: baseColors.receivedMessage
     val receivedQuoteFallback = colors.receivedQuote?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedQuote ?: baseColors.receivedQuote
     return baseColors.copy(
-      title = perChatTheme?.title?.colorFromReadableHex() ?: perUserTheme?.title?.colorFromReadableHex() ?: colors.title?.colorFromReadableHex() ?: presetWallpaperTheme?.title ?: baseColors.title,
-      primaryVariant2 = perChatTheme?.primaryVariant2?.colorFromReadableHex() ?: perUserTheme?.primaryVariant2?.colorFromReadableHex() ?: colors.primaryVariant2?.colorFromReadableHex() ?: presetWallpaperTheme?.primaryVariant2 ?: baseColors.primaryVariant2,
-      toolbar = perChatTheme?.toolbar?.colorFromReadableHex() ?: perUserTheme?.toolbar?.colorFromReadableHex() ?: colors.toolbar?.colorFromReadableHex() ?: presetWallpaperTheme?.toolbar ?: baseColors.toolbar,
+      title = resolveColor(perChatTheme?.title, perUserTheme?.title, colors.title, presetWallpaperTheme?.title, baseColors.title),
+      primaryVariant2 = resolveColor(perChatTheme?.primaryVariant2, perUserTheme?.primaryVariant2, colors.primaryVariant2, presetWallpaperTheme?.primaryVariant2, baseColors.primaryVariant2),
+      toolbar = resolveColor(perChatTheme?.toolbar, perUserTheme?.toolbar, colors.toolbar, presetWallpaperTheme?.toolbar, baseColors.toolbar),
       sentMessage = if (perChatTheme?.sentMessage != null) perChatTheme.sentMessage.colorFromReadableHex()
         else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.sentMessage?.colorFromReadableHex() ?: sentMessageFallback
         else sentMessageFallback,
@@ -881,6 +898,24 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     }
   )
 }
+
+/** Resolve the active theme to apply to a UI surface that is "owned" by a
+ *  specific chat. Returns the chat's theme override (resolved through the
+ *  per-user / app-settings chain) when one exists; otherwise returns the
+ *  passed [theme] unchanged. Same logic used at chat scope (SimpleXThemeOverride
+ *  caller in ChatView) and at scopes that follow the active chat from the
+ *  outside (ActiveChatThemeProvider in App). */
+@Composable
+fun rememberActiveChatTheme(chatInfo: ChatInfo?, theme: ThemeManager.ActiveTheme): ThemeManager.ActiveTheme =
+  remember(chatInfo, theme) {
+    val perChatTheme = when (chatInfo) {
+      is ChatInfo.Direct -> chatInfo.contact.uiThemes?.preferredMode(!theme.colors.isLight)
+      is ChatInfo.Group -> chatInfo.groupInfo.uiThemes?.preferredMode(!theme.colors.isLight)
+      else -> null
+    }
+    if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    else theme
+  }
 
 @Composable
 fun SimpleXThemeOverride(theme: ThemeManager.ActiveTheme, content: @Composable () -> Unit) {
