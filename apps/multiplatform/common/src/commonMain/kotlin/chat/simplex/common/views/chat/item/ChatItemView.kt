@@ -1374,7 +1374,7 @@ fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction
 
 fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, chatInfo: ChatInfo, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   val canDeleteForEveryone = chatItem.meta.deletable && !chatItem.localNote && !chatItem.isReport
-  val editorial = chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator
+  val editorial = publicGroupEditor(chatInfo)
   AlertManager.shared.showAlertDialogButtons(
     title = generalGetString(MR.strings.delete_message__question),
     text = questionText,

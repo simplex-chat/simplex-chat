@@ -2175,7 +2175,7 @@ struct ChatView: View {
                 )
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                    if publicGroupEditorialRole(chat) {
+                    if publicGroupEditor(chat) {
                         Button("Delete from history", role: .destructive) {
                             deleteMessage(.cidmHistory, moderate: false)
                         }
@@ -2191,7 +2191,7 @@ struct ChatView: View {
                     }
                 }
                 .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
-                    if publicGroupEditorialRole(chat) {
+                    if publicGroupEditor(chat) {
                         Button("Delete from history", role: .destructive) {
                             deleteMessages(chat, deletingItems, .cidmHistory, moderate: false)
                         }
@@ -2978,7 +2978,7 @@ class FloatingButtonModel: ObservableObject {
 
 }
 
-private func publicGroupEditorialRole(_ chat: Chat) -> Bool {
+private func publicGroupEditor(_ chat: Chat) -> Bool {
     if case let .group(groupInfo, _) = chat.chatInfo {
         groupInfo.useRelays && groupInfo.membership.memberRole >= .moderator
     } else {

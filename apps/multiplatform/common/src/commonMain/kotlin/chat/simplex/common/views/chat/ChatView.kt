@@ -317,7 +317,7 @@ fun ChatView(
                         itemIds.sorted(),
                         questionText = questionText,
                         forAll = canDeleteForAll,
-                        editorial = chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator,
+                        editorial = publicGroupEditor(chatInfo),
                         deleteMessages = { ids, forAll ->
                           deleteMessages(chatRh, chatInfo, ids, forAll, moderate = false) {
                             selectedChatItems.value = null
@@ -3353,7 +3353,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           scope = chatInfo.groupChatScope(),
           itemIds = itemIds,
           mode = if (forAll) CIDeleteMode.cidmBroadcast
-            else if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) CIDeleteMode.cidmHistory
+            else if (publicGroupEditor(chatInfo)) CIDeleteMode.cidmHistory
             else CIDeleteMode.cidmInternal
         )
       }
@@ -3615,6 +3615,9 @@ fun providerForGallery(
 }
 
 typealias ChatViewItemKey = Pair<Long, Long>
+
+fun publicGroupEditor(chatInfo: ChatInfo): Boolean =
+  chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator
 
 private fun keyForItem(item: ChatItem): ChatViewItemKey = ChatViewItemKey(item.id, item.meta.createdAt.toEpochMilliseconds())
 
