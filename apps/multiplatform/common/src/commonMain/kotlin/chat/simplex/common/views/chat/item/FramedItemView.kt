@@ -592,8 +592,6 @@ fun CenteredRowLayout(
     val second = measureable[1].measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = (constraints.maxWidth - first.measuredWidth - third.measuredWidth).coerceAtLeast(0)))
     // Limit width for every other element to width of important element and height for a sum of all elements.
     layout(constraints.maxWidth, constraints.maxHeight) {
-      // placeRelative mirrors x under RTL so the leading slot (first) and trailing slot (third)
-      // swap visual sides automatically when the locale flips.
       first.placeRelative(0, ((constraints.maxHeight - first.measuredHeight) / 2).coerceAtLeast(0))
       second.placeRelative((constraints.maxWidth - second.measuredWidth) / 2, ((constraints.maxHeight - second.measuredHeight) / 2).coerceAtLeast(0))
       third.placeRelative(constraints.maxWidth - third.measuredWidth, ((constraints.maxHeight - third.measuredHeight) / 2).coerceAtLeast(0))

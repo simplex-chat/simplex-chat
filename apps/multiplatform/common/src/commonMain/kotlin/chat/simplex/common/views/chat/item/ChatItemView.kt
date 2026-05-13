@@ -238,7 +238,7 @@ fun ChatItemView(
     }
 
     @Composable
-    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, iconSize: Dp = 22.dp, parentActivated: State<Boolean>, onClick: () -> Unit) {
+    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, iconSize: Dp = 22.dp, parentActivated: State<Boolean>, mirror: Boolean = false, onClick: () -> Unit) {
       val buttonInteractionSource = remember { MutableInteractionSource() }
       val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
       val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
@@ -273,7 +273,7 @@ fun ChatItemView(
           .size(22.dp),
         interactionSource = buttonInteractionSource
       ) {
-        Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)
+        Icon(painterResource(icon), null, Modifier.size(iconSize).then(if (mirror) Modifier.mirrorIfRtl() else Modifier), tint = iconTint)
       }
     }
 
@@ -289,7 +289,7 @@ fun ChatItemView(
           }
         }
       } else if (chatTypeApiIdMsgId != null) {
-        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
+        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated, mirror = true) {
           val (chatType, apiId, msgId) = chatTypeApiIdMsgId
           withBGApi {
             openChat(secondaryChatsCtx = null, rhId, chatType, apiId, msgId)
@@ -1283,10 +1283,9 @@ private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boole
     quadraticBezierTo(bubbleInitialX, 0f, bubbleInitialX + rx, 0f) // Top-left corner
   }
 
-  // The default path draws the tail at the bottom-left corner. We mirror the path so the tail
-  // ends up on the side closer to the message author's profile in chat: right for sent in LTR,
-  // left for received in LTR — and the opposite under RTL where chat sides are mirrored.
-  if (sent != (layoutDirection == LayoutDirection.Rtl)) {
+  // Default path draws the tail at the bottom-left corner.
+  val tailOnRight = sent != (layoutDirection == LayoutDirection.Rtl)
+  if (tailOnRight) {
     val matrix = Matrix()
     matrix.scale(-1f, 1f)
     this.transform(matrix)

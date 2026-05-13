@@ -12,8 +12,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.roundToInt
 
-// Horizontally flips an asymmetric directional drawable (back/forward arrows, chevrons, signal
-// waves) when the layout direction is RTL. Apply to the Icon's modifier at each call site.
 @Composable
 fun Modifier.mirrorIfRtl(): Modifier =
   if (LocalLayoutDirection.current == LayoutDirection.Rtl) this.scale(scaleX = -1f, scaleY = 1f) else this
