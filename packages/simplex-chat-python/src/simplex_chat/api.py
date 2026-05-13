@@ -40,9 +40,25 @@ def _db_to_migrate_args(db: Db) -> tuple[str, str, _native.Backend]:
 
 
 class ChatCommandError(Exception):
+    """A chat command returned an unexpected response type.
+
+    `response` is the raw wire response; `response_type` exposes its `type`
+    discriminator for quick checks. Subclasses cover known recoverable cases
+    so callers can `except ContactAlreadyExistsError` instead of inspecting
+    `response.get("type")` themselves.
+    """
+
     def __init__(self, message: str, response: CR.ChatResponse):
         super().__init__(message)
         self.response = response
+
+    @property
+    def response_type(self) -> str:
+        return self.response.get("type", "")  # type: ignore[return-value]
+
+
+class ContactAlreadyExistsError(ChatCommandError):
+    """`api_connect`/`api_connect_active_user` was called for an existing contact."""
 
 
 class ChatApi:
@@ -481,7 +497,7 @@ class ChatApi:
         if r["type"] == "sentInvitation":
             return "contact"
         if r["type"] == "contactAlreadyExists":
-            raise ChatCommandError("contact already exists", r)
+            raise ContactAlreadyExistsError("contact already exists", r)
         raise ChatCommandError("connection error", r)
 
     async def api_accept_contact_request(self, contact_req_id: int) -> T.Contact:
