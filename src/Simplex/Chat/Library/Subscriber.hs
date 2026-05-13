@@ -2183,7 +2183,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             in case sndMemberId_ of
               -- regular deletion
               Nothing
-                | isAuthor && onlyHistory && publicGroupItemDeletable gInfo m ->
+                | isAuthor && onlyHistory && publicGroupEditor gInfo m ->
                     delete cci False Nothing $> Nothing
                 | isAuthor && not onlyHistory && rcvItemDeletable ci brokerTs ->
                     delete cci False Nothing

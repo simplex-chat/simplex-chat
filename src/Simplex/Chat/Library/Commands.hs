@@ -766,7 +766,7 @@ processChatCommand vr nm = \case
       chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
       deletions <- case mode of
         CIDMInternal
-          | publicGroupItemDeletable gInfo (membership gInfo) -> throwChatError CEInvalidChatItemDelete
+          | publicGroupEditor gInfo (membership gInfo) -> throwChatError CEInvalidChatItemDelete
           | otherwise -> deleteGroupCIs user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
         CIDMInternalMark -> do
           markGroupCIsDeleted user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
@@ -779,7 +779,7 @@ processChatCommand vr nm = \case
           mapM_ (sendGroupMessages user gInfo Nothing False recipients) events
           delGroupChatItems user gInfo chatScopeInfo items False
         CIDMHistory -> do
-          unless (publicGroupItemDeletable gInfo (membership gInfo)) $ throwChatError CEInvalidChatItemDelete
+          unless (publicGroupEditor gInfo (membership gInfo)) $ throwChatError CEInvalidChatItemDelete
           recipients <- getGroupRecipients vr user gInfo chatScopeInfo groupKnockingVersion
           assertUserGroupRole gInfo GRObserver
           let msgIds = itemsMsgIds items
