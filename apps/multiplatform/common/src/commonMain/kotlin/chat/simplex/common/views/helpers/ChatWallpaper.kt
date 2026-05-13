@@ -332,7 +332,7 @@ private enum class ThemeElem(val params: ElemParams) {
 private const val BG_LIGHT_L = 0.9657f
 private const val BG_LIGHT_C_BASE = 0.02721f
 
-private fun gen(mode: DefaultTheme, elem: ThemeElem, p: PresetWallpaper): Color {
+private fun colorForElement(mode: DefaultTheme, elem: ThemeElem, p: PresetWallpaper): Color {
   val m = MODE_PARAMS[mode]!!
   val e = elem.params
   return oklch(m.lBase + m.lSpread * e.lOffset, m.cFactor * e.cFactor * p.cScale, p.hue)
@@ -342,15 +342,15 @@ private fun generateBackground(p: PresetWallpaper): Map<DefaultTheme, Color> =
   wallpaperBackgrounds(light = oklch(BG_LIGHT_L, BG_LIGHT_C_BASE * p.cScale, p.hue))
 
 private fun generateTint(p: PresetWallpaper): Map<DefaultTheme, Color> =
-  DefaultTheme.entries.associateWith { gen(it, ThemeElem.TINT, p) }
+  DefaultTheme.entries.associateWith { colorForElement(it, ThemeElem.TINT, p) }
 
 private fun generateColors(p: PresetWallpaper): Map<DefaultTheme, ResolvedColors> =
   DefaultTheme.entries.associateWith { mode ->
     ResolvedColors(
-      sentMessage = gen(mode, ThemeElem.SENT_MESSAGE, p),
-      sentQuote = gen(mode, ThemeElem.SENT_QUOTE, p),
-      receivedMessage = gen(mode, ThemeElem.RECEIVED_MESSAGE, p),
-      receivedQuote = gen(mode, ThemeElem.RECEIVED_QUOTE, p),
+      sentMessage = colorForElement(mode, ThemeElem.SENT_MESSAGE, p),
+      sentQuote = colorForElement(mode, ThemeElem.SENT_QUOTE, p),
+      receivedMessage = colorForElement(mode, ThemeElem.RECEIVED_MESSAGE, p),
+      receivedQuote = colorForElement(mode, ThemeElem.RECEIVED_QUOTE, p),
     )
   }
 

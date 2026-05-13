@@ -808,13 +808,13 @@ object AppearanceScope {
     val colorChroma = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("colorChroma") ?: defaults["colorChroma"] ?: 0f) }
 
     // Compute formula result (O(1) math, no need to memoize)
-    val result = when {
-      isLight -> generateSchemeLight(
+    val result = when (baseTheme) {
+      DefaultTheme.LIGHT -> generateSchemeLight(
         hue.floatValue, bgL.floatValue, bgC.floatValue, step.floatValue,
         patternDepth.floatValue, patternChromaVal.floatValue, receivedTint.floatValue,
         bgLOffset.floatValue,
       )
-      isBlack -> generateSchemeBlack(
+      DefaultTheme.BLACK -> generateSchemeBlack(
         hue.floatValue, step.floatValue, colorChroma.floatValue,
       )
       else -> generateSchemeDark(
@@ -846,21 +846,29 @@ object AppearanceScope {
     }
 
     SectionView("FORMULA: ${preset.filename.uppercase()} / ${baseTheme.name}") {
-      if (isLight) {
-        FormulaSlider("Hue", hue, 0f..360f)
-        FormulaSlider("Lightness", bgL, 0.85f..1f)
-        FormulaSlider("BG Lightness", bgLOffset, -0.05f..0.05f)
-        FormulaSlider("Chroma", bgC, 0f..0.10f)
-        FormulaSlider("Contrast", step, 0.01f..0.10f)
-        FormulaSlider("Received tint", receivedTint, 0f..0.07f)
-        FormulaSlider("Pattern depth", patternDepth, 0f..10f)
-        FormulaSlider("Pattern chroma", patternChromaVal, 0f..0.15f)
-      } else {
-        FormulaSlider("Hue", hue, 0f..360f)
-        if (!isBlack) FormulaSlider("Lightness", bgL, 0.05f..0.30f)
-        FormulaSlider("Contrast", step, 0.01f..0.10f)
-        FormulaSlider("Accent chroma", colorChroma, 0f..0.20f)
-        if (!isBlack) FormulaSlider("Secondary chroma", mutedChroma, 0f..0.05f)
+      when (baseTheme) {
+        DefaultTheme.LIGHT -> {
+          FormulaSlider("Hue", hue, 0f..360f)
+          FormulaSlider("Lightness", bgL, 0.85f..1f)
+          FormulaSlider("BG Lightness", bgLOffset, -0.05f..0.05f)
+          FormulaSlider("Chroma", bgC, 0f..0.10f)
+          FormulaSlider("Contrast", step, 0.01f..0.10f)
+          FormulaSlider("Received tint", receivedTint, 0f..0.07f)
+          FormulaSlider("Pattern depth", patternDepth, 0f..10f)
+          FormulaSlider("Pattern chroma", patternChromaVal, 0f..0.15f)
+        }
+        DefaultTheme.BLACK -> {
+          FormulaSlider("Hue", hue, 0f..360f)
+          FormulaSlider("Contrast", step, 0.01f..0.10f)
+          FormulaSlider("Accent chroma", colorChroma, 0f..0.20f)
+        }
+        else -> {
+          FormulaSlider("Hue", hue, 0f..360f)
+          FormulaSlider("Lightness", bgL, 0.05f..0.30f)
+          FormulaSlider("Contrast", step, 0.01f..0.10f)
+          FormulaSlider("Accent chroma", colorChroma, 0f..0.20f)
+          FormulaSlider("Secondary chroma", mutedChroma, 0f..0.05f)
+        }
       }
       SectionItemView({
         savedParams.keys.filter { it.startsWith(pk) }.forEach { savedParams.remove(it) }
