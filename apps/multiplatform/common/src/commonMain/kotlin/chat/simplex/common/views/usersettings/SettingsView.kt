@@ -295,14 +295,10 @@ fun ChatLockItem(
 }
 
 private fun resetHintPreferences() {
-  for ((pref, def) in appPreferences.hintPreferences) {
-    pref.set(def)
-  }
+  appPreferences.hintPreferences.forEach { it.reset() }
 }
 
-fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { (pref, def) ->
-  pref.state.value == def
-}
+fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { it.isUnchanged() }
 
 @Composable
 fun AppVersionItem(showVersion: () -> Unit) {

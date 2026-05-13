@@ -91,6 +91,13 @@ enum class SimplexLinkMode {
   }
 }
 
+enum class CloseBehavior {
+  Ask, Quit, MinimizeToTray;
+  companion object { val default = Ask }
+}
+
+class HintPref(val reset: () -> Unit, val isUnchanged: () -> Boolean)
+
 // Spec: spec/state.md#AppPreferences
 class AppPreferences {
   // deprecated, remove in 2024
@@ -99,6 +106,7 @@ class AppPreferences {
     SHARED_PREFS_NOTIFICATIONS_MODE,
     if (!runServiceInBackground.get()) NotificationsMode.OFF else NotificationsMode.default
   )  { NotificationsMode.values().firstOrNull { it.name == this } }
+  val closeBehavior: SharedPreference<CloseBehavior> = mkSafeEnumPreference(SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR, CloseBehavior.default)
   val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
   val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
@@ -257,17 +265,23 @@ class AppPreferences {
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
   val chatBottomBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_BAR, true)
 
-  val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
-    laNoticeShown to false,
-    oneHandUICardShown to false,
-    addressCreationCardShown to false,
-    liveMessageAlertShown to false,
-    showHiddenProfilesNotice to true,
-    showMuteProfileAlert to true,
-    showReportsInSupportChatAlert to true,
-    showDeleteConversationNotice to true,
-    showDeleteContactNotice to true,
-    privacyLinkPreviewsShowAlert to true,
+  val hintPreferences: List<HintPref> = listOf(
+    hintPref(laNoticeShown, false),
+    hintPref(oneHandUICardShown, false),
+    hintPref(addressCreationCardShown, false),
+    hintPref(liveMessageAlertShown, false),
+    hintPref(showHiddenProfilesNotice, true),
+    hintPref(showMuteProfileAlert, true),
+    hintPref(showReportsInSupportChatAlert, true),
+    hintPref(showDeleteConversationNotice, true),
+    hintPref(showDeleteContactNotice, true),
+    hintPref(privacyLinkPreviewsShowAlert, true),
+    hintPref(closeBehavior, CloseBehavior.default),
+  )
+
+  private fun <T> hintPref(pref: SharedPreference<T>, default: T) = HintPref(
+    reset = { pref.set(default) },
+    isUnchanged = { pref.state.value == default },
   )
 
   private fun mkIntPreference(prefName: String, default: Int) =
@@ -479,6 +493,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
+    private const val SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR = "DesktopCloseBehavior"
     private const val SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
     private const val SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
     private const val SHARED_PREFS_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
