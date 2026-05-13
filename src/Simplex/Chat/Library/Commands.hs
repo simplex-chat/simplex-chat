@@ -2138,7 +2138,8 @@ processChatCommand vr nm = \case
                   _ -> Nothing
             void $ createLinkOwnerMember db vr user gInfo' ctId_ (MemberId ownerId) ownerKey
           pure gInfo'
-        rs <- mapConcurrently (connectToRelay user gInfo') relays
+        rs <- withGroupLock "connectPreparedGroup" groupId $
+          mapConcurrently (connectToRelay user gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
         if null succeeded
@@ -3619,7 +3620,7 @@ processChatCommand vr nm = \case
           localRelayLinks = mapMaybe memberRelayLink activeRelayMembers
           newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
       forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
-        connectToRelay user gInfo rlnk
+        connectToRelayAsync user gInfo rlnk
       forM_ localRelayMembers $ \m ->
         case memberRelayLink m of
           -- Remove relay if its link is no longer in the current link data.
@@ -3631,7 +3632,6 @@ processChatCommand vr nm = \case
               deleteMemberConnection m
               deleteOrUpdateMemberRecord user gInfo m
           _ -> pure ()
-
     prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
     prepareContact user cReq pqSup = do
       -- 0) toggle disabled - PQSupportOff
@@ -3944,38 +3944,36 @@ processChatCommand vr nm = \case
       mapConcurrently addRelay relays
       where
         addRelay :: UserChatRelay -> CM (UserChatRelay, Either ChatError GroupRelay)
-        addRelay relay@UserChatRelay {address} = do
-          r <- tryAllErrors $ do
-            (FixedLinkData {linkConnReq = cReq}, _cData) <- getShortLinkConnReq nm user address
-            lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
-              Nothing -> throwChatError CEInvalidConnReq
-              Just (agentV, _) -> do
-                let chatV = agentToChatVersion agentV
-                gVar <- asks random
-                subMode <- chatReadVar subscriptionMode
-                connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
-                (relayMember, conn, groupRelay) <- withFastStore $ \db -> do
-                  relayMember <- createRelayForOwner db vr gVar user gInfo relay
-                  groupRelay <- createGroupRelayRecord db gInfo relayMember relay
-                  conn <- createRelayConnection db vr user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
-                  pure (relayMember, conn, groupRelay)
-                let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-                    allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
-                    membershipProfile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
-                    GroupMember {memberId = relayMemberId} = relayMember
-                    relayInv = GroupRelayInvitation {
-                      fromMember = MemberIdRole userMemberId userRole,
-                      fromMemberProfile = membershipProfile,
-                      relayMemberId,
-                      groupLink = groupSLink
-                    }
-                dm <- encodeConnInfo $ XGrpRelayInv relayInv
-                (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
-                let newConnStatus = if sqSecured then ConnSndReady else ConnJoined
-                withFastStore' $ \db -> do
-                  void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
-                  updateRelayStatusFromTo db groupRelay RSNew RSInvited
-          pure (relay, r)
+        addRelay relay@UserChatRelay {address} = fmap (relay,) . tryAllErrors $ do
+          (FixedLinkData {linkConnReq = cReq}, _cData) <- getShortLinkConnReq nm user address
+          lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
+            Nothing -> throwChatError CEInvalidConnReq
+            Just (agentV, _) -> do
+              let chatV = agentToChatVersion agentV
+              gVar <- asks random
+              subMode <- chatReadVar subscriptionMode
+              connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+              (relayMember, conn, groupRelay) <- withFastStore $ \db -> do
+                relayMember <- createRelayForOwner db vr gVar user gInfo relay
+                groupRelay <- createGroupRelayRecord db gInfo relayMember relay
+                conn <- createRelayConnection db vr user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
+                pure (relayMember, conn, groupRelay)
+              let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+                  allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+                  membershipProfile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
+                  GroupMember {memberId = relayMemberId} = relayMember
+                  relayInv = GroupRelayInvitation {
+                    fromMember = MemberIdRole userMemberId userRole,
+                    fromMemberProfile = membershipProfile,
+                    relayMemberId,
+                    groupLink = groupSLink
+                  }
+              dm <- encodeConnInfo $ XGrpRelayInv relayInv
+              (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
+              let newConnStatus = if sqSecured then ConnSndReady else ConnJoined
+              withFastStore' $ \db -> do
+                void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
+                updateRelayStatusFromTo db groupRelay RSNew RSInvited
     privateGetUser :: UserId -> CM User
     privateGetUser userId =
       tryAllErrors (withStore (`getUser` userId)) >>= \case
@@ -4783,9 +4781,8 @@ deleteInProgressGroup user gInfo = do
 
 runRelayGroupLinkChecks :: User -> CM ()
 runRelayGroupLinkChecks user = do
-  initialDelay <- asks (relayChecksInitialDelay . config)
-  liftIO $ threadDelay' initialDelay
   interval <- asks (relayChecksInterval . config)
+  liftIO $ threadDelay' $ diffToMicroseconds interval
   forever $ do
     flip catchAllErrors eToView $ do
       lift waitChatStartedAndActivated

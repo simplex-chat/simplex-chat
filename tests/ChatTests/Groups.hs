@@ -9734,9 +9734,6 @@ testChannelAddRelay ps =
             threadDelay 100000
 
             -- existing subscriber discovers and connects to new relay
-            dan ##> "/_get group link data #1"
-            dan <## "group ID: 1"
-            void $ getTermLine dan -- subscribers: N
             concurrentlyN_
               [ do
                   dan <## "#team: joining the group (connecting to relay cath)..."

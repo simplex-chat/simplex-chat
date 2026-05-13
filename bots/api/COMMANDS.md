@@ -295,7 +295,7 @@ Send messages.
 ```
 
 ```python
-'/_send ' + str(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
+'/_send ' + ChatRef_cmd_string(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
 ```
 
 **Responses**:
@@ -335,7 +335,7 @@ Update message.
 ```
 
 ```python
-'/_update item ' + str(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + ' json ' + json.dumps(updatedMessage) # Python
+'/_update item ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + ' json ' + json.dumps(updatedMessage) # Python
 ```
 
 **Responses**:
@@ -382,7 +382,7 @@ Delete message.
 ```
 
 ```python
-'/_delete item ' + str(chatRef) + ' ' + ','.join(map(str, chatItemIds)) + ' ' + str(deleteMode) # Python
+'/_delete item ' + ChatRef_cmd_string(chatRef) + ' ' + ','.join(map(str, chatItemIds)) + ' ' + str(deleteMode) # Python
 ```
 
 **Responses**:
@@ -464,7 +464,7 @@ Add/remove message reaction.
 ```
 
 ```python
-'/_reaction ' + str(chatRef) + ' ' + str(chatItemId) + ' ' + ('on' if add else 'off') + ' ' + json.dumps(reaction) # Python
+'/_reaction ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) + ' ' + ('on' if add else 'off') + ' ' + json.dumps(reaction) # Python
 ```
 
 **Responses**:
@@ -1386,7 +1386,7 @@ Connect via prepared SimpleX link. The link can be 1-time invitation link, conta
 ```
 
 ```python
-'/_connect ' + str(userId) + ((' ' + str(preparedLink_)) if preparedLink_ is not None else '') # Python
+'/_connect ' + str(userId) + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
 ```
 
 **Responses**:
@@ -1644,7 +1644,7 @@ Get chat previews. Supports time-based pagination — use this instead of APILis
 ```
 
 ```python
-'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + str(pagination) + ' ' + json.dumps(query) # Python
+'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + PaginationByTime_cmd_string(pagination) + ' ' + json.dumps(query) # Python
 ```
 
 **Responses**:
@@ -1682,7 +1682,7 @@ Delete chat.
 ```
 
 ```python
-'/_delete ' + str(chatRef) + ' ' + str(chatDeleteMode) # Python
+'/_delete ' + ChatRef_cmd_string(chatRef) + ' ' + ChatDeleteMode_cmd_string(chatDeleteMode) # Python
 ```
 
 **Responses**:

@@ -1008,6 +1008,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfo p -> fmap ctx <$> xInfoMember gInfo' m'' p msg brokerTs
               XGrpLinkMem p -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
+              XGrpRelayNew rl -> fmap ctx <$> xGrpRelayNew gInfo' m'' rl
               XGrpMemNew memInfo msgScope -> fmap ctx <$> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> Nothing <$ xGrpMemInv gInfo' m'' memId introInv
@@ -1303,23 +1304,38 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CFSetShortLink ->
               case (ucGroupId_, auData) of
                 (Just groupId, UserContactLinkData UserContactData {relays = relayLinks}) -> do
-                  (gInfo, gLink, relays, relaysChanged) <- withStore $ \db -> do
+                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db vr user groupId
                     gLink <- getGroupLink db user gInfo
                     relays <- liftIO $ getGroupRelays db gInfo
-                    (relays', changed) <- liftIO $ foldrM (updateRelay db) ([], False) relays
+                    (relays', changed, newlyActive) <- liftIO $ foldrM (updateRelay db) ([], False, []) relays
                     liftIO $ setGroupInProgressDone db gInfo
-                    pure (gInfo, gLink, relays', changed)
+                    pure (gInfo, gLink, relays', changed, newlyActive)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
+                  let GroupSummary {publicMemberCount} = groupSummary gInfo
+                  -- Owner is counted in publicMemberCount; > 1 means at least one subscriber.
+                  -- TODO [relays] multi-owner: with N owners, threshold should be > N (or use a
+                  -- dedicated subscriber count).
+                  when (fromMaybe 0 publicMemberCount > 1) $
+                    forM_ (L.nonEmpty newlyActiveLinks) $ \newlyActive -> do
+                      allRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
+                      let recipients =
+                            filter
+                              (\GroupMember {memberStatus, relayLink} ->
+                                 memberStatus == GSMemConnected && relayLink `notElem` map Just newlyActiveLinks)
+                              allRelayMembers
+                          events = XGrpRelayNew <$> newlyActive
+                      unless (null recipients) $
+                        void $ sendGroupMessages user gInfo Nothing False recipients events
                   where
-                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool) -> IO ([GroupRelay], Bool)
-                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
+                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
+                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed, newlyActive) =
                       case relayLink of
                         Just rLink
                           | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
                               relay' <- updateRelayStatus db relay RSActive
-                              pure (relay' : acc, True)
-                          | rLink `elem` relayLinks -> pure (relay : acc, changed)
+                              pure (relay' : acc, True, rLink : newlyActive)
+                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActive)
                           | relayStatus == RSActive -> do
                               -- Relay link absent from link data — deactivate.
                               -- RSAccepted relays are not deactivated: their own link data update
@@ -1328,8 +1344,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               -- TODO   the SMP server, but this owner won't receive a LINK callback for it
                               -- TODO   (LINK only fires in response to own setConnShortLink calls).
                               relay' <- updateRelayStatus db relay RSInactive
-                              pure (relay' : acc, True)
-                        _ -> pure (relay : acc, changed)
+                              pure (relay' : acc, True, newlyActive)
+                        _ -> pure (relay : acc, changed, newlyActive)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do
@@ -2165,7 +2181,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             in case sndMemberId_ of
               -- regular deletion
               Nothing
-                | sameMemberId memberId mem && rcvItemDeletable ci brokerTs ->
+                | sameMemberId memberId mem && (publicGroupItemDeletable mem || rcvItemDeletable ci brokerTs) ->
                     delete cci False Nothing
                 | otherwise ->
                     messageError "x.msg.del: member attempted invalid message delete" $> Nothing
@@ -2201,6 +2217,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             messageError ("x.msg.del: channel message not found, " <> tshow e) $> Nothing
       where
         isOwner = maybe True (\m -> memberRole' m == GROwner) m_
+        publicGroupItemDeletable mem = useRelays' gInfo && memberRole' mem >= GRModerator
         RcvMessage {msgId} = rcvMsg
         findItem = do
           let tryMemberLookup mId =
@@ -3246,6 +3263,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         let cd = CDGroupRcv g'' scopeInfo m'
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
 
+    xGrpRelayNew :: GroupInfo -> GroupMember -> ShortLinkContact -> CM (Maybe DeliveryJobScope)
+    xGrpRelayNew gInfo GroupMember {memberRole} rl
+      | memberRole < GROwner = messageError "x.grp.relay.new with insufficient member permissions" $> Nothing
+      | otherwise = do
+          unless (isUserGrpFwdRelay gInfo) $ connectToRelayAsync user gInfo rl
+          pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
     xGrpDirectInv g@GroupInfo {groupId, groupProfile = gp} m mConn@Connection {connId = mConnId} connReq mContent_ msg brokerTs
       | not (groupFeatureMemberAllowed SGFDirectMessages m g) = messageError "x.grp.direct.inv: direct messages not allowed"
@@ -3367,6 +3391,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
+            XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \author -> void $ xGrpRelayNew gInfo author rl
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
