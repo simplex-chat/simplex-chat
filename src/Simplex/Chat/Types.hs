@@ -494,6 +494,9 @@ data GroupInfo = GroupInfo
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
 
+publicGroupEditor :: GroupInfo -> GroupMember -> Bool
+publicGroupEditor gInfo mem = useRelays' gInfo && memberRole' mem >= GRModerator
+
 groupId' :: GroupInfo -> GroupId
 groupId' GroupInfo {groupId} = groupId
 
