@@ -10237,7 +10237,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="You can change it in Appearance settings." xml:space="preserve" approved="no">
         <source>You can change it in Appearance settings.</source>
-        <target state="translated">Kann von Ihnen in den Darstellungs-Einstellungen geändert werden.</target>
+        <target state="translated">Sie können dies in den Einstellungen unter „Darstellung“ ändern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can configure servers via settings." xml:space="preserve">
