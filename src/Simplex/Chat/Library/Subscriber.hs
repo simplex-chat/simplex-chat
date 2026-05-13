@@ -511,7 +511,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
                 XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct'' sharedMsgId fileDescr
                 XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
-                XMsgDel sharedMsgId _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
+                XMsgDel sharedMsgId _ _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
                 XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
                 -- TODO discontinue XFile
                 XFile fInv -> processFileInvitation' ct'' fInv msg msgMeta
@@ -931,7 +931,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
           shouldDelConns <-
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
-              then createDeliveryTasks gInfo' m' newDeliveryTasks
+              then
+                let tasks
+                      | relayOwnStatus gInfo' == Just RSInactive = filter relayRemovedNewTask newDeliveryTasks
+                      | otherwise = newDeliveryTasks
+                 in createDeliveryTasks gInfo' m' tasks
               else pure False
           withRcpt <- checkSendRcpt $ rights aChatMsgs
           pure (withRcpt, shouldDelConns)
@@ -995,7 +999,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 checkSendAsGroup asGroup_ $
                   memberCanSend (Just m'') msgScope $
                     groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_
-              XMsgDel sharedMsgId memberId_ scope_ -> groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ msg brokerTs
+              XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
+                groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
               -- TODO discontinue XFile
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
@@ -1004,6 +1009,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfo p -> fmap ctx <$> xInfoMember gInfo' m'' p msg brokerTs
               XGrpLinkMem p -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
+              XGrpRelayNew rl -> fmap ctx <$> xGrpRelayNew gInfo' m'' rl
               XGrpMemNew memInfo msgScope -> fmap ctx <$> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> Nothing <$ xGrpMemInv gInfo' m'' memId introInv
@@ -1039,6 +1045,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               aChatMsgHasReceipt (APMsg _ (ParsedMsg _ _ ChatMessage {chatMsgEvent})) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
+          relayRemovedNewTask :: NewMessageDeliveryTask -> Bool
+          relayRemovedNewTask NewMessageDeliveryTask {taskContext = DeliveryTaskContext {jobScope}} = isRelayRemoved jobScope
           createDeliveryTasks :: GroupInfo -> GroupMember -> [NewMessageDeliveryTask] -> CM ShouldDeleteGroupConns
           createDeliveryTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
             let relayRemovedTask_ = find (\NewMessageDeliveryTask {taskContext = DeliveryTaskContext {jobScope}} -> isRelayRemoved jobScope) newDeliveryTasks
@@ -1297,25 +1305,48 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CFSetShortLink ->
               case (ucGroupId_, auData) of
                 (Just groupId, UserContactLinkData UserContactData {relays = relayLinks}) -> do
-                  (gInfo, gLink, relays, relaysChanged) <- withStore $ \db -> do
+                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db vr user groupId
                     gLink <- getGroupLink db user gInfo
                     relays <- liftIO $ getGroupRelays db gInfo
-                    (relays', changed) <- liftIO $ foldrM (updateRelay db) ([], False) relays
+                    (relays', changed, newlyActive) <- liftIO $ foldrM (updateRelay db) ([], False, []) relays
                     liftIO $ setGroupInProgressDone db gInfo
-                    pure (gInfo, gLink, relays', changed)
+                    pure (gInfo, gLink, relays', changed, newlyActive)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
+                  let GroupSummary {publicMemberCount} = groupSummary gInfo
+                  -- Owner is counted in publicMemberCount; > 1 means at least one subscriber.
+                  -- TODO [relays] multi-owner: with N owners, threshold should be > N (or use a
+                  -- dedicated subscriber count).
+                  when (fromMaybe 0 publicMemberCount > 1) $
+                    forM_ (L.nonEmpty newlyActiveLinks) $ \newlyActive -> do
+                      allRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
+                      let recipients =
+                            filter
+                              (\GroupMember {memberStatus, relayLink} ->
+                                 memberStatus == GSMemConnected && relayLink `notElem` map Just newlyActiveLinks)
+                              allRelayMembers
+                          events = XGrpRelayNew <$> newlyActive
+                      unless (null recipients) $
+                        void $ sendGroupMessages user gInfo Nothing False recipients events
                   where
-                    -- TODO [relays] owner: on relay deletion (link absent from relayLinks)
-                    -- TODO          move status RSActive to new "Removed" status / remove relay record
-                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool) -> IO ([GroupRelay], Bool)
-                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
+                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
+                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed, newlyActive) =
                       case relayLink of
                         Just rLink
                           | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
                               relay' <- updateRelayStatus db relay RSActive
-                              pure (relay' : acc, True)
-                        _ -> pure (relay : acc, changed)
+                              pure (relay' : acc, True, rLink : newlyActive)
+                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActive)
+                          | relayStatus == RSActive -> do
+                              -- Relay link absent from link data — deactivate.
+                              -- RSAccepted relays are not deactivated: their own link data update
+                              -- may not have been processed yet (race with concurrent relay connections).
+                              -- TODO [relays] multi-owner: Another owner removing a relay updates link data on
+                              -- TODO   the SMP server, but this owner won't receive a LINK callback for it
+                              -- TODO   (LINK only fires in response to own setConnShortLink calls).
+                              relay' <- updateRelayStatus db relay RSInactive
+                              pure (relay' : acc, True, newlyActive)
+                        _ -> pure (relay : acc, changed, newlyActive)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do
@@ -2142,26 +2173,30 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
               pure Nothing
 
-    groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
-    groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ rcvMsg brokerTs =
+    groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
+    groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =
       findItem >>= \case
         Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> case (chatDir, m_) of
           (CIGroupRcv mem, Just m@GroupMember {memberId}) ->
             let msgMemberId = fromMaybe memberId sndMemberId_
+                isAuthor = sameMemberId memberId mem
             in case sndMemberId_ of
               -- regular deletion
               Nothing
-                | sameMemberId memberId mem && rcvItemDeletable ci brokerTs ->
+                | isAuthor && onlyHistory && publicGroupEditor gInfo m ->
+                    delete cci False Nothing $> Nothing
+                | isAuthor && not onlyHistory && rcvItemDeletable ci brokerTs ->
                     delete cci False Nothing
                 | otherwise ->
                     messageError "x.msg.del: member attempted invalid message delete" $> Nothing
               -- moderation (not limited by time)
               Just _
-                | sameMemberId memberId mem && msgMemberId == memberId ->
+                | isAuthor && msgMemberId == memberId ->
                     delete cci False (Just m)
                 | otherwise -> moderate m mem cci
           (CIChannelRcv, _)
-            | isNothing sndMemberId_ && isOwner -> delete cci True Nothing
+            | isNothing sndMemberId_ && isOwner ->
+                (if onlyHistory then ($> Nothing) else id) $ delete cci True Nothing
             | otherwise -> messageError "x.msg.del: invalid channel message delete" $> Nothing
           (CIGroupSnd, Just m) -> moderate m membership cci
           _ -> messageError "x.msg.del: invalid message deletion" $> Nothing
@@ -3096,10 +3131,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           deleteGroupLinkIfExists user gInfo
           -- TODO [relays] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
           unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
-          withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
+          withStore' $ \db -> do
+            updateGroupMemberStatus db userId membership GSMemRemoved
+            when (isJust $ relayOwnStatus gInfo) $ updateRelayOwnStatus_ db gInfo RSInactive
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
-          deleteMemberItem gInfo RGEUserDeleted
+          deleteMemberItem msg gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
           pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
         else
@@ -3127,7 +3164,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
                     deletedMember' = deletedMember {memberStatus = GSMemRemoved}
                 when withMessages $ deleteMessages gInfo'' deletedMember' SMDRcv
-                unless wasDeleted $ deleteMemberItem gInfo'' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                -- Clear forwardedByMember if it references the deleted member,
+                -- as the member record was already deleted above.
+                let RcvMessage {forwardedByMember = fwdBy} = msg
+                    msg' = if fwdBy == Just groupMemberId then (msg :: RcvMessage) {forwardedByMember = Nothing} else msg
+                unless wasDeleted $ deleteMemberItem msg' gInfo'' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                 toView $ CEvtDeletedMember user gInfo'' m deletedMember' withMessages msgSigned
                 pure deliveryScope
       where
@@ -3135,9 +3176,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | senderRole < GRAdmin || senderRole < memberRole =
               messageError "x.grp.mem.del with insufficient member permissions" $> Nothing
           | otherwise = a
-        deleteMemberItem gi gEvent = do
+        deleteMemberItem msg' gi gEvent = do
           (gi', m', scopeInfo) <- mkGroupChatScope gi m
-          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
+          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg' brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView cInfo ci
         deleteMessages :: MsgDirectionI d => GroupInfo -> GroupMember -> SMsgDirection d -> CM ()
         deleteMessages gInfo' delMem msgDir
@@ -3168,10 +3209,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
-      when (isRelay m) $
-        withStore' $ \db -> do
-          relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
-          forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
       gInfo'' <- updatePublicGroupData user gInfo'
       unless (muteEventInChannel gInfo'' m) $ do
         (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m
@@ -3229,6 +3266,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         (g'', m', scopeInfo) <- mkGroupChatScope g' m
         let cd = CDGroupRcv g'' scopeInfo m'
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
+
+    xGrpRelayNew :: GroupInfo -> GroupMember -> ShortLinkContact -> CM (Maybe DeliveryJobScope)
+    xGrpRelayNew gInfo GroupMember {memberRole} rl
+      | memberRole < GROwner = messageError "x.grp.relay.new with insufficient member permissions" $> Nothing
+      | otherwise = do
+          unless (isUserGrpFwdRelay gInfo) $ connectToRelayAsync user gInfo rl
+          pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
 
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
     xGrpDirectInv g@GroupInfo {groupId, groupProfile = gp} m mConn@Connection {connId = mConnId} connReq mContent_ msg brokerTs
@@ -3347,10 +3391,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
               void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_
-            XMsgDel sharedMsgId memId scope_ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ rcvMsg msgTs
+            XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
+            XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \author -> void $ xGrpRelayNew gInfo author rl
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
@@ -3526,19 +3571,24 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask :: MessageDeliveryTask -> CM ()
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
           case jobScopeImpliedSpec jobScope of
-            DJDeliveryJob _includePending ->
-              withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
-                let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
-                withStore' $ \db -> do
-                  createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body
-                  forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
-                  forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
-                lift . void $ getDeliveryJobWorker True deliveryKey
+            DJDeliveryJob _includePending
+              | relayOwnStatus gInfo == Just RSInactive -> do
+                  logWarn "delivery task worker: relay inactive"
+                  withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
+              | otherwise ->
+                  withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
+                    let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
+                    withStore' $ \db -> do
+                      createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body
+                      forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
+                      forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
+                    lift . void $ getDeliveryJobWorker True deliveryKey
               where
                 singleSenderGMId_ :: NonEmpty MessageDeliveryTask -> Maybe GroupMemberId
                 singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
                   | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
                   | otherwise = Nothing
+            -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery task worker: relay removed task in wrong worker scope"
@@ -3591,9 +3641,14 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob :: MessageDeliveryJob -> CM ()
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
-            DJDeliveryJob _includePending -> do
-              sendBodyToMembers
-              withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
+            DJDeliveryJob _includePending
+              | relayOwnStatus gInfo == Just RSInactive -> do
+                  logWarn "delivery job worker: relay inactive"
+                  withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) "relay inactive"
+              | otherwise -> do
+                  sendBodyToMembers
+                  withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
+            -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery job worker: relay removed job in wrong worker scope"

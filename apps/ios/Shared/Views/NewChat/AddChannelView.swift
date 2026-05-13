@@ -338,6 +338,9 @@ struct AddChannelView: View {
             .compactSectionSpacing()
 
             Section {
+                Button("Cancel and delete channel", role: .destructive) {
+                    showCancelChannelAlert(gInfo)
+                }
                 Button("Continue") {
                     if activeCount >= total {
                         showLinkStep = true
@@ -365,11 +368,6 @@ struct AddChannelView: View {
         }
         .navigationTitle("Creating channel")
         .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Delete channel") { showCancelChannelAlert(gInfo) }
-            }
-        }
         .onDisappear {
             if !showLinkStep && m.creatingChannelId == gInfo.id {
                 showCancelChannelAlert(gInfo)
@@ -481,7 +479,7 @@ func relayDisplayName(_ relay: GroupRelay) -> String {
     return "relay \(relay.groupRelayId)"
 }
 
-private func chatRelayDisplayName(_ relay: UserChatRelay) -> String {
+func chatRelayDisplayName(_ relay: UserChatRelay) -> String {
     if !relay.displayName.isEmpty { return relay.displayName }
     return relay.address
 }
@@ -489,7 +487,7 @@ private func chatRelayDisplayName(_ relay: UserChatRelay) -> String {
 func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false, memberStatus: GroupMemberStatus? = nil) -> some View {
     let removed = memberStatus.map { [.memLeft, .memRemoved, .memGroupDeleted].contains($0) } ?? false
     let color: Color = connFailed || removed ? .red : (status == .rsActive ? .green : .yellow)
-    let text: LocalizedStringKey = connFailed ? "failed" : memberStatus == .memLeft ? "removed by operator" : status.text
+    let text: LocalizedStringKey = connFailed ? "failed" : memberStatus == .memLeft ? "removed by operator" : removed ? "removed" : status.text
     return HStack(spacing: 4) {
         Circle()
             .fill(color)

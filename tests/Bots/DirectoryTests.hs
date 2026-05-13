@@ -7,7 +7,6 @@
 module Bots.DirectoryTests where
 
 import ChatClient
-import ChatTests.ChatRelays (withRelay)
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils

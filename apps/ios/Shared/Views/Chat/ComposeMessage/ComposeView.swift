@@ -395,13 +395,13 @@ struct ComposeView: View {
             if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
                ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
-                    if let s = ownerState, s.activeCount < s.relays.count {
+                    if let s = ownerState, s.relays.isEmpty || s.activeCount < s.relays.count {
                         ownerChannelRelayBar(relays: s.relays, activeCount: s.activeCount, failedCount: s.failedCount, removedCount: s.removedCount)
                     }
                 } else {
                     let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
                     let relayMembers = chatModel.groupMembers
-                        .filter { $0.wrapped.memberRole == .relay }
+                        .filter { $0.wrapped.memberRole == .relay && ![.memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) }
                         .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
                     let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
                     let removedCount = relayMembers.filter { relayMemberRemoved($0.wrapped.memberStatus) }.count
@@ -409,7 +409,7 @@ struct ComposeView: View {
                     let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
                     let resolvedCount = connectedCount + removedCount + failedCount
                     let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
-                    if total > 0, removedCount + failedCount > 0 || resolvedCount < total {
+                    if total == 0 || removedCount + failedCount > 0 || resolvedCount < total {
                         subscriberChannelRelayBar(
                             hostnames: hostnames,
                             relayMembers: relayMembers,
@@ -735,9 +735,9 @@ struct ComposeView: View {
               gInfo.membership.memberRole == .owner,
               ![.memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus)
         else { return nil }
-        let relays = channelRelaysModel.groupId == gInfo.groupId
-            ? channelRelaysModel.groupRelays : []
-        guard !relays.isEmpty else { return nil }
+        guard channelRelaysModel.groupId == gInfo.groupId else { return nil }
+        let relays = channelRelaysModel.groupRelays
+        guard !relays.isEmpty else { return ([], 0, 0, 0, true) }
         let relayMembers = relays.map { relay in
             (relay, chatModel.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId })?.wrapped)
         }
@@ -763,7 +763,11 @@ struct ComposeView: View {
                 if !allBroken && activeCount + failedCount + removedCount < total {
                     RelayProgressIndicator(active: activeCount, total: total)
                 }
-                if allBroken {
+                if total == 0 {
+                    Text("No relays")
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                } else if allBroken {
                     if removedCount == total {
                         Text("All relays removed")
                     } else if failedCount == total {
@@ -793,7 +797,7 @@ struct ComposeView: View {
             }
             if relayListExpanded {
                 if allBroken {
-                    Text("Adding relays will be supported later.")
+                    Text("Add relays to restore message delivery.")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)
@@ -843,7 +847,11 @@ struct ComposeView: View {
         let allBroken = connectedCount == 0 && errorCount == total
         VStack(spacing: 0) {
             relayBarHeader {
-                if allBroken {
+                if total == 0 {
+                    Text("No relays")
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                } else if allBroken {
                     if removedCount == total {
                         Text("All relays removed")
                     } else if failedCount == total {
