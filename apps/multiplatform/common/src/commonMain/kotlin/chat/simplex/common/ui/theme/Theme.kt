@@ -661,12 +661,18 @@ data class ThemeModeOverride (
   }
 
   companion object {
-    fun withFilledAppDefaults(mode: DefaultThemeMode, base: DefaultTheme): ThemeModeOverride =
-      ThemeModeOverride(
+    fun withFilledAppDefaults(mode: DefaultThemeMode, base: DefaultTheme): ThemeModeOverride {
+      // Default override = SCHOOL preset image + SCHOOL's recalibrated colors
+      // for this base. Without passing preset.colors[base], the color chain
+      // falls through to LightColorPalette / DarkColorPalette / etc. — the
+      // pre-PR values that no longer match the recalibrated SCHOOL wallpaper.
+      val preset = PresetWallpaper.SCHOOL
+      return ThemeModeOverride(
         mode = mode,
-        colors = ThemeOverrides(base = base).withFilledColors(base, null, null, null, null, null),
-        wallpaper = ThemeWallpaper(preset = PresetWallpaper.SCHOOL.filename)
+        colors = ThemeOverrides(base = base).withFilledColors(base, null, null, null, null, preset.colors[base]),
+        wallpaper = ThemeWallpaper(preset = preset.filename)
       )
+    }
   }
 }
 
