@@ -2802,4 +2802,14 @@
     <string name="button_remove_relay">删除中继</string>
     <string name="button_remove_relay_question">删除中继？</string>
     <string name="select_relays">选择中继</string>
+    <string name="close_behavior_dialog_text">如果选择关闭将不会接收消息。\n可以之后在外观设置中更改。</string>
+    <string name="appearance_minimize_to_tray_desc">保持 SimpleX 在后台运行以接收消息。</string>
+    <string name="close_behavior_dialog_minimize">最小化到托盘</string>
+    <string name="close_behavior_dialog_title">最小化到托盘？</string>
+    <string name="appearance_minimize_to_tray">关闭窗口时最小化到托盘</string>
+    <string name="tray_quit">退出 SimpleX</string>
+    <string name="tray_show">显示 SimpleX</string>
+    <string name="tray_tooltip">SimpleX</string>
+    <string name="tray_tooltip_unread">SimpleX — %d 则未读</string>
+    <string name="close_behavior_dialog_close">关闭应用</string>
 </resources>
