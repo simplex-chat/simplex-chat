@@ -2819,4 +2819,16 @@
     <string name="button_remove_relay_question">Rimuovere il relay?</string>
     <string name="select_relays">Seleziona i relay</string>
     <string name="last_active_relay_warning">Questo è l\'ultimo relay attivo. La sua rimozione impedirà la consegna dei messaggi agli iscritti.</string>
+    <string name="close_behavior_dialog_close">Chiudi l\'app</string>
+    <string name="error_deleting_message">Errore di eliminazione del messaggio</string>
+    <string name="from_history">Dalla cronologia</string>
+    <string name="close_behavior_dialog_text">Se scegli Chiudi, i messaggi non verranno ricevuti.\nPuoi cambiarlo più tardi nelle impostazioni di Aspetto.</string>
+    <string name="appearance_minimize_to_tray_desc">Tieni SimpleX attivo in secondo piano per ricevere i messaggi.</string>
+    <string name="close_behavior_dialog_minimize">Riduci nell\'area delle notifiche</string>
+    <string name="close_behavior_dialog_title">Ridurre nell\'area delle notifiche?</string>
+    <string name="appearance_minimize_to_tray">Riduci nell\'area delle notifiche alla chiusura della finestra</string>
+    <string name="tray_quit">Esci da SimpleX</string>
+    <string name="tray_show">Mostra SimpleX</string>
+    <string name="tray_tooltip">SimpleX</string>
+    <string name="tray_tooltip_unread">SimpleX — %d non letto/i</string>
 </resources>
