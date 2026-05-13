@@ -2793,4 +2793,6 @@
     <string name="close_behavior_dialog_minimize">Kicsinyítés az értesítési területre</string>
     <string name="close_behavior_dialog_title">Biztosan kicsinyíteni szeretné az értesítési területre?</string>
     <string name="appearance_minimize_to_tray">Kicsinyítés az értesítési területre az ablak bezárásakor</string>
+    <string name="error_deleting_message">Hiba történt az üzenet törlésekor</string>
+    <string name="from_history">Az előzményekből</string>
 </resources>
