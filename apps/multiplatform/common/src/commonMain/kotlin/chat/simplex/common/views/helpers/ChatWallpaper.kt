@@ -300,9 +300,16 @@ fun wallpaperBackgrounds(
   )
 
 // ===== Theme color formula =====
-// L = mode.lBase + mode.lSpread * elem.lOffset
-// C = mode.cFactor * elem.cFactor * theme.cScale
-// H = theme.hue
+// Each preset's per-mode bubble/tint colors are derived from the preset's hue
+// and chroma scale, the mode's anchor (lBase) + range (lSpread) + chroma factor,
+// and the element's lightness offset + chroma factor. Constants below were tuned
+// empirically via the FormulaDevTools UI (see Appearance.kt) and locked in once
+// every preset/mode combination satisfied the design contrast targets.
+//
+// Formula:
+//   L = mode.lBase + mode.lSpread * elem.lOffset
+//   C = mode.cFactor * elem.cFactor * theme.cScale
+//   H = theme.hue
 
 private data class ModeParams(val lBase: Float, val lSpread: Float, val cFactor: Float)
 private data class ElemParams(val lOffset: Float, val cFactor: Float)

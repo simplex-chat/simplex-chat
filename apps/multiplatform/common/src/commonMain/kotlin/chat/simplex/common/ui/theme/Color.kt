@@ -148,6 +148,12 @@ private fun allChannelsInGamut(C: Float, p: FloatArray, q: FloatArray, matrix: A
   return true
 }
 
+/** Real roots of ax³+bx²+cx+d = 0 (Cardano's method).
+ *  Used by [maxChromaForMatrix] to find the gamut-boundary chroma at a given
+ *  (L, H) — the largest C such that oklch(L, C, H) is still inside the target
+ *  RGB cube. The 1e-10f thresholds detect near-zero leading coefficients to
+ *  avoid amplifying floating-point noise (degree drops from cubic to quadratic
+ *  to linear as coefficients vanish). */
 private fun solveCubic(a: Float, b: Float, c: Float, d: Float): FloatArray {
   if (abs(a) < 1e-10f) {
     if (abs(b) < 1e-10f) {

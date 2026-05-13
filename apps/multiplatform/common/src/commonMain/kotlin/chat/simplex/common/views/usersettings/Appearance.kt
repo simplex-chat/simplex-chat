@@ -56,11 +56,19 @@ import kotlin.math.*
 @Composable
 expect fun AppearanceView(m: ChatModel)
 
-// Formula slider values — survives navigation, cleared on app restart
+// ─── DEV-ONLY: theme-formula tuning UI ─────────────────────────────────────
+// Module-level state below backs the FormulaDevTools panel that the founder
+// uses to live-tune wallpaper color formulas. It is NOT part of the user-facing
+// settings flow and MUST be removed (along with FormulaDevTools, FormulaSlider,
+// buildCodeOutput, formulaSavedParams, patternScaleDragging) before this PR's
+// dev affordances ship to end users. Search-tag: REMOVE-DEV-FORMULA.
+
+// Formula slider values — survives navigation, cleared on app restart.
 private val formulaSavedParams = mutableStateMapOf<String, Float>()
 
-// Desktop: use fast scaling during slider drag, SCALE_SMOOTH on release
+// Desktop: use fast scaling during slider drag, SCALE_SMOOTH on release.
 private var patternScaleDragging by mutableStateOf(false)
+// ───────────────────────────────────────────────────────────────────────────
 
 object AppearanceScope {
   @Composable
