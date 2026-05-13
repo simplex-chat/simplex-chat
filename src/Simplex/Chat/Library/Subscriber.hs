@@ -999,9 +999,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 checkSendAsGroup asGroup_ $
                   memberCanSend (Just m'') msgScope $
                     groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_
-              XMsgDel sharedMsgId memberId_ scope_ onlyHistory
-                | onlyHistory -> groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ msg brokerTs $> Nothing
-                | otherwise -> groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ msg brokerTs
+              XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
+                (\r -> if onlyHistory then Nothing else r)
+                  <$> groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
               -- TODO discontinue XFile
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
