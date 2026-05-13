@@ -2195,7 +2195,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     delete cci False (Just m)
                 | otherwise -> moderate m mem cci
           (CIChannelRcv, _)
-            | isNothing sndMemberId_ && isOwner -> delete cci True Nothing
+            | isNothing sndMemberId_ && isOwner ->
+                (if onlyHistory then ($> Nothing) else id) $ delete cci True Nothing
             | otherwise -> messageError "x.msg.del: invalid channel message delete" $> Nothing
           (CIGroupSnd, Just m) -> moderate m membership cci
           _ -> messageError "x.msg.del: invalid message deletion" $> Nothing
