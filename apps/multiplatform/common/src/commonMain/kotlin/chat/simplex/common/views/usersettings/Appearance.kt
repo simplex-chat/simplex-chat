@@ -784,6 +784,8 @@ object AppearanceScope {
           "hue" to bg.H.let { if (isBlack) sm.H else it },
           "bgL" to bg.L, "step" to step,
           "mutedChroma" to mutedC, "colorChroma" to sm.C,
+          "patternDepth" to if (step > 0f) (tint.L - bg.L) / step else 0f,
+          "patternChroma" to tint.C,
         )
       }
     }
@@ -816,10 +818,16 @@ object AppearanceScope {
       )
       DefaultTheme.BLACK -> generateSchemeBlack(
         hue.floatValue, step.floatValue, colorChroma.floatValue,
+        patternDepth = patternDepth.floatValue,
+        patternChroma = patternChromaVal.floatValue,
+        bgLOffset = bgLOffset.floatValue,
       )
       else -> generateSchemeDark(
         hue.floatValue, bgL.floatValue, step.floatValue,
         mutedChroma.floatValue, colorChroma.floatValue,
+        patternDepth = patternDepth.floatValue,
+        patternChroma = patternChromaVal.floatValue,
+        bgLOffset = bgLOffset.floatValue,
       )
     }
 
@@ -859,15 +867,21 @@ object AppearanceScope {
         }
         DefaultTheme.BLACK -> {
           FormulaSlider("Hue", hue, 0f..360f)
+          FormulaSlider("BG Lightness", bgLOffset, -0.05f..0.05f)
           FormulaSlider("Contrast", step, 0.01f..0.10f)
           FormulaSlider("Accent chroma", colorChroma, 0f..0.20f)
+          FormulaSlider("Pattern depth", patternDepth, 0f..15f)
+          FormulaSlider("Pattern chroma", patternChromaVal, 0f..0.15f)
         }
         else -> {
           FormulaSlider("Hue", hue, 0f..360f)
           FormulaSlider("Lightness", bgL, 0.05f..0.30f)
+          FormulaSlider("BG Lightness", bgLOffset, -0.05f..0.05f)
           FormulaSlider("Contrast", step, 0.01f..0.10f)
           FormulaSlider("Accent chroma", colorChroma, 0f..0.20f)
           FormulaSlider("Secondary chroma", mutedChroma, 0f..0.05f)
+          FormulaSlider("Pattern depth", patternDepth, 0f..10f)
+          FormulaSlider("Pattern chroma", patternChromaVal, 0f..0.15f)
         }
       }
       SectionItemView({

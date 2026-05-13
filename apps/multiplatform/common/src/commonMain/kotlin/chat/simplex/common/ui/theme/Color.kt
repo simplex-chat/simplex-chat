@@ -309,25 +309,32 @@ fun generateSchemeDark(
   step: Float = 0.038f,
   mutedChroma: Float = 0.020f,
   colorChroma: Float = 0.063f,
+  patternDepth: Float? = null,
+  patternChroma: Float? = null,
+  bgLOffset: Float = 0f,
   saturationScale: Float = 1f,
   contrastScale: Float = 1f,
   patternIntensity: Float = 1f,
-): FormulaResult = generateDarkFromSlots(hue, bgL, step, mutedChroma, colorChroma, DARK_SLOTS, false, saturationScale, contrastScale, patternIntensity)
+): FormulaResult = generateDarkFromSlots(hue, bgL, step, mutedChroma, colorChroma, DARK_SLOTS, false, patternDepth, patternChroma, bgLOffset, saturationScale, contrastScale, patternIntensity)
 
 fun generateSchemeBlack(
   hue: Float,
   step: Float = 0.04f,
   colorChroma: Float = 0.0522f,
+  patternDepth: Float? = null,
+  patternChroma: Float? = null,
+  bgLOffset: Float = 0f,
   saturationScale: Float = 1f,
   contrastScale: Float = 1f,
   patternIntensity: Float = 1f,
-): FormulaResult = generateDarkFromSlots(hue, 0f, step, 0f, colorChroma, BLACK_SLOTS, true, saturationScale, contrastScale, patternIntensity)
+): FormulaResult = generateDarkFromSlots(hue, 0f, step, 0f, colorChroma, BLACK_SLOTS, true, patternDepth, patternChroma, bgLOffset, saturationScale, contrastScale, patternIntensity)
 
 private fun generateDarkFromSlots(
   hue: Float, bgL: Float, step: Float,
   mutedChroma: Float, colorChroma: Float,
   slotDefs: Map<String, DarkSlotDef>,
   patternPinsToP3: Boolean,
+  patternDepth: Float?, patternChroma: Float?, bgLOffset: Float,
   saturationScale: Float, contrastScale: Float, patternIntensity: Float,
 ): FormulaResult {
   val effStep = step * contrastScale
@@ -345,12 +352,20 @@ private fun generateDarkFromSlots(
     var lMult = def.lightnessMult
     var baseC = baselineC[name]!!
     if (name == "pattern") {
-      lMult *= patternIntensity
-      baseC = bgCAnchor + (baseC - bgCAnchor) * patternIntensity
+      // patternDepth slider overrides slot's lightnessMult (and patternIntensity)
+      // directly; same semantic as LIGHT's patternDepth — multiplier on effStep.
+      lMult = patternDepth ?: (lMult * patternIntensity)
+      baseC = patternChroma ?: (bgCAnchor + (baseC - bgCAnchor) * patternIntensity)
     }
-    val L = bgL + lMult * effStep
+    // bgLOffset nudges only the background slot, leaving bubbles/pattern at their
+    // formula-computed L (mirrors LIGHT's bgLOffset behaviour).
+    val L = if (name == "background") (bgL + bgLOffset).coerceIn(0f, 1f)
+            else bgL + lMult * effStep
     val C = when {
       name == "background" -> bgCAnchor
+      // patternChroma slider takes precedence over BLACK's max-pin behavior so
+      // the user can dial it back from the gamut edge.
+      name == "pattern" && patternChroma != null -> patternChroma
       name == "pattern" && patternPinsToP3 -> maxChroma(L, hue)
       else -> bgCAnchor + (baseC - bgCAnchor) * saturationScale
     }.let { min(it, maxChroma(L, hue)) }
