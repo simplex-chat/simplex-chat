@@ -10036,11 +10036,10 @@ testChannelMessageDeleteFromHistory ps =
       (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
       memberJoinChannel "team" [relay] [alice] shortLink fullLink bob
       memberJoinChannel "team" [relay] [alice] shortLink fullLink cath
-      memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
 
       alice #> "#team hello"
       relay <# "#team> hello"
-      [bob, cath, dan] *<# "#team> hello [>>]"
+      [bob, cath] *<# "#team> hello [>>]"
 
       -- owner deletes from history (relay processes locally but doesn't forward)
       msgId <- lastItemId alice
@@ -10050,12 +10049,15 @@ testChannelMessageDeleteFromHistory ps =
       -- subscribers don't receive deletion - next message arrives cleanly
       alice #> "#team still here"
       relay <# "#team> still here"
-      [bob, cath, dan] *<# "#team> still here [>>]"
+      [bob, cath] *<# "#team> still here [>>]"
 
       -- internal delete rejected for channel owner
       msgId2 <- lastItemId alice
       alice ##> ("/_delete item #1 " <> msgId2 <> " internal")
       alice <## "cannot delete this item"
+      
+      memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
+      dan <# "#team> still here [>>]"
 
 testChannelMessageFile :: HasCallStack => TestParams -> IO ()
 testChannelMessageFile ps =
