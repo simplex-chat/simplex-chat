@@ -1000,8 +1000,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   memberCanSend (Just m'') msgScope $
                     groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_
               XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
-                (\r -> if onlyHistory then Nothing else r)
-                  <$> groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ msg brokerTs
+                groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
               -- TODO discontinue XFile
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
@@ -2174,22 +2173,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
               pure Nothing
 
-    groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
-    groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ rcvMsg brokerTs =
+    groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
+    groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =
       findItem >>= \case
         Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> case (chatDir, m_) of
           (CIGroupRcv mem, Just m@GroupMember {memberId}) ->
             let msgMemberId = fromMaybe memberId sndMemberId_
+                isAuthor = sameMemberId memberId mem
             in case sndMemberId_ of
               -- regular deletion
               Nothing
-                | sameMemberId memberId mem && rcvItemDeletable ci brokerTs ->
+                | onlyHistory && isAuthor && publicGroupItemDeletable gInfo m ->
+                    delete cci False Nothing $> Nothing
+                | isAuthor && rcvItemDeletable ci brokerTs ->
                     delete cci False Nothing
                 | otherwise ->
                     messageError "x.msg.del: member attempted invalid message delete" $> Nothing
               -- moderation (not limited by time)
               Just _
-                | sameMemberId memberId mem && msgMemberId == memberId ->
+                | isAuthor && msgMemberId == memberId ->
                     delete cci False (Just m)
                 | otherwise -> moderate m mem cci
           (CIChannelRcv, _)
@@ -3388,7 +3390,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
               void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_
-            XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ rcvMsg msgTs
+            XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
