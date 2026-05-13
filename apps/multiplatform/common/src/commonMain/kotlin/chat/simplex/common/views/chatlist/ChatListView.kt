@@ -854,7 +854,7 @@ enum class ScrollDirection {
 @Composable
 fun BoxScope.StatusBarBackground() {
   if (appPlatform.isAndroid) {
-    val finalColor = MaterialTheme.colors.background.copy(0.88f)
+    val finalColor = panelBackgroundColor().copy(0.88f)
     Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(finalColor))
   }
 }
@@ -864,14 +864,14 @@ fun BoxScope.NavigationBarBackground(appBarOnBottom: Boolean = false, mixedColor
   if (appPlatform.isAndroid) {
     val barPadding = WindowInsets.navigationBars.asPaddingValues()
     val paddingBottom = barPadding.calculateBottomPadding()
-    val color = if (mixedColor) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f) else MaterialTheme.colors.background
+    val color = if (mixedColor) panelBackgroundColor() else MaterialTheme.colors.background
     val finalColor = color.copy(if (noAlpha) 1f else if (appBarOnBottom) remember { appPrefs.inAppBarsAlpha.state }.value else 0.6f)
     Box(Modifier.align(Alignment.BottomStart).height(paddingBottom).fillMaxWidth().background(finalColor))
   }
 }
 
 @Composable
-fun BoxScope.NavigationBarBackground(modifier: Modifier, color: Color = MaterialTheme.colors.background) {
+fun BoxScope.NavigationBarBackground(modifier: Modifier, color: Color = panelBackgroundColor()) {
   val keyboardState = getKeyboardState()
   if (appPlatform.isAndroid && keyboardState.value == KeyboardState.Closed) {
     val barPadding = WindowInsets.navigationBars.asPaddingValues()

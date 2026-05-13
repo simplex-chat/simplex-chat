@@ -119,7 +119,7 @@ actual fun ImageBitmap.addLogo(size: Float): ImageBitmap = asAndroidBitmap().app
   drawBitmap(logo, null, android.graphics.Rect(0, 0, logoSize, logoSize), null)
 }.asImageBitmap()
 
-actual fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap = asAndroidBitmap().scale(width, height).asImageBitmap()
+actual fun ImageBitmap.scale(width: Int, height: Int, highQuality: Boolean): ImageBitmap = asAndroidBitmap().scale(width, height).asImageBitmap()
 
 actual fun isImage(uri: URI): Boolean =
   MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileName(uri)?.split(".")?.last())?.contains("image/") == true
