@@ -22,7 +22,7 @@ export class GrokApiClient {
         "Authorization": `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: "grok-3-mini",
+        model: "grok-latest",
         messages,
         temperature: 0.3,
         max_tokens: 1024,
