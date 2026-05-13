@@ -2105,7 +2105,7 @@
     <string name="create_address_button">Erstellen</string>
     <string name="v6_0_upgrade_app_descr">Laden Sie neue Versionen von GitHub herunter.</string>
     <string name="v6_0_chat_list_media">Direkt aus der Chat-Liste abspielen.</string>
-    <string name="one_hand_ui_change_instruction">Kann von Ihnen in den Darstellungs-Einstellungen geändert werden.</string>
+    <string name="one_hand_ui_change_instruction">Sie können dies in den Einstellungen unter „Darstellung“ ändern.</string>
     <string name="v6_0_your_contacts_descr">Kontakte für spätere Chats archivieren.</string>
     <string name="v6_0_private_routing_descr">Ihre IP-Adresse und Verbindungen werden geschützt.</string>
     <string name="v6_0_delete_many_messages_descr">Löschen Sie bis zu 20 Nachrichten auf einmal.</string>
@@ -2888,4 +2888,14 @@
     <string name="button_remove_relay_question">Relais entfernen?</string>
     <string name="select_relays">Relais auswählen</string>
     <string name="last_active_relay_warning">Dies ist das letzte aktive Relais. Wenn Sie es entfernen, können keine Nachrichten mehr an Abonnenten zugestellt werden.</string>
+    <string name="close_behavior_dialog_close">App schließen</string>
+    <string name="close_behavior_dialog_text">Wenn Sie \"Schließen\" auswählen, werden keine Nachrichten mehr empfangen.\nSie können dies später in den Einstellungen unter \"Darstellung\" ändern.</string>
+    <string name="appearance_minimize_to_tray_desc">SimpleX im Hintergrund weiter ausführen, um Nachrichten zu empfangen.</string>
+    <string name="close_behavior_dialog_minimize">In den Infobereich minimieren</string>
+    <string name="close_behavior_dialog_title">In den Infobereich minimieren?</string>
+    <string name="appearance_minimize_to_tray">Beim Schließen des Fensters in den Infobereich minimieren</string>
+    <string name="tray_quit">SimpleX beenden</string>
+    <string name="tray_show">SimpleX anzeigen</string>
+    <string name="tray_tooltip">SimpleX</string>
+    <string name="tray_tooltip_unread">SimpleX — %d ungelesen</string>
 </resources>
