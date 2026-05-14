@@ -1,0 +1,62 @@
+name: android-release-arm64
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-arm64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Prepare trial local.properties
+        working-directory: apps/multiplatform
+        run: |
+          cat > local.properties << 'PROPS'
+          # Side-by-side install with official SimpleX
+          application_id.suffix=.trial
+          app.name=SimpleX Trial
+          # Build only arm64-v8a
+          abi_filter=arm64-v8a
+          # Keep release APK compatible with installation
+          compression.level=0
+          PROPS
+
+      - name: Build arm64 release APK
+        working-directory: apps/multiplatform
+        run: ./gradlew :android:assembleRelease
+
+      - name: Collect arm64 APK
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find apps/multiplatform/android/build/outputs -type f -name '*arm64-v8a-release*.apk' | head -n1)
+          if [ -z "$APK" ]; then
+            echo "arm64 release APK bulunamadı" >&2
+            exit 1
+          fi
+          cp "$APK" simplex-android-arm64-v8a-trial.apk
+          echo "apk_path=simplex-android-arm64-v8a-trial.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.collect.outputs.apk_path }}
+          fail_on_unmatched_files: true
