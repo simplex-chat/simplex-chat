@@ -1145,12 +1145,24 @@ memberIntroEvt gInfo reMember =
 -- This doesn't create introduction records in db, compared to above methods.
 introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn} = do
+introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
+  -- The reverse-direction sent_profile_vector mark (subscriber's vector at each
+  -- moderator's index, since this XGrpMemNew delivers the subscriber's profile to
+  -- moderators) is deliberately omitted. The cost is one redundant XGrpMemNew
+  -- prepended to the subscriber's first authored forward to moderators, who already
+  -- know them; the receiver's xGrpMemNew no-ops in the "already-known" branch.
+  -- Self-healing on the second forward onwards.
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
   let introEvts = map (memberIntroEvt gInfo) modMs
-  forM_ (L.nonEmpty introEvts) $ \introEvts' ->
+  forM_ (L.nonEmpty introEvts) $ \introEvts' -> do
     sendGroupMemberMessages user gInfo conn introEvts'
+    -- Each moderator's profile reached this subscriber via XGrpMemIntro above;
+    -- record it so the delivery worker doesn't re-prepend XGrpMemNew when
+    -- forwarding messages authored by these moderators to this subscriber.
+    withStore' $ \db ->
+      forM_ modMs $ \modM ->
+        markProfilesSentToMembers db (groupMemberId' modM) [subscriberIdx]
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1172,6 +1184,34 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     }
   where
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
+
+-- | Build a forwarded-element wrapping 'XGrpMemNew' for the given member's profile,
+-- attributed to the relay (gInfo.membership) so receivers process it via the same
+-- xGrpMsgForward path as ordinary forwarded events.
+--
+-- Attribution rationale: the alternative (fwdSender = the profile owner) would cause
+-- xGrpMemNew's checkHostRole to fire and fail for subscriber-authored profiles,
+-- because subscribers have memberRole < GRAdmin. With fwdSender = relay the
+-- 'isRelay m' guard in xGrpMemNew bypasses checkHostRole — consistent with the
+-- existing direct relay announce in 'introduceInChannel'.
+--
+-- Unsigned because XGrpMemNew is not in 'requiresSignature' for relay groups, so
+-- 'withVerifiedMsg' accepts 'VMUnsigned'. Threat-model impact: a compromised
+-- relay can already inject members it would otherwise admit; this dissemination
+-- path does not enlarge that surface.
+encodeMemberProfileElement :: VersionRangeChat -> GroupInfo -> GroupMember -> UTCTime -> ByteString
+encodeMemberProfileElement vr gInfo member fwdBrokerTs =
+  encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} (VMUnsigned chatMsg)
+  where
+    GroupMember {memberId = relayMemberId, localDisplayName = relayName} = membership gInfo
+    fwdSender = FwdMember relayMemberId relayName
+    chatMsg :: ChatMessage 'Json
+    chatMsg =
+      ChatMessage
+        { chatVRange = vr,
+          msgId = Nothing,
+          chatMsgEvent = XGrpMemNew (memberInfo gInfo member) Nothing
+        }
 
 redactedMemberProfile :: Bool -> Profile -> Profile
 redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType} =

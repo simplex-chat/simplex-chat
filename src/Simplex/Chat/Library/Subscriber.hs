@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find)
+import Data.List (find, nub, partition)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -46,7 +46,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, encodeBinaryBatch, encodeFwdElement)
+import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, encodeBinaryBatch, encodeFwdElement, prependBatchElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
@@ -65,6 +65,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
+import Simplex.Chat.Types.SentProfileVector (isProfileSentTo)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Description (ValidFileDescription)
@@ -2551,6 +2552,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xInfoMember :: GroupInfo -> GroupMember -> Profile -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xInfoMember gInfo m p' msg brokerTs = do
       void $ processMemberProfileUpdate gInfo m p' (Just (msg, brokerTs))
+      -- Relay-side: re-disseminate this member's profile on next forwarded message.
+      when (useRelays' gInfo && isRelay (membership gInfo)) $
+        withStore' $ \db -> clearSentProfileVector db (groupMemberId' m)
       pure $ memberEventDeliveryScope m
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> CM ()
@@ -3574,8 +3578,12 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
               | otherwise ->
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
+                        single = singleSenderGMId_ nextTasks
+                        senders = case single of
+                          Just _ -> [] -- fast path: job uses single_sender_group_member_id
+                          Nothing -> distinctSenderGMIds nextTasks
                     withStore' $ \db -> do
-                      createMsgDeliveryJob db gInfo jobScope (singleSenderGMId_ nextTasks) body
+                      createMsgDeliveryJob db gInfo jobScope single senders body
                       forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
                       forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
                     lift . void $ getDeliveryJobWorker True deliveryKey
@@ -3584,6 +3592,8 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                 singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
                   | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
                   | otherwise = Nothing
+                distinctSenderGMIds :: NonEmpty MessageDeliveryTask -> [GroupMemberId]
+                distinctSenderGMIds = nub . map (\MessageDeliveryTask {senderGMId} -> senderGMId) . L.toList
             -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
@@ -3593,7 +3603,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                       fwd = GrpMsgForward {fwdSender, fwdBrokerTs}
                       body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
                   withStore' $ \db -> do
-                    createMsgDeliveryJob db gInfo jobScope (Just senderGMId) body
+                    createMsgDeliveryJob db gInfo jobScope (Just senderGMId) [] body
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
                   lift . void $ getDeliveryJobWorker True deliveryKey
 
@@ -3653,7 +3663,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
-            MessageDeliveryJob {jobId, jobScope, singleSenderGMId_, body, cursorGMId_ = startingCursor} = job
+            MessageDeliveryJob {jobId, jobScope, singleSenderGMId_, senderGMIds, body, cursorGMId_ = startingCursor} = job
             sendBodyToMembers :: CM ()
             sendBodyToMembers
               -- channel
@@ -3661,16 +3671,50 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   -- there's no member review in channels, so job spec includePending is ignored
                   DJSGroup {} -> do
                     bucketSize <- asks $ deliveryBucketSize . config
-                    sendLoop bucketSize startingCursor
+                    -- distinct senders contributing to this body — fast path: single sender from
+                    -- the job column; slow path: decoded blob persisted at job creation time.
+                    let allSenderGMIds = case singleSenderGMId_ of
+                          Just s -> [s]
+                          Nothing -> senderGMIds
+                    senderProfiles <- forM allSenderGMIds $ \sId -> do
+                      sender <- withStore $ \db -> getGroupMemberById db vr user sId
+                      vec <- withStore' $ \db -> getSentProfileVector db sId
+                      pure (sender, vec)
+                    -- extBody captures each sender's profile at job-start. If the profile
+                    -- is updated mid-job (xInfoMember clears the vector and queues XInfo
+                    -- as its own job), recipients of this job receive the pre-update
+                    -- profile; the cleared vector takes effect on the next job. Eventually
+                    -- consistent.
+                    extBody <-
+                      if null senderProfiles
+                        then pure body
+                        else do
+                          fwdBrokerTs <- liftIO getCurrentTime
+                          let profileElements = map (\(sender, _) -> encodeMemberProfileElement vr gInfo sender fwdBrokerTs) senderProfiles
+                          pure $ foldr prependBatchElement body profileElements
+                    sendLoop bucketSize startingCursor senderProfiles extBody
                     where
-                      sendLoop :: Int -> Maybe GroupMemberId -> CM ()
-                      sendLoop bucketSize cursorGMId_ = do
+                      sendLoop :: Int -> Maybe GroupMemberId -> [(GroupMember, ByteString)] -> ByteString -> CM ()
+                      sendLoop bucketSize cursorGMId_ senderProfiles extBody = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
-                          deliver body mems
+                          if null senderProfiles
+                            then deliver body mems
+                            else do
+                              let knowsAll m = all (\(_, vec) -> isProfileSentTo vec (indexInGroup m)) senderProfiles
+                                  (hasAllProfiles, needsProfiles) = partition knowsAll mems
+                              unless (null needsProfiles) $ deliver extBody needsProfiles
+                              unless (null hasAllProfiles) $ deliver body hasAllProfiles
+                              -- mark only members the SMP-side call could deliver to (had a ready conn).
+                              -- marking pending-conn members would lose the profile on their reconnect.
+                              let readyIdxs = [indexInGroup m | m <- mems, isJust (readyMemberConn m)]
+                              unless (null readyIdxs) $
+                                withStore' $ \db ->
+                                  forM_ senderProfiles $ \(sender, _) ->
+                                    markProfilesSentToMembers db (groupMemberId' sender) readyIdxs
                           let cursorGMId' = groupMemberId' $ last mems
                           withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
-                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId')
+                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senderProfiles extBody
                   DJSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo

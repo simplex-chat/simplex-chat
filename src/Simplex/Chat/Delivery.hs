@@ -162,6 +162,10 @@ data MessageDeliveryJob = MessageDeliveryJob
   { jobId :: Int64,
     jobScope :: DeliveryJobScope,
     singleSenderGMId_ :: Maybe GroupMemberId, -- Just for single-sender deliveries, Nothing for multi-sender deliveries
+    -- All distinct senders contributing to this job's body. Used by relay groups
+    -- to disseminate sender profiles on demand. For single-sender jobs the
+    -- fast path uses singleSenderGMId_ and this list may be empty.
+    senderGMIds :: [GroupMemberId],
     body :: ByteString,
     cursorGMId_ :: Maybe GroupMemberId
   }

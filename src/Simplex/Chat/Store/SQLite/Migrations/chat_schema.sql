@@ -221,6 +221,7 @@ CREATE TABLE group_members(
   member_relations_vector BLOB,
   relay_link BLOB,
   member_pub_key BLOB,
+  sent_profile_vector BLOB NOT NULL DEFAULT x'',
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -742,6 +743,8 @@ CREATE TABLE delivery_jobs(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  sender_group_member_ids BLOB
 ) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,

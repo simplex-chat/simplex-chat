@@ -15,6 +15,9 @@ module Simplex.Chat.Types.MemberRelations
     setRelationConnected,
     setNewRelation,
     setNewRelations,
+    -- Generic byte-vector primitive — exported for reuse by other vectors
+    -- indexed by member position (e.g. sent_profile_vector).
+    updateByteVector,
   )
 where
 
@@ -101,7 +104,7 @@ setRelation i r v
 -- | Set multiple relation statuses at once.
 -- Preserves the introduction direction. Expands the vector lazily if needed.
 setRelations :: [(Int64, MemberRelation)] -> ByteString -> ByteString
-setRelations = setRelations_ $ \r b -> (b .&. complement statusMask) .|. toRelationInt r
+setRelations = updateByteVector $ \r b -> (b .&. complement statusMask) .|. toRelationInt r
 
 -- | Set relation to connected state based on passed status and current status.
 -- newStatus should be MRSubjectConnected or MRReferencedConnected, otherwise returns vector unchanged.
@@ -135,13 +138,16 @@ setNewRelation i dir r v
 -- | Set multiple new relations with both direction and status at once.
 -- Expands the vector lazily if needed.
 setNewRelations :: [(Int64, (IntroductionDirection, MemberRelation))] -> ByteString -> ByteString
-setNewRelations = setRelations_ $ \(dir, r) b -> (b .&. relationMask) .|. (toIntroDirInt dir `shiftL` 3) .|. toRelationInt r
+setNewRelations = updateByteVector $ \(dir, r) b -> (b .&. relationMask) .|. (toIntroDirInt dir `shiftL` 3) .|. toRelationInt r
   where
     relationMask = complement (statusMask .|. directionMask)
 
-setRelations_ :: (r -> Word8 -> Word8) -> [(Int64, r)] -> ByteString -> ByteString
-setRelations_ _ [] v = v
-setRelations_ updateByte relations v =
+-- | Generic byte-vector update with lazy expansion: applies updateByte at each
+-- (index, payload). Reads at unset positions return 0; writes past the end grow
+-- the vector and zero-fill the gap. Used by relation/sent-profile vectors.
+updateByteVector :: (r -> Word8 -> Word8) -> [(Int64, r)] -> ByteString -> ByteString
+updateByteVector _ [] v = v
+updateByteVector updateByte relations v =
   let (fp, off, len) = toForeignPtr v
       newLen = max len $ fromIntegral $ maximum (map fst relations) + 1
    in unsafeCreate newLen $ \ptr -> do

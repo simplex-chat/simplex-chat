@@ -128,6 +128,9 @@ module Simplex.Chat.Store.Groups
     setMembersVectorsNewRelation,
     setMemberVectorRelationConnected,
     getMemberRelationsVector,
+    getSentProfileVector,
+    markProfilesSentToMembers,
+    clearSentProfileVector,
     createIntroReMember,
     createIntroReMemberConn,
     createIntroToMemberContact,
@@ -200,6 +203,7 @@ import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setNewRelations, setRelationConnected, toIntroDirInt, toRelationInt)
+import Simplex.Chat.Types.SentProfileVector (markSentPositions)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -2194,6 +2198,59 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
       db
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
+
+-- Sent-profile vector tracks which recipients have received this member's profile
+-- (one byte per index_in_group; 0 = not sent, non-zero = sent). Empty vector means
+-- no recipients have been sent the profile yet; the column is NOT NULL DEFAULT empty
+-- per migration M20260513, so reads always return a ByteString.
+
+getSentProfileVector :: DB.Connection -> GroupMemberId -> IO ByteString
+getSentProfileVector db groupMemberId = do
+  v_ <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        "SELECT sent_profile_vector FROM group_members WHERE group_member_id = ?"
+        (Only groupMemberId)
+  -- defensive: empty vector if the row doesn't exist (the column itself is NOT NULL)
+  pure $ fromMaybe B.empty v_
+
+markProfilesSentToMembers :: DB.Connection -> GroupMemberId -> [Int64] -> IO ()
+markProfilesSentToMembers _ _ [] = pure ()
+markProfilesSentToMembers db groupMemberId positions = do
+  v_ <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        ( "SELECT sent_profile_vector FROM group_members WHERE group_member_id = ?"
+#if defined(dbPostgres)
+            <> " FOR UPDATE"
+#endif
+        )
+        (Only groupMemberId)
+  -- defensive: empty vector if the row doesn't exist (the column itself is NOT NULL)
+  let v' = markSentPositions positions $ fromMaybe B.empty v_
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET sent_profile_vector = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (Binary v', currentTs, groupMemberId)
+
+clearSentProfileVector :: DB.Connection -> GroupMemberId -> IO ()
+clearSentProfileVector db groupMemberId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET sent_profile_vector = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (Binary B.empty, currentTs, groupMemberId)
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> MemberInfo -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
 createIntroReMember

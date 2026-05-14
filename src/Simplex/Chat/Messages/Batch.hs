@@ -13,11 +13,13 @@ module Simplex.Chat.Messages.Batch
     encodeBinaryBatch,
     batchMessages,
     batchDeliveryTasks1,
+    prependBatchElement,
   )
 where
 
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Char (chr, ord)
 import Data.Int (Int64)
 import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty (..))
@@ -118,3 +120,28 @@ batchLen _ _ 0 = 0
 batchLen _ len 1 = len
 batchLen BMJson len n = len + n + 1 -- (n - 1) commas + 2 brackets
 batchLen BMBinary len n = len + n * 2 + 2 -- 2-byte length prefix per element + '=' + count
+
+-- | Prepend one element to an existing binary-batch body without re-parsing the rest.
+--
+-- Body format produced by 'encodeBinaryBatch': '=' <count:1B> ( <len:Word16> <element> )*
+-- where count is 'lenEncode (length elements)' (single byte, 0..255).
+--
+-- The input @element@ is the raw element body (without a length prefix); this
+-- function wraps it with a Word16 length prefix and inserts it at position 0.
+--
+-- Calls 'error' on malformed input or count overflow (>= 255); both indicate
+-- programmer error — callers must pass a body produced by 'encodeBinaryBatch'
+-- with at most 254 elements.
+prependBatchElement :: ByteString -> ByteString -> ByteString
+prependBatchElement element body
+  | B.null body = encodeBinaryBatch [element]
+  | B.head body /= '=' = error "prependBatchElement: invalid batch body (missing '=' prefix)"
+  | B.length body < 2 = error "prependBatchElement: invalid batch body (missing count byte)"
+  | oldCount >= 255 = error "prependBatchElement: batch element count overflow"
+  | otherwise =
+      let newCount = chr (oldCount + 1)
+          encodedElement = smpEncode (Large element)
+          rest = B.drop 2 body
+       in B.cons '=' (B.cons newCount (encodedElement <> rest))
+  where
+    oldCount = ord (B.index body 1)

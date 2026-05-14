@@ -248,6 +248,8 @@ chatGroupTests = do
           it "number of recipients is NOT multiple of bucket size (3/2)" (testChannels1RelayDeliverLoop 2)
           it "number of recipients is equal to bucket size (3/3)" (testChannels1RelayDeliverLoop 3)
         it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
+        it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerNoHistoryReceivesProfile
+        it "multi senders disseminate independently" testChannelMultiSendersIndependentDissemination
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
@@ -8540,10 +8542,11 @@ testChannels1RelayDeliver ps =
             -- alice knows cath via XGrpMemNew announcement from relay
             alice <# "#team cath> > hi"
             alice <## "    + 👍"
-            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            -- dan/eve learn cath via prepended XGrpMemNew before the forwarded reaction
+            dan <## "#team: bob added cath (Catherine) to the group"
             dan <# "#team cath> > hi"
             dan <## "    + 👍"
-            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <## "#team: bob added cath (Catherine) to the group"
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
 
@@ -8739,10 +8742,10 @@ testChannels1RelayDeliverLoop deliveryBucketSize ps =
             bob <## "    + 👍"
             alice <# "#team cath> > hi"
             alice <## "    + 👍"
-            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            dan <## "#team: bob added cath (Catherine) to the group"
             dan <# "#team cath> > hi"
             dan <## "    + 👍"
-            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <## "#team: bob added cath (Catherine) to the group"
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
   where
@@ -8781,14 +8784,14 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team dan> 6 [>>]"
                    ]
             cath
-              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record dan",
+              <### [ "#team: bob added dan (Daniel) to the group",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
                      WithTime "#team dan> 6 [>>]"
                    ]
             dan
-              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record cath",
+              <### [ "#team: bob added cath (Catherine) to the group",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
@@ -8796,8 +8799,8 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team cath> 5 [>>]"
                    ]
             eve
-              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record cath",
-                     "#team: bob forwarded a message from an unknown member, creating unknown member record dan",
+              <### [ "#team: bob added cath (Catherine) to the group",
+                     "#team: bob added dan (Daniel) to the group",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
@@ -8807,6 +8810,71 @@ testChannelsSenderDeduplicateOwn ps = do
                    ]
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
+
+-- Late joiner with no prior history: subscriber joins a channel where no prior messages
+-- exist, so sendHistory has nothing to replay. The first forward from another subscriber
+-- must then disseminate that sender's profile cleanly via prepended XGrpMemNew.
+-- (The "with prior history" variant is covered by a follow-up task — sendHistory currently
+-- forwards the unknown-author chat-item path before dissemination can prepend.)
+testChannelLateJoinerNoHistoryReceivesProfile :: HasCallStack => TestParams -> IO ()
+testChannelLateJoinerNoHistoryReceivesProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          -- dan joins AFTER cath, but before any messages exist; sendHistory has nothing.
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          -- cath sends the first message. cath.sent_profile_vector is empty on the relay,
+          -- so both alice (already knows cath via XGrpMemNew at join) and dan (does not
+          -- know cath) are in needsProfiles. dan learns cath via the prepended XGrpMemNew.
+          cath #> "#team hi"
+          bob <# "#team cath> hi"
+          alice <# "#team cath> hi [>>]"
+          dan <## "#team: bob added cath (Catherine) to the group"
+          dan <# "#team cath> hi [>>]"
+
+          -- Second send from cath: dan's bit is now set, no prepend, no view event.
+          cath #> "#team hi again"
+          bob <# "#team cath> hi again"
+          alice <# "#team cath> hi again [>>]"
+          dan <# "#team cath> hi again [>>]"
+
+testChannelMultiSendersIndependentDissemination :: HasCallStack => TestParams -> IO ()
+testChannelMultiSendersIndependentDissemination ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- cath posts: dan and eve learn cath via prepended XGrpMemNew
+            cath #> "#team from cath"
+            bob <# "#team cath> from cath"
+            alice <# "#team cath> from cath [>>]"
+            dan <## "#team: bob added cath (Catherine) to the group"
+            dan <# "#team cath> from cath [>>]"
+            eve <## "#team: bob added cath (Catherine) to the group"
+            eve <# "#team cath> from cath [>>]"
+
+            -- dan posts: cath and eve learn dan independently of cath's vector
+            dan #> "#team from dan"
+            bob <# "#team dan> from dan"
+            alice <# "#team dan> from dan [>>]"
+            cath <## "#team: bob added dan (Daniel) to the group"
+            cath <# "#team dan> from dan [>>]"
+            eve <## "#team: bob added dan (Daniel) to the group"
+            eve <# "#team dan> from dan [>>]"
+
+            -- second post from cath: all recipients have cath marked, no prepend
+            cath #> "#team again from cath"
+            bob <# "#team cath> again from cath"
+            alice <# "#team cath> again from cath [>>]"
+            dan <# "#team cath> again from cath [>>]"
+            eve <# "#team cath> again from cath [>>]"
 
 testChannels2RelaysDeliver :: HasCallStack => TestParams -> IO ()
 testChannels2RelaysDeliver ps =
@@ -8830,10 +8898,10 @@ testChannels2RelaysDeliver ps =
               cath <## "    + 👍"
               alice <# "#team dan> > hi"
               alice <## "    + 👍"
-              eve .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              eve .<## " added dan (Daniel) to the group"
               eve <# "#team dan> > hi"
               eve <## "    + 👍"
-              frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              frank .<## " added dan (Daniel) to the group"
               frank <# "#team dan> > hi"
               frank <## "    + 👍"
 
@@ -8868,10 +8936,10 @@ testChannels2RelaysIncognito ps =
               cath <## "    + 👍"
               alice <# ("#team " <> danIncognito <> "> > hi")
               alice <## "    + 👍"
-              eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              eve .<## (" added " <> danIncognito <> " to the group")
               eve <# ("#team " <> danIncognito <> "> > hi")
               eve <## "    + 👍"
-              frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              frank .<## (" added " <> danIncognito <> " to the group")
               frank <# ("#team " <> danIncognito <> "> > hi")
               frank <## "    + 👍"
 
@@ -9084,10 +9152,10 @@ testChannelChangeRoleSigned ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob added cath (Catherine) to the group"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob added cath (Catherine) to the group"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9139,10 +9207,10 @@ testChannelBlockMemberSigned ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob added cath (Catherine) to the group"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob added cath (Catherine) to the group"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9202,10 +9270,10 @@ testChannelRemoveMemberSigned ps =
             concurrentlyN_
               [ alice <# "#team eve> hello from eve [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  dan <## "#team: bob added eve (Eve) to the group"
                   dan <# "#team eve> hello from eve [>>]",
                 do
-                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  cath <## "#team: bob added eve (Eve) to the group"
                   cath <# "#team eve> hello from eve [>>]"
               ]
 
@@ -9370,10 +9438,10 @@ testChannelSubscriberLeave ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob added cath (Catherine) to the group"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob added cath (Catherine) to the group"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9424,7 +9492,9 @@ testChannelSubscriberLeave ps =
             dan <## "use /d #team to delete the group"
             bob <## "#team: dan left the group (signed)"
             alice <## "#team: dan left the group (signed)"
-            -- eve doesn't know dan - no unknown member record created (skipped for XGrpLeave)
+            -- dan never sent before leaving, so dan's profile is disseminated to eve
+            -- via prepended XGrpMemNew before the forwarded XGrpLeave
+            eve <## "#team: bob added dan (Daniel) to the group"
             alice #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             bob #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(1, "left (signed)")])
@@ -9443,8 +9513,10 @@ testChannelSubscriberLeave ps =
             checkMemberStatus alice "dan" (Just "left")
             checkMemberStatus bob "dan" (Just "left")
             checkMemberStatus dan "dan" (Just "left")
-            -- eve doesn't know dan - no member record (XGrpLeave skips unknown member creation)
-            checkMemberStatus eve "dan" Nothing
+            -- eve learned dan via prepended XGrpMemNew before the forwarded XGrpLeave,
+            -- so eve now has a record for dan with status "left"
+            checkMemberStatus eve "dan" (Just "left")
+            -- cath left earlier and was excluded from the forward; no record on cath
             checkMemberStatus cath "dan" Nothing
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
@@ -9619,10 +9691,10 @@ testChannelSubscriberProfileUpdate ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob added cath (Catherine) to the group"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob added cath (Catherine) to the group"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9665,10 +9737,10 @@ testChannelSubscriberProfileUpdate ps =
             concurrentlyN_
               [ alice <# "#team dave> hello from dave [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record dave"
+                  eve <## "#team: bob added dave to the group"
                   eve <# "#team dave> hello from dave [>>]",
                 do
-                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record dave"
+                  cath <## "#team: bob added dave to the group"
                   cath <# "#team dave> hello from dave [>>]"
               ]
             -- no profile update items in main scope (dan has no support chat, item not created)
@@ -10135,11 +10207,11 @@ testChannelMessageQuote ps =
                   alice <# "#team cath> > hello from channel [>>]"
                   alice <## "      replying to channel [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob added cath (Catherine) to the group"
                   dan <# "#team cath> > hello from channel [>>]"
                   dan <## "      replying to channel [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob added cath (Catherine) to the group"
                   eve <# "#team cath> > hello from channel [>>]"
                   eve <## "      replying to channel [>>]"
               ]
@@ -10495,9 +10567,9 @@ testChannelMemberMessageUpdate ps =
             bob <# "#team cath> hello"
             concurrentlyN_
               [ alice <# "#team cath> hello [>>]",
-                do dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                do dan <## "#team: bob added cath (Catherine) to the group"
                    dan <# "#team cath> hello [>>]",
-                do eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                do eve <## "#team: bob added cath (Catherine) to the group"
                    eve <# "#team cath> hello [>>]"
               ]
 
@@ -10526,9 +10598,9 @@ testChannelMemberMessageDelete ps =
             bob <# "#team cath> hello"
             concurrentlyN_
               [ alice <# "#team cath> hello [>>]",
-                do dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                do dan <## "#team: bob added cath (Catherine) to the group"
                    dan <# "#team cath> hello [>>]",
-                do eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                do eve <## "#team: bob added cath (Catherine) to the group"
                    eve <# "#team cath> hello [>>]"
               ]
 

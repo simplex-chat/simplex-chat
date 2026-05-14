@@ -30,6 +30,7 @@ module Simplex.Chat.Store.Delivery
 where
 
 import qualified Data.Aeson as J
+import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
@@ -43,7 +44,8 @@ import Simplex.Chat.Types.Shared (MsgSigStatus (..))
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Encoding (smpDecode)
+import Simplex.Messaging.Encoding (smpDecode, smpEncodeList, smpListP)
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (eitherToMaybe, firstRow')
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (In (..), Only (..), (:.) (..))
@@ -245,8 +247,8 @@ deleteDoneDeliveryTasks db createdAtCutoff = do
     |]
     (createdAtCutoff, DTSProcessed, DTSError)
 
-createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> Maybe GroupMemberId -> ByteString -> IO ()
-createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body = do
+createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> Maybe GroupMemberId -> [GroupMemberId] -> ByteString -> IO ()
+createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ senderGMIds body = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -254,12 +256,19 @@ createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body = do
       INSERT INTO delivery_jobs (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        single_sender_group_member_id, body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?)
+        single_sender_group_member_id, sender_group_member_ids, body, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, Binary body, DJSPending, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, encodedSenderGMIds, Binary body, DJSPending, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
+    -- For single-sender jobs the sender-list column is unused at execution time
+    -- (the fast path reads single_sender_group_member_id instead). Skip persisting
+    -- an empty blob for the multi-sender list to keep storage minimal.
+    encodedSenderGMIds :: Maybe (Binary ByteString)
+    encodedSenderGMIds = case senderGMIds of
+      [] -> Nothing
+      _ -> Just $ Binary $ smpEncodeList senderGMIds
 
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerKey]
 getPendingDeliveryJobScopes db =
@@ -272,7 +281,7 @@ getPendingDeliveryJobScopes db =
     |]
     (Only DJSPending)
 
-type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe GroupMemberId, Binary ByteString, Maybe GroupMemberId)
+type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe GroupMemberId, Maybe (Binary ByteString), Binary ByteString, Maybe GroupMemberId)
 
 getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryJob))
 getNextDeliveryJob db deliveryKey = do
@@ -302,17 +311,22 @@ getNextDeliveryJob db deliveryKey = do
             SELECT
               delivery_job_id,
               worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-              single_sender_group_member_id, body, cursor_group_member_id
+              single_sender_group_member_id, sender_group_member_ids, body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           |]
           (Only jobId)
       where
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
-        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleSenderGMId_, Binary body, cursorGMId_)) =
-          case toJobScope_ jobScopeRow of
-            Just jobScope -> Right $ MessageDeliveryJob {jobId = jobId', jobScope, singleSenderGMId_, body, cursorGMId_}
-            Nothing -> Left $ SEInvalidDeliveryJob jobId'
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleSenderGMId_, senderGMIds_, Binary body, cursorGMId_)) = do
+          jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
+          -- sender_group_member_ids is written by smpEncodeList; a parse failure means
+          -- on-disk corruption or a format change. Surface as job error rather than silently
+          -- degrade to the pre-feature "unknown member" behavior.
+          senderGMIds <- case senderGMIds_ of
+            Nothing -> Right []
+            Just (Binary bs) -> first (const $ SEInvalidDeliveryJob jobId') $ parseAll smpListP bs
+          Right $ MessageDeliveryJob {jobId = jobId', jobScope, singleSenderGMId_, senderGMIds, body, cursorGMId_}
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)

@@ -642,7 +642,8 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     job_err_reason text,
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    sender_group_member_ids bytea
 );
 
 
@@ -818,7 +819,8 @@ CREATE TABLE test_chat_schema.group_members (
     index_in_group bigint DEFAULT 0 NOT NULL,
     member_relations_vector bytea,
     relay_link bytea,
-    member_pub_key bytea
+    member_pub_key bytea,
+    sent_profile_vector bytea DEFAULT '\x'::bytea NOT NULL
 );
 
 
