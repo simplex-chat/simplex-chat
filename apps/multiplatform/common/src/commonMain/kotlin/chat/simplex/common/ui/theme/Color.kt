@@ -64,9 +64,25 @@ fun panelBackgroundColor(): Color {
 private fun currentWallpaperPanelTint(state: ThemeManager.ActiveTheme): Color? {
   val type = state.wallpaper.type as? WallpaperType.Preset ?: return null
   val preset = PresetWallpaper.from(type.filename) ?: return null
-  val hue = preset.hue(state.base)
+  // Read hue from the stored preset bg for this base — that's the source of truth
+  // after the LIGHT formula reshuffle. (Old code used preset.hue(state.base), which
+  // returns the constructor field that wasn't updated in lockstep with the bg colors.)
+  val bg = preset.background[state.base] ?: return null
+  val hue = bg.toOklch().H
+  // Toolbar tint values (single L per mode, hue from preset bg, small chroma):
+  //   LIGHT  L=0.99  C=0.025 — just below pure white, so chroma can survive the
+  //                            high-L gamut squeeze and produce a faint preset
+  //                            tint instead of flat white. Yellow/green hues
+  //                            keep most of the chroma; red/blue hues clamp at
+  //                            their (smaller) gamut edge — still enough to
+  //                            distinguish presets without competing with bg.
+  //   DARK   L=0.1822 C=0.01 — same idea inverted: just above pure black with a
+  //                            barely-perceptible hue tint that aligns the
+  //                            toolbar with the dark wallpaper.
+  // BLACK and SIMPLEX get no preset tint — BLACK keeps pure dark, SIMPLEX has
+  // its own gradient panel.
   return when (state.base) {
-    DefaultTheme.LIGHT -> oklch(1.0f, 0.03f, hue)
+    DefaultTheme.LIGHT -> oklch(0.99f, 0.025f, hue)
     DefaultTheme.DARK -> oklch(0.1822f, 0.01f, hue)
     else -> null
   }
@@ -218,66 +234,68 @@ data class FormulaResult(
 
 // ─── LIGHT ───
 
+// Lightness ladder (top → bottom):
+//   R          = 1 − receivedTint                      (faint tint, near-white)
+//   bg         = bgL                                    (anchor)
+//   RQ         = bgL − rqGap·step                       (default 0.5)
+//   S          = bgL − (rqGap + sGap)·step              (default sGap = 1.0)
+//   SQ         = bgL − (rqGap + sGap + sqGap)·step      (default sqGap = 1.0)
+//   pattern    = bgL − patternDepth·step                (depth slider)
+//
+// Step is the contrast-ladder unit: bigger step → wider total ladder.
+// rqGap / sGap / sqGap let the founder retune individual rungs.
+//
+// Chroma: bgC for bg, darkChroma for SQ (the darkest below-bg slot). RQ and S
+// linearly interpolate between bgC and darkChroma by their L position relative
+// to the bg→SQ axis. So darkChroma=0 → SQ pure grey, S/RQ approach bg's chroma
+// proportionally; darkChroma > bgC → ladder gets more saturated as it darkens.
+// Pattern uses patternChroma slider (default 2.6·bgC). All chromas clamped to
+// gamut.
 fun generateSchemeLight(
   hue: Float,
   bgL: Float,
   bgC: Float,
   step: Float,
-  patternDepth: Float = 2.5f,
+  patternDepth: Float? = null,
   patternChroma: Float? = null,
   receivedTint: Float = 0.005f,
   bgLOffset: Float = 0f,
+  rqGap: Float = 0.5f,
+  sGap: Float = 1.0f,
+  sqGap: Float = 1.0f,
+  darkChroma: Float? = null,
   saturationScale: Float = 1f,
   contrastScale: Float = 1f,
   patternIntensity: Float = 1f,
 ): FormulaResult {
   val effBgC = bgC * saturationScale
   val effStep = step * contrastScale
-  val effDepth = patternDepth * patternIntensity
-  val effPatternC = patternChroma?.let { it * patternIntensity }
-  val maxBg = maxChroma(bgL, hue)
-  val satRatio = if (maxBg > 0f) effBgC / maxBg else 0f
-  val loRatio = 0.35f
+  val effDepth = (patternDepth ?: 3.5f) * patternIntensity
+  val effPatternC = patternChroma?.let { it * patternIntensity } ?: (effBgC * 2.6f)
+  val effDarkC = (darkChroma ?: (bgC * 3.3f)) * saturationScale
 
-  data class Raw(val name: String, val L: Float)
-  val slots = listOf(
-    Raw("receivedMessage", 1f - receivedTint),
-    Raw("receivedQuote", 1f - effStep),
-    Raw("sentMessage", bgL + effStep / 3f),
-    Raw("background", (bgL + bgLOffset).coerceIn(0f, 1f)),
-    Raw("sentQuote", bgL - effStep),
-    Raw("pattern", bgL - effDepth * effStep),
-  )
+  fun clamp(L: Float, c: Float) = min(c, maxChroma(L, hue))
+  fun lerp(a: Float, b: Float, t: Float) = a + t * (b - a)
 
-  val computed = mutableMapOf<String, FormulaSlot>()
-  for (slot in slots) {
-    val maxC = maxChroma(slot.L, hue)
-    val c = when (slot.name) {
-      "receivedMessage" -> maxC
-      "background" -> effBgC
-      "pattern" -> if (effPatternC != null) min(effPatternC, maxC) else {
-        if (slot.L >= bgL) maxC * satRatio
-        else {
-          val t = if (effStep > 0f) min(1f, (bgL - slot.L) / (2.5f * effStep)) else 0f
-          maxC * (satRatio - (satRatio - loRatio) * t)
-        }
-      }
-      else -> if (slot.L >= bgL) maxC * satRatio
-      else {
-        val t = if (effStep > 0f) min(1f, (bgL - slot.L) / (2.5f * effStep)) else 0f
-        maxC * (satRatio - (satRatio - loRatio) * t)
-      }
-    }
-    computed[slot.name] = FormulaSlot(slot.L, min(c, maxC), hue)
-  }
+  val rL = 1f - receivedTint
+  val bgLEff = (bgL + bgLOffset).coerceIn(0f, 1f)
+  val rqL = bgL - rqGap * effStep
+  val sL = bgL - (rqGap + sGap) * effStep
+  val sqL = bgL - (rqGap + sGap + sqGap) * effStep
+  val ptL = bgL - effDepth * effStep
+
+  // Chroma interpolation: bgC at bg, effDarkC at SQ; RQ and S sit on the line.
+  val totalGap = rqGap + sGap + sqGap
+  val tRQ = if (totalGap > 0f) rqGap / totalGap else 0f
+  val tS = if (totalGap > 0f) (rqGap + sGap) / totalGap else 0f
 
   return FormulaResult(
-    background = computed["background"]!!,
-    pattern = computed["pattern"]!!,
-    sentMessage = computed["sentMessage"]!!,
-    sentQuote = computed["sentQuote"]!!,
-    receivedMessage = computed["receivedMessage"]!!,
-    receivedQuote = computed["receivedQuote"]!!,
+    receivedMessage = FormulaSlot(rL, maxChroma(rL, hue), hue),
+    background = FormulaSlot(bgLEff, clamp(bgLEff, effBgC), hue),
+    receivedQuote = FormulaSlot(rqL, clamp(rqL, lerp(effBgC, effDarkC, tRQ)), hue),
+    sentMessage = FormulaSlot(sL, clamp(sL, lerp(effBgC, effDarkC, tS)), hue),
+    sentQuote = FormulaSlot(sqL, clamp(sqL, effDarkC), hue),
+    pattern = FormulaSlot(ptL, clamp(ptL, effPatternC), hue),
   )
 }
 
