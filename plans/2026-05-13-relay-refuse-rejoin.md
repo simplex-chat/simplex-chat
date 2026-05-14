@@ -4,78 +4,80 @@ Plan rewritten for conciseness with fresh-context re-evaluation; supersedes earl
 
 ## 1. Identifier
 
-Gating key: `GroupRelayInvitation.groupLink :: ShortLinkContact` (Types.hs:884-889). Available at `xGrpRelayInv` (Subscriber.hs:1524-1528) before any DB write or network call, which is what the task requires. Link rotation by the owner bypasses refusal; `publicGroupId` (Types.hs:790) would resist that but is only known after `getShortLinkConnReq'` — defer that gating to a follow-up.
+Gating key: `GroupRelayInvitation.groupLink :: ShortLinkContact` (Types.hs:884-889). Available at `xGrpRelayInv` (Subscriber.hs:1524-1528) before any DB write or network call. The relay already stores this exact value on every `groups` row it processes (column `relay_request_group_link`, M20260222:38), so the rejection lookup is a single SELECT against `groups` keyed on `(user_id, relay_request_group_link)`. Link rotation by the owner bypasses refusal; `publicGroupId` (Types.hs:790) would resist that but is only known after `getShortLinkConnReq'` — defer that gating to a follow-up.
 
 ## 2. Storage
 
-New table `refused_relay_groups`, separate from `groups` so the refusal outlives the relay's local GroupInfo (which the operator may delete after leaving).
+New column on `groups`. The refusal is naturally part of the group's existing state on the relay; a separate table was rejected to keep one source of truth and surface refusal in the existing `/gs` listing.
 
-New migration `M20260514_refused_relay_groups`. SQLite (matches M20260507 conventions and M20260222 BLOB columns for ShortLinkContact):
-
-```sql
-CREATE TABLE refused_relay_groups (
-  refused_relay_group_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  group_link BLOB NOT NULL,
-  group_display_name TEXT NOT NULL DEFAULT '',
-  group_short_descr TEXT,
-  group_image TEXT,
-  left_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-) STRICT;
-CREATE UNIQUE INDEX idx_refused_relay_groups_user_group_link
-  ON refused_relay_groups(user_id, group_link);
-```
-
-Postgres (matches M20260222 `BIGINT … GENERATED ALWAYS AS IDENTITY` and M20260429 `TIMESTAMPTZ`):
-
-```sql
-CREATE TABLE refused_relay_groups (
-  refused_relay_group_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
-  group_link BYTEA NOT NULL,
-  group_display_name TEXT NOT NULL DEFAULT '',
-  group_short_descr TEXT,
-  group_image TEXT,
-  left_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE UNIQUE INDEX idx_refused_relay_groups_user_group_link
-  ON refused_relay_groups(user_id, group_link);
-```
-
-Down: `DROP TABLE refused_relay_groups`. Tests regenerate `chat_schema.sql`.
-
-New module `Simplex/Chat/Store/RefusedRelayGroups.hs` (mirrors `Store/RelayRequests.hs`). Exports:
+New `RelayRejection` type in `src/Simplex/Chat/Types/Shared.hs` next to `RelayStatus`. Single-constructor enum because the only meaningful state is "the relay has rejected this channel"; absence (`Nothing`) is the default and what operator-allow restores. Matches the shape of the existing `relayOwnStatus :: Maybe RelayStatus` at Types.hs:470:
 
 ```haskell
-insertRefusedRelayGroup
-  :: DB.Connection -> User -> ShortLinkContact -> Text -> Maybe Text -> Maybe ImageData -> IO ()
-isRelayGroupRefused    :: DB.Connection -> User -> ShortLinkContact -> IO Bool
-listRefusedRelayGroups :: DB.Connection -> User -> IO [RefusedRelayGroup]
-deleteRefusedRelayGroup :: DB.Connection -> User -> Int64 -> IO Bool
-```
-
-`insert` uses `ON CONFLICT (user_id, group_link) DO UPDATE` so a repeated leave refreshes display fields and `left_at` while preserving `created_at`. `delete` is SELECT-EXISTS-then-DELETE because `DB.execute` returns `()` in this codebase.
-
-New record in `Simplex/Chat/Types.hs` next to `RelayRequestData`:
-
-```haskell
-data RefusedRelayGroup = RefusedRelayGroup
-  { refusedRelayGroupId :: Int64,
-    groupLink :: ShortLinkContact,
-    groupDisplayName :: Text,
-    groupShortDescr :: Maybe Text,
-    groupImage :: Maybe ImageData,
-    leftAt :: UTCTime,
-    createdAt :: UTCTime
-  }
+data RelayRejection = RJRejected
   deriving (Eq, Show)
 
-$(JQ.deriveJSON defaultJSON ''RefusedRelayGroup)
+instance TextEncoding RelayRejection where
+  textEncode RJRejected = "rejected"
+  textDecode "rejected" = Just RJRejected
+  textDecode _ = Nothing
+
+instance FromField RelayRejection where fromField = fromTextField_ textDecode
+instance ToField RelayRejection where toField = toField . textEncode
+$(JQ.deriveJSON (enumJSON $ dropPrefix "RJ") ''RelayRejection)
 ```
 
-`defaultJSON` matches `GroupRelay` (Operators.hs:616).
+Add `relayRejection :: Maybe RelayRejection` to `GroupInfo` (Types.hs:467-491) next to `relayOwnStatus`. `Nothing` is the default for every group on every install.
+
+New migration `M20260514_relay_rejection`. SQLite:
+
+```sql
+ALTER TABLE groups ADD COLUMN relay_rejection TEXT;
+CREATE INDEX idx_groups_relay_request_group_link
+  ON groups(user_id, relay_request_group_link)
+  WHERE relay_request_group_link IS NOT NULL;
+```
+
+Postgres:
+
+```sql
+ALTER TABLE groups ADD COLUMN relay_rejection TEXT;
+CREATE INDEX idx_groups_relay_request_group_link
+  ON groups(user_id, relay_request_group_link)
+  WHERE relay_request_group_link IS NOT NULL;
+```
+
+Column is nullable, no default — `NULL` is the natural "no relay rejection state on this row" sentinel and avoids spurious writes during the ALTER. The index is partial-on-`IS NOT NULL` because most rows on owner-only or p2p installs have no `relay_request_group_link`; the index size stays minimal on those installs and the lookup remains O(log n) on relay installs. Both engines support partial indexes.
+
+Down: `DROP INDEX idx_groups_relay_request_group_link; ALTER TABLE groups DROP COLUMN relay_rejection;`. Tests regenerate `chat_schema.sql`.
+
+Two helpers, added to `src/Simplex/Chat/Store/Groups.hs` alongside the existing `relay_*` helpers:
+
+```haskell
+isRelayGroupRefused :: DB.Connection -> User -> ShortLinkContact -> IO Bool
+isRelayGroupRefused db User {userId} groupLink =
+  fromOnly . head <$> DB.query db
+    [sql|
+      SELECT EXISTS (
+        SELECT 1 FROM groups
+        WHERE user_id = ?
+          AND relay_request_group_link = ?
+          AND relay_rejection = ?
+        LIMIT 1
+      )
+    |]
+    (userId, groupLink, RJRejected)
+
+setGroupRelayRejection :: DB.Connection -> User -> GroupId -> Maybe RelayRejection -> IO ()
+setGroupRelayRejection db User {userId} groupId rejection = do
+  currentTs <- getCurrentTime
+  DB.execute db
+    "UPDATE groups SET relay_rejection = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
+    (rejection, currentTs, userId, groupId)
+```
+
+`isRelayGroupRefused` uses `EXISTS … LIMIT 1` because more than one `groups` row may share `relay_request_group_link` (`createRelayRequestGroup` at Store/Groups.hs:1526 INSERTs unconditionally — pre-existing behavior). If *any* matching row has `relay_rejection = 'rejected'`, the channel is refused. The equality check naturally excludes `NULL` rows.
+
+`setGroupRelayRejection` takes `Maybe RelayRejection` so the same helper writes both directions: `Just RJRejected` on leave (§6), `Nothing` on operator-allow (§7). The `updated_at = ?` clause matches the convention used by `updateRelayOwnStatus_` (Store/Groups.hs:1597) and `updateRelayStatus_` (1444-1447); `groups.updated_at` is defined at chat_schema.sql:137 with `CHECK(updated_at NOT NULL)`.
 
 ## 3. Rejection point — `xGrpRelayInv` (Subscriber.hs:1524)
 
@@ -97,7 +99,7 @@ xGrpRelayInv invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = d
       chatVR <- chatVersionRange
       let chatV = chatVR `peerConnChatVersion` chatVRange
       connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) False invId pqSup
-      dm <- encodeConnInfoPQ pqSup chatV XGrpRelayRej
+      dm <- encodeConnInfoPQ pqSup chatV XGrpRelayReject
       void $ withAgent $ \a ->
         acceptContact a NRMBackground (aUserId user) connId False invId dm pqSup subMode
       deleteAgentConnectionAsync' connId False
@@ -109,31 +111,31 @@ xGrpRelayInv invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = d
 
 No chat-layer `Connection` row is persisted for the refused contact — the agent owns the connection state, and `deleteAgentConnectionAsync'` cleans it up.
 
-## 4. Wire format — `XGrpRelayRej`
+## 4. Wire format — `XGrpRelayReject`
 
-Empty-payload event, owner-relay direct contact channel only. Not group-signed (the direct contact connection is authenticated at the agent layer).
+Empty-payload event, owner-relay direct contact channel only. Not group-signed (the direct contact connection is authenticated at the agent layer). Naming matches the existing `XGrpLinkReject` precedent (Protocol.hs:440, tag:985, string:1043).
 
 `src/Simplex/Chat/Protocol.hs`:
 
 - GADT constructor (after `XGrpRelayNew`, line 446):
   ```haskell
-  XGrpRelayRej :: ChatMsgEvent 'Json
+  XGrpRelayReject :: ChatMsgEvent 'Json
   ```
 - Tag GADT (after `XGrpRelayNew_`, line 991):
   ```haskell
-  XGrpRelayRej_ :: CMEventTag 'Json
+  XGrpRelayReject_ :: CMEventTag 'Json
   ```
-- `strEncode` (line 1049): `XGrpRelayRej_ -> "x.grp.relay.rej"`.
-- `strDecode` lookup map (line 1108): `"x.grp.relay.rej" -> XGrpRelayRej_`.
-- `toCMEventTag` (line 1163): `XGrpRelayRej -> XGrpRelayRej_`.
-- JSON parse (line 1321): `XGrpRelayRej_ -> pure XGrpRelayRej`.
-- JSON encode (line 1391): `XGrpRelayRej -> JM.empty` — matches `XGrpLeave -> JM.empty` (line 1402) and `XDirectDel -> JM.empty` (line 1379).
+- `strEncode` (line 1049): `XGrpRelayReject_ -> "x.grp.relay.reject"`.
+- `strDecode` lookup map (line 1108): `"x.grp.relay.reject" -> XGrpRelayReject_`.
+- `toCMEventTag` (line 1163): `XGrpRelayReject -> XGrpRelayReject_`.
+- JSON parse (line 1321): `XGrpRelayReject_ -> pure XGrpRelayReject`.
+- JSON encode (line 1391): `XGrpRelayReject -> JM.empty` — matches `XGrpLeave -> JM.empty` (1402) and `XDirectDel -> JM.empty` (1379).
 - **No** entry in `isForwardedGroupMsg` (485-505) — not forwarded.
 - **No** entry in `requiresSignature` (1227-1238) — not a group event.
 
 Older owner clients parse the unknown tag as `XUnknown` (default branch at line 1134) and hit the CONF handler's catch-all `_ -> messageError "CONF from invited member must have x.grp.acpt"`. No state change, no crash; the GroupRelay stays at `RSInvited` — the same end state as today's "relay never responds" mode. The owner UI shows the relay as permanently "invited" with no progress; documented degradation.
 
-`docs/protocol/channels-protocol.md`: insert a `### Relay refusal` subsection between `### Relay addition` (lines 61-73) and `### Subscriber connection` (line 75). Three short paragraphs: (1) trigger — `APILeaveGroup` persists a refusal; (2) signal — empty-payload `x.grp.relay.rej` over the direct contact channel; (3) owner handling — `GroupRelay` transitions `RSInvited → RSRejected`; final; cleared only by the relay operator re-issuing.
+`docs/protocol/channels-protocol.md`: insert a `### Relay refusal` subsection between `### Relay addition` (lines 61-73) and `### Subscriber connection` (line 75). Three short paragraphs: (1) trigger — `APILeaveGroup` flips `relay_rejection` to `rejected`; (2) signal — empty-payload `x.grp.relay.reject` over the direct contact channel; (3) owner handling — `GroupRelay` transitions `RSInvited → RSRejected`; final; cleared only by the relay operator running `/relay allow <groupId>`.
 
 ## 5. Owner-side state
 
@@ -148,7 +150,7 @@ relayStatusText RSRejected = "rejected"
 CONF handler arm in `src/Simplex/Chat/Library/Subscriber.hs:760-773` (immediately after the existing `XGrpRelayAcpt` clause):
 
 ```haskell
-XGrpRelayRej
+XGrpRelayReject
   | memberRole' membership == GROwner && isRelay m -> do
       relay <- withStore $ \db -> do
         liftIO $ updateGroupMemberStatus db userId m GSMemRejected
@@ -157,12 +159,12 @@ XGrpRelayRej
       let m' = m {memberStatus = GSMemRejected}
       deleteMemberConnection m'
       toView $ CEvtGroupRelayUpdated user gInfo m' relay
-  | otherwise -> messageError "x.grp.relay.rej: only owner can receive relay rejection"
+  | otherwise -> messageError "x.grp.relay.reject: only owner can receive relay rejection"
 ```
 
 Both `getGroupRelayByGMId` (Store/Groups.hs:1307, returns `ExceptT StoreError IO`) and `updateRelayStatusFromTo` (1438-1442, returns `IO`) are already exported; no new helper. `updateRelayStatusFromTo` is conditional on the current status equalling `RSInvited` — racing CONFs cannot regress an already-rejected or already-active row. `deleteMemberConnection` (Internal.hs:1807-1808) safely no-ops when `activeConn` is `Nothing`. `CEvtGroupRelayUpdated` (Controller.hs:900) carries `(user, groupInfo, member, groupRelay)` — exactly the iOS payload.
 
-`addRelays` (Commands.hs:3942-3976) already persists `GroupRelay` with `RSNew → RSInvited` before sending `XGrpRelayInv`, so by the time `XGrpRelayRej` arrives the row exists. A second user-initiated `addRelays` after rejection creates a fresh row (new `GroupMember`, new `GroupRelay`), independent of the rejected one — there is no automatic retry.
+`addRelays` (Commands.hs:3942-3976) already persists `GroupRelay` with `RSNew → RSInvited` before sending `XGrpRelayInv`, so by the time `XGrpRelayReject` arrives the row exists. A second user-initiated `addRelays` after rejection creates a fresh row (new `GroupMember`, new `GroupRelay`), independent of the rejected one — there is no automatic retry.
 
 ## 6. Refusal write — `APILeaveGroup` (Commands.hs:2919-2935)
 
@@ -180,56 +182,88 @@ APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' scopeInfo) ci]
     deleteGroupLinkIfExists user gInfo'
     withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
-    -- NEW
+    -- NEW: flip relay_rejection on the relay's local groups row
     when (useRelays' gInfo && isRelay membership) $ do
-      let GroupProfile {displayName, shortDescr, image, publicGroup} = groupProfile
+      let GroupProfile {publicGroup} = groupProfile
       case publicGroup of
-        Just PublicGroupProfile {groupLink} ->
-          withFastStore' $ \db ->
-            insertRefusedRelayGroup db user groupLink displayName shortDescr image
+        Just PublicGroupProfile {} ->
+          withFastStore' $ \db -> setGroupRelayRejection db user groupId (Just RJRejected)
         Nothing ->
           throwChatError $ CEInternalError "APILeaveGroup: relay-served channel has no publicGroup"
     pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
 ```
 
-The throw is structural assertion, not a runtime hazard: a relay-served channel always has `publicGroup = Just _` by the time the relay becomes a current member (the placeholder profile from `createRelayRequestGroup` is replaced by `updateGroupProfile` inside `getLinkDataCreateRelayLink` at Subscriber.hs:3847).
+The throw is a structural assertion (the placeholder profile is replaced by `updateGroupProfile` inside `getLinkDataCreateRelayLink` at Subscriber.hs:3847 before the relay ever becomes a current member). It catches schema inconsistency without papering over it.
 
-## 7. Operator commands — relay side
+## 7. Operator command — relay side
 
-`src/Simplex/Chat/Controller.hs` (after `APITestChatRelay` at ~407):
+One API command. Operator discovers rejected channels through the existing `/gs` listing (see §7.2 below); no separate list command.
 
-```haskell
-| APIListRefusedRelayGroups
-| APIClearRefusedRelayGroup {refusedRelayGroupId :: Int64}
--- responses (after CRGroupRelays at ~737):
-| CRRefusedRelayGroups {user :: User, refusedRelayGroups :: [RefusedRelayGroup]}
-| CRRefusedRelayGroupCleared {user :: User, refusedRelayGroupId :: Int64}
-```
-
-Parser entries (`src/Simplex/Chat/Library/Commands.hs:5033+`, longer prefixes first because attoparsec `<|>` is left-biased):
+`src/Simplex/Chat/Controller.hs` (after `APITestChatRelay` at ~408):
 
 ```haskell
-"/_relay refused clear " *> (APIClearRefusedRelayGroup <$> A.decimal),
-"/_relay refused"        $> APIListRefusedRelayGroups,
-"/relay refused clear "  *> (APIClearRefusedRelayGroup <$> A.decimal),
-"/relay refused"         $> APIListRefusedRelayGroups,
+| APIAllowRelayGroup {groupId :: GroupId}
+-- response (after CRGroupRelays at ~737):
+| CRRelayGroupAllowed {user :: User, groupInfo :: GroupInfo}
 ```
 
-Handlers (alongside `APITestChatRelay`):
+Parser entries (`src/Simplex/Chat/Library/Commands.hs:5033+`). `GroupId = Int64` is a type alias (Types.hs:449), so `A.decimal` decodes directly — matches the `APILeaveGroup <$> A.decimal` precedent at Commands.hs:5021:
 
 ```haskell
-APIListRefusedRelayGroups -> withUser $ \user -> do
-  rs <- withStore' $ \db -> listRefusedRelayGroups db user
-  pure $ CRRefusedRelayGroups user rs
-APIClearRefusedRelayGroup refusedId -> withUser $ \user -> do
-  deleted <- withStore' $ \db -> deleteRefusedRelayGroup db user refusedId
-  unless deleted $ throwChatError $ CECommandError "no refused relay-group record with that id"
-  pure $ CRRefusedRelayGroupCleared user refusedId
+"/_relay allow " *> (APIAllowRelayGroup <$> A.decimal),
+"/relay allow "  *> (APIAllowRelayGroup <$> A.decimal),
 ```
 
-Clear deletes only the row. No event to the owner. The owner's next user-initiated `addRelays` for the same relay/channel succeeds normally.
+Handler:
+
+```haskell
+APIAllowRelayGroup groupId -> withUser $ \user -> do
+  gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+  withStore' $ \db -> setGroupRelayRejection db user groupId Nothing
+  let gInfo' = gInfo {relayRejection = Nothing}
+  pure $ CRRelayGroupAllowed user gInfo'
+```
+
+Operator-allow writes `NULL` to the column, restoring the row to "no relay rejection state". This is the minimal-state design: the only meaningful value the column ever holds is `'rejected'`. The alternative (storing a `Just RJAllowed` tombstone) was rejected because no caller needs the "previously rejected" history — `addRelays` already creates fresh `GroupRelay` rows on retry (Commands.hs:3942-3976), so audit visibility lives on those rows, not on the cleared `groups` row.
+
+No event to the owner. The owner's next user-initiated `addRelays` succeeds normally. Operator authorization is the chat-relay binary's process-level access; no protocol-level auth needed.
+
+### 7.1 Guard against deleting a rejected group
+
+`APIDeleteChat CTGroup` at Commands.hs:1242-1246 lets the operator delete the group once `memberCurrent membership` is false (post-leave). That path would silently clear the refusal — an accidental `/d` should not undo a moderation decision. Add a guard immediately after the existing `unless canDelete` check (line 1246):
+
+```haskell
+when (relayRejection gInfo == Just RJRejected) $
+  throwChatError $ CECommandError "cannot delete a rejected channel; run /_relay allow <groupId> first"
+```
+
+`checkRelayInactiveGroups` at Commands.hs:4812-4817 only deletes connections (`deleteGroupConnections`), not the `groups` row, so no guard is needed there.
+
+### 7.2 Surface `[rejected]` in `/gs`
+
+`viewGroupsList` in `src/Simplex/Chat/View.hs:1432-1459` renders one line per group. Extend `groupSS`'s destructure to pull `relayRejection` while keeping the existing `GroupSummary {currentMembers}` pattern (used at line 1456 by `memberCount`), and append `[rejected]` between status and alias:
+
+```haskell
+groupSS g@GroupInfo { membership
+                    , chatSettings = ChatSettings {enableNtfs}
+                    , groupSummary = GroupSummary {currentMembers}
+                    , relayRejection
+                    } =
+  case memberStatus membership of
+    GSMemInvited -> groupInvitation' g
+    s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> rejectionSuffix <> alias g
+  where
+    rejectionSuffix = case relayRejection of
+      Just RJRejected -> " [rejected]"
+      Nothing         -> ""
+    …
+```
+
+One token, recognizable in the existing list output. No new column, no template change.
 
 ## 8. iOS
+
+No iOS changes from the rev-4 plan — the owner-side `RSRejected` surface is independent of the relay-side storage shape.
 
 `apps/ios/SimpleXChat/ChatTypes.swift:2637-2643 + 2708-2718`:
 
@@ -278,43 +312,50 @@ Kotlin/Android/desktop port is a separate PR.
 
 All tests use the existing channel harness (`prepareChannel2Relays`, `relayN ##> "/leave #..."`) and block on chat events from the test queue, not `threadDelay`.
 
-- **`testRelayRefuseAfterLeave`** — relay1 leaves; owner re-adds; owner blocks on `CEvtGroupRelayUpdated`; assert `relayStatus == RSRejected`, member `GSMemRejected`, channel link data excludes relay1 (`getConnectedGroupRelays` filters by `relay_status IN (RSAccepted, RSActive)` at Store/Groups.hs:1334). This is the deterministic delivery check for the sync-accept-then-delete path.
-- **`testRelayClearRefusedAcceptsAgain`** — operator runs `/relay refused`, then `/relay refused clear <id>`; owner re-adds; relay reaches `RSActive`.
-- **`testRelayDoesNotRefuseUnrelatedChannel`** — relay1 leaves channel A; owner of unrelated channel B issues `XGrpRelayInv`; relay1 accepts B; refused-table contains only A.
-- **`testRelayRefuseRaceConcurrentInvitations`** — owner sends two `XGrpRelayInv` for the same channel concurrently after the relay has left; both refuse; relay's `groups` table acquires no placeholder row; refused-table still has exactly one row (UNIQUE index).
-- **`testRelayForwardCompatOldOwner`** — owner's `chatVersionRange` excludes `x.grp.relay.rej`; relay refuses; owner emits `messageError` and the GroupRelay row stays at `RSInvited`; no crash.
+- **`testRelayRefuseAfterLeave`** — relay1 leaves; owner re-adds; owner blocks on `CEvtGroupRelayUpdated`; assert `relayStatus == RSRejected`, member `GSMemRejected`, channel link data excludes relay1 (`getConnectedGroupRelays` filters by `relay_status IN (RSAccepted, RSActive)` at Store/Groups.hs:1334). Also: query relay's `groups` table and assert `relay_rejection = 'rejected'`. Deterministic delivery check for the sync-accept-then-delete path.
+- **`testRelayAllowAcceptsAgain`** — operator runs `/relay allow <groupId>`; owner re-adds; relay reaches `RSActive`. Relay's `groups.relay_rejection` flips back to `allowed`.
+- **`testRelayDoesNotRefuseUnrelatedChannel`** — relay1 leaves channel A; owner of unrelated channel B issues `XGrpRelayInv`; relay1 accepts B; only A's `groups` row has `relay_rejection = 'rejected'`.
+- **`testRelayRefuseRaceConcurrentInvitations`** — owner sends two `XGrpRelayInv` for the same channel concurrently after the relay has left; both refuse; relay's `groups` table acquires no placeholder row for the second invitation (both queries match the same rejected row).
+- **`testRelayForwardCompatOldOwner`** — owner's `chatVersionRange` excludes `x.grp.relay.reject`; relay refuses; owner emits `messageError` and the GroupRelay row stays at `RSInvited`; no crash.
+- **`testRelayDeleteRejectedBlocked`** — relay1 leaves channel A; operator runs `/d #A`; deletion fails with the guard error from §7.1; channel still exists; operator runs `/relay allow <groupId>` then `/d #A`; deletion succeeds.
 
 ## 10. Adversarial review
 
-- **Timing side channel** — the refusal path takes one synchronous SMP round-trip (the new `acceptContact`); the accepted path takes much longer (worker, link-data fetch). An attacker with passive SMP-server observation can distinguish refusal from acceptance by latency. The SMP server already infers relay-channel relationships from connection patterns; marginal additional leak. Not mitigated; documented residual risk.
-- **Information leakage in `XGrpRelayRej`** — empty payload. No reason, no timestamp, no other channel identifiers.
-- **Concurrent leave-then-rejoin** — explicit operator-facing contract: invitations arriving before the leave commits locally are processed normally; invitations arriving after are refused. The window is bounded by the duration of `withGroupLock "leaveGroup" groupId` plus the refused-record write. No cross-group lock added.
-- **Operator-clear vs. concurrent invitation** — DELETE-SELECT race resolves to either "still refused" or "slipped through with accept"; both match operator intent.
-- **`getGroupRelayByGMId` failure on owner side** — would propagate as `ChatErrorStore` to the dispatch. Cannot happen in normal operation (the row is created by `addRelays` before `XGrpRelayInv` goes out, so it exists when the CONF arrives); if it ever did, the error surfaces visibly rather than being silently lost.
-- **Multi-user relay binary** — refused-records scoped by `user_id`; `withUser` for the CLI commands. No cross-user pollution.
-- **Forward compat (old relay)** — old relay binary doesn't enforce refusal but doesn't break either: it processes `XGrpRelayInv` as before. Feature is enforced by relay behavior, not by a protocol invariant on every node.
+- **Timing side channel** — refusal path takes one synchronous SMP round-trip via `acceptContact`; accepted path is much longer (worker, link-data fetch). Passive SMP-server observation can distinguish refusal from acceptance by latency. SMP server already infers relay-channel relationships from connection patterns; marginal additional leak. Not mitigated; documented residual risk.
+- **Information leakage in `XGrpRelayReject`** — empty payload. No reason, no timestamp, no other channel identifiers.
+- **Concurrent leave-then-rejoin** — operator-facing contract: invitations arriving before the leave commits locally are processed normally; invitations after are refused. Window bounded by the duration of `withGroupLock "leaveGroup" groupId`. No cross-group lock added.
+- **Operator deletes a `RJRejected` group** — blocked at `APIDeleteChat CTGroup` (Commands.hs:1242-1246) per §7.1. Operator must explicitly `/relay allow <id>` before deletion. Mental model: an accidental `/d` doesn't undo a moderation decision.
+- **Two concurrent `XGrpRelayInv` for the same rejected channel** — both lookups query the same indexed `groups` row, both find `relay_rejection = 'rejected'`, both refuse. No race in the rejection path.
+- **Duplicate `groups` rows for the same `relay_request_group_link`** — pre-existing behavior (`createRelayRequestGroup` INSERTs unconditionally). `isRelayGroupRefused` uses `EXISTS … LIMIT 1` so any one `RJRejected` row blocks future invitations. The delete-guard in §7.1 keeps rejected rows alive against accidental deletion.
+- **Schema migration on a relay with unusual group states** — column is nullable with no default; every existing row gets `NULL`. Owner-only groups, business chats, p2p groups all read `Nothing` and never write the column. No upgrade hazard.
+- **Migration on a database without `relay_request_group_link` populated** — the partial index `WHERE relay_request_group_link IS NOT NULL` has zero entries on non-relay installs; the lookup path is unused on those installs.
+- **Operator-allow vs. concurrent invitation** — UPDATE-SELECT race resolves to either "still refused" (lookup ran first) or "slipped through with accept" (UPDATE ran first); both match operator intent.
+- **`getGroupRelayByGMId` failure on owner side** — propagates as `ChatErrorStore`. Cannot happen in normal operation (`addRelays` creates the row before invitation); if it ever does, the error surfaces visibly.
+- **Multi-user relay binary** — `groups.user_id` scopes both the lookup and the update. `withUser` for the CLI command. No cross-user pollution.
+- **Forward compat (old relay)** — old relay binary lacks the column and the gate. Until migrated, it processes `XGrpRelayInv` as before. Feature is enforced by relay behavior at the binary level.
 
 ## 11. Files changed
 
 | File | Change |
 |---|---|
-| `src/Simplex/Chat/Types/Shared.hs` | `RSRejected` variant + encodings |
-| `src/Simplex/Chat/Types.hs` | `RefusedRelayGroup` record |
-| `src/Simplex/Chat/Protocol.hs` | `XGrpRelayRej` constructor, tag, str enc/dec, JSON enc/dec |
-| `src/Simplex/Chat/Store/RefusedRelayGroups.hs` | NEW. Four exported helpers |
-| `src/Simplex/Chat/Store/SQLite/Migrations/M20260514_refused_relay_groups.hs` | NEW |
+| `src/Simplex/Chat/Types/Shared.hs` | `RSRejected` variant + encodings; new `RelayRejection` type |
+| `src/Simplex/Chat/Types.hs` | Add `relayRejection` field to `GroupInfo` |
+| `src/Simplex/Chat/Protocol.hs` | `XGrpRelayReject` constructor, tag, str enc/dec, JSON enc/dec |
+| `src/Simplex/Chat/Store/Groups.hs` | `isRelayGroupRefused`, `setGroupRelayRejection`; read `relay_rejection` into `GroupInfo` |
+| `src/Simplex/Chat/Store/SQLite/Migrations/M20260514_relay_rejection.hs` | NEW. ALTER + partial index |
 | `src/Simplex/Chat/Store/SQLite/Migrations.hs` | Register migration |
-| `src/Simplex/Chat/Store/Postgres/Migrations/M20260514_refused_relay_groups.hs` | NEW |
+| `src/Simplex/Chat/Store/Postgres/Migrations/M20260514_relay_rejection.hs` | NEW |
 | `src/Simplex/Chat/Store/Postgres/Migrations.hs` | Register migration |
-| `src/Simplex/Chat/Controller.hs` | Two API commands, two responses |
-| `src/Simplex/Chat/Library/Commands.hs` | Parser entries, two handlers, refusal write in `APILeaveGroup` |
-| `src/Simplex/Chat/Library/Subscriber.hs` | Gate in `xGrpRelayInv`; `XGrpRelayRej` arm in CONF handler |
-| `simplex-chat.cabal` | Register new modules |
+| `src/Simplex/Chat/Controller.hs` | `APIAllowRelayGroup` command; `CRRelayGroupAllowed` response |
+| `src/Simplex/Chat/Library/Commands.hs` | Parser entries; handler; refusal write in `APILeaveGroup`; delete guard in `APIDeleteChat CTGroup` |
+| `src/Simplex/Chat/Library/Subscriber.hs` | Gate in `xGrpRelayInv`; `XGrpRelayReject` arm in CONF handler |
+| `src/Simplex/Chat/View.hs` | `[rejected]` suffix in `viewGroupsList` |
+| `simplex-chat.cabal` | Register new migration modules |
 | `docs/protocol/channels-protocol.md` | Insert "Relay refusal" subsection |
 | `apps/ios/SimpleXChat/ChatTypes.swift` | `rsRejected` case + text |
 | `apps/ios/Shared/Views/NewChat/AddChannelView.swift` | Red dot + "rejected" in `relayStatusIndicator` |
 | `apps/ios/Shared/Views/Chat/Group/GroupMemberInfoView.swift` | "Status: rejected by relay operator" row |
-| `tests/ChatTests/RelayRefused.hs` | NEW. Five tests |
+| `tests/ChatTests/RelayRefused.hs` | NEW. Six tests |
 | Test list registration | Add the new module |
 
 `chat_schema.sql` is auto-regenerated by tests; do not hand-edit.
