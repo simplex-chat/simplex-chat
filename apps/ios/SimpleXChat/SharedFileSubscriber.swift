@@ -43,7 +43,7 @@ public class SharedFileSubscriber<Message: Codable>: NSObject, NSFilePresenter {
         fc.coordinate(writingItemAt: url, options: [], error: nil) { newURL in
             do {
                 let data = try jsonEncoder.encode(message)
-                try data.write(to: newURL, options: [.atomic])
+                try data.write(to: newURL, options: [.atomic, .completeFileProtectionUnlessOpen])
             } catch {
                 logger.error("notifyViaSharedFile error: \(error)")
             }

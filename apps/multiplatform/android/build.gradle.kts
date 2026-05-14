@@ -12,7 +12,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "chat.simplex.app"
+        val appIdSuffix = rootProject.extra["application_id.suffix"] as String
+        applicationId = "chat.simplex.app$appIdSuffix"
         namespace = "chat.simplex.app"
         minSdk = 26
         targetSdk = 35
@@ -30,18 +31,15 @@ android {
                 cppFlags("")
             }
         }
-        manifestPlaceholders["app_name"] = "@string/app_name"
-        manifestPlaceholders["provider_authorities"] = "chat.simplex.app.provider"
+        manifestPlaceholders["app_name"] = rootProject.extra["app.name"] as String
+        manifestPlaceholders["provider_authorities"] = "chat.simplex.app$appIdSuffix.provider"
         manifestPlaceholders["extract_native_libs"] = rootProject.extra["compression.level"] as Int != 0
     }
 
     buildTypes {
         debug {
-            applicationIdSuffix = rootProject.extra["application_id.suffix"] as String
             isDebuggable = rootProject.extra["enable_debuggable"] as Boolean
-            manifestPlaceholders["app_name"] = rootProject.extra["app.name"] as String
-            // Provider can"t be the same for different apps on the same device
-            manifestPlaceholders["provider_authorities"] = "chat.simplex.app${rootProject.extra["application_id.suffix"]}.provider"
+            manifestPlaceholders["app_name"] = "${rootProject.extra["app.name"]} (Debug)"
         }
         release {
             isMinifyEnabled = false
@@ -111,14 +109,14 @@ android {
     )
     ndkVersion = "23.1.7779620"
     if (isBundle) {
-        defaultConfig.ndk.abiFilters("arm64-v8a", "armeabi-v7a")
+        defaultConfig.ndk.abiFilters(rootProject.extra["abi_filter"] as String)
     } else {
         splits {
             abi {
                 isEnable = true
                 reset()
                 if (isRelease) {
-                    include("arm64-v8a", "armeabi-v7a")
+                    include(rootProject.extra["abi_filter"] as String)
                 } else {
                     include("arm64-v8a", "armeabi-v7a")
                     isUniversalApk = false
@@ -135,6 +133,7 @@ dependencies {
     //implementation("androidx.compose.material:material:$compose_version")
     //implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
     implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-process:2.8.4")
     implementation("androidx.activity:activity-compose:1.9.1")
