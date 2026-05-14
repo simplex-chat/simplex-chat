@@ -2898,4 +2898,6 @@
     <string name="tray_show">SimpleX anzeigen</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="tray_tooltip_unread">SimpleX — %d ungelesen</string>
+    <string name="error_deleting_message">Fehler beim Löschen der Nachricht</string>
+    <string name="from_history">Aus dem Nachrichtenverlauf</string>
 </resources>
