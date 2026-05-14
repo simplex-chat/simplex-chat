@@ -14,8 +14,14 @@ No new column, no new type, no new field on `GroupInfo`. The existing `relay_own
 
 State-machine slot for `RSRejected` on the relay:
 
-- `updateRelayOwnStatus_` (Store/Groups.hs:1593-1597) writes `relay_inactive_at = Just currentTs` only when the new status is `RSInactive`. `RSRejected` therefore correctly leaves `relay_inactive_at = NULL`, so the row is NOT eligible for `checkRelayInactiveGroups` cleanup (Commands.hs:4812-4817, which filters `relay_own_status = RSInactive AND relay_inactive_at IS NOT NULL AND relay_inactive_at <= cutoff`).
-- `checkRelayServedGroups` (Commands.hs:4795-4810) iterates only `getRelayServedGroups` rows — `relay_own_status IN (RSAccepted, RSActive)` (Store/Groups.hs:1607). RSRejected rows are not iterated, so the health-check never silently undoes a refusal.
+- `updateRelayOwnStatus_` (Store/Groups.hs:1593-1597) writes `relay_inactive_at = Just currentTs` only when the new status is `RSInactive`. `RSRejected` therefore correctly leaves `relay_inactive_at = NULL`, so the row is NOT eligible for `checkRelayInactiveGroups` cleanup (Commands.hs:4812-4817).
+- `checkRelayServedGroups` (Commands.hs:4795-4810) iterates only `getRelayServedGroups` rows — `relay_own_status IN (RSAccepted, RSActive)` (Store/Groups.hs:1607). RSRejected rows are not iterated.
+- `xGrpMemDel` writer at Subscriber.hs:3132 currently flips any non-NULL `relay_own_status` to `RSInactive` when the owner removes the relay member. That would silently regress `RSRejected → RSInactive` and let a subsequent `XGrpRelayInv` slip through (the lookup checks `'rejected'`). The write at line 3132 is tightened to skip when the row is already `RSRejected`:
+
+```haskell
+when (maybe False (/= RSRejected) (relayOwnStatus gInfo)) $
+  updateRelayOwnStatus_ db gInfo RSInactive
+```
 
 New migration `M20260514_relay_request_group_link_index` adds a partial index — the column is unindexed today and the new gate SELECTs on it. SQLite:
 
@@ -56,7 +62,7 @@ xGrpRelayInv :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM (
 xGrpRelayInv invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = do
   refused <- withStore' $ \db -> isRelayGroupRefused db user groupLink
   if refused
-    then sendRelayRejection
+    then sendRelayRejection `catchAllErrors` eToView
     else do
       initialDelay <- asks $ initialInterval . relayRequestRetryInterval . config
       (_gInfo, _ownerMember) <- withStore $ \db ->
@@ -81,6 +87,8 @@ xGrpRelayInv invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = d
 
 No chat-layer `Connection` row is persisted for the refused contact — the agent owns the connection state, and `deleteAgentConnectionAsync'` cleans it up.
 
+If `sendInvitation` throws (SMP server unreachable), `acceptContact` throws before reaching its internal `acceptInvitation` step and the agent-allocated rcv queue from `newRcvConnSrv` is left for the agent's eventual cleanup. The owner receives no rejection and falls back to the silent-degradation path (GroupRelay stuck at `RSInvited`). The outer `catchAllErrors eToView` prevents the receive loop from being held by the bubbled-up exception.
+
 ## 4. Wire format — `XGrpRelayReject`
 
 Empty-payload event, owner-relay direct contact channel only. Not group-signed. Naming matches the existing `XGrpLinkReject` precedent (Protocol.hs:440, tag:985, string:1043).
@@ -98,7 +106,12 @@ Empty-payload event, owner-relay direct contact channel only. Not group-signed. 
 
 Older owner clients parse the unknown tag as `XUnknown` (default branch at 1134) and hit the CONF handler's catch-all `_ -> messageError "CONF from invited member must have x.grp.acpt"`. No state change, no crash; the GroupRelay stays at `RSInvited` — the same end state as today's "relay never responds" mode. The owner UI shows the relay as permanently "invited" with no progress; documented degradation.
 
-`docs/protocol/channels-protocol.md`: insert a `### Relay refusal` subsection between `### Relay addition` (61-73) and `### Subscriber connection` (75). Three paragraphs: (1) trigger — relay's `APILeaveGroup` sets `relay_own_status = 'rejected'`; (2) signal — empty-payload `x.grp.relay.reject` over the direct contact channel; (3) owner handling — `GroupRelay` transitions `RSInvited → RSRejected`; cleared only by the relay operator running `/relay allow <groupId>`.
+`docs/protocol/channels-protocol.md`: insert a `### Relay refusal` subsection between `### Relay addition` (61-73) and `### Subscriber connection` (75). Paragraphs:
+
+1. **Trigger** — relay's `APILeaveGroup` sets `relay_own_status = 'rejected'` on the relay's local `groups` row for the channel.
+2. **Signal** — empty-payload `x.grp.relay.reject` over the owner-relay direct contact channel.
+3. **Owner handling** — `GroupRelay` transitions `RSInvited → RSRejected`; final. Cleared only by the relay operator running `/relay allow <groupId>`.
+4. **Limitations** — (a) older owner clients log a CONF parse error and leave their `GroupRelay` at `RSInvited` indefinitely (same UX as a relay that doesn't respond); (b) older relay binaries do not enforce refusal — mixed-version deployments where some relays are old behave asymmetrically.
 
 ## 5. Owner-side state
 
@@ -125,11 +138,11 @@ XGrpRelayReject
 
 ## 6. Refusal write — `APILeaveGroup` (Commands.hs:2919-2935)
 
-Currently `leaveChannelRelay` does NOT touch `relay_own_status` — verified at Commands.hs:2938-2947. The new write is added to the existing `when (useRelays' gInfo && isRelay membership)` block in `APILeaveGroup`, alongside the existing membership-status update:
+Currently `leaveChannelRelay` does NOT touch `relay_own_status` — verified at Commands.hs:2938-2947. The new write is added to the existing leave path, unconditionally on the relay-leave branch:
 
 ```haskell
 APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
-  gInfo@GroupInfo {membership, groupProfile} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+  gInfo@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db vr user groupId
   filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
   withGroupLock "leaveGroup" groupId $ do
     cancelFilesInProgress user filesInfo
@@ -142,17 +155,12 @@ APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     deleteGroupLinkIfExists user gInfo'
     withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
     -- NEW: mark the relay's local groups row as refused
-    when (useRelays' gInfo && isRelay membership) $ do
-      let GroupProfile {publicGroup} = groupProfile
-      case publicGroup of
-        Just PublicGroupProfile {} ->
-          withFastStore' $ \db -> updateRelayOwnStatus_ db gInfo RSRejected
-        Nothing ->
-          throwChatError $ CEInternalError "APILeaveGroup: relay-served channel has no publicGroup"
+    when (useRelays' gInfo && isRelay membership) $
+      withFastStore' $ \db -> updateRelayOwnStatus_ db gInfo RSRejected
     pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
 ```
 
-`updateRelayOwnStatus_` (Store/Groups.hs:1593) writes unconditionally — the prior status could be `RSActive` (most common after acceptance), `RSAccepted` (if the relay hadn't yet been picked up by the health-check), or `RSInvited` (if the relay leaves mid-request, edge case). All transitions to `RSRejected` are intentional on the operator-initiated leave path. The `publicGroup == Nothing` throw is structural assertion.
+`updateRelayOwnStatus_` (Store/Groups.hs:1593) writes unconditionally. The prior status can legitimately be any of `RSInvited` (operator leaves mid-request, placeholder profile still in place — verified at Store/Groups.hs:1531-1541), `RSAccepted` (waiting for health-check), `RSActive` (steady state), or `RSInactive` (already inactive — re-leaving). The earlier rev's `publicGroup == Nothing` throw was wrong: `RSInvited` is a real lifecycle state with `publicGroup = Nothing` (`createRelayRequestGroup` at Store/Groups.hs:1531 uses a placeholder profile until `updateGroupProfile` at Subscriber.hs:3847 runs inside the relay-request worker). Writing `RSRejected` unconditionally on the relay-leave path correctly cancels an in-progress invitation: `getNextPendingRelayRequest` (Store/RelayRequests.hs:60-72) selects only rows where `relay_own_status = 'invited'`, so the flip to `RSRejected` removes the row from the worker queue.
 
 ## 7. Operator command — relay side
 
@@ -274,6 +282,8 @@ All tests use the existing channel harness and block on chat events, not `thread
 - **`testRelayRefuseRaceConcurrentInvitations`** — owner sends two `XGrpRelayInv` for the same channel concurrently after the relay has left; both refuse; relay's `groups` table acquires no placeholder row for the second invitation (both lookups match the same rejected row).
 - **`testRelayForwardCompatOldOwner`** — owner's `chatVersionRange` excludes `x.grp.relay.reject`; relay refuses; owner emits `messageError` and the GroupRelay row stays at `RSInvited`; no crash.
 - **`testRelayDeleteRejectedBlocked`** — relay1 leaves channel A; operator runs `/d #A`; deletion fails with the guard error from §7.1; channel still exists; operator runs `/relay allow <groupId>` then `/d #A`; deletion succeeds.
+- **`testRelayRejectSurvivesOwnerRemoveRelayMember`** — relay1 leaves channel A (sets `RSRejected`); owner sends `XGrpMemDel` removing relay1; assert relay's `groups.relay_own_status` is still `'rejected'`, not flipped to `'inactive'`. Covers the §2 tightening of `xGrpMemDel` at Subscriber.hs:3132.
+- **`testNonOwnerXGrpRelayRejectIgnored`** — owner-side negative case: deliver an `XGrpRelayReject` CONF on a connection where either `memberRole' membership /= GROwner` or the sender member is not `isRelay`; assert the owner emits `messageError` and neither the GroupRelay row nor the member status changes.
 
 ## 10. Adversarial review
 
@@ -281,18 +291,21 @@ All tests use the existing channel harness and block on chat events, not `thread
   - Subscriber.hs:936 (`MSG` handler filters delivery tasks).
   - Subscriber.hs:3571 (delivery-task worker rejects `DJDeliveryJob`).
   - Subscriber.hs:3641 (delivery-job worker errors `DJDeliveryJob`).
-  All three must broaden to also match `Just RSRejected` — both states share the "not serving" semantic. `DJRelayRemoved` is handled in a separate branch and remains status-independent. Add a tiny predicate at the call sites (or a `relayNotServing :: Maybe RelayStatus -> Bool` helper near the existing `relayOwnStatus` accessors).
-- **Health-check loop never touches RSRejected.** `getRelayServedGroups` filters `relay_own_status IN (RSAccepted, RSActive)` (Store/Groups.hs:1607); RSRejected rows are not iterated. `updateRelayOwnStatusFromTo` calls in Commands.hs:4808-4809 only transition RSAccepted↔RSActive↔RSInactive. No path can silently undo a refusal.
-- **Operator deletes a rejected group** — blocked at `APIDeleteChat CTGroup` per §7.1. Operator must `/relay allow <id>` first.
-- **Timing side channel** — refusal path takes one synchronous SMP round-trip via `acceptContact`; accepted path is much longer (worker, link-data fetch). Passive SMP-server observation can distinguish. SMP server already infers relay-channel relationships from connection patterns; marginal additional leak.
+  All three must broaden to also match `Just RSRejected` — both states share the "not serving" semantic. `DJRelayRemoved` is handled in a separate branch and remains status-independent. Add a small predicate (e.g., `relayNotServing :: Maybe RelayStatus -> Bool`) near the existing `relayOwnStatus` accessors.
+- **`xGrpMemDel` writer at Subscriber.hs:3132** — this is also a writer of `relay_own_status`, not a filter. It flips any non-NULL status to `RSInactive` when the owner removes the relay member. Tightened in §2 to skip when the row is already `RSRejected`; otherwise the refusal would be silently undone by a normal protocol event.
+- **Health-check loop never touches RSRejected.** `getRelayServedGroups` filters `relay_own_status IN (RSAccepted, RSActive)` (Store/Groups.hs:1607); RSRejected rows are not iterated. `updateRelayOwnStatusFromTo` calls in Commands.hs:4808-4809 only transition RSAccepted↔RSActive↔RSInactive. With the §2 tightening of `xGrpMemDel` line 3132, no path can silently undo a refusal.
+- **Operator deletes a rejected group** — blocked at `APIDeleteChat CTGroup` per §7.1.
+- **Timing side channel** — refusal path is one synchronous SMP round-trip; accepted path is much longer. Passive SMP-server observation can distinguish, though relay load adds variance to both paths. SMP server already infers relay-channel relationships from connection patterns; marginal additional leak.
 - **Information leakage in `XGrpRelayReject`** — empty payload.
-- **Concurrent leave-then-rejoin** — operator-facing contract: invitations arriving before the leave commits locally are processed normally; invitations after are refused. Window bounded by `withGroupLock "leaveGroup" groupId`.
+- **Concurrent leave-then-rejoin** — operator-facing contract: invitations arriving before the leave commits locally are processed normally; invitations after are refused. Note that `xGrpRelayInv` does NOT take `withGroupLock "leaveGroup" groupId` (no group ID is known at REQ time); the bound is the SQL commit of the `relay_own_status = 'rejected'` write, not a lock. Sibling rows already at `RSInvited` from before the leave are not retroactively rejected — they are processed normally by the worker. See §12 for follow-up scope.
 - **Two concurrent `XGrpRelayInv` for the same rejected channel** — both lookups hit the same indexed row, both refuse. No race.
-- **Duplicate `groups` rows for the same `relay_request_group_link`** — pre-existing (`createRelayRequestGroup` INSERTs unconditionally). `isRelayGroupRefused` uses `EXISTS … LIMIT 1`, so any `RSRejected` row blocks future invitations. Operator-allow flips the offending row to `RSInactive`; a future invitation creates a fresh row that progresses normally. The old RSInactive row's connections are eventually cleaned up by `checkRelayInactiveGroups`.
+- **Duplicate `groups` rows for the same `relay_request_group_link`** — pre-existing (`createRelayRequestGroup` INSERTs unconditionally; no uniqueness on `relay_request_inv_id` or `relay_request_group_link`). Any `RSRejected` row blocks *future invitations from creating new rows that progress to acceptance* (the lookup uses `EXISTS … LIMIT 1`). Sibling rows already in `RSInvited` continue to be processed by the worker — see §12.
 - **Operator-allow vs. concurrent invitation** — UPDATE-SELECT race resolves to either "still refused" or "slipped through with accept"; both match operator intent.
-- **`getGroupRelayByGMId` failure on owner side** — propagates as `ChatErrorStore`; cannot happen in normal operation (the row is created by `addRelays` before invitation).
+- **`getGroupRelayByGMId` failure on owner side** — propagates as `ChatErrorStore`; cannot happen in normal operation.
 - **Multi-user relay binary** — `groups.user_id` scopes both lookup and write. `withUser` for the CLI. No cross-user pollution.
-- **Forward compat (old relay binary)** — old relay sets `RSInactive` on leave, not `RSRejected`, and does not enforce refusal. Rows left behind by an old binary before this PR ships are plain inactive, not refused. Acceptable v1 limitation; the operator can `/leave` again under the new binary to re-establish refusal.
+- **`sendRelayRejection` SMP failure** — wrapped in `catchAllErrors eToView` per §3 so a single SMP failure during refusal does not propagate to the agent receive loop. The owner falls back to silent-degradation (GroupRelay stuck at RSInvited), matching today's "relay unresponsive" mode.
+- **Forward compat — mixed-version relays.** An old relay binary leaves a channel by writing `RSInactive`, not `RSRejected`, and does not enforce refusal at `xGrpRelayInv`. Mixed-version deployments (some relays new, some old) have asymmetric behavior: new relays refuse, old relays accept. Acceptable v1 limitation; document in `docs/protocol/channels-protocol.md`. Operator on an upgraded relay can `/leave` again under the new binary to re-establish refusal.
+- **Forward compat (old owner)** — old owner's CONF handler lands in the `_ -> messageError "CONF from invited member must have x.grp.acpt"` catch-all (Subscriber.hs:773). GroupRelay stays at `RSInvited`; same end state as today's "relay never responds" mode. Documented in the protocol doc.
 
 ## 11. Files changed
 
@@ -307,14 +320,14 @@ All tests use the existing channel harness and block on chat events, not `thread
 | `src/Simplex/Chat/Store/Postgres/Migrations.hs` | Register migration |
 | `src/Simplex/Chat/Controller.hs` | `APIAllowRelayGroup` command; `CRRelayGroupAllowed` response |
 | `src/Simplex/Chat/Library/Commands.hs` | Parser; handler; refusal write in `APILeaveGroup`; delete guard in `APIDeleteChat CTGroup` |
-| `src/Simplex/Chat/Library/Subscriber.hs` | Gate in `xGrpRelayInv`; `XGrpRelayReject` arm in CONF handler; broaden three RSInactive filters to also match RSRejected (lines 936, 3571, 3641) |
+| `src/Simplex/Chat/Library/Subscriber.hs` | Gate in `xGrpRelayInv`; `XGrpRelayReject` arm in CONF handler; broaden three RSInactive filters to also match RSRejected (lines 936, 3571, 3641); tighten `xGrpMemDel` writer at 3132 to skip when row is `RSRejected` |
 | `src/Simplex/Chat/View.hs` | `[rejected]` suffix in `viewGroupsList` |
 | `simplex-chat.cabal` | Register new migration modules |
 | `docs/protocol/channels-protocol.md` | Insert "Relay refusal" subsection |
 | `apps/ios/SimpleXChat/ChatTypes.swift` | `rsRejected` case + text |
 | `apps/ios/Shared/Views/NewChat/AddChannelView.swift` | Red dot + "rejected" in `relayStatusIndicator` |
 | `apps/ios/Shared/Views/Chat/Group/GroupMemberInfoView.swift` | "Status: rejected by relay operator" row |
-| `tests/ChatTests/RelayRefused.hs` | NEW. Six tests |
+| `tests/ChatTests/RelayRefused.hs` | NEW. Eight tests |
 | Test list registration | Add the new module |
 
 `chat_schema.sql` is auto-regenerated by tests.
@@ -328,3 +341,7 @@ All tests use the existing channel harness and block on chat events, not `thread
 - Owner-side independent clear of `RSRejected`.
 - `publicGroupId`-keyed refusal.
 - Timing-uniform refusal.
+- **Sibling-row worker race.** When a relay leaves a channel for which it has a sibling `groups` row in `RSInvited` (e.g., the owner re-sent `XGrpRelayInv` and `createRelayRequestGroup` created a second row), only the row whose ID `APILeaveGroup` targets is flipped to `RSRejected`; sibling `RSInvited` rows continue through the worker. Pre-existing behavior — `leaveChannelRelay` doesn't touch sibling rows today either. Cheapest future closure: in §6, also `UPDATE groups SET relay_request_failed = 1 WHERE user_id = ? AND relay_request_group_link = ? AND relay_own_status = 'invited'` in the same transaction (the worker filters on `relay_request_failed = 0` at Store/RelayRequests.hs:67). Deferred to a follow-up.
+- **`XGrpRelayInv` re-delivery duplicates.** `createRelayRequestGroup` has no uniqueness on `relay_request_inv_id` or `relay_request_group_link`; an owner retry of `XGrpRelayInv` creates duplicate rows. Pre-existing; closure ties to the sibling-row item above.
+
+The mixed-version-relay asymmetry and the old-owner stuck-RSInvited UI degradation are documented in `docs/protocol/channels-protocol.md` alongside the new `### Relay refusal` subsection.
