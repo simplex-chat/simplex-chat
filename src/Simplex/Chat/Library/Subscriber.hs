@@ -990,9 +990,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             deliveryTaskContext_ <- case event of
               XMsgNew mc ->
                 checkSendAsGroup asGroup $
-                  memberCanSend (Just m'') scope $ newGroupContentMessage gInfo' (Just m'') mc msg brokerTs False
+                  memberCanSendOrComment (Just m'') mc $ newGroupContentMessage gInfo' (Just m'') mc msg brokerTs False
                 where
-                  MsgContainer {scope, asGroup} = mc
+                  MsgContainer {asGroup} = mc
               -- file description is always allowed, to allow sending files to support scope
               XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ prefs_ ->
@@ -1584,6 +1584,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     memberCanComment (Just GroupMember {memberRole}) a
       | memberRole >= GRCommenter = a
       | otherwise = messageError "member is not allowed to comment" $> Nothing
+
+    memberCanSendOrComment :: Maybe GroupMember -> MsgContainer -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+    memberCanSendOrComment m_ MsgContainer {scope, parent} = case parent of
+      Just _ -> memberCanComment m_
+      Nothing -> memberCanSend m_ scope
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
@@ -3426,9 +3431,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ verifiedMsg brokerTs
           forM_ rcvMsg_ $ \rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
-              void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
-              where
-                MsgContainer {scope} = mc
+              void $ memberCanSendOrComment author_ mc $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ prefs_ ->
