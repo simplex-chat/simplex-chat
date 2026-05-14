@@ -2812,4 +2812,6 @@
     <string name="tray_tooltip">SimpleX</string>
     <string name="tray_tooltip_unread">SimpleX — %d 则未读</string>
     <string name="close_behavior_dialog_close">关闭应用</string>
+    <string name="error_deleting_message">删除消息出错</string>
+    <string name="from_history">来自历史记录</string>
 </resources>
