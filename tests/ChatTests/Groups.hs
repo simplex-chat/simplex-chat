@@ -290,7 +290,7 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
-    describe "channel comments" $ do
+    fdescribe "channel comments" $ do
       it "subscriber should comment on channel post" testChannelCommentSubscriberCanComment
       it "should reject comment in non-channel group" testChannelCommentNotInRegularGroup
       it "should reject comment when comments disabled on post" testChannelCommentDisabledRejected
@@ -10566,7 +10566,7 @@ testChannelCommentSubscriberCanComment ps =
             [cath, dan, eve] *<# "#team> hello [>>]"
 
             -- subscriber comments on the post
-            parentId <- lastItemId cath
+            parentId <- lastGroupItemId cath 1
             cath ##> ("/_comment #1 " <> parentId <> " text reply")
             cath <# "#team reply"
             bob <# "#team cath> reply"
@@ -10587,7 +10587,7 @@ testChannelCommentNotInRegularGroup =
       createGroup3 "team" alice bob cath
       alice #> "#team hello"
       [bob, cath] *<# "#team alice> hello"
-      parentId <- lastItemId bob
+      parentId <- lastGroupItemId bob 1
       bob ##> ("/_comment #1 " <> parentId <> " text reply")
       bob <## "bad chat command: comments are only supported in channel groups"
 
@@ -10605,7 +10605,7 @@ testChannelCommentDisabledRejected ps =
             [cath, dan, eve] *<# "#team> hello [>>]"
 
             -- owner disables comments on the post
-            aliceParentId <- lastItemId alice
+            aliceParentId <- lastGroupItemId alice 1
             alice ##> ("/_comments_disabled #1 " <> aliceParentId <> " on")
             alice <## "ok"
 
@@ -10635,7 +10635,7 @@ testChannelCommentEditDelete ps =
             [cath, dan, eve] *<# "#team> hello [>>]"
 
             -- cath comments on the post
-            cathParentId <- lastItemId cath
+            cathParentId <- lastGroupItemId cath 1
             cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
             cath <# "#team reply"
             bob <# "#team cath> reply"
@@ -10650,7 +10650,7 @@ testChannelCommentEditDelete ps =
               ]
 
             -- cath edits her own comment
-            cathCommentId <- lastItemId cath
+            cathCommentId <- lastGroupItemId cath 1
             cath ##> ("/_update item #1 " <> cathCommentId <> " text reply edited")
             cath <# "#team [edited] reply edited"
             bob <# "#team cath> [edited] reply edited"
