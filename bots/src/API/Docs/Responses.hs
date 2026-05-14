@@ -71,6 +71,8 @@ chatResponsesDocsData =
     ("CRPublicGroupCreated", ""),
     ("CRPublicGroupCreationFailed", ""),
     ("CRGroupRelays", ""),
+    ("CRGroupRelaysAdded", ""),
+    ("CRGroupRelaysAddFailed", ""),
     ("CRGroupMembers", ""),
     ("CRGroupUpdated", ""),
     ("CRGroupsList", "Groups"),
@@ -95,9 +97,9 @@ chatResponsesDocsData =
     ("CRUserDeletedMembers", "Members deleted"),
     ("CRUserProfileUpdated", "User profile updated"),
     ("CRUserProfileNoChange", "User profile was not changed"),
-    ("CRUsersList", "Users")
+    ("CRUsersList", "Users"),
+    ("CRApiChats", "Chat previews (paginated). Use this instead of CRContactsList / CRGroupsList when scanning at scale.")
     -- ("CRApiChat", "Chat and messages"),
-    -- ("CRApiChats", "Chats with the most recent messages"),
     -- ("CRChatCleared", ""),
     -- ("CRChatItemInfo", "Message information"),
     -- ("CRChatItems", "The most recent messages"),
@@ -120,7 +122,6 @@ undocumentedResponses =
     "CRAgentWorkersDetails",
     "CRAgentWorkersSummary",
     "CRApiChat",
-    "CRApiChats",
     "CRAppSettings",
     "CRArchiveExported",
     "CRArchiveImported",

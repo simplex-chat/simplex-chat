@@ -41,6 +41,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatListQuery](#chatlistquery)
 - [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
 - [ChatSettings](#chatsettings)
@@ -136,6 +137,7 @@ This file is generated automatically.
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
 - [OwnerVerification](#ownerverification)
+- [PaginationByTime](#paginationbytime)
 - [PendingContactConnection](#pendingcontactconnection)
 - [PrefEnabled](#prefenabled)
 - [Preferences](#preferences)
@@ -587,6 +589,7 @@ ChatBanner:
 - "broadcast"
 - "internal"
 - "internalMark"
+- "history"
 
 
 ---
@@ -1329,6 +1332,22 @@ Message deletion result.
 
 ---
 
+## ChatListQuery
+
+**Discriminated union type**:
+
+Filters:
+- type: "filters"
+- favorite: bool
+- unread: bool
+
+Search:
+- type: "search"
+- search: string
+
+
+---
+
 ## ChatPeerType
 
 **Enum type**:
@@ -1358,7 +1377,7 @@ ChatType.cmdString(chatType) + chatId + (chatScope ? GroupChatScope.cmdString(ch
 ```
 
 ```python
-str(chatType) + str(chatId) + ((str(chatScope)) if chatScope is not None else '') # Python
+ChatType_cmd_string(chatType) + str(chatId) + ((GroupChatScope_cmd_string(chatScope)) if chatScope is not None else '') # Python
 ```
 
 
@@ -2891,6 +2910,31 @@ Verified:
 Failed:
 - type: "failed"
 - reason: string
+
+
+---
+
+## PaginationByTime
+
+**Discriminated union type**:
+
+Last:
+- type: "last"
+- count: int
+
+**Syntax**:
+
+```
+count=<count>
+```
+
+```javascript
+'count=' + count // JavaScript
+```
+
+```python
+'count=' + str(count) # Python
+```
 
 
 ---

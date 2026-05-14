@@ -302,6 +302,8 @@ markdownP = mconcat <$> A.many' fragmentP
     isPunctuation' = \case
       '/' -> False
       ')' -> False
+      '_' -> False
+      '!' -> False
       c -> isPunctuation c
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     -- matches what is likely to be a domain, not all valid domain names
@@ -360,7 +362,7 @@ parseUri s = case U.parseURI U.laxURIParserOptions s of
 sanitizeUri :: Bool -> U.URI -> Maybe U.URI
 sanitizeUri safe uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
   let sanitizedQS
-        | safe = filter (not . isSafeBlacklisted . fst) originalQS
+        | safe = filter (\(n, _) -> isWhitelisted n || not (isSafeBlacklisted n)) originalQS
         | isNamePath = case originalQS of
             p@(n, _) : ps -> (if isWhitelisted n || not (isBlacklisted n) then (p :) else id) $ filter (isWhitelisted . fst) ps
             [] -> []

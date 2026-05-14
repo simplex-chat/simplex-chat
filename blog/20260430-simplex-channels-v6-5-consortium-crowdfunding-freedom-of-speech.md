@@ -52,7 +52,7 @@ We've seen open-source privacy-focussed projects die without funding, or worse &
 
 So we're building both: a governance structure and a real business. The governance protects the network neutrality. The commercial model funds the network and makes our and other businesses on the network profitable, ensuring their independence. Neither works without the other.
 
-We recently published [a preliminary design of commercial model](https://simplex.chat/vouchers/) &mdash; private Community Credits that fund servers, development, and governance without surveillance or speculation. The full investment case will be published when crowdfunding launches.
+We recently published [a preliminary design of commercial model](https://simplex.chat/credits/) &mdash; private Community Credits that fund servers, development, and governance without surveillance or speculation. The full investment case will be published when crowdfunding launches.
 
 You can *register your interest* to participate in crowdfunding here: https://simplexchat.typeform.com/crowdfunding
 

@@ -641,13 +641,12 @@ struct GroupMemberInfoView: View {
                         blockForAllButton(mem)
                     }
                 }
-                // TODO [relays] removing relay should also remove its link from group link data;
-                // TODO   - removing last relay should be prohibited or show warning
+                // TODO [relays] re-enable when relay management ships
                 if canRemove && mem.memberRole != .relay {
-                    if mem.memberStatus == .memRemoved || mem.memberStatus == .memLeft {
-                        deleteMemberMessagesButton(mem)
-                    } else {
+                    if mem.memberStatus != .memRemoved && (mem.memberStatus != .memLeft || mem.memberRole == .relay) {
                         removeMemberButton(mem)
+                    } else if mem.memberRole != .relay {
+                        deleteMemberMessagesButton(mem)
                     }
                 }
             }
@@ -705,7 +704,10 @@ struct GroupMemberInfoView: View {
         Button(role: .destructive) {
             showRemoveMemberAlert(groupInfo, mem, dismiss: dismiss)
         } label: {
-            Label(groupInfo.useRelays ? "Remove subscriber" : "Remove member", systemImage: "trash")
+            let text = mem.memberRole == .relay ? "Remove relay"
+                : groupInfo.useRelays ? "Remove subscriber"
+                : "Remove member"
+            Label(text, systemImage: "trash")
                 .foregroundColor(.red)
         }
     }

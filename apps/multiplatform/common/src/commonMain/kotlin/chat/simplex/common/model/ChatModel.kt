@@ -92,6 +92,7 @@ object ChannelRelaysModel {
     if (groupId.value == groupInfo.groupId) {
       val i = groupRelays.indexOfFirst { it.groupRelayId == relay.groupRelayId }
       if (i >= 0) groupRelays[i] = relay
+      else groupRelays.add(relay)
     }
   }
 
@@ -3734,7 +3735,8 @@ sealed class CIForwardedFrom {
 enum class CIDeleteMode(val deleteMode: String) {
   @SerialName("internal") cidmInternal("internal"),
   @SerialName("internalMark") cidmInternalMark("internalMark"),
-  @SerialName("broadcast") cidmBroadcast("broadcast");
+  @SerialName("broadcast") cidmBroadcast("broadcast"),
+  @SerialName("history") cidmHistory("history");
 }
 
 interface ItemContent {
