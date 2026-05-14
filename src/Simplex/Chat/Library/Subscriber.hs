@@ -1579,6 +1579,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         | memberRole >= GRAuthor || memberPending m -> a
         | otherwise -> messageError "member is not allowed to send messages" $> Nothing
 
+    memberCanComment :: Maybe GroupMember -> CM (Maybe a) -> CM (Maybe a)
+    memberCanComment Nothing a = a -- channel post from owner via relay - role precheck on the relay
+    memberCanComment (Just GroupMember {memberRole}) a
+      | memberRole >= GRCommenter = a
+      | otherwise = messageError "member is not allowed to comment" $> Nothing
+
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
       case err of
@@ -2020,25 +2026,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       Just m@GroupMember {memberId} -> do
         (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m content msgScope_
         channelMsgInfo_ <- resolveCommentParent gInfo' parent_
-        if blockedByAdmin m'
-          then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
-          else case prohibitedGroupContent gInfo' m' scopeInfo channelMsgInfo_ content ft_ fInv_ False of
-            Just GFComments
-              | not forwarded -> messageError "channel comment prohibited" $> Nothing
-            Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
-            Nothing -> do
-              now <- liftIO getCurrentTime
-              if commentsClosed gInfo' channelMsgInfo_ now
-                then messageError "channel post comments are closed" $> Nothing
-                else
-                  withStore' (\db -> getCIModeration db vr user gInfo' memberId sharedMsgId_) >>= \case
-                    Just ciModeration -> do
-                      applyModeration gInfo' m' scopeInfo ciModeration
-                      withStore' $ \db -> deleteCIModeration db gInfo' memberId sharedMsgId_
-                      pure Nothing
-                    Nothing -> do
-                      createContentItem gInfo' (Just m') scopeInfo channelMsgInfo_
-                      pure $ Just $ infoToDeliveryContext gInfo' scopeInfo sentAsGroup
+        let withCommentRoleCheck = case channelMsgInfo_ of
+              Just _ -> memberCanComment (Just m')
+              Nothing -> id
+        withCommentRoleCheck $
+          if blockedByAdmin m'
+            then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
+            else case prohibitedGroupContent gInfo' m' scopeInfo channelMsgInfo_ content ft_ fInv_ False of
+              Just GFComments
+                | not forwarded -> messageError "channel comment prohibited" $> Nothing
+              Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
+              Nothing -> do
+                now <- liftIO getCurrentTime
+                if commentsClosed gInfo' channelMsgInfo_ now
+                  then messageError "channel post comments are closed" $> Nothing
+                  else
+                    withStore' (\db -> getCIModeration db vr user gInfo' memberId sharedMsgId_) >>= \case
+                      Just ciModeration -> do
+                        applyModeration gInfo' m' scopeInfo ciModeration
+                        withStore' $ \db -> deleteCIModeration db gInfo' memberId sharedMsgId_
+                        pure Nothing
+                      Nothing -> do
+                        createContentItem gInfo' (Just m') scopeInfo channelMsgInfo_
+                        pure $ Just $ infoToDeliveryContext gInfo' scopeInfo sentAsGroup
       where
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo Nothing (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL

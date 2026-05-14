@@ -1776,7 +1776,7 @@ getGroupChatAround' db user g scopeInfo parentChatItemId_ contentFilter aroundId
   where
     getNavInfo cis_ = case cis_ of
       [] -> pure $ NavigationInfo 0 0
-      cis -> getGroupNavInfo_ db user g (last cis)
+      cis -> getGroupNavInfo_ db user g scopeInfo parentChatItemId_ (last cis)
 
 getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChatItemId -> Maybe MsgContentTag -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChatInitial_ db user g scopeInfo_ parentChatItemId_ contentFilter count = do
@@ -1862,56 +1862,154 @@ queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFil
     (Just _scope, Just _mcTag) ->
       throwError $ SEInternalError "group scope and content filter are not supported together"
 
-getGroupNavInfo_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO NavigationInfo
-getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
+getGroupNavInfo_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChatItemId -> CChatItem 'CTGroup -> IO NavigationInfo
+getGroupNavInfo_ db User {userId} GroupInfo {groupId} scopeInfo_ parentChatItemId_ afterCI = do
   afterUnread <- getAfterUnreadCount
   afterTotal <- getAfterTotalCount
   pure NavigationInfo {afterUnread, afterTotal}
   where
     getAfterUnreadCount :: IO Int
     getAfterUnreadCount =
-      fromOnly . head
-        <$> DB.query
-          db
-          [sql|
-            SELECT COUNT(1)
-            FROM (
-              SELECT 1
-              FROM chat_items
-              WHERE user_id = ? AND group_id = ? AND item_status = ?
-                AND item_ts > ?
-              UNION ALL
-              SELECT 1
-              FROM chat_items
-              WHERE user_id = ? AND group_id = ? AND item_status = ?
-                AND item_ts = ? AND chat_item_id > ?
-            ) ci
-          |]
-          ( (userId, groupId, CISRcvNew, chatItemTs afterCI)
-              :. (userId, groupId, CISRcvNew, chatItemTs afterCI, cChatItemId afterCI)
-          )
+      fromOnly . head <$> case (scopeInfo_, parentChatItemId_) of
+        (Just _, Just _) ->
+          error "getGroupNavInfo_: scope and parent are mutually exclusive"
+        (Nothing, Just pId) ->
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM (
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ? AND item_status = ?
+                  AND item_ts > ?
+                  AND parent_chat_item_id = ?
+                UNION ALL
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ? AND item_status = ?
+                  AND item_ts = ? AND chat_item_id > ?
+                  AND parent_chat_item_id = ?
+              ) ci
+            |]
+            ( (userId, groupId, CISRcvNew, chatItemTs afterCI, pId)
+                :. (userId, groupId, CISRcvNew, chatItemTs afterCI, cChatItemId afterCI, pId)
+            )
+        (Nothing, Nothing) ->
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM (
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ? AND item_status = ?
+                  AND item_ts > ?
+                  AND parent_chat_item_id IS NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
+                UNION ALL
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ? AND item_status = ?
+                  AND item_ts = ? AND chat_item_id > ?
+                  AND parent_chat_item_id IS NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
+              ) ci
+            |]
+            ( (userId, groupId, CISRcvNew, chatItemTs afterCI)
+                :. (userId, groupId, CISRcvNew, chatItemTs afterCI, cChatItemId afterCI)
+            )
+        (Just GCSIMemberSupport {groupMember_ = m}, Nothing) ->
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM (
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ? AND item_status = ?
+                  AND item_ts > ?
+                  AND parent_chat_item_id IS NULL AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+                UNION ALL
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ? AND item_status = ?
+                  AND item_ts = ? AND chat_item_id > ?
+                  AND parent_chat_item_id IS NULL AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+              ) ci
+            |]
+            ( (userId, groupId, CISRcvNew, chatItemTs afterCI, GCSTMemberSupport_, groupMemberId' <$> m)
+                :. (userId, groupId, CISRcvNew, chatItemTs afterCI, cChatItemId afterCI, GCSTMemberSupport_, groupMemberId' <$> m)
+            )
     getAfterTotalCount :: IO Int
     getAfterTotalCount =
-      fromOnly . head
-        <$> DB.query
-          db
-          [sql|
-            SELECT COUNT(1)
-            FROM (
-              SELECT 1
-              FROM chat_items
-              WHERE user_id = ? AND group_id = ?
-                AND item_ts > ?
-              UNION ALL
-              SELECT 1
-              FROM chat_items
-              WHERE user_id = ? AND group_id = ?
-                AND item_ts = ? AND chat_item_id > ?
-            ) ci
-          |]
-          ( (userId, groupId, chatItemTs afterCI)
-              :. (userId, groupId, chatItemTs afterCI, cChatItemId afterCI)
-          )
+      fromOnly . head <$> case (scopeInfo_, parentChatItemId_) of
+        (Just _, Just _) ->
+          error "getGroupNavInfo_: scope and parent are mutually exclusive"
+        (Nothing, Just pId) ->
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM (
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ?
+                  AND item_ts > ?
+                  AND parent_chat_item_id = ?
+                UNION ALL
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ?
+                  AND item_ts = ? AND chat_item_id > ?
+                  AND parent_chat_item_id = ?
+              ) ci
+            |]
+            ( (userId, groupId, chatItemTs afterCI, pId)
+                :. (userId, groupId, chatItemTs afterCI, cChatItemId afterCI, pId)
+            )
+        (Nothing, Nothing) ->
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM (
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ?
+                  AND item_ts > ?
+                  AND parent_chat_item_id IS NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
+                UNION ALL
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ?
+                  AND item_ts = ? AND chat_item_id > ?
+                  AND parent_chat_item_id IS NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
+              ) ci
+            |]
+            ( (userId, groupId, chatItemTs afterCI)
+                :. (userId, groupId, chatItemTs afterCI, cChatItemId afterCI)
+            )
+        (Just GCSIMemberSupport {groupMember_ = m}, Nothing) ->
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM (
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ?
+                  AND item_ts > ?
+                  AND parent_chat_item_id IS NULL AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+                UNION ALL
+                SELECT 1
+                FROM chat_items
+                WHERE user_id = ? AND group_id = ?
+                  AND item_ts = ? AND chat_item_id > ?
+                  AND parent_chat_item_id IS NULL AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+              ) ci
+            |]
+            ( (userId, groupId, chatItemTs afterCI, GCSTMemberSupport_, groupMemberId' <$> m)
+                :. (userId, groupId, chatItemTs afterCI, cChatItemId afterCI, GCSTMemberSupport_, groupMemberId' <$> m)
+            )
 
 getLocalChat :: DB.Connection -> User -> Int64 -> Maybe MsgContentTag -> ChatPagination -> Maybe Text -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
 getLocalChat db user folderId contentFilter pagination search_ = do
