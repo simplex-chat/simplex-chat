@@ -20,10 +20,11 @@ struct ChatItemForwardingView: View {
     var composeState: Binding<ComposeState>? = nil
     var isProhibited: ((Chat) -> Bool)? = nil
     var onSelectChat: ((Chat) -> Void)? = nil
+    var includeLocal: Bool = true
 
     @State private var searchText: String = ""
     @State private var alert: SomeAlert?
-    private let chatsToForwardTo = filterChatsToForwardTo(chats: ChatModel.shared.chats)
+    private var chatsToForwardTo: [Chat] { filterChatsToForwardTo(chats: ChatModel.shared.chats, includeLocal: includeLocal) }
 
     var body: some View {
         NavigationView {
