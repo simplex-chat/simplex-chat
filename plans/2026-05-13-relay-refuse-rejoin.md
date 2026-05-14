@@ -105,7 +105,7 @@ xGrpRelayInv invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = d
 
 **Why synchronous `acceptContact` (not `acceptContactAsync`).** `acceptContactAsync` enqueues a JOIN agent command; the CONF send and the snd-queue creation happen later inside the agent's command worker (Agent.hs:1826-1830). If we immediately call `deleteAgentConnectionAsync' acId True`, `setConnDeleted` runs, `prepareDeleteConnections_` finds zero rcv queues (no JOIN yet), `deleteConn db (Just timeout) connId` finds zero `snd_message_deliveries` and calls `deleteConnRecord`. The connection record is gone before the JOIN worker can send the CONF — the rejection signal is silently dropped.
 
-`acceptContact` (Internal.hs:881-912 precedent; Agent.hs:1437-1442 → `joinConn` → `sendInvitation` synchronously) returns only after the CONF is on the SMP server. Subsequent `deleteAgentConnectionAsync'` is then safe. The cost is one SMP round-trip blocking the receive loop, which the refusal path can absorb. `waitDelivery=False` because the CONF is already delivered.
+`acceptContact` (Internal.hs:881-912 precedent; Agent.hs:1437-1442 → `joinConn` 1263 → `joinConnSrv` 1358-1369 for CRContactUri → `sendInvitation` Agent/Client.hs:1796-1799 → `sendOrProxySMPMessage` 1084-1094 → `sendSMPMessage`/`proxySMPMessage`) hands the CONF to the SMP server via a direct SMP client call. The CONF does NOT go through `snd_message_deliveries` — it is transmitted inline. Subsequent `deleteAgentConnectionAsync' connId False` is therefore safe; `waitDelivery=True` would be a no-op because no delivery row exists for this CONF. The cost is one SMP round-trip blocking the receive loop, which the refusal path can absorb.
 
 No chat-layer `Connection` row is persisted for the refused contact — the agent owns the connection state, and `deleteAgentConnectionAsync'` cleans it up.
 
@@ -268,6 +268,8 @@ if groupRelay?.relayStatus == .rsRejected {
 
 `ChannelRelaysView.swift` requires no change — the existing fall-through in `ownerRelayStatusText` (line 114-127) to `groupRelays.first(…)?.relayStatus.text` already renders `"rejected"` via the new `RelayStatus.text` case.
 
+`GroupMemberStatus.memRejected` already exists in `apps/ios/SimpleXChat/ChatTypes.swift:3002` (`case memRejected = "rejected"`) and is the JSON-decoded form of Haskell's `GSMemRejected`. No Swift enum change needed; cited here so an iOS-only reviewer doesn't drop the case if the enum is touched.
+
 Per `apps/ios/CODE.md` Change Protocol, the implementer also updates `apps/ios/spec/state.md`, `apps/ios/spec/api.md`, `apps/ios/spec/client/chat-view.md`, `apps/ios/product/views/group-info.md`, `apps/ios/spec/impact.md`, and `apps/ios/product/concepts.md`.
 
 Kotlin/Android/desktop port is a separate PR.
@@ -291,7 +293,6 @@ All tests use the existing channel harness (`prepareChannel2Relays`, `relayN ##>
 - **`getGroupRelayByGMId` failure on owner side** — would propagate as `ChatErrorStore` to the dispatch. Cannot happen in normal operation (the row is created by `addRelays` before `XGrpRelayInv` goes out, so it exists when the CONF arrives); if it ever did, the error surfaces visibly rather than being silently lost.
 - **Multi-user relay binary** — refused-records scoped by `user_id`; `withUser` for the CLI commands. No cross-user pollution.
 - **Forward compat (old relay)** — old relay binary doesn't enforce refusal but doesn't break either: it processes `XGrpRelayInv` as before. Feature is enforced by relay behavior, not by a protocol invariant on every node.
-- **Relay restart during `acceptContact`** — agent's existing connection-recovery handles partial state. Worst case is one orphan agent connection record after restart; trivial resource footprint.
 
 ## 11. Files changed
 
