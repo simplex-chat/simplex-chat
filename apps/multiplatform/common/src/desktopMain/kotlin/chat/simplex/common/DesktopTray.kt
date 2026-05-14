@@ -21,7 +21,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import java.awt.AWTException
-import java.awt.Frame
 import java.awt.SystemTray
 import java.awt.TrayIcon
 import java.awt.image.BufferedImage
@@ -45,17 +44,6 @@ val trayIsAvailable: Boolean by lazy {
   } catch (e: SecurityException) {
     Log.w(TAG, "SystemTray probe denied: ${e.stackTraceToString()}")
     false
-  }
-}
-
-fun showWindow() {
-  simplexWindowState.windowVisible.value = true
-  simplexWindowState.window?.apply {
-    // Clear ICONIFIED so a minimized window un-minimizes; preserves MAXIMIZED_BOTH
-    // when set. toFront() alone does not un-minimize on any AWT platform.
-    extendedState = extendedState and Frame.ICONIFIED.inv()
-    toFront()
-    requestFocus()
   }
 }
 
