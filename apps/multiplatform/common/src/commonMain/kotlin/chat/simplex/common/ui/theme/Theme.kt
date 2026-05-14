@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
@@ -57,6 +58,7 @@ class AppColors(
   sentQuote: Color,
   receivedMessage: Color,
   receivedQuote: Color,
+  toolbar: Color = Color.Transparent,
 ) {
   var title by mutableStateOf(title, structuralEqualityPolicy())
     internal set
@@ -70,6 +72,8 @@ class AppColors(
     internal set
   var receivedQuote by mutableStateOf(receivedQuote, structuralEqualityPolicy())
     internal set
+  var toolbar by mutableStateOf(toolbar, structuralEqualityPolicy())
+    internal set
 
   fun copy(
     title: Color = this.title,
@@ -78,6 +82,7 @@ class AppColors(
     sentQuote: Color = this.sentQuote,
     receivedMessage: Color = this.receivedMessage,
     receivedQuote: Color = this.receivedQuote,
+    toolbar: Color = this.toolbar,
   ): AppColors = AppColors(
     title,
     primaryVariant2,
@@ -85,6 +90,7 @@ class AppColors(
     sentQuote,
     receivedMessage,
     receivedQuote,
+    toolbar,
   )
 
   override fun toString(): String {
@@ -95,7 +101,8 @@ class AppColors(
       append("sentMessage=$sentMessage, ")
       append("sentQuote=$sentQuote, ")
       append("receivedMessage=$receivedMessage, ")
-      append("receivedQuote=$receivedQuote")
+      append("receivedQuote=$receivedQuote, ")
+      append("toolbar=$toolbar")
       append(")")
     }
   }
@@ -138,7 +145,7 @@ class AppWallpaper(
 
 // Spec: spec/services/theme.md#ThemeColor
 enum class ThemeColor {
-  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TITLE, SENT_MESSAGE, SENT_QUOTE, RECEIVED_MESSAGE, RECEIVED_QUOTE, PRIMARY_VARIANT2, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
+  PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TOOLBAR, TITLE, SENT_MESSAGE, SENT_QUOTE, RECEIVED_MESSAGE, RECEIVED_QUOTE, PRIMARY_VARIANT2, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
 
   fun fromColors(colors: Colors, appColors: AppColors, appWallpaper: AppWallpaper): Color? {
     return when (this) {
@@ -148,6 +155,7 @@ enum class ThemeColor {
       SECONDARY_VARIANT -> colors.secondaryVariant
       BACKGROUND -> colors.background
       SURFACE -> colors.surface
+      TOOLBAR -> appColors.toolbar
       TITLE -> appColors.title
       PRIMARY_VARIANT2 -> appColors.primaryVariant2
       SENT_MESSAGE -> appColors.sentMessage
@@ -167,6 +175,7 @@ enum class ThemeColor {
       SECONDARY_VARIANT -> generalGetString(MR.strings.color_secondary_variant)
       BACKGROUND -> generalGetString(MR.strings.color_background)
       SURFACE -> generalGetString(MR.strings.color_surface)
+      TOOLBAR -> "Toolbar"
       TITLE -> generalGetString(MR.strings.color_title)
       PRIMARY_VARIANT2 -> generalGetString(MR.strings.color_primary_variant2)
       SENT_MESSAGE -> generalGetString(MR.strings.color_sent_message)
@@ -190,6 +199,7 @@ data class ThemeColors(
   val background: String? = null,
   @SerialName("menus")
   val surface: String? = null,
+  val toolbar: String? = null,
   val title: String? = null,
   @SerialName("accentVariant2")
   val primaryVariant2: String? = null,
@@ -209,6 +219,7 @@ data class ThemeColors(
         secondaryVariant = colors.secondaryVariant.toReadableHex(),
         background = colors.background.toReadableHex(),
         surface = colors.surface.toReadableHex(),
+        toolbar = if (appColors.toolbar.alpha > 0f) appColors.toolbar.toReadableHex() else null,
         title = appColors.title.toReadableHex(),
         primaryVariant2 = appColors.primaryVariant2.toReadableHex(),
         sentMessage = appColors.sentMessage.toReadableHex(),
@@ -216,6 +227,42 @@ data class ThemeColors(
         receivedMessage = appColors.receivedMessage.toReadableHex(),
         receivedQuote = appColors.receivedQuote.toReadableHex(),
       )
+  }
+}
+
+/** Resolved preset colors — Color objects, not strings. Used for presets defined in code. */
+data class ResolvedColors(
+  val primary: Color? = null,
+  val primaryVariant: Color? = null,
+  val secondary: Color? = null,
+  val secondaryVariant: Color? = null,
+  val background: Color? = null,
+  val surface: Color? = null,
+  val toolbar: Color? = null,
+  val title: Color? = null,
+  val primaryVariant2: Color? = null,
+  val sentMessage: Color? = null,
+  val sentQuote: Color? = null,
+  val receivedMessage: Color? = null,
+  val receivedQuote: Color? = null,
+) {
+  companion object {
+    /** Temporary: convert hex ThemeColors to ResolvedColors. Replace with oklch() values. */
+    fun fromThemeColors(tc: ThemeColors): ResolvedColors = ResolvedColors(
+      primary = tc.primary?.colorFromReadableHex(),
+      primaryVariant = tc.primaryVariant?.colorFromReadableHex(),
+      secondary = tc.secondary?.colorFromReadableHex(),
+      secondaryVariant = tc.secondaryVariant?.colorFromReadableHex(),
+      background = tc.background?.colorFromReadableHex(),
+      surface = tc.surface?.colorFromReadableHex(),
+      toolbar = tc.toolbar?.colorFromReadableHex(),
+      title = tc.title?.colorFromReadableHex(),
+      primaryVariant2 = tc.primaryVariant2?.colorFromReadableHex(),
+      sentMessage = tc.sentMessage?.colorFromReadableHex(),
+      sentQuote = tc.sentQuote?.colorFromReadableHex(),
+      receivedMessage = tc.receivedMessage?.colorFromReadableHex(),
+      receivedQuote = tc.receivedQuote?.colorFromReadableHex(),
+    )
   }
 }
 
@@ -299,6 +346,22 @@ data class ThemesFile(
   val themes: List<ThemeOverrides> = emptyList()
 )
 
+// Theme color priority: per-chat → per-user → this override's own colors →
+// preset-wallpaper-derived theme → base palette. Used by toColors / toAppColors
+// for every non-bubble field; bubble colors have wallpaper-aware logic that
+// can't share this chain.
+private fun resolveColor(
+  perChatColor: String?,
+  perUserColor: String?,
+  ownColor: String?,
+  presetColor: Color?,
+  baseColor: Color,
+): Color = perChatColor?.colorFromReadableHex()
+  ?: perUserColor?.colorFromReadableHex()
+  ?: ownColor?.colorFromReadableHex()
+  ?: presetColor
+  ?: baseColor
+
 // Spec: spec/services/theme.md#ThemeOverrides
 @Serializable
 data class ThemeOverrides (
@@ -324,6 +387,7 @@ data class ThemeOverrides (
         ThemeColor.SECONDARY_VARIANT -> colors.copy(secondaryVariant = color)
         ThemeColor.BACKGROUND -> colors.copy(background = color)
         ThemeColor.SURFACE -> colors.copy(surface = color)
+        ThemeColor.TOOLBAR -> colors.copy(toolbar = color)
         ThemeColor.TITLE -> colors.copy(title = color)
         ThemeColor.PRIMARY_VARIANT2 -> colors.copy(primaryVariant2 = color)
         ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
@@ -340,7 +404,7 @@ data class ThemeOverrides (
     )
   }
 
-  fun toColors(base: DefaultTheme, perChatTheme: ThemeColors?, perUserTheme: ThemeColors?, presetWallpaperTheme: ThemeColors?): Colors {
+  fun toColors(base: DefaultTheme, perChatTheme: ThemeColors?, perUserTheme: ThemeColors?, presetWallpaperTheme: ResolvedColors?): Colors {
     val baseColors = when (base) {
       DefaultTheme.LIGHT -> LightColorPalette
       DefaultTheme.DARK -> DarkColorPalette
@@ -348,16 +412,16 @@ data class ThemeOverrides (
       DefaultTheme.BLACK -> BlackColorPalette
     }
     return baseColors.copy(
-      primary = perChatTheme?.primary?.colorFromReadableHex() ?: perUserTheme?.primary?.colorFromReadableHex() ?: colors.primary?.colorFromReadableHex() ?: presetWallpaperTheme?.primary?.colorFromReadableHex() ?: baseColors.primary,
-      primaryVariant = perChatTheme?.primaryVariant?.colorFromReadableHex() ?: perUserTheme?.primaryVariant?.colorFromReadableHex() ?: colors.primaryVariant?.colorFromReadableHex() ?: presetWallpaperTheme?.primaryVariant?.colorFromReadableHex() ?: baseColors.primaryVariant,
-      secondary = perChatTheme?.secondary?.colorFromReadableHex() ?: perUserTheme?.secondary?.colorFromReadableHex() ?: colors.secondary?.colorFromReadableHex() ?: presetWallpaperTheme?.secondary?.colorFromReadableHex() ?: baseColors.secondary,
-      secondaryVariant = perChatTheme?.secondaryVariant?.colorFromReadableHex() ?: perUserTheme?.secondaryVariant?.colorFromReadableHex() ?: colors.secondaryVariant?.colorFromReadableHex() ?: presetWallpaperTheme?.secondaryVariant?.colorFromReadableHex() ?: baseColors.secondaryVariant,
-      background = perChatTheme?.background?.colorFromReadableHex() ?: perUserTheme?.background?.colorFromReadableHex() ?: colors.background?.colorFromReadableHex() ?: presetWallpaperTheme?.background?.colorFromReadableHex() ?: baseColors.background,
-      surface = perChatTheme?.surface?.colorFromReadableHex() ?: perUserTheme?.surface?.colorFromReadableHex() ?: colors.surface?.colorFromReadableHex() ?: presetWallpaperTheme?.surface?.colorFromReadableHex() ?: baseColors.surface,
+      primary = resolveColor(perChatTheme?.primary, perUserTheme?.primary, colors.primary, presetWallpaperTheme?.primary, baseColors.primary),
+      primaryVariant = resolveColor(perChatTheme?.primaryVariant, perUserTheme?.primaryVariant, colors.primaryVariant, presetWallpaperTheme?.primaryVariant, baseColors.primaryVariant),
+      secondary = resolveColor(perChatTheme?.secondary, perUserTheme?.secondary, colors.secondary, presetWallpaperTheme?.secondary, baseColors.secondary),
+      secondaryVariant = resolveColor(perChatTheme?.secondaryVariant, perUserTheme?.secondaryVariant, colors.secondaryVariant, presetWallpaperTheme?.secondaryVariant, baseColors.secondaryVariant),
+      background = resolveColor(perChatTheme?.background, perUserTheme?.background, colors.background, presetWallpaperTheme?.background, baseColors.background),
+      surface = resolveColor(perChatTheme?.surface, perUserTheme?.surface, colors.surface, presetWallpaperTheme?.surface, baseColors.surface),
     )
   }
 
-  fun toAppColors(base: DefaultTheme, perChatTheme: ThemeColors?, perChatWallpaperType: WallpaperType?, perUserTheme: ThemeColors?, perUserWallpaperType: WallpaperType?, presetWallpaperTheme: ThemeColors?): AppColors {
+  fun toAppColors(base: DefaultTheme, perChatTheme: ThemeColors?, perChatWallpaperType: WallpaperType?, perUserTheme: ThemeColors?, perUserWallpaperType: WallpaperType?, presetWallpaperTheme: ResolvedColors?): AppColors {
     val baseColors = when (base) {
       DefaultTheme.LIGHT -> LightColorPaletteApp
       DefaultTheme.DARK -> DarkColorPaletteApp
@@ -365,13 +429,14 @@ data class ThemeOverrides (
       DefaultTheme.BLACK -> BlackColorPaletteApp
     }
 
-    val sentMessageFallback = colors.sentMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.sentMessage?.colorFromReadableHex() ?: baseColors.sentMessage
-    val sentQuoteFallback = colors.sentQuote?.colorFromReadableHex() ?: presetWallpaperTheme?.sentQuote?.colorFromReadableHex() ?: baseColors.sentQuote
-    val receivedMessageFallback = colors.receivedMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedMessage?.colorFromReadableHex() ?: baseColors.receivedMessage
-    val receivedQuoteFallback = colors.receivedQuote?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedQuote?.colorFromReadableHex() ?: baseColors.receivedQuote
+    val sentMessageFallback = colors.sentMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.sentMessage ?: baseColors.sentMessage
+    val sentQuoteFallback = colors.sentQuote?.colorFromReadableHex() ?: presetWallpaperTheme?.sentQuote ?: baseColors.sentQuote
+    val receivedMessageFallback = colors.receivedMessage?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedMessage ?: baseColors.receivedMessage
+    val receivedQuoteFallback = colors.receivedQuote?.colorFromReadableHex() ?: presetWallpaperTheme?.receivedQuote ?: baseColors.receivedQuote
     return baseColors.copy(
-      title = perChatTheme?.title?.colorFromReadableHex() ?: perUserTheme?.title?.colorFromReadableHex() ?: colors.title?.colorFromReadableHex() ?: presetWallpaperTheme?.title?.colorFromReadableHex() ?: baseColors.title,
-      primaryVariant2 = perChatTheme?.primaryVariant2?.colorFromReadableHex() ?: perUserTheme?.primaryVariant2?.colorFromReadableHex() ?: colors.primaryVariant2?.colorFromReadableHex() ?: presetWallpaperTheme?.primaryVariant2?.colorFromReadableHex() ?: baseColors.primaryVariant2,
+      title = resolveColor(perChatTheme?.title, perUserTheme?.title, colors.title, presetWallpaperTheme?.title, baseColors.title),
+      primaryVariant2 = resolveColor(perChatTheme?.primaryVariant2, perUserTheme?.primaryVariant2, colors.primaryVariant2, presetWallpaperTheme?.primaryVariant2, baseColors.primaryVariant2),
+      toolbar = resolveColor(perChatTheme?.toolbar, perUserTheme?.toolbar, colors.toolbar, presetWallpaperTheme?.toolbar, baseColors.toolbar),
       sentMessage = if (perChatTheme?.sentMessage != null) perChatTheme.sentMessage.colorFromReadableHex()
         else if (perUserTheme != null && (perChatWallpaperType == null || perUserWallpaperType == null || perChatWallpaperType.sameType(perUserWallpaperType))) perUserTheme.sentMessage?.colorFromReadableHex() ?: sentMessageFallback
         else sentMessageFallback,
@@ -416,7 +481,7 @@ data class ThemeOverrides (
     )
   }
 
-  fun withFilledColors(base: DefaultTheme, perChatTheme: ThemeColors?, perChatWallpaperType: WallpaperType?, perUserTheme: ThemeColors?, perUserWallpaperType: WallpaperType?, presetWallpaperTheme: ThemeColors?): ThemeColors {
+  fun withFilledColors(base: DefaultTheme, perChatTheme: ThemeColors?, perChatWallpaperType: WallpaperType?, perUserTheme: ThemeColors?, perUserWallpaperType: WallpaperType?, presetWallpaperTheme: ResolvedColors?): ThemeColors {
     val c = toColors(base, perChatTheme, perUserTheme, presetWallpaperTheme)
     val ac = toAppColors(base, perChatTheme, perChatWallpaperType, perUserTheme, perUserWallpaperType, presetWallpaperTheme)
     return ThemeColors(
@@ -426,6 +491,7 @@ data class ThemeOverrides (
       secondaryVariant = c.secondaryVariant.toReadableHex(),
       background = c.background.toReadableHex(),
       surface = c.surface.toReadableHex(),
+      toolbar = if (ac.toolbar.alpha > 0f) ac.toolbar.toReadableHex() else null,
       title = ac.title.toReadableHex(),
       primaryVariant2 = ac.primaryVariant2.toReadableHex(),
       sentMessage = ac.sentMessage.toReadableHex(),
@@ -501,6 +567,7 @@ data class ThemeModeOverride (
       ThemeColor.SECONDARY_VARIANT -> colors.copy(secondaryVariant = color)
       ThemeColor.BACKGROUND -> colors.copy(background = color)
       ThemeColor.SURFACE -> colors.copy(surface = color)
+      ThemeColor.TOOLBAR -> colors.copy(toolbar = color)
       ThemeColor.TITLE -> colors.copy(title = color)
       ThemeColor.PRIMARY_VARIANT2 -> colors.copy(primaryVariant2 = color)
       ThemeColor.SENT_MESSAGE -> colors.copy(sentMessage = color)
@@ -537,8 +604,8 @@ data class ThemeModeOverride (
           preset = wallpaperType.filename,
           scale = p?.scale ?: wallpaper?.scale,
           scaleType = null,
-          background = p?.background?.get(base)?.toReadableHex(),
-          tint = p?.tint?.get(base)?.toReadableHex(),
+          background = null,
+          tint = null,
           image = null,
           imageFile = null,
         )
@@ -567,6 +634,7 @@ data class ThemeModeOverride (
         secondaryVariant = if (colors.secondaryVariant?.colorFromReadableHex() != c.secondaryVariant) colors.secondaryVariant else null,
         background = if (colors.background?.colorFromReadableHex() != c.background) colors.background else null,
         surface = if (colors.surface?.colorFromReadableHex() != c.surface) colors.surface else null,
+        toolbar = if (colors.toolbar?.colorFromReadableHex() != ac.toolbar) colors.toolbar else null,
         title = if (colors.title?.colorFromReadableHex() != ac.title) colors.title else null,
         primaryVariant2 = if (colors.primaryVariant2?.colorFromReadableHex() != ac.primaryVariant2) colors.primary else null,
         sentMessage = if (colors.sentMessage?.colorFromReadableHex() != ac.sentMessage) colors.sentMessage else null,
@@ -578,8 +646,14 @@ data class ThemeModeOverride (
         preset = wallpaper.preset,
         scale = if (wallpaper.scale != w.scale) wallpaper.scale else null,
         scaleType = if (wallpaper.scaleType != w.scaleType) wallpaper.scaleType else null,
-        background = if (wallpaper.background != w.background) wallpaper.background else null,
-        tint = if (wallpaper.tint != w.tint) wallpaper.tint else null,
+        background = if (WallpaperType.from(wallpaper) is WallpaperType.Preset) {
+          val p = PresetWallpaper.from((WallpaperType.from(wallpaper) as WallpaperType.Preset).filename)
+          if (wallpaper.background?.colorFromReadableHex()?.toArgb() != p?.background?.get(base)?.toArgb()) wallpaper.background else null
+        } else if (wallpaper.background != w.background) wallpaper.background else null,
+        tint = if (WallpaperType.from(wallpaper) is WallpaperType.Preset) {
+          val p = PresetWallpaper.from((WallpaperType.from(wallpaper) as WallpaperType.Preset).filename)
+          if (wallpaper.tint?.colorFromReadableHex()?.toArgb() != p?.tint?.get(base)?.toArgb()) wallpaper.tint else null
+        } else if (wallpaper.tint != w.tint) wallpaper.tint else null,
         image = wallpaper.image,
         imageFile = wallpaper.imageFile,
       )
@@ -587,12 +661,18 @@ data class ThemeModeOverride (
   }
 
   companion object {
-    fun withFilledAppDefaults(mode: DefaultThemeMode, base: DefaultTheme): ThemeModeOverride =
-      ThemeModeOverride(
+    fun withFilledAppDefaults(mode: DefaultThemeMode, base: DefaultTheme): ThemeModeOverride {
+      // Default override = SCHOOL preset image + SCHOOL's recalibrated colors
+      // for this base. Without passing preset.colors[base], the color chain
+      // falls through to LightColorPalette / DarkColorPalette / etc. — the
+      // pre-PR values that no longer match the recalibrated SCHOOL wallpaper.
+      val preset = PresetWallpaper.SCHOOL
+      return ThemeModeOverride(
         mode = mode,
-        colors = ThemeOverrides(base = base).withFilledColors(base, null, null, null, null, null),
-        wallpaper = ThemeWallpaper(preset = PresetWallpaper.SCHOOL.filename)
+        colors = ThemeOverrides(base = base).withFilledColors(base, null, null, null, null, preset.colors[base]),
+        wallpaper = ThemeWallpaper(preset = preset.filename)
       )
+    }
   }
 }
 
@@ -638,20 +718,20 @@ val DarkColorPalette = darkColors(
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
 //  background = Color.Black,
-  surface = Color(0xFF222222),
+  surface = oklch(0.2519647f, 0f, 0f), // #ff222222
 //  background = Color(0xFF121212),
   error = Color.Red,
-  onBackground = Color(0xFFFFFBFA),
-  onSurface = Color(0xFFFFFBFA),
+  onBackground = oklch(0.9908696f, 0.00447983f, 34.30938f), // #fffffbfa
+  onSurface = oklch(0.9908696f, 0.00447983f, 34.30938f), // #fffffbfa
 //  onError: Color = Color.Black,
 )
 val DarkColorPaletteApp = AppColors(
   title = SimplexBlue,
-  primaryVariant2 = Color(0xFF18262E),
-  sentMessage = Color(0xFF18262E),
-  sentQuote = Color(0xFF1D3847),
-  receivedMessage = Color(0xff262627),
-  receivedQuote = Color(0xff373739),
+  primaryVariant2 = oklch(0.2596116f, 0.02435695f, 234.0127f), // #ff18262e
+  sentMessage = oklch(0.2596116f, 0.02435695f, 234.0127f), // #ff18262e
+  sentQuote = oklch(0.3262685f, 0.04242656f, 234.4608f), // #ff1d3847
+  receivedMessage = oklch(0.2690091f, 0.001828474f, 286.2761f), // #ff262627
+  receivedQuote = oklch(0.3375424f, 0.003458181f, 286.2129f), // #ff373739
 )
 
 val LightColorPalette = lightColors(
@@ -669,57 +749,57 @@ val LightColorPalette = lightColors(
 )
 val LightColorPaletteApp = AppColors(
   title = SimplexBlue,
-  primaryVariant2 = Color(0xFFE9F7FF),
-  sentMessage = Color(0xFFE9F7FF),
-  sentQuote = Color(0xFFD6F0FF),
-  receivedMessage = Color(0xfff5f5f6),
-  receivedQuote = Color(0xffececee),
+  primaryVariant2 = oklch(0.9680794f, 0.0183117f, 232.503f), // #ffe9f7ff
+  sentMessage = oklch(0.9680794f, 0.0183117f, 232.503f), // #ffe9f7ff
+  sentQuote = oklch(0.9407676f, 0.03409827f, 233.0377f), // #ffd6f0ff
+  receivedMessage = oklch(0.9704316f, 0.001324867f, 286.3749f), // #fff5f5f6
+  receivedQuote = oklch(0.943656f, 0.002669381f, 286.3484f), // #ffececee
 )
 
 val SimplexColorPalette = darkColors(
-  primary = Color(0xFF70F0F9),  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xFF1298A5),
+  primary = oklch(0.8862563f, 0.113699f, 201.5703f),  // If this value changes also need to update #0088ff in string resource files
+  primaryVariant = oklch(0.6217762f, 0.1034518f, 205.799f), // #ff1298a5
   secondary = HighOrLowlight,
-  secondaryVariant = Color(0xFF2C464D),
-  background = Color(0xFF111528),
+  secondaryVariant = oklch(0.3761328f, 0.03384425f, 216.5493f), // #ff2c464d
+  background = oklch(0.2024453f, 0.03849037f, 273.4875f), // #ff111528
   //  surface = Color.Black,
   //  background = Color(0xFF121212),
-  surface = Color(0xFF121C37),
+  surface = oklch(0.2331016f, 0.05415408f, 266.8904f), // #ff121c37
   error = Color.Red,
 //  onBackground = Color(0xFFFFFBFA),
 //  onSurface = Color(0xFFFFFBFA),
   //  onError: Color = Color.Black,
 )
 val SimplexColorPaletteApp = AppColors(
-  title = Color(0xFF267BE5),
-  primaryVariant2 = Color(0xFF172941),
-  sentMessage = Color(0xFF172941),
-  sentQuote = Color(0xFF1C3A57),
-  receivedMessage = Color(0xff25283a),
-  receivedQuote = Color(0xff36394a),
+  title = oklch(0.5909158f, 0.1793687f, 256.4473f), // #ff267be5
+  primaryVariant2 = oklch(0.2782386f, 0.05068946f, 256.0234f), // #ff172941
+  sentMessage = oklch(0.2782386f, 0.05068946f, 256.0234f), // #ff172941
+  sentQuote = oklch(0.3401385f, 0.06268949f, 249.4274f), // #ff1C3A57
+  receivedMessage = oklch(0.2823021f, 0.03341238f, 276.7299f), // #ff25283a
+  receivedQuote = oklch(0.3488846f, 0.02991734f, 276.9226f), // #ff36394a
 )
 
 val BlackColorPalette = darkColors(
-  primary = Color(0xff0077e0),  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xff0077e0),
+  primary = oklch(0.5737125f, 0.1826329f, 254.0001f),  // If this value changes also need to update #0088ff in string resource files
+  primaryVariant = oklch(0.5737125f, 0.1826329f, 254.0001f), // #ff0077e0
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
-  background = Color(0xff070707),
-  surface = Color(0xff161617),
+  background = oklch(0.1285578f, 0f, 0f), // #ff070707
+  surface = oklch(0.200616f, 0.001969079f, 286.2208f), // #ff161617
   //  background = Color(0xFF121212),
   //  surface = Color(0xFF121212),
   error = Color.Red,
-  onBackground = Color(0xFFFFFBFA),
-  onSurface = Color(0xFFFFFBFA),
+  onBackground = oklch(0.9908696f, 0.00447983f, 34.30938f), // #fffffbfa
+  onSurface = oklch(0.9908696f, 0.00447983f, 34.30938f), // #fffffbfa
   //  onError: Color = Color.Black,
 )
 val BlackColorPaletteApp = AppColors(
-  title = Color(0xff0077e0),
-  primaryVariant2 = Color(0xff243747),
-  sentMessage = Color(0xFF18262E),
-  sentQuote = Color(0xFF1D3847),
-  receivedMessage = Color(0xff1b1b1b),
-  receivedQuote = Color(0xff29292b),
+  title = oklch(0.5737125f, 0.1826329f, 254.0001f), // #ff0077e0
+  primaryVariant2 = oklch(0.327876f, 0.03765742f, 244.7111f), // #ff243747
+  sentMessage = oklch(0.2596116f, 0.02435695f, 234.0127f), // #ff18262e
+  sentQuote = oklch(0.3262685f, 0.04242656f, 234.4608f), // #ff1d3847
+  receivedMessage = oklch(0.2221287f, 0f, 0f), // #ff1b1b1b
+  receivedQuote = oklch(0.2817215f, 0.003620283f, 286.165f), // #ff29292b
 )
 
 var systemInDarkThemeCurrently: Boolean = isInNightMode()
@@ -735,6 +815,7 @@ expect fun isSystemInDarkTheme(): Boolean
 
 internal val LocalAppColors = staticCompositionLocalOf { LightColorPaletteApp }
 internal val LocalAppWallpaper = staticCompositionLocalOf { AppWallpaper() }
+internal val LocalActiveTheme = staticCompositionLocalOf { CurrentColors.value }
 
 val MaterialTheme.appColors: AppColors
   @Composable
@@ -748,6 +829,7 @@ fun AppColors.updateColorsFrom(other: AppColors) {
   sentQuote = other.sentQuote
   receivedMessage = other.receivedMessage
   receivedQuote = other.receivedQuote
+  toolbar = other.toolbar
 }
 
 fun AppWallpaper.updateWallpaperFrom(other: AppWallpaper) {
@@ -815,12 +897,31 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
         LocalContentColor provides MaterialTheme.colors.onBackground,
         LocalAppColors provides rememberedAppColors,
         LocalAppWallpaper provides rememberedWallpaper,
+        LocalActiveTheme provides theme,
         LocalDensity provides density,
         content = content
       )
     }
   )
 }
+
+/** Resolve the active theme to apply to a UI surface that is "owned" by a
+ *  specific chat. Returns the chat's theme override (resolved through the
+ *  per-user / app-settings chain) when one exists; otherwise returns the
+ *  passed [theme] unchanged. Same logic used at chat scope (SimpleXThemeOverride
+ *  caller in ChatView) and at scopes that follow the active chat from the
+ *  outside (ActiveChatThemeProvider in App). */
+@Composable
+fun rememberActiveChatTheme(chatInfo: ChatInfo?, theme: ThemeManager.ActiveTheme): ThemeManager.ActiveTheme =
+  remember(chatInfo, theme) {
+    val perChatTheme = when (chatInfo) {
+      is ChatInfo.Direct -> chatInfo.contact.uiThemes?.preferredMode(!theme.colors.isLight)
+      is ChatInfo.Group -> chatInfo.groupInfo.uiThemes?.preferredMode(!theme.colors.isLight)
+      else -> null
+    }
+    if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    else theme
+  }
 
 @Composable
 fun SimpleXThemeOverride(theme: ThemeManager.ActiveTheme, content: @Composable () -> Unit) {
@@ -843,6 +944,7 @@ fun SimpleXThemeOverride(theme: ThemeManager.ActiveTheme, content: @Composable (
         LocalContentColor provides MaterialTheme.colors.onBackground,
         LocalAppColors provides rememberedAppColors,
         LocalAppWallpaper provides rememberedWallpaper,
+        LocalActiveTheme provides theme,
         content = content)
     }
   )

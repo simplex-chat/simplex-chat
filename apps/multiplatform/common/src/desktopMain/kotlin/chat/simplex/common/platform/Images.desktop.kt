@@ -173,20 +173,36 @@ actual fun ImageBitmap.addLogo(size: Float): ImageBitmap {
   return withLogo.toComposeImageBitmap()
 }
 
-actual fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap {
-  val original = toAwtImage()
-  val resized = BufferedImage(width, height, original.type)
-  val g = resized.createGraphics()
-  g.setRenderingHint(
-    RenderingHints.KEY_INTERPOLATION,
-    RenderingHints.VALUE_INTERPOLATION_BILINEAR
-  )
-  g.drawImage(original, 0, 0, width, height, 0, 0, original.width, original.height, null)
-  g.dispose()
-  return resized.toComposeImageBitmap()
+actual fun ImageBitmap.scale(width: Int, height: Int, highQuality: Boolean): ImageBitmap {
+  val src = toAwtImage()
+  if (highQuality) {
+    val smooth = src.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH)
+    val dst = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+    val g = dst.createGraphics()
+    g.drawImage(smooth, 0, 0, null)
+    g.dispose()
+    return dst.toComposeImageBitmap()
+  }
+  // Progressive downscale: halve until within 2× of target, then final bilinear.
+  var current = src
+  while (current.width > width * 2 || current.height > height * 2) {
+    val halfW = (current.width / 2).coerceAtLeast(width)
+    val halfH = (current.height / 2).coerceAtLeast(height)
+    current = scaleStep(current, halfW, halfH)
+  }
+  if (current.width == width && current.height == height) return current.toComposeImageBitmap()
+  return scaleStep(current, width, height).toComposeImageBitmap()
 }
 
-// LALAL
+private fun scaleStep(src: BufferedImage, w: Int, h: Int): BufferedImage {
+  val dst = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
+  val g = dst.createGraphics()
+  g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+  g.drawImage(src, 0, 0, w, h, 0, 0, src.width, src.height, null)
+  g.dispose()
+  return dst
+}
+
 actual fun isImage(uri: URI): Boolean {
   val path = uri.toFile().path.lowercase()
   return path.endsWith(".gif") ||

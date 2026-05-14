@@ -226,6 +226,44 @@ public enum ThemeColor {
     }
 }
 
+/// Resolved preset colors — Color objects, not strings. Used for presets defined in code.
+public struct ResolvedColors {
+    public var primary: Color? = nil
+    public var primaryVariant: Color? = nil
+    public var secondary: Color? = nil
+    public var secondaryVariant: Color? = nil
+    public var background: Color? = nil
+    public var surface: Color? = nil
+    public var title: Color? = nil
+    public var primaryVariant2: Color? = nil
+    public var sentMessage: Color? = nil
+    public var sentQuote: Color? = nil
+    public var receivedMessage: Color? = nil
+    public var receivedQuote: Color? = nil
+
+    public init(primary: Color? = nil, primaryVariant: Color? = nil, secondary: Color? = nil, secondaryVariant: Color? = nil, background: Color? = nil, surface: Color? = nil, title: Color? = nil, primaryVariant2: Color? = nil, sentMessage: Color? = nil, sentQuote: Color? = nil, receivedMessage: Color? = nil, receivedQuote: Color? = nil) {
+        self.primary = primary; self.primaryVariant = primaryVariant; self.secondary = secondary; self.secondaryVariant = secondaryVariant; self.background = background; self.surface = surface; self.title = title; self.primaryVariant2 = primaryVariant2; self.sentMessage = sentMessage; self.sentQuote = sentQuote; self.receivedMessage = receivedMessage; self.receivedQuote = receivedQuote
+    }
+
+    /// Temporary: convert hex ThemeColors to ResolvedColors.
+    public static func fromThemeColors(_ tc: ThemeColors) -> ResolvedColors {
+        ResolvedColors(
+            primary: tc.primary?.colorFromReadableHex(),
+            primaryVariant: tc.primaryVariant?.colorFromReadableHex(),
+            secondary: tc.secondary?.colorFromReadableHex(),
+            secondaryVariant: tc.secondaryVariant?.colorFromReadableHex(),
+            background: tc.background?.colorFromReadableHex(),
+            surface: tc.surface?.colorFromReadableHex(),
+            title: tc.title?.colorFromReadableHex(),
+            primaryVariant2: tc.primaryVariant2?.colorFromReadableHex(),
+            sentMessage: tc.sentMessage?.colorFromReadableHex(),
+            sentQuote: tc.sentQuote?.colorFromReadableHex(),
+            receivedMessage: tc.receivedMessage?.colorFromReadableHex(),
+            receivedQuote: tc.receivedQuote?.colorFromReadableHex()
+        )
+    }
+}
+
 // Spec: spec/services/theme.md#ThemeColors
 public struct ThemeColors: Codable, Equatable, Hashable {
     public var primary: String? = nil
@@ -434,7 +472,7 @@ public struct ThemeOverrides: Codable, Equatable, Hashable {
         return ThemeOverrides(themeId: themeId, base: base, colors: c, wallpaper: w)
     }
 
-    public func toColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perUserTheme: ThemeColors?, _ presetWallpaperTheme: ThemeColors?) -> Colors {
+    public func toColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perUserTheme: ThemeColors?, _ presetWallpaperTheme: ResolvedColors?) -> Colors {
         let baseColors = switch base {
             case DefaultTheme.LIGHT: LightColorPalette
             case DefaultTheme.DARK: DarkColorPalette
@@ -442,16 +480,16 @@ public struct ThemeOverrides: Codable, Equatable, Hashable {
             case DefaultTheme.BLACK: BlackColorPalette
         }
         let c = baseColors.clone()
-        c.primary = perChatTheme?.primary?.colorFromReadableHex() ?? perUserTheme?.primary?.colorFromReadableHex() ?? colors.primary?.colorFromReadableHex() ?? presetWallpaperTheme?.primary?.colorFromReadableHex() ?? baseColors.primary
-        c.primaryVariant = perChatTheme?.primaryVariant?.colorFromReadableHex() ?? perUserTheme?.primaryVariant?.colorFromReadableHex() ?? colors.primaryVariant?.colorFromReadableHex() ?? presetWallpaperTheme?.primaryVariant?.colorFromReadableHex() ?? baseColors.primaryVariant
-        c.secondary = perChatTheme?.secondary?.colorFromReadableHex() ?? perUserTheme?.secondary?.colorFromReadableHex() ?? colors.secondary?.colorFromReadableHex() ?? presetWallpaperTheme?.secondary?.colorFromReadableHex() ?? baseColors.secondary
-        c.secondaryVariant = perChatTheme?.secondaryVariant?.colorFromReadableHex() ?? perUserTheme?.secondaryVariant?.colorFromReadableHex() ?? colors.secondaryVariant?.colorFromReadableHex() ?? presetWallpaperTheme?.secondaryVariant?.colorFromReadableHex() ?? baseColors.secondaryVariant
-        c.background = perChatTheme?.background?.colorFromReadableHex() ?? perUserTheme?.background?.colorFromReadableHex() ?? colors.background?.colorFromReadableHex() ?? presetWallpaperTheme?.background?.colorFromReadableHex() ?? baseColors.background
-        c.surface = perChatTheme?.surface?.colorFromReadableHex() ?? perUserTheme?.surface?.colorFromReadableHex() ?? colors.surface?.colorFromReadableHex() ?? presetWallpaperTheme?.surface?.colorFromReadableHex() ?? baseColors.surface
+        c.primary = perChatTheme?.primary?.colorFromReadableHex() ?? perUserTheme?.primary?.colorFromReadableHex() ?? colors.primary?.colorFromReadableHex() ?? presetWallpaperTheme?.primary ?? baseColors.primary
+        c.primaryVariant = perChatTheme?.primaryVariant?.colorFromReadableHex() ?? perUserTheme?.primaryVariant?.colorFromReadableHex() ?? colors.primaryVariant?.colorFromReadableHex() ?? presetWallpaperTheme?.primaryVariant ?? baseColors.primaryVariant
+        c.secondary = perChatTheme?.secondary?.colorFromReadableHex() ?? perUserTheme?.secondary?.colorFromReadableHex() ?? colors.secondary?.colorFromReadableHex() ?? presetWallpaperTheme?.secondary ?? baseColors.secondary
+        c.secondaryVariant = perChatTheme?.secondaryVariant?.colorFromReadableHex() ?? perUserTheme?.secondaryVariant?.colorFromReadableHex() ?? colors.secondaryVariant?.colorFromReadableHex() ?? presetWallpaperTheme?.secondaryVariant ?? baseColors.secondaryVariant
+        c.background = perChatTheme?.background?.colorFromReadableHex() ?? perUserTheme?.background?.colorFromReadableHex() ?? colors.background?.colorFromReadableHex() ?? presetWallpaperTheme?.background ?? baseColors.background
+        c.surface = perChatTheme?.surface?.colorFromReadableHex() ?? perUserTheme?.surface?.colorFromReadableHex() ?? colors.surface?.colorFromReadableHex() ?? presetWallpaperTheme?.surface ?? baseColors.surface
         return c
     }
 
-    public func toAppColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ThemeColors?) -> AppColors {
+    public func toAppColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ResolvedColors?) -> AppColors {
         let baseColors = switch base {
         case DefaultTheme.LIGHT: LightColorPaletteApp
         case DefaultTheme.DARK: DarkColorPaletteApp
@@ -459,14 +497,14 @@ public struct ThemeOverrides: Codable, Equatable, Hashable {
         case DefaultTheme.BLACK: BlackColorPaletteApp
         }
 
-        let sentMessageFallback = colors.sentMessage?.colorFromReadableHex() ?? presetWallpaperTheme?.sentMessage?.colorFromReadableHex() ?? baseColors.sentMessage
-        let sentQuoteFallback = colors.sentQuote?.colorFromReadableHex() ?? presetWallpaperTheme?.sentQuote?.colorFromReadableHex() ?? baseColors.sentQuote
-        let receivedMessageFallback = colors.receivedMessage?.colorFromReadableHex() ?? presetWallpaperTheme?.receivedMessage?.colorFromReadableHex() ?? baseColors.receivedMessage
-        let receivedQuoteFallback = colors.receivedQuote?.colorFromReadableHex() ?? presetWallpaperTheme?.receivedQuote?.colorFromReadableHex() ?? baseColors.receivedQuote
-        
+        let sentMessageFallback = colors.sentMessage?.colorFromReadableHex() ?? presetWallpaperTheme?.sentMessage ?? baseColors.sentMessage
+        let sentQuoteFallback = colors.sentQuote?.colorFromReadableHex() ?? presetWallpaperTheme?.sentQuote ?? baseColors.sentQuote
+        let receivedMessageFallback = colors.receivedMessage?.colorFromReadableHex() ?? presetWallpaperTheme?.receivedMessage ?? baseColors.receivedMessage
+        let receivedQuoteFallback = colors.receivedQuote?.colorFromReadableHex() ?? presetWallpaperTheme?.receivedQuote ?? baseColors.receivedQuote
+
         let c = baseColors.clone()
-        c.title = perChatTheme?.title?.colorFromReadableHex() ?? perUserTheme?.title?.colorFromReadableHex() ?? colors.title?.colorFromReadableHex() ?? presetWallpaperTheme?.title?.colorFromReadableHex() ?? baseColors.title
-        c.primaryVariant2 = perChatTheme?.primaryVariant2?.colorFromReadableHex() ?? perUserTheme?.primaryVariant2?.colorFromReadableHex() ?? colors.primaryVariant2?.colorFromReadableHex() ?? presetWallpaperTheme?.primaryVariant2?.colorFromReadableHex() ?? baseColors.primaryVariant2
+        c.title = perChatTheme?.title?.colorFromReadableHex() ?? perUserTheme?.title?.colorFromReadableHex() ?? colors.title?.colorFromReadableHex() ?? presetWallpaperTheme?.title ?? baseColors.title
+        c.primaryVariant2 = perChatTheme?.primaryVariant2?.colorFromReadableHex() ?? perUserTheme?.primaryVariant2?.colorFromReadableHex() ?? colors.primaryVariant2?.colorFromReadableHex() ?? presetWallpaperTheme?.primaryVariant2 ?? baseColors.primaryVariant2
         c.sentMessage = if let c = perChatTheme?.sentMessage { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.sentMessage?.colorFromReadableHex() ?? sentMessageFallback } else { sentMessageFallback }
         c.sentQuote = if let c = perChatTheme?.sentQuote { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.sentQuote?.colorFromReadableHex() ?? sentQuoteFallback } else { sentQuoteFallback }
         c.receivedMessage = if let c = perChatTheme?.receivedMessage { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.receivedMessage?.colorFromReadableHex() ?? receivedMessageFallback }
@@ -508,7 +546,7 @@ public struct ThemeOverrides: Codable, Equatable, Hashable {
         return AppWallpaper(background: background, tint: tint, type: wallpaper)
     }
 
-    public func withFilledColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ThemeColors?) -> ThemeColors {
+    public func withFilledColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ResolvedColors?) -> ThemeColors {
         let c = toColors(base, perChatTheme, perUserTheme, presetWallpaperTheme)
         let ac = toAppColors(base, perChatTheme, perChatWallpaperType, perUserTheme, perUserWallpaperType, presetWallpaperTheme)
         return ThemeColors(
@@ -632,19 +670,19 @@ public let DarkColorPalette = Colors(
     secondary: HighOrLowlight,
     secondaryVariant: DarkGray,
     background: Color.black,
-    surface: Color(0xFF222222),
+    surface: oklch(0.2519647, 0, 0), // #ff222222
     error: Color.red,
-    onBackground: Color.white,
-    onSurface: Color.white,
+    onBackground: oklch(0.9908696, 0.00447983, 34.30938), // #fffffbfa
+    onSurface: oklch(0.9908696, 0.00447983, 34.30938), // #fffffbfa
     isLight: false
 )
 public let DarkColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: Color(0xFF18262E),
-    sentMessage: Color(0xFF18262E),
-    sentQuote: Color(0xFF1D3847),
-    receivedMessage: Color(0xff262627),
-    receivedQuote: Color(0xff373739)
+    primaryVariant2: oklch(0.2596116, 0.02435695, 234.0127), // #ff18262e
+    sentMessage: oklch(0.2596116, 0.02435695, 234.0127), // #ff18262e
+    sentQuote: oklch(0.3262685, 0.04242656, 234.4608), // #ff1d3847
+    receivedMessage: oklch(0.2690091, 0.001828474, 286.2761), // #ff262627
+    receivedQuote: oklch(0.3375424, 0.003458181, 286.2129) // #ff373739
 )
 
 public let LightColorPalette = Colors (
@@ -661,20 +699,20 @@ public let LightColorPalette = Colors (
 )
 public let LightColorPaletteApp = AppColors(
     title: .black,
-    primaryVariant2: Color(0xFFE9F7FF),
-    sentMessage: Color(0xFFE9F7FF),
-    sentQuote: Color(0xFFD6F0FF),
-    receivedMessage: Color(0xfff5f5f6),
-    receivedQuote: Color(0xffececee)
+    primaryVariant2: oklch(0.9680794, 0.0183117, 232.503), // #ffe9f7ff
+    sentMessage: oklch(0.9680794, 0.0183117, 232.503), // #ffe9f7ff
+    sentQuote: oklch(0.9407676, 0.03409827, 233.0377), // #ffd6f0ff
+    receivedMessage: oklch(0.9704316, 0.001324867, 286.3749), // #fff5f5f6
+    receivedQuote: oklch(0.943656, 0.002669381, 286.3484) // #ffececee
 )
 
 public let SimplexColorPalette = Colors(
-    primary: Color(0xFF70F0F9),
-    primaryVariant: Color(0xFF1298A5),
+    primary: oklch(0.8862563, 0.113699, 201.5703), // #ff70f0f9
+    primaryVariant: oklch(0.6217762, 0.1034518, 205.799), // #ff1298a5
     secondary: HighOrLowlight,
-    secondaryVariant: Color(0xFF2C464D),
-    background: Color(0xFF111528),
-    surface: Color(0xFF121C37),
+    secondaryVariant: oklch(0.3761328, 0.03384425, 216.5493), // #ff2c464d
+    background: oklch(0.2024453, 0.03849037, 273.4875), // #ff111528
+    surface: oklch(0.2331016, 0.05415408, 266.8904), // #ff121c37
     error: Color.red,
     onBackground: Color.white,
     onSurface: Color.white,
@@ -682,32 +720,32 @@ public let SimplexColorPalette = Colors(
 )
 public let SimplexColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: Color(0xFF172941),
-    sentMessage: Color(0xFF172941),
-    sentQuote: Color(0xFF1C3A57),
-    receivedMessage: Color(0xff25283a),
-    receivedQuote: Color(0xff36394a)
+    primaryVariant2: oklch(0.2782386, 0.05068946, 256.0234), // #ff172941
+    sentMessage: oklch(0.2782386, 0.05068946, 256.0234), // #ff172941
+    sentQuote: oklch(0.3401385, 0.06268949, 249.4274), // #ff1C3A57
+    receivedMessage: oklch(0.2823021, 0.03341238, 276.7299), // #ff25283a
+    receivedQuote: oklch(0.3488846, 0.02991734, 276.9226) // #ff36394a
 )
 
 public let BlackColorPalette = Colors(
-    primary: Color(0xff0077e0),
-    primaryVariant: Color(0xff0077e0),
+    primary: oklch(0.5737125, 0.1826329, 254.0001), // #ff0077e0
+    primaryVariant: oklch(0.5737125, 0.1826329, 254.0001), // #ff0077e0
     secondary: HighOrLowlight,
     secondaryVariant: DarkGray,
-    background: Color(0xff070707),
-    surface: Color(0xff161617),
+    background: oklch(0.1285578, 0, 0), // #ff070707
+    surface: oklch(0.200616, 0.001969079, 286.2208), // #ff161617
     error: Color.red,
-    onBackground: Color.white,
-    onSurface: Color.white,
+    onBackground: oklch(0.9908696, 0.00447983, 34.30938),
+    onSurface: oklch(0.9908696, 0.00447983, 34.30938),
     isLight: false
 )
 public let BlackColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: Color(0xff243747),
-    sentMessage: Color(0xFF18262E),
-    sentQuote: Color(0xFF1D3847),
-    receivedMessage: Color(0xff1b1b1b),
-    receivedQuote: Color(0xff29292b)
+    primaryVariant2: oklch(0.327876, 0.03765742, 244.7111), // #ff243747
+    sentMessage: oklch(0.2596116, 0.02435695, 234.0127), // #ff18262e
+    sentQuote: oklch(0.3262685, 0.04242656, 234.4608), // #ff1d3847
+    receivedMessage: oklch(0.2221287, 0, 0), // #ff1b1b1b
+    receivedQuote: oklch(0.2817215, 0.003620283, 286.165)
 )
 
 extension Colors {

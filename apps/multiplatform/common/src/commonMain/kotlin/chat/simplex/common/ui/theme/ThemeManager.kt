@@ -2,8 +2,8 @@ package chat.simplex.common.ui.theme
 
 import androidx.compose.material.Colors
 import androidx.compose.runtime.MutableState
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.text.font.FontFamily
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -223,6 +223,7 @@ object ThemeManager {
 
   fun String.colorFromReadableHex(): Color =
     Color(this.replace("#", "").toLongOrNull(16) ?: Color.White.toArgb().toLong())
+      .convert(ColorSpaces.DisplayP3)
 
   fun Color.toReadableHex(): String {
     val s = Integer.toHexString(toArgb())

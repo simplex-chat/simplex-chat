@@ -146,13 +146,12 @@ extension ThemeModeOverride {
         let w: ThemeWallpaper
         switch wallpaperType {
         case let WallpaperType.preset(filename, scale):
-            let p = PresetWallpaper.from(filename)
             w = ThemeWallpaper(
                 preset: filename,
                 scale: scale ?? wallpaper?.scale,
                 scaleType: nil,
-                background: p?.background[base]?.toReadableHex(),
-                tint: p?.tint[base]?.toReadableHex(),
+                background: nil,
+                tint: nil,
                 image: nil,
                 imageFile: nil
             )
@@ -174,8 +173,20 @@ extension ThemeModeOverride {
                 preset: wallpaper.preset,
                 scale: wallpaper.scale != w.scale ? wallpaper.scale : nil,
                 scaleType: wallpaper.scaleType != w.scaleType ? wallpaper.scaleType : nil,
-                background: wallpaper.background != w.background ? wallpaper.background : nil,
-                tint: wallpaper.tint != w.tint ? wallpaper.tint : nil,
+                background: {
+                    if case let WallpaperType.preset(filename, _) = wallpaperType,
+                       let p = PresetWallpaper.from(filename) {
+                        return wallpaper.background?.colorFromReadableHex().toReadableHex() != p.background[base]?.toReadableHex() ? wallpaper.background : nil
+                    }
+                    return wallpaper.background != w.background ? wallpaper.background : nil
+                }(),
+                tint: {
+                    if case let WallpaperType.preset(filename, _) = wallpaperType,
+                       let p = PresetWallpaper.from(filename) {
+                        return wallpaper.tint?.colorFromReadableHex().toReadableHex() != p.tint[base]?.toReadableHex() ? wallpaper.tint : nil
+                    }
+                    return wallpaper.tint != w.tint ? wallpaper.tint : nil
+                }(),
                 image: wallpaper.image,
                 imageFile: wallpaper.imageFile
             )

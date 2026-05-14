@@ -8,8 +8,10 @@ import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
@@ -54,6 +57,75 @@ import kotlin.math.*
 
 @Composable
 expect fun AppearanceView(m: ChatModel)
+
+// ─── DEV-ONLY: theme-formula tuning UI ─────────────────────────────────────
+// Module-level state below backs the FormulaDevTools panel that the founder
+// uses to live-tune wallpaper color formulas. It is NOT part of the user-facing
+// settings flow and MUST be removed (along with FormulaDevTools, FormulaSlider,
+// buildCodeOutput, formulaSavedParams, patternScaleDragging) before this PR's
+// dev affordances ship to end users. Search-tag: REMOVE-DEV-FORMULA.
+
+// Formula slider values — survives navigation, cleared on app restart.
+private val formulaSavedParams = mutableStateMapOf<String, Float>()
+
+// Desktop: use fast scaling during slider drag, SCALE_SMOOTH on release.
+private var patternScaleDragging by mutableStateOf(false)
+
+// Snapshot of LIGHT preset colors before the formula rewrite (the values that
+// were stored in ChatWallpaper.kt prior to today's pass). Used by the "Old
+// colors" hold-to-compare button so the founder can see the previous palette
+// without depending on the previous formula's behaviour.
+private val OLD_LIGHT_COLORS: Map<String, FormulaResult> = mapOf(
+  "cats" to FormulaResult(
+    background = FormulaSlot(0.97393197f, 0.04026258f, 94.315125f),
+    pattern = FormulaSlot(0.9049206f, 0.07393196f, 94.315125f),
+    sentMessage = FormulaSlot(0.97874475f, 0.03285575f, 94.315125f),
+    sentQuote = FormulaSlot(0.95411396f, 0.05781051f, 94.315125f),
+    receivedMessage = FormulaSlot(0.9946289f, 0.00832808f, 94.315125f),
+    receivedQuote = FormulaSlot(0.9815269f, 0.028569698f, 94.315125f),
+  ),
+  "flowers" to FormulaResult(
+    background = FormulaSlot(0.9506836f, 0.035730995f, 129.80244f),
+    pattern = FormulaSlot(0.85039175f, 0.09360638f, 129.80244f),
+    sentMessage = FormulaSlot(0.96106595f, 0.027363745f, 129.80244f),
+    sentQuote = FormulaSlot(0.9195365f, 0.06853871f, 129.80244f),
+    receivedMessage = FormulaSlot(0.9946289f, 0.011358023f, 129.80244f),
+    receivedQuote = FormulaSlot(0.9688529f, 0.021421315f, 129.80244f),
+  ),
+  "hearts" to FormulaResult(
+    background = FormulaSlot(0.9560547f, 0.021765456f, 13.841402f),
+    pattern = FormulaSlot(0.90485084f, 0.04976797f, 13.841402f),
+    sentMessage = FormulaSlot(0.96500653f, 0.017198082f, 13.841402f),
+    sentQuote = FormulaSlot(0.9291992f, 0.026614813f, 13.841402f),
+    receivedMessage = FormulaSlot(0.99560547f, 0.002124548f, 13.841402f),
+    receivedQuote = FormulaSlot(0.97314453f, 0.013107679f, 13.841402f),
+  ),
+  "kids" to FormulaResult(
+    background = FormulaSlot(0.9628906f, 0.023496835f, 198.73976f),
+    pattern = FormulaSlot(0.8909232f, 0.055181965f, 198.73976f),
+    sentMessage = FormulaSlot(0.9716797f, 0.017883832f, 198.73976f),
+    sentQuote = FormulaSlot(0.93652344f, 0.036067758f, 198.73976f),
+    receivedMessage = FormulaSlot(0.9946289f, 0.0069881678f, 198.73976f),
+    receivedQuote = FormulaSlot(0.9736328f, 0.016644018f, 198.73976f),
+  ),
+  "school" to FormulaResult(
+    background = FormulaSlot(0.9604492f, 0.025148988f, 225.3911f),
+    pattern = FormulaSlot(0.9019366f, 0.04948576f, 225.3911f),
+    sentMessage = FormulaSlot(0.96875f, 0.019812047f, 225.3911f),
+    sentQuote = FormulaSlot(0.9355469f, 0.036309462f, 225.3911f),
+    receivedMessage = FormulaSlot(0.99560547f, 0.0027611256f, 225.3911f),
+    receivedQuote = FormulaSlot(0.97509766f, 0.015755296f, 225.3911f),
+  ),
+  "travel" to FormulaResult(
+    background = FormulaSlot(0.95996094f, 0.023496835f, 322.59464f),
+    pattern = FormulaSlot(0.9120599f, 0.056131333f, 322.59464f),
+    sentMessage = FormulaSlot(0.96809894f, 0.01866399f, 322.59464f),
+    sentQuote = FormulaSlot(0.9355469f, 0.030384803f, 322.59464f),
+    receivedMessage = FormulaSlot(0.99560547f, 0.0035372972f, 322.59464f),
+    receivedQuote = FormulaSlot(0.97558594f, 0.014230033f, 322.59464f),
+  ),
+)
+// ───────────────────────────────────────────────────────────────────────────
 
 object AppearanceScope {
   @Composable
@@ -277,7 +349,7 @@ object AppearanceScope {
     Column(Modifier
       .drawWithCache {
         if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null) {
-          chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, null, null)
+          chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, null, null, highQuality = !patternScaleDragging)
         } else {
           onDrawBehind {
             drawRect(themeBackgroundColor)
@@ -620,7 +692,8 @@ object AppearanceScope {
           wallpaperType,
           wallpaperImage,
           onColorChange = { color ->
-            ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
+            val c = if (name == ThemeColor.TOOLBAR && (color == null || color.alpha < 0.01f)) null else color
+            ThemeManager.saveAndApplyThemeColor(baseTheme, name, c)
             saveThemeToDatabase(null)
           }
         )
@@ -671,6 +744,11 @@ object AppearanceScope {
         )
       }
       SectionDividerSpaced()
+
+      if (appPrefs.developerTools.get()) {
+        FormulaDevTools(wallpaperType, baseTheme)
+        SectionDividerSpaced()
+      }
 
       CustomizeThemeColorsSection(currentTheme) { name ->
         editColor(name)
@@ -724,6 +802,308 @@ object AppearanceScope {
         }
       }
       SectionBottomSpacer()
+    }
+  }
+
+  // ===== Dev-only formula tuning UI =====
+
+  @Composable
+  fun FormulaDevTools(
+    wallpaperType: WallpaperType,
+    baseTheme: DefaultTheme,
+  ) {
+    val preset = (wallpaperType as? WallpaperType.Preset)?.let { PresetWallpaper.from(it.filename) } ?: return
+    val clipboard = LocalClipboardManager.current
+    val isLight = baseTheme == DefaultTheme.LIGHT
+    val isBlack = baseTheme == DefaultTheme.BLACK
+
+    // Derive defaults from hardcoded oklch values — always in sync
+    val defaults = remember(preset, baseTheme) {
+      val bg = preset.background[baseTheme]!!.toOklch()
+      val tint = preset.tint[baseTheme]!!.toOklch()
+      val colors = preset.colors[baseTheme]
+      val sm = colors?.sentMessage?.toOklch() ?: bg
+      val sq = colors?.sentQuote?.toOklch() ?: bg
+      if (isLight) {
+        // New LIGHT formula: SQ sits at bgL − 2.5·step, so step = (bgL − sqL) / 2.5.
+        // patternDepth and rqGap/sGap/sqGap are derived in the same step units
+        // so a Reset on a tuned preset restores its actual ladder shape, not a
+        // flat 0.5/1.0/1.0 default. darkChroma is SQ.C directly.
+        val step = (bg.L - sq.L) / 2.5f
+        val rm = colors?.receivedMessage?.toOklch()
+        val rq = colors?.receivedQuote?.toOklch() ?: bg
+        mapOf(
+          "hue" to bg.H, "bgL" to bg.L, "bgC" to bg.C,
+          "step" to step,
+          "patternDepth" to if (step > 0f) (bg.L - tint.L) / step else 0f,
+          "patternChroma" to tint.C,
+          "receivedTint" to if (rm != null && rm.L < 1f) 1f - rm.L else 0.005f,
+          "darkChroma" to sq.C,
+          "rqGap" to if (step > 0f) (bg.L - rq.L) / step else 0.5f,
+          "sGap" to if (step > 0f) (rq.L - sm.L) / step else 1.0f,
+          "sqGap" to if (step > 0f) (sm.L - sq.L) / step else 1.0f,
+        )
+      } else {
+        val step = if (isBlack) sm.L / 6f else (sm.L - bg.L) / 3.5f
+        val mutedC = if (isBlack) 0f else bg.C / 0.9f
+        mapOf(
+          "hue" to bg.H.let { if (isBlack) sm.H else it },
+          "bgL" to bg.L, "step" to step,
+          "mutedChroma" to mutedC, "colorChroma" to sm.C,
+          "patternDepth" to if (step > 0f) (tint.L - bg.L) / step else 0f,
+          "patternChroma" to tint.C,
+        )
+      }
+    }
+
+    val savedParams = formulaSavedParams
+    val pk = "${preset.name}/${baseTheme.name}/"
+    fun saved(name: String) = savedParams["$pk$name"]
+
+    // Reset key — increment to force slider recomposition
+    var resetKey by remember { mutableStateOf(0) }
+
+    // Slider states: saved values (if modified) → derived defaults
+    val hue = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("hue") ?: defaults["hue"]!!) }
+    val bgL = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("bgL") ?: defaults["bgL"]!!) }
+    val bgC = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("bgC") ?: defaults["bgC"] ?: 0f) }
+    val step = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("step") ?: defaults["step"]!!) }
+    val patternDepth = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("patternDepth") ?: defaults["patternDepth"] ?: 0f) }
+    val patternChromaVal = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("patternChroma") ?: defaults["patternChroma"] ?: 0f) }
+    val receivedTint = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("receivedTint") ?: defaults["receivedTint"] ?: 0.005f) }
+    val bgLOffset = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("bgLOffset") ?: 0f) }
+    val mutedChroma = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("mutedChroma") ?: defaults["mutedChroma"] ?: 0f) }
+    val colorChroma = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("colorChroma") ?: defaults["colorChroma"] ?: 0f) }
+    val rqGap = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("rqGap") ?: defaults["rqGap"] ?: 0.5f) }
+    val sGap = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("sGap") ?: defaults["sGap"] ?: 1.0f) }
+    val sqGap = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("sqGap") ?: defaults["sqGap"] ?: 1.0f) }
+    val darkChroma = remember(preset, baseTheme, resetKey) { mutableFloatStateOf(saved("darkChroma") ?: defaults["darkChroma"] ?: 0f) }
+
+    // Hold-to-compare: when true, LIGHT result switches to the snapshot of
+    // pre-rewrite preset colors (OLD_LIGHT_COLORS). DARK/BLACK have no snapshot
+    // — flag is no-op there.
+    val comparingOld = remember { mutableStateOf(false) }
+    val oldColors = OLD_LIGHT_COLORS[preset.filename]
+
+    // Compute formula result (O(1) math, no need to memoize)
+    val result = if (comparingOld.value && baseTheme == DefaultTheme.LIGHT && oldColors != null) {
+      oldColors
+    } else when (baseTheme) {
+      DefaultTheme.LIGHT -> generateSchemeLight(
+        hue.floatValue, bgL.floatValue, bgC.floatValue, step.floatValue,
+        patternDepth.floatValue, patternChromaVal.floatValue, receivedTint.floatValue,
+        bgLOffset.floatValue,
+        rqGap = rqGap.floatValue,
+        sGap = sGap.floatValue,
+        sqGap = sqGap.floatValue,
+        darkChroma = darkChroma.floatValue,
+      )
+      DefaultTheme.BLACK -> generateSchemeBlack(
+        hue.floatValue, step.floatValue, colorChroma.floatValue,
+        patternDepth = patternDepth.floatValue,
+        patternChroma = patternChromaVal.floatValue,
+        bgLOffset = bgLOffset.floatValue,
+      )
+      else -> generateSchemeDark(
+        hue.floatValue, bgL.floatValue, step.floatValue,
+        mutedChroma.floatValue, colorChroma.floatValue,
+        patternDepth = patternDepth.floatValue,
+        patternChroma = patternChromaVal.floatValue,
+        bgLOffset = bgLOffset.floatValue,
+      )
+    }
+
+    // Apply colors live + persist slider values
+    LaunchedEffect(result) {
+      ThemeManager.saveAndApplyThemeColor(baseTheme, ThemeColor.SENT_MESSAGE, result.sentMessage.toColor())
+      ThemeManager.saveAndApplyThemeColor(baseTheme, ThemeColor.SENT_QUOTE, result.sentQuote.toColor())
+      ThemeManager.saveAndApplyThemeColor(baseTheme, ThemeColor.RECEIVED_MESSAGE, result.receivedMessage.toColor())
+      ThemeManager.saveAndApplyThemeColor(baseTheme, ThemeColor.RECEIVED_QUOTE, result.receivedQuote.toColor())
+      ThemeManager.saveAndApplyThemeColor(baseTheme, ThemeColor.WALLPAPER_BACKGROUND, result.background.toColor())
+      ThemeManager.saveAndApplyThemeColor(baseTheme, ThemeColor.WALLPAPER_TINT, result.pattern.toColor())
+      saveThemeToDatabase(null)
+      // Save slider values so they survive wallpaper switches
+      savedParams["${pk}hue"] = hue.floatValue
+      savedParams["${pk}bgL"] = bgL.floatValue
+      savedParams["${pk}bgC"] = bgC.floatValue
+      savedParams["${pk}step"] = step.floatValue
+      savedParams["${pk}patternDepth"] = patternDepth.floatValue
+      savedParams["${pk}patternChroma"] = patternChromaVal.floatValue
+      savedParams["${pk}receivedTint"] = receivedTint.floatValue
+      savedParams["${pk}bgLOffset"] = bgLOffset.floatValue
+      savedParams["${pk}mutedChroma"] = mutedChroma.floatValue
+      savedParams["${pk}colorChroma"] = colorChroma.floatValue
+      savedParams["${pk}rqGap"] = rqGap.floatValue
+      savedParams["${pk}sGap"] = sGap.floatValue
+      savedParams["${pk}sqGap"] = sqGap.floatValue
+      savedParams["${pk}darkChroma"] = darkChroma.floatValue
+    }
+
+    // Old colors compare button — disabled (uncomment to re-enable A/B compare).
+    // if (baseTheme == DefaultTheme.LIGHT && oldColors != null) {
+    //   Box(
+    //     Modifier
+    //       .fillMaxWidth()
+    //       .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+    //       .pointerInput(Unit) {
+    //         detectTapGestures(onPress = {
+    //           comparingOld.value = true
+    //           tryAwaitRelease()
+    //           comparingOld.value = false
+    //         })
+    //       }
+    //       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+    //     contentAlignment = Alignment.CenterStart,
+    //   ) {
+    //     Text(
+    //       if (comparingOld.value) "Old colors — release to return" else "Old colors — hold to compare",
+    //       color = colors.primary,
+    //     )
+    //   }
+    // }
+
+    SectionView("FORMULA: ${preset.filename.uppercase()} / ${baseTheme.name}") {
+      when (baseTheme) {
+        DefaultTheme.LIGHT -> {
+          FormulaSlider("Hue", hue, 0f..360f)
+          FormulaSlider("Lightness", bgL, 0.85f..1f)
+          FormulaSlider("BG Lightness", bgLOffset, -0.05f..0.05f)
+          FormulaSlider("Chroma", bgC, 0f..0.10f)
+          FormulaSlider("Contrast", step, 0.005f..0.05f)
+          FormulaSlider("Received tint", receivedTint, 0f..0.07f)
+          FormulaSlider("RQ gap", rqGap, 0f..3f)
+          FormulaSlider("S gap", sGap, 0f..3f)
+          FormulaSlider("SQ gap", sqGap, 0f..3f)
+          FormulaSlider("Dark chroma", darkChroma, 0f..0.15f)
+          FormulaSlider("Pattern depth", patternDepth, 0f..10f)
+          FormulaSlider("Pattern chroma", patternChromaVal, 0f..0.15f)
+        }
+        DefaultTheme.BLACK -> {
+          FormulaSlider("Hue", hue, 0f..360f)
+          FormulaSlider("BG Lightness", bgLOffset, -0.05f..0.05f)
+          FormulaSlider("Contrast", step, 0.01f..0.10f)
+          FormulaSlider("Accent chroma", colorChroma, 0f..0.20f)
+          FormulaSlider("Pattern depth", patternDepth, 0f..15f)
+          FormulaSlider("Pattern chroma", patternChromaVal, 0f..0.15f)
+        }
+        else -> {
+          FormulaSlider("Hue", hue, 0f..360f)
+          FormulaSlider("Lightness", bgL, 0.05f..0.30f)
+          FormulaSlider("BG Lightness", bgLOffset, -0.05f..0.05f)
+          FormulaSlider("Contrast", step, 0.01f..0.10f)
+          FormulaSlider("Accent chroma", colorChroma, 0f..0.20f)
+          FormulaSlider("Secondary chroma", mutedChroma, 0f..0.05f)
+          FormulaSlider("Pattern depth", patternDepth, 0f..10f)
+          FormulaSlider("Pattern chroma", patternChromaVal, 0f..0.15f)
+        }
+      }
+      SectionItemView({
+        savedParams.keys.filter { it.startsWith(pk) }.forEach { savedParams.remove(it) }
+        resetKey++
+      }) {
+        Text("Reset formula", color = colors.primary)
+      }
+    }
+
+    SectionSpacer()
+
+    // Color preview squares
+    Row(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), horizontalArrangement = Arrangement.SpaceEvenly) {
+      val slots = listOf("bg" to result.background, "ti" to result.pattern, "s" to result.sentMessage, "sq" to result.sentQuote, "r" to result.receivedMessage, "rq" to result.receivedQuote)
+      for ((label, slot) in slots) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Box(Modifier.size(40.dp).background(slot.toColor()))
+          Text(label, style = MaterialTheme.typography.caption)
+        }
+      }
+    }
+
+    SectionSpacer()
+
+    // Code output for copy-paste
+    val codeText = buildCodeOutput(baseTheme, result)
+    val wallpaperLine = wallpaperSourceLine(preset)
+    SectionView("CODE OUTPUT") {
+      SectionItemView({
+        clipboard.shareText(codeText)
+      }) {
+        Text("Copy code to clipboard", color = colors.primary)
+      }
+      Text(
+        "Paste to ChatWallpaper.kt line $wallpaperLine",
+        Modifier.padding(horizontal = DEFAULT_PADDING),
+        style = MaterialTheme.typography.caption,
+        color = MaterialTheme.colors.onBackground.copy(alpha = 0.5f),
+      )
+      Text(
+        codeText,
+        Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+        style = MaterialTheme.typography.caption.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 9.sp),
+        color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f),
+      )
+    }
+  }
+
+  @Composable
+  private fun FormulaSlider(label: String, state: MutableFloatState, range: ClosedFloatingPointRange<Float>) {
+    // Separate text state — only reformatted by slider drag, not by typing
+    var textField by remember(state) { mutableStateOf(String.format(Locale.US, "%.4f", state.floatValue)) }
+    SectionItemViewWithoutMinPadding {
+      Text(label, Modifier.width(110.dp), style = MaterialTheme.typography.body2, maxLines = 1)
+      BasicTextField(
+        textField,
+        onValueChange = { raw ->
+          textField = raw
+          raw.toFloatOrNull()?.let { v -> if (v in range) state.floatValue = v }
+        },
+        Modifier.width(60.dp),
+        textStyle = MaterialTheme.typography.caption.copy(
+          fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+          color = MaterialTheme.colors.onBackground,
+        ),
+        singleLine = true,
+      )
+      Slider(
+        state.floatValue,
+        valueRange = range,
+        onValueChange = {
+          state.floatValue = it
+          textField = String.format(Locale.US, "%.4f", it)
+        },
+        modifier = Modifier.weight(1f),
+        colors = SliderDefaults.colors(
+          activeTickColor = Color.Transparent,
+          inactiveTickColor = Color.Transparent,
+        ),
+      )
+    }
+  }
+
+  private fun wallpaperSourceLine(preset: PresetWallpaper): Int = when (preset) {
+    PresetWallpaper.CATS -> 42
+    PresetWallpaper.FLOWERS -> 81
+    PresetWallpaper.HEARTS -> 120
+    PresetWallpaper.KIDS -> 159
+    PresetWallpaper.SCHOOL -> 198
+    PresetWallpaper.TRAVEL -> 237
+  }
+
+  private fun buildCodeOutput(theme: DefaultTheme, result: FormulaResult): String {
+    val t = theme.name
+    return buildString {
+      appendLine("// wallpaperBackgrounds( → ${t.lowercase()} =")
+      appendLine("${t.lowercase()} = ${result.background.toCodeString()},")
+      appendLine()
+      appendLine("// _tint = mapOf( → DefaultTheme.$t to")
+      appendLine("DefaultTheme.$t to ${result.pattern.toCodeString()},")
+      appendLine()
+      appendLine("// _colors = mapOf( → DefaultTheme.$t to")
+      appendLine("DefaultTheme.$t to ResolvedColors(")
+      appendLine("  sentMessage = ${result.sentMessage.toCodeString()},")
+      appendLine("  sentQuote = ${result.sentQuote.toCodeString()},")
+      appendLine("  receivedMessage = ${result.receivedMessage.toCodeString()},")
+      appendLine("  receivedQuote = ${result.receivedQuote.toCodeString()},")
+      appendLine("),")
     }
   }
 
@@ -794,6 +1174,7 @@ object AppearanceScope {
         ThemeColor.SECONDARY_VARIANT -> MaterialTheme.colors.secondaryVariant
         ThemeColor.BACKGROUND -> MaterialTheme.colors.background
         ThemeColor.SURFACE -> MaterialTheme.colors.surface
+        ThemeColor.TOOLBAR -> panelBackgroundColor()
         ThemeColor.TITLE -> MaterialTheme.appColors.title
         ThemeColor.PRIMARY_VARIANT2 -> MaterialTheme.appColors.primaryVariant2
         ThemeColor.SENT_MESSAGE -> MaterialTheme.appColors.sentMessage
@@ -979,6 +1360,11 @@ object AppearanceScope {
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.surface)
       }
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.TOOLBAR) }) {
+        val title = "Toolbar"
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = panelBackgroundColor())
+      }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE) }) {
         val title = generalGetString(MR.strings.color_title)
         Text(title)
@@ -1077,6 +1463,24 @@ object AppearanceScope {
             }
           )
         }
+      }
+      if (name == ThemeColor.TOOLBAR && appPrefs.developerTools.get()) {
+        SectionSpacer()
+        val toolbarCode = if (currentColor.alpha >= 0.01f) {
+          val (L, C, H) = currentColor.toOklch()
+          "toolbar = oklch(${L}f, ${C}f, ${H}f, ${currentColor.alpha}f),"
+        } else "// toolbar: no tint (transparent)"
+        val preset = (wallpaperType as? WallpaperType.Preset)?.let { PresetWallpaper.from(it.filename) }
+        val pasteHint = if (preset != null) "Paste to ChatWallpaper.kt line ${wallpaperSourceLine(preset)}" else "Paste to ChatWallpaper.kt → ResolvedColors"
+        SectionItemView({ clipboard.shareText(toolbarCode) }) {
+          Text("Copy toolbar code", color = colors.primary)
+        }
+        Text(
+          "$pasteHint\n$toolbarCode",
+          Modifier.padding(horizontal = DEFAULT_PADDING),
+          style = MaterialTheme.typography.caption.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 9.sp),
+          color = MaterialTheme.colors.onBackground.copy(alpha = 0.5f),
+        )
       }
       SectionItemView({
         allowReloadPicker = true
@@ -1206,17 +1610,22 @@ fun WallpaperSetupView(
 
   if (wallpaperType is WallpaperType.Preset || (wallpaperType is WallpaperType.Image && wallpaperType.scaleType == WallpaperScaleType.REPEAT)) {
     val state = remember(wallpaperType, initialWallpaper?.type?.scale) { mutableStateOf(wallpaperType.scale ?: initialWallpaper?.type?.scale ?: 1f) }
+    DisposableEffect(Unit) { onDispose { patternScaleDragging = false } }
     Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
       Text("${state.value}".substring(0, min("${state.value}".length, 4)), Modifier.width(50.dp))
       Slider(
         state.value,
         valueRange = 0.5f..2f,
         onValueChange = {
+          patternScaleDragging = true
           if (wallpaperType is WallpaperType.Preset) {
             onTypeChange(wallpaperType.copy(scale = it))
           } else if (wallpaperType is WallpaperType.Image) {
             onTypeChange(wallpaperType.copy(scale = it))
           }
+        },
+        onValueChangeFinished = {
+          patternScaleDragging = false
         }
       )
     }
