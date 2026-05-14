@@ -1104,7 +1104,8 @@ func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState
     let v = ChatItemForwardingView(
         title: "Share channel",
         isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
-        onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: composeState) }
+        onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: composeState) },
+        includeLocal: false
     )
     if #available(iOS 16.0, *) {
         v.presentationDetents([.fraction(0.8)])
