@@ -188,6 +188,7 @@ New view accessible from channel info, showing relay members (role == `.relay`):
 | Relay list | Filtered from `chatModel.groupMembers` by `.relay` role |
 | Relay row | Profile image, relay display name, status text (`RelayStatus` or connection status) |
 | Relay tap | NavigationLink to `GroupMemberInfoView` with `groupRelay:` parameter |
+| Add relay sheet | Owner-only "Add relay" button opens `AddGroupRelayView`; the available-to-add list excludes any `chatRelayId` already present in `groupRelays` (regardless of `relayStatus`), so inactive or rejected relays cannot be re-added without first removing them via the row's swipe action |
 | Empty state | "No chat relays" |
 | Footer | "Chat relays forward messages to channel subscribers." |
 
@@ -221,7 +222,7 @@ Owner sees relay status from `apiGetGroupRelays`; non-owner sees connection stat
 | "Unblock for all?" alert | "Unblock subscriber for all?" |
 | Relay link info row | Shown when `member.relayLink` exists, displays `hostFromRelayLink(link)` |
 | Relay address info row | Shown when `groupRelay?.userChatRelay.address` exists, with "Share relay address" button |
-| Status row (rejected) | Shown when `groupRelay?.relayStatus == .rsRejected`: "Status: rejected by relay operator". Indicates the relay rejected the invitation to rejoin this channel after a prior `/leave` — clearable only by the relay operator via `/relay allow <groupId>`. |
+| Status row (rejected) | Shown when `groupRelay?.relayStatus == .rsRejected`: "Status: rejected by relay operator". The relay rejected the invitation to rejoin this channel after a prior `/leave`; the owner-side `GroupMember.memberStatus` is also set to `.memLeft` so the relay renders identically to one that explicitly left. Clearable only by the relay operator running `/relay allow #<channel>`. |
 | Relay footer | Owner: "Subscribers use relay link to connect to the channel. Relay address was used to set up this relay for the channel." Non-owner: "You connected to the channel via this relay link." |
 
 ## Related Specs

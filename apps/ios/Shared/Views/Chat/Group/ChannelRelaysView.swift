@@ -35,7 +35,9 @@ struct ChannelRelaysView: View {
             }
         }
         .sheet(isPresented: $showAddRelay) {
-            let existingRelayIds = Set(groupRelays.filter { $0.relayStatus != .rsInactive }.compactMap { $0.userChatRelay.chatRelayId })
+            // Backend gate (APIAddGroupRelays) rejects any chatRelayId already in group_relays
+            // regardless of relayStatus, so all current rows must be excluded from the add list.
+            let existingRelayIds = Set(groupRelays.compactMap { $0.userChatRelay.chatRelayId })
             AddGroupRelayView(groupInfo: groupInfo, existingRelayIds: existingRelayIds) {
                 Task { await chatModel.loadGroupMembers(groupInfo) }
             }

@@ -9998,10 +9998,15 @@ testRelayRejectAfterLeave ps =
         -- alice's CONF handler emits TERelayRejected; the relay row flips to 'rejected'.
         alice <## "#team: relay rejected, reason: RRRRejoinRejected"
 
-        -- assert alice's fresh GroupRelay row is marked 'rejected'
+        -- assert alice's fresh GroupRelay row is marked 'rejected' and the relay
+        -- GroupMember is GSMemLeft so the owner UI treats it as gone
         aliceRelayStatuses <- withCCTransaction alice $ \db ->
           DB.query_ db "SELECT relay_status FROM group_relays" :: IO [Only T.Text]
         map (\(Only s) -> s) aliceRelayStatuses `shouldBe` ["rejected"]
+        aliceRelayMemStatuses <- withCCTransaction alice $ \db ->
+          DB.query_ db "SELECT member_status FROM group_members WHERE member_role = 'relay'"
+            :: IO [Only T.Text]
+        map (\(Only s) -> s) aliceRelayMemStatuses `shouldBe` ["left"]
 
         -- subscriber still doesn't receive after the failed re-invitation
         alice #> "#team after rejection"
@@ -10083,6 +10088,12 @@ testRelayAllowAcceptsAgain ps =
         alice #> "#team after allow"
         bob <# "#team_1> after allow"
         cath <# "#team> after allow [>>]"
+
+        -- after re-acceptance, the relay GroupMember is not in the rejected/left state
+        aliceRelayMemStatuses <- withCCTransaction alice $ \db ->
+          DB.query_ db "SELECT member_status FROM group_members WHERE member_role = 'relay'"
+            :: IO [Only T.Text]
+        map (\(Only s) -> s) aliceRelayMemStatuses `shouldBe` ["connected"]
 
 testRelayDoesNotRejectUnrelatedChannel :: HasCallStack => TestParams -> IO ()
 testRelayDoesNotRejectUnrelatedChannel ps =

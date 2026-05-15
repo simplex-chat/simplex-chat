@@ -120,6 +120,7 @@ chatCommandsDocsData =
         ("APINewPublicGroup", [], "Create public group.", ["CRPublicGroupCreated", "CRPublicGroupCreationFailed", "CRChatCmdError"], [], Just UNInteractive, "/_public group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Join ',' "relayIds" <> " " <> Json "groupProfile"),
         ("APIGetGroupRelays", [], "Get group relays.", ["CRGroupRelays", "CRChatCmdError"], [], Nothing, "/_get relays #" <> Param "groupId"),
         ("APIAddGroupRelays", [], "Add relays to group.", ["CRGroupRelaysAdded", "CRGroupRelaysAddFailed", "CRChatCmdError"], [], Just UNInteractive, "/_add relays #" <> Param "groupId" <> " " <> Join ',' "relayIds"),
+        ("APIAllowRelayGroup", [], "Clear relay rejection for a channel (relay operator).", ["CRRelayGroupAllowed", "CRChatCmdError"], [], Just UNBackground, "/_relay allow #" <> Param "groupId"),
         ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile")
       ]
     ),
@@ -203,6 +204,7 @@ cliCommands =
     "AcceptMember",
     "AddContact",
     "AddMember",
+    "AllowRelayGroup",
     "BlockForAll",
     "ChatHelp",
     "ClearContact",

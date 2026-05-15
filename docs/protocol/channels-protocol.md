@@ -80,7 +80,7 @@ When a relay operator removes the relay from a channel, the relay marks the chan
 
 2. **Refuse.** When the owner later sends `x.grp.relay.inv` for the same channel link — typically from a re-invitation — the relay does not accept the invitation as a relay. Instead it replies with `x.grp.relay.reject` over the owner-relay direct contact channel, carrying a rejection reason. The current reason is `rejoin_rejected`; older relays or future reasons fall through to an unknown reason for forward compatibility.
 
-3. **Owner handling.** The owner marks the corresponding relay as rejected and notifies the operator UI. The owner's next user-initiated relay addition for the same channel creates a fresh invitation, which the relay rejects again unless the rejection has been cleared.
+3. **Owner handling.** The owner marks the corresponding relay as rejected and notifies the operator UI. The owner also sets the relay member's status to `GSMemLeft` so the UI treats the rejected relay identically to one that ran `/leave`. The owner's next user-initiated relay addition for the same channel creates a fresh invitation, which the relay rejects again unless the rejection has been cleared.
 
 4. **Clear.** The relay operator runs `/relay allow <groupId>` to clear the rejection for the channel. After the next user-initiated relay addition, the relay accepts the invitation and rejoins as a relay.
 

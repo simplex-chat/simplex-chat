@@ -772,12 +772,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               XGrpRelayReject reason
                 | memberRole' membership == GROwner && isRelay m -> do
-                    relay <- withStore $ \db -> do
+                    -- GSMemLeft (not GSMemRejected): owner UI treats this identically to an explicit /leave from the relay; GSMemRejected has knocking-admission semantics.
+                    (relay', m') <- withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
-                      liftIO $ updateRelayStatusFromTo db relay RSInvited RSRejected
+                      relay' <- liftIO $ updateRelayStatusFromTo db relay RSInvited RSRejected
+                      liftIO $ updateGroupMemberStatus db userId m GSMemLeft
+                      pure (relay', m {memberStatus = GSMemLeft})
                     -- complete the contact handshake so the relay receives INFO and cleans up its transient bookkeeping
                     allowAgentConnectionAsync user conn' confId XOk
-                    toView $ CEvtGroupRelayUpdated user gInfo m relay
+                    toView $ CEvtGroupRelayUpdated user gInfo m' relay'
                     toViewTE $ TERelayRejected user gInfo reason
                 | otherwise -> messageError "x.grp.relay.reject: only owner should receive relay rejection"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
