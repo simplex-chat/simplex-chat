@@ -1295,6 +1295,12 @@ CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
   item_viewed,
   item_ts
 );
+CREATE INDEX idx_groups_relay_request_group_link
+ON groups(
+  user_id,
+  relay_request_group_link
+)
+WHERE relay_request_group_link IS NOT NULL;
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

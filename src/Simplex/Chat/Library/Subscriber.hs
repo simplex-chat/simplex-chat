@@ -770,6 +770,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     withStore' $ \db -> setRelayLinkConfId db m confId relayLink
                     void $ getAgentConnShortLinkAsync user CFGetRelayDataAccept (Just conn') relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
+              XGrpRelayReject reason
+                | memberRole' membership == GROwner && isRelay m -> do
+                    relay <- withStore $ \db -> do
+                      relay <- getGroupRelayByGMId db (groupMemberId' m)
+                      liftIO $ updateRelayStatusFromTo db relay RSInvited RSRejected
+                    -- complete the contact handshake so the relay receives INFO and cleans
+                    -- up its transient bookkeeping (the new INFO arm at GCHostMember +
+                    -- RSRejected handles that), then tear down our chat-layer connection.
+                    allowAgentConnectionAsync user conn' confId XOk
+                    toView $ CEvtGroupRelayUpdated user gInfo m relay
+                    toViewTE $ TERelayRejected user gInfo reason
+                | otherwise -> messageError "x.grp.relay.reject: only owner can receive relay rejection"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
             case chatMsgEvent of
@@ -812,14 +824,33 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 pure ()
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
           -- sent when connecting via group link
-          XInfo _ ->
-            -- TODO Keep rejected member to allow them to appeal against rejection.
-            when (memberStatus m == GSMemRejected) $ do
-              deleteMemberConnection' m True
-              withStore' $ \db -> deleteGroupMember db user m
-          XOk -> pure ()
+          XInfo _
+            | memberStatus m == GSMemRejected -> do
+                -- TODO Keep rejected member to allow them to appeal against rejection.
+                deleteMemberConnection' m True
+                withStore' $ \db -> deleteGroupMember db user m
+            | cleanupTransientRelayReject -> cleanupRelayRejectRow
+            | otherwise -> pure ()
+          XOk
+            | cleanupTransientRelayReject -> cleanupRelayRejectRow
+            | otherwise -> pure ()
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
+        where
+          -- Transient relay-reject row cleanup. The transient row is created with
+          -- RSRejected + GCHostMember owner. The persistent /leave-time row has the
+          -- same combination but its host connection is deleted by DJRelayRemoved
+          -- before any INFO can fire, so this filter only matches transients.
+          -- RSInactive is also matched to handle the case where APIAllowRelayGroup
+          -- flipped the transient row mid-flight.
+          cleanupTransientRelayReject =
+            memberCategory m == GCHostMember
+              && maybe False (`elem` ([RSRejected, RSInactive] :: [RelayStatus])) (relayOwnStatus gInfo)
+          cleanupRelayRejectRow = do
+            deleteMemberConnection' m True
+            withStore' $ \db -> do
+              deleteGroupMember db user m
+              deleteGroup db user gInfo
       CON _pqEnc -> unless (memberStatus m == GSMemRejected || memberStatus membership == GSMemRejected) $ do
         -- TODO [knocking] send pending messages after accepting?
         -- possible improvement: check for each pending message, requires keeping track of connection state
@@ -933,7 +964,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
               then
                 let tasks
-                      | relayOwnStatus gInfo' == Just RSInactive = filter relayRemovedNewTask newDeliveryTasks
+                      | relayNotServing (relayOwnStatus gInfo') = filter relayRemovedNewTask newDeliveryTasks
                       | otherwise = newDeliveryTasks
                  in createDeliveryTasks gInfo' m' tasks
               else pure False
@@ -1522,10 +1553,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                           toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
-        xGrpRelayInv invId chatVRange groupRelayInv = do
+        xGrpRelayInv invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = do
+          refused <- withStore' $ \db -> isRelayGroupRefused db user groupLink
           initialDelay <- asks $ initialInterval . relayRequestRetryInterval . config
-          (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange initialDelay
-          lift $ void $ getRelayRequestWorker True
+          if refused
+            then acceptRelayJoinRequestRejectAsync user uclId vr groupRelayInv invId chatVRange initialDelay RRRRejoinRefused
+            else do
+              (_gInfo, _ownerMember) <- withStore $ \db ->
+                createRelayRequestGroup db vr user groupRelayInv invId chatVRange initialDelay GSMemAccepted RSInvited
+              lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
         xGrpRelayTest invId chatVRange challenge = do
           privKey_ <- withAgent $ \a -> getConnLinkPrivKey a (aConnId conn)
@@ -3129,7 +3165,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
           withStore' $ \db -> do
             updateGroupMemberStatus db userId membership GSMemRemoved
-            when (isJust $ relayOwnStatus gInfo) $ updateRelayOwnStatus_ db gInfo RSInactive
+            when (maybe False (/= RSRejected) (relayOwnStatus gInfo)) $ updateRelayOwnStatus_ db gInfo RSInactive
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
           deleteMemberItem msg gInfo RGEUserDeleted
@@ -3568,7 +3604,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending
-              | relayOwnStatus gInfo == Just RSInactive -> do
+              | relayNotServing (relayOwnStatus gInfo) -> do
                   logWarn "delivery task worker: relay inactive"
                   withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
               | otherwise ->
@@ -3638,7 +3674,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending
-              | relayOwnStatus gInfo == Just RSInactive -> do
+              | relayNotServing (relayOwnStatus gInfo) -> do
                   logWarn "delivery job worker: relay inactive"
                   withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) "relay inactive"
               | otherwise -> do

@@ -916,6 +916,30 @@ instance ToJSON GroupRejectionReason where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+data RelayRejectionReason
+  = RRRRejoinRefused
+  | RRRUnknown {text :: Text}
+  deriving (Eq, Show)
+
+instance FromField RelayRejectionReason where fromField = blobFieldDecoder strDecode
+
+instance ToField RelayRejectionReason where toField = toField . strEncode
+
+instance StrEncoding RelayRejectionReason where
+  strEncode = \case
+    RRRRejoinRefused -> "rejoin_refused"
+    RRRUnknown text -> encodeUtf8 text
+  strP =
+    "rejoin_refused" $> RRRRejoinRefused
+    <|> RRRUnknown . safeDecodeUtf8 <$> A.takeByteString
+
+instance FromJSON RelayRejectionReason where
+  parseJSON = strParseJSON "RelayRejectionReason"
+
+instance ToJSON RelayRejectionReason where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
     memberRole :: GroupMemberRole

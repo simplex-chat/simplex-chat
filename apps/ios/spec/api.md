@@ -415,6 +415,7 @@ Event processing entry point: [`processReceivedMsg`](../Shared/Model/SimpleXAPI.
 | `groupUpdated` | `user, toGroup: GroupInfo` | Group profile changed | [L1106](../Shared/Model/AppAPITypes.swift#L1106) |
 | `groupLinkRelaysUpdated` | `user, groupInfo, groupLink, groupRelays: [GroupRelay]` | Channel relay configuration changed | [L1107](../Shared/Model/AppAPITypes.swift#L1107) |
 | `groupMemberUpdated` | `user, groupInfo, fromMember, toMember` | Member info updated | [L1081](../Shared/Model/AppAPITypes.swift#L1081) |
+| `groupRelayUpdated` | `user, groupInfo, member, groupRelay` | Owner-side: a relay's `relayStatus` and/or the member's status changed. Fires on `XGrpRelayReject` with `relayStatus = .rsRejected` and `member.memberStatus = .memRejected` — final until cleared by the relay operator's `/relay allow <groupId>` (no event emitted to the owner for that clear). | Controller.hs (`CEvtGroupRelayUpdated`) |
 
 ### File Transfer Events
 

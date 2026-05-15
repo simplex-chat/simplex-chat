@@ -486,8 +486,14 @@ func chatRelayDisplayName(_ relay: UserChatRelay) -> String {
 
 func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false, memberStatus: GroupMemberStatus? = nil) -> some View {
     let removed = memberStatus.map { [.memLeft, .memRemoved, .memGroupDeleted].contains($0) } ?? false
-    let color: Color = connFailed || removed ? .red : (status == .rsActive ? .green : .yellow)
-    let text: LocalizedStringKey = connFailed ? "failed" : memberStatus == .memLeft ? "removed by operator" : removed ? "removed" : status.text
+    let isRejected = status == .rsRejected
+    let color: Color = connFailed || removed || isRejected ? .red : (status == .rsActive ? .green : .yellow)
+    let text: LocalizedStringKey =
+        connFailed ? "failed"
+        : memberStatus == .memLeft ? "removed by operator"
+        : isRejected ? "rejected"
+        : removed ? "removed"
+        : status.text
     return HStack(spacing: 4) {
         Circle()
             .fill(color)

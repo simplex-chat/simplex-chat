@@ -72,6 +72,16 @@ When the owner adds a relay to an existing channel:
 
 The announce is an optimisation. When it does not reach a subscriber — because the channel had no subscribers at announce time, because an older client or relay sits in the path, or because of a transient network failure — the subscriber reaches the same end state on the next channel open via its relay sync against the channel's link data.
 
+### Relay refusal
+
+**Trigger.** When a relay operator runs `APILeaveGroup` (`/leave #channel`) on a channel the relay serves, the relay's local `groups` row for the channel transitions `relay_own_status → 'rejected'` in the same transaction that flips its membership to `GSMemLeft`. The row is keyed by the channel's `relay_request_group_link` (a `ShortLinkContact`), which the relay learned when it received the original `x.grp.relay.inv`.
+
+**Signal.** On the next `x.grp.relay.inv` from any owner for a channel link the relay has already marked `'rejected'`, the relay accepts the contact through the agent's normal async-accept path and sends `x.grp.relay.reject` over the owner-relay direct contact channel, then lets the eventual INFO event drive cleanup of its transient bookkeeping. The message is unsigned and is not part of the forwarded group message set. The payload carries a `RelayRejectionReason` — currently only `rejoin_refused`; older relays or future reasons fall through to `RRRUnknown text` for forward compatibility.
+
+**Owner handling.** The owner's CONF handler validates that the sender is a relay member (`memberRole == GRRelay`) and that the receiver is the owner. It transitions the corresponding `GroupRelay.relayStatus` atomically `RSInvited → RSRejected`, marks the relay `GroupMember` `GSMemRejected`, and deletes the chat-layer connection. The transition is final on the owner side and is only cleared by the relay operator running `/relay allow <groupId>` (which transitions the relay's own row `'rejected' → 'inactive'` and emits no event back to the owner). The owner's subsequent user-initiated `addRelays` invocation creates a fresh `GroupRelay` row independent of the rejected one and proceeds normally — the relay's lookup will find no `'rejected'` row for the link.
+
+**Limitations.** (a) An older owner client that does not recognise `x.grp.relay.reject` parses it as `XUnknown` and falls through to the CONF catch-all, logging a parse error and leaving the relay's `GroupRelay` permanently at `RSInvited` — the same UX as a relay that never responds. (b) An older relay binary continues to write `RSInactive` on leave and does not enforce refusal at `xGrpRelayInv`. In a mixed-version deployment where some relays are old, those relays accept fresh invitations after a leave while new-binary relays refuse — asymmetric behaviour that the operator can resolve by re-running `/leave` under the new binary.
+
 ### Subscriber connection
 
 A subscriber joins a channel through the following flow:

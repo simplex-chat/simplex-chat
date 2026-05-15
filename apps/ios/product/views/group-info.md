@@ -221,6 +221,7 @@ Owner sees relay status from `apiGetGroupRelays`; non-owner sees connection stat
 | "Unblock for all?" alert | "Unblock subscriber for all?" |
 | Relay link info row | Shown when `member.relayLink` exists, displays `hostFromRelayLink(link)` |
 | Relay address info row | Shown when `groupRelay?.userChatRelay.address` exists, with "Share relay address" button |
+| Status row (rejected) | Shown when `groupRelay?.relayStatus == .rsRejected`: "Status: rejected by relay operator". Indicates the relay refused to rejoin this channel after a prior `/leave` — clearable only by the relay operator via `/relay allow <groupId>`. |
 | Relay footer | Owner: "Subscribers use relay link to connect to the channel. Relay address was used to set up this relay for the channel." Non-owner: "You connected to the channel via this relay link." |
 
 ## Related Specs

@@ -1059,6 +1059,32 @@ acceptRelayJoinRequestAsync
       ownerMember' <- getGroupMemberById db vr user groupMemberId
       pure (gInfo', ownerMember')
 
+-- Asynchronous rejection of a relay invitation. Mirrors acceptGroupJoinSendRejectAsync:
+-- creates a transient groups row tagged RSRejected (so the worker ignores it) with the
+-- owner member in GSMemInvited so the eventual INFO arrival drives cleanup, then enqueues
+-- agentAcceptContactAsync to send XGrpRelayReject through the agent's normal retry path.
+acceptRelayJoinRequestRejectAsync
+  :: User
+  -> Int64
+  -> VersionRangeChat
+  -> GroupRelayInvitation
+  -> InvitationId
+  -> VersionRangeChat
+  -> Int64
+  -> RelayRejectionReason
+  -> CM ()
+acceptRelayJoinRequestRejectAsync user uclId vr groupRelayInv invId reqChatVRange initialDelay reason = do
+  (_gInfo, ownerMember) <- withStore $ \db ->
+    createRelayRequestGroup db vr user groupRelayInv invId reqChatVRange initialDelay GSMemInvited RSRejected
+  let GroupMember {groupMemberId} = ownerMember
+      msg = XGrpRelayReject reason
+  subMode <- chatReadVar subscriptionMode
+  chatVR <- chatVersionRange
+  let chatV = chatVR `peerConnChatVersion` reqChatVRange
+  connIds <- agentAcceptContactAsync user False invId msg subMode PQSupportOff chatV
+  withStore' $ \db ->
+    createJoiningMemberConnection db user uclId connIds chatV reqChatVRange groupMemberId subMode
+
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
   GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}

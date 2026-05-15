@@ -1244,6 +1244,8 @@ processChatCommand vr nm = \case
       let isOwner = memberRole' membership == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
+      when (relayOwnStatus gInfo == Just RSRejected) $
+        throwChatError $ CECommandError "cannot delete a rejected channel; run /_relay allow <groupId> first"
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId $ do
         deleteCIFiles user filesInfo
@@ -1578,6 +1580,9 @@ processChatCommand vr nm = \case
                   Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
   TestChatRelay address -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APITestChatRelay userId address
+  APIAllowRelayGroup groupId -> withUser $ \user -> do
+    gInfo' <- withStore $ \db -> allowRelayGroupAndSiblings db vr user groupId
+    pure $ CRRelayGroupAllowed user gInfo'
   GetUserChatRelays -> withUser $ \user -> do
     srvs <- withFastStore (`getUserServers` user)
     liftIO $ CRUserServers user <$> groupByOperator (onlyRelays srvs)
@@ -2932,6 +2937,8 @@ processChatCommand vr nm = \case
       deleteGroupLinkIfExists user gInfo'
       -- member records are not deleted to keep history
       withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
+      when (useRelays' gInfo && isRelay membership) $
+        withFastStore' $ \db -> updateRelayOwnStatus_ db gInfo RSRejected
       pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
     where
       -- Relay leaving channel: create delivery job for cursor-based sending and async connection cleanup.
@@ -5032,6 +5039,8 @@ chatCommandP =
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
       "/_relay test " *> (APITestChatRelay <$> A.decimal <* A.space <*> strP),
       "/relay test " *> (TestChatRelay <$> strP),
+      "/_relay allow " *> (APIAllowRelayGroup <$> A.decimal),
+      "/relay allow " *> (APIAllowRelayGroup <$> A.decimal),
       "/relays " *> (SetUserChatRelays <$> chatRelaysP),
       "/relays" $> GetUserChatRelays,
       "/_operators" $> APIGetServerOperators,

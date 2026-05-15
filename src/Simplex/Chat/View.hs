@@ -184,6 +184,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRGroupRelays u g relays -> ttyUser u $ viewGroupRelays g relays
   CRGroupRelaysAdded u g _groupLink relays -> ttyUser u $ viewGroupRelays g relays
   CRGroupRelaysAddFailed u results -> ttyUser u $ viewGroupRelaysAddFailed results
+  CRRelayGroupAllowed u g -> ttyUser u [ttyFullGroup g <> ": relay refusal cleared"]
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
   -- CRGroupConversationsArchived u _g _conversations -> ttyUser u []
@@ -541,6 +542,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtTerminalEvent te -> case te of
     TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
     TEGroupLinkRejected u g reason -> ttyUser u [ttyGroup' g <> ": join rejected, reason: " <> sShow reason]
+    TERelayRejected u g reason -> ttyUser u [ttyGroup' g <> ": relay rejected, reason: " <> sShow reason]
     TENewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
     TEContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
     TEGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
@@ -1435,11 +1437,18 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
     ldn_ :: GroupInfo -> Text
     ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
-    groupSS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}, groupSummary = GroupSummary {currentMembers}} =
+    groupSS g@GroupInfo { membership
+                        , chatSettings = ChatSettings {enableNtfs}
+                        , groupSummary = GroupSummary {currentMembers}
+                        , relayOwnStatus
+                        } =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
-        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
+        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> rejectionSuffix <> alias g
       where
+        rejectionSuffix = case relayOwnStatus of
+          Just RSRejected -> " [rejected]"
+          _ -> ""
         viewMemberStatus = \case
           GSMemRejected -> delete "you are rejected"
           GSMemRemoved -> delete "you are removed"

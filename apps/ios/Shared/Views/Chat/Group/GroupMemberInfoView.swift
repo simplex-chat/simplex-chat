@@ -199,6 +199,9 @@ struct GroupMemberInfoView: View {
                                 Label("Share relay address", systemImage: "square.and.arrow.up")
                             }
                         }
+                        if groupRelay?.relayStatus == .rsRejected {
+                            infoRow("Status", "rejected by relay operator")
+                        }
                     } header: {
                         Text(channelMemberSectionHeader).foregroundColor(theme.colors.secondary)
                     } footer: {
