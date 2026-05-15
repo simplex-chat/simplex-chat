@@ -250,6 +250,7 @@ chatGroupTests = do
         it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
         it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerNoHistoryReceivesProfile
         it "multi senders disseminate independently" testChannelMultiSendersIndependentDissemination
+        it "extBody overflow falls back to bare body and skips vector mark" testChannelExtBodyOverflowSkipsVectorMark
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
@@ -8841,6 +8842,62 @@ testChannelLateJoinerNoHistoryReceivesProfile ps =
           bob <# "#team cath> hi again"
           alice <# "#team cath> hi again [>>]"
           dan <# "#team cath> hi again [>>]"
+
+-- Regression test for: prepended XGrpMemNew can push extBody past maxEncodedMsgLength,
+-- causing the agent to reject delivery to "needs profiles" recipients while the worker
+-- still marks their sent_profile_vector — silently locking them out of future
+-- dissemination for that sender. With the fix, the worker falls back to delivering the
+-- bare body (no prepend) and skips the vector mark, so the next forward retries.
+testChannelExtBodyOverflowSkipsVectorMark :: HasCallStack => TestParams -> IO ()
+testChannelExtBodyOverflowSkipsVectorMark ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          -- Inflate cath's profile image directly on the relay's database so the
+          -- prepended XGrpMemNew element for her overflows maxEncodedMsgLength even
+          -- with a tiny forwarded body. This bypasses the chat client's profile-size
+          -- validation; we're exercising the relay's overflow path, not the validator.
+          let bigImage = T.pack ("data:image/png;base64," <> replicate 16000 'A')
+          withCCTransaction bob $ \db ->
+            DB.execute
+              db
+              "UPDATE contact_profiles SET image = ? WHERE display_name = ?"
+              (bigImage, "cath" :: T.Text)
+
+          -- cath sends a small message. The relay loads cath's (now huge) profile from
+          -- its DB and tries to prepend it; extBody exceeds maxEncodedMsgLength. The
+          -- worker falls back to delivering the bare body to all recipients in this
+          -- job AND skips the vector marks. dan learns nothing about cath from this
+          -- batch — sees the familiar "unknown member" line — but recovery is not
+          -- locked out for future forwards.
+          cath #> "#team hi"
+          bob <# "#team cath> hi"
+          -- alice already knows cath via the join-time XGrpMemNew; her view is unaffected.
+          alice <# "#team cath> hi [>>]"
+          -- dan never received an XGrpMemNew for cath (no prepend in the overflowing batch).
+          dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+          dan <# "#team cath> hi [>>]"
+
+          -- Crucial regression assertion: cath.sent_profile_vector on the relay (bob)
+          -- is empty. Without the fix, the worker would have marked dan.idx (and
+          -- alice.idx) after the agent-rejected delivery, locking dan out of future
+          -- dissemination — the bug the fix closes.
+          checkSentProfileVectorEmpty bob "cath"
+  where
+    checkSentProfileVectorEmpty :: HasCallStack => TestCC -> T.Text -> IO ()
+    checkSentProfileVectorEmpty cc senderName = do
+      lens <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT length(sent_profile_vector) FROM group_members WHERE local_display_name = ?"
+          (Only senderName) ::
+          IO [Only Int]
+      map fromOnly lens `shouldBe` [0]
 
 testChannelMultiSendersIndependentDissemination :: HasCallStack => TestParams -> IO ()
 testChannelMultiSendersIndependentDissemination ps =
