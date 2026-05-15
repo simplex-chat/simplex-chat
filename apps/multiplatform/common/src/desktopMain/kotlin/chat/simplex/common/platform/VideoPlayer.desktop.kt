@@ -214,8 +214,8 @@ actual class VideoPlayer actual constructor(
       }
     }
 
-    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(playerThread.asCoroutineDispatcher()) {
-      val mediaComponent = getOrCreateHelperPlayer()
+    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(previewThread.asCoroutineDispatcher()) {
+      val mediaComponent = createHelperPlayer()
       val player = mediaComponent.mediaPlayer()
       if (uri == null || !uri.toFile().exists()) {
         if (withAlertOnException) showVideoDecodingException()
@@ -232,7 +232,7 @@ actual class VideoPlayer actual constructor(
       val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()
       if (orientation == null) {
         player.stop()
-        putHelperPlayer(mediaComponent)
+        player.release()
         if (withAlertOnException) showVideoDecodingException()
 
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
@@ -250,13 +250,13 @@ actual class VideoPlayer actual constructor(
       }?.toComposeImageBitmap()
       val duration = player.duration.toLong()
       player.stop()
-      putHelperPlayer(mediaComponent)
+      player.release()
       return@withContext VideoPlayerInterface.PreviewAndDuration(preview = preview, timestamp = 0L, duration = duration)
     }
 
     val playerThread = Executors.newSingleThreadExecutor()
+    private val previewThread = Executors.newSingleThreadExecutor()
     private val playersPool: ArrayList<Component> = ArrayList()
-    private val helperPlayersPool: ArrayList<CallbackMediaPlayerComponent> = ArrayList()
 
     private fun getOrCreatePlayer(): Component = playersPool.removeFirstOrNull() ?: createNew()
 
@@ -280,7 +280,6 @@ actual class VideoPlayer actual constructor(
 
     private fun putPlayer(player: Component) = playersPool.add(player)
 
-    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) })
-    private fun putHelperPlayer(player: CallbackMediaPlayerComponent) = helperPlayersPool.add(player)
+    private fun createHelperPlayer(): CallbackMediaPlayerComponent = CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) })
   }
 }
