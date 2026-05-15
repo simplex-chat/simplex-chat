@@ -839,7 +839,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 deleteGroup db user gInfo
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
-      CON _pqEnc -> unless (memberStatus m == GSMemRejected || memberStatus membership == GSMemRejected) $ do
+      CON _pqEnc -> unless rejected $ do
         -- TODO [knocking] send pending messages after accepting?
         -- possible improvement: check for each pending message, requires keeping track of connection state
         unless (connDisabled conn) $ sendPendingGroupMessages user gInfo m conn
@@ -941,6 +941,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     forM_ (memberConn im) $ \imConn ->
                       void $ sendDirectMemberMessage imConn (XGrpMemCon memberId) groupId
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
+        where
+          rejected =
+            memberStatus m `elem` ([GSMemRejected, GSMemLeft, GSMemRemoved, GSMemGroupDeleted] :: [GroupMemberStatus])
+              || memberStatus membership == GSMemRejected
+              || maybe False (`elem` ([RSRejected, RSInactive] :: [RelayStatus])) (relayOwnStatus gInfo)
       MSG msgMeta _msgFlags msgBody -> do
         tags <- newTVarIO []
         withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
