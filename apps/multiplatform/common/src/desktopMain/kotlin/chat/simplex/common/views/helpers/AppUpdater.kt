@@ -376,7 +376,7 @@ private fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset>
   val res = if (isRunningFromFlatpak()) {
     // No need to show download options for Flatpak users
     emptyList()
-  } else if (!isRunningFromAppImage() && Runtime.getRuntime().exec("which dpkg").onExit().join().exitValue() == 0) {
+  } else if (desktopPlatform.isLinux() && !isRunningFromAppImage() && Runtime.getRuntime().exec("which dpkg").onExit().join().exitValue() == 0) {
     // Show all available .deb packages and user will choose the one that works on his system (for Debian derivatives)
     release.assets.filter { it.name.lowercase().endsWith(".deb") }
   } else {
