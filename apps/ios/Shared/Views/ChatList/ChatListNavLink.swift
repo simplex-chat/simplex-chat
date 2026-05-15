@@ -67,7 +67,7 @@ struct ChatListNavLink: View {
             switch chat.chatInfo {
             case let .direct(contact):
                 contactNavLink(contact)
-            case let .group(groupInfo, _):
+            case let .group(groupInfo, _, _):
                 groupNavLink(groupInfo)
             case let .local(noteFolder):
                 noteFolderNavLink(noteFolder)

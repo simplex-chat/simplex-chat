@@ -313,7 +313,7 @@ struct FramedItemView: View {
     
     private func membership() -> GroupMember? {
         switch chat.chatInfo {
-        case let .group(groupInfo: groupInfo, _): return groupInfo.membership
+        case let .group(groupInfo: groupInfo, _, _): return groupInfo.membership
         default: return nil
         }
     }

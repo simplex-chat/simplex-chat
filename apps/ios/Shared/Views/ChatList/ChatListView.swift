@@ -952,17 +952,17 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         case let .direct(contact): !contact.isContactCard && !contact.chatDeleted
         case .contactRequest: true
         case .contactConnection: true
-        case let .group(groupInfo, _): groupInfo.businessChat?.chatType == .customer
+        case let .group(groupInfo, _, _): groupInfo.businessChat?.chatType == .customer
         default: false
         }
     case .groups:
         switch chatInfo {
-        case let .group(groupInfo, _): groupInfo.businessChat == nil && !groupInfo.isChannel
+        case let .group(groupInfo, _, _): groupInfo.businessChat == nil && !groupInfo.isChannel
         default: false
         }
     case .channels:
         switch chatInfo {
-        case let .group(groupInfo, _): groupInfo.isChannel
+        case let .group(groupInfo, _, _): groupInfo.isChannel
         default: false
         }
     case .business:

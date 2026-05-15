@@ -14,7 +14,7 @@ public protocol ChatLike {
 
 extension ChatLike {
     public func groupFeatureEnabled(_ feature: GroupFeature) -> Bool {
-        if case let .group(groupInfo, _) = self.chatInfo {
+        if case let .group(groupInfo, _, _) = self.chatInfo {
             let p = groupInfo.fullGroupPreferences
             return switch feature {
             case .timedMessages: p.timedMessages.on
@@ -93,7 +93,7 @@ private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
 public func chatIconName(_ cInfo: ChatInfo) -> String {
     switch cInfo {
     case let .direct(contact): contact.chatIconName
-    case let .group(groupInfo, _): groupInfo.chatIconName
+    case let .group(groupInfo, _, _): groupInfo.chatIconName
     case .local: "folder.circle.fill"
     case .contactRequest: "person.crop.circle.fill"
     default:  "circle.fill"

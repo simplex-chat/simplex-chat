@@ -35,7 +35,7 @@ struct SecondaryChatView: View {
 #Preview {
     SecondaryChatView(
         chat: Chat(
-            chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData)),
+            chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData), channelMsgInfo: nil),
             chatItems: [],
             chatStats: ChatStats()
         ),

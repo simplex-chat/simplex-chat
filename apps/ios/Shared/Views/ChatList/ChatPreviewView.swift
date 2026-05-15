@@ -142,7 +142,7 @@ struct ChatPreviewView: View {
             } else {
                 EmptyView()
             }
-        case let .group(groupInfo, _):
+        case let .group(groupInfo, _, _):
             switch (groupInfo.membership.memberStatus) {
             case .memRejected: inactiveIcon()
             case .memLeft: inactiveIcon()
@@ -174,7 +174,7 @@ struct ChatPreviewView: View {
                 ? theme.colors.secondary
                 : nil
             previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(color)
-        case let .group(groupInfo, _):
+        case let .group(groupInfo, _, _):
             let color = if deleting {
                 theme.colors.secondary
             } else {
@@ -377,7 +377,7 @@ struct ChatPreviewView: View {
             } else {
                 nil
             }
-        case let .group(groupInfo, _):
+        case let .group(groupInfo, _, _):
             if groupInfo.nextConnectPrepared {
                 if groupInfo.businessChat?.chatType == .business {
                     Text("Open to connect")
