@@ -299,6 +299,10 @@ chatGroupTests = do
       it "observer should not be able to comment" testChannelCommentObserverRejected
       it "comments should not appear in main channel pagination" testChannelCommentMainChatExclusion
       it "subscriber should quote comment on channel post" testChannelCommentQuote
+      it "subscriber should receive comment from another subscriber via relay" testChannelCommentRcvFromAnotherSubscriber
+      it "owner should moderate-delete subscriber comment and decrement count" testChannelCommentModerationDelete
+      it "content edit should preserve commentsDisabled flag" testChannelCommentDisabledViaPrefs
+      it "subscriber should react to a channel comment" testChannelCommentReact
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -10827,6 +10831,15 @@ testChannelCommentMainChatExclusion ps =
             alice #$> ("/_get chat #1 parent=" <> aliceParentId <> " count=10", chat, [(0, "reply")])
             cath #$> ("/_get chat #1 parent=" <> cathParentId <> " count=10", chat, [(1, "reply")])
 
+            -- §4.2: CPAround in a comments thread must be scoped to the parent.
+            -- The around query requires parent= as well — getGroupChat's mutual-exclusion
+            -- check at Messages.hs:1445 prohibits scope= with parent=, but parent= +
+            -- around= is allowed and selects the comments-thread items only.
+            -- getGroupNavInfo_'s nav counts are scoped via the same predicate; nav metadata
+            -- is not surfaced by testView so we assert the items list only.
+            cathCommentId <- lastGroupItemId cath 1
+            cath #$> ("/_get chat #1 parent=" <> cathParentId <> " around=" <> cathCommentId <> " count=5", chat, [(1, "reply")])
+
 testChannelCommentQuote :: HasCallStack => TestParams -> IO ()
 testChannelCommentQuote ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -10913,6 +10926,187 @@ testChannelCommentQuote ps =
             let cm3 = "{\"quotedItemId\": " <> cathCommentId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"cross-section quote\"}}"
             cath ##> ("/_comment #1 " <> cathSecondParentId <> " json [" <> cm3 <> "]")
             cath <## "bad chat command: quoted item does not belong to the same comment section"
+
+testChannelCommentRcvFromAnotherSubscriber :: HasCallStack => TestParams -> IO ()
+testChannelCommentRcvFromAnotherSubscriber ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- capture every viewer's local parent id BEFORE the comment is sent
+            cathParentId <- lastGroupItemId cath 1
+            danParentId <- lastGroupItemId dan 1
+            eveParentId <- lastGroupItemId eve 1
+
+            -- cath comments via the relay; dan and eve receive via the unknown-member path
+            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath <# "#team reply"
+            bob <# "#team cath> reply"
+            concurrentlyN_
+              [ alice <# "#team cath> reply [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> reply [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> reply [>>]"
+              ]
+
+            -- the comment is queryable via parent-scoped pagination on every receiver,
+            -- including the subscribers who learned cath through the unknown-member path
+            dan #$> ("/_get chat #1 parent=" <> danParentId <> " count=10", chat, [(0, "reply")])
+            eve #$> ("/_get chat #1 parent=" <> eveParentId <> " count=10", chat, [(0, "reply")])
+
+testChannelCommentModerationDelete :: HasCallStack => TestParams -> IO ()
+testChannelCommentModerationDelete ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            aliceParentId <- lastGroupItemId alice 1
+            cathParentId <- lastGroupItemId cath 1
+            cath ##> ("/_comment #1 " <> cathParentId <> " text moderate-me")
+            cath <# "#team moderate-me"
+            bob <# "#team cath> moderate-me"
+            concurrentlyN_
+              [ alice <# "#team cath> moderate-me [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> moderate-me [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> moderate-me [>>]"
+              ]
+
+            -- count = 1 after one comment
+            getCommentsTotal alice aliceParentId `shouldReturn` 1
+
+            -- owner moderates cath's comment by text (resolves to the latest cath-text item)
+            alice ##> "\\\\ #team @cath moderate-me"
+            alice <## "message marked deleted by you"
+            bob <# "#team cath> [marked deleted by alice] moderate-me"
+            concurrentlyN_
+              [ cath <# "#team cath> [marked deleted by alice] moderate-me",
+                dan <# "#team cath> [marked deleted by alice] moderate-me",
+                eve <# "#team cath> [marked deleted by alice] moderate-me"
+              ]
+
+            -- comments_total decremented exactly once: from 1 to 0
+            getCommentsTotal alice aliceParentId `shouldReturn` 0
+  where
+    getCommentsTotal cc parentId = do
+      rows <-
+        withCCTransaction cc $ \db ->
+          DB.query db "SELECT comments_total FROM chat_items WHERE chat_item_id = ?" (Only parentId) :: IO [[Int]]
+      case rows of
+        [[n]] -> pure n
+        _ -> error $ "unexpected rows for comments_total: " <> show rows
+
+testChannelCommentDisabledViaPrefs :: HasCallStack => TestParams -> IO ()
+testChannelCommentDisabledViaPrefs ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            aliceParentId <- lastGroupItemId alice 1
+            cathParentId <- lastGroupItemId cath 1
+
+            -- step 1: alice disables comments on the post via XMsgUpdate.prefs
+            alice ##> ("/_comments_disabled #1 " <> aliceParentId <> " on")
+            alice <## "ok"
+
+            -- wait for XMsgUpdate with prefs to propagate to subscribers via the relay
+            threadDelay 1000000
+
+            -- cath's local commentsDisabled is now True; attempted comment is rejected
+            cath ##> ("/_comment #1 " <> cathParentId <> " text after-disable")
+            cath <## "bad chat command: feature not allowed Comments"
+
+            -- step 2: alice edits the POST CONTENT (no prefs in the update — prefs defaults to Nothing).
+            -- the invariant under test: a content-only update MUST NOT silently reset commentsDisabled.
+            alice ##> ("/_update item #1 " <> aliceParentId <> " text hello edited")
+            alice <# "#team [edited] hello edited"
+            bob <# "#team> [edited] hello edited"
+            [cath, dan, eve] *<# "#team> [edited] hello edited"
+
+            -- wait for the content-edit to settle on subscribers
+            threadDelay 1000000
+
+            -- commentsDisabled is still True after the content edit; cath remains rejected
+            cath ##> ("/_comment #1 " <> cathParentId <> " text after-content-edit")
+            cath <## "bad chat command: feature not allowed Comments"
+
+testChannelCommentReact :: HasCallStack => TestParams -> IO ()
+testChannelCommentReact ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- cath comments on alice's post
+            cathParentId <- lastGroupItemId cath 1
+            cath ##> ("/_comment #1 " <> cathParentId <> " text react-target")
+            cath <# "#team react-target"
+            bob <# "#team cath> react-target"
+            concurrentlyN_
+              [ alice <# "#team cath> react-target [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> react-target [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> react-target [>>]"
+              ]
+
+            -- dan reacts to cath's comment. The XMsgReact wire carries scope = Nothing
+            -- (comments do not appear in MsgScope; the parent lives in MsgContainer.parent
+            -- for the new event, not in the reaction's scope). The receive-side lookup
+            -- (getGroupChatItemBySharedMsgId / getGroupMemberCIBySharedMsgId) resolves
+            -- the comment by SharedMsgId — no parent filter — so the reaction lands.
+            dan ##> "+1 #team react-target"
+            dan <## "added 👍"
+            bob <# "#team dan> > cath react-target"
+            bob <## "    + 👍"
+            concurrentlyN_
+              [ do
+                  alice <# "#team dan> > cath react-target"
+                  alice <## "    + 👍",
+                do
+                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record dan"
+                  cath <# "#team dan> > cath react-target"
+                  cath <## "    + 👍",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record dan"
+                  eve <# "#team dan> > cath react-target"
+                  eve <## "    + 👍"
+              ]
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =

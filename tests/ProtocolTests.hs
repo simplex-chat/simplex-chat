@@ -63,6 +63,9 @@ quotedMsg =
     (MsgRef (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True Nothing)
     $ MCText "hello there!"
 
+parentMsgRef :: MsgRef
+parentMsgRef = MsgRef (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True Nothing
+
 (==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
 s ==## msg = do
   case parseChatMessages s of
@@ -188,9 +191,24 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.new forward with file" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})
+  it "x.msg.new comment (parent only)" $
+    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"reply\",\"type\":\"text\"},\"parent\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}"
+      ##==## ChatMessage
+        chatInitialVRange
+        (Just $ SharedMsgId "\1\2\3\4")
+        (XMsgNew (mcComment parentMsgRef (MCText "reply")))
+  it "x.msg.new comment quoting another comment (parent and quote)" $
+    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"reply\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"parent\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}"
+      ##==## ChatMessage
+        chatInitialVRange
+        (Just $ SharedMsgId "\1\2\3\4")
+        (XMsgNew (mcEmpty {content = MCText "reply", quote = Just quotedMsg, parent = Just parentMsgRef}))
   it "x.msg.update" $
     "{\"v\":\"1\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing
+  it "x.msg.update with prefs (comments disabled)" $
+    "{\"v\":\"1\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"prefs\":{\"commentsDisabled\":true}}}"
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just MsgPrefs {commentsDisabled = True})
   it "x.msg.del" $
     "{\"v\":\"1\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
       #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing
