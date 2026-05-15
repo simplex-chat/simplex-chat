@@ -24,24 +24,25 @@ struct ChannelRelaysView: View {
     var body: some View {
         List {
             relaysList()
-            if groupInfo.isOwner {
-                Section {
-                    Button {
-                        showAddRelay = true
-                    } label: {
-                        Label("Add relay", systemImage: "plus")
-                    }
-                }
-            }
+            // TODO [relays] re-enable when relay management ships
+            // if groupInfo.isOwner {
+            //     Section {
+            //         Button {
+            //             showAddRelay = true
+            //         } label: {
+            //             Label("Add relay", systemImage: "plus")
+            //         }
+            //     }
+            // }
         }
-        .sheet(isPresented: $showAddRelay) {
-            // Backend gate (APIAddGroupRelays) rejects any chatRelayId already in group_relays
-            // regardless of relayStatus, so all current rows must be excluded from the add list.
-            let existingRelayIds = Set(groupRelays.compactMap { $0.userChatRelay.chatRelayId })
-            AddGroupRelayView(groupInfo: groupInfo, existingRelayIds: existingRelayIds) {
-                Task { await chatModel.loadGroupMembers(groupInfo) }
-            }
-        }
+        // TODO [relays] re-enable when relay management ships
+        // .sheet(isPresented: $showAddRelay) {
+        //     // Backend gate (APIAddGroupRelays) rejects any chatRelayId already in group_relays
+        //     // regardless of relayStatus, so all current rows must be excluded from the add list.
+        //     let existingRelayIds = Set(groupRelays.compactMap { $0.userChatRelay.chatRelayId })
+        //     AddGroupRelayView(groupInfo: groupInfo, existingRelayIds: existingRelayIds) {
+        //         Task { await chatModel.loadGroupMembers(groupInfo) }
+        //     }
         .onAppear {
             Task {
                 await chatModel.loadGroupMembers(groupInfo)
@@ -80,18 +81,20 @@ struct ChannelRelaysView: View {
                             : subscriberRelayStatusText(member.wrapped)
                         relayMemberRow(member.wrapped, statusText: statusText)
                     }
-                    if groupInfo.isOwner && member.wrapped.canBeRemoved(groupInfo: groupInfo) {
-                        link.swipeActions(edge: .trailing) {
-                            Button {
-                                showRemoveMemberAlert(groupInfo, member.wrapped)
-                            } label: {
-                                Label("Remove relay", systemImage: "trash")
-                            }
-                            .tint(.red)
-                        }
-                    } else {
-                        link
-                    }
+                    // TODO [relays] re-enable when relay management ships
+                    // if groupInfo.isOwner && member.wrapped.canBeRemoved(groupInfo: groupInfo) {
+                    //     link.swipeActions(edge: .trailing) {
+                    //         Button {
+                    //             showRemoveMemberAlert(groupInfo, member.wrapped)
+                    //         } label: {
+                    //             Label("Remove relay", systemImage: "trash")
+                    //         }
+                    //         .tint(.red)
+                    //     }
+                    // } else {
+                    //     link
+                    // }
+                    link
                 }
             } footer: {
                 Text("Chat relays forward messages to channel subscribers.")
