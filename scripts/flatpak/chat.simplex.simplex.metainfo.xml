@@ -44,7 +44,6 @@
         <p>New in v6.5.2:</p>
         <ul>
           <li>allow deleting messages from channel history without time limit.</li>
-          <li>support adding and removing chat relays in channels on the subscriber side (will be enabled in UI in v6.5.x or v7).</li>
         </ul>
         <p>New in v6.5:</p>
         <p>Public channels - speak freely!</p>
