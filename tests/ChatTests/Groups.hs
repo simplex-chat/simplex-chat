@@ -9479,8 +9479,8 @@ testChannelRelayLeave ps =
               -- relay1 (bob) leaves
               threadDelay 100000
               bob ##> "/leave #team"
-              bob <## "#team: you left the group"
-              bob <## "use /d #team to delete the group"
+              bob <## "#team: you left the group (future invitations will be rejected)"
+              bob <## "use /relay allow #team then /d #team to delete the group"
               concurrentlyN_
                 [ alice <## "#team: bob left the group (signed)",
                   -- cath: not notified (relays not connected, owner doesn't forward)
@@ -9502,8 +9502,8 @@ testChannelRelayLeave ps =
               -- relay2 (cath) leaves
               threadDelay 100000
               cath ##> "/leave #team"
-              cath <## "#team: you left the group"
-              cath <## "use /d #team to delete the group"
+              cath <## "#team: you left the group (future invitations will be rejected)"
+              cath <## "use /relay allow #team then /d #team to delete the group"
               concurrentlyN_
                 [ alice <## "#team: cath left the group (signed)",
                   dan <## "#team: cath left the group (signed)",
@@ -9874,8 +9874,8 @@ testChannelRemoveLeftRelay ps =
           bob ##> "/l team"
           concurrentlyN_
             [ do
-                bob <## "#team: you left the group"
-                bob <## "use /d #team to delete the group",
+                bob <## "#team: you left the group (future invitations will be rejected)"
+                bob <## "use /relay allow #team then /d #team to delete the group",
               alice <## "#team: bob left the group (signed)",
               dan <## "#team: bob left the group (signed)"
             ]
@@ -9903,8 +9903,8 @@ testChannelRemoveLeftRelay ps =
           cath ##> "/l team"
           concurrentlyN_
             [ do
-                cath <## "#team: you left the group"
-                cath <## "use /d #team to delete the group",
+                cath <## "#team: you left the group (future invitations will be rejected)"
+                cath <## "use /relay allow #team then /d #team to delete the group",
               alice <## "#team: cath left the group (signed)",
               dan <## "#team: cath left the group (signed)"
             ]
