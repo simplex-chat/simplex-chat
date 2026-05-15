@@ -365,7 +365,7 @@ fun FramedItemView(
               is MsgContent.MCReport -> {
                 val prefix = buildAnnotatedString {
                   withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
-                    append(if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+                    append(itemPrefixText(ci))
                   }
                 }
                 CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix)

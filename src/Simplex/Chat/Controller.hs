@@ -73,6 +73,7 @@ import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
 import Simplex.Messaging.Agent.Lock
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
@@ -158,6 +159,10 @@ data ChatConfig = ChatConfig
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
+    relayChecksInterval :: NominalDiffTime,
+    relayInactiveTTL :: NominalDiffTime,
+    relayRequestRetryInterval :: RetryInterval,
+    relayRequestExpiry :: (Int, NominalDiffTime),
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     remoteCompression :: Bool,
@@ -470,13 +475,13 @@ data ChatCommand
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectionLink is used to report link parsing failure as special error
+  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink, resolveKnown :: Bool, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectionLink is used to report link parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
   | APIPrepareGroup UserId CreatedLinkContact DirectLink GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
-  | APIConnectPreparedGroup GroupId IncognitoEnabled (Maybe MsgContent)
+  | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connLink_ :: Maybe AConnectionLink}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
@@ -518,6 +523,7 @@ data ChatCommand
   -- TODO [relays] starting role should be communicated in protocol from owner to relays (see channelSubscriberRole config)
   | APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
   | APIGetGroupRelays {groupId :: GroupId}
+  | APIAddGroupRelays {groupId :: GroupId, relayIds :: NonEmpty Int64}
   | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
@@ -729,6 +735,8 @@ data ChatResponse
   | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CRPublicGroupCreationFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupRelays {user :: User, groupInfo :: GroupInfo, groupRelays :: [GroupRelay]}
+  | CRGroupRelaysAdded {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+  | CRGroupRelaysAddFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupMembers {user :: User, group :: Group}
   | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
@@ -990,7 +998,7 @@ data ChatPagination
   deriving (Show)
 
 data PaginationByTime
-  = PTLast Int
+  = PTLast {count :: Int}
   | PTAfter UTCTime Int
   | PTBefore UTCTime Int
   deriving (Show)
@@ -1037,13 +1045,25 @@ data GroupLinkPlan
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
-  | GLPKnown {groupInfo :: GroupInfo}
+  | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: BoolDef, ownerVerification :: Maybe OwnerVerification, linkOwners :: ListDef GroupLinkOwner}
   | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
+  deriving (Show)
+
+data GroupLinkOwner = GroupLinkOwner
+  { memberId :: MemberId,
+    memberKey :: C.PublicKeyEd25519
+  }
   deriving (Show)
 
 data OwnerVerification
   = OVVerified
   | OVFailed {reason :: Text}
+  deriving (Show)
+
+data GroupOwnerContact = GroupOwnerContact
+  { contactId :: ContactId,
+    memberId :: MemberId
+  }
   deriving (Show)
 
 type DirectLink = Bool
@@ -1655,6 +1675,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
 
 $(JQ.deriveJSON defaultJSON ''GroupShortLinkInfo)
+
+$(JQ.deriveJSON defaultJSON ''GroupLinkOwner)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 

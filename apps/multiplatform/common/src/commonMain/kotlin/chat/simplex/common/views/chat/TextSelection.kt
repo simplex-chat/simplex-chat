@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.item.itemPrefixText
 import chat.simplex.common.views.chat.item.itemSegmentDisplayText
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -52,8 +53,10 @@ val LocalItemContext = compositionLocalOf { ItemContext() }
 
 data class SelectionRange(
     val startIndex: Int,
+    val startItemId: Long,
     val startOffset: Int,
     val endIndex: Int,
+    val endItemId: Long,
     val endOffset: Int
 )
 
@@ -79,11 +82,13 @@ class SelectionManager {
     var viewportPosition by mutableStateOf(Offset.Zero)
     var focusCharRect by mutableStateOf(Rect.Zero) // X: absolute window, Y: relative to item
     var listState: State<LazyListState>? = null
+    var mergedItemsState: State<MergedItems>? = null
     var onCopySelection: (() -> Unit)? = null
     private var autoScrollJob: Job? = null
 
     fun startSelection(startIndex: Int, anchorY: Float, anchorX: Float) {
-        range = SelectionRange(startIndex, -1, startIndex, -1)
+        val id = mergedItemsState?.value?.items?.getOrNull(startIndex)?.newest()?.item?.id ?: return
+        range = SelectionRange(startIndex, id, -1, startIndex, id, -1)
         selectionState = SelectionState.Selecting
         anchorWindowY = anchorY
         anchorWindowX = anchorX
@@ -96,7 +101,8 @@ class SelectionManager {
 
     fun updateFocusIndex(index: Int) {
         val r = range ?: return
-        range = r.copy(endIndex = index)
+        val id = mergedItemsState?.value?.items?.getOrNull(index)?.newest()?.item?.id ?: return
+        range = r.copy(endIndex = index, endItemId = id)
     }
 
     fun updateFocusOffset(offset: Int, charRect: Rect = Rect.Zero) {
@@ -175,6 +181,15 @@ class SelectionManager {
         updateFocusIndex(idx)
     }
 
+    fun resyncIndices() {
+        val r = range ?: return
+        val items = mergedItemsState?.value?.items ?: return
+        val newStartIndex = items.indexOfFirst { it.newest().item.id == r.startItemId }
+        val newEndIndex = items.indexOfFirst { it.newest().item.id == r.endItemId }
+        if (newStartIndex < 0 || newEndIndex < 0) clearSelection()
+        else range = r.copy(startIndex = newStartIndex, endIndex = newEndIndex)
+    }
+
     fun updateAutoScroll(draggingDown: Boolean, pointerY: Float, scope: CoroutineScope) {
         val edgeDistance = if (draggingDown) viewportBottom - pointerY else pointerY - viewportTop
         if (edgeDistance !in 0f..AUTO_SCROLL_ZONE_PX) {
@@ -196,12 +211,13 @@ class SelectionManager {
         }
     }
 
-    fun getSelectedCopiedText(items: List<MergedItem>, linkMode: SimplexLinkMode): String {
+    fun getSelectedCopiedText(items: List<MergedItem>, revealedItems: Set<Long>, linkMode: SimplexLinkMode): String {
         val r = range ?: return ""
         val lo = minOf(r.startIndex, r.endIndex)
         val hi = maxOf(r.startIndex, r.endIndex)
         return (lo..hi).mapNotNull { idx ->
             val ci = items.getOrNull(idx)?.newest()?.item ?: return@mapNotNull null
+            if (ci.meta.itemDeleted != null && (!revealedItems.contains(ci.id) || ci.isDeletedContent)) return@mapNotNull null
             val sel = selectedRange(range, idx) ?: return@mapNotNull null
             selectedItemCopiedText(ci, sel, linkMode)
         }.reversed().joinToString("\n")
@@ -239,15 +255,22 @@ fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
 }
 
 // Extracts source text for the selected range within one item.
-// Selection offsets are in display-text space. For transformed segments (mentions, links with showText),
-// the full source is emitted if any part is selected. For untransformed segments, partial substring works.
+// Selection offsets are in display-text space (which includes any leading itemPrefixText).
+// For transformed segments (mentions, links with showText), the full source is emitted if any part
+// is selected. For untransformed segments, partial substring works.
 private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: SimplexLinkMode): String {
-    val formattedText = ci.formattedText ?: return ci.text.substring(
-        sel.first.coerceAtMost(ci.text.length),
-        (sel.last + 1).coerceAtMost(ci.text.length)
-    )
+    val prefix = itemPrefixText(ci)
     val sb = StringBuilder()
-    var displayOffset = 0
+    if (sel.first < prefix.length) {
+        sb.append(prefix, sel.first, minOf(prefix.length, sel.last + 1))
+    }
+    val formattedText = ci.formattedText ?: run {
+        val start = (sel.first - prefix.length).coerceAtLeast(0).coerceAtMost(ci.text.length)
+        val end = (sel.last + 1 - prefix.length).coerceAtMost(ci.text.length)
+        if (start < end) sb.append(ci.text, start, end)
+        return sb.toString()
+    }
+    var displayOffset = prefix.length
     for (ft in formattedText) {
         val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
         val displayEnd = displayOffset + segDisplay.length
@@ -268,7 +291,7 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
 // Snaps a boundary offset to include full transformed segments.
 private fun snapOffset(ci: ChatItem, offset: Int, linkMode: SimplexLinkMode, expandRight: Boolean): Int {
     val formattedText = ci.formattedText ?: return offset
-    var displayOffset = 0
+    var displayOffset = itemPrefixText(ci).length
     for (ft in formattedText) {
         val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
         val displayEnd = displayOffset + segDisplay.length
@@ -291,6 +314,7 @@ fun BoxScope.SelectionHandler(
     manager: SelectionManager,
     listState: State<LazyListState>,
     mergedItems: State<MergedItems>,
+    revealedItems: State<Set<Long>>,
     linkMode: SimplexLinkMode
 ): Modifier {
     val touchSlop = LocalViewConfiguration.current.touchSlop
@@ -310,10 +334,14 @@ fun BoxScope.SelectionHandler(
     }
 
     manager.listState = listState
+    manager.mergedItemsState = mergedItems
     manager.onCopySelection = {
-        clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(mergedItems.value.items, linkMode)))
+        clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(mergedItems.value.items, revealedItems.value, linkMode)))
         showToast(generalGetString(MR.strings.copied))
     }
+
+    // Resync after the items list mutates (new message arrives, item deleted).
+    SideEffect { manager.resyncIndices() }
 
     return Modifier
         .focusRequester(focusRequester)

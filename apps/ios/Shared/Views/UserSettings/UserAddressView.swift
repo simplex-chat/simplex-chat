@@ -215,11 +215,6 @@ struct UserAddressView: View {
             HStack(spacing: 8) {
                 let link = userAddress.connLinkContact.simplexChatUri(short: showShortLink)
                 linkTextView(link)
-                Button { UIPasteboard.general.string = link } label: {
-                    Image(systemName: "doc.on.doc")
-                        .padding(.top, -7)
-                        .padding(.horizontal, 8)
-                }
                 Button { showShareSheet(items: [link]) } label: {
                     Image(systemName: "square.and.arrow.up")
                         .padding(.top, -7)

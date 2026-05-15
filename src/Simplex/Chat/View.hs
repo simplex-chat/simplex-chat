@@ -182,6 +182,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
   CRGroupRelays u g relays -> ttyUser u $ viewGroupRelays g relays
+  CRGroupRelaysAdded u g _groupLink relays -> ttyUser u $ viewGroupRelays g relays
+  CRGroupRelaysAddFailed u results -> ttyUser u $ viewGroupRelaysAddFailed results
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
   -- CRGroupConversationsArchived u _g _conversations -> ttyUser u []
@@ -1239,13 +1241,17 @@ viewGroupCreated g testView =
   where
     relaysInstruction = "wait for selected relay(s) to join, then you can invite members via group link"
 
-viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
-viewPublicGroupCreationFailed results =
-  ["channel not created, results:"]
-    <> map showRelayResult results
+viewRelayResults :: StyledString -> [AddRelayResult] -> [StyledString]
+viewRelayResults header results = [header] <> map showRelayResult results
   where
     showRelayResult (AddRelayResult UserChatRelay {chatRelayId = DBEntityId i} err_) =
       "  relay " <> sShow i <> ": " <> maybe "ok" (plain . tshow) err_
+
+viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
+viewPublicGroupCreationFailed = viewRelayResults "channel not created, results:"
+
+viewGroupRelaysAddFailed :: [AddRelayResult] -> [StyledString]
+viewGroupRelaysAddFailed = viewRelayResults "relays not added, results:"
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
@@ -2103,7 +2109,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
     GLPConnectingProhibit (Just g) -> connecting g
-    GLPKnown g@GroupInfo {preparedGroup, membership = m} -> case preparedGroup of
+    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
       Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
         GSMemUnknown
           | connLinkStartedConnection -> connecting g

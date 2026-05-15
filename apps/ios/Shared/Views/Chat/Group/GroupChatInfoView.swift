@@ -103,6 +103,10 @@ struct GroupChatInfoView: View {
                         }
                     }
 
+                    let showUserSupportChat = groupInfo.membership.memberActive
+                        && ((groupInfo.fullGroupPreferences.support.on && groupInfo.membership.memberRole < .moderator)
+                            || groupInfo.membership.supportChat != nil)
+
                     if groupInfo.useRelays {
                         Section {
                             // TODO [relays] allow other owners to manage channel link (requires protocol changes to share link ownership)
@@ -124,6 +128,12 @@ struct GroupChatInfoView: View {
                             if groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
                                 channelMembersButton()
                             }
+                            if groupInfo.membership.memberRole >= .moderator {
+                                memberSupportButton()
+                            }
+                            if showUserSupportChat {
+                                UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                            }
                         } footer: {
                             if !groupInfo.isOwner && groupInfo.groupProfile.publicGroup?.groupLink != nil {
                                 Text("You can share a link or a QR code - anybody will be able to join the channel.")
@@ -141,8 +151,7 @@ struct GroupChatInfoView: View {
                             if groupInfo.canModerate {
                                 GroupReportsChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
                             }
-                            if groupInfo.membership.memberActive
-                                && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
+                            if showUserSupportChat {
                                 UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
                             }
                         } header: {
@@ -915,26 +924,54 @@ struct GroupChatInfoView: View {
 }
 
 func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
-    showAlert(
-        groupInfo.useRelays
-        ? NSLocalizedString("Remove subscriber?", comment: "alert title")
-        : NSLocalizedString("Remove member?", comment: "alert title"),
-        message:
-            groupInfo.useRelays
-            ? NSLocalizedString("Subscriber will be removed from channel - this cannot be undone!", comment: "alert message")
-            : groupInfo.businessChat == nil
-            ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
-            : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
-        actions: {[
-            UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
-                removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
-            },
-            UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
-                removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
-            },
-            cancelAlertAction
-        ]}
-    )
+    if mem.memberRole == .relay {
+        let isLastActive = groupInfo.useRelays && mem.memberCurrent && {
+            let activeRelays = ChatModel.shared.groupMembers.filter { $0.wrapped.memberRole == .relay && $0.wrapped.memberCurrent }
+            return activeRelays.count <= 1
+        }()
+        showAlert(
+            NSLocalizedString("Remove relay?", comment: "alert title"),
+            message: isLastActive
+                ? NSLocalizedString("This is the last active relay. Removing it will prevent message delivery to subscribers.", comment: "alert message")
+                : NSLocalizedString("Relay will be removed from channel - this cannot be undone!", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+                },
+                cancelAlertAction
+            ]}
+        )
+    } else if groupInfo.useRelays {
+        showAlert(
+            NSLocalizedString("Remove subscriber?", comment: "alert title"),
+            message: NSLocalizedString("Subscriber will be removed from channel - this cannot be undone!", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+                },
+                UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+                },
+                cancelAlertAction
+            ]}
+        )
+    } else {
+        showAlert(
+            NSLocalizedString("Remove member?", comment: "alert title"),
+            message: groupInfo.businessChat == nil
+                ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
+                : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+                },
+                UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+                },
+                cancelAlertAction
+            ]}
+        )
+    }
 }
 
 func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, dismiss: DismissAction?) {
@@ -1067,7 +1104,8 @@ func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState
     let v = ChatItemForwardingView(
         title: "Share channel",
         isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
-        onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: composeState) }
+        onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: composeState) },
+        includeLocal: false
     )
     if #available(iOS 16.0, *) {
         v.presentationDetents([.fraction(0.8)])

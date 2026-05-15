@@ -338,12 +338,17 @@ quoteContent mc qmc ciFile_
 
 prohibitedGroupContent :: GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe MarkdownList -> Maybe f -> Bool -> Maybe GroupFeature
 prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole = userRole}} m scopeInfo mc ft file_ sent
+  | not supportAllowed = Just GFSupport
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
   | isNothing scopeInfo && not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
   | isNothing scopeInfo && prohibitedSimplexLinks gInfo m mc ft = Just GFSimplexLinks
   | otherwise = Nothing
   where
+    supportAllowed = case scopeInfo of
+      Just (GCSIMemberSupport scopeMem_) ->
+        groupFeatureAllowed SGFSupport gInfo || isJust (supportChat $ fromMaybe mem scopeMem_)
+      Nothing -> True
     hostApprovalVoice
       | sent = userRole >= GRAdmin && sendApprovalPhase
       | otherwise = memberCategory m == GCHostMember && hostApprovalPhase
@@ -1029,7 +1034,7 @@ acceptBusinessJoinRequestAsync
       createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
     let cd = CDGroupSnd gInfo Nothing
     -- TODO [short links] move to profileContactRequest?
-    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+    createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)
@@ -1316,6 +1321,18 @@ setGroupLinkDataAsync user gInfo gLink = do
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
+connectToRelayAsync :: User -> GroupInfo -> ShortLinkContact -> CM ()
+connectToRelayAsync user gInfo relayLink = do
+  vr <- chatVersionRange
+  gVar <- asks random
+  relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink
+  case activeConn of
+    Just _ -> pure ()
+    Nothing -> do
+      subMode <- chatReadVar subscriptionMode
+      newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
+      withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
+
 updatePublicGroupData :: User -> GroupInfo -> CM GroupInfo
 updatePublicGroupData user gInfo
   | useRelays' gInfo && memberRole' (membership gInfo) == GROwner = do
@@ -1327,6 +1344,24 @@ updatePublicGroupData user gInfo
       setGroupLinkDataAsync user gInfo' gLink
       pure gInfo'
   | otherwise = pure gInfo
+
+updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> CM (GroupInfo, Bool)
+updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData}
+  | profileChanged || countChanged = do
+      vr <- chatVersionRange
+      withStore $ \db -> do
+        g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
+        g' <- case publicGroupData of
+          Just PublicGroupData {publicMemberCount} | countChanged ->
+            setPublicMemberCount db vr user g publicMemberCount
+          _ -> pure g
+        pure (g', profileChanged)
+  | otherwise = pure (gInfo, False)
+  where
+    profileChanged = p /= groupProfile
+    countChanged = case publicGroupData of
+      Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
+      _ -> False
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
@@ -1467,7 +1502,7 @@ createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (C
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
   flip catchAllErrors (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
     (Just b, b') | b' /= b -> createPQItem $ CISndConnEvent (SCEPqEnabled pqSndEnabled')
-    (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (E2EInfo $ Just pqSndEnabled')
+    (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (e2eInfoEncrypted $ Just pqSndEnabled')
     _ -> pure (ct, conn)
   where
     createPQItem ciContent = do
@@ -1482,7 +1517,7 @@ updateContactPQRcv :: User -> Contact -> Connection -> PQEncryption -> CM (Conta
 updateContactPQRcv user ct conn@Connection {connId, pqRcvEnabled} pqRcvEnabled' =
   flip catchAllErrors (const $ pure (ct, conn)) $ case (pqRcvEnabled, pqRcvEnabled') of
     (Just b, b') | b' /= b -> updatePQ $ CIRcvConnEvent (RCEPqEnabled pqRcvEnabled')
-    (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (E2EInfo $ Just pqRcvEnabled')
+    (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (e2eInfoEncrypted $ Just pqRcvEnabled')
     _ -> pure (ct, conn)
   where
     updatePQ ciContent = do
@@ -1785,9 +1820,12 @@ deleteOrUpdateMemberRecord user gInfo m =
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
 deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
   (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
-  checkGroupMemberHasItems db user m' >>= \case
-    Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-    Nothing -> deleteGroupMember db user m'
+  if isRelay m'
+    then deleteGroupMember db user m'
+    else
+      checkGroupMemberHasItems db user m' >>= \case
+        Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
+        Nothing -> deleteGroupMember db user m'
   pure gInfo'
 
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo
@@ -1795,7 +1833,14 @@ updateMemberRecordDeleted user@User {userId} gInfo m newStatus =
   withStore' $ \db -> do
     (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
     updateGroupMemberStatus db userId m' newStatus
+    deactivateRelay_ db m
     pure gInfo'
+
+deactivateRelay_ :: DB.Connection -> GroupMember -> IO ()
+deactivateRelay_ db m =
+  when (isRelay m) $ do
+    relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
+    forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
 
 deleteSupportChatIfExists :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
 deleteSupportChatIfExists db user gInfo m = do

@@ -372,6 +372,21 @@ export namespace APIGetGroupRelays {
   }
 }
 
+// Add relays to group.
+// Network usage: interactive.
+export interface APIAddGroupRelays {
+  groupId: number // int64
+  relayIds: number[] // int64, non-empty
+}
+
+export namespace APIAddGroupRelays {
+  export type Response = CR.GroupRelaysAdded | CR.GroupRelaysAddFailed | CR.ChatCmdError
+
+  export function cmdString(self: APIAddGroupRelays): string {
+    return '/_add relays #' + self.groupId + ' ' + self.relayIds.join(',')
+  }
+}
+
 // Update group profile.
 // Network usage: background.
 export interface APIUpdateGroupProfile {
@@ -471,6 +486,7 @@ export namespace APIAddContact {
 export interface APIConnectPlan {
   userId: number // int64
   connectionLink?: string
+  resolveKnown: boolean
   linkOwnerSig?: T.LinkOwnerSig
 }
 
@@ -571,6 +587,23 @@ export namespace APIListGroups {
 
   export function cmdString(self: APIListGroups): string {
     return '/_groups ' + self.userId + (self.contactId_ ? ' @' + self.contactId_ : '') + (self.search ? ' ' + self.search : '')
+  }
+}
+
+// Get chat previews. Supports time-based pagination — use this instead of APIListContacts / APIListGroups when scanning at scale (those load every record into memory and fail on large databases).
+// Network usage: no.
+export interface APIGetChats {
+  userId: number // int64
+  pendingConnections: boolean
+  pagination: T.PaginationByTime
+  query: T.ChatListQuery
+}
+
+export namespace APIGetChats {
+  export type Response = CR.ApiChats | CR.ChatCmdError
+
+  export function cmdString(self: APIGetChats): string {
+    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + ' ' + T.PaginationByTime.cmdString(self.pagination) + ' ' + JSON.stringify(self.query)
   }
 }
 

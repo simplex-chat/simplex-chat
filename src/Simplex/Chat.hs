@@ -10,6 +10,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -26,7 +27,7 @@ import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
-import Data.Time.Clock (getCurrentTime)
+import Data.Time.Clock (getCurrentTime, nominalDay)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -42,6 +43,7 @@ import Simplex.Chat.Util (shuffle)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore (dbNew))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -115,6 +117,10 @@ defaultChatConfig =
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
       channelSubscriberRole = GRObserver,
+      relayChecksInterval = 15 * 60, -- 15 minutes
+      relayInactiveTTL = nominalDay,
+      relayRequestRetryInterval = RetryInterval {initialInterval = 5_000000, increaseAfter = 0, maxInterval = 600_000000},
+      relayRequestExpiry = (10, nominalDay),
       deviceNameForRemote = "",
       remoteCompression = True,
       chatHooks = defaultChatHooks

@@ -278,6 +278,7 @@ chatTypesDocsData =
     (sti @GroupKeys, STRecord, "", [], "", ""),
     (sti @GroupRootKey, STUnion, "GRK", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
+    (sti @GroupLinkOwner, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
     (sti @GroupMember, STRecord, "", [], "", ""),
     (sti @GroupMemberAdmission, STRecord, "", [], "", ""),
@@ -294,7 +295,7 @@ chatTypesDocsData =
     (sti @GroupShortLinkInfo, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
-    (sti @GroupType, STEnum1, "GT", ["GTUnknown"], "", ""),
+    (sti @GroupType, STEnum, "GT", ["GTUnknown"], "", ""),
     (sti @HandshakeError, STEnum, "", [], "", ""),
     (sti @InlineFileMode, STEnum, "IFM", [], "", ""),
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
@@ -353,6 +354,7 @@ chatTypesDocsData =
     (sti @SrvError, STUnion, "SrvErr", [], "", ""),
     (sti @StoreError, STUnion, "SE", [], "", ""),
     (sti @SubscriptionStatus, STUnion, "SS", [], "", ""),
+    (sti @SupportGroupPreference, STRecord, "", [], "", ""),
     (sti @SwitchPhase, STEnum, "SP", [], "", ""),
     (sti @TimedMessagesGroupPreference, STRecord, "", [], "", ""),
     (sti @TimedMessagesPreference, STRecord, "", [], "", ""),
@@ -372,11 +374,11 @@ chatTypesDocsData =
     (sti @UserPwdHash, STRecord, "", [], "", ""),
     (sti @XFTPErrorType, STUnion, "", [], "", ""),
     (sti @XFTPRcvFile, STRecord, "", [], "", ""),
-    (sti @XFTPSndFile, STRecord, "", [], "", "")
+    (sti @XFTPSndFile, STRecord, "", [], "", ""),
     -- (sti @DatabaseError, STUnion, "DB", [], "", ""),
     -- (sti @ChatItemInfo, STRecord, "", [], "", ""),
     -- (sti @ChatItemVersion, STRecord, "", [], "", ""),
-    -- (sti @ChatListQuery, STUnion, "CLQ", [], "", ""),
+    (sti @ChatListQuery, STUnion, "CLQ", [], "", ""),
     -- (sti @ChatName, STRecord, "", [], "", ""),
     -- (sti @ChatPagination, STRecord, "CP", [], "", ""),
     -- (sti @ConnectionStats, STRecord, "", [], "", ""),
@@ -385,7 +387,10 @@ chatTypesDocsData =
     -- (sti @MemberReaction, STRecord, "", [], "", ""),
     -- (sti @MsgContentTag, (STEnum' $ dropPfxSfx "MC" '_'), "", ["MCUnknown_"], "", ""),
     -- (sti @NavigationInfo, STRecord, "", [], "", ""),
-    -- (sti @PaginationByTime, STRecord, "", [], "", ""),
+    -- PTAfter / PTBefore are hidden — bots only need "tail last N chats".
+    -- The wire format is parsed by paginationByTimeP in
+    -- src/Simplex/Chat/Library/Commands.hs.
+    (sti @PaginationByTime, STUnion1, "PT", ["PTAfter", "PTBefore"], "count=" <> Param "count", "")
     -- (sti @RcvQueueInfo, STRecord, "", [], "", ""),
     -- (sti @RcvSwitchStatus, STEnum, "", [], "", ""), -- incorrect
     -- (sti @SendRef, STRecord, "", [], "", ""),
@@ -482,6 +487,7 @@ deriving instance Generic GroupInfo
 deriving instance Generic GroupKeys
 deriving instance Generic GroupRootKey
 deriving instance Generic GroupLink
+deriving instance Generic GroupLinkOwner
 deriving instance Generic GroupLinkPlan
 deriving instance Generic GroupMember
 deriving instance Generic GroupMemberAdmission
@@ -561,6 +567,7 @@ deriving instance Generic SndGroupEvent
 deriving instance Generic SrvError
 deriving instance Generic StoreError
 deriving instance Generic SubscriptionStatus
+deriving instance Generic SupportGroupPreference
 deriving instance Generic SwitchPhase
 deriving instance Generic TimedMessagesGroupPreference
 deriving instance Generic TimedMessagesPreference
@@ -585,7 +592,7 @@ deriving instance Generic XFTPSndFile
 -- deriving instance Generic DatabaseError
 -- deriving instance Generic ChatItemInfo
 -- deriving instance Generic ChatItemVersion
--- deriving instance Generic ChatListQuery
+deriving instance Generic ChatListQuery
 -- deriving instance Generic ChatName
 -- deriving instance Generic ChatPagination
 -- deriving instance Generic ConnectionStats
@@ -595,7 +602,7 @@ deriving instance Generic XFTPSndFile
 -- deriving instance Generic MemberReaction
 -- deriving instance Generic MsgContentTag
 -- deriving instance Generic NavigationInfo
--- deriving instance Generic PaginationByTime
+deriving instance Generic PaginationByTime
 -- deriving instance Generic RcvQueueInfo
 -- deriving instance Generic RcvSwitchStatus
 -- deriving instance Generic SendRef

@@ -110,7 +110,7 @@ for os_pair in ${oses}; do
     # Desktop: deb
     docker exec \
         -t "${container_name}" \
-        sh -c './scripts/desktop/make-deb-linux.sh'
+        sh -c "export ASSETS_DIR='../../assets'; ./scripts/desktop/make-deb-linux.sh"
 
     # Copy deb
     docker cp \
@@ -128,7 +128,7 @@ for os_pair in ${oses}; do
             # Appimage
             docker exec \
                 -t "${container_name}" \
-                sh -c './scripts/desktop/make-appimage-linux.sh && mv ./apps/multiplatform/release/main/*imple*.AppImage ./apps/multiplatform/release/main/simplex.appimage'
+                sh -c "export ASSETS_DIR='../../assets'; ./scripts/desktop/make-appimage-linux.sh && mv ./apps/multiplatform/release/main/*imple*.AppImage ./apps/multiplatform/release/main/simplex.appimage"
 
             # Copy appimage
             docker cp \

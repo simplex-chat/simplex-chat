@@ -211,7 +211,7 @@ fun ChatView(
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
-                } else {
+                } else if (cInfo.groupInfo.membership.memberCurrent) {
                   val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(chatRh, cInfo.groupInfo.groupId)
                   if (gInfo != null) {
                     withContext(Dispatchers.Main) {
@@ -317,6 +317,7 @@ fun ChatView(
                         itemIds.sorted(),
                         questionText = questionText,
                         forAll = canDeleteForAll,
+                        editorial = publicGroupEditor(chatInfo),
                         deleteMessages = { ids, forAll ->
                           deleteMessages(chatRh, chatInfo, ids, forAll, moderate = false) {
                             selectedChatItems.value = null
@@ -2339,7 +2340,7 @@ fun BoxScope.ChatItemsList(
   }
 
   val manager = LocalSelectionManager.current
-  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, linkMode) else Modifier
+  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, revealedItems, linkMode) else Modifier
 
   LazyColumnWithScrollBar(
     modifier.align(Alignment.BottomCenter),
@@ -3351,7 +3352,9 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           id = chatInfo.apiId,
           scope = chatInfo.groupChatScope(),
           itemIds = itemIds,
-          mode = if (forAll) CIDeleteMode.cidmBroadcast else CIDeleteMode.cidmInternal
+          mode = if (forAll) CIDeleteMode.cidmBroadcast
+            else if (publicGroupEditor(chatInfo)) CIDeleteMode.cidmHistory
+            else CIDeleteMode.cidmInternal
         )
       }
       if (deleted != null) {
@@ -3597,7 +3600,6 @@ fun providerForGallery(
 
     override fun scrollToStart() {
       initialIndex = 0
-      initialChatId = chatItems.firstOrNull { canShowMedia(it) }?.id ?: return
     }
 
     override fun onDismiss(index: Int) {
@@ -3613,6 +3615,9 @@ fun providerForGallery(
 }
 
 typealias ChatViewItemKey = Pair<Long, Long>
+
+fun publicGroupEditor(chatInfo: ChatInfo): Boolean =
+  chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator
 
 private fun keyForItem(item: ChatItem): ChatViewItemKey = ChatViewItemKey(item.id, item.meta.createdAt.toEpochMilliseconds())
 

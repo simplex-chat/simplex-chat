@@ -18,7 +18,7 @@ Defined in: [src/core.ts:87](../src/core.ts#L87)
 
 ### error?
 
-> `optional` **error**: `ChatError`
+> `optional` **error?**: `ChatError`
 
 Defined in: [src/core.ts:89](../src/core.ts#L89)
 
@@ -26,6 +26,6 @@ Defined in: [src/core.ts:89](../src/core.ts#L89)
 
 ### result?
 
-> `optional` **result**: `R`
+> `optional` **result?**: `R`
 
 Defined in: [src/core.ts:88](../src/core.ts#L88)

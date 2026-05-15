@@ -419,9 +419,9 @@ fun ComposeView(
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
         if (pendingLinkUrl.value != url) return@withLongRunningApi
-        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()
-            && !chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
-          showLinkPreviewsConfirmAlert { enable ->
+        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()) {
+          val socksEnabled = chatModel.controller.appPrefs.networkUseSocksProxy.get()
+          showLinkPreviewsConfirmAlert(socksEnabled) { enable ->
             if (enable != null) {
               chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
               chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
@@ -534,7 +534,7 @@ fun ComposeView(
         type = cInfo.chatType,
         id = cInfo.apiId,
         scope = cInfo.groupChatScope(),
-        sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false,
+        sendAsGroup = cInfo.sendAsGroup,
         live = live,
         ttl = ttl,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
@@ -665,7 +665,7 @@ fun ComposeView(
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         toScope = chat.chatInfo.groupChatScope(),
-        sendAsGroup = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false,
+        sendAsGroup = chat.chatInfo.sendAsGroup,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
         fromScope = fromChatInfo.groupChatScope(),
@@ -1304,6 +1304,8 @@ fun ComposeView(
       composeState.value = cs.copy(inProgress = false, progressByTimeout = false)
     } else if (!cs.empty) {
       if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
+        recState.value = RecordingState.NotStarted
+        RecorderInterface.stopRecording?.invoke()
         composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
       }
       if (saveLastDraft) {
@@ -1494,7 +1496,7 @@ fun ComposeView(
       )
       is SharedContent.ChatLink -> {
         val cInfo = chat.chatInfo
-        val sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false
+        val sendAsGroup = cInfo.sendAsGroup
         withBGApi {
           val mc = chatModel.controller.apiShareChatMsgContent(
             chat.remoteHostId, ChatType.Group, shared.groupInfo.groupId,
@@ -1541,14 +1543,14 @@ fun ComposeView(
     ) {
       if (gInfo.membership.memberRole == GroupMemberRole.Owner) {
         ownerRelayState?.let { s ->
-          if (s.activeCount < s.relays.size) {
+          if (s.relays.isEmpty() || s.activeCount < s.relays.size) {
             OwnerChannelRelayBar(chatModel, s.relays, s.activeCount, s.failedCount, s.removedCount, relayListExpanded)
           }
         }
       } else {
         val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
         val relayMembers = chatModel.groupMembers.value
-          .filter { it.memberRole == GroupMemberRole.Relay }
+          .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus !in listOf(GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) }
           .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
         val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
         val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }
@@ -1556,7 +1558,7 @@ fun ComposeView(
         val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
         val resolvedCount = connectedCount + removedCount + failedCount
         val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
-        if (total > 0 && (removedCount + failedCount > 0 || resolvedCount < total)) {
+        if (total == 0 || removedCount + failedCount > 0 || resolvedCount < total) {
           SubscriberChannelRelayBar(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, showProgress, relayListExpanded)
         }
       }
@@ -1691,7 +1693,7 @@ fun ComposeView(
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
           AttachmentAndCommandsButtons()
           val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
-            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner) generalGetString(MR.strings.compose_view_broadcast)
+            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner && chat.chatInfo.groupChatScope() == null) generalGetString(MR.strings.compose_view_broadcast)
             else null
           }
           SendMsgView_(disableSendButton = disableSendButton, placeholder = broadcastPlaceholder)
@@ -1701,10 +1703,15 @@ fun ComposeView(
   }
 }
 
-private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
+private fun showLinkPreviewsConfirmAlert(socksEnabled: Boolean, onChoice: (Boolean?) -> Unit) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.link_previews_alert_title),
-    text = AnnotatedString(generalGetString(MR.strings.link_previews_alert_desc)),
+    text = AnnotatedString(
+      if (socksEnabled)
+        generalGetString(MR.strings.link_previews_alert_desc) + "\n\n" + generalGetString(MR.strings.link_previews_alert_desc_socks)
+      else
+        generalGetString(MR.strings.link_previews_alert_desc)
+    ),
     onDismissRequest = { onChoice(null) },
     buttons = {
       Column {
@@ -1712,13 +1719,13 @@ private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
           AlertManager.shared.hideAlert()
           onChoice(false)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
           onChoice(true)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = if (socksEnabled) MaterialTheme.colors.primary else Color.Red)
         }
 //        SectionItemView({
 //          AlertManager.shared.hideAlert()
@@ -1749,7 +1756,15 @@ private fun OwnerChannelRelayBar(
       if (!allBroken && activeCount + failedCount + removedCount < total) {
         RelayProgressIndicator(active = activeCount, total = total)
       }
-      if (allBroken) {
+      if (total == 0) {
+        Text(generalGetString(MR.strings.relay_bar_no_relays), color = MaterialTheme.colors.secondary)
+        Icon(
+          painterResource(MR.images.ic_warning),
+          contentDescription = null,
+          tint = WarningOrange,
+          modifier = Modifier.size(18.dp)
+        )
+      } else if (allBroken) {
         val statusText = if (removedCount == total) {
           generalGetString(MR.strings.relay_bar_all_relays_removed)
         } else if (failedCount == total) {
@@ -1835,7 +1850,15 @@ private fun SubscriberChannelRelayBar(
   val allBroken = connectedCount == 0 && errorCount == total
   Column(Modifier.background(MaterialTheme.colors.surface)) {
     RelayBarHeader(relayListExpanded) {
-      if (allBroken) {
+      if (total == 0) {
+        Text(generalGetString(MR.strings.relay_bar_no_relays), color = MaterialTheme.colors.secondary)
+        Icon(
+          painterResource(MR.images.ic_warning),
+          contentDescription = null,
+          tint = WarningOrange,
+          modifier = Modifier.size(18.dp)
+        )
+      } else if (allBroken) {
         val statusText = if (removedCount == total) {
           generalGetString(MR.strings.relay_bar_all_relays_removed)
         } else if (failedCount == total) {
@@ -1983,7 +2006,7 @@ private fun ownerRelayState(chat: Chat, chatModel: ChatModel): OwnerRelayState? 
     gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
   ) return null
   val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
-  if (relays.isEmpty()) return null
+  if (relays.isEmpty()) return OwnerRelayState(emptyList(), 0, 0, 0, true)
   val relayMembers = relays.map { relay ->
     relay to chatModel.groupMembers.value.firstOrNull { it.groupMemberId == relay.groupMemberId }
   }

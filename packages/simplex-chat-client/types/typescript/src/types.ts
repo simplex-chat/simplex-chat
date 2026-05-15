@@ -527,6 +527,7 @@ export enum CIDeleteMode {
   Broadcast = "broadcast",
   Internal = "internal",
   InternalMark = "internalMark",
+  History = "history",
 }
 
 export type CIDeleted = CIDeleted.Deleted | CIDeleted.Blocked | CIDeleted.BlockedByAdmin | CIDeleted.Moderated
@@ -1577,6 +1578,27 @@ export interface ChatItemDeletion {
   toChatItem?: AChatItem
 }
 
+export type ChatListQuery = ChatListQuery.Filters | ChatListQuery.Search
+
+export namespace ChatListQuery {
+  export type Tag = "filters" | "search"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Filters extends Interface {
+    type: "filters"
+    favorite: boolean
+    unread: boolean
+  }
+
+  export interface Search extends Interface {
+    type: "search"
+    search: string
+  }
+}
+
 export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
@@ -2094,6 +2116,7 @@ export interface DroppedMsg {
 }
 
 export interface E2EInfo {
+  public?: boolean
   pqEnabled?: boolean
 }
 
@@ -2442,6 +2465,7 @@ export interface FullGroupPreferences {
   simplexLinks: RoleGroupPreference
   reports: GroupPreference
   history: GroupPreference
+  support: SupportGroupPreference
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
   commands: ChatBotCommand[]
@@ -2515,6 +2539,7 @@ export enum GroupFeature {
   SimplexLinks = "simplexLinks",
   Reports = "reports",
   History = "history",
+  Support = "support",
   Sessions = "sessions",
   Comments = "comments",
 }
@@ -2565,6 +2590,11 @@ export interface GroupLink {
   acceptMemberRole: GroupMemberRole
 }
 
+export interface GroupLinkOwner {
+  memberId: string
+  memberKey: string
+}
+
 export type GroupLinkPlan = 
   | GroupLinkPlan.Ok
   | GroupLinkPlan.OwnLink
@@ -2610,6 +2640,9 @@ export namespace GroupLinkPlan {
   export interface Known extends Interface {
     type: "known"
     groupInfo: GroupInfo
+    groupUpdated: boolean
+    ownerVerification?: OwnerVerification
+    linkOwners: GroupLinkOwner[]
   }
 
   export interface NoRelays extends Interface {
@@ -2706,6 +2739,7 @@ export interface GroupPreferences {
   simplexLinks?: RoleGroupPreference
   reports?: GroupPreference
   history?: GroupPreference
+  support?: SupportGroupPreference
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
   commands?: ChatBotCommand[]
@@ -2776,6 +2810,7 @@ export interface GroupSupportChat {
 
 export enum GroupType {
   Channel = "channel",
+  Group = "group",
 }
 
 export enum HandshakeError {
@@ -3174,6 +3209,25 @@ export namespace OwnerVerification {
   export interface Failed extends Interface {
     type: "failed"
     reason: string
+  }
+}
+
+export type PaginationByTime = PaginationByTime.Last
+
+export namespace PaginationByTime {
+  export type Tag = "last"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Last extends Interface {
+    type: "last"
+    count: number // int
+  }
+
+  export function cmdString(self: PaginationByTime): string {
+    return 'count=' + self.count
   }
 }
 
@@ -4625,6 +4679,10 @@ export namespace SubscriptionStatus {
   export interface NoSub extends Interface {
     type: "noSub"
   }
+}
+
+export interface SupportGroupPreference {
+  enable: GroupFeatureEnabled
 }
 
 export enum SwitchPhase {

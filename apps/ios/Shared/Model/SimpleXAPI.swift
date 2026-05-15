@@ -1891,6 +1891,22 @@ func apiGetGroupRelays(_ groupId: Int64) async -> [GroupRelay] {
     return []
 }
 
+enum AddGroupRelaysResult {
+    case added(GroupInfo, GroupLink, [GroupRelay])
+    case addFailed([AddRelayResult])
+}
+
+func apiAddGroupRelays(_ groupId: Int64, relayIds: [Int64]) async throws -> AddGroupRelaysResult? {
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiAddGroupRelays(groupId: groupId, relayIds: relayIds))
+    switch r {
+    case let .result(.groupRelaysAdded(_, groupInfo, groupLink, groupRelays)):
+        return .added(groupInfo, groupLink, groupRelays)
+    case let .result(.groupRelaysAddFailed(_, addRelayResults)):
+        return .addFailed(addRelayResults)
+    default: if let r { throw r.unexpected } else { return nil }
+    }
+}
+
 func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
     let r: ChatResponse2 = try await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
     if case let .sentGroupInvitation(_, _, _, member) = r { return member }
@@ -2183,7 +2199,7 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
             withAnimation {
                 let savedOnboardingStage = onboardingStageDefault.get()
                 m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
-                ? .step3_ChooseServerOperators
+                ? .step4_NetworkCommitments
                 : savedOnboardingStage
                 if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
                     m.setDeliveryReceipts = true

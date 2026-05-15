@@ -494,8 +494,8 @@ data GroupInfo = GroupInfo
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
 
-sendAsGroup' :: GroupInfo -> Bool
-sendAsGroup' gInfo@GroupInfo {membership} = useRelays' gInfo && memberRole' membership == GROwner
+publicGroupEditor :: GroupInfo -> GroupMember -> Bool
+publicGroupEditor gInfo mem = useRelays' gInfo && memberRole' mem >= GRModerator
 
 groupId' :: GroupInfo -> GroupId
 groupId' GroupInfo {groupId} = groupId
@@ -769,15 +769,18 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contact
 
 data GroupType
   = GTChannel
+  | GTGroup
   | GTUnknown Text
   deriving (Eq, Show)
 
 instance TextEncoding GroupType where
   textEncode = \case
     GTChannel -> "channel"
+    GTGroup -> "group"
     GTUnknown tag -> tag
   textDecode s = Just $ case s of
     "channel" -> GTChannel
+    "group" -> GTGroup
     tag -> GTUnknown tag
 
 instance FromField GroupType where fromField = fromTextField_ textDecode
@@ -1045,7 +1048,11 @@ data GroupMember = GroupMember
 data RelayRequestData = RelayRequestData
   { relayInvId :: InvitationId,
     reqGroupLink :: ShortLinkContact,
-    reqChatVRange :: VersionRangeChat
+    reqChatVRange :: VersionRangeChat,
+    reqDelay :: Int64,
+    reqRetries :: Int,
+    reqCreatedAt :: UTCTime,
+    reqExecuteAt :: UTCTime
   }
   deriving (Eq, Show)
 

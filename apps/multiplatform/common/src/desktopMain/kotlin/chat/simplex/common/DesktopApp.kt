@@ -31,8 +31,11 @@ import kotlin.system.exitProcess
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() {
-  val closedByError = mutableStateOf(true)
-  while (closedByError.value) {
+  // Probe SystemTray off the EDT — the lazy's first read would otherwise block the
+  // EDT during composition; JDK-8322750's GNOME detection forks a subprocess.
+  trayIsAvailable
+  while (true) {
+    val closedByError = mutableStateOf(false)
     application(exitProcessOnExit = false) {
       CompositionLocalProvider(
         LocalWindowExceptionHandlerFactory provides WindowExceptionHandlerFactory { window ->
@@ -43,8 +46,9 @@ fun showApp() {
               shareText = true
             )
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
-            window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
+            // Must precede dispatchEvent — handleCloseRequest reads this flag.
             closedByError.value = true
+            window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
             includeMoreFailedComposables()
             // If the left side of screen has open modal, it's probably caused the crash
             if (ModalManager.start.hasModalsOpen()) {
@@ -73,9 +77,11 @@ fun showApp() {
           }
         }
       ) {
+        SimplexTray()
         AppWindow(closedByError)
       }
     }
+    if (!closedByError.value) break
   }
   exitProcess(0)
 }
@@ -115,7 +121,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   simplexWindowState.windowState = windowState
   // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
-    Window(state = windowState, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { closedByError.value = false; exitApplication() }, onKeyEvent = {
+    Window(state = windowState, visible = simplexWindowState.windowVisible.value, icon = painterResource(MR.images.ic_simplex), onCloseRequest = { handleCloseRequest(closedByError) }, onKeyEvent = {
       if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
         simplexWindowState.backstack.lastOrNull()?.invoke() != null
       } else {
@@ -224,6 +230,30 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   }
 }
 
+// Not invoked for macOS Cmd+Q — that goes through AWT's default QuitHandler and
+// exits the process directly. Intentional: Cmd+Q is canonical "always quit" on macOS.
+private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Boolean>) {
+  // Crash dispatch — bypass user-facing policy and exit; outer loop will restart.
+  if (closedByError.value) {
+    exitApplication()
+    return
+  }
+  val pref = ChatController.appPrefs.closeBehavior
+  when (pref.get()) {
+    CloseBehavior.Quit -> exitApplication()
+    CloseBehavior.MinimizeToTray -> if (trayIsAvailable) {
+      simplexWindowState.windowVisible.value = false
+    } else exitApplication()
+    CloseBehavior.Ask -> if (trayIsAvailable) {
+      requestCloseBehavior()
+    } else {
+      // Tray unavailable — Minimize is not a real option; remember Quit and exit.
+      pref.set(CloseBehavior.Quit)
+      exitApplication()
+    }
+  }
+}
+
 class SimplexWindowState {
   lateinit var windowState: WindowState
   val backstack = mutableStateListOf<() -> Unit>()
@@ -232,6 +262,7 @@ class SimplexWindowState {
   val saveDialog = DialogState<File?>()
   val toasts = mutableStateListOf<Pair<String, Long>>()
   var windowFocused = mutableStateOf(true)
+  val windowVisible = mutableStateOf(true)
   var window: ComposeWindow? = null
 }
 

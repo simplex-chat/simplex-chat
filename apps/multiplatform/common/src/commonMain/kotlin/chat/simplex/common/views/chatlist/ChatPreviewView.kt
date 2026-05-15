@@ -255,11 +255,11 @@ fun ChatPreviewView(
         ci.content.msgContent is MsgContent.MCChat -> null
         else -> ci.formattedText
       }
-      val prefix = when (val mc = ci.content.msgContent) {
+      val prefix = when (ci.content.msgContent) {
         is MsgContent.MCReport ->
           buildAnnotatedString {
             withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
-              append(if (text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+              append(itemPrefixText(ci))
             }
           }
 

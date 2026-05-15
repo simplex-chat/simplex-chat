@@ -23,6 +23,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import androidx.compose.ui.layout.ContentScale
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.views.*
 import chat.simplex.common.views.chat.group.GroupLinkView
 import chat.simplex.common.views.chatlist.openGroupChat
@@ -110,7 +112,10 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
           fullName = "",
           shortDescr = null,
           image = profileImage.value,
-          groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
+          groupPreferences = GroupPreferences(
+            history = GroupPreference(GroupFeatureEnabled.ON),
+            support = GroupPreference(GroupFeatureEnabled.OFF)
+          )
         )
         creationInProgress.value = true
         withBGApi {
@@ -254,21 +259,36 @@ private fun ProfileStepView(
   ) {
     ModalView(close = close) {
       ColumnWithScrollBar {
-        AppBarTitle(generalGetString(MR.strings.create_channel_title))
-        Box(
+        AppBarTitle(generalGetString(MR.strings.create_channel_title), bottomPadding = DEFAULT_PADDING_HALF)
+        Row(
           Modifier
             .fillMaxWidth()
-            .padding(bottom = 24.dp),
-          contentAlignment = Alignment.Center
+            .padding(vertical = DEFAULT_PADDING_HALF),
+          horizontalArrangement = if (BuildConfigCommon.SIMPLEX_ASSETS) Arrangement.SpaceEvenly else Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Box(contentAlignment = Alignment.TopEnd) {
-            Box(contentAlignment = Alignment.Center) {
-              ProfileImage(108.dp, image = profileImage.value, icon = MR.images.ic_bigtop_updates_circle_filled)
-              EditImageButton { scope.launch { bottomSheetModalState.show() } }
+          // Padding offsets transparent space built into 3D asset
+          Box(
+            modifier = if (BuildConfigCommon.SIMPLEX_ASSETS) Modifier.padding(horizontal = 3.dp) else Modifier,
+            contentAlignment = Alignment.Center
+          ) {
+            Box(contentAlignment = Alignment.TopEnd) {
+              Box(contentAlignment = Alignment.Center) {
+                ProfileImage(128.dp, image = profileImage.value, icon = MR.images.ic_bigtop_updates_circle_filled)
+                EditImageButton { scope.launch { bottomSheetModalState.show() } }
+              }
+              if (profileImage.value != null) {
+                DeleteImageButton { profileImage.value = null }
+              }
             }
-            if (profileImage.value != null) {
-              DeleteImageButton { profileImage.value = null }
-            }
+          }
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Image(
+              painterResource(if (isInDarkTheme()) MR.images.create_channel_light else MR.images.create_channel),
+              contentDescription = null,
+              contentScale = ContentScale.Fit,
+              modifier = Modifier.height(140.dp)
+            )
           }
         }
         Row(
@@ -344,16 +364,23 @@ private fun ProgressStepView(
   val activeCount = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
   val total = groupRelays.value.size
 
+  fun showCancelAlert() {
+    val active = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
+    val tot = groupRelays.value.size
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.cancel_creating_channel_question),
+      text = String.format(generalGetString(MR.strings.cancel_channel_alert_msg), gInfo.groupProfile.displayName, active, tot),
+      confirmText = generalGetString(MR.strings.cancel_verb),
+      onConfirm = cancelChannelCreation,
+      dismissText = generalGetString(MR.strings.wait_verb),
+      destructive = true,
+    )
+  }
+
   if (appPlatform.isDesktop) {
     DisposableEffect(Unit) {
       chatModel.centerPanelBackgroundClickHandler = {
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.cancel_creating_channel_question),
-          confirmText = generalGetString(MR.strings.cancel_creating_channel_confirm),
-          onConfirm = cancelChannelCreation,
-          dismissText = generalGetString(MR.strings.wait_verb),
-          destructive = true,
-        )
+        showCancelAlert()
         true
       }
       onDispose {
@@ -375,13 +402,8 @@ private fun ProgressStepView(
   }
 
   ModalView(
-    close = cancelChannelCreation,
+    close = { showCancelAlert() },
     showClose = false,
-    endButtons = {
-      TextButton(onClick = cancelChannelCreation) {
-        Text(generalGetString(MR.strings.cancel_verb))
-      }
-    }
   ) {
     ColumnWithScrollBar {
       AppBarTitle(generalGetString(MR.strings.creating_channel))
@@ -454,10 +476,17 @@ private fun ProgressStepView(
       Spacer(Modifier.height(16.dp))
 
       SectionView {
+        SettingsActionItem(
+          painterResource(MR.images.ic_delete),
+          generalGetString(MR.strings.button_cancel_and_delete_channel),
+          click = { showCancelAlert() },
+          textColor = Color.Red,
+          iconColor = Color.Red,
+        )
         val enabled = activeCount > 0
         SettingsActionItem(
-          painterResource(MR.images.ic_link),
-          generalGetString(MR.strings.channel_link),
+          painterResource(MR.images.ic_check),
+          generalGetString(MR.strings.continue_to_next_step),
           click = {
             if (activeCount >= total) {
               onLinkReady()
@@ -479,7 +508,7 @@ private fun ProgressStepView(
                         AlertManager.shared.hideAlert()
                         onLinkReady()
                       }) {
-                        Text(generalGetString(MR.strings.proceed_verb))
+                        Text(generalGetString(MR.strings.continue_to_next_step))
                       }
                     }
                   }
@@ -488,7 +517,7 @@ private fun ProgressStepView(
                 AlertManager.shared.showAlertDialog(
                   title = generalGetString(MR.strings.not_all_relays_connected),
                   text = alertText,
-                  confirmText = generalGetString(MR.strings.proceed_verb),
+                  confirmText = generalGetString(MR.strings.continue_to_next_step),
                   onConfirm = { onLinkReady() }
                 )
               }
@@ -559,7 +588,7 @@ fun relayDisplayName(relay: GroupRelay): String {
   return "relay ${relay.groupRelayId}"
 }
 
-private fun chatRelayDisplayName(relay: UserChatRelay): String {
+fun chatRelayDisplayName(relay: UserChatRelay): String {
   if (relay.displayName.isNotEmpty()) return relay.displayName
   return relay.address
 }
@@ -568,7 +597,7 @@ private fun chatRelayDisplayName(relay: UserChatRelay): String {
 fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false, memberStatus: GroupMemberStatus? = null) {
   val removed = memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
   val color = if (connFailed || removed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
-  val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator) else status.text
+  val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator) else if (removed) generalGetString(MR.strings.relay_conn_status_removed) else status.text
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
