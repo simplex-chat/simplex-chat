@@ -43,6 +43,7 @@ struct ChannelRelaysView: View {
         //     AddGroupRelayView(groupInfo: groupInfo, existingRelayIds: existingRelayIds) {
         //         Task { await chatModel.loadGroupMembers(groupInfo) }
         //     }
+        // }
         .onAppear {
             Task {
                 await chatModel.loadGroupMembers(groupInfo)
