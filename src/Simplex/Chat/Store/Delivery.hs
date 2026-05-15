@@ -247,8 +247,8 @@ deleteDoneDeliveryTasks db createdAtCutoff = do
     |]
     (createdAtCutoff, DTSProcessed, DTSError)
 
-createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> Maybe GroupMemberId -> [GroupMemberId] -> ByteString -> IO ()
-createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ senderGMIds body = do
+createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> JobSenders -> ByteString -> IO ()
+createMsgDeliveryJob db gInfo jobScope jobSenders body = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -259,16 +259,17 @@ createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ senderGMIds body = do
         single_sender_group_member_id, sender_group_member_ids, body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, encodedSenderGMIds, Binary body, DJSPending, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (singleColumn, multiColumn, Binary body, DJSPending, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
-    -- For single-sender jobs the sender-list column is unused at execution time
-    -- (the fast path reads single_sender_group_member_id instead). Skip persisting
-    -- an empty blob for the multi-sender list to keep storage minimal.
-    encodedSenderGMIds :: Maybe (Binary ByteString)
-    encodedSenderGMIds = case senderGMIds of
-      [] -> Nothing
-      _ -> Just $ Binary $ smpEncodeList senderGMIds
+    -- The two columns are mutually exclusive by construction: SingleSender
+    -- writes only single_sender_group_member_id, MultiSender writes only
+    -- sender_group_member_ids (and the latter as NULL when the list is empty,
+    -- e.g. DJRelayRemoved with no senders to disseminate).
+    (singleColumn, multiColumn) = case jobSenders of
+      SingleSender s -> (Just s, Nothing)
+      MultiSender [] -> (Nothing, Nothing)
+      MultiSender ss -> (Nothing, Just $ Binary $ smpEncodeList ss)
 
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerKey]
 getPendingDeliveryJobScopes db =
@@ -318,15 +319,20 @@ getNextDeliveryJob db deliveryKey = do
           (Only jobId)
       where
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
-        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleSenderGMId_, senderGMIds_, Binary body, cursorGMId_)) = do
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleColumn, multiColumn, Binary body, cursorGMId_)) = do
           jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
-          -- sender_group_member_ids is written by smpEncodeList; a parse failure means
-          -- on-disk corruption or a format change. Surface as job error rather than silently
-          -- degrade to the pre-feature "unknown member" behavior.
-          senderGMIds <- case senderGMIds_ of
-            Nothing -> Right []
-            Just (Binary bs) -> first (const $ SEInvalidDeliveryJob jobId') $ parseAll smpListP bs
-          Right $ MessageDeliveryJob {jobId = jobId', jobScope, singleSenderGMId_, senderGMIds, body, cursorGMId_}
+          jobSenders <- case (singleColumn, multiColumn) of
+            (Just s, Nothing) -> Right $ SingleSender s
+            (Nothing, Nothing) -> Right $ MultiSender []
+            -- sender_group_member_ids is written by smpEncodeList; a parse failure means
+            -- on-disk corruption or a format change. Surface as job error rather than
+            -- silently degrading to the pre-feature "unknown member" behavior.
+            (Nothing, Just (Binary bs)) ->
+              first (const $ SEInvalidDeliveryJob jobId') $ MultiSender <$> parseAll smpListP bs
+            -- Both columns set is a writer-side bug; createMsgDeliveryJob enforces
+            -- mutual exclusion. Surface rather than silently pick one.
+            (Just _, Just _) -> Left $ SEInvalidDeliveryJob jobId'
+          Right $ MessageDeliveryJob {jobId = jobId', jobScope, jobSenders, body, cursorGMId_}
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)

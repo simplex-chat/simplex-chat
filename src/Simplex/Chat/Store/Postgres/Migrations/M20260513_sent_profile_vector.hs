@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
+-- Member profile dissemination in relay-mediated groups (task 001):
+--   group_members.sent_profile_vector      — per-recipient byte vector of "did this member's profile reach you?"
+--   delivery_jobs.sender_group_member_ids  — multi-sender batch: senders whose body fragments are in this job
+-- Both columns serve the same feature; the migration name only references the primary column.
 module Simplex.Chat.Store.Postgres.Migrations.M20260513_sent_profile_vector where
 
 import Data.Text (Text)

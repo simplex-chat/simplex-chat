@@ -3578,22 +3578,34 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
               | otherwise ->
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
-                        single = singleSenderGMId_ nextTasks
-                        senders = case single of
-                          Just _ -> [] -- fast path: job uses single_sender_group_member_id
-                          Nothing -> distinctSenderGMIds nextTasks
+                        jobSenders
+                          -- Relay groups: tasks in nextTasks may have different senders.
+                          -- Only those accepted by batchDeliveryTasks1 (i.e. in `body`)
+                          -- contribute to dissemination tracking; "large" tasks (DTSError)
+                          -- and overflow-rejected tasks (left DTSNew for a later run) are
+                          -- not in body and their senders must not be marked as already
+                          -- disseminated by this job.
+                          | useRelays' gInfo =
+                              let acceptedTasks = filter ((`elem` taskIds) . deliveryTaskId) (L.toList nextTasks)
+                               in sendersFromTasks acceptedTasks
+                          -- Fully-connected groups: getNextDeliveryTasks filters by
+                          -- sender_group_member_id, so all nextTasks share one sender. Use
+                          -- the outer task's sender even when acceptedTasks is empty (all
+                          -- batched tasks rejected as "large"), preserving the fast-path
+                          -- contract that the worker has a known sender.
+                          | otherwise = SingleSender (taskSenderGMId task)
                     withStore' $ \db -> do
-                      createMsgDeliveryJob db gInfo jobScope single senders body
+                      createMsgDeliveryJob db gInfo jobScope jobSenders body
                       forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
                       forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
                     lift . void $ getDeliveryJobWorker True deliveryKey
               where
-                singleSenderGMId_ :: NonEmpty MessageDeliveryTask -> Maybe GroupMemberId
-                singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
-                  | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
-                  | otherwise = Nothing
-                distinctSenderGMIds :: NonEmpty MessageDeliveryTask -> [GroupMemberId]
-                distinctSenderGMIds = nub . map (\MessageDeliveryTask {senderGMId} -> senderGMId) . L.toList
+                taskSenderGMId :: MessageDeliveryTask -> GroupMemberId
+                taskSenderGMId MessageDeliveryTask {senderGMId} = senderGMId
+                sendersFromTasks :: [MessageDeliveryTask] -> JobSenders
+                sendersFromTasks ts = case nub (map taskSenderGMId ts) of
+                  [s] -> SingleSender s
+                  ss -> MultiSender ss
             -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
@@ -3603,7 +3615,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                       fwd = GrpMsgForward {fwdSender, fwdBrokerTs}
                       body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
                   withStore' $ \db -> do
-                    createMsgDeliveryJob db gInfo jobScope (Just senderGMId) [] body
+                    createMsgDeliveryJob db gInfo jobScope (SingleSender senderGMId) body
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
                   lift . void $ getDeliveryJobWorker True deliveryKey
 
@@ -3663,7 +3675,13 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
-            MessageDeliveryJob {jobId, jobScope, singleSenderGMId_, senderGMIds, body, cursorGMId_ = startingCursor} = job
+            MessageDeliveryJob {jobId, jobScope, jobSenders, body, cursorGMId_ = startingCursor} = job
+            -- Derived once for use by both the channel and fully-connected branches
+            -- and by the cursor query's sender-exclusion filter.
+            singleSenderGMId_ = singleSenderGMId jobSenders
+            allSenderGMIds = case jobSenders of
+              SingleSender s -> [s]
+              MultiSender ss -> ss
             sendBodyToMembers :: CM ()
             sendBodyToMembers
               -- channel
@@ -3671,15 +3689,15 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   -- there's no member review in channels, so job spec includePending is ignored
                   DJSGroup {} -> do
                     bucketSize <- asks $ deliveryBucketSize . config
-                    -- distinct senders contributing to this body — fast path: single sender from
-                    -- the job column; slow path: decoded blob persisted at job creation time.
-                    let allSenderGMIds = case singleSenderGMId_ of
-                          Just s -> [s]
-                          Nothing -> senderGMIds
-                    senderProfiles <- forM allSenderGMIds $ \sId -> do
-                      sender <- withStore $ \db -> getGroupMemberById db vr user sId
-                      vec <- withStore' $ \db -> getSentProfileVector db sId
-                      pure (sender, vec)
+                    -- (sender, vector) snapshot read in one transaction so partition runs
+                    -- against a consistent point-in-time view. Without this, an xInfoMember
+                    -- racing the worker could yield (new profile, old vector) or (old
+                    -- profile, cleared vector), making partitioning meaningless.
+                    senderProfiles <- withStore $ \db ->
+                      forM allSenderGMIds $ \sId -> do
+                        sender <- getGroupMemberById db vr user sId
+                        vec <- liftIO $ getSentProfileVector db sId
+                        pure (sender, vec)
                     -- extBody captures each sender's profile at job-start. If the profile
                     -- is updated mid-job (xInfoMember clears the vector and queues XInfo
                     -- as its own job), recipients of this job receive the pre-update
@@ -3733,8 +3751,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
               -- fully connected group
               | otherwise = case singleSenderGMId_ of
                   Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required when not using relays"
-                  Just singleSenderGMId -> do
-                    sender <- withStore $ \db -> getGroupMemberById db vr user singleSenderGMId
+                  Just sId -> do
+                    sender <- withStore $ \db -> getGroupMemberById db vr user sId
                     ms <- buildMemberList sender
                     unless (null ms) $ deliver body ms
                     where
