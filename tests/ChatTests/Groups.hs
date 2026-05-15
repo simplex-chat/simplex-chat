@@ -9945,29 +9945,14 @@ listRelayOwnStatuses cc =
       "SELECT group_id, relay_own_status FROM groups WHERE relay_own_status IS NOT NULL ORDER BY group_id"
       :: IO [(Int64, T.Text)]
 
--- | Directly set relay_own_status on a relay's groups row (test surgery).
-setRelayOwnStatus :: TestCC -> Int64 -> T.Text -> IO ()
-setRelayOwnStatus cc gId status =
-  withCCTransaction cc $ \db ->
-    DB.execute db "UPDATE groups SET relay_own_status = ? WHERE group_id = ?" (status, gId)
-
--- | Poll for a relay's row count with non-NULL relay_own_status to reach
--- `expected` (e.g. after INFO cleanup removed a transient row). Up to 20 s.
-waitForRelayGroupCount :: TestCC -> Int -> IO Int
-waitForRelayGroupCount cc expected = loop (40 :: Int)
-  where
-    countRows = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query_ db "SELECT COUNT(*) FROM groups WHERE relay_own_status IS NOT NULL" :: IO [Only Int]
-      pure $ case rows of
-        [Only n] -> n
+checkRelayGroupCount :: TestCC -> Int -> IO ()
+checkRelayGroupCount cc expected = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT COUNT(*) FROM groups WHERE relay_own_status IS NOT NULL" :: IO [Only Int]
+  let n = case rows of
+        [Only c] -> c
         _ -> 0
-    loop 0 = countRows
-    loop n = do
-      c <- countRows
-      if c == expected
-        then pure c
-        else threadDelay 500000 >> loop (n - 1)
+  n `shouldBe` expected
 
 testRelayRefuseAfterLeave :: HasCallStack => TestParams -> IO ()
 testRelayRefuseAfterLeave ps =
@@ -10007,7 +9992,8 @@ testRelayRefuseAfterLeave ps =
 
       -- bob's transient row was created with relay_own_status='rejected';
       -- after INFO arrives the cleanup arm deletes it. Original row 1 remains rejected.
-      _ <- waitForRelayGroupCount bob 1
+      threadDelay 1000000
+      checkRelayGroupCount bob 1
       finalStatuses <- listRelayOwnStatuses bob
       finalStatuses `shouldBe` [(1, "rejected")]
 
@@ -10096,7 +10082,8 @@ testRelayRefuseRaceConcurrentInvitations ps =
       alice <## "#team: group relays:"
       alice .<##. ("  - relay id", ": invited")
       alice <## "#team: relay rejected, reason: RRRRejoinRefused"
-      void $ waitForRelayGroupCount bob 1
+      threadDelay 1000000
+      checkRelayGroupCount bob 1
 
       -- second refusal
       alice ##> "/rm #team bob"
@@ -10107,7 +10094,8 @@ testRelayRefuseRaceConcurrentInvitations ps =
       alice .<##. ("  - relay id", ": invited")
       alice <## "#team: relay rejected, reason: RRRRejoinRefused"
 
-      _ <- waitForRelayGroupCount bob 1
+      threadDelay 1000000
+      checkRelayGroupCount bob 1
       finalStatuses <- listRelayOwnStatuses bob
       finalStatuses `shouldBe` [(1, "rejected")]
 
