@@ -1244,6 +1244,7 @@ processChatCommand vr nm = \case
       let isOwner = memberRole' membership == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
+      -- prevent operator from accidentally clearing the rejection record
       when (relayOwnStatus gInfo == Just RSRejected) $
         throwChatError $ CECommandError "cannot delete a rejected channel; run /_relay allow <groupId> first"
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
