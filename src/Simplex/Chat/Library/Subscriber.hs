@@ -1554,10 +1554,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
         xGrpRelayInv invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = do
-          refused <- withStore' $ \db -> isRelayGroupRefused db user groupLink
+          rejected <- withStore' $ \db -> isRelayGroupRejected db user groupLink
           initialDelay <- asks $ initialInterval . relayRequestRetryInterval . config
-          if refused
-            then acceptRelayJoinRequestRejectAsync user uclId vr groupRelayInv invId chatVRange initialDelay RRRRejoinRefused
+          if rejected
+            then acceptRelayJoinRequestRejectAsync user uclId vr groupRelayInv invId chatVRange initialDelay RRRRejoinRejected
             else do
               (_gInfo, _ownerMember) <- withStore $ \db ->
                 createRelayRequestGroup db vr user groupRelayInv invId chatVRange initialDelay GSMemAccepted RSInvited

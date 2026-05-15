@@ -917,7 +917,7 @@ instance ToJSON GroupRejectionReason where
   toEncoding = strToJEncoding
 
 data RelayRejectionReason
-  = RRRRejoinRefused
+  = RRRRejoinRejected
   | RRRUnknown {text :: Text}
   deriving (Eq, Show)
 
@@ -927,10 +927,10 @@ instance ToField RelayRejectionReason where toField = toField . strEncode
 
 instance StrEncoding RelayRejectionReason where
   strEncode = \case
-    RRRRejoinRefused -> "rejoin_refused"
+    RRRRejoinRejected -> "rejoin_rejected"
     RRRUnknown text -> encodeUtf8 text
   strP =
-    "rejoin_refused" $> RRRRejoinRefused
+    "rejoin_rejected" $> RRRRejoinRejected
     <|> RRRUnknown . safeDecodeUtf8 <$> A.takeByteString
 
 instance FromJSON RelayRejectionReason where

@@ -95,7 +95,7 @@ module Simplex.Chat.Store.Groups
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
     updateRelayOwnStatus_,
-    isRelayGroupRefused,
+    isRelayGroupRejected,
     allowRelayGroupAndSiblings,
     getRelayServedGroups,
     getRelayInactiveGroups,
@@ -1619,8 +1619,8 @@ allowRelayGroupAndSiblings db vr user@User {userId} groupId = do
       (RSInactive, currentTs, currentTs, userId, groupId, RSRejected)
   getGroupInfo db vr user groupId
 
-isRelayGroupRefused :: DB.Connection -> User -> ShortLinkContact -> IO Bool
-isRelayGroupRefused db User {userId} groupLink =
+isRelayGroupRejected :: DB.Connection -> User -> ShortLinkContact -> IO Bool
+isRelayGroupRejected db User {userId} groupLink =
   fromMaybe False <$> maybeFirstRow fromOnly (
     DB.query
       db

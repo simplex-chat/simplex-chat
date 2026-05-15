@@ -120,7 +120,7 @@ instance ToField RelayStatus where toField = toField . textEncode
 $(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
 
 -- True for relay-own-status values that mean "relay not serving this group".
--- Both RSInactive (relay removed or stopped) and RSRejected (relay refused to rejoin)
+-- Both RSInactive (relay removed or stopped) and RSRejected (relay rejected the channel)
 -- block normal message delivery; DJRelayRemoved is handled in a status-independent branch.
 relayNotServing :: Maybe RelayStatus -> Bool
 relayNotServing = \case

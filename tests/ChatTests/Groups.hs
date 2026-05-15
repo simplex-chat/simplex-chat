@@ -272,11 +272,11 @@ chatGroupTests = do
       it "should add relay to existing channel" testChannelAddRelay
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
-      describe "relay refusal" $ do
-        it "relay refuses fresh invitation after leaving the same channel" testRelayRefuseAfterLeave
+      describe "relay rejection" $ do
+        it "relay rejects fresh invitation after leaving the same channel" testRelayRejectAfterLeave
         it "operator allow clears rejection and relay accepts again" testRelayAllowAcceptsAgain
-        it "rejection on channel A does not affect unrelated channel B" testRelayDoesNotRefuseUnrelatedChannel
-        it "concurrent fresh invitations both refused" testRelayRefuseRaceConcurrentInvitations
+        it "rejection on channel A does not affect unrelated channel B" testRelayDoesNotRejectUnrelatedChannel
+        it "concurrent fresh invitations both rejected" testRelayRejectRaceConcurrentInvitations
         it "deleting a rejected channel is blocked until operator allow" testRelayDeleteRejectedBlocked
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
@@ -9954,8 +9954,8 @@ checkRelayGroupCount cc expected = do
         _ -> 0
   n `shouldBe` expected
 
-testRelayRefuseAfterLeave :: HasCallStack => TestParams -> IO ()
-testRelayRefuseAfterLeave ps =
+testRelayRejectAfterLeave :: HasCallStack => TestParams -> IO ()
+testRelayRejectAfterLeave ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -9998,7 +9998,7 @@ testRelayRefuseAfterLeave ps =
 
         -- bob's xGrpRelayInv finds the 'rejected' row for this link and sends XGrpRelayReject.
         -- alice's CONF handler emits TERelayRejected; the relay row flips to 'rejected'.
-        alice <## "#team: relay rejected, reason: RRRRejoinRefused"
+        alice <## "#team: relay rejected, reason: RRRRejoinRejected"
 
         -- assert alice's fresh GroupRelay row is marked 'rejected'
         aliceRelayStatuses <- withCCTransaction alice $ \db ->
@@ -10006,7 +10006,7 @@ testRelayRefuseAfterLeave ps =
         map (\(Only s) -> s) aliceRelayStatuses `shouldBe` ["rejected"]
 
         -- subscriber still doesn't receive after the failed re-invitation
-        alice #> "#team after refusal"
+        alice #> "#team after rejection"
         (cath </)
 
         -- bob's transient row was created with relay_own_status='rejected';
@@ -10045,7 +10045,7 @@ testRelayAllowAcceptsAgain ps =
 
         -- /_relay allow flips bob's row from 'rejected' to 'inactive'
         bob ##> "/_relay allow 1"
-        bob <## "#team: relay refusal cleared"
+        bob <## "#team: relay rejection cleared"
         bobClearStatus <- queryRelayOwnStatus bob 1
         bobClearStatus `shouldBe` Just "inactive"
 
@@ -10086,8 +10086,8 @@ testRelayAllowAcceptsAgain ps =
         bob <# "#team_1> after allow"
         cath <# "#team> after allow [>>]"
 
-testRelayDoesNotRefuseUnrelatedChannel :: HasCallStack => TestParams -> IO ()
-testRelayDoesNotRefuseUnrelatedChannel ps =
+testRelayDoesNotRejectUnrelatedChannel :: HasCallStack => TestParams -> IO ()
+testRelayDoesNotRejectUnrelatedChannel ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -10119,9 +10119,9 @@ testRelayDoesNotRefuseUnrelatedChannel ps =
         bobBStatus `shouldNotBe` Just "rejected"
         bobBStatus `shouldNotBe` Nothing
 
-testRelayRefuseRaceConcurrentInvitations :: HasCallStack => TestParams -> IO ()
-testRelayRefuseRaceConcurrentInvitations ps =
-  -- After rejection, multiple sequential re-invitations must all refuse with
+testRelayRejectRaceConcurrentInvitations :: HasCallStack => TestParams -> IO ()
+testRelayRejectRaceConcurrentInvitations ps =
+  -- After rejection, multiple sequential re-invitations must all reject with
   -- consistent state (each transient row created with RSRejected and cleaned
   -- up by its own INFO).
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -10145,32 +10145,32 @@ testRelayRefuseRaceConcurrentInvitations ps =
           ]
         threadDelay 100000
 
-        -- first refusal
+        -- first rejection
         alice ##> "/rm #team bob"
         alice .<##. ("#team: you removed bob from the group", "")
         threadDelay 100000
         alice ##> "/_add relays #1 1"
         alice <## "#team: group relays:"
         alice .<##. ("  - relay id", ": invited")
-        alice <## "#team: relay rejected, reason: RRRRejoinRefused"
+        alice <## "#team: relay rejected, reason: RRRRejoinRejected"
         threadDelay 1000000
         checkRelayGroupCount bob 1
 
-        -- subscriber doesn't receive between refusals (no active relay)
-        alice #> "#team between refusals"
+        -- subscriber doesn't receive between rejections (no active relay)
+        alice #> "#team between rejections"
         (cath </)
 
-        -- second refusal
+        -- second rejection
         alice ##> "/rm #team bob"
         alice .<##. ("#team: you removed bob from the group", "")
         threadDelay 100000
         alice ##> "/_add relays #1 1"
         alice <## "#team: group relays:"
         alice .<##. ("  - relay id", ": invited")
-        alice <## "#team: relay rejected, reason: RRRRejoinRefused"
+        alice <## "#team: relay rejected, reason: RRRRejoinRejected"
 
-        -- subscriber still doesn't receive after the second refusal
-        alice #> "#team after second refusal"
+        -- subscriber still doesn't receive after the second rejection
+        alice #> "#team after second rejection"
         (cath </)
 
         threadDelay 1000000
@@ -10215,7 +10215,7 @@ testRelayDeleteRejectedBlocked ps =
         stillRejected `shouldBe` Just "rejected"
 
         bob ##> "/_relay allow 1"
-        bob <## "#team: relay refusal cleared"
+        bob <## "#team: relay rejection cleared"
 
         bobInactive <- queryRelayOwnStatus bob 1
         bobInactive `shouldBe` Just "inactive"

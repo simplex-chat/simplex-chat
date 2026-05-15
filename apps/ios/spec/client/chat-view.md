@@ -353,7 +353,7 @@ Navigates to relay list view with role-based branches:
 - **Owner**: loads `[GroupRelay]` via [`apiGetGroupRelays`](../../Shared/Model/SimpleXAPI.swift#L1839) (owner-only API, guarded by `assertUserGroupRole GROwner` on backend). Joins with `chatModel.groupMembers` by `groupMemberId` for display names. Shows status indicators (colored circle + `RelayStatus.text`). When `relayStatus == .rsRejected` the indicator dot is red and the text reads "rejected", matching the `connFailed`/`removed` rendering.
 - **Member**: filters `chatModel.groupMembers` by `.memberRole == .relay`. Shows relay member display names only (no status data).
 
-### Relay Refusal Surface
+### Relay Rejection Surface
 
 When a relay operator runs `/leave #channel`, the relay sends `x.grp.relay.reject` over the owner-relay direct contact channel. Owner-side handling: the corresponding `GroupRelay.relayStatus` transitions `RSInvited → RSRejected`; the relay's `GroupMember.memberStatus` becomes `.memRejected`. The transition surfaces through `CEvtGroupRelayUpdated`. In `GroupMemberInfoView`, an additional `Status: rejected by relay operator` info row appears when `groupRelay?.relayStatus == .rsRejected`. The status is final on the owner side — clearable only by the relay operator running `/relay allow <groupId>`, which has no owner-facing event.
 
