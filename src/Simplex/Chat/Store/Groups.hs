@@ -96,7 +96,7 @@ module Simplex.Chat.Store.Groups
     updateRelayOwnStatusFromTo,
     updateRelayOwnStatus_,
     isRelayGroupRejected,
-    allowRelayGroupAndSiblings,
+    allowRelayGroup,
     getRelayServedGroups,
     getRelayInactiveGroups,
     createNewContactMemberAsync,
@@ -1603,8 +1603,8 @@ updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
 -- for the targeted groupId (whether it was flipped or not). The subquery
 -- resolves the link in the same UPDATE statement so there is no
 -- read-then-write race with concurrent xGrpRelayInv handlers.
-allowRelayGroupAndSiblings :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupInfo
-allowRelayGroupAndSiblings db vr user@User {userId} groupId = do
+allowRelayGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupInfo
+allowRelayGroup db vr user@User {userId} groupId = do
   currentTs <- liftIO getCurrentTime
   liftIO $
     DB.execute

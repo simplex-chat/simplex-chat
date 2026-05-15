@@ -1582,7 +1582,7 @@ processChatCommand vr nm = \case
   TestChatRelay address -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APITestChatRelay userId address
   APIAllowRelayGroup groupId -> withUser $ \user -> do
-    gInfo' <- withStore $ \db -> allowRelayGroupAndSiblings db vr user groupId
+    gInfo' <- withStore $ \db -> allowRelayGroup db vr user groupId
     pure $ CRRelayGroupAllowed user gInfo'
   GetUserChatRelays -> withUser $ \user -> do
     srvs <- withFastStore (`getUserServers` user)
