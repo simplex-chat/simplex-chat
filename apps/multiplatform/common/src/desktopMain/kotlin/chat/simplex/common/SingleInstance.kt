@@ -20,44 +20,76 @@ private var watcher: WatchService? = null
 private val lockPath get() = dataDir.resolve("simplex.started").toPath()
 private val showPath get() = dataDir.resolve("simplex.show").toPath()
 
-// true = lock acquired (or lock unsupported - proceed without tray-minimize).
-// false = another instance is running, signalled it to show, caller should exit.
 var singleInstanceLock = false
   private set
 
+private sealed interface LockResult {
+  class Acquired(val lock: FileLock) : LockResult
+  object Taken : LockResult
+  object Failed : LockResult
+}
+
 fun acquireSingleInstance(): Boolean {
   dataDir.mkdirs()
-  val channel: FileChannel = try {
+  when (val result = tryAcquireLock()) {
+    is LockResult.Acquired -> {
+      lockHandle = result.lock
+      singleInstanceLock = true
+      deleteShowFile()
+      return true
+    }
+    LockResult.Failed -> {
+      return true
+    }
+    LockResult.Taken -> {
+      if (Files.exists(showPath)) {
+        val start = showSingleInstanceAlert()
+        if (start) deleteShowFile()
+        return start
+      } else {
+        val signalled = createShowFile()
+        if (signalled) return false
+        return showSingleInstanceAlert()
+      }
+    }
+  }
+}
+
+private fun tryAcquireLock(): LockResult {
+  val channel = try {
     FileChannel.open(lockPath, READ, WRITE, CREATE)
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: cannot open lock file: ${e.message}")
-    return true
+    return LockResult.Failed
   }
-  val held: FileLock? = try {
-    channel.tryLock(0L, 1L, false)
+  return try {
+    val lock = channel.tryLock(0L, 1L, false)
+    if (lock != null) {
+      LockResult.Acquired(lock)
+    } else {
+      channel.close()
+      LockResult.Taken
+    }
   } catch (_: OverlappingFileLockException) {
-    channel.close()
-    return true
+    Log.w(TAG, "single-instance: overlapping lock in same JVM")
+    LockResult.Failed
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: tryLock failed: ${e.message}")
-    channel.close()
-    return true
+    channel.close(); LockResult.Failed
   }
-  if (held != null) {
-    lockHandle = held
-    singleInstanceLock = true
-    try { Files.deleteIfExists(showPath) } catch (_: IOException) {}
-    return true
-  }
-  // Lock taken by another instance
-  channel.close()
-  if (Files.exists(showPath)) {
-    // Previous signal not picked up - running instance may be stuck
-    return showSingleInstanceAlert()
-  }
-  try { Files.createFile(showPath) } catch (_: IOException) {}
-  return false
 }
+
+private fun deleteShowFile() {
+  try { Files.deleteIfExists(showPath) } catch (e: IOException) {
+    Log.w(TAG, "single-instance: cannot delete show file: ${e.message}")
+  }
+}
+
+private fun createShowFile(): Boolean =
+  try { Files.createFile(showPath); true } catch (e: IOException) {
+    Log.w(TAG, "single-instance: cannot create show file: ${e.message}")
+    false
+  }
 
 fun startShowFileWatcher() {
   if (watcher != null) return
@@ -74,7 +106,7 @@ fun startShowFileWatcher() {
       val key = try { ws.take() } catch (_: ClosedWatchServiceException) { return@thread } catch (_: InterruptedException) { return@thread }
       for (event in key.pollEvents()) {
         if ((event.context() as? Path)?.fileName?.toString() == "simplex.show") {
-          try { Files.deleteIfExists(showPath) } catch (_: IOException) {}
+          deleteShowFile()
           SwingUtilities.invokeLater { showWindow() }
         }
       }
