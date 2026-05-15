@@ -995,15 +995,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   MsgContainer {asGroup} = mc
               -- file description is always allowed, to allow sending files to support scope
               XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr
-              XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ prefs_ ->
+              XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ prefs_ -> do
+                isComment <- isCommentEdit gInfo' (Just m'') asGroup_ sharedMsgId
                 let check a
                       | asGroup_ /= Just True = a
                       | memberRole' m'' >= GROwner = a
                       | isJust prefs_ && memberRole' m'' >= GRModerator = a
                       | otherwise = messageError "member is not allowed to send as group" $> Nothing
-                 in check $
-                  memberCanSend (Just m'') msgScope $
-                    groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_ prefs_
+                    gate = if isComment then memberCanComment (Just m'') else memberCanSend (Just m'') msgScope
+                check $ gate $
+                  groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_ prefs_
               XMsgDel sharedMsgId memberId_ scope_ -> groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
               -- TODO discontinue XFile
@@ -1589,6 +1590,24 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     memberCanSendOrComment m_ MsgContainer {scope, parent} = case parent of
       Just _ -> memberCanComment m_
       Nothing -> memberCanSend m_ scope
+
+    -- True iff the local chat item identified by sharedMsgId is a comment
+    -- (parent_chat_item_id IS NOT NULL). Mirrors the lookup dispatch of
+    -- groupMessageUpdate's updateRcvChatItem so the same item is found.
+    -- Returns False on not-found: callers without a local copy of the target
+    -- are gated conservatively as non-comment (production GRCommenter is
+    -- rejected by memberCanSend rather than silently admitted as a comment).
+    isCommentEdit :: GroupInfo -> Maybe GroupMember -> Maybe Bool -> SharedMsgId -> CM Bool
+    isCommentEdit gInfo m_ asGroup_ sharedMsgId = do
+      result <- withStore' $ \db -> runExceptT $
+        if asGroup_ == Just True
+          then getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
+          else case m_ of
+            Just GroupMember {memberId} -> getGroupMemberCIBySharedMsgId db user gInfo memberId sharedMsgId
+            Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
+      pure $ case result of
+        Right (CChatItem _ ChatItem {meta = CIMeta {parentChatItemId = Just _}}) -> True
+        _ -> False
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
@@ -3434,8 +3453,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               void $ memberCanSendOrComment author_ mc $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr
-            XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ prefs_ ->
-              void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ prefs_
+            XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ prefs_ -> do
+              isComment <- isCommentEdit gInfo author_ asGroup_ sharedMsgId
+              let gate = if isComment then memberCanComment author_ else memberCanSend author_ msgScope
+              void $ gate $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ prefs_
             XMsgDel sharedMsgId memId scope_ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
