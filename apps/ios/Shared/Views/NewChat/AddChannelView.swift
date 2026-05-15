@@ -490,8 +490,8 @@ func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false, membe
     let color: Color = connFailed || removed || isRejected ? .red : (status == .rsActive ? .green : .yellow)
     let text: LocalizedStringKey =
         connFailed ? "failed"
-        : memberStatus == .memLeft ? "removed by operator"
         : isRejected ? "rejected"
+        : memberStatus == .memLeft ? "removed by operator"
         : removed ? "removed"
         : status.text
     return HStack(spacing: 4) {

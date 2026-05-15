@@ -600,8 +600,8 @@ fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false, membe
   val color = if (connFailed || removed || isRejected) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
   val text =
     if (connFailed) generalGetString(MR.strings.relay_status_failed)
-    else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator)
     else if (isRejected) generalGetString(MR.strings.relay_status_rejected)
+    else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator)
     else if (removed) generalGetString(MR.strings.relay_conn_status_removed)
     else status.text
   Row(
