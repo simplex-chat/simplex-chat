@@ -223,7 +223,13 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRUserDeletedMembers u g members wm signed -> case members of
     [m] -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group" <> withMessages wm <> signedStr signed]
     mems' -> ttyUser u [ttyGroup' g <> ": you removed " <> sShow (length mems') <> " members from the group" <> withMessages wm <> signedStr signed]
-  CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
+  CRLeftMemberUser u g
+    | relayOwnStatus g == Just RSRejected ->
+        ttyUser u
+          [ ttyGroup' g <> ": you left the group (future invitations will be rejected)",
+            "use " <> highlight ("/relay allow #" <> viewGroupName g) <> " then " <> highlight ("/d #" <> viewGroupName g) <> " to delete the group"
+          ]
+    | otherwise -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g signed -> ttyUser u [ttyGroup' g <> ": you deleted the group" <> signedStr signed]
   CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
   CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc <> viewMsgTestInfo testView mc

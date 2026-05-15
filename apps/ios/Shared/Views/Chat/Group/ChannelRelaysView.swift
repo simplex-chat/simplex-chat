@@ -110,7 +110,10 @@ struct ChannelRelaysView: View {
     }
 
     private func ownerRelayStatusText(_ member: GroupMember) -> LocalizedStringKey {
-        if [.memLeft, .memRemoved, .memGroupDeleted].contains(member.memberStatus) {
+        let relayStatus = groupRelays.first(where: { $0.groupMemberId == member.groupMemberId })?.relayStatus
+        return if relayStatus == .rsRejected {
+            "rejected"
+        } else if [.memLeft, .memRemoved, .memGroupDeleted].contains(member.memberStatus) {
             relayConnStatus(member).text
         } else if case .failed = member.activeConn?.connStatus {
             "failed"
@@ -119,8 +122,7 @@ struct ChannelRelaysView: View {
         } else if member.activeConn?.connInactive ?? false {
             "inactive"
         } else {
-            groupRelays.first(where: { $0.groupMemberId == member.groupMemberId })?.relayStatus.text
-                ?? relayConnStatus(member).text
+            relayStatus?.text ?? relayConnStatus(member).text
         }
     }
 

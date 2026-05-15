@@ -9969,8 +9969,8 @@ testRelayRejectAfterLeave ps =
         -- relay leaves the channel: subscriber gets the signed leave notice via bob's
         -- DJRelayRemoved job, then has no relay to forward subsequent messages.
         bob ##> "/leave #team"
-        bob <## "#team: you left the group"
-        bob <## "use /d #team to delete the group"
+        bob <## "#team: you left the group (future invitations will be rejected)"
+        bob <## "use /relay allow #team then /d #team to delete the group"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
             cath <## "#team: bob left the group (signed)"
@@ -10034,8 +10034,8 @@ testRelayAllowAcceptsAgain ps =
         cath <# "#team> hello [>>]"
 
         bob ##> "/leave #team"
-        bob <## "#team: you left the group"
-        bob <## "use /d #team to delete the group"
+        bob <## "#team: you left the group (future invitations will be rejected)"
+        bob <## "use /relay allow #team then /d #team to delete the group"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
             cath <## "#team: bob left the group (signed)"
@@ -10104,8 +10104,8 @@ testRelayDoesNotRejectUnrelatedChannel ps =
         threadDelay 100000
 
         bob ##> "/leave #teama"
-        bob <## "#teama: you left the group"
-        bob <## "use /d #teama to delete the group"
+        bob <## "#teama: you left the group (future invitations will be rejected)"
+        bob <## "use /relay allow #teama then /d #teama to delete the group"
         alice <## "#teama: bob left the group (signed)"
         threadDelay 100000
 
@@ -10146,8 +10146,8 @@ testRelayRejectRaceConcurrentInvitations ps =
         cath <# "#team> hello [>>]"
 
         bob ##> "/leave #team"
-        bob <## "#team: you left the group"
-        bob <## "use /d #team to delete the group"
+        bob <## "#team: you left the group (future invitations will be rejected)"
+        bob <## "use /relay allow #team then /d #team to delete the group"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
             cath <## "#team: bob left the group (signed)"
@@ -10202,8 +10202,8 @@ testRelayDeleteRejectedBlocked ps =
         cath <# "#team> hello [>>]"
 
         bob ##> "/leave #team"
-        bob <## "#team: you left the group"
-        bob <## "use /d #team to delete the group"
+        bob <## "#team: you left the group (future invitations will be rejected)"
+        bob <## "use /relay allow #team then /d #team to delete the group"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
             cath <## "#team: bob left the group (signed)"
