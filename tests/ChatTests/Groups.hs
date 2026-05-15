@@ -9957,106 +9957,167 @@ checkRelayGroupCount cc expected = do
 testRelayRefuseAfterLeave :: HasCallStack => TestParams -> IO ()
 testRelayRefuseAfterLeave ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      _ <- prepareChannel1Relay "team" alice bob
-      threadDelay 100000
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        threadDelay 100000
 
-      -- relay leaves the channel
-      bob ##> "/leave #team"
-      bob <## "#team: you left the group"
-      bob <## "use /d #team to delete the group"
-      alice <## "#team: bob left the group (signed)"
-      threadDelay 100000
+        -- baseline: subscriber receives forwarded messages via the active relay
+        alice #> "#team hello"
+        bob <# "#team> hello"
+        cath <# "#team> hello [>>]"
 
-      bobLeaveStatus <- queryRelayOwnStatus bob 1
-      bobLeaveStatus `shouldBe` Just "rejected"
+        -- relay leaves the channel: subscriber gets the signed leave notice via bob's
+        -- DJRelayRemoved job, then has no relay to forward subsequent messages.
+        bob ##> "/leave #team"
+        bob <## "#team: you left the group"
+        bob <## "use /d #team to delete the group"
+        concurrentlyN_
+          [ alice <## "#team: bob left the group (signed)",
+            cath <## "#team: bob left the group (signed)"
+          ]
+        threadDelay 100000
 
-      -- owner removes the (now-left) relay member; cascade clears alice's group_relays row
-      alice ##> "/rm #team bob"
-      alice <## "#team: you removed bob from the group (signed)"
-      threadDelay 100000
+        bobLeaveStatus <- queryRelayOwnStatus bob 1
+        bobLeaveStatus `shouldBe` Just "rejected"
 
-      -- owner re-adds bob as relay
-      alice ##> "/_add relays #1 1"
-      alice <## "#team: group relays:"
-      alice .<##. ("  - relay id", ": invited")
+        -- with no active relay, owner's messages don't reach the subscriber
+        alice #> "#team after leave"
+        (cath </)
 
-      -- bob's xGrpRelayInv finds the 'rejected' row for this link and sends XGrpRelayReject.
-      -- alice's CONF handler emits TERelayRejected; the relay row flips to 'rejected'.
-      alice <## "#team: relay rejected, reason: RRRRejoinRefused"
+        -- owner removes the (now-left) relay member; cascade clears alice's group_relays row
+        alice ##> "/rm #team bob"
+        alice <## "#team: you removed bob from the group (signed)"
+        threadDelay 100000
 
-      -- assert alice's fresh GroupRelay row is marked 'rejected'
-      aliceRelayStatuses <- withCCTransaction alice $ \db ->
-        DB.query_ db "SELECT relay_status FROM group_relays" :: IO [Only T.Text]
-      map (\(Only s) -> s) aliceRelayStatuses `shouldBe` ["rejected"]
+        -- owner re-adds bob as relay
+        alice ##> "/_add relays #1 1"
+        alice <## "#team: group relays:"
+        alice .<##. ("  - relay id", ": invited")
 
-      -- bob's transient row was created with relay_own_status='rejected';
-      -- after INFO arrives the cleanup arm deletes it. Original row 1 remains rejected.
-      threadDelay 1000000
-      checkRelayGroupCount bob 1
-      finalStatuses <- listRelayOwnStatuses bob
-      finalStatuses `shouldBe` [(1, "rejected")]
+        -- bob's xGrpRelayInv finds the 'rejected' row for this link and sends XGrpRelayReject.
+        -- alice's CONF handler emits TERelayRejected; the relay row flips to 'rejected'.
+        alice <## "#team: relay rejected, reason: RRRRejoinRefused"
+
+        -- assert alice's fresh GroupRelay row is marked 'rejected'
+        aliceRelayStatuses <- withCCTransaction alice $ \db ->
+          DB.query_ db "SELECT relay_status FROM group_relays" :: IO [Only T.Text]
+        map (\(Only s) -> s) aliceRelayStatuses `shouldBe` ["rejected"]
+
+        -- subscriber still doesn't receive after the failed re-invitation
+        alice #> "#team after refusal"
+        (cath </)
+
+        -- bob's transient row was created with relay_own_status='rejected';
+        -- after INFO arrives the cleanup arm deletes it. Original row 1 remains rejected.
+        threadDelay 1000000
+        checkRelayGroupCount bob 1
+        finalStatuses <- listRelayOwnStatuses bob
+        finalStatuses `shouldBe` [(1, "rejected")]
 
 testRelayAllowAcceptsAgain :: HasCallStack => TestParams -> IO ()
 testRelayAllowAcceptsAgain ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      _ <- prepareChannel1Relay "team" alice bob
-      threadDelay 100000
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        threadDelay 100000
 
-      bob ##> "/leave #team"
-      bob <## "#team: you left the group"
-      bob <## "use /d #team to delete the group"
-      alice <## "#team: bob left the group (signed)"
-      threadDelay 100000
+        -- baseline: subscriber receives forwarded messages
+        alice #> "#team hello"
+        bob <# "#team> hello"
+        cath <# "#team> hello [>>]"
 
-      -- /_relay allow flips bob's row from 'rejected' to 'inactive'
-      bob ##> "/_relay allow 1"
-      bob <## "#team: relay refusal cleared"
-      bobClearStatus <- queryRelayOwnStatus bob 1
-      bobClearStatus `shouldBe` Just "inactive"
+        bob ##> "/leave #team"
+        bob <## "#team: you left the group"
+        bob <## "use /d #team to delete the group"
+        concurrentlyN_
+          [ alice <## "#team: bob left the group (signed)",
+            cath <## "#team: bob left the group (signed)"
+          ]
+        threadDelay 100000
 
-      -- owner can now re-add and bob accepts as relay
-      alice ##> "/rm #team bob"
-      alice <## "#team: you removed bob from the group (signed)"
-      threadDelay 100000
+        -- with no relay, subscriber doesn't receive
+        alice #> "#team during downtime"
+        (cath </)
 
-      alice ##> "/_add relays #1 1"
-      concurrentlyN_
-        [ do
-            alice <## "#team: group relays:"
-            alice .<##. ("  - relay id", ": invited")
-            alice <## "#team: group link relays updated, current relays:"
-            alice .<##. ("  - relay id", ": active")
-            alice <## "group link:"
-            void $ getTermLine alice,
-          bob <## "#team_1: you joined the group as relay"
-        ]
+        -- /_relay allow flips bob's row from 'rejected' to 'inactive'
+        bob ##> "/_relay allow 1"
+        bob <## "#team: relay refusal cleared"
+        bobClearStatus <- queryRelayOwnStatus bob 1
+        bobClearStatus `shouldBe` Just "inactive"
+
+        -- owner can now re-add and bob accepts as relay (the rejection has been cleared)
+        alice ##> "/rm #team bob"
+        alice <## "#team: you removed bob from the group (signed)"
+        threadDelay 100000
+
+        alice ##> "/_add relays #1 1"
+        concurrentlyN_
+          [ do
+              alice <## "#team: group relays:"
+              alice .<##. ("  - relay id", ": invited")
+              alice <## "#team: group link relays updated, current relays:"
+              alice .<##. ("  - relay id", ": active")
+              alice <## "group link:"
+              void $ getTermLine alice,
+            bob <## "#team_1: you joined the group as relay"
+          ]
+        threadDelay 100000
+
+        -- subscriber syncs against link data and reconnects to the new relay
+        cath ##> "/_get group link data #1"
+        cath <## "group ID: 1"
+        void $ getTermLine cath
+        concurrentlyN_
+          [ do
+              cath <## "#team: joining the group (connecting to relay bob)..."
+              cath <## "#team: you joined the group (connected to relay bob)",
+            do
+              bob <## "cath_1 (Catherine): accepting request to join group #team_1..."
+              bob <## "#team_1: cath_1 joined the group"
+          ]
+        threadDelay 100000
+
+        -- delivery resumes through the freshly accepted relay
+        alice #> "#team after allow"
+        bob <# "#team_1> after allow"
+        cath <# "#team> after allow [>>]"
 
 testRelayDoesNotRefuseUnrelatedChannel :: HasCallStack => TestParams -> IO ()
 testRelayDoesNotRefuseUnrelatedChannel ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      _ <- prepareChannel1Relay "teama" alice bob
-      threadDelay 100000
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        _ <- prepareChannel1Relay "teama" alice bob
+        threadDelay 100000
 
-      bob ##> "/leave #teama"
-      bob <## "#teama: you left the group"
-      bob <## "use /d #teama to delete the group"
-      alice <## "#teama: bob left the group (signed)"
-      threadDelay 100000
+        bob ##> "/leave #teama"
+        bob <## "#teama: you left the group"
+        bob <## "use /d #teama to delete the group"
+        alice <## "#teama: bob left the group (signed)"
+        threadDelay 100000
 
-      bobAStatus <- queryRelayOwnStatus bob 1
-      bobAStatus `shouldBe` Just "rejected"
+        bobAStatus <- queryRelayOwnStatus bob 1
+        bobAStatus `shouldBe` Just "rejected"
 
-      -- alice creates a second channel reusing the same bob relay config.
-      -- bob's xGrpRelayInv for teamb's link finds no rejection and accepts normally.
-      _ <- prepareChannel' 2 "teamb" alice bob
-      threadDelay 100000
+        -- alice creates a second channel reusing the same bob relay config.
+        -- bob's xGrpRelayInv for teamb's link finds no rejection and accepts normally.
+        (shortLinkB, fullLinkB) <- prepareChannel' 2 "teamb" alice bob
+        memberJoinChannel "teamb" [bob] [alice] shortLinkB fullLinkB cath
+        threadDelay 100000
 
-      bobBStatus <- queryRelayOwnStatus bob 2
-      bobBStatus `shouldNotBe` Just "rejected"
-      bobBStatus `shouldNotBe` Nothing
+        -- subscriber on teamb receives forwarded messages, proving bob accepts teamb
+        -- even though teama remains rejected on bob's side.
+        alice #> "#teamb hello"
+        bob <# "#teamb> hello"
+        cath <# "#teamb> hello [>>]"
+
+        bobBStatus <- queryRelayOwnStatus bob 2
+        bobBStatus `shouldNotBe` Just "rejected"
+        bobBStatus `shouldNotBe` Nothing
 
 testRelayRefuseRaceConcurrentInvitations :: HasCallStack => TestParams -> IO ()
 testRelayRefuseRaceConcurrentInvitations ps =
@@ -10064,71 +10125,107 @@ testRelayRefuseRaceConcurrentInvitations ps =
   -- consistent state (each transient row created with RSRejected and cleaned
   -- up by its own INFO).
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      _ <- prepareChannel1Relay "team" alice bob
-      threadDelay 100000
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        threadDelay 100000
 
-      bob ##> "/leave #team"
-      bob <## "#team: you left the group"
-      bob <## "use /d #team to delete the group"
-      alice <## "#team: bob left the group (signed)"
-      threadDelay 100000
+        -- baseline: subscriber receives forwarded messages
+        alice #> "#team hello"
+        bob <# "#team> hello"
+        cath <# "#team> hello [>>]"
 
-      -- first refusal
-      alice ##> "/rm #team bob"
-      alice .<##. ("#team: you removed bob from the group", "")
-      threadDelay 100000
-      alice ##> "/_add relays #1 1"
-      alice <## "#team: group relays:"
-      alice .<##. ("  - relay id", ": invited")
-      alice <## "#team: relay rejected, reason: RRRRejoinRefused"
-      threadDelay 1000000
-      checkRelayGroupCount bob 1
+        bob ##> "/leave #team"
+        bob <## "#team: you left the group"
+        bob <## "use /d #team to delete the group"
+        concurrentlyN_
+          [ alice <## "#team: bob left the group (signed)",
+            cath <## "#team: bob left the group (signed)"
+          ]
+        threadDelay 100000
 
-      -- second refusal
-      alice ##> "/rm #team bob"
-      alice .<##. ("#team: you removed bob from the group", "")
-      threadDelay 100000
-      alice ##> "/_add relays #1 1"
-      alice <## "#team: group relays:"
-      alice .<##. ("  - relay id", ": invited")
-      alice <## "#team: relay rejected, reason: RRRRejoinRefused"
+        -- first refusal
+        alice ##> "/rm #team bob"
+        alice .<##. ("#team: you removed bob from the group", "")
+        threadDelay 100000
+        alice ##> "/_add relays #1 1"
+        alice <## "#team: group relays:"
+        alice .<##. ("  - relay id", ": invited")
+        alice <## "#team: relay rejected, reason: RRRRejoinRefused"
+        threadDelay 1000000
+        checkRelayGroupCount bob 1
 
-      threadDelay 1000000
-      checkRelayGroupCount bob 1
-      finalStatuses <- listRelayOwnStatuses bob
-      finalStatuses `shouldBe` [(1, "rejected")]
+        -- subscriber doesn't receive between refusals (no active relay)
+        alice #> "#team between refusals"
+        (cath </)
+
+        -- second refusal
+        alice ##> "/rm #team bob"
+        alice .<##. ("#team: you removed bob from the group", "")
+        threadDelay 100000
+        alice ##> "/_add relays #1 1"
+        alice <## "#team: group relays:"
+        alice .<##. ("  - relay id", ": invited")
+        alice <## "#team: relay rejected, reason: RRRRejoinRefused"
+
+        -- subscriber still doesn't receive after the second refusal
+        alice #> "#team after second refusal"
+        (cath </)
+
+        threadDelay 1000000
+        checkRelayGroupCount bob 1
+        finalStatuses <- listRelayOwnStatuses bob
+        finalStatuses `shouldBe` [(1, "rejected")]
 
 testRelayDeleteRejectedBlocked :: HasCallStack => TestParams -> IO ()
 testRelayDeleteRejectedBlocked ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      _ <- prepareChannel1Relay "team" alice bob
-      threadDelay 100000
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        threadDelay 100000
 
-      bob ##> "/leave #team"
-      bob <## "#team: you left the group"
-      bob <## "use /d #team to delete the group"
-      alice <## "#team: bob left the group (signed)"
-      threadDelay 100000
+        -- baseline: subscriber receives forwarded messages via the active relay
+        alice #> "#team hello"
+        bob <# "#team> hello"
+        cath <# "#team> hello [>>]"
 
-      bobStatus <- queryRelayOwnStatus bob 1
-      bobStatus `shouldBe` Just "rejected"
+        bob ##> "/leave #team"
+        bob <## "#team: you left the group"
+        bob <## "use /d #team to delete the group"
+        concurrentlyN_
+          [ alice <## "#team: bob left the group (signed)",
+            cath <## "#team: bob left the group (signed)"
+          ]
+        threadDelay 100000
 
-      bob ##> "/d #team"
-      bob <## "bad chat command: cannot delete a rejected channel; run /_relay allow <groupId> first"
+        bobStatus <- queryRelayOwnStatus bob 1
+        bobStatus `shouldBe` Just "rejected"
 
-      stillRejected <- queryRelayOwnStatus bob 1
-      stillRejected `shouldBe` Just "rejected"
+        -- no active relay → subscriber stops receiving
+        alice #> "#team after leave"
+        (cath </)
 
-      bob ##> "/_relay allow 1"
-      bob <## "#team: relay refusal cleared"
+        bob ##> "/d #team"
+        bob <## "bad chat command: cannot delete a rejected channel; run /_relay allow <groupId> first"
 
-      bobInactive <- queryRelayOwnStatus bob 1
-      bobInactive `shouldBe` Just "inactive"
+        stillRejected <- queryRelayOwnStatus bob 1
+        stillRejected `shouldBe` Just "rejected"
 
-      bob ##> "/d #team"
-      bob <## "#team: you deleted the group"
+        bob ##> "/_relay allow 1"
+        bob <## "#team: relay refusal cleared"
+
+        bobInactive <- queryRelayOwnStatus bob 1
+        bobInactive `shouldBe` Just "inactive"
+
+        bob ##> "/d #team"
+        bob <## "#team: you deleted the group"
+
+        -- after bob deletes his copy, subscriber still has no relay forwarding to it
+        alice #> "#team after delete"
+        (cath </)
 
 testChannelCreateDeletedRelay :: HasCallStack => TestParams -> IO ()
 testChannelCreateDeletedRelay ps =
