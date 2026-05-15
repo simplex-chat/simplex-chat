@@ -1059,10 +1059,6 @@ acceptRelayJoinRequestAsync
       ownerMember' <- getGroupMemberById db vr user groupMemberId
       pure (gInfo', ownerMember')
 
--- Asynchronous rejection of a relay invitation. Mirrors acceptGroupJoinSendRejectAsync:
--- creates a transient groups row tagged RSRejected (so the worker ignores it) with the
--- owner member in GSMemInvited so the eventual INFO arrival drives cleanup, then enqueues
--- agentAcceptContactAsync to send XGrpRelayReject through the agent's normal retry path.
 acceptRelayJoinRequestRejectAsync
   :: User
   -> Int64

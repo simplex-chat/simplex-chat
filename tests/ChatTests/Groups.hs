@@ -9926,7 +9926,6 @@ testChannelRemoveLeftRelay ps =
             DB.query_ db "SELECT local_display_name FROM group_members" :: IO [Only T.Text]
           danMembers2 `shouldMatchList` [Only "dan", Only "alice"]
 
--- | Read the relay_own_status column from a relay's groups table by group_id.
 queryRelayOwnStatus :: TestCC -> Int64 -> IO (Maybe T.Text)
 queryRelayOwnStatus cc gId = do
   rows <- withCCTransaction cc $ \db ->
@@ -9936,7 +9935,6 @@ queryRelayOwnStatus cc gId = do
     [Only s] -> s
     _ -> Nothing
 
--- | All (group_id, relay_own_status) rows on a relay where relay_own_status is set.
 listRelayOwnStatuses :: TestCC -> IO [(Int64, T.Text)]
 listRelayOwnStatuses cc =
   withCCTransaction cc $ \db ->
@@ -10044,7 +10042,7 @@ testRelayAllowAcceptsAgain ps =
         (cath </)
 
         -- /_relay allow flips bob's row from 'rejected' to 'inactive'
-        bob ##> "/_relay allow 1"
+        bob ##> "/relay allow #team"
         bob <## "#team: relay rejection cleared"
         bobClearStatus <- queryRelayOwnStatus bob 1
         bobClearStatus `shouldBe` Just "inactive"
@@ -10209,12 +10207,12 @@ testRelayDeleteRejectedBlocked ps =
         (cath </)
 
         bob ##> "/d #team"
-        bob <## "bad chat command: cannot delete a rejected channel; run /_relay allow <groupId> first"
+        bob <## "bad chat command: cannot delete a rejected channel; run /relay allow #<channel> first"
 
         stillRejected <- queryRelayOwnStatus bob 1
         stillRejected `shouldBe` Just "rejected"
 
-        bob ##> "/_relay allow 1"
+        bob ##> "/relay allow #team"
         bob <## "#team: relay rejection cleared"
 
         bobInactive <- queryRelayOwnStatus bob 1

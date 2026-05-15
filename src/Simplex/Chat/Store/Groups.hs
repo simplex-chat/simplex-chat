@@ -1526,7 +1526,7 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     (currentTs, groupId)
 
 createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> Int64 -> GroupMemberStatus -> RelayStatus -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay ownerStatus relayStatus = do
+createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay memberStatus relayStatus = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile
@@ -1543,10 +1543,10 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
   (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just relayStatus) Nothing currentTs
   -- Store relay request data for recovery
   liftIO $ setRelayRequestData_ groupId currentTs
-  ownerMemberId <- insertOwner_ currentTs groupId ownerStatus
+  ownerMemberId <- insertOwner_ currentTs groupId
   let relayMember = MemberIdRole relayMemberId GRRelay
   -- TODO [member keys] should relays use member keys?
-  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember GSMemAccepted IBUnknown Nothing Nothing currentTs vr
+  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember memberStatus IBUnknown Nothing Nothing currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
@@ -1565,7 +1565,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           WHERE group_id = ?
         |]
         (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, initialDelay, currentTs, groupId)
-    insertOwner_ currentTs groupId ownerStatus_ = do
+    insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
           VersionRange minV maxV = reqChatVRange
       (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
@@ -1580,7 +1580,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
                 peer_chat_min_version, peer_chat_max_version)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, ownerStatus_)
+          ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, memberStatus)
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
               :. (minV, maxV)
           )
@@ -1598,11 +1598,8 @@ updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   let inactiveAt_ = if relayStatus == RSInactive then Just currentTs else Nothing
   DB.execute db "UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?" (relayStatus, inactiveAt_, currentTs, groupId)
 
--- Atomically flip every RSRejected row sharing the targeted group's
--- relay_request_group_link to RSInactive. Returns the refreshed GroupInfo
--- for the targeted groupId (whether it was flipped or not). The subquery
--- resolves the link in the same UPDATE statement so there is no
--- read-then-write race with concurrent xGrpRelayInv handlers.
+-- Flip every RSRejected row sharing the targeted group's relay_request_group_link
+-- to RSInactive in one statement; returns the refreshed GroupInfo for the targeted groupId.
 allowRelayGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupInfo
 allowRelayGroup db vr user@User {userId} groupId = do
   currentTs <- liftIO getCurrentTime

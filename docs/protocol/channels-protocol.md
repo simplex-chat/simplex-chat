@@ -74,13 +74,17 @@ The announce is an optimisation. When it does not reach a subscriber — because
 
 ### Relay rejection
 
-**Trigger.** When a relay operator runs `APILeaveGroup` (`/leave #channel`) on a channel the relay serves, the relay's local `groups` row for the channel transitions `relay_own_status → 'rejected'` in the same transaction that flips its membership to `GSMemLeft`. The row is keyed by the channel's `relay_request_group_link` (a `ShortLinkContact`), which the relay learned when it received the original `x.grp.relay.inv`.
+When a relay operator removes the relay from a channel, the relay marks the channel as rejected and refuses future invitations from the same channel link:
 
-**Signal.** On the next `x.grp.relay.inv` from any owner for a channel link the relay has already marked `'rejected'`, the relay accepts the contact through the agent's normal async-accept path and sends `x.grp.relay.reject` over the owner-relay direct contact channel, then lets the eventual INFO event drive cleanup of its transient bookkeeping. The message is unsigned and is not part of the forwarded group message set. The payload carries a `RelayRejectionReason` — currently only `rejoin_rejected`; older relays or future reasons fall through to `RRRUnknown text` for forward compatibility.
+1. **Leave.** The relay operator runs `/leave #channel`. The relay marks the channel as rejected locally, keyed by the channel's short link.
 
-**Owner handling.** The owner's CONF handler validates that the sender is a relay member (`memberRole == GRRelay`) and that the receiver is the owner. It transitions the corresponding `GroupRelay.relayStatus` atomically `RSInvited → RSRejected`, marks the relay `GroupMember` `GSMemRejected`, and deletes the chat-layer connection. The transition is final on the owner side and is only cleared by the relay operator running `/relay allow <groupId>` (which transitions the relay's own row `'rejected' → 'inactive'` and emits no event back to the owner). The owner's subsequent user-initiated `addRelays` invocation creates a fresh `GroupRelay` row independent of the rejected one and proceeds normally — the relay's lookup will find no `'rejected'` row for the link.
+2. **Refuse.** When the owner later sends `x.grp.relay.inv` for the same channel link — typically from a re-invitation — the relay does not accept the invitation as a relay. Instead it replies with `x.grp.relay.reject` over the owner-relay direct contact channel, carrying a rejection reason. The current reason is `rejoin_rejected`; older relays or future reasons fall through to an unknown reason for forward compatibility.
 
-**Limitations.** (a) An older owner client that does not recognise `x.grp.relay.reject` parses it as `XUnknown` and falls through to the CONF catch-all, logging a parse error and leaving the relay's `GroupRelay` permanently at `RSInvited` — the same UX as a relay that never responds. (b) An older relay binary continues to write `RSInactive` on leave and does not enforce rejection at `xGrpRelayInv`. In a mixed-version deployment where some relays are old, those relays accept fresh invitations after a leave while new-binary relays reject — asymmetric behaviour that the operator can resolve by re-running `/leave` under the new binary.
+3. **Owner handling.** The owner marks the corresponding relay as rejected and notifies the operator UI. The owner's next user-initiated relay addition for the same channel creates a fresh invitation, which the relay rejects again unless the rejection has been cleared.
+
+4. **Clear.** The relay operator runs `/relay allow <groupId>` to clear the rejection for the channel. After the next user-initiated relay addition, the relay accepts the invitation and rejoins as a relay.
+
+An older owner client that does not recognise `x.grp.relay.reject` ignores the message and leaves the relay invitation in an invited state indefinitely — the same end state as a relay that does not respond. An older relay binary does not enforce rejection; in mixed-version deployments the operator can re-run `/leave` under the new binary to re-establish rejection.
 
 ### Subscriber connection
 

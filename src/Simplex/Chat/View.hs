@@ -1437,11 +1437,7 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
     ldn_ :: GroupInfo -> Text
     ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
-    groupSS g@GroupInfo { membership
-                        , chatSettings = ChatSettings {enableNtfs}
-                        , groupSummary = GroupSummary {currentMembers}
-                        , relayOwnStatus
-                        } =
+    groupSS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}, groupSummary = GroupSummary {currentMembers}, relayOwnStatus} =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> rejectionSuffix <> alias g

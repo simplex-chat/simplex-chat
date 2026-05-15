@@ -533,6 +533,7 @@ data ChatCommand
   | BlockForAll GroupName ContactName Bool
   | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool}
   | LeaveGroup GroupName
+  | AllowRelayGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
