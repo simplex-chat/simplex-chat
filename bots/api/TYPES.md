@@ -3349,6 +3349,7 @@ ParseError:
 - "accepted"
 - "active"
 - "inactive"
+- "rejected"
 
 
 ---
