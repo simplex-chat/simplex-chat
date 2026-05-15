@@ -109,7 +109,9 @@ private fun ChannelRelaysLayout(
     if (groupInfo.isOwner) {
       SectionView {
         SectionItemView(click = {
-          val existingRelayIds = groupRelays.filter { it.relayStatus != RelayStatus.RsInactive }.mapNotNull { it.userChatRelay.chatRelayId }.toSet()
+          // Backend gate (APIAddGroupRelays) rejects any chatRelayId already in group_relays
+          // regardless of relayStatus, so all current rows must be excluded from the add list.
+          val existingRelayIds = groupRelays.mapNotNull { it.userChatRelay.chatRelayId }.toSet()
           ModalManager.end.showModalCloseable(true) { close ->
             AddGroupRelayView(
               groupInfo = groupInfo,

@@ -2992,6 +2992,9 @@
   <string name="relay_status_accepted">accepted</string>
   <string name="relay_status_active">active</string>
   <string name="relay_status_inactive">inactive</string>
+  <string name="relay_status_rejected">rejected</string>
+  <string name="member_info_status">Status</string>
+  <string name="member_info_relay_status_rejected_by_operator">rejected by relay operator</string>
 
   <!-- ComposeView.kt channel relay bars -->
   <string name="relay_bar_all_relays_removed">All relays removed</string>

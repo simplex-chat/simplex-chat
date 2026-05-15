@@ -300,6 +300,21 @@ data class ChatStats(
 | `ChatInfo.ContactConnection` | `"contactConnection"` | `contactConnection: PendingContactConnection` |
 | `ChatInfo.InvalidJSON` | `"invalidJSON"` | `json: String` |
 
+### RelayStatus (Channels)
+
+`RelayStatus` is an `enum class` at [`ChatModel.kt line 2288`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L2288) modelling a relay's lifecycle for a channel on the owner's side. Serialized as a lowercase string via `@SerialName`.
+
+| Case | SerialName | Meaning |
+|---|---|---|
+| `RsNew` | `"new"` | Allocated locally; not yet sent |
+| `RsInvited` | `"invited"` | `XGrpRelayInv` sent, awaiting `XGrpRelayAcpt` |
+| `RsAccepted` | `"accepted"` | Accepted, link-data update pending |
+| `RsActive` | `"active"` | Listed in channel link data; forwarding |
+| `RsInactive` | `"inactive"` | No longer in link data or backend reports it removed |
+| `RsRejected` | `"rejected"` | Relay sent `XGrpRelayReject` for the channel link; final on the owner side. Clearable only by the relay operator running `/relay allow #<channel>`. The owner-side `GroupMember.memberStatus` is also set to `MemLeft` so the relay renders identically to one that explicitly left (`MemRejected` is reserved for the knocking-admission flow). |
+
+The `text` extension on the enum returns the localized status string (resource key `relay_status_*`, with `relay_status_rejected` = "rejected").
+
 ---
 
 <a id="AppPreferences"></a>

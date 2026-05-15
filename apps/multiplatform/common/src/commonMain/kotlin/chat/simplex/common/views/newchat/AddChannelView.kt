@@ -596,8 +596,14 @@ fun chatRelayDisplayName(relay: UserChatRelay): String {
 @Composable
 fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false, memberStatus: GroupMemberStatus? = null) {
   val removed = memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
-  val color = if (connFailed || removed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
-  val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator) else if (removed) generalGetString(MR.strings.relay_conn_status_removed) else status.text
+  val isRejected = status == RelayStatus.RsRejected
+  val color = if (connFailed || removed || isRejected) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
+  val text =
+    if (connFailed) generalGetString(MR.strings.relay_status_failed)
+    else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator)
+    else if (isRejected) generalGetString(MR.strings.relay_status_rejected)
+    else if (removed) generalGetString(MR.strings.relay_conn_status_removed)
+    else status.text
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)

@@ -2290,7 +2290,8 @@ enum class RelayStatus {
   @SerialName("invited") RsInvited,
   @SerialName("accepted") RsAccepted,
   @SerialName("active") RsActive,
-  @SerialName("inactive") RsInactive;
+  @SerialName("inactive") RsInactive,
+  @SerialName("rejected") RsRejected;
 
   val text: String get() = when (this) {
     RsNew -> generalGetString(MR.strings.relay_status_new)
@@ -2298,6 +2299,7 @@ enum class RelayStatus {
     RsAccepted -> generalGetString(MR.strings.relay_status_accepted)
     RsActive -> generalGetString(MR.strings.relay_status_active)
     RsInactive -> generalGetString(MR.strings.relay_status_inactive)
+    RsRejected -> generalGetString(MR.strings.relay_status_rejected)
   }
 }
 

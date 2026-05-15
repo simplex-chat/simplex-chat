@@ -615,6 +615,9 @@ fun GroupMemberInfoLayout(
         val clipboard = LocalClipboardManager.current
         ShareRelayAddressButton { clipboard.shareText(simplexChatLink(relayAddress)) }
       }
+      if (groupRelay?.relayStatus == RelayStatus.RsRejected) {
+        InfoRow(stringResource(MR.strings.member_info_status), stringResource(MR.strings.member_info_relay_status_rejected_by_operator))
+      }
     }
     if (groupInfo.useRelays && member.memberRole == GroupMemberRole.Relay) {
       SectionTextFooter(
