@@ -607,7 +607,7 @@ fun canvasColorForCurrentTheme(): Color {
   val theme = CurrentColors.value
   val c = theme.colors
   return when (theme.base) {
-    DefaultTheme.LIGHT -> c.background.mixWith(c.onBackground, 0.97f)
+    DefaultTheme.LIGHT -> c.background.mixWith(c.onBackground, 0.94f)
     DefaultTheme.SIMPLEX -> c.background.darker(0.4f)
     else -> c.background
   }

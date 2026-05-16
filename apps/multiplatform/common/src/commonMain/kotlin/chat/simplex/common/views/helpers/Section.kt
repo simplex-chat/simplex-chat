@@ -31,7 +31,7 @@ val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
 // Set to true by SectionView around its inner Column. SectionItemView reads it
 // to decide whether to draw the 2dp bottom divider. False default keeps
 // standalone usage (alerts, pickers, custom contexts) unaffected.
-private val LocalInSectionCard = staticCompositionLocalOf { false }
+internal val LocalInSectionCard = staticCompositionLocalOf { false }
 
 
 @Composable
