@@ -1,6 +1,6 @@
 # Desktop: video playback hangs after a preview snapshot stalls
 
-Branch: `nd/fix-video` · code commit `4a964c661`.
+Branch: `nd/fix-video` · final code commit `4c7073bdc` · PR [#6983](https://github.com/simplex-chat/simplex-chat/pull/6983).
 
 ## 1. Problem statement
 
@@ -20,24 +20,7 @@ The bug appeared after PR [#6924](https://github.com/simplex-chat/simplex-chat/p
 
 Two compounding defects in `VideoPlayer.desktop.kt`, surfaced by `#6924`:
 
-### 2a. Helper-player pool reuse exhausts the software h264 buffer pool
-
-`getOrCreateHelperPlayer()` (line 283 before the fix) returned a `CallbackMediaPlayerComponent` from `helperPlayersPool`, recycling it across preview generations:
-
-```kotlin
-private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent =
-  helperPlayersPool.removeFirstOrNull()
-    ?: CallbackMediaPlayerComponent(
-         MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) }
-       )
-private fun putHelperPlayer(player: CallbackMediaPlayerComponent) = helperPlayersPool.add(player)
-```
-
-After the first preview, `player.stop()` was called and the component was put back in the pool. The next call to `getBitmapFromVideo` reused the same component on the same `vlcPreviewFactory` libvlc instance — and the same libavcodec h264 software decoder pool. With `--avcodec-hw=none`, libavcodec frames decoded by the previous run were never released cleanly across `stop` + `startPaused`, and the second decoder ran out of buffers (`get_buffer() failed`). The vout therefore never got a frame to display, and `libvlc_video_take_snapshot` logged `"Failed to grab a snapshot"`.
-
-This was harmless before `#6924` because the previous helper used `vlcFactory` (default = hardware-accelerated when available). Hardware decoding has a much larger buffer pool with different lifecycle semantics — pool reuse never drained it. Switching to software-only decoding revealed the latent fragility.
-
-### 2b. Synchronous `snapshots().get()` blocks the shared `playerThread` indefinitely
+### 2a. Synchronous `snapshots().get()` blocks the shared `playerThread` indefinitely
 
 `getBitmapFromVideo` ran inside `withContext(playerThread.asCoroutineDispatcher())` — the same single-thread executor used by `play()`/`stop()` for playback. Its loop polls vlcj's snapshot API:
 
@@ -48,25 +31,27 @@ while (snap == null && start + 1500 > System.currentTimeMillis()) {
 }
 ```
 
-The 1500 ms wall-clock guard only fires *between* calls. `player.snapshots()?.get()` is a synchronous JNI call that, when libvlc cannot produce a frame (because of 2a), waits indefinitely. While it blocks, `playerThread` is held: every queued `playerThread.execute { videoPlaying.value = start(...) }` from a subsequent `play()` click sits in the queue and never runs.
+The 1500 ms wall-clock guard only fires *between* calls. `player.snapshots()?.get()` is a synchronous JNI call that, when libvlc cannot produce a frame, waits indefinitely. While it blocks, `playerThread` is held: every queued `playerThread.execute { videoPlaying.value = start(...) }` from a subsequent `play()` click sits in the queue and never runs.
 
 This was confirmed by instrumented printlns: after the first video's preview entered the snapshot loop, the second video's `play()` body executed (UI thread println fires), but its lambda submitted to `playerThread.execute` produced no `lambda started` print — because `playerThread` was stuck inside the JNI call.
 
+### 2b. Helper-player pool reuse exhausts the software h264 buffer pool
+
+`getOrCreateHelperPlayer()` returns a `CallbackMediaPlayerComponent` from `helperPlayersPool`, recycling it across preview generations. With `vlcFactory` (hardware-accelerated by default), this was harmless — the GPU buffer pool was large with different lifecycle semantics. After `#6924` switched the helper to `vlcPreviewFactory` (`--avcodec-hw=none`), libavcodec frames from the previous run were not released cleanly across `stop` + `startPaused`, and the second decoder ran out of buffers (`get_buffer() failed`). The vout never produced a frame, which is the trigger for the hang in 2a.
+
 ## 3. Solution summary
 
-`apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/VideoPlayer.desktop.kt` — single file, +6 / −7 lines.
+`apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/platform/VideoPlayer.desktop.kt` — single file, +8 / −6 lines. Helper-player pool is preserved as-is.
 
-1. **Drop the helper-player pool.** `getOrCreateHelperPlayer` / `putHelperPlayer` / `helperPlayersPool` are removed. A new `createHelperPlayer()` returns a fresh `CallbackMediaPlayerComponent` per call. The two call sites in `getBitmapFromVideo` follow `player.stop()` with `player.release()` instead of returning the component to the pool. Each preview now runs against a fresh libvlc decoder context — no stale buffer-pool state carries across previews. Cost: `previewsAndDurations` already caches the result per URI, so each video file pays the component-creation cost at most once.
+1. **Replace the polling `snapshots().get()` loop with a `CallbackVideoSurface` capture wrapped in `withTimeoutOrNull`.** The existing `SkiaBitmapVideoSurface` (already used for full-screen playback rendering) is attached to the helper player before `media().startPaused(...)`. Its `RenderCallback.display()` runs as soon as libvlc decodes the first frame, populating `surface.bitmap`. `getBitmapFromVideo` polls `surface.bitmap.value` from inside `withTimeoutOrNull(1500L) { ... }`; the wait is now structurally bounded — the synchronous JNI call is gone. Frame is converted to `BufferedImage` via `ImageBitmap.toAwtImage()` for the existing orientation-correction code path. This addresses 2a directly: a helper that fails to decode (2b) no longer holds the dispatcher.
 
-2. **Move preview generation to a dedicated executor.** A new `previewThread = Executors.newSingleThreadExecutor()` is added next to the existing `playerThread`. `getBitmapFromVideo`'s `withContext` switches to `previewThread.asCoroutineDispatcher()`. Preview generation no longer competes with playback for the same single-thread dispatcher: even if the snapshot JNI call blocks (e.g., on a corrupt video), `playerThread` stays free, and clicking play on any other video continues to work.
+2. **Move preview generation to a dedicated executor.** A new `previewThread = Executors.newSingleThreadExecutor()` runs `getBitmapFromVideo`. Defense in depth: even if 1500 ms of preview work overlaps with a play click, playback's `playerThread` is free to service it.
 
-The two fixes are complementary. (1) addresses the root cause of the hang for the observed workload (multiple sequential previews on software decoder). (2) is defensive: `snapshots().get()` is a blocking JNI call with no timeout we control, and any future condition that makes a single preview hang must not be allowed to take playback down with it.
+The pool is intentionally not touched. Removing it loses the factory-warmup amortization across distinct video URIs without addressing the actual hang (which is in the synchronous snapshot API, not in player reuse).
 
 ## 4. Alternatives considered (and rejected)
 
-- **Fix 1B — keep the pool, reset the helper between uses.** vlcj has no clean reset API; would require `media().release()` + manual re-attach. More code, fragile, doesn't address the executor-sharing problem.
-- **Fix 2A — replace `snapshots().get()` with a `CallbackVideoSurface` capture of the first `display()` frame.** Architecturally cleanest (no blocking JNI at all) but ~30 line refactor. Worth considering for a follow-up; out of scope for the immediate regression fix.
-- **Fix 2B — wrap `snapshots().get()` in a coroutine timeout on a separate IO thread.** Doesn't actually cancel the JNI call; threads leak indefinitely.
-- **Fix 5 — revert PR #6924.** Restores the masking effect of hardware-accelerated decoding but reintroduces whatever security/stability concern motivated `--avcodec-hw=none`. Pool reuse remains a latent footgun.
-
-The chosen combination (1A + 3A) is the smallest patch that fixes the user-visible regression and prevents recurrence from the same root mechanism.
+- **Drop the helper-player pool (initial attempt, commit `4a964c661`).** Replaces every preview's helper with a fresh `CallbackMediaPlayerComponent`. Fixes the symptom by sidestepping pool reuse, but costs the factory-warmup benefit and does not address the underlying blocking JNI call — a single corrupt video could still hang preview generation indefinitely (just on a fresh helper). Superseded by the surface-capture approach.
+- **Keep the pool, reset the helper between uses.** vlcj has no clean reset API; would require `media().release()` + manual re-attach. More code, fragile, doesn't address 2a.
+- **Wrap `snapshots().get()` in a coroutine timeout on a separate IO thread.** `withTimeoutOrNull` cannot cancel a blocked JNI call; the IO thread leaks until libvlc returns (which may be never).
+- **Revert PR #6924.** Restores the masking effect of hardware-accelerated decoding but reintroduces whatever the PR was guarding against, and leaves both 2a and 2b in place.
