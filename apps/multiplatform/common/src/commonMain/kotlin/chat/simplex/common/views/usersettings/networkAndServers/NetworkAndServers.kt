@@ -262,12 +262,14 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
         SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) } })
         SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
-        if (networkUseSocksProxy.value) {
-          SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
-          SectionDividerSpaced(maxTopPadding = true)
-        } else {
-          SectionDividerSpaced(maxBottomPadding = false)
-        }
+      }
+    }
+    if (currentRemoteHost == null) {
+      if (networkUseSocksProxy.value) {
+        SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
+        SectionDividerSpaced(maxTopPadding = true)
+      } else {
+        SectionDividerSpaced(maxBottomPadding = false)
       }
     }
     val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
