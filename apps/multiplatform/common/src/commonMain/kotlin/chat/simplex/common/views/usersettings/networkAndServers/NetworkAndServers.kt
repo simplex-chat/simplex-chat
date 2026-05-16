@@ -339,23 +339,10 @@ fun UseSocksProxySwitch(
   networkUseSocksProxy: MutableState<Boolean>,
   toggleSocksProxy: (Boolean) -> Unit,
 ) {
-  Row(
-    Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.SpaceBetween
+  SettingsActionItemWithContent(
+    icon = painterResource(MR.images.ic_settings_ethernet),
+    text = stringResource(MR.strings.network_socks_toggle_use_socks_proxy),
   ) {
-    Row(
-      Modifier.weight(1f).padding(horizontal = DEFAULT_PADDING),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Icon(
-        painterResource(MR.images.ic_settings_ethernet),
-        stringResource(MR.strings.network_socks_toggle_use_socks_proxy),
-        tint = MaterialTheme.colors.secondary
-      )
-      TextIconSpaced(false)
-      Text(generalGetString(MR.strings.network_socks_toggle_use_socks_proxy))
-    }
     DefaultSwitch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
