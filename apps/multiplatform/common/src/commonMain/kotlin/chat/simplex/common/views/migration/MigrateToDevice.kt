@@ -297,8 +297,8 @@ private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, lin
         }
       }
     ){}
-    SectionTextFooter(stringResource(MR.strings.migrate_to_device_confirm_network_settings_footer))
   }
+  SectionTextFooter(stringResource(MR.strings.migrate_to_device_confirm_network_settings_footer))
 
   SectionSpacer()
 
@@ -374,8 +374,8 @@ private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, cha
         state = MigrationToState.DatabaseInit(link, netCfg, networkProxy)
       }
     ) {}
-    SectionTextFooter(stringResource(MR.strings.migrate_to_device_try_again))
   }
+  SectionTextFooter(stringResource(MR.strings.migrate_to_device_try_again))
   LaunchedEffect(Unit) {
     chatReceiver?.stopAndCleanUp()
     File(archivePath).delete()
@@ -405,8 +405,8 @@ private fun MutableState<MigrationToState?>.ArchiveImportFailedView(archivePath:
         state = MigrationToState.ArchiveImport(archivePath, netCfg, networkProxy)
       }
     ) {}
-    SectionTextFooter(stringResource(MR.strings.migrate_to_device_try_again))
   }
+  SectionTextFooter(stringResource(MR.strings.migrate_to_device_try_again))
 }
 
 @Composable
@@ -500,8 +500,8 @@ private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DB
         }
       ) {}
     }
-    SectionTextFooter(footer)
   }
+  SectionTextFooter(footer)
 }
 
 @Composable

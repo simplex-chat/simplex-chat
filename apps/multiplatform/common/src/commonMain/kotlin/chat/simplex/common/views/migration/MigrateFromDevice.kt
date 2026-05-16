@@ -201,8 +201,8 @@ private fun MutableState<MigrationFromState>.ChatStopFailedView(reason: String) 
       textColor = MaterialTheme.colors.error,
       click = ::stopChat
     ){}
-    SectionTextFooter(stringResource(MR.strings.migrate_from_device_chat_should_be_stopped))
   }
+  SectionTextFooter(stringResource(MR.strings.migrate_from_device_chat_should_be_stopped))
 }
 
 @Composable
@@ -243,8 +243,8 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
             }
           }
         ) {}
-        SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
       }
+      SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
     }
     if (verifyingPassphrase.value) {
       ProgressView()
@@ -261,8 +261,8 @@ private fun MutableState<MigrationFromState>.UploadConfirmationView() {
       textColor = MaterialTheme.colors.primary,
       click = { state = MigrationFromState.Archiving }
     ){}
-    SectionTextFooter(stringResource(MR.strings.migrate_from_device_all_data_will_be_uploaded))
   }
+  SectionTextFooter(stringResource(MR.strings.migrate_from_device_all_data_will_be_uploaded))
 }
 
 @Composable
@@ -319,8 +319,8 @@ private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, 
         state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
       }
     ) {}
-    SectionTextFooter(stringResource(MR.strings.migrate_from_device_try_again))
   }
+  SectionTextFooter(stringResource(MR.strings.migrate_from_device_try_again))
   LaunchedEffect(Unit) {
     chatReceiver?.stopAndCleanUp()
   }
@@ -361,9 +361,9 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
         )
       }
     ) {}
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   }
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   SectionSpacer()
   SectionView(stringResource(MR.strings.show_QR_code).uppercase()) {
     SimpleXLinkQRCode(link, onShare = {})
@@ -410,9 +410,9 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
           )
         }
       ) {}
-      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
-      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     }
+    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
+    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     if (chatDeletion) {
       ProgressView()
     }
