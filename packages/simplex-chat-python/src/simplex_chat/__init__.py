@@ -1,12 +1,21 @@
 """SimpleX Chat — Python client library for chat bots."""
 
 from ._version import __version__
-from .api import ChatApi, ChatCommandError, ConnReqType, Db, PostgresDb, SqliteDb
+from .api import (
+    ChatApi,
+    ChatCommandError,
+    ConnReqType,
+    ContactAlreadyExistsError,
+    Db,
+    PostgresDb,
+    SqliteDb,
+)
 from .bot import (
     Bot,
     BotCommand,
     BotProfile,
     ChatMessage,
+    Client,
     CommandHandler,
     EventHandler,
     FileMessage,
@@ -16,6 +25,7 @@ from .bot import (
     MessageHandler,
     Middleware,
     ParsedCommand,
+    Profile,
     ReportMessage,
     TextMessage,
     UnknownMessage,
@@ -35,8 +45,10 @@ __all__ = [
     "ChatCommandError",
     "ChatInitError",
     "ChatMessage",
+    "Client",
     "CommandHandler",
     "ConnReqType",
+    "ContactAlreadyExistsError",
     "CryptoArgs",
     "Db",
     "EventHandler",
@@ -49,6 +61,7 @@ __all__ = [
     "MigrationConfirmation",
     "ParsedCommand",
     "PostgresDb",
+    "Profile",
     "ReportMessage",
     "SqliteDb",
     "TextMessage",

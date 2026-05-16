@@ -3737,7 +3737,8 @@ sealed class CIForwardedFrom {
 enum class CIDeleteMode(val deleteMode: String) {
   @SerialName("internal") cidmInternal("internal"),
   @SerialName("internalMark") cidmInternalMark("internalMark"),
-  @SerialName("broadcast") cidmBroadcast("broadcast");
+  @SerialName("broadcast") cidmBroadcast("broadcast"),
+  @SerialName("history") cidmHistory("history");
 }
 
 interface ItemContent {

@@ -207,6 +207,7 @@
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_note_folder">Error deleting private notes</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
+  <string name="error_deleting_message">Error deleting message</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
   <string name="error_changing_address">Error changing address</string>
   <string name="error_aborting_address_change">Error aborting address change</string>
@@ -424,6 +425,7 @@
   <string name="moderate_messages_will_be_marked_warning">The messages will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
+  <string name="from_history">From history</string>
   <string name="stop_file__action">Stop file</string>
   <string name="stop_snd_file__title">Stop sending file?</string>
   <string name="stop_snd_file__message">Sending file will be stopped.</string>

@@ -1,7 +1,8 @@
 # API Events
 # This file is generated automatically.
 from __future__ import annotations
-from typing import Literal, NotRequired, TypedDict
+from collections.abc import Awaitable, Callable
+from typing import Literal, NotRequired, Protocol, TypedDict, overload
 from . import _types as T
 
 class ContactConnected(TypedDict):
@@ -377,3 +378,318 @@ ChatEvent = (
 )
 
 ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "sentGroupInvitation", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "messageError", "chatError", "chatErrors"]
+
+
+class OnEventDecorator(Protocol):
+    """Per-tag narrowing protocol for ``Client.on_event``.
+
+    ``@client.on_event("contactConnected")`` types the handler's
+    ``evt`` parameter as :class:`ContactConnected` rather than the
+    unnarrowed :data:`ChatEvent` union.
+    """
+
+    @overload
+    def __call__(self, event: Literal["contactConnected"], /) -> Callable[
+        [Callable[["ContactConnected"], Awaitable[None]]],
+        Callable[["ContactConnected"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["contactUpdated"], /) -> Callable[
+        [Callable[["ContactUpdated"], Awaitable[None]]],
+        Callable[["ContactUpdated"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["contactDeletedByContact"], /) -> Callable[
+        [Callable[["ContactDeletedByContact"], Awaitable[None]]],
+        Callable[["ContactDeletedByContact"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["receivedContactRequest"], /) -> Callable[
+        [Callable[["ReceivedContactRequest"], Awaitable[None]]],
+        Callable[["ReceivedContactRequest"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["newMemberContactReceivedInv"], /) -> Callable[
+        [Callable[["NewMemberContactReceivedInv"], Awaitable[None]]],
+        Callable[["NewMemberContactReceivedInv"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["contactSndReady"], /) -> Callable[
+        [Callable[["ContactSndReady"], Awaitable[None]]],
+        Callable[["ContactSndReady"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["newChatItems"], /) -> Callable[
+        [Callable[["NewChatItems"], Awaitable[None]]],
+        Callable[["NewChatItems"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["chatItemReaction"], /) -> Callable[
+        [Callable[["ChatItemReaction"], Awaitable[None]]],
+        Callable[["ChatItemReaction"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["chatItemsDeleted"], /) -> Callable[
+        [Callable[["ChatItemsDeleted"], Awaitable[None]]],
+        Callable[["ChatItemsDeleted"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["chatItemUpdated"], /) -> Callable[
+        [Callable[["ChatItemUpdated"], Awaitable[None]]],
+        Callable[["ChatItemUpdated"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["groupChatItemsDeleted"], /) -> Callable[
+        [Callable[["GroupChatItemsDeleted"], Awaitable[None]]],
+        Callable[["GroupChatItemsDeleted"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["chatItemsStatusesUpdated"], /) -> Callable[
+        [Callable[["ChatItemsStatusesUpdated"], Awaitable[None]]],
+        Callable[["ChatItemsStatusesUpdated"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["receivedGroupInvitation"], /) -> Callable[
+        [Callable[["ReceivedGroupInvitation"], Awaitable[None]]],
+        Callable[["ReceivedGroupInvitation"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["userJoinedGroup"], /) -> Callable[
+        [Callable[["UserJoinedGroup"], Awaitable[None]]],
+        Callable[["UserJoinedGroup"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["groupUpdated"], /) -> Callable[
+        [Callable[["GroupUpdated"], Awaitable[None]]],
+        Callable[["GroupUpdated"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["joinedGroupMember"], /) -> Callable[
+        [Callable[["JoinedGroupMember"], Awaitable[None]]],
+        Callable[["JoinedGroupMember"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["memberRole"], /) -> Callable[
+        [Callable[["MemberRole"], Awaitable[None]]],
+        Callable[["MemberRole"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["deletedMember"], /) -> Callable[
+        [Callable[["DeletedMember"], Awaitable[None]]],
+        Callable[["DeletedMember"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["leftMember"], /) -> Callable[
+        [Callable[["LeftMember"], Awaitable[None]]],
+        Callable[["LeftMember"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["deletedMemberUser"], /) -> Callable[
+        [Callable[["DeletedMemberUser"], Awaitable[None]]],
+        Callable[["DeletedMemberUser"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["groupDeleted"], /) -> Callable[
+        [Callable[["GroupDeleted"], Awaitable[None]]],
+        Callable[["GroupDeleted"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["connectedToGroupMember"], /) -> Callable[
+        [Callable[["ConnectedToGroupMember"], Awaitable[None]]],
+        Callable[["ConnectedToGroupMember"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["memberAcceptedByOther"], /) -> Callable[
+        [Callable[["MemberAcceptedByOther"], Awaitable[None]]],
+        Callable[["MemberAcceptedByOther"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["memberBlockedForAll"], /) -> Callable[
+        [Callable[["MemberBlockedForAll"], Awaitable[None]]],
+        Callable[["MemberBlockedForAll"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["groupMemberUpdated"], /) -> Callable[
+        [Callable[["GroupMemberUpdated"], Awaitable[None]]],
+        Callable[["GroupMemberUpdated"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["groupLinkDataUpdated"], /) -> Callable[
+        [Callable[["GroupLinkDataUpdated"], Awaitable[None]]],
+        Callable[["GroupLinkDataUpdated"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["groupRelayUpdated"], /) -> Callable[
+        [Callable[["GroupRelayUpdated"], Awaitable[None]]],
+        Callable[["GroupRelayUpdated"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["rcvFileDescrReady"], /) -> Callable[
+        [Callable[["RcvFileDescrReady"], Awaitable[None]]],
+        Callable[["RcvFileDescrReady"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["rcvFileComplete"], /) -> Callable[
+        [Callable[["RcvFileComplete"], Awaitable[None]]],
+        Callable[["RcvFileComplete"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["sndFileCompleteXFTP"], /) -> Callable[
+        [Callable[["SndFileCompleteXFTP"], Awaitable[None]]],
+        Callable[["SndFileCompleteXFTP"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["rcvFileStart"], /) -> Callable[
+        [Callable[["RcvFileStart"], Awaitable[None]]],
+        Callable[["RcvFileStart"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["rcvFileSndCancelled"], /) -> Callable[
+        [Callable[["RcvFileSndCancelled"], Awaitable[None]]],
+        Callable[["RcvFileSndCancelled"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["rcvFileAccepted"], /) -> Callable[
+        [Callable[["RcvFileAccepted"], Awaitable[None]]],
+        Callable[["RcvFileAccepted"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["rcvFileError"], /) -> Callable[
+        [Callable[["RcvFileError"], Awaitable[None]]],
+        Callable[["RcvFileError"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["rcvFileWarning"], /) -> Callable[
+        [Callable[["RcvFileWarning"], Awaitable[None]]],
+        Callable[["RcvFileWarning"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["sndFileError"], /) -> Callable[
+        [Callable[["SndFileError"], Awaitable[None]]],
+        Callable[["SndFileError"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["sndFileWarning"], /) -> Callable[
+        [Callable[["SndFileWarning"], Awaitable[None]]],
+        Callable[["SndFileWarning"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["acceptingContactRequest"], /) -> Callable[
+        [Callable[["AcceptingContactRequest"], Awaitable[None]]],
+        Callable[["AcceptingContactRequest"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["acceptingBusinessRequest"], /) -> Callable[
+        [Callable[["AcceptingBusinessRequest"], Awaitable[None]]],
+        Callable[["AcceptingBusinessRequest"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["contactConnecting"], /) -> Callable[
+        [Callable[["ContactConnecting"], Awaitable[None]]],
+        Callable[["ContactConnecting"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["businessLinkConnecting"], /) -> Callable[
+        [Callable[["BusinessLinkConnecting"], Awaitable[None]]],
+        Callable[["BusinessLinkConnecting"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["joinedGroupMemberConnecting"], /) -> Callable[
+        [Callable[["JoinedGroupMemberConnecting"], Awaitable[None]]],
+        Callable[["JoinedGroupMemberConnecting"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["sentGroupInvitation"], /) -> Callable[
+        [Callable[["SentGroupInvitation"], Awaitable[None]]],
+        Callable[["SentGroupInvitation"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["groupLinkConnecting"], /) -> Callable[
+        [Callable[["GroupLinkConnecting"], Awaitable[None]]],
+        Callable[["GroupLinkConnecting"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["hostConnected"], /) -> Callable[
+        [Callable[["HostConnected"], Awaitable[None]]],
+        Callable[["HostConnected"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["hostDisconnected"], /) -> Callable[
+        [Callable[["HostDisconnected"], Awaitable[None]]],
+        Callable[["HostDisconnected"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["subscriptionStatus"], /) -> Callable[
+        [Callable[["SubscriptionStatus"], Awaitable[None]]],
+        Callable[["SubscriptionStatus"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["messageError"], /) -> Callable[
+        [Callable[["MessageError"], Awaitable[None]]],
+        Callable[["MessageError"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["chatError"], /) -> Callable[
+        [Callable[["ChatError"], Awaitable[None]]],
+        Callable[["ChatError"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: Literal["chatErrors"], /) -> Callable[
+        [Callable[["ChatErrors"], Awaitable[None]]],
+        Callable[["ChatErrors"], Awaitable[None]],
+    ]: ...
+
+    @overload
+    def __call__(self, event: str, /) -> Callable[
+        [Callable[["ChatEvent"], Awaitable[None]]],
+        Callable[["ChatEvent"], Awaitable[None]],
+    ]: ...

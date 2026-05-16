@@ -258,7 +258,7 @@ fun GroupLinkLayout(
           iconColor = MaterialTheme.colors.primary,
           textColor = MaterialTheme.colors.primary,
         )
-        if (shareGroupInfo != null) {
+        if (shareGroupInfo != null && isChannel) {
           SettingsActionItem(
             painterResource(MR.images.ic_forward),
             stringResource(MR.strings.share_via_chat),

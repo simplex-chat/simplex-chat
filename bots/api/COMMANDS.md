@@ -375,7 +375,7 @@ Delete message.
 **Syntax**:
 
 ```
-/_delete item <str(chatRef)> <chatItemIds[0]>[,<chatItemIds[1]>...] broadcast|internal|internalMark
+/_delete item <str(chatRef)> <chatItemIds[0]>[,<chatItemIds[1]>...] broadcast|internal|internalMark|history
 ```
 
 ```javascript

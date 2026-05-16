@@ -1213,14 +1213,14 @@ object ChatController {
   suspend fun apiDeleteChatItems(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemIds: List<Long>, mode: CIDeleteMode): List<ChatItemDeletion>? {
     val r = sendCmd(rh, CC.ApiDeleteChatItem(type, id, scope, itemIds, mode))
     if (r is API.Result && r.res is CR.ChatItemsDeleted) return r.res.chatItemDeletions
-    Log.e(TAG, "apiDeleteChatItem bad response: ${r.responseType} ${r.details}")
+    apiErrorAlert("apiDeleteChatItems", generalGetString(MR.strings.error_deleting_message), r)
     return null
   }
 
   suspend fun apiDeleteMemberChatItems(rh: Long?, groupId: Long, itemIds: List<Long>): List<ChatItemDeletion>? {
     val r = sendCmd(rh, CC.ApiDeleteMemberChatItem(groupId, itemIds))
     if (r is API.Result && r.res is CR.ChatItemsDeleted) return r.res.chatItemDeletions
-    Log.e(TAG, "apiDeleteMemberChatItem bad response: ${r.responseType} ${r.details}")
+    apiErrorAlert("apiDeleteMemberChatItems", generalGetString(MR.strings.error_deleting_message), r)
     return null
   }
 

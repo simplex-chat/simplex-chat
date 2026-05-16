@@ -325,9 +325,6 @@ testShareChannelChannel ps =
 getTermLine2 :: TestCC -> IO (String, String)
 getTermLine2 c = (,) <$> getTermLine c <*> getTermLine c
 
-withRelay :: HasCallStack => TestParams -> (TestCC -> IO ()) -> IO ()
-withRelay ps = withNewTestChatOpts ps relayTestOpts "relay" relayProfile
-
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()
 createChannelWithRelay gName owner relay = do
