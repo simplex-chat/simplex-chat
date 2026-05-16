@@ -336,7 +336,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
       )
       SubscriptionStatusIndicatorView(totals.subs, totals.sessions.hasSess)
     }
-    Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
+    SectionView {
       InfoRow(
         generalGetString(MR.strings.servers_info_subscriptions_connections_subscribed),
         numOrDash(totals.subs.ssActive)
@@ -366,7 +366,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
       )
       SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew.hasSess)
     }
-    Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
+    SectionView {
       InfoRow(
         generalGetString(MR.strings.servers_info_subscriptions_connections_subscribed),
         numOrDash(subs.ssActive)
