@@ -815,16 +815,18 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
           ) {
             Spacer(Modifier.height(DEFAULT_PADDING))
             if (showUserSelection) {
-              ExposedDropDownSettingRow(
-                generalGetString(MR.strings.servers_info_target),
-                userOptions,
-                selectedUserCategory,
-                icon = null,
-                enabled = remember { mutableStateOf(true) },
-                onSelected = {
-                  selectedUserCategory.value = it
-                }
-              )
+              SectionView {
+                ExposedDropDownSettingRow(
+                  generalGetString(MR.strings.servers_info_target),
+                  userOptions,
+                  selectedUserCategory,
+                  icon = null,
+                  enabled = remember { mutableStateOf(true) },
+                  onSelected = {
+                    selectedUserCategory.value = it
+                  }
+                )
+              }
               SectionDividerSpaced()
             }
             when (index) {
