@@ -325,20 +325,20 @@ private fun ModalData.NewChatSheetLayout(
       item {
         if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
           SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
-          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {}
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        }
-      }
-      item {
-        NoFilteredContactsItem()
-      }
-      itemsIndexed(filteredContactChats) { index, chat ->
-        val nextChatSelected = remember(chat.id, filteredContactChats) {
-          derivedStateOf {
-            chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {
+            filteredContactChats.forEachIndexed { index, chat ->
+              val nextChatSelected = remember(chat.id, filteredContactChats) {
+                derivedStateOf {
+                  chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+                }
+              }
+              ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
+            }
           }
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        } else {
+          NoFilteredContactsItem()
         }
-        ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
       }
       if (appPlatform.isAndroid) {
         item {
@@ -410,19 +410,19 @@ private fun ModalData.NewChatSheetLayout(
       item {
         if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
           SectionDividerSpaced()
-          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {}
-        }
-      }
-      item {
-        NoFilteredContactsItem()
-      }
-      itemsIndexed(filteredContactChats) { index, chat ->
-        val nextChatSelected = remember(chat.id, filteredContactChats) {
-          derivedStateOf {
-            chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {
+            filteredContactChats.forEachIndexed { index, chat ->
+              val nextChatSelected = remember(chat.id, filteredContactChats) {
+                derivedStateOf {
+                  chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+                }
+              }
+              ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
+            }
           }
+        } else {
+          NoFilteredContactsItem()
         }
-        ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
       }
       if (appPlatform.isAndroid) {
         item {
