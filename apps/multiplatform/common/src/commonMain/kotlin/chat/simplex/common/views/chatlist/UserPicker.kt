@@ -142,7 +142,7 @@ fun UserPicker(
 
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val iconColor = MaterialTheme.colors.secondaryVariant
-  val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface
+  val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else canvasColorForCurrentTheme()
   PlatformUserPicker(
     modifier = Modifier
       .height(IntrinsicSize.Min)
@@ -217,7 +217,65 @@ fun UserPicker(
     }
 
     @Composable
+    fun ProfilesOptionRow() {
+      if (chatModel.desktopNoUserNoRemote) {
+        UserPickerOptionRow(
+          painterResource(MR.images.ic_manage_accounts),
+          generalGetString(MR.strings.create_chat_profile),
+          {
+            doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
+              ModalManager.center.showModalCloseable { close ->
+                LaunchedEffect(Unit) {
+                  userPickerState.value = AnimatedViewState.HIDING
+                }
+                CreateProfile(chat.simplex.common.platform.chatModel, close)
+              }
+            }
+          }
+        )
+      } else {
+        UserPickerOptionRow(
+          painterResource(MR.images.ic_manage_accounts),
+          stringResource(MR.strings.your_chat_profiles),
+          {
+            ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
+              val search = rememberSaveable { mutableStateOf("") }
+              val profileHidden = rememberSaveable { mutableStateOf(false) }
+              val authorized = remember { stateGetOrPut("authorized") { false } }
+              ModalView(
+                { close() },
+                showSearch = true,
+                searchAlwaysVisible = true,
+                onSearchValueChanged = {
+                  search.value = it
+                },
+                content = {
+                  UserProfilesView(chatModel, search, profileHidden) { block ->
+                      if (authorized.value) {
+                        block()
+                      } else {
+                        doWithAuth(
+                          generalGetString(MR.strings.auth_open_chat_profiles),
+                          generalGetString(MR.strings.auth_log_in_using_credential)
+                        ) {
+                          authorized.value = true
+                          block()
+                        }
+                      }
+                    }
+                })
+            }
+          },
+          disabled = stopped
+        )
+      }
+    }
+
+    @Composable
     fun SecondSection() {
+      val inactiveUsers = users.filter { !it.user.activeUser }
+      val splitForDesktopGrid = appPlatform.isDesktop && inactiveUsers.isNotEmpty()
+
       SectionView {
         UserPickerOptionRow(
           painterResource(MR.images.ic_qr_code),
@@ -234,74 +292,21 @@ fun UserPicker(
           }),
           disabled = stopped
         )
-        if (appPlatform.isDesktop) {
-          Divider(Modifier.padding(DEFAULT_PADDING))
-
-          val inactiveUsers = users.filter { !it.user.activeUser }
-
-          if (inactiveUsers.isNotEmpty()) {
-            Column(modifier = Modifier.padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)) {
-              UserPickerUsersSection(
-                users = inactiveUsers,
-                iconColor = iconColor,
-                onUserClicked = onUserClicked,
-                stopped = stopped
-              )
-            }
-          }
+        if (!splitForDesktopGrid) {
+          ProfilesOptionRow()
         }
+      }
 
-        if (chatModel.desktopNoUserNoRemote) {
-          UserPickerOptionRow(
-            painterResource(MR.images.ic_manage_accounts),
-            generalGetString(MR.strings.create_chat_profile),
-            {
-              doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
-                ModalManager.center.showModalCloseable { close ->
-                  LaunchedEffect(Unit) {
-                    userPickerState.value = AnimatedViewState.HIDING
-                  }
-                  CreateProfile(chat.simplex.common.platform.chatModel, close)
-                }
-              }
-            }
-          )
-        } else {
-          UserPickerOptionRow(
-            painterResource(MR.images.ic_manage_accounts),
-            stringResource(MR.strings.your_chat_profiles),
-            {
-              ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
-                val search = rememberSaveable { mutableStateOf("") }
-                val profileHidden = rememberSaveable { mutableStateOf(false) }
-                val authorized = remember { stateGetOrPut("authorized") { false } }
-                ModalView(
-                  { close() },
-                  showSearch = true,
-                  searchAlwaysVisible = true,
-                  onSearchValueChanged = {
-                    search.value = it
-                  },
-                  content = {
-                    UserProfilesView(chatModel, search, profileHidden) { block ->
-                        if (authorized.value) {
-                          block()
-                        } else {
-                          doWithAuth(
-                            generalGetString(MR.strings.auth_open_chat_profiles),
-                            generalGetString(MR.strings.auth_log_in_using_credential)
-                          ) {
-                            authorized.value = true
-                            block()
-                          }
-                        }
-                      }
-                  })
-              }
-            },
-            disabled = stopped
+      if (splitForDesktopGrid) {
+        Column(modifier = Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
+          UserPickerUsersSection(
+            users = inactiveUsers,
+            iconColor = iconColor,
+            onUserClicked = onUserClicked,
+            stopped = stopped
           )
         }
+        SectionView { ProfilesOptionRow() }
       }
     }
 
