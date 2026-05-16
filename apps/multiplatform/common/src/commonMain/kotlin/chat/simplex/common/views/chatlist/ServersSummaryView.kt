@@ -533,27 +533,23 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
     SelectionContainer {
       Text(
         summary.xftpServer,
-        Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
+        Modifier.padding(start = CARD_ITEM_PADDING, top = 5.dp, end = CARD_ITEM_PADDING, bottom = 10.dp),
         style = TextStyle(
           fontFamily = FontFamily.Monospace, fontSize = 16.sp,
           color = MaterialTheme.colors.secondary
         )
       )
     }
-    if (summary.stats != null || summary.sessions != null) {
-      SectionDividerSpaced()
-    }
+  }
 
-    if (summary.stats != null) {
-      XFTPStatsView(stats = summary.stats, rh = rh, statsStartedAt = statsStartedAt)
-      if (summary.sessions != null) {
-        SectionDividerSpaced(maxTopPadding = true)
-      }
-    }
+  if (summary.stats != null) {
+    SectionDividerSpaced()
+    XFTPStatsView(stats = summary.stats, rh = rh, statsStartedAt = statsStartedAt)
+  }
 
-    if (summary.sessions != null) {
-      ServerSessionsView(summary.sessions)
-    }
+  if (summary.sessions != null) {
+    SectionDividerSpaced(maxTopPadding = true)
+    ServerSessionsView(summary.sessions)
   }
 
   SectionBottomSpacer()
@@ -565,34 +561,28 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
     SelectionContainer {
       Text(
         summary.smpServer,
-        Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
+        Modifier.padding(start = CARD_ITEM_PADDING, top = 5.dp, end = CARD_ITEM_PADDING, bottom = 10.dp),
         style = TextStyle(
           fontFamily = FontFamily.Monospace, fontSize = 16.sp,
           color = MaterialTheme.colors.secondary
         )
       )
     }
-    if (summary.stats != null || summary.subs != null || summary.sessions != null) {
-      SectionDividerSpaced()
-    }
+  }
 
-    if (summary.stats != null) {
-      SMPStatsView(stats = summary.stats, remoteHostInfo = rh, statsStartedAt = statsStartedAt)
-      if (summary.subs != null || summary.sessions != null) {
-        SectionDividerSpaced(maxTopPadding = true)
-      }
-    }
+  if (summary.stats != null) {
+    SectionDividerSpaced()
+    SMPStatsView(stats = summary.stats, remoteHostInfo = rh, statsStartedAt = statsStartedAt)
+  }
 
-    if (summary.subs != null) {
-      SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
-      if (summary.sessions != null) {
-        SectionDividerSpaced()
-      }
-    }
+  if (summary.subs != null) {
+    SectionDividerSpaced(maxTopPadding = true)
+    SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
+  }
 
-    if (summary.sessions != null) {
-      ServerSessionsView(summary.sessions)
-    }
+  if (summary.sessions != null) {
+    SectionDividerSpaced(maxTopPadding = true)
+    ServerSessionsView(summary.sessions)
   }
 
   SectionBottomSpacer()
