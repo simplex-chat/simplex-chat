@@ -244,7 +244,6 @@ private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Bool
     CloseBehavior.Quit -> exitApplication()
     CloseBehavior.MinimizeToTray -> if (trayIsAvailable && singleInstanceLock) {
       simplexWindowState.windowVisible.value = false
-      startShowFileWatcher()
     } else exitApplication()
     CloseBehavior.Ask -> if (trayIsAvailable && singleInstanceLock) {
       requestCloseBehavior()
@@ -257,7 +256,6 @@ private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Bool
 }
 
 fun showWindow() {
-  stopShowFileWatcher()
   simplexWindowState.windowVisible.value = true
   simplexWindowState.window?.apply {
     // Clear ICONIFIED so a minimized window un-minimizes; preserves MAXIMIZED_BOTH

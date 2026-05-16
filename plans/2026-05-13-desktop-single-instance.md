@@ -11,15 +11,13 @@ Two files in `dataDir`: `simplex.started` (lock file) and `simplex.show` (signal
 ### Startup
 
 1. Try `FileChannel.tryLock(0, 1, false)` on `simplex.started`.
-2. **Lock acquired**: delete stale `simplex.show` if present (leftover from crash), start the app normally.
-3. **Lock taken** (another process holds it): create `simplex.show`, exit. The running instance will detect it and show its window.
+2. **Lock acquired**: delete stale `simplex.show` if present (leftover from crash), start a daemon `WatchService` on `dataDir` for `ENTRY_CREATE`, start the app normally.
+3. **Lock taken** (another process holds it): create `simplex.show`, exit. The running instance detects it and shows its window.
 4. **Lock fails** (IOException, filesystem doesn't support locks, etc.): start normally but disable minimize-to-tray. Close quits the app. No worse than before tray support existed.
 
-### Window minimize/restore
+### Signal handling
 
-- When the window minimizes to tray: start `WatchService` watching `dataDir` for `ENTRY_CREATE`.
-- When `simplex.show` appears: call `showWindow()` on the EDT, delete `simplex.show`.
-- When the window is restored (un-minimized by user): stop `WatchService`.
+While the lock is held, the daemon watcher runs for the JVM lifetime. When `simplex.show` appears it deletes the file and posts `showWindow()` to the EDT. `showWindow()` sets `windowVisible = true`, clears `ICONIFIED`, and brings the window to front — restores from tray, from taskbar-minimize, or just raises if visible-but-behind.
 
 Minimize-to-tray is only available when `singleInstanceLock` is held. If the lock couldn't be acquired (case 4), close always quits - preventing the scenario where two tray'd instances fight over the database.
 

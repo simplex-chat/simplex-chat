@@ -27,8 +27,6 @@
   <string name="non_content_uri_alert_title">Invalid file path</string>
   <string name="non_content_uri_alert_text">You shared an invalid file path. Report the issue to the app developers.</string>
   <string name="app_was_crashed">View crashed</string>
-  <string name="another_instance_title">App is already running</string>
-  <string name="another_instance_not_responding">Another app instance may be running or did not exit properly. Start anyway?</string>
 
   <!-- Server info - ChatModel.kt -->
   <string name="server_connected">connected</string>

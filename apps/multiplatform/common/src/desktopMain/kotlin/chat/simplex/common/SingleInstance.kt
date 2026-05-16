@@ -36,21 +36,15 @@ fun acquireSingleInstance(): Boolean {
       lockHandle = result.lock
       singleInstanceLock = true
       deleteShowFile()
+      startShowFileWatcher()
       return true
     }
     LockResult.Failed -> {
       return true
     }
     LockResult.Taken -> {
-      if (Files.exists(showPath)) {
-        val start = showSingleInstanceAlert()
-        if (start) deleteShowFile()
-        return start
-      } else {
-        val signalled = createShowFile()
-        if (signalled) return false
-        return showSingleInstanceAlert()
-      }
+      createShowFile()
+      return false
     }
   }
 }
@@ -85,13 +79,15 @@ private fun deleteShowFile() {
   }
 }
 
-private fun createShowFile(): Boolean =
-  try { Files.createFile(showPath); true } catch (e: IOException) {
+private fun createShowFile() {
+  try { Files.createFile(showPath) } catch (_: FileAlreadyExistsException) {
+    // Another duplicate already signalled; primary will pick it up.
+  } catch (e: IOException) {
     Log.w(TAG, "single-instance: cannot create show file: ${e.message}")
-    false
   }
+}
 
-fun startShowFileWatcher() {
+private fun startShowFileWatcher() {
   if (watcher != null) return
   val ws = try {
     dataDir.toPath().fileSystem.newWatchService()
@@ -113,20 +109,4 @@ fun startShowFileWatcher() {
       if (!key.reset()) return@thread
     }
   }
-}
-
-fun stopShowFileWatcher() {
-  watcher?.close()
-  watcher = null
-}
-
-private fun showSingleInstanceAlert(): Boolean {
-  val title = chat.simplex.common.views.helpers.generalGetString(chat.simplex.res.MR.strings.another_instance_title)
-  val message = chat.simplex.common.views.helpers.generalGetString(chat.simplex.res.MR.strings.another_instance_not_responding)
-  val result = javax.swing.JOptionPane.showConfirmDialog(
-    null, message, title,
-    javax.swing.JOptionPane.YES_NO_OPTION,
-    javax.swing.JOptionPane.WARNING_MESSAGE
-  )
-  return result == javax.swing.JOptionPane.YES_OPTION
 }
