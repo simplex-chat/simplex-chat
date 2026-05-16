@@ -1059,7 +1059,7 @@ acceptRelayJoinRequestAsync
       ownerMember' <- getGroupMemberById db vr user groupMemberId
       pure (gInfo', ownerMember')
 
-acceptRelayJoinRequestRejectAsync
+rejectRelayInvitation
   :: User
   -> Int64
   -> VersionRangeChat
@@ -1069,7 +1069,7 @@ acceptRelayJoinRequestRejectAsync
   -> Int64
   -> RelayRejectionReason
   -> CM ()
-acceptRelayJoinRequestRejectAsync user uclId vr groupRelayInv invId reqChatVRange initialDelay reason = do
+rejectRelayInvitation user uclId vr groupRelayInv invId reqChatVRange initialDelay reason = do
   (_gInfo, ownerMember) <- withStore $ \db ->
     createRelayRequestGroup db vr user groupRelayInv invId reqChatVRange initialDelay GSMemInvited RSRejected
   let GroupMember {groupMemberId} = ownerMember

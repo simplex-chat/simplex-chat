@@ -182,7 +182,7 @@ private fun subscriberRelayStatusText(member: GroupMember): String {
 
 private fun ownerRelayStatusText(member: GroupMember, groupRelays: List<GroupRelay>): String {
   val relayStatus = groupRelays.firstOrNull { it.groupMemberId == member.groupMemberId }?.relayStatus
-  return if (relayStatus == RelayStatus.RsRejected) {
+  return if (relayStatus == RelayStatus.Rejected) {
     generalGetString(MR.strings.relay_status_rejected)
   } else if (member.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)) {
     relayConnStatus(member).first

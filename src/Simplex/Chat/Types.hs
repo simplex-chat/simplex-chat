@@ -494,6 +494,12 @@ data GroupInfo = GroupInfo
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
 
+relayServesGroup :: GroupInfo -> Bool
+relayServesGroup GroupInfo {relayOwnStatus} = case relayOwnStatus of
+  Just RSInactive -> False
+  Just RSRejected -> False
+  _ -> True
+
 publicGroupEditor :: GroupInfo -> GroupMember -> Bool
 publicGroupEditor gInfo mem = useRelays' gInfo && memberRole' mem >= GRModerator
 
@@ -923,10 +929,6 @@ data RelayRejectionReason
   = RRRRejoinRejected
   | RRRUnknown {text :: Text}
   deriving (Eq, Show)
-
-instance FromField RelayRejectionReason where fromField = blobFieldDecoder strDecode
-
-instance ToField RelayRejectionReason where toField = toField . strEncode
 
 instance StrEncoding RelayRejectionReason where
   strEncode = \case

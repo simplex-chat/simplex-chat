@@ -2945,12 +2945,12 @@ processChatCommand vr nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' scopeInfo) ci]
       -- TODO delete direct connections that were unused
       deleteGroupLinkIfExists user gInfo'
-      let isRelayLeave = useRelays' gInfo && isRelay membership
+      let shouldReject = useRelays' gInfo && isRelay membership
       -- member records are not deleted to keep history
       withFastStore' $ \db -> do
         updateGroupMemberStatus db userId membership GSMemLeft
-        when isRelayLeave $ updateRelayOwnStatus_ db gInfo RSRejected
-      let relayOwnStatus' = if isRelayLeave then Just RSRejected else relayOwnStatus gInfo
+        when shouldReject $ updateRelayOwnStatus_ db gInfo RSRejected
+      let relayOwnStatus' = if shouldReject then Just RSRejected else relayOwnStatus gInfo
       pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}, relayOwnStatus = relayOwnStatus'}
     where
       -- Relay leaving channel: create delivery job for cursor-based sending and async connection cleanup.

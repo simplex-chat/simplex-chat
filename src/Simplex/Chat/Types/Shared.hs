@@ -119,11 +119,6 @@ instance ToField RelayStatus where toField = toField . textEncode
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
 
-relayNotServing :: Maybe RelayStatus -> Bool
-relayNotServing = \case
-  Just RSInactive -> True
-  Just RSRejected -> True
-  _ -> False
 
 data MsgSigStatus = MSSVerified | MSSSignedNoKey
   deriving (Eq, Show)

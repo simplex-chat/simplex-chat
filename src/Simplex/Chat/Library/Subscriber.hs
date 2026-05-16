@@ -775,7 +775,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- GSMemLeft (not GSMemRejected): owner UI treats this identically to an explicit /leave from the relay; GSMemRejected has knocking-admission semantics.
                     (relay', m') <- withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
-                      relay' <- liftIO $ updateRelayStatusFromTo db relay RSInvited RSRejected
+                      relay' <- if relayStatus relay == RSInvited
+                        then liftIO $ updateRelayStatusFromTo db relay RSInvited RSRejected
+                        else pure relay
                       liftIO $ updateGroupMemberStatus db userId m GSMemLeft
                       pure (relay', m {memberStatus = GSMemLeft})
                     -- complete the contact handshake so the relay receives INFO and cleans up its transient bookkeeping
@@ -832,7 +834,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               withStore' $ \db -> deleteGroupMember db user m
           XOk ->
             -- transient relay-reject row cleanup after the rejection handshake completes
-            when (memberCategory m == GCHostMember && maybe False (`elem` ([RSRejected, RSInactive] :: [RelayStatus])) (relayOwnStatus gInfo)) $ do
+            when (memberCategory m == GCHostMember && not (relayServesGroup gInfo)) $ do
               deleteMemberConnection' m True
               withStore' $ \db -> do
                 deleteGroupMember db user m
@@ -945,7 +947,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           rejected =
             memberStatus m `elem` ([GSMemRejected, GSMemLeft, GSMemRemoved, GSMemGroupDeleted] :: [GroupMemberStatus])
               || memberStatus membership == GSMemRejected
-              || maybe False (`elem` ([RSRejected, RSInactive] :: [RelayStatus])) (relayOwnStatus gInfo)
+              || not (relayServesGroup gInfo)
       MSG msgMeta _msgFlags msgBody -> do
         tags <- newTVarIO []
         withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
@@ -957,7 +959,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
               then
                 let tasks
-                      | relayNotServing (relayOwnStatus gInfo') = filter relayRemovedNewTask newDeliveryTasks
+                      | not (relayServesGroup gInfo') = filter relayRemovedNewTask newDeliveryTasks
                       | otherwise = newDeliveryTasks
                  in createDeliveryTasks gInfo' m' tasks
               else pure False
@@ -1551,7 +1553,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           rejected <- withStore' $ \db -> isRelayGroupRejected db user groupLink
           initialDelay <- asks $ initialInterval . relayRequestRetryInterval . config
           if rejected
-            then acceptRelayJoinRequestRejectAsync user uclId vr groupRelayInv invId chatVRange initialDelay RRRRejoinRejected
+            then rejectRelayInvitation user uclId vr groupRelayInv invId chatVRange initialDelay RRRRejoinRejected
             else do
               (_gInfo, _ownerMember) <- withStore $ \db ->
                 createRelayRequestGroup db vr user groupRelayInv invId chatVRange initialDelay GSMemAccepted RSInvited
@@ -3601,7 +3603,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending
-              | relayNotServing (relayOwnStatus gInfo) -> do
+              | not (relayServesGroup gInfo) -> do
                   logWarn "delivery task worker: relay inactive"
                   withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
               | otherwise ->
@@ -3671,7 +3673,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending
-              | relayNotServing (relayOwnStatus gInfo) -> do
+              | not (relayServesGroup gInfo) -> do
                   logWarn "delivery job worker: relay inactive"
                   withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) "relay inactive"
               | otherwise -> do

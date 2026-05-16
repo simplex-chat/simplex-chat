@@ -199,7 +199,7 @@ struct GroupMemberInfoView: View {
                                 Label("Share relay address", systemImage: "square.and.arrow.up")
                             }
                         }
-                        if groupRelay?.relayStatus == .rsRejected {
+                        if groupRelay?.relayStatus == .rejected {
                             infoRow("Status", "rejected by relay operator")
                         }
                     } header: {
