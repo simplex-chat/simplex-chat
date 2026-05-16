@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionDivider
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
