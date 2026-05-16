@@ -107,6 +107,7 @@ fun ApplicationScope.requestCloseBehavior() {
           AlertManager.shared.hideAlert()
           pref.set(CloseBehavior.MinimizeToTray)
           simplexWindowState.windowVisible.value = false
+          startShowFileWatcher()
         }) {
           Text(
             stringResource(MR.strings.close_behavior_dialog_minimize),
