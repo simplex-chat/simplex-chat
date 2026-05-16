@@ -631,8 +631,8 @@ fun ChatInfoLayout(
         SimpleXLinkQRCode(contact.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       SectionDividerSpaced(maxTopPadding = true)
     }
 

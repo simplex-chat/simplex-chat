@@ -211,9 +211,9 @@ private fun ConnectMobileViewLayout(
             Text(generalGetString(MR.strings.share_link), color = MaterialTheme.colors.primary)
           }
         }
-
-        Spacer(Modifier.height(DEFAULT_PADDING))
       }
+
+
       if (deviceName != null || sessionCode != null) {
         SectionView(stringResource(MR.strings.connected_mobile).uppercase()) {
           SelectionContainer {

@@ -74,9 +74,9 @@ fun NotificationsSettingsLayout(
           color = MaterialTheme.colors.secondary
         )
       }
-      if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
-        SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
-      }
+    }
+    if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
+      SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
     }
     SectionBottomSpacer()
   }

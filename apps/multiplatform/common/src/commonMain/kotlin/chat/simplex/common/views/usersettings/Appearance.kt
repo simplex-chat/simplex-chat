@@ -558,7 +558,6 @@ object AppearanceScope {
             color = if (chatModel.remoteHostId != null && themeUserDestination.value != null) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
           )
         }
-        SectionSpacer()
       }
 
       val state: State<DefaultThemeMode?> = remember(appPrefs.currentTheme.get()) {

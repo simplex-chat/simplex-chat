@@ -577,8 +577,8 @@ fun GroupMemberInfoLayout(
         } else {
           ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
         }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       }
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       SectionDividerSpaced()
     }
 
