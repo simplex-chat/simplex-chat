@@ -2122,6 +2122,7 @@ struct AppSettings: Codable, Equatable {
     var privacyAskToApproveRelays: Bool? = nil
     var privacyAcceptImages: Bool? = nil
     var privacyLinkPreviews: Bool? = nil
+    var privacySanitizeLinks: Bool? = nil
     var privacyShowChatPreviews: Bool? = nil
     var privacySaveLastDraft: Bool? = nil
     var privacyProtectScreen: Bool? = nil
@@ -2157,6 +2158,7 @@ struct AppSettings: Codable, Equatable {
         if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
+        if privacySanitizeLinks != def.privacySanitizeLinks { empty.privacySanitizeLinks = privacySanitizeLinks }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
@@ -2193,6 +2195,7 @@ struct AppSettings: Codable, Equatable {
             privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
+            privacySanitizeLinks: false,
             privacyShowChatPreviews: true,
             privacySaveLastDraft: true,
             privacyProtectScreen: false,
