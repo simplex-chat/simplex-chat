@@ -111,7 +111,7 @@ private fun MinimizeToTraySection() {
 fun DensityScaleSection() {
   val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
   SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
       Box(Modifier.size(50.dp)
         .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
         .clip(RoundedCornerShape(percent = 22))
