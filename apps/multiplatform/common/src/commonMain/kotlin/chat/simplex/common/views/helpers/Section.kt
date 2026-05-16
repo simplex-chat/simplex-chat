@@ -26,6 +26,7 @@ import chat.simplex.res.MR
 
 private val SectionCardShape = RoundedCornerShape(16.dp)
 private val CARD_PADDING = 16.dp
+private val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
 
 // Set to true by SectionView around its inner Column. SectionItemView reads it
 // to decide whether to draw the 2dp bottom divider. False default keeps
@@ -174,9 +175,9 @@ fun SectionItemView(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_ITEM_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
-    PaddingValues(horizontal = CARD_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+    PaddingValues(horizontal = CARD_ITEM_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -198,9 +199,9 @@ fun SectionItemViewWithoutMinPadding(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_PADDING)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_ITEM_PADDING)
   else
-    PaddingValues(horizontal = CARD_PADDING),
+    PaddingValues(horizontal = CARD_ITEM_PADDING),
   content: (@Composable RowScope.() -> Unit)
 ) {
   SectionItemView(click, minHeight, disabled, extraPadding, padding, content)
@@ -214,9 +215,9 @@ fun SectionItemViewLongClickable(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_ITEM_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
-    PaddingValues(horizontal = CARD_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+    PaddingValues(horizontal = CARD_ITEM_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -239,7 +240,7 @@ fun SectionItemViewSpaceBetween(
   click: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null,
   minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
-  padding: PaddingValues = PaddingValues(horizontal = CARD_PADDING),
+  padding: PaddingValues = PaddingValues(horizontal = CARD_ITEM_PADDING),
   disabled: Boolean = false,
   content: (@Composable RowScope.() -> Unit)
 ) {
