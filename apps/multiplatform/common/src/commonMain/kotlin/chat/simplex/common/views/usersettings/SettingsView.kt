@@ -1,5 +1,6 @@
 package chat.simplex.common.views.usersettings
 
+import CARD_ITEM_PADDING
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
@@ -348,9 +349,9 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
     click,
     extraPadding = extraPadding,
     padding = if (extraPadding && icon != null)
-      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_ITEM_PADDING)
     else
-      PaddingValues(horizontal = DEFAULT_PADDING),
+      PaddingValues(horizontal = CARD_ITEM_PADDING),
     disabled = disabled
   ) {
     if (icon != null) {

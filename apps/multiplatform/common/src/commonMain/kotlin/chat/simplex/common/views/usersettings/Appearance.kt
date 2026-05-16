@@ -1,5 +1,7 @@
 package chat.simplex.common.views.usersettings
 
+import CARD_ITEM_PADDING
+import CARD_PADDING
 import SectionBottomSpacer
 import SectionDivider
 import SectionDividerSpaced
@@ -113,7 +115,7 @@ object AppearanceScope {
               val diff = it % 0.025f
               appPrefs.inAppBarsAlpha.set(1f - (String.format(Locale.US, "%.3f", it + (if (diff >= 0.0125f) -diff + 0.025f else -diff)).toFloatOrNull() ?: 1f))
             },
-            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - (CARD_PADDING + CARD_ITEM_PADDING) * 2) * 0.618f),
             valueRange = 0f..0.5f,
             steps = 21,
             colors = SliderDefaults.colors(
@@ -159,7 +161,7 @@ object AppearanceScope {
                 val diff = it % 0.05f
                 saveBlur(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
               },
-              Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+              Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - (CARD_PADDING + CARD_ITEM_PADDING) * 2) * 0.618f),
               valueRange = 0f..1f,
               steps = 21,
               colors = SliderDefaults.colors(
@@ -187,7 +189,7 @@ object AppearanceScope {
               appPreferences.chatItemRoundness.set(it + (if (diff >= 0.025f) -diff + 0.05f else -diff))
               saveThemeToDatabase(null)
             },
-            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - (CARD_PADDING + CARD_ITEM_PADDING) * 2) * 0.618f),
             valueRange = 0f..1f,
             steps = 20,
             colors = SliderDefaults.colors(

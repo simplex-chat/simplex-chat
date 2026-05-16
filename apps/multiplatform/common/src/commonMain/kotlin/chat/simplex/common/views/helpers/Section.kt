@@ -28,8 +28,8 @@ import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 
 private val SectionCardShape = RoundedCornerShape(16.dp)
-private val CARD_PADDING = 16.dp
-private val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
+val CARD_PADDING = 16.dp
+val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
 
 // Set to true by SectionView around its inner Column. SectionItemView reads it
 // to decide whether to draw the 2dp bottom divider. False default keeps
