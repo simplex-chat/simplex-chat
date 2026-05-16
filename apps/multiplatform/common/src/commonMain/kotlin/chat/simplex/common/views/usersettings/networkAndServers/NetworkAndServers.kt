@@ -214,9 +214,9 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
         userServers.value.forEachIndexed { index, srv ->
           srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, serverWarnings, currentRemoteHost?.remoteHostId) }
         }
-      }
-      if (conditionsAction != null && anyOperatorEnabled.value) {
-        ConditionsButton(conditionsAction, rhId = currentRemoteHost?.remoteHostId)
+        if (conditionsAction != null && anyOperatorEnabled.value) {
+          ConditionsButton(conditionsAction, rhId = currentRemoteHost?.remoteHostId)
+        }
       }
       val footerText = if (conditionsAction is UsageConditionsAction.Review && conditionsAction.deadline != null && anyOperatorEnabled.value) {
         String.format(generalGetString(MR.strings.operator_conditions_will_be_accepted_on), localDate(conditionsAction.deadline))
@@ -274,11 +274,13 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     }
     val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
 
-    SectionItemView(
-      { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
-      disabled = saveDisabled,
-    ) {
-      Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+    SectionView {
+      SectionItemView(
+        { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
+        disabled = saveDisabled,
+      ) {
+        Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+      }
     }
     val serversErr = globalServersError(serverErrors.value)
     if (serversErr != null) {
