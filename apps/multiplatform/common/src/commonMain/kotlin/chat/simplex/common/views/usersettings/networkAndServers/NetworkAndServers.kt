@@ -483,8 +483,8 @@ fun SocksProxySettings(
         UseOnionHosts(onionHosts, rememberUpdatedState(networkUseSocksProxy && proxyAuthRandomUnsaved.value)) {
           onionHosts.value = it
         }
-        SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
       }
+      SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
 
       SectionDividerSpaced(maxTopPadding = true)
 
@@ -514,8 +514,8 @@ fun SocksProxySettings(
             )
           }
         }
-        SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
       }
+      SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
 
       SectionDividerSpaced(maxBottomPadding = false, maxTopPadding = true)
 
