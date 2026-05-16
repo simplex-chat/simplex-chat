@@ -636,9 +636,9 @@ fun ChatInfoLayout(
       SectionDividerSpaced(maxTopPadding = true)
     }
 
-    if (contact.ready && contact.active) {
+    val chatSubStatus = chatModel.chatSubStatus.value
+    if (contact.ready && contact.active && (chatSubStatus != null || cStats != null)) {
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
-        val chatSubStatus = chatModel.chatSubStatus.value
         if (chatSubStatus != null) {
           SectionItemView({
             AlertManager.shared.showAlertMsg(
