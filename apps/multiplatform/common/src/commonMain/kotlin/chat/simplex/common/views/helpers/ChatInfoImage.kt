@@ -25,7 +25,7 @@ import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondary, shadow: Boolean = false) {
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
@@ -52,7 +52,7 @@ fun ProfileImage(
   size: Dp,
   image: String? = null,
   icon: ImageResource = MR.images.ic_account_circle_filled,
-  color: Color = MaterialTheme.colors.secondaryVariant,
+  color: Color = MaterialTheme.colors.secondary,
   backgroundColor: Color? = null,
   blurred: Boolean = false,
   async: Boolean = false
