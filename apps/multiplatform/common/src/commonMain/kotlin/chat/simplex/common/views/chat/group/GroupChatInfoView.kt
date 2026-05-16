@@ -658,7 +658,7 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       if (anyTopSectionRowShow) {
-        SectionDividerSpaced(maxBottomPadding = false)
+        SectionDividerSpaced()
       }
       SectionView {
         if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {

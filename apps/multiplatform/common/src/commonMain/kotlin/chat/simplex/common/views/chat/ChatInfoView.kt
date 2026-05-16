@@ -610,7 +610,7 @@ fun ChatInfoLayout(
         }
       }
     }
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
 
     SectionView {
       ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
