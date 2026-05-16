@@ -47,7 +47,7 @@ private fun Modifier.sectionItemHover(enabled: Boolean = true): Modifier {
   if (!enabled || !LocalInSectionCard.current) return this
   val interactionSource = remember { MutableInteractionSource() }
   val isHovered by interactionSource.collectIsHoveredAsState()
-  val hoverColor = if (isHovered) MaterialTheme.colors.onBackground.copy(alpha = 0.08f) else Color.Transparent
+  val hoverColor = if (isHovered) MaterialTheme.colors.onBackground.copy(alpha = 0.05f) else Color.Transparent
   return this.hoverable(interactionSource).background(hoverColor)
 }
 
