@@ -622,8 +622,8 @@ fun ChatInfoLayout(
     if (conn != null) {
       SectionView {
         InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
-        SectionDividerSpaced()
       }
+      SectionDividerSpaced()
     }
 
     if (contact.contactLink != null) {
