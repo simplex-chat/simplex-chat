@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION") // RippleTheme/LocalRippleTheme — used for SectionRippleTheme hover-alpha override; modern Indication-based ripple migration is a separate concern.
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
