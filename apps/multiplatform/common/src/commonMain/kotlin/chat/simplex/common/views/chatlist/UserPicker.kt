@@ -217,95 +217,92 @@ fun UserPicker(
     }
 
     @Composable
-    fun SecondSectionBody() {
-      UserPickerOptionRow(
-        painterResource(MR.images.ic_qr_code),
-        if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
-        showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
-      )
-      UserPickerOptionRow(
-        painterResource(MR.images.ic_toggle_on),
-        stringResource(MR.strings.chat_preferences),
-        click = if (stopped) null else ({
-          showCustomModal { m, close ->
-            PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
-          }()
-        }),
-        disabled = stopped
-      )
-      if (appPlatform.isDesktop) {
-        Divider(Modifier.padding(DEFAULT_PADDING))
-
-        val inactiveUsers = users.filter { !it.user.activeUser }
-
-        if (inactiveUsers.isNotEmpty()) {
-          Column(modifier = Modifier.padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)) {
-            UserPickerUsersSection(
-              users = inactiveUsers,
-              iconColor = iconColor,
-              onUserClicked = onUserClicked,
-              stopped = stopped
-            )
-          }
-        }
-      }
-
-      if (chatModel.desktopNoUserNoRemote) {
+    fun SecondSection() {
+      SectionView {
         UserPickerOptionRow(
-          painterResource(MR.images.ic_manage_accounts),
-          generalGetString(MR.strings.create_chat_profile),
-          {
-            doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
-              ModalManager.center.showModalCloseable { close ->
-                LaunchedEffect(Unit) {
-                  userPickerState.value = AnimatedViewState.HIDING
-                }
-                CreateProfile(chat.simplex.common.platform.chatModel, close)
-              }
-            }
-          }
+          painterResource(MR.images.ic_qr_code),
+          if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
+          showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
         )
-      } else {
         UserPickerOptionRow(
-          painterResource(MR.images.ic_manage_accounts),
-          stringResource(MR.strings.your_chat_profiles),
-          {
-            ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
-              val search = rememberSaveable { mutableStateOf("") }
-              val profileHidden = rememberSaveable { mutableStateOf(false) }
-              val authorized = remember { stateGetOrPut("authorized") { false } }
-              ModalView(
-                { close() },
-                showSearch = true,
-                searchAlwaysVisible = true,
-                onSearchValueChanged = {
-                  search.value = it
-                },
-                content = {
-                  UserProfilesView(chatModel, search, profileHidden) { block ->
-                      if (authorized.value) {
-                        block()
-                      } else {
-                        doWithAuth(
-                          generalGetString(MR.strings.auth_open_chat_profiles),
-                          generalGetString(MR.strings.auth_log_in_using_credential)
-                        ) {
-                          authorized.value = true
-                          block()
-                        }
-                      }
-                    }
-                })
-            }
-          },
+          painterResource(MR.images.ic_toggle_on),
+          stringResource(MR.strings.chat_preferences),
+          click = if (stopped) null else ({
+            showCustomModal { m, close ->
+              PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
+            }()
+          }),
           disabled = stopped
         )
-      }
-    }
+        if (appPlatform.isDesktop) {
+          Divider(Modifier.padding(DEFAULT_PADDING))
 
-    @Composable
-    fun SecondSection() {
-      if (appPlatform.isAndroid) SectionView { SecondSectionBody() } else SecondSectionBody()
+          val inactiveUsers = users.filter { !it.user.activeUser }
+
+          if (inactiveUsers.isNotEmpty()) {
+            Column(modifier = Modifier.padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)) {
+              UserPickerUsersSection(
+                users = inactiveUsers,
+                iconColor = iconColor,
+                onUserClicked = onUserClicked,
+                stopped = stopped
+              )
+            }
+          }
+        }
+
+        if (chatModel.desktopNoUserNoRemote) {
+          UserPickerOptionRow(
+            painterResource(MR.images.ic_manage_accounts),
+            generalGetString(MR.strings.create_chat_profile),
+            {
+              doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
+                ModalManager.center.showModalCloseable { close ->
+                  LaunchedEffect(Unit) {
+                    userPickerState.value = AnimatedViewState.HIDING
+                  }
+                  CreateProfile(chat.simplex.common.platform.chatModel, close)
+                }
+              }
+            }
+          )
+        } else {
+          UserPickerOptionRow(
+            painterResource(MR.images.ic_manage_accounts),
+            stringResource(MR.strings.your_chat_profiles),
+            {
+              ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
+                val search = rememberSaveable { mutableStateOf("") }
+                val profileHidden = rememberSaveable { mutableStateOf(false) }
+                val authorized = remember { stateGetOrPut("authorized") { false } }
+                ModalView(
+                  { close() },
+                  showSearch = true,
+                  searchAlwaysVisible = true,
+                  onSearchValueChanged = {
+                    search.value = it
+                  },
+                  content = {
+                    UserProfilesView(chatModel, search, profileHidden) { block ->
+                        if (authorized.value) {
+                          block()
+                        } else {
+                          doWithAuth(
+                            generalGetString(MR.strings.auth_open_chat_profiles),
+                            generalGetString(MR.strings.auth_log_in_using_credential)
+                          ) {
+                            authorized.value = true
+                            block()
+                          }
+                        }
+                      }
+                  })
+              }
+            },
+            disabled = stopped
+          )
+        }
+      }
     }
 
     if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
@@ -357,8 +354,7 @@ private fun GlobalSettingsSection(
 ) {
   val stopped = remember { chatModel.chatRunning }.value == false
 
-  @Composable
-  fun Body() {
+  SectionView {
     if (appPlatform.isAndroid) {
       val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
 
@@ -402,8 +398,6 @@ private fun GlobalSettingsSection(
       ColorModeSwitcher()
     }
   }
-
-  if (appPlatform.isAndroid) SectionView { Body() } else Body()
 }
 
 @Composable
