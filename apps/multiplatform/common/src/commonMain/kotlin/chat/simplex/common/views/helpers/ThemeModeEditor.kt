@@ -329,6 +329,7 @@ fun ModalData.ChatWallpaperEditor(
       ThemeManager.currentColors(type, if (type?.sameType(themeModeOverride.value.type) == true) themeModeOverride.value else null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     }
 
+    SectionView {
     WallpaperPresetSelector(
       selectedWallpaper = currentTheme.wallpaper.type,
       activeBackgroundColor = currentTheme.wallpaper.background,
@@ -367,9 +368,11 @@ fun ModalData.ChatWallpaperEditor(
       editColor = editColor,
       onTypeChange = onTypeChange,
     )
+    }
 
     SectionSpacer()
 
+    SectionView {
     if (!globalThemeUsed.value) {
       ResetToGlobalThemeButton(remember { chatModel.currentUser }.value?.uiThemes?.preferredMode(isInDarkTheme()) == null) {
         themeModeOverride.value = ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
@@ -392,6 +395,7 @@ fun ModalData.ChatWallpaperEditor(
         themeModeOverride.value = ThemeModeOverride.withFilledAppDefaults(mode, if (mode == DefaultThemeMode.LIGHT) lightBase else darkBase)
         save(themeModeOverride.value.mode, themeModeOverride.value)
       }
+    }
     }
 
     KeyChangeEffect(theme.mode) {
@@ -420,6 +424,7 @@ fun ModalData.ChatWallpaperEditor(
         )
       )
       }
+      SectionView {
       ExposedDropDownSettingRow(
         generalGetString(MR.strings.chat_theme_apply_to_mode),
         values,
@@ -435,6 +440,7 @@ fun ModalData.ChatWallpaperEditor(
           }
         }
       )
+      }
 
       SectionDividerSpaced()
 
@@ -448,7 +454,9 @@ fun ModalData.ChatWallpaperEditor(
         }
       }
     } else {
-      AdvancedSettingsButton { showMore = true }
+      SectionView {
+        AdvancedSettingsButton { showMore = true }
+      }
     }
 
     SectionBottomSpacer()
