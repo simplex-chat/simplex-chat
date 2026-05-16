@@ -1,6 +1,4 @@
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -35,23 +33,6 @@ val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
 // standalone usage (alerts, pickers, custom contexts) unaffected.
 private val LocalInSectionCard = staticCompositionLocalOf { false }
 
-// Modern hover overlay for section card items (replaces deprecated RippleTheme
-// override). Adds its own hover-state background so the hovered row is visible
-// against the off-white LIGHT canvas (where the default 0.04-alpha ripple hover
-// blends in). Click ripple is still provided by Modifier.clickable's own
-// indication — this only handles the persistent hover overlay.
-// `enabled = false` suppresses hover for disabled items.
-// `clickable = false` suppresses hover for rows whose action is an inline
-// control (switch, dropdown) rather than navigating the whole row — those
-// rows aren't "interactive as a whole", so hover feedback is misleading.
-@Composable
-private fun Modifier.sectionItemHover(enabled: Boolean = true, clickable: Boolean = true): Modifier {
-  if (!enabled || !clickable || !LocalInSectionCard.current) return this
-  val interactionSource = remember { MutableInteractionSource() }
-  val isHovered by interactionSource.collectIsHoveredAsState()
-  val hoverColor = if (isHovered) MaterialTheme.colors.onBackground.copy(alpha = 0.05f) else Color.Transparent
-  return this.hoverable(interactionSource).background(hoverColor)
-}
 
 @Composable
 private fun Modifier.sectionItemDivider(): Modifier {
@@ -204,7 +185,6 @@ fun SectionItemView(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
-    .sectionItemHover(enabled = !disabled, clickable = click != null)
     .sectionItemDivider()
   Row(
     if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
@@ -245,7 +225,6 @@ fun SectionItemViewLongClickable(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
-    .sectionItemHover(enabled = !disabled)
     .sectionItemDivider()
   Row(
     if (disabled) {
@@ -271,7 +250,6 @@ fun SectionItemViewSpaceBetween(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
-    .sectionItemHover(enabled = !disabled, clickable = click != null)
     .sectionItemDivider()
   Row(
     if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
