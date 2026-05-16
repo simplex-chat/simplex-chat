@@ -721,36 +721,33 @@ fun ModalData.GroupChatInfoLayout(
           SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             MemberRow(groupInfo.membership, user = true)
           }
-        }
-      }
-    }
-    if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-      items(filteredMembers.value, key = { it.groupMemberId }) { member ->
-        Divider()
-        val showMenu = remember { mutableStateOf(false) }
-        val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
-        SectionItemViewLongClickable(
-          click = {
-            if (selectedItems.value != null) {
-              if (canBeSelected) {
-                toggleItemSelection(member.groupMemberId, selectedItems)
+          filteredMembers.value.forEach { member ->
+            val showMenu = remember(member.groupMemberId) { mutableStateOf(false) }
+            val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
+            SectionItemViewLongClickable(
+              click = {
+                if (selectedItems.value != null) {
+                  if (canBeSelected) {
+                    toggleItemSelection(member.groupMemberId, selectedItems)
+                  }
+                } else {
+                  showMemberInfo(member, null)
+                }
+              },
+              longClick = { showMenu.value = true },
+              minHeight = 54.dp,
+              padding = PaddingValues(horizontal = DEFAULT_PADDING)
+            ) {
+              Box(contentAlignment = Alignment.CenterStart) {
+                androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
+                  SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
+                }
+                val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
+                DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
+                Box(Modifier.padding(start = selectionOffset)) {
+                  MemberRow(member)
+                }
               }
-            } else {
-              showMemberInfo(member, null)
-            }
-          },
-          longClick = { showMenu.value = true },
-          minHeight = 54.dp,
-          padding = PaddingValues(horizontal = DEFAULT_PADDING)
-        ) {
-          Box(contentAlignment = Alignment.CenterStart) {
-            androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
-              SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
-            }
-            val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
-            DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
-            Box(Modifier.padding(start = selectionOffset)) {
-              MemberRow(member)
             }
           }
         }
