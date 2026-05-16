@@ -484,6 +484,7 @@ fun SocksProxySettings(
           onionHosts.value = it
         }
       }
+      UseOnionHostsDescription(onionHosts)
       SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
 
       SectionDividerSpaced(maxTopPadding = true)
@@ -558,13 +559,8 @@ private fun showUnsavedSocksHostPortAlert(confirmText: String, save: () -> Unit,
   )
 }
 
-@Composable
-fun UseOnionHosts(
-  onionHosts: MutableState<OnionHosts>,
-  enabled: State<Boolean>,
-  useOnion: (OnionHosts) -> Unit,
-) {
-  val values = remember {
+private val onionHostsValues: List<ValueTitleDesc<OnionHosts>>
+  @Composable get() = remember {
     OnionHosts.values().map {
       when (it) {
         OnionHosts.NEVER -> ValueTitleDesc(OnionHosts.NEVER, generalGetString(MR.strings.network_use_onion_hosts_no), AnnotatedString(generalGetString(MR.strings.network_use_onion_hosts_no_desc)))
@@ -574,29 +570,37 @@ fun UseOnionHosts(
     }
   }
 
-  Column {
-    if (enabled.value) {
-      ExposedDropDownSettingRow(
-        generalGetString(MR.strings.network_use_onion_hosts),
-        values.map { it.value to it.title },
-        onionHosts,
-        icon = painterResource(MR.images.ic_security),
-        enabled = enabled,
-        onSelected = useOnion
-      )
-    } else {
-      // In reality, when socks proxy is disabled, this option acts like NEVER regardless of what was chosen before
-      ExposedDropDownSettingRow(
-        generalGetString(MR.strings.network_use_onion_hosts),
-        listOf(OnionHosts.NEVER to generalGetString(MR.strings.network_use_onion_hosts_no)),
-        remember { mutableStateOf(OnionHosts.NEVER) },
-        icon = painterResource(MR.images.ic_security),
-        enabled = enabled,
-        onSelected = {}
-      )
-    }
-    SectionTextFooter(values.firstOrNull { it.value == onionHosts.value }?.description ?: AnnotatedString(""))
+@Composable
+fun UseOnionHosts(
+  onionHosts: MutableState<OnionHosts>,
+  enabled: State<Boolean>,
+  useOnion: (OnionHosts) -> Unit,
+) {
+  if (enabled.value) {
+    ExposedDropDownSettingRow(
+      generalGetString(MR.strings.network_use_onion_hosts),
+      onionHostsValues.map { it.value to it.title },
+      onionHosts,
+      icon = painterResource(MR.images.ic_security),
+      enabled = enabled,
+      onSelected = useOnion
+    )
+  } else {
+    // In reality, when socks proxy is disabled, this option acts like NEVER regardless of what was chosen before
+    ExposedDropDownSettingRow(
+      generalGetString(MR.strings.network_use_onion_hosts),
+      listOf(OnionHosts.NEVER to generalGetString(MR.strings.network_use_onion_hosts_no)),
+      remember { mutableStateOf(OnionHosts.NEVER) },
+      icon = painterResource(MR.images.ic_security),
+      enabled = enabled,
+      onSelected = {}
+    )
   }
+}
+
+@Composable
+fun UseOnionHostsDescription(onionHosts: MutableState<OnionHosts>) {
+  SectionTextFooter(onionHostsValues.firstOrNull { it.value == onionHosts.value }?.description ?: AnnotatedString(""))
 }
 
 @Composable
