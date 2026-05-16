@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import CARD_ITEM_PADDING
 import InfoRow
 import InfoRowTwoValues
 import SectionBottomSpacer
@@ -444,7 +445,7 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: 
 
 @Composable
 private fun IndentedInfoRow(title: String, desc: String) {
-  InfoRow(title, desc, padding = PaddingValues(start = 24.dp + DEFAULT_PADDING, end = DEFAULT_PADDING))
+  InfoRow(title, desc, padding = PaddingValues(start = 24.dp + CARD_ITEM_PADDING, end = CARD_ITEM_PADDING))
 }
 
 @Composable

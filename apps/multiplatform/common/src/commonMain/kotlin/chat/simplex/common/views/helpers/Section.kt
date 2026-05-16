@@ -347,7 +347,7 @@ fun TextIconSpaced(extraPadding: Boolean = false) {
 }
 
 @Composable
-fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null, textColor: Color = MaterialTheme.colors.onBackground, padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING)) {
+fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null, textColor: Color = MaterialTheme.colors.onBackground, padding: PaddingValues = PaddingValues(horizontal = CARD_ITEM_PADDING)) {
   SectionItemViewSpaceBetween(padding = padding) {
     Row {
       val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
