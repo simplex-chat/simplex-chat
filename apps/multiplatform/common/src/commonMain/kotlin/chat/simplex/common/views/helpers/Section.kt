@@ -6,7 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -36,7 +36,8 @@ private val LocalInSectionCard = staticCompositionLocalOf { false }
 @Composable
 private fun Modifier.sectionItemDivider(): Modifier {
   if (!LocalInSectionCard.current) return this
-  return this.drawBehind {
+  return this.drawWithContent {
+    drawContent()
     drawLine(canvasColorForCurrentTheme(), Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 2.dp.toPx())
   }
 }
@@ -183,9 +184,9 @@ fun SectionItemView(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemDivider()
   Row(
-    (if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding))
-      .sectionItemDivider(),
+    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
@@ -223,12 +224,13 @@ fun SectionItemViewLongClickable(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemDivider()
   Row(
-    (if (disabled) {
+    if (disabled) {
       modifier.padding(padding)
     } else {
       modifier.combinedClickable(onClick = click, onLongClick = longClick).onRightClick(longClick).padding(padding)
-    }).sectionItemDivider(),
+    },
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
@@ -247,10 +249,11 @@ fun SectionItemViewSpaceBetween(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemDivider()
   Row(
-    (if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
+    if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
       .combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding)
-      .onRightClick { onLongClick?.invoke() }).sectionItemDivider(),
+      .onRightClick { onLongClick?.invoke() },
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
