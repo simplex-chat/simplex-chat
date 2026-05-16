@@ -173,7 +173,7 @@ fun <T> SectionViewSelectableCards(
 @Composable
 fun SectionItemView(
   click: (() -> Unit)? = null,
-  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 6.dp,
+  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp,
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
@@ -197,7 +197,7 @@ fun SectionItemView(
 @Composable
 fun SectionItemViewWithoutMinPadding(
   click: (() -> Unit)? = null,
-  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 6.dp,
+  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp,
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
@@ -213,7 +213,7 @@ fun SectionItemViewWithoutMinPadding(
 fun SectionItemViewLongClickable(
   click: () -> Unit,
   longClick: () -> Unit,
-  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 6.dp,
+  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp,
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
@@ -242,7 +242,7 @@ fun SectionItemViewLongClickable(
 fun SectionItemViewSpaceBetween(
   click: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null,
-  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 6.dp,
+  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp,
   padding: PaddingValues = PaddingValues(horizontal = CARD_ITEM_PADDING),
   disabled: Boolean = false,
   content: (@Composable RowScope.() -> Unit)
