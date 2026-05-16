@@ -371,8 +371,8 @@ private fun UserAddressLayout(
           SectionDividerSpaced(maxBottomPadding = false)
           SectionView {
             DeleteAddressButton(deleteAddress)
-            SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
           }
+          SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
         }
       }
     }
@@ -512,13 +512,18 @@ private fun ModalData.UserAddressSettings(
         }
         SectionDividerSpaced()
 
-        SectionView(stringResource(MR.strings.address_welcome_message).uppercase()) {
+        SectionView(
+          stringResource(MR.strings.address_welcome_message).uppercase(),
+          contentPadding = PaddingValues(vertical = DEFAULT_PADDING_HALF),
+        ) {
           AutoReplyEditor(addressSettingsState)
         }
         SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
-        saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
-          saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
+        SectionView {
+          saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
+            saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
+          }
         }
       }
     }
