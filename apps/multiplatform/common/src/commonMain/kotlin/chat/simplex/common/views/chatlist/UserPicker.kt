@@ -272,32 +272,24 @@ fun UserPicker(
     }
 
     @Composable
-    fun SecondSection() {
+    fun SecondSectionBody() {
       val inactiveUsers = users.filter { !it.user.activeUser }
-      val splitForDesktopGrid = appPlatform.isDesktop && inactiveUsers.isNotEmpty()
-
-      SectionView {
-        UserPickerOptionRow(
-          painterResource(MR.images.ic_qr_code),
-          if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
-          showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
-        )
-        UserPickerOptionRow(
-          painterResource(MR.images.ic_toggle_on),
-          stringResource(MR.strings.chat_preferences),
-          click = if (stopped) null else ({
-            showCustomModal { m, close ->
-              PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
-            }()
-          }),
-          disabled = stopped
-        )
-        if (!splitForDesktopGrid) {
-          ProfilesOptionRow()
-        }
-      }
-
-      if (splitForDesktopGrid) {
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_qr_code),
+        if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
+        showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
+      )
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_toggle_on),
+        stringResource(MR.strings.chat_preferences),
+        click = if (stopped) null else ({
+          showCustomModal { m, close ->
+            PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
+          }()
+        }),
+        disabled = stopped
+      )
+      if (appPlatform.isDesktop && inactiveUsers.isNotEmpty()) {
         Column(modifier = Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
           UserPickerUsersSection(
             users = inactiveUsers,
@@ -306,18 +298,20 @@ fun UserPicker(
             stopped = stopped
           )
         }
-        SectionView { ProfilesOptionRow() }
       }
+      ProfilesOptionRow()
     }
 
     if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
       Column {
         FirstSection()
-        SecondSection()
-        GlobalSettingsSection(
-          userPickerState = userPickerState,
-          setPerformLA = setPerformLA,
-        )
+        SectionView {
+          SecondSectionBody()
+          GlobalSettingsBody(
+            userPickerState = userPickerState,
+            setPerformLA = setPerformLA,
+          )
+        }
       }
     } else {
       Column {
@@ -325,16 +319,18 @@ fun UserPicker(
         Row {
           Box(Modifier.weight(1f)) {
             Column {
-              SecondSection()
+              SectionView { SecondSectionBody() }
             }
           }
           VerticalDivider()
           Box(Modifier.weight(1f)) {
             Column {
-              GlobalSettingsSection(
-                userPickerState = userPickerState,
-                setPerformLA = setPerformLA,
-              )
+              SectionView {
+                GlobalSettingsBody(
+                  userPickerState = userPickerState,
+                  setPerformLA = setPerformLA,
+                )
+              }
             }
           }
         }
@@ -353,55 +349,53 @@ fun userPickerAlpha(): Float {
 }
 
 @Composable
-private fun GlobalSettingsSection(
+private fun GlobalSettingsBody(
   userPickerState: MutableStateFlow<AnimatedViewState>,
   setPerformLA: (Boolean) -> Unit,
 ) {
   val stopped = remember { chatModel.chatRunning }.value == false
 
-  SectionView {
-    if (appPlatform.isAndroid) {
-      val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
+  if (appPlatform.isAndroid) {
+    val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
 
-      UserPickerOptionRow(
-        painterResource(MR.images.ic_desktop),
-        text,
-        click = {
-          ModalManager.start.showCustomModal { close ->
-            ConnectDesktopView(close)
-          }
-        },
-        disabled = stopped
-      )
-    } else {
-      UserPickerOptionRow(
-        icon = painterResource(MR.images.ic_smartphone_300),
-        text = stringResource(if (remember { chat.simplex.common.platform.chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles),
-        click = {
-          userPickerState.value = AnimatedViewState.HIDING
-          ModalManager.start.showModal {
-            ConnectMobileView()
-          }
-        },
-        disabled = stopped
-      )
-    }
-
-    SectionItemView(
+    UserPickerOptionRow(
+      painterResource(MR.images.ic_desktop),
+      text,
       click = {
-        ModalManager.start.showModalCloseable { close ->
-          SettingsView(chatModel, setPerformLA, close)
+        ModalManager.start.showCustomModal { close ->
+          ConnectDesktopView(close)
         }
       },
-      padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
-    ) {
-      val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-      Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
-      TextIconSpaced()
-      Text(text, color = Color.Unspecified)
-      Spacer(Modifier.weight(1f))
-      ColorModeSwitcher()
-    }
+      disabled = stopped
+    )
+  } else {
+    UserPickerOptionRow(
+      icon = painterResource(MR.images.ic_smartphone_300),
+      text = stringResource(if (remember { chat.simplex.common.platform.chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles),
+      click = {
+        userPickerState.value = AnimatedViewState.HIDING
+        ModalManager.start.showModal {
+          ConnectMobileView()
+        }
+      },
+      disabled = stopped
+    )
+  }
+
+  SectionItemView(
+    click = {
+      ModalManager.start.showModalCloseable { close ->
+        SettingsView(chatModel, setPerformLA, close)
+      }
+    },
+    padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+  ) {
+    val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+    Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
+    TextIconSpaced()
+    Text(text, color = Color.Unspecified)
+    Spacer(Modifier.weight(1f))
+    ColorModeSwitcher()
   }
 }
 
