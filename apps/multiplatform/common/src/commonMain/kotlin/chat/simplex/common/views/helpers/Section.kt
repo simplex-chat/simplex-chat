@@ -2,6 +2,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.ripple.LocalRippleTheme
+import androidx.compose.material.ripple.RippleAlpha
+import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +36,33 @@ private val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
 // standalone usage (alerts, pickers, custom contexts) unaffected.
 private val LocalInSectionCard = staticCompositionLocalOf { false }
 
+// Custom ripple theme for section card items: bumps hover alpha so the hover
+// state stays visible on LIGHT theme (where canvas is the off-white formula
+// and the default 0.04 alpha hover overlay blends into the canvas). Dark
+// themes keep the default — their hover contrast is already adequate.
+private object SectionRippleTheme : RippleTheme {
+  @Composable
+  override fun defaultColor(): Color = RippleTheme.defaultRippleColor(
+    contentColor = LocalContentColor.current,
+    lightTheme = MaterialTheme.colors.isLight
+  )
+
+  @Composable
+  override fun rippleAlpha(): RippleAlpha {
+    val isLight = MaterialTheme.colors.isLight
+    val default = RippleTheme.defaultRippleAlpha(
+      contentColor = LocalContentColor.current,
+      lightTheme = isLight
+    )
+    return if (isLight) RippleAlpha(
+      pressedAlpha = default.pressedAlpha,
+      focusedAlpha = default.focusedAlpha,
+      draggedAlpha = default.draggedAlpha,
+      hoveredAlpha = 0.08f
+    ) else default
+  }
+}
+
 @Composable
 private fun Modifier.sectionItemDivider(): Modifier {
   if (!LocalInSectionCard.current) return this
@@ -53,7 +83,7 @@ fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingVa
         modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding), fontSize = 12.sp
       )
     }
-    CompositionLocalProvider(LocalInSectionCard provides true) {
+    CompositionLocalProvider(LocalInSectionCard provides true, LocalRippleTheme provides SectionRippleTheme) {
       Column(
         Modifier
           .padding(horizontal = CARD_PADDING)
@@ -84,7 +114,7 @@ fun SectionView(
       Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
-    CompositionLocalProvider(LocalInSectionCard provides true) {
+    CompositionLocalProvider(LocalInSectionCard provides true, LocalRippleTheme provides SectionRippleTheme) {
       Column(
         Modifier
           .padding(horizontal = CARD_PADDING)
@@ -113,7 +143,7 @@ fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () ->
         }
       }
     }
-    CompositionLocalProvider(LocalInSectionCard provides true) {
+    CompositionLocalProvider(LocalInSectionCard provides true, LocalRippleTheme provides SectionRippleTheme) {
       Column(
         Modifier
           .padding(horizontal = CARD_PADDING)
