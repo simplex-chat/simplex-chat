@@ -182,9 +182,9 @@ fun SectionItemView(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
-    .sectionItemDivider()
   Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
+    (if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding))
+      .sectionItemDivider(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
@@ -222,13 +222,12 @@ fun SectionItemViewLongClickable(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
-    .sectionItemDivider()
   Row(
-    if (disabled) {
+    (if (disabled) {
       modifier.padding(padding)
     } else {
       modifier.combinedClickable(onClick = click, onLongClick = longClick).onRightClick(longClick).padding(padding)
-    },
+    }).sectionItemDivider(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
@@ -247,11 +246,10 @@ fun SectionItemViewSpaceBetween(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
-    .sectionItemDivider()
   Row(
-    if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
+    (if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
       .combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding)
-      .onRightClick { onLongClick?.invoke() },
+      .onRightClick { onLongClick?.invoke() }).sectionItemDivider(),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
