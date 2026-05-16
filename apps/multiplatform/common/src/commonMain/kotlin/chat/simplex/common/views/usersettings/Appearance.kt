@@ -536,6 +536,7 @@ object AppearanceScope {
         },
         onChooseType = { onChooseType(it, importWallpaperLauncher) },
       )
+      SectionDivider()
       val type = MaterialTheme.wallpaper.type
       if (type is WallpaperType.Image && (themeUserDestination.value == null || perUserTheme.value.wallpaper?.imageFile != null)) {
         SectionItemView(disabled = chatModel.remoteHostId != null && themeUserDestination.value != null, click = {

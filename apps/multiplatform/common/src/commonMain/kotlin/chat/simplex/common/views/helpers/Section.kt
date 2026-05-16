@@ -311,9 +311,15 @@ fun SectionCustomFooter(padding: PaddingValues = PaddingValues(start = DEFAULT_P
   }
 }
 
+// Explicit 2dp canvas-color divider for inserting between non-SectionItemView
+// composables inside a SectionView card (e.g., between a custom block and a
+// SectionItemView). Auto-divider on SectionItemView handles the row-to-row
+// case; this one covers manual placement around mixed content. No-op outside
+// a SectionView card.
 @Composable
 fun SectionDivider() {
-  Divider(Modifier.padding(horizontal = 8.dp))
+  if (!LocalInSectionCard.current) return
+  Box(Modifier.fillMaxWidth().height(2.dp).background(canvasColorForCurrentTheme()))
 }
 
 @Composable
