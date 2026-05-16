@@ -40,11 +40,13 @@ private val LocalInSectionCard = staticCompositionLocalOf { false }
 // against the off-white LIGHT canvas (where the default 0.04-alpha ripple hover
 // blends in). Click ripple is still provided by Modifier.clickable's own
 // indication — this only handles the persistent hover overlay.
-// `enabled = false` suppresses the hover state entirely (used for disabled
-// items, which should not visually respond to hover).
+// `enabled = false` suppresses hover for disabled items.
+// `clickable = false` suppresses hover for rows whose action is an inline
+// control (switch, dropdown) rather than navigating the whole row — those
+// rows aren't "interactive as a whole", so hover feedback is misleading.
 @Composable
-private fun Modifier.sectionItemHover(enabled: Boolean = true): Modifier {
-  if (!enabled || !LocalInSectionCard.current) return this
+private fun Modifier.sectionItemHover(enabled: Boolean = true, clickable: Boolean = true): Modifier {
+  if (!enabled || !clickable || !LocalInSectionCard.current) return this
   val interactionSource = remember { MutableInteractionSource() }
   val isHovered by interactionSource.collectIsHoveredAsState()
   val hoverColor = if (isHovered) MaterialTheme.colors.onBackground.copy(alpha = 0.05f) else Color.Transparent
@@ -202,7 +204,7 @@ fun SectionItemView(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
-    .sectionItemHover(enabled = !disabled)
+    .sectionItemHover(enabled = !disabled, clickable = click != null)
     .sectionItemDivider()
   Row(
     if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
@@ -269,7 +271,7 @@ fun SectionItemViewSpaceBetween(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
-    .sectionItemHover(enabled = !disabled)
+    .sectionItemHover(enabled = !disabled, clickable = click != null)
     .sectionItemDivider()
   Row(
     if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
