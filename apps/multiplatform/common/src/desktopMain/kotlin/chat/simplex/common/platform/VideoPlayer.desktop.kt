@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
+import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
 import uk.co.caprica.vlcj.media.VideoOrientation
 import uk.co.caprica.vlcj.player.base.*
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
@@ -215,24 +216,24 @@ actual class VideoPlayer actual constructor(
     }
 
     suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(previewThread.asCoroutineDispatcher()) {
-      val mediaComponent = createHelperPlayer()
+      val mediaComponent = getOrCreateHelperPlayer()
       val player = mediaComponent.mediaPlayer()
       if (uri == null || !uri.toFile().exists()) {
         if (withAlertOnException) showVideoDecodingException()
 
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
       }
+      val surface = SkiaBitmapVideoSurface()
+      player.videoSurface().set(surface)
       player.media().startPaused(uri.toFile().absolutePath)
-      val start = System.currentTimeMillis()
-      var snap: BufferedImage? = null
-      while (snap == null && start + 1500 > System.currentTimeMillis()) {
-        snap = player.snapshots()?.get()
-        delay(50)
+      val snap = withTimeoutOrNull(1500L) {
+        while (surface.bitmap.value == null) delay(50)
+        surface.bitmap.value!!.toAwtImage()
       }
       val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()
       if (orientation == null) {
         player.stop()
-        player.release()
+        putHelperPlayer(mediaComponent)
         if (withAlertOnException) showVideoDecodingException()
 
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
@@ -250,13 +251,14 @@ actual class VideoPlayer actual constructor(
       }?.toComposeImageBitmap()
       val duration = player.duration.toLong()
       player.stop()
-      player.release()
+      putHelperPlayer(mediaComponent)
       return@withContext VideoPlayerInterface.PreviewAndDuration(preview = preview, timestamp = 0L, duration = duration)
     }
 
     val playerThread = Executors.newSingleThreadExecutor()
     private val previewThread = Executors.newSingleThreadExecutor()
     private val playersPool: ArrayList<Component> = ArrayList()
+    private val helperPlayersPool: ArrayList<CallbackMediaPlayerComponent> = ArrayList()
 
     private fun getOrCreatePlayer(): Component = playersPool.removeFirstOrNull() ?: createNew()
 
@@ -280,6 +282,7 @@ actual class VideoPlayer actual constructor(
 
     private fun putPlayer(player: Component) = playersPool.add(player)
 
-    private fun createHelperPlayer(): CallbackMediaPlayerComponent = CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) })
+    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) })
+    private fun putHelperPlayer(player: CallbackMediaPlayerComponent) = helperPlayersPool.add(player)
   }
 }
