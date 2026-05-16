@@ -311,27 +311,29 @@ private fun ProfileStepView(
         }
         Spacer(Modifier.height(8.dp))
 
-        SettingsActionItem(
-          painterResource(MR.images.ic_wifi_tethering),
-          generalGetString(MR.strings.configure_relays),
-          click = {
-            ModalManager.start.showCustomModal { close ->
-              NetworkAndServersView(close)
-            }
-          },
-          textColor = if (hasRelays.value) MaterialTheme.colors.primary else WarningOrange,
-          iconColor = if (hasRelays.value) MaterialTheme.colors.primary else WarningOrange
-        )
+        SectionView {
+          SettingsActionItem(
+            painterResource(MR.images.ic_wifi_tethering),
+            generalGetString(MR.strings.configure_relays),
+            click = {
+              ModalManager.start.showCustomModal { close ->
+                NetworkAndServersView(close)
+              }
+            },
+            textColor = if (hasRelays.value) MaterialTheme.colors.primary else WarningOrange,
+            iconColor = if (hasRelays.value) MaterialTheme.colors.primary else WarningOrange
+          )
 
-        val canCreate = canCreateProfile(displayName.value) && hasRelays.value && !creationInProgress.value
-        SettingsActionItem(
-          painterResource(MR.images.ic_check),
-          generalGetString(MR.strings.create_channel_button),
-          click = createChannel,
-          textColor = MaterialTheme.colors.primary,
-          iconColor = MaterialTheme.colors.primary,
-          disabled = !canCreate
-        )
+          val canCreate = canCreateProfile(displayName.value) && hasRelays.value && !creationInProgress.value
+          SettingsActionItem(
+            painterResource(MR.images.ic_check),
+            generalGetString(MR.strings.create_channel_button),
+            click = createChannel,
+            textColor = MaterialTheme.colors.primary,
+            iconColor = MaterialTheme.colors.primary,
+            disabled = !canCreate
+          )
+        }
 
         SectionTextFooter(
           if (!hasRelays.value) {

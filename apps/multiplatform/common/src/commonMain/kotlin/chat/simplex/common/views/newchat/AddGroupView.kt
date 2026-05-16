@@ -1,6 +1,7 @@
 package chat.simplex.common.views.newchat
 
 import SectionTextFooter
+import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -150,24 +151,26 @@ fun AddGroupLayout(
           }
           Spacer(Modifier.height(8.dp))
 
-          SettingsActionItem(
-            painterResource(MR.images.ic_check),
-            stringResource(MR.strings.create_group_button),
-            click = {
-              createGroup(incognito.value, GroupProfile(
-                displayName = displayName.value.trim(),
-                fullName = "",
-                shortDescr = null,
-                image = profileImage.value,
-                groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
-              ))
-            },
-            textColor = MaterialTheme.colors.primary,
-            iconColor = MaterialTheme.colors.primary,
-            disabled = !canCreateProfile(displayName.value)
-          )
+          SectionView {
+            SettingsActionItem(
+              painterResource(MR.images.ic_check),
+              stringResource(MR.strings.create_group_button),
+              click = {
+                createGroup(incognito.value, GroupProfile(
+                  displayName = displayName.value.trim(),
+                  fullName = "",
+                  shortDescr = null,
+                  image = profileImage.value,
+                  groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
+                ))
+              },
+              textColor = MaterialTheme.colors.primary,
+              iconColor = MaterialTheme.colors.primary,
+              disabled = !canCreateProfile(displayName.value)
+            )
 
-          IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
+            IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
+          }
 
           SectionTextFooter(
             buildAnnotatedString {
