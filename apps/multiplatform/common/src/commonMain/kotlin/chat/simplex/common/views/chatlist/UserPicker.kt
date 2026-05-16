@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import SectionDivider
 import SectionItemView
 import SectionView
 import TextIconSpaced
@@ -298,6 +299,7 @@ fun UserPicker(
             stopped = stopped
           )
         }
+        SectionDivider()
       }
       ProfilesOptionRow()
     }
@@ -387,8 +389,7 @@ private fun GlobalSettingsBody(
       ModalManager.start.showModalCloseable { close ->
         SettingsView(chatModel, setPerformLA, close)
       }
-    },
-    padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+    }
   ) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
@@ -484,7 +485,7 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
 
 @Composable
 fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
-  SectionItemView(click, disabled = disabled, extraPadding = appPlatform.isDesktop) {
+  SectionItemView(click, disabled = disabled) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
     TextIconSpaced()
     Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else Color.Unspecified)
