@@ -614,8 +614,8 @@ fun ChatInfoLayout(
 
     SectionView {
       ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
-      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
     }
+    SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
     SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
     val conn = contact.activeConn
