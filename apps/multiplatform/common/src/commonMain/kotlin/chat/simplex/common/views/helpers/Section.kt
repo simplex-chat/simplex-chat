@@ -1,12 +1,9 @@
-@file:Suppress("DEPRECATION", "DEPRECATION_ERROR") // RippleTheme/LocalRippleTheme — used for SectionRippleTheme hover-alpha override; modern Indication-based ripple migration is a separate concern.
-
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.ripple.LocalRippleTheme
-import androidx.compose.material.ripple.RippleAlpha
-import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,31 +35,18 @@ val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
 // standalone usage (alerts, pickers, custom contexts) unaffected.
 private val LocalInSectionCard = staticCompositionLocalOf { false }
 
-// Custom ripple theme for section card items: bumps hover alpha so the hover
-// state stays visible on LIGHT theme (where canvas is the off-white formula
-// and the default 0.04 alpha hover overlay blends into the canvas). Dark
-// themes keep the default — their hover contrast is already adequate.
-private object SectionRippleTheme : RippleTheme {
-  @Composable
-  override fun defaultColor(): Color = RippleTheme.defaultRippleColor(
-    contentColor = LocalContentColor.current,
-    lightTheme = MaterialTheme.colors.isLight
-  )
-
-  @Composable
-  override fun rippleAlpha(): RippleAlpha {
-    val isLight = MaterialTheme.colors.isLight
-    val default = RippleTheme.defaultRippleAlpha(
-      contentColor = LocalContentColor.current,
-      lightTheme = isLight
-    )
-    return if (isLight) RippleAlpha(
-      pressedAlpha = default.pressedAlpha,
-      focusedAlpha = default.focusedAlpha,
-      draggedAlpha = default.draggedAlpha,
-      hoveredAlpha = 0.08f
-    ) else default
-  }
+// Modern hover overlay for section card items (replaces deprecated RippleTheme
+// override). Adds its own hover-state background so the hovered row is visible
+// against the off-white LIGHT canvas (where the default 0.04-alpha ripple hover
+// blends in). Click ripple is still provided by Modifier.clickable's own
+// indication — this only handles the persistent hover overlay.
+@Composable
+private fun Modifier.sectionItemHover(): Modifier {
+  if (!LocalInSectionCard.current) return this
+  val interactionSource = remember { MutableInteractionSource() }
+  val isHovered by interactionSource.collectIsHoveredAsState()
+  val hoverColor = if (isHovered) MaterialTheme.colors.onBackground.copy(alpha = 0.08f) else Color.Transparent
+  return this.hoverable(interactionSource).background(hoverColor)
 }
 
 @Composable
@@ -85,7 +69,7 @@ fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingVa
         modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding), fontSize = 12.sp
       )
     }
-    CompositionLocalProvider(LocalInSectionCard provides true, LocalRippleTheme provides SectionRippleTheme) {
+    CompositionLocalProvider(LocalInSectionCard provides true) {
       Column(
         Modifier
           .padding(horizontal = CARD_PADDING)
@@ -116,7 +100,7 @@ fun SectionView(
       Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
-    CompositionLocalProvider(LocalInSectionCard provides true, LocalRippleTheme provides SectionRippleTheme) {
+    CompositionLocalProvider(LocalInSectionCard provides true) {
       Column(
         Modifier
           .padding(horizontal = CARD_PADDING)
@@ -145,7 +129,7 @@ fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () ->
         }
       }
     }
-    CompositionLocalProvider(LocalInSectionCard provides true, LocalRippleTheme provides SectionRippleTheme) {
+    CompositionLocalProvider(LocalInSectionCard provides true) {
       Column(
         Modifier
           .padding(horizontal = CARD_PADDING)
@@ -216,6 +200,7 @@ fun SectionItemView(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemHover()
     .sectionItemDivider()
   Row(
     if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
@@ -256,6 +241,7 @@ fun SectionItemViewLongClickable(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemHover()
     .sectionItemDivider()
   Row(
     if (disabled) {
@@ -281,6 +267,7 @@ fun SectionItemViewSpaceBetween(
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemHover()
     .sectionItemDivider()
   Row(
     if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
