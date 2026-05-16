@@ -6,6 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
@@ -23,10 +25,25 @@ import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 
 private val SectionCardShape = RoundedCornerShape(16.dp)
+private val CARD_PADDING = 16.dp
+
+// Set to true by SectionView around its inner Column. SectionItemView reads it
+// to decide whether to draw the 2dp bottom divider. False default keeps
+// standalone usage (alerts, pickers, custom contexts) unaffected.
+private val LocalInSectionCard = staticCompositionLocalOf { false }
+
+@Composable
+private fun Modifier.sectionItemDivider(): Modifier {
+  if (!LocalInSectionCard.current) return this
+  return this.drawBehind {
+    drawLine(canvasColorForCurrentTheme(), Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 2.dp.toPx())
+  }
+}
 
 @Composable
 fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = 8.dp, content: (@Composable ColumnScope.() -> Unit)) {
-  val cardColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
+  val cardColor = if (CurrentColors.value.base == DefaultTheme.LIGHT) Color.White
+    else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
   Column {
     if (title != null) {
       Text(
@@ -34,14 +51,16 @@ fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingVa
         modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding), fontSize = 12.sp
       )
     }
-    Column(
-      Modifier
-        .padding(horizontal = DEFAULT_PADDING_HALF)
-        .fillMaxWidth()
-        .clip(SectionCardShape)
-        .background(cardColor)
-        .padding(contentPadding)
-    ) { content() }
+    CompositionLocalProvider(LocalInSectionCard provides true) {
+      Column(
+        Modifier
+          .padding(horizontal = CARD_PADDING)
+          .fillMaxWidth()
+          .clip(SectionCardShape)
+          .background(cardColor)
+          .padding(contentPadding)
+      ) { content() }
+    }
   }
 }
 
@@ -54,7 +73,8 @@ fun SectionView(
   padding: PaddingValues = PaddingValues(),
   content: (@Composable ColumnScope.() -> Unit)
 ) {
-  val cardColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
+  val cardColor = if (CurrentColors.value.base == DefaultTheme.LIGHT) Color.White
+    else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -62,20 +82,23 @@ fun SectionView(
       Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
-    Column(
-      Modifier
-        .padding(horizontal = DEFAULT_PADDING_HALF)
-        .fillMaxWidth()
-        .clip(SectionCardShape)
-        .background(cardColor)
-        .padding(padding)
-    ) { content() }
+    CompositionLocalProvider(LocalInSectionCard provides true) {
+      Column(
+        Modifier
+          .padding(horizontal = CARD_PADDING)
+          .fillMaxWidth()
+          .clip(SectionCardShape)
+          .background(cardColor)
+          .padding(padding)
+      ) { content() }
+    }
   }
 }
 
 @Composable
 fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () -> Unit)?, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = 8.dp, content: (@Composable ColumnScope.() -> Unit)) {
-  val cardColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
+  val cardColor = if (CurrentColors.value.base == DefaultTheme.LIGHT) Color.White
+    else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
   Column {
     if (title != null || titleButton != null) {
       Row(modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, end = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding).fillMaxWidth()) {
@@ -88,14 +111,16 @@ fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () ->
         }
       }
     }
-    Column(
-      Modifier
-        .padding(horizontal = DEFAULT_PADDING_HALF)
-        .fillMaxWidth()
-        .clip(SectionCardShape)
-        .background(cardColor)
-        .padding(contentPadding)
-    ) { content() }
+    CompositionLocalProvider(LocalInSectionCard provides true) {
+      Column(
+        Modifier
+          .padding(horizontal = CARD_PADDING)
+          .fillMaxWidth()
+          .clip(SectionCardShape)
+          .background(cardColor)
+          .padding(contentPadding)
+      ) { content() }
+    }
   }
 }
 
@@ -149,14 +174,15 @@ fun SectionItemView(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
-    PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+    PaddingValues(horizontal = CARD_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemDivider()
   Row(
     if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
     verticalAlignment = Alignment.CenterVertically
@@ -172,9 +198,9 @@ fun SectionItemViewWithoutMinPadding(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_PADDING)
   else
-    PaddingValues(horizontal = DEFAULT_PADDING),
+    PaddingValues(horizontal = CARD_PADDING),
   content: (@Composable RowScope.() -> Unit)
 ) {
   SectionItemView(click, minHeight, disabled, extraPadding, padding, content)
@@ -188,14 +214,15 @@ fun SectionItemViewLongClickable(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
-    PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+    PaddingValues(horizontal = CARD_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemDivider()
   Row(
     if (disabled) {
       modifier.padding(padding)
@@ -213,13 +240,14 @@ fun SectionItemViewSpaceBetween(
   click: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null,
   minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
-  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
+  padding: PaddingValues = PaddingValues(horizontal = CARD_PADDING),
   disabled: Boolean = false,
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
+    .sectionItemDivider()
   Row(
     if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
       .combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding)

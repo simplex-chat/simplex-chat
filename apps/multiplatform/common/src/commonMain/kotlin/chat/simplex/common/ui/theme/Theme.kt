@@ -596,13 +596,30 @@ data class ThemeModeOverride (
   }
 }
 
+// Canvas color for settings/info screens (drawn behind cards by themedBackground)
+// and for the 2dp item divider inside section cards (matches canvas so dividers
+// read as gaps showing the screen behind).
+// LIGHT: formula derives off-white from palette bg + onBackground — lifts white
+// cards above. DARK/BLACK: palette bg (cards already raised via founder's
+// formula in Section.kt). SIMPLEX: gradient bottom stop (darker), since the
+// canvas itself is a gradient drawn by themedBackgroundBrush.
+fun canvasColorForCurrentTheme(): Color {
+  val theme = CurrentColors.value
+  val c = theme.colors
+  return when (theme.base) {
+    DefaultTheme.LIGHT -> c.background.mixWith(c.onBackground, 0.95f)
+    DefaultTheme.SIMPLEX -> c.background.darker(0.4f)
+    else -> c.background
+  }
+}
+
 fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, bgLayerSize: MutableState<IntSize>?, bgLayer: GraphicsLayer?/*, shape: Shape = RectangleShape*/): Modifier {
   return drawBehind {
     copyBackgroundToAppBar(bgLayerSize, bgLayer) {
       if (baseTheme == DefaultTheme.SIMPLEX) {
         drawRect(brush = themedBackgroundBrush())
       } else {
-        drawRect(CurrentColors.value.colors.background)
+        drawRect(canvasColorForCurrentTheme())
       }
     }
   }
