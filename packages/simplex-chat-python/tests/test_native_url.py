@@ -42,7 +42,7 @@ def test_url_sqlite(_):
     assert (
         _libs_url("sqlite")
         == "https://github.com/simplex-chat/simplex-chat-libs/releases/download/"
-        "v6.5.1/simplex-chat-libs-linux-x86_64.zip"
+        "v6.5.2/simplex-chat-libs-linux-x86_64.zip"
     )
 
 
@@ -51,5 +51,5 @@ def test_url_postgres(_):
     assert (
         _libs_url("postgres")
         == "https://github.com/simplex-chat/simplex-chat-libs/releases/download/"
-        "v6.5.1/simplex-chat-libs-linux-x86_64-postgres.zip"
+        "v6.5.2/simplex-chat-libs-linux-x86_64-postgres.zip"
     )
