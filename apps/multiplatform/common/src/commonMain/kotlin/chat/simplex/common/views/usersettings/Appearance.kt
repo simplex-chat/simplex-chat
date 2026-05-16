@@ -523,7 +523,6 @@ object AppearanceScope {
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
       Spacer(Modifier.height(DEFAULT_PADDING_HALF))
       ThemeDestinationPicker(themeUserDestination)
-      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
 
       val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
         if (to != null) onImport(to)
