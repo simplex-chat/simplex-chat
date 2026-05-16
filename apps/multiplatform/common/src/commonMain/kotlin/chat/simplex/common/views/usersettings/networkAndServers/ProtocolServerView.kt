@@ -175,6 +175,7 @@ fun CustomServer(
     stringResource(MR.strings.smp_servers_your_server_address).uppercase(),
     icon = painterResource(MR.images.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
+    padding = PaddingValues(vertical = DEFAULT_PADDING_HALF),
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
     TextEditor(
