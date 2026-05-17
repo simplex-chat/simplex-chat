@@ -1553,7 +1553,7 @@
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS proxy</string>
-  <string name="settings_section_title_interface" translatable="false">INTERFACE</string>
+  <string name="settings_section_title_interface" translatable="false">Interface</string>
   <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">App icon</string>
   <string name="settings_section_title_themes">Themes</string>
