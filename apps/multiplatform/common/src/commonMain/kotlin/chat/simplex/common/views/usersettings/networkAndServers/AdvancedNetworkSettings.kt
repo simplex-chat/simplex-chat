@@ -236,11 +236,11 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
       SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
       SectionDividerSpaced(maxTopPadding = true)
 
-      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
+      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation)) {
         SessionModePicker(sessionMode, showModal, updateSessionMode)
       }
       SectionDividerSpaced()
-      SectionView(stringResource(MR.strings.network_smp_web_port_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.network_smp_web_port_section_title)) {
         ExposedDropDownSettingRow(
           stringResource(MR.strings.network_smp_web_port_toggle),
           SMPWebPortServers.entries.map { it to stringResource(it.text) },
@@ -253,7 +253,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
       )
       SectionDividerSpaced(maxTopPadding = true)
 
-      SectionView(stringResource(MR.strings.network_option_tcp_connection).uppercase()) {
+      SectionView(stringResource(MR.strings.network_option_tcp_connection)) {
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeoutInteractive,

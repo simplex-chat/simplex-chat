@@ -182,7 +182,7 @@ private fun ChatRelayLayout(
 
 @Composable
 private fun PresetRelay(relay: MutableState<UserChatRelay>, testing: MutableState<Boolean>) {
-  SectionView(stringResource(MR.strings.preset_relay_address).uppercase()) {
+  SectionView(stringResource(MR.strings.preset_relay_address)) {
     SelectionContainer {
       Text(
         relay.value.address,
@@ -192,7 +192,7 @@ private fun PresetRelay(relay: MutableState<UserChatRelay>, testing: MutableStat
     }
   }
   SectionDividerSpaced()
-  SectionView(stringResource(MR.strings.preset_relay_name).uppercase()) {
+  SectionView(stringResource(MR.strings.preset_relay_name)) {
     SectionItemView {
       Text(relay.value.displayName)
     }
@@ -229,7 +229,7 @@ private fun CustomRelay(
   }
 
   SectionView(
-    stringResource(MR.strings.your_relay_address).uppercase(),
+    stringResource(MR.strings.your_relay_address),
     icon = painterResource(MR.images.ic_error),
     iconTint = if (!validAddress.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
@@ -244,7 +244,7 @@ private fun CustomRelay(
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       Text(
-        stringResource(MR.strings.your_relay_name).uppercase(),
+        stringResource(MR.strings.your_relay_name),
         color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp
       )
       IconButton(
@@ -291,7 +291,7 @@ private fun UseRelaySection(
   testing: MutableState<Boolean>
 ) {
   val scope = rememberCoroutineScope()
-  SectionView(stringResource(MR.strings.use_relay).uppercase()) {
+  SectionView(stringResource(MR.strings.use_relay)) {
     SectionItemViewSpaceBetween(
       click = {
         testing.value = true

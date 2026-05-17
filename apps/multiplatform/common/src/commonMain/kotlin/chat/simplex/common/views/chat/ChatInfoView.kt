@@ -576,7 +576,7 @@ fun ChatInfoLayout(
     SectionSpacer()
 
     if (customUserProfile != null) {
-      SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+      SectionView(generalGetString(MR.strings.incognito)) {
         SectionItemViewSpaceBetween {
           Text(generalGetString(MR.strings.incognito_random_profile))
           Text(customUserProfile.chatViewName, color = Indigo)
@@ -627,7 +627,7 @@ fun ChatInfoLayout(
     }
 
     if (contact.contactLink != null) {
-      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title)) {
         SimpleXLinkQRCode(contact.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }

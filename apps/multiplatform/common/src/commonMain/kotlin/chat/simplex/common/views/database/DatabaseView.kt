@@ -170,7 +170,7 @@ fun DatabaseLayout(
     AppBarTitle(stringResource(MR.strings.your_chat_database))
 
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(stringResource(MR.strings.messages_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.messages_section_title)) {
         TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
       }
       SectionTextFooter(
@@ -262,7 +262,7 @@ fun DatabaseLayout(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
+    SectionView(stringResource(MR.strings.files_and_media_section)) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,

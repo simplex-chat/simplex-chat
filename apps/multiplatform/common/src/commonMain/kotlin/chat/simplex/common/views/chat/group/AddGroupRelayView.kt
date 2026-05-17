@@ -132,7 +132,7 @@ private fun AddGroupRelayLayout(
         )
       }
       SectionDividerSpaced(maxTopPadding = true)
-      SectionView(generalGetString(MR.strings.select_relays).uppercase()) {
+      SectionView(generalGetString(MR.strings.select_relays)) {
         availableRelays.forEach { item ->
           val selected = item.relayId in selectedRelayIds
           SectionItemView(

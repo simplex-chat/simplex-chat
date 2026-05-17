@@ -619,7 +619,7 @@ fun SimplexLockView(
       }
       if (performLA.value && laMode.value == LAMode.PASSCODE) {
         SectionDividerSpaced()
-        SectionView(stringResource(MR.strings.self_destruct_passcode).uppercase()) {
+        SectionView(stringResource(MR.strings.self_destruct_passcode)) {
           val openInfo = {
             ModalManager.start.showModal {
               SelfDestructInfoView()

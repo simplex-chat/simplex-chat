@@ -325,7 +325,7 @@ private fun ModalData.NewChatSheetLayout(
       item {
         if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
           SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
-          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {
+          SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {
             filteredContactChats.forEachIndexed { index, chat ->
               val nextChatSelected = remember(chat.id, filteredContactChats) {
                 derivedStateOf {
@@ -410,7 +410,7 @@ private fun ModalData.NewChatSheetLayout(
       item {
         if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
           SectionDividerSpaced()
-          SectionView(stringResource(MR.strings.contact_list_header_title).uppercase(), headerBottomPadding = DEFAULT_PADDING_HALF) {
+          SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {
             filteredContactChats.forEachIndexed { index, chat ->
               val nextChatSelected = remember(chat.id, filteredContactChats) {
                 derivedStateOf {

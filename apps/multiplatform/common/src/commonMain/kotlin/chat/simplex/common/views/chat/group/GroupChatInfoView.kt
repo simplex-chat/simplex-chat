@@ -584,7 +584,7 @@ fun ModalData.GroupChatInfoLayout(
       SectionSpacer()
 
       if (groupInfo.useRelays && groupInfo.membership.memberIncognito) {
-        SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+        SectionView(generalGetString(MR.strings.incognito)) {
           SectionItemViewSpaceBetween {
             Text(generalGetString(MR.strings.incognito_random_profile))
             Text(groupInfo.membership.chatViewName, color = Indigo)

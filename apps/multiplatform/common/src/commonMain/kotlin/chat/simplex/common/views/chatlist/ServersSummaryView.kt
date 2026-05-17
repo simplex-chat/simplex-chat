@@ -152,7 +152,7 @@ enum class PresentedServerType {
 
 @Composable
 private fun ServerSessionsView(sess: ServerSessions) {
-  SectionView(generalGetString(MR.strings.servers_info_transport_sessions_section_header).uppercase()) {
+  SectionView(generalGetString(MR.strings.servers_info_transport_sessions_section_header)) {
     InfoRow(
       generalGetString(MR.strings.servers_info_sessions_connected),
       numOrDash(sess.ssConnected)
@@ -294,7 +294,7 @@ private fun XFTPServersListView(servers: List<XFTPServerSummary>, statsStartedAt
 
 @Composable
 private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant, remoteHostInfo: RemoteHostInfo?) {
-  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header).uppercase()) {
+  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header)) {
     InfoRow(
       generalGetString(MR.strings.servers_info_messages_sent),
       numOrDash(stats._sentDirect + stats._sentViaProxy)
@@ -330,7 +330,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
       horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)
     ) {
       Text(
-        generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(),
+        generalGetString(MR.strings.servers_info_subscriptions_section_header),
         color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         fontSize = 12.sp
@@ -360,7 +360,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
       horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)
     ) {
       Text(
-        generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(),
+        generalGetString(MR.strings.servers_info_subscriptions_section_header),
         color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         fontSize = 12.sp
@@ -416,7 +416,7 @@ private fun reconnectServerAlert(rh: RemoteHostInfo?, server: String) {
 
 @Composable
 fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: RemoteHostInfo?) {
-  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header).uppercase()) {
+  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header)) {
     InfoRow(
       generalGetString(MR.strings.servers_info_uploaded),
       prettySize(stats._uploadsSize)
@@ -450,7 +450,7 @@ private fun IndentedInfoRow(title: String, desc: String) {
 
 @Composable
 fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Instant) {
-  SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_sent_messages_header).uppercase()) {
+  SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_sent_messages_header)) {
     InfoRow(generalGetString(MR.strings.servers_info_detailed_statistics_sent_messages_total), numOrDash(stats._sentDirect + stats._sentViaProxy))
     InfoRowTwoValues(generalGetString(MR.strings.sent_directly), generalGetString(MR.strings.attempts_label), stats._sentDirect, stats._sentDirectAttempts)
     InfoRowTwoValues(generalGetString(MR.strings.sent_via_proxy), generalGetString(MR.strings.attempts_label), stats._sentViaProxy, stats._sentViaProxyAttempts)
@@ -466,7 +466,7 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
 
   SectionDividerSpaced()
 
-  SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_received_messages_header).uppercase()) {
+  SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_received_messages_header)) {
     InfoRow(generalGetString(MR.strings.servers_info_detailed_statistics_received_total), numOrDash(stats._recvMsgs))
     SectionItemView {
       Text(generalGetString(MR.strings.servers_info_detailed_statistics_receive_errors), color = MaterialTheme.colors.onBackground)
@@ -484,7 +484,7 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
 
   SectionDividerSpaced()
 
-  SectionView(generalGetString(MR.strings.connections).uppercase()) {
+  SectionView(generalGetString(MR.strings.connections)) {
     InfoRow(generalGetString(MR.strings.created), numOrDash(stats._connCreated))
     InfoRow(generalGetString(MR.strings.secured), numOrDash(stats._connSecured))
     InfoRow(generalGetString(MR.strings.completed), numOrDash(stats._connCompleted))
@@ -503,7 +503,7 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
 
 @Composable
 fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Instant) {
-  SectionView(generalGetString(MR.strings.uploaded_files).uppercase()) {
+  SectionView(generalGetString(MR.strings.uploaded_files)) {
     InfoRow(generalGetString(MR.strings.size), prettySize(stats._uploadsSize))
     InfoRowTwoValues(generalGetString(MR.strings.chunks_uploaded), generalGetString(MR.strings.attempts_label), stats._uploads, stats._uploadAttempts)
     InfoRow(generalGetString(MR.strings.upload_errors), numOrDash(stats._uploadErrs))
@@ -511,7 +511,7 @@ fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Ins
     InfoRow(generalGetString(MR.strings.deletion_errors), numOrDash(stats._deleteErrs))
   }
   SectionDividerSpaced()
-  SectionView(generalGetString(MR.strings.downloaded_files).uppercase()) {
+  SectionView(generalGetString(MR.strings.downloaded_files)) {
     InfoRow(generalGetString(MR.strings.size), prettySize(stats._downloadsSize))
     InfoRowTwoValues(generalGetString(MR.strings.chunks_downloaded), generalGetString(MR.strings.attempts_label), stats._downloads, stats._downloadAttempts)
     SectionItemView {
@@ -529,7 +529,7 @@ fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Ins
 
 @Composable
 fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
-  SectionView(generalGetString(MR.strings.server_address).uppercase()) {
+  SectionView(generalGetString(MR.strings.server_address)) {
     SelectionContainer {
       Text(
         summary.xftpServer,
@@ -557,7 +557,7 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
 
 @Composable
 fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
-  SectionView(generalGetString(MR.strings.server_address).uppercase()) {
+  SectionView(generalGetString(MR.strings.server_address)) {
     SelectionContainer {
       Text(
         summary.smpServer,
@@ -840,7 +840,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     SMPServersListView(
                       servers = currentlyUsedSMPServers,
                       statsStartedAt = statsStartedAt,
-                      header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                      header = generalGetString(MR.strings.servers_info_connected_servers_section_header),
                       rh = rh
                     )
                     SectionDividerSpaced()
@@ -850,7 +850,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     SMPServersListView(
                       servers = previouslyUsedSMPServers,
                       statsStartedAt = statsStartedAt,
-                      header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                      header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header),
                       rh = rh
                     )
                     SectionDividerSpaced()
@@ -860,7 +860,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     SMPServersListView(
                       servers = proxySMPServers,
                       statsStartedAt = statsStartedAt,
-                      header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
+                      header = generalGetString(MR.strings.servers_info_proxied_servers_section_header),
                       footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
                       rh = rh
                     )
@@ -887,7 +887,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     XFTPServersListView(
                       currentlyUsedXFTPServers,
                       statsStartedAt,
-                      generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                      generalGetString(MR.strings.servers_info_connected_servers_section_header),
                       rh
                     )
                     SectionDividerSpaced()
@@ -897,7 +897,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     XFTPServersListView(
                       previouslyUsedXFTPServers,
                       statsStartedAt,
-                      generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                      generalGetString(MR.strings.servers_info_previously_connected_servers_section_header),
                       rh
                     )
                     SectionDividerSpaced()

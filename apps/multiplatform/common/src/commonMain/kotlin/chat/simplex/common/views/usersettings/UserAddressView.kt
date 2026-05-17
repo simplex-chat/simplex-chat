@@ -301,12 +301,12 @@ private fun UserAddressLayout(
     ) {
       if (userAddress == null) {
         if (!onboarding) {
-          SectionView(generalGetString(MR.strings.for_social_media).uppercase()) {
+          SectionView(generalGetString(MR.strings.for_social_media)) {
             CreateAddressButton(createAddress)
           }
 
           SectionDividerSpaced()
-          SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
+          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
             CreateOneTimeLinkButton()
           }
 
@@ -336,7 +336,7 @@ private fun UserAddressLayout(
           val savedAddressSettingsState = remember { mutableStateOf(addressSettingsState.value) }
 
           SectionViewWithButton(
-            stringResource(MR.strings.for_social_media).uppercase(),
+            stringResource(MR.strings.for_social_media),
             titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
           ) {
             SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
@@ -360,7 +360,7 @@ private fun UserAddressLayout(
           }
 
           SectionDividerSpaced(maxTopPadding = addressSettingsState.value.businessAddress)
-          SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
+          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
             CreateOneTimeLinkButton()
           }
           SectionDividerSpaced(maxBottomPadding = false)
@@ -513,7 +513,7 @@ private fun ModalData.UserAddressSettings(
         SectionDividerSpaced()
 
         SectionView(
-          stringResource(MR.strings.address_welcome_message).uppercase(),
+          stringResource(MR.strings.address_welcome_message),
           contentPadding = PaddingValues(vertical = DEFAULT_PADDING_HALF),
         ) {
           AutoReplyEditor(addressSettingsState)

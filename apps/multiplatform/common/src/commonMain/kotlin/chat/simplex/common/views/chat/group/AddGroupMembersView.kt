@@ -196,7 +196,7 @@ fun AddGroupMembersLayout(
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
       SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.select_contacts).uppercase()) {
+      SectionView(stringResource(MR.strings.select_contacts)) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
         }

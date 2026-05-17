@@ -61,7 +61,7 @@ expect fun AppearanceView(m: ChatModel)
 object AppearanceScope {
   @Composable
   fun ProfileImageSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
       Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
@@ -94,7 +94,7 @@ object AppearanceScope {
   @Composable
   fun AppToolbarsSection() {
     BoxWithConstraints {
-      SectionView(stringResource(MR.strings.appearance_app_toolbars).uppercase()) {
+      SectionView(stringResource(MR.strings.appearance_app_toolbars)) {
         SectionItemViewWithoutMinPadding {
           Box(Modifier.weight(1f)) {
             Text(
@@ -178,7 +178,7 @@ object AppearanceScope {
   @Composable
   fun MessageShapeSection() {
     BoxWithConstraints {
-      SectionView(stringResource(MR.strings.settings_section_title_message_shape).uppercase()) {
+      SectionView(stringResource(MR.strings.settings_section_title_message_shape)) {
         SectionItemViewWithoutMinPadding {
           Text(stringResource(MR.strings.settings_message_shape_corner), Modifier.weight(1f))
           Spacer(Modifier.width(10.dp))
@@ -208,7 +208,7 @@ object AppearanceScope {
   @Composable
   fun FontScaleSection() {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
-    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.appearance_font_size), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(50.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
@@ -656,7 +656,7 @@ object AppearanceScope {
       }
       SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.settings_section_title_chat_colors).uppercase()) {
+      SectionView(stringResource(MR.strings.settings_section_title_chat_colors)) {
         WallpaperSetupView(
           wallpaperType,
           baseTheme,

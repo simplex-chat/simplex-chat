@@ -130,7 +130,7 @@ private fun ContactConnectionInfoLayout(
     if (connLink != null && connLink.connFullLink.isNotEmpty() && contactConnection.initiated) {
       Spacer(Modifier.height(DEFAULT_PADDING))
       SectionViewWithButton(
-        stringResource(MR.strings.one_time_link).uppercase(),
+        stringResource(MR.strings.one_time_link),
         titleButton = if (connLink.connShortLink == null) null else {{ ToggleShortLinkButton(showShortLink) }}
       ) {
         SimpleXCreatedLinkQRCode(connLink, short = showShortLink.value)

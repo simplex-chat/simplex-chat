@@ -36,7 +36,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
     )
     if (devTools.value) {
       SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.developer_options_section).uppercase()) {
+      SectionView(stringResource(MR.strings.developer_options_section)) {
         SettingsActionItemWithContent(painterResource(MR.images.ic_breaking_news), stringResource(MR.strings.debug_logs)) {
           DefaultSwitch(
             checked = remember { appPrefs.logLevel.state }.value <= LogLevel.DEBUG,
@@ -60,7 +60,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
       }
     }
     SectionDividerSpaced(maxTopPadding = true)
-    SectionView(stringResource(MR.strings.deprecated_options_section).uppercase()) {
+    SectionView(stringResource(MR.strings.deprecated_options_section)) {
       val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)

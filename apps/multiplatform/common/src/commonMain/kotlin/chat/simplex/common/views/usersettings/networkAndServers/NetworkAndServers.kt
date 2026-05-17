@@ -210,7 +210,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     // TODO: Review this and socks.
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(generalGetString(MR.strings.network_preset_servers_title).uppercase()) {
+      SectionView(generalGetString(MR.strings.network_preset_servers_title)) {
         userServers.value.forEachIndexed { index, srv ->
           srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, serverWarnings, currentRemoteHost?.remoteHostId) }
         }
@@ -307,7 +307,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
 
     if (appPlatform.isAndroid) {
       SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.settings_section_title_network_connection).uppercase()) {
+      SectionView(generalGetString(MR.strings.settings_section_title_network_connection)) {
         val info = remember { chatModel.networkInfo }.value
         SettingsActionItemWithContent(icon = null, info.networkType.text) {
           Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = if (info.online) Color.Green else MaterialTheme.colors.error)
@@ -460,7 +460,7 @@ fun SocksProxySettings(
   ) {
     ColumnWithScrollBar {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
-      SectionView(stringResource(MR.strings.network_socks_proxy).uppercase()) {
+      SectionView(stringResource(MR.strings.network_socks_proxy)) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           DefaultConfigurableTextField(
             hostUnsaved,
@@ -489,7 +489,7 @@ fun SocksProxySettings(
 
       SectionDividerSpaced(maxTopPadding = true)
 
-      SectionView(stringResource(MR.strings.network_proxy_auth).uppercase()) {
+      SectionView(stringResource(MR.strings.network_proxy_auth)) {
         PreferenceToggle(
           stringResource(MR.strings.network_proxy_random_credentials),
           checked = proxyAuthRandomUnsaved.value,
