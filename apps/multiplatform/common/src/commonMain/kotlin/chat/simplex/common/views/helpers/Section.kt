@@ -16,6 +16,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.text.font.FontWeight
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
 import chat.simplex.common.ui.theme.*
@@ -51,7 +52,7 @@ fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingVa
     if (title != null) {
       Text(
         title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding), fontSize = 14.sp
+        modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding), fontSize = 14.sp, fontWeight = FontWeight.SemiBold
       )
     }
     CompositionLocalProvider(LocalInSectionCard provides true) {
@@ -82,7 +83,7 @@ fun SectionView(
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
-      Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 14.sp)
+      Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
     CompositionLocalProvider(LocalInSectionCard provides true) {
@@ -106,7 +107,7 @@ fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () ->
     if (title != null || titleButton != null) {
       Row(modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, end = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding).fillMaxWidth()) {
         if (title != null) {
-          Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 14.sp)
+          Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         }
         if (titleButton != null) {
           Spacer(modifier = Modifier.weight(1f))
