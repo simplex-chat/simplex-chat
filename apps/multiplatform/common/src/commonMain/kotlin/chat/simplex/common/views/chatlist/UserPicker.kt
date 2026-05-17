@@ -212,8 +212,9 @@ fun UserPicker(
           )
         }
       } else if (currentUser != null) {
+        Spacer(Modifier.height(DEFAULT_PADDING))
         SectionView {
-          SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+          SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 10.dp, end = DEFAULT_PADDING), disabled = stopped) {
             ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
           }
         }
