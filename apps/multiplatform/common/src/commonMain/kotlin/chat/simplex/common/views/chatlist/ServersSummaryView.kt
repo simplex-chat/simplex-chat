@@ -335,7 +335,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
         color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         fontSize = 14.sp,
-        fontWeight = FontWeight.SemiBold
+        fontWeight = FontWeight.Medium
       )
       SubscriptionStatusIndicatorView(totals.subs, totals.sessions.hasSess)
     }
@@ -366,7 +366,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
         color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         fontSize = 14.sp,
-        fontWeight = FontWeight.SemiBold
+        fontWeight = FontWeight.Medium
       )
       SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew.hasSess)
     }

@@ -52,7 +52,7 @@ fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingVa
     if (title != null) {
       Text(
         title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding), fontSize = 14.sp, fontWeight = FontWeight.SemiBold
+        modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding), fontSize = 14.sp, fontWeight = FontWeight.Medium
       )
     }
     CompositionLocalProvider(LocalInSectionCard provides true) {
@@ -83,7 +83,7 @@ fun SectionView(
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
-      Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+      Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 14.sp, fontWeight = FontWeight.Medium)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
     CompositionLocalProvider(LocalInSectionCard provides true) {
@@ -107,7 +107,7 @@ fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () ->
     if (title != null || titleButton != null) {
       Row(modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, end = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding).fillMaxWidth()) {
         if (title != null) {
-          Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+          Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
         if (titleButton != null) {
           Spacer(modifier = Modifier.weight(1f))
