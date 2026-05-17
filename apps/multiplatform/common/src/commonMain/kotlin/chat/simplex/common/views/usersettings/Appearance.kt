@@ -759,7 +759,7 @@ object AppearanceScope {
           onLongClick = onLongClick
         )
         .onRightClick(onLongClick)
-        .size(44.dp),
+        .size(28.dp),
       contentAlignment = Alignment.Center
     ) {
       Icon(painterResource(if (themeMode == DefaultThemeMode.LIGHT) MR.images.ic_light_mode else MR.images.ic_bedtime_moon), stringResource(MR.strings.color_mode_light), tint = MaterialTheme.colors.secondary)
