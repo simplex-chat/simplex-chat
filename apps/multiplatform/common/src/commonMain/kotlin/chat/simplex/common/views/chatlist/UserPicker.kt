@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import SectionDivider
+import SectionDividerSpaced
 import SectionItemView
 import SectionView
 import TextIconSpaced
@@ -211,9 +212,12 @@ fun UserPicker(
           )
         }
       } else if (currentUser != null) {
-        SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
+        SectionView {
+          SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+            ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
+          }
         }
+        SectionDividerSpaced()
       }
     }
 
