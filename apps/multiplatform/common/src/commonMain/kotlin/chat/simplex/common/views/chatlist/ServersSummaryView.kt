@@ -333,7 +333,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
         generalGetString(MR.strings.servers_info_subscriptions_section_header),
         color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
-        fontSize = 12.sp
+        fontSize = 14.sp
       )
       SubscriptionStatusIndicatorView(totals.subs, totals.sessions.hasSess)
     }
@@ -363,7 +363,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
         generalGetString(MR.strings.servers_info_subscriptions_section_header),
         color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
-        fontSize = 12.sp
+        fontSize = 14.sp
       )
       SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew.hasSess)
     }
