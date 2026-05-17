@@ -326,7 +326,7 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
 private fun SMPSubscriptionsSection(totals: SMPTotals) {
   Column {
     Row(
-      Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 5.dp),
+      Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)
     ) {
@@ -357,7 +357,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
 private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSummary, rh: RemoteHostInfo?) {
   Column {
     Row(
-      Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 5.dp),
+      Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)
     ) {
