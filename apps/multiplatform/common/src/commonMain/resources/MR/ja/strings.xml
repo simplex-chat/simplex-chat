@@ -880,7 +880,7 @@
     <string name="send_us_an_email">メールを送る</string>
     <string name="share_image">メディア共有…</string>
     <string name="simplex_link_mode">SimpleXリンク</string>
-    <string name="settings_section_title_support">SIMPLEX CHATを支援</string>
+    <string name="settings_section_title_support">SimpleX chatを支援</string>
     <string name="smp_servers_test_servers">テストサーバ</string>
     <string name="switch_receiving_address_desc">受信アドレスは別のサーバーに変更されます。アドレス変更は送信者がオンラインになった後に完了します。</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに SimpleX メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>
@@ -906,7 +906,7 @@
     <string name="switch_receiving_address">受信アドレスを変える</string>
     <string name="incognito_random_profile">あなたのランダム・プロフィール</string>
     <string name="v4_3_voice_messages">音声メッセージ</string>
-    <string name="settings_section_title_socks">SOCKSプロキシ</string>
+    <string name="settings_section_title_socks">Socksプロキシ</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">データベースのエクスポート、読み込み、削除するにはチャット機能を停止する必要があります。チャット機能を停止すると送受信ができなくなります。</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">あなたのプロフィール、連絡先、メッセージ、ファイルが完全削除されます (※元に戻せません※)。</string>
     <string name="update_database_passphrase">データベースパスフレーズを更新</string>
