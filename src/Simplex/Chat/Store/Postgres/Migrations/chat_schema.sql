@@ -2361,6 +2361,10 @@ CREATE INDEX idx_groups_inv_queue_info ON test_chat_schema.groups USING btree (i
 
 
 
+CREATE INDEX idx_groups_relay_request_group_link ON test_chat_schema.groups USING btree (user_id, relay_request_group_link) WHERE (relay_request_group_link IS NOT NULL);
+
+
+
 CREATE INDEX idx_groups_summary_current_members_count ON test_chat_schema.groups USING btree (summary_current_members_count);
 
 

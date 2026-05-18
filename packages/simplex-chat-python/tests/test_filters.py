@@ -3,7 +3,7 @@ import re
 from simplex_chat.filters import compile_message_filter
 
 
-def _msg(content_type="text", text=None, chat_type="direct", group_id=None):
+def _msg(content_type="text", text=None, chat_type="direct", group_id=None, contact_id=None):
     """Build a minimal mock Message-like object for filter testing."""
 
     class M:
@@ -11,12 +11,12 @@ def _msg(content_type="text", text=None, chat_type="direct", group_id=None):
 
     m = M()
     m.content = {"type": content_type, "text": text} if text is not None else {"type": content_type}
-    m.chat_item = {
-        "chatInfo": {
-            "type": chat_type,
-            **({"groupInfo": {"groupId": group_id}} if chat_type == "group" else {}),
-        }
-    }
+    chat_info: dict = {"type": chat_type}
+    if chat_type == "group":
+        chat_info["groupInfo"] = {"groupId": group_id}
+    elif chat_type == "direct" and contact_id is not None:
+        chat_info["contact"] = {"contactId": contact_id}
+    m.chat_item = {"chatInfo": chat_info}
     return m
 
 
@@ -81,3 +81,23 @@ def test_group_id_tuple_or():
     f = compile_message_filter({"group_id": (1, 2, 3)})
     assert f(_msg(chat_type="group", group_id=2))
     assert not f(_msg(chat_type="group", group_id=99))
+
+
+def test_contact_id_filter():
+    f = compile_message_filter({"contact_id": 7})
+    assert f(_msg(chat_type="direct", contact_id=7))
+    assert not f(_msg(chat_type="direct", contact_id=99))
+    assert not f(_msg(chat_type="group", group_id=7))
+
+
+def test_contact_id_tuple_or():
+    f = compile_message_filter({"contact_id": (1, 2, 3)})
+    assert f(_msg(chat_type="direct", contact_id=2))
+    assert not f(_msg(chat_type="direct", contact_id=99))
+
+
+def test_contact_id_combined_with_content_type():
+    f = compile_message_filter({"content_type": "text", "contact_id": 5})
+    assert f(_msg(content_type="text", chat_type="direct", contact_id=5))
+    assert not f(_msg(content_type="image", chat_type="direct", contact_id=5))
+    assert not f(_msg(content_type="text", chat_type="direct", contact_id=99))

@@ -2175,8 +2175,14 @@ struct ChatView: View {
                 )
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                    Button("Delete for me", role: .destructive) {
-                        deleteMessage(.cidmInternal, moderate: false)
+                    if publicGroupEditor(chat) {
+                        Button("Delete from history", role: .destructive) {
+                            deleteMessage(.cidmHistory, moderate: false)
+                        }
+                    } else {
+                        Button("Delete for me", role: .destructive) {
+                            deleteMessage(.cidmInternal, moderate: false)
+                        }
                     }
                     if let di = deletingItem, di.meta.deletable && !di.localNote && !di.isReport {
                         Button(broadcastDeleteButtonText(chat), role: .destructive) {
@@ -2185,8 +2191,14 @@ struct ChatView: View {
                     }
                 }
                 .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
-                    Button("Delete for me", role: .destructive) {
-                        deleteMessages(chat, deletingItems, moderate: false)
+                    if publicGroupEditor(chat) {
+                        Button("Delete from history", role: .destructive) {
+                            deleteMessages(chat, deletingItems, .cidmHistory, moderate: false)
+                        }
+                    } else {
+                        Button("Delete for me", role: .destructive) {
+                            deleteMessages(chat, deletingItems, moderate: false)
+                        }
                     }
                 }
                 .confirmationDialog(archivingReports?.count == 1 ? "Archive report?" : "Archive \(archivingReports?.count ?? 0) reports?", isPresented: $showArchivingReports, titleVisibility: .visible) {
@@ -2817,6 +2829,9 @@ struct ChatView: View {
                     }
                 } catch {
                     logger.error("ChatView.deleteMessage error: \(error)")
+                    await MainActor.run {
+                        showAlert(NSLocalizedString("Error deleting message", comment: "alert title"), message: responseError(error))
+                    }
                 }
             }
         }
@@ -2963,6 +2978,14 @@ class FloatingButtonModel: ObservableObject {
 
 }
 
+private func publicGroupEditor(_ chat: Chat) -> Bool {
+    if case let .group(groupInfo, _) = chat.chatInfo {
+        groupInfo.useRelays && groupInfo.membership.memberRole >= .moderator
+    } else {
+        false
+    }
+}
+
 private func broadcastDeleteButtonText(_ chat: Chat) -> LocalizedStringKey {
     chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
 }
@@ -3010,6 +3033,9 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                 await onSuccess()
             } catch {
                 logger.error("ChatView.deleteMessages error: \(error.localizedDescription)")
+                await MainActor.run {
+                    showAlert(NSLocalizedString("Error deleting message", comment: "alert title"), message: responseError(error))
+                }
             }
         }
     }

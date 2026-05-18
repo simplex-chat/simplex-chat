@@ -95,6 +95,8 @@ module Simplex.Chat.Store.Groups
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
     updateRelayOwnStatus_,
+    isRelayGroupRejected,
+    allowRelayGroup,
     getRelayServedGroups,
     getRelayInactiveGroups,
     createNewContactMemberAsync,
@@ -1527,8 +1529,8 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     "UPDATE groups SET creating_in_progress = 0, updated_at = ? WHERE group_id = ?"
     (currentTs, groupId)
 
-createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay = do
+createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> Int64 -> GroupMemberStatus -> RelayStatus -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay memberStatus relayStatus = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile
@@ -1542,13 +1544,13 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           groupPreferences = Nothing,
           memberAdmission = Nothing
         }
-  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) Nothing currentTs
+  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just relayStatus) Nothing currentTs
   -- Store relay request data for recovery
   liftIO $ setRelayRequestData_ groupId currentTs
   ownerMemberId <- insertOwner_ currentTs groupId
   let relayMember = MemberIdRole relayMemberId GRRelay
   -- TODO [member keys] should relays use member keys?
-  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember GSMemAccepted IBUnknown Nothing Nothing currentTs vr
+  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember memberStatus IBUnknown Nothing Nothing currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
@@ -1582,7 +1584,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
                 peer_chat_min_version, peer_chat_max_version)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, GSMemAccepted)
+          ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, memberStatus)
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
               :. (minV, maxV)
           )
@@ -1599,6 +1601,41 @@ updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   currentTs <- getCurrentTime
   let inactiveAt_ = if relayStatus == RSInactive then Just currentTs else Nothing
   DB.execute db "UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?" (relayStatus, inactiveAt_, currentTs, groupId)
+
+-- Flip every RSRejected row sharing the targeted group's relay_request_group_link
+-- to RSInactive in one statement; returns the refreshed GroupInfo for the targeted groupId.
+allowRelayGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupInfo
+allowRelayGroup db vr user@User {userId} groupId = do
+  currentTs <- liftIO getCurrentTime
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE groups
+        SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ?
+        WHERE user_id = ?
+          AND relay_request_group_link = (SELECT relay_request_group_link FROM groups WHERE group_id = ?)
+          AND relay_own_status = ?
+      |]
+      (RSInactive, currentTs, currentTs, userId, groupId, RSRejected)
+  getGroupInfo db vr user groupId
+
+isRelayGroupRejected :: DB.Connection -> User -> ShortLinkContact -> IO Bool
+isRelayGroupRejected db User {userId} groupLink =
+  fromMaybe False <$> maybeFirstRow fromOnly (
+    DB.query
+      db
+      [sql|
+        SELECT EXISTS (
+          SELECT 1 FROM groups
+          WHERE user_id = ?
+            AND relay_request_group_link = ?
+            AND relay_own_status = ?
+          LIMIT 1
+        )
+      |]
+      (userId, groupLink, RSRejected)
+  )
 
 getRelayServedGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
 getRelayServedGroups db vr User {userId, userContactId} = do
@@ -2202,7 +2239,7 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
 -- Sent-profile vector tracks which recipients have received this member's profile
 -- (one byte per index_in_group; 0 = not sent, non-zero = sent). Empty vector means
 -- no recipients have been sent the profile yet; the column is NOT NULL DEFAULT empty
--- per migration M20260513, so reads always return a ByteString.
+-- per migration M20260515, so reads always return a ByteString.
 
 getSentProfileVector :: DB.Connection -> GroupMemberId -> IO ByteString
 getSentProfileVector db groupMemberId = do

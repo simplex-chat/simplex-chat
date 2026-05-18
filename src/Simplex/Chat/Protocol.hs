@@ -423,7 +423,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
-  XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope} -> ChatMsgEvent 'Json
+  XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
@@ -444,6 +444,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
   XGrpRelayTest :: ByteString -> Maybe ByteString -> ChatMsgEvent 'Json
   XGrpRelayNew :: ShortLinkContact -> ChatMsgEvent 'Json
+  XGrpRelayReject :: RelayRejectionReason -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -989,6 +990,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpRelayAcpt_ :: CMEventTag 'Json
   XGrpRelayTest_ :: CMEventTag 'Json
   XGrpRelayNew_ :: CMEventTag 'Json
+  XGrpRelayReject_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
   XGrpMemIntro_ :: CMEventTag 'Json
   XGrpMemInv_ :: CMEventTag 'Json
@@ -1047,6 +1049,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpRelayAcpt_ -> "x.grp.relay.acpt"
     XGrpRelayTest_ -> "x.grp.relay.test"
     XGrpRelayNew_ -> "x.grp.relay.new"
+    XGrpRelayReject_ -> "x.grp.relay.reject"
     XGrpMemNew_ -> "x.grp.mem.new"
     XGrpMemIntro_ -> "x.grp.mem.intro"
     XGrpMemInv_ -> "x.grp.mem.inv"
@@ -1106,6 +1109,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.relay.acpt" -> XGrpRelayAcpt_
         "x.grp.relay.test" -> XGrpRelayTest_
         "x.grp.relay.new" -> XGrpRelayNew_
+        "x.grp.relay.reject" -> XGrpRelayReject_
         "x.grp.mem.new" -> XGrpMemNew_
         "x.grp.mem.intro" -> XGrpMemIntro_
         "x.grp.mem.inv" -> XGrpMemInv_
@@ -1161,6 +1165,7 @@ toCMEventTag msg = case msg of
   XGrpRelayAcpt _ -> XGrpRelayAcpt_
   XGrpRelayTest {} -> XGrpRelayTest_
   XGrpRelayNew _ -> XGrpRelayNew_
+  XGrpRelayReject _ -> XGrpRelayReject_
   XGrpMemNew {} -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -1288,7 +1293,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         scope <- opt "scope"
         asGroup <- opt "asGroup"
         pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup}
-      XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope"
+      XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> (fromMaybe False <$> opt "onlyHistory")
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
       XFile_ -> XFile <$> p "file"
@@ -1319,6 +1324,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         sig_ <- fmap (\(B64UrlByteString s) -> s) <$> opt "signature"
         pure $ XGrpRelayTest challenge sig_
       XGrpRelayNew_ -> XGrpRelayNew <$> p "relayLink"
+      XGrpRelayReject_ -> XGrpRelayReject <$> p "reason"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1366,7 +1372,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
         _ -> JM.empty
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
-      XMsgDel msgId' memberId scope -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId']
+      XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
       XFile fileInv -> o ["file" .= fileInv]
@@ -1389,6 +1395,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
         ("signature" .=? (B64UrlByteString <$> sig_))
         ["challenge" .= B64UrlByteString challenge]
       XGrpRelayNew relayLink -> o ["relayLink" .= relayLink]
+      XGrpRelayReject reason -> o ["reason" .= reason]
       XGrpMemNew memInfo scope -> o $ ("scope" .=? scope) ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]

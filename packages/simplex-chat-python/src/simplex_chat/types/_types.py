@@ -370,7 +370,7 @@ CIContent = (
 
 CIContent_Tag = Literal["sndMsgContent", "rcvMsgContent", "sndDeleted", "rcvDeleted", "sndCall", "rcvCall", "rcvIntegrityError", "rcvDecryptionError", "rcvMsgError", "rcvGroupInvitation", "sndGroupInvitation", "rcvDirectEvent", "rcvGroupEvent", "sndGroupEvent", "rcvConnEvent", "sndConnEvent", "rcvChatFeature", "sndChatFeature", "rcvChatPreference", "sndChatPreference", "rcvGroupFeature", "sndGroupFeature", "rcvChatFeatureRejected", "rcvGroupFeatureRejected", "sndModerated", "rcvModerated", "rcvBlocked", "sndDirectE2EEInfo", "rcvDirectE2EEInfo", "sndGroupE2EEInfo", "rcvGroupE2EEInfo", "chatBanner"]
 
-CIDeleteMode = Literal["broadcast", "internal", "internalMark"]
+CIDeleteMode = Literal["broadcast", "internal", "internalMark", "history"]
 
 class CIDeleted_deleted(TypedDict):
     type: Literal["deleted"]
@@ -2627,7 +2627,7 @@ class RelayProfile(TypedDict):
     shortDescr: NotRequired[str]
     image: NotRequired[str]
 
-RelayStatus = Literal["new", "invited", "accepted", "active", "inactive"]
+RelayStatus = Literal["new", "invited", "accepted", "active", "inactive", "rejected"]
 
 ReportReason = Literal["spam", "content", "community", "profile", "other"]
 

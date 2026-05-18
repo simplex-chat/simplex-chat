@@ -742,7 +742,7 @@ struct ComposeView: View {
             (relay, chatModel.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId })?.wrapped)
         }
         let removedCount = relayMembers.filter { (_, m) in relayMemberRemoved(m?.memberStatus) }.count
-        let activeCount = relayMembers.filter { (relay, m) in !relayMemberRemoved(m?.memberStatus) && relay.relayStatus == .rsActive && m?.activeConn?.connFailedErr == nil }.count
+        let activeCount = relayMembers.filter { (relay, m) in !relayMemberRemoved(m?.memberStatus) && relay.relayStatus == .active && m?.activeConn?.connFailedErr == nil }.count
         let failedCount = relayMembers.filter { (_, m) in !relayMemberRemoved(m?.memberStatus) && m?.activeConn?.connFailedErr != nil }.count
         let noActiveRelays = activeCount == 0 && (failedCount + removedCount) == relays.count
         return (relays, activeCount, failedCount, removedCount, noActiveRelays)
