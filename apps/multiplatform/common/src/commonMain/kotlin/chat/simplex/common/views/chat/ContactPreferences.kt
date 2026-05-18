@@ -90,27 +90,27 @@ private fun ContactPreferencesLayout(
     TimedMessagesFeatureSection(featuresAllowed, contact.mergedPreferences.timedMessages, timedMessages, onTTLUpdated) { allowed, ttl ->
       applyPrefs(featuresAllowed.copy(timedMessagesAllowed = allowed, timedMessagesTTL = ttl ?: currentFeaturesAllowed.timedMessagesTTL))
     }
-    SectionDividerSpaced(true)
+    SectionDividerSpaced()
     val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
     FeatureSection(ChatFeature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
       applyPrefs(featuresAllowed.copy(fullDelete = it))
     }
-    SectionDividerSpaced(true)
+    SectionDividerSpaced()
     val allowReactions: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.reactions) }
     FeatureSection(ChatFeature.Reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, allowReactions) {
       applyPrefs(featuresAllowed.copy(reactions = it))
     }
-    SectionDividerSpaced(true)
+    SectionDividerSpaced()
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
     FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
     }
-    SectionDividerSpaced(true)
+    SectionDividerSpaced()
     val allowCalls: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.calls) }
     FeatureSection(ChatFeature.Calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, allowCalls) {
       applyPrefs(featuresAllowed.copy(calls = it))
     }
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionDividerSpaced()
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,

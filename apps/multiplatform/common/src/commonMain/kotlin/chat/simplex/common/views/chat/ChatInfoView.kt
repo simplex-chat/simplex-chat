@@ -616,7 +616,7 @@ fun ChatInfoLayout(
       ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
     }
     SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionDividerSpaced()
 
     val conn = contact.activeConn
     if (conn != null) {
@@ -633,7 +633,7 @@ fun ChatInfoLayout(
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
       }
       SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
     }
 
     val chatSubStatus = chatModel.chatSubStatus.value

@@ -551,7 +551,7 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
   }
 
   if (summary.sessions != null) {
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     ServerSessionsView(summary.sessions)
   }
 
@@ -579,12 +579,12 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
   }
 
   if (summary.subs != null) {
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
   }
 
   if (summary.sessions != null) {
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     ServerSessionsView(summary.sessions)
   }
 
@@ -835,7 +835,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                   val statsStartedAt = it.statsStartedAt
 
                   SMPStatsView(totals.stats, statsStartedAt, rh)
-                  SectionDividerSpaced(maxTopPadding = true)
+                  SectionDividerSpaced()
                   SMPSubscriptionsSection(totals)
                   SectionDividerSpaced()
 
@@ -867,7 +867,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                       footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
                       rh = rh
                     )
-                    SectionDividerSpaced(maxTopPadding = true)
+                    SectionDividerSpaced()
                   }
 
                   ServerSessionsView(totals.sessions)
@@ -884,7 +884,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                   val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
 
                   XFTPStatsView(totals.stats, statsStartedAt, rh)
-                  SectionDividerSpaced(maxTopPadding = true)
+                  SectionDividerSpaced()
 
                   if (currentlyUsedXFTPServers.isNotEmpty()) {
                     XFTPServersListView(

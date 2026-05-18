@@ -238,7 +238,7 @@ private fun CustomRelay(
       Modifier.height(144.dp)
     )
   }
-  SectionDividerSpaced(maxTopPadding = true)
+  SectionDividerSpaced()
 
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
@@ -270,7 +270,7 @@ private fun CustomRelay(
   if (relay.value.tested != true) {
     SectionTextFooter(annotatedStringResource(MR.strings.test_relay_to_retrieve_name))
   }
-  SectionDividerSpaced(maxTopPadding = true)
+  SectionDividerSpaced()
 
   UseRelaySection(relay, validAddress.value, testing)
 

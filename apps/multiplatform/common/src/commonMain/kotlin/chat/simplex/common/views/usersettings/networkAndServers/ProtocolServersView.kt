@@ -170,7 +170,7 @@ fun YourServersViewLayout(
       userServers.value[operatorIndex].xftpServers.any { !it.deleted } ||
       userServers.value[operatorIndex].chatRelays.any { !it.deleted }
       ) {
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionDividerSpaced(maxBottomPadding = false)
     }
 
     SectionView {
@@ -195,7 +195,7 @@ fun YourServersViewLayout(
         ServersWarningFooter(serversWarn)
       }
     }
-    SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+    SectionDividerSpaced(maxBottomPadding = false)
 
     SectionView {
       TestServersButton(

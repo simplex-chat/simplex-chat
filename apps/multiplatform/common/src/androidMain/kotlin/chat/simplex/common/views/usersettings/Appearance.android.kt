@@ -126,7 +126,7 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_icon), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
@@ -152,7 +152,7 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     FontScaleSection()
 
     SectionBottomSpacer()

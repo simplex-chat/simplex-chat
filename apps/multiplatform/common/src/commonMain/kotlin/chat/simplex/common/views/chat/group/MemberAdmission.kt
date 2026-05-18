@@ -85,7 +85,7 @@ private fun MemberAdmissionLayout(
       }
     }
     if (groupInfo.isOwner) {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionDividerSpaced()
       ResetSaveButtons(
         reset = reset,
         save = saveAdmission,

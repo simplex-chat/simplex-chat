@@ -82,10 +82,10 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     FontScaleSection()
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     DensityScaleSection()
 
     SectionBottomSpacer()

@@ -171,7 +171,7 @@ fun PrivacySettingsView(
       }
 
       if (!chatModel.desktopNoUserNoRemote) {
-        SectionDividerSpaced(maxTopPadding = true)
+        SectionDividerSpaced()
         ContacRequestsFromGroupsSection(
           currentUser = currentUser,
           setAutoAcceptGrpDirectInvs = { enable ->
@@ -179,7 +179,7 @@ fun PrivacySettingsView(
           }
         )
 
-        SectionDividerSpaced(maxTopPadding = true)
+        SectionDividerSpaced()
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->

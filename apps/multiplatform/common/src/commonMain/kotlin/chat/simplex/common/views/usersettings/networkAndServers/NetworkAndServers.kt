@@ -267,7 +267,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     if (currentRemoteHost == null) {
       if (networkUseSocksProxy.value) {
         SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
-        SectionDividerSpaced(maxTopPadding = true)
+        SectionDividerSpaced()
       } else {
         SectionDividerSpaced(maxBottomPadding = false)
       }
@@ -487,7 +487,7 @@ fun SocksProxySettings(
       UseOnionHostsDescription(onionHosts)
       SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
 
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
       SectionView(stringResource(MR.strings.network_proxy_auth)) {
         PreferenceToggle(
@@ -518,7 +518,7 @@ fun SocksProxySettings(
       }
       SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
 
-      SectionDividerSpaced(maxBottomPadding = false, maxTopPadding = true)
+      SectionDividerSpaced()
 
       SectionView {
         SectionItemView({

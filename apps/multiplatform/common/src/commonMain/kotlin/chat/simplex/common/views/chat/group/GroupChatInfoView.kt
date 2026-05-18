@@ -677,7 +677,7 @@ fun ModalData.GroupChatInfoLayout(
         else if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs
         else MR.strings.only_chat_owners_can_change_prefs
       SectionTextFooter(stringResource(footerId))
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionDividerSpaced()
 
       SectionView {
         if (!groupInfo.useRelays) {
@@ -699,7 +699,7 @@ fun ModalData.GroupChatInfoLayout(
         ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
       }
       SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
+      SectionDividerSpaced()
 
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
         SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
@@ -755,7 +755,7 @@ fun ModalData.GroupChatInfoLayout(
     }
     item {
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        SectionDividerSpaced()
       }
       SectionView {
         if (groupInfo.useRelays && (groupInfo.isOwner || activeSortedMembers.any { it.memberRole == GroupMemberRole.Relay })) {

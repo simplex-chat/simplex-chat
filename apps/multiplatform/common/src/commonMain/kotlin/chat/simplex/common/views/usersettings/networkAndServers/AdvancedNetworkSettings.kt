@@ -234,7 +234,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
       }
       SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
       SectionView(stringResource(MR.strings.network_session_mode_transport_isolation)) {
         SessionModePicker(sessionMode, showModal, updateSessionMode)
@@ -251,7 +251,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         if (smpWebPortServers.value == SMPWebPortServers.Preset) stringResource(MR.strings.network_smp_web_port_preset_footer)
         else String.format(stringResource(MR.strings.network_smp_web_port_footer), if (smpWebPortServers.value == SMPWebPortServers.All) "443" else "5223")
       )
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
       SectionView(stringResource(MR.strings.network_option_tcp_connection)) {
         SectionItemView {

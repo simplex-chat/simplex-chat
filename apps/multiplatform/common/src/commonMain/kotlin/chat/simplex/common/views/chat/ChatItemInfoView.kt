@@ -286,7 +286,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   fun HistoryTab() {
     ColumnWithScrollBar {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
+      SectionDividerSpaced()
       val versions = ciInfo.itemVersions
       if (versions.isNotEmpty()) {
         SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -311,7 +311,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   fun QuoteTab(qi: CIQuote) {
     ColumnWithScrollBar {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
+      SectionDividerSpaced()
       SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
@@ -325,7 +325,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   fun ForwardedFromTab(forwardedFromItem: AChatItem) {
     ColumnWithScrollBar {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
+      SectionDividerSpaced()
       SectionView {
         Text(stringResource(if (local) MR.strings.saved_from_chat_item_info_title else MR.strings.forwarded_from_chat_item_info_title),
           style = MaterialTheme.typography.h2,
@@ -388,7 +388,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
     ColumnWithScrollBar {
       Details()
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
+      SectionDividerSpaced()
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)
       if (mss.isNotEmpty()) {
         SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {

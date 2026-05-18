@@ -310,7 +310,7 @@ private fun UserAddressLayout(
             CreateOneTimeLinkButton()
           }
 
-          SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+          SectionDividerSpaced()
           SectionView {
             LearnMoreButton(learnMore)
           }
@@ -359,7 +359,7 @@ private fun UserAddressLayout(
             }
           }
 
-          SectionDividerSpaced(maxTopPadding = addressSettingsState.value.businessAddress)
+          SectionDividerSpaced()
           SectionView(generalGetString(MR.strings.or_to_share_privately)) {
             CreateOneTimeLinkButton()
           }
@@ -518,7 +518,7 @@ private fun ModalData.UserAddressSettings(
         ) {
           AutoReplyEditor(addressSettingsState)
         }
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        SectionDividerSpaced()
 
         SectionView {
           saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {

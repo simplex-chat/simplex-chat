@@ -184,7 +184,7 @@ fun DatabaseLayout(
           }
         }
       )
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
     }
     val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
     if (chatModel.localUserCreated.value == true) {
@@ -200,7 +200,7 @@ fun DatabaseLayout(
         RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
       if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
     }
 
     SectionView(stringResource(MR.strings.chat_database_section)) {

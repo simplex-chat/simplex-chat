@@ -186,33 +186,33 @@ private fun GroupPreferencesLayout(
         SectionDividerSpaced(maxBottomPadding = false)
       }
       TimedMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       DirectMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       FullDeletePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       ReactionsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       VoicePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       FilesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       SimplexLinksPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       ReportsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       HistoryPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       SupportPreference(disabled = true)
     } else {
       TimedMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       FullDeletePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       ReactionsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       HistoryPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       SupportPreference(notice = generalGetString(MR.strings.chat_with_admins_relay_note), onEnable = { revert ->
         AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.enable_chats_with_admins_question),
@@ -225,7 +225,7 @@ private fun GroupPreferencesLayout(
       })
     }
     if (groupInfo.isOwner) {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionDividerSpaced()
       val saveTextId = if (groupInfo.useRelays) MR.strings.save_and_notify_channel_subscribers
         else MR.strings.save_and_notify_group_members
       ResetSaveButtons(
