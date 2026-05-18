@@ -110,7 +110,7 @@ Older owner clients parse the unknown tag as `XUnknown` (default branch at 1134)
 
 1. **Trigger** — relay's `APILeaveGroup` sets `relay_own_status = 'rejected'` on the relay's local `groups` row for the channel.
 2. **Signal** — empty-payload `x.grp.relay.reject` over the owner-relay direct contact channel.
-3. **Owner handling** — `GroupRelay` transitions `RSInvited → RSRejected`; final. Cleared only by the relay operator running `/relay allow <groupId>`.
+3. **Owner handling** — `GroupRelay` transitions `RSInvited → RSRejected`; final. Cleared only by the relay operator running `/group allow <groupId>`.
 4. **Limitations** — (a) older owner clients log a CONF parse error and leave their `GroupRelay` at `RSInvited` indefinitely (same UX as a relay that doesn't respond); (b) older relay binaries do not enforce refusal — mixed-version deployments where some relays are old behave asymmetrically.
 
 ## 5. Owner-side state
@@ -178,7 +178,7 @@ Parser entries (`src/Simplex/Chat/Library/Commands.hs:5033+`). `GroupId = Int64`
 
 ```haskell
 "/_relay allow " *> (APIAllowRelayGroup <$> A.decimal),
-"/relay allow "  *> (APIAllowRelayGroup <$> A.decimal),
+"/group allow "  *> (APIAllowRelayGroup <$> A.decimal),
 ```
 
 Handler:
@@ -277,11 +277,11 @@ Kotlin/Android/desktop port is a separate PR.
 All tests use the existing channel harness and block on chat events, not `threadDelay`.
 
 - **`testRelayRefuseAfterLeave`** — relay1 leaves; owner re-adds; owner blocks on `CEvtGroupRelayUpdated`; assert owner `relayStatus == RSRejected`, member `GSMemRejected`, channel link data excludes relay1. Also assert relay's `groups.relay_own_status = 'rejected'`. Deterministic delivery check for the sync-accept-then-delete path.
-- **`testRelayAllowAcceptsAgain`** — operator runs `/relay allow <groupId>`; relay's `groups.relay_own_status` becomes `'inactive'`; owner re-adds; relay reaches `RSActive` on a fresh `GroupRelay` row.
+- **`testRelayAllowAcceptsAgain`** — operator runs `/group allow <groupId>`; relay's `groups.relay_own_status` becomes `'inactive'`; owner re-adds; relay reaches `RSActive` on a fresh `GroupRelay` row.
 - **`testRelayDoesNotRefuseUnrelatedChannel`** — relay1 leaves channel A; owner of unrelated channel B issues `XGrpRelayInv`; relay1 accepts B; only A's `groups` row has `relay_own_status = 'rejected'`.
 - **`testRelayRefuseRaceConcurrentInvitations`** — owner sends two `XGrpRelayInv` for the same channel concurrently after the relay has left; both refuse; relay's `groups` table acquires no placeholder row for the second invitation (both lookups match the same rejected row).
 - **`testRelayForwardCompatOldOwner`** — owner's `chatVersionRange` excludes `x.grp.relay.reject`; relay refuses; owner emits `messageError` and the GroupRelay row stays at `RSInvited`; no crash.
-- **`testRelayDeleteRejectedBlocked`** — relay1 leaves channel A; operator runs `/d #A`; deletion fails with the guard error from §7.1; channel still exists; operator runs `/relay allow <groupId>` then `/d #A`; deletion succeeds.
+- **`testRelayDeleteRejectedBlocked`** — relay1 leaves channel A; operator runs `/d #A`; deletion fails with the guard error from §7.1; channel still exists; operator runs `/group allow <groupId>` then `/d #A`; deletion succeeds.
 - **`testRelayRejectSurvivesOwnerRemoveRelayMember`** — relay1 leaves channel A (sets `RSRejected`); owner sends `XGrpMemDel` removing relay1; assert relay's `groups.relay_own_status` is still `'rejected'`, not flipped to `'inactive'`. Covers the §2 tightening of `xGrpMemDel` at Subscriber.hs:3132.
 - **`testNonOwnerXGrpRelayRejectIgnored`** — owner-side negative case: deliver an `XGrpRelayReject` CONF on a connection where either `memberRole' membership /= GROwner` or the sender member is not `isRelay`; assert the owner emits `messageError` and neither the GroupRelay row nor the member status changes.
 

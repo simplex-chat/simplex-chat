@@ -82,7 +82,7 @@ When a relay operator removes the relay from a channel, the relay marks the chan
 
 3. **Owner handling.** The owner marks the corresponding relay as rejected and notifies the operator UI. The owner also sets the relay member's status to `GSMemLeft` so the UI treats the rejected relay identically to one that ran `/leave`. The owner's next user-initiated relay addition for the same channel creates a fresh invitation, which the relay rejects again unless the rejection has been cleared.
 
-4. **Clear.** The relay operator runs `/relay allow <groupId>` to clear the rejection for the channel. After the next user-initiated relay addition, the relay accepts the invitation and rejoins as a relay.
+4. **Clear.** The relay operator runs `/group allow <groupId>` to clear the rejection for the channel. After the next user-initiated relay addition, the relay accepts the invitation and rejoins as a relay.
 
 An older owner client that does not recognise `x.grp.relay.reject` ignores the message and leaves the relay invitation in an invited state indefinitely — the same end state as a relay that does not respond. An older relay binary does not enforce rejection; in mixed-version deployments the operator can re-run `/leave` under the new binary to re-establish rejection.
 

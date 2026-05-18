@@ -5052,7 +5052,7 @@ chatCommandP =
       "/_relay test " *> (APITestChatRelay <$> A.decimal <* A.space <*> strP),
       "/relay test " *> (TestChatRelay <$> strP),
       "/_relay allow #" *> (APIAllowRelayGroup <$> A.decimal),
-      "/relay allow #" *> (AllowRelayGroup <$> displayNameP),
+      "/group allow #" *> (AllowRelayGroup <$> displayNameP),
       "/relays " *> (SetUserChatRelays <$> chatRelaysP),
       "/relays" $> GetUserChatRelays,
       "/_operators" $> APIGetServerOperators,

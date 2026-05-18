@@ -152,7 +152,7 @@ Owner sees relay status from `apiGetGroupRelays`; non-owner sees connection stat
 |---|---|
 | Relay link info row | Shown when `member.relayLink` exists, displays `hostFromRelayLink(link)` |
 | Relay address info row | Shown when `groupRelay?.userChatRelay.address` exists, with "Share relay address" button |
-| Status row (rejected) | Shown when `groupRelay?.relayStatus == RelayStatus.RsRejected`: "Status: rejected by relay operator". The relay rejected the invitation to rejoin this channel after a prior `/leave`; the owner-side `GroupMember.memberStatus` is also set to `MemLeft` so the relay renders identically to one that explicitly left. Clearable only by the relay operator running `/relay allow #<channel>`. |
+| Status row (rejected) | Shown when `groupRelay?.relayStatus == RelayStatus.RsRejected`: "Status: rejected by relay operator". The relay rejected the invitation to rejoin this channel after a prior `/leave`; the owner-side `GroupMember.memberStatus` is also set to `MemLeft` so the relay renders identically to one that explicitly left. Clearable only by the relay operator running `/group allow #<channel>`. |
 
 ## Source Files
 

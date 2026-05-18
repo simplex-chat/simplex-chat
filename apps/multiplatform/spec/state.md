@@ -311,7 +311,7 @@ data class ChatStats(
 | `RsAccepted` | `"accepted"` | Accepted, link-data update pending |
 | `RsActive` | `"active"` | Listed in channel link data; forwarding |
 | `RsInactive` | `"inactive"` | No longer in link data or backend reports it removed |
-| `RsRejected` | `"rejected"` | Relay sent `XGrpRelayReject` for the channel link; final on the owner side. Clearable only by the relay operator running `/relay allow #<channel>`. The owner-side `GroupMember.memberStatus` is also set to `MemLeft` so the relay renders identically to one that explicitly left (`MemRejected` is reserved for the knocking-admission flow). |
+| `RsRejected` | `"rejected"` | Relay sent `XGrpRelayReject` for the channel link; final on the owner side. Clearable only by the relay operator running `/group allow #<channel>`. The owner-side `GroupMember.memberStatus` is also set to `MemLeft` so the relay renders identically to one that explicitly left (`MemRejected` is reserved for the knocking-admission flow). |
 
 The `text` extension on the enum returns the localized status string (resource key `relay_status_*`, with `relay_status_rejected` = "rejected").
 

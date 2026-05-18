@@ -9480,7 +9480,7 @@ testChannelRelayLeave ps =
               threadDelay 100000
               bob ##> "/leave #team"
               bob <## "#team: you left the group (future invitations will be rejected)"
-              bob <## "use /relay allow #team to allow future invitations"
+              bob <## "use /group allow #team to allow future invitations"
               bob <## "use /d #team to delete the group (also clears the rejection)"
               concurrentlyN_
                 [ alice <## "#team: bob left the group (signed)",
@@ -9504,7 +9504,7 @@ testChannelRelayLeave ps =
               threadDelay 100000
               cath ##> "/leave #team"
               cath <## "#team: you left the group (future invitations will be rejected)"
-              cath <## "use /relay allow #team to allow future invitations"
+              cath <## "use /group allow #team to allow future invitations"
               cath <## "use /d #team to delete the group (also clears the rejection)"
               concurrentlyN_
                 [ alice <## "#team: cath left the group (signed)",
@@ -9877,7 +9877,7 @@ testChannelRemoveLeftRelay ps =
           concurrentlyN_
             [ do
                 bob <## "#team: you left the group (future invitations will be rejected)"
-                bob <## "use /relay allow #team to allow future invitations"
+                bob <## "use /group allow #team to allow future invitations"
                 bob <## "use /d #team to delete the group (also clears the rejection)",
               alice <## "#team: bob left the group (signed)",
               dan <## "#team: bob left the group (signed)"
@@ -9907,7 +9907,7 @@ testChannelRemoveLeftRelay ps =
           concurrentlyN_
             [ do
                 cath <## "#team: you left the group (future invitations will be rejected)"
-                cath <## "use /relay allow #team to allow future invitations"
+                cath <## "use /group allow #team to allow future invitations"
                 cath <## "use /d #team to delete the group (also clears the rejection)",
               alice <## "#team: cath left the group (signed)",
               dan <## "#team: cath left the group (signed)"
@@ -9974,7 +9974,7 @@ testRelayRejectAfterLeave ps =
         -- DJRelayRemoved job, then has no relay to forward subsequent messages.
         bob ##> "/leave #team"
         bob <## "#team: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #team to allow future invitations"
+        bob <## "use /group allow #team to allow future invitations"
         bob <## "use /d #team to delete the group (also clears the rejection)"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
@@ -10040,7 +10040,7 @@ testRelayAllowAcceptsAgain ps =
 
         bob ##> "/leave #team"
         bob <## "#team: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #team to allow future invitations"
+        bob <## "use /group allow #team to allow future invitations"
         bob <## "use /d #team to delete the group (also clears the rejection)"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
@@ -10053,7 +10053,7 @@ testRelayAllowAcceptsAgain ps =
         (cath </)
 
         -- /_relay allow flips bob's row from 'rejected' to 'inactive'
-        bob ##> "/relay allow #team"
+        bob ##> "/group allow #team"
         bob <## "#team: relay rejection cleared"
         bobClearStatus <- queryRelayOwnStatus bob 1
         bobClearStatus `shouldBe` Just "inactive"
@@ -10111,7 +10111,7 @@ testRelayDoesNotRejectUnrelatedChannel ps =
 
         bob ##> "/leave #teama"
         bob <## "#teama: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #teama to allow future invitations"
+        bob <## "use /group allow #teama to allow future invitations"
         bob <## "use /d #teama to delete the group (also clears the rejection)"
         alice <## "#teama: bob left the group (signed)"
         threadDelay 100000
@@ -10154,7 +10154,7 @@ testRelayRejectRaceConcurrentInvitations ps =
 
         bob ##> "/leave #team"
         bob <## "#team: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #team to allow future invitations"
+        bob <## "use /group allow #team to allow future invitations"
         bob <## "use /d #team to delete the group (also clears the rejection)"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",

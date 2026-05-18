@@ -356,7 +356,7 @@ Navigates to relay list view with role-based branches:
 
 ### Relay Rejection Surface
 
-When a relay operator runs `/leave #channel`, the relay sends `x.grp.relay.reject` over the owner-relay direct contact channel. Owner-side handling: the corresponding `GroupRelay.relayStatus` transitions `RSInvited → RSRejected`; the relay's `GroupMember.memberStatus` is set to `.memLeft` so the owner UI renders the rejected relay identically to one that explicitly ran `/leave` (`.memRejected` is reserved for the knocking-admission flow). The transition surfaces through `CEvtGroupRelayUpdated`. In `GroupMemberInfoView`, an additional `Status: rejected by relay operator` info row appears when `groupRelay?.relayStatus == .rsRejected`. The status is final on the owner side — clearable only by the relay operator running `/relay allow #<channel>`, which has no owner-facing event.
+When a relay operator runs `/leave #channel`, the relay sends `x.grp.relay.reject` over the owner-relay direct contact channel. Owner-side handling: the corresponding `GroupRelay.relayStatus` transitions `RSInvited → RSRejected`; the relay's `GroupMember.memberStatus` is set to `.memLeft` so the owner UI renders the rejected relay identically to one that explicitly ran `/leave` (`.memRejected` is reserved for the knocking-admission flow). The transition surfaces through `CEvtGroupRelayUpdated`. In `GroupMemberInfoView`, an additional `Status: rejected by relay operator` info row appears when `groupRelay?.relayStatus == .rsRejected`. The status is final on the owner side — clearable only by the relay operator running `/group allow #<channel>`, which has no owner-facing event.
 
 ### Leave Button Logic
 

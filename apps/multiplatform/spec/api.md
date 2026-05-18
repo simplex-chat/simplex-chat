@@ -352,7 +352,7 @@ Events handled in `processReceivedMsg` include:
 | `DeletedMember` / `DeletedMemberUser` | A member was removed |
 | `LeftMember` | A member left voluntarily |
 | `GroupUpdated` | Group profile changed |
-| `GroupRelayUpdated` | Owner-side: a relay's `relayStatus` and/or the member's status changed. Fires on `XGrpRelayReject` with `relayStatus = RsRejected` and `GroupMember.memberStatus = MemLeft` — final on owner side until cleared by the relay operator's `/relay allow #<channel>` (no event emitted to the owner for that clear). |
+| `GroupRelayUpdated` | Owner-side: a relay's `relayStatus` and/or the member's status changed. Fires on `XGrpRelayReject` with `relayStatus = RsRejected` and `GroupMember.memberStatus = MemLeft` — final on owner side until cleared by the relay operator's `/group allow #<channel>` (no event emitted to the owner for that clear). |
 | `MemberRole` | A member's role changed |
 | `MemberBlockedForAll` | A member was blocked for all |
 | `RcvFileStart` / `RcvFileComplete` / `RcvFileError` | File receive progress |
