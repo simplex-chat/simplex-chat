@@ -224,7 +224,7 @@ private fun ModalData.NewChatSheetLayout(
         }
       }
       if (deletedChats.isNotEmpty()) {
-        SectionDividerSpaced(maxBottomPadding = false)
+        SectionDividerSpaced()
         SectionView {
           SectionItemView(
             click = {
@@ -325,7 +325,7 @@ private fun ModalData.NewChatSheetLayout(
       item {
         when {
           filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty() -> {
-            SectionDividerSpaced(maxBottomPadding = false)
+            SectionDividerSpaced()
             SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {
               filteredContactChats.forEachIndexed { index, chat ->
                 val nextChatSelected = remember(chat.id, filteredContactChats) {
