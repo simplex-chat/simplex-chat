@@ -2900,4 +2900,9 @@
     <string name="tray_tooltip_unread">SimpleX — %d ungelesen</string>
     <string name="error_deleting_message">Fehler beim Löschen der Nachricht</string>
     <string name="from_history">Aus dem Nachrichtenverlauf</string>
+    <string name="another_instance_title">App ist bereits gestartet</string>
+    <string name="another_instance_not_responding">App ist eventuell schon gestartet oder wurde nicht richtig beendet. Trotzdem starten?</string>
+    <string name="relay_status_rejected">Abgelehnt</string>
+    <string name="member_info_status">Status</string>
+    <string name="member_info_relay_status_rejected_by_operator">Vom Relais-Betreiber abgelehnt</string>
 </resources>
