@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
@@ -97,21 +96,19 @@ private fun GroupWelcomeLayout(
     AppBarTitle(stringResource(MR.strings.group_welcome_title))
     val wt = rememberSaveable { welcomeText }
     if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
-      SectionView(contentPadding = PaddingValues(vertical = DEFAULT_PADDING_HALF)) {
-        if (editMode.value) {
-          val focusRequester = remember { FocusRequester() }
-          TextEditor(
-            wt,
-            Modifier.height(140.dp), stringResource(MR.strings.enter_welcome_message),
-            focusRequester = focusRequester
-          )
-          LaunchedEffect(Unit) {
-            delay(300)
-            focusRequester.requestFocus()
-          }
-        } else {
-          TextPreview(wt.value, linkMode)
+      if (editMode.value) {
+        val focusRequester = remember { FocusRequester() }
+        TextEditor(
+          wt,
+          Modifier.height(140.dp), stringResource(MR.strings.enter_welcome_message),
+          focusRequester = focusRequester
+        )
+        LaunchedEffect(Unit) {
+          delay(300)
+          focusRequester.requestFocus()
         }
+      } else {
+        TextPreview(wt.value, linkMode)
       }
       SectionTextFooter(
         if (!welcomeTextFitsLimit(wt)) { generalGetString(MR.strings.message_too_large) } else "",
@@ -120,17 +117,15 @@ private fun GroupWelcomeLayout(
 
       Spacer(Modifier.size(8.dp))
 
-      SectionView {
-        ChangeModeButton(
-          editMode.value,
-          click = {
-            editMode.value = !editMode.value
-          },
-          wt.value.isEmpty()
-        )
-        val clipboard = LocalClipboardManager.current
-        CopyTextButton { clipboard.setText(AnnotatedString(wt.value)) }
-      }
+      ChangeModeButton(
+        editMode.value,
+        click = {
+          editMode.value = !editMode.value
+        },
+        wt.value.isEmpty()
+      )
+      val clipboard = LocalClipboardManager.current
+      CopyTextButton { clipboard.setText(AnnotatedString(wt.value)) }
 
       SectionDividerSpaced(maxBottomPadding = false)
 
@@ -140,12 +135,8 @@ private fun GroupWelcomeLayout(
       )
     } else {
       val clipboard = LocalClipboardManager.current
-      SectionView(contentPadding = PaddingValues(vertical = DEFAULT_PADDING_HALF)) {
-        TextPreview(wt.value, linkMode)
-      }
-      SectionView {
-        CopyTextButton { clipboard.setText(AnnotatedString(wt.value)) }
-      }
+      TextPreview(wt.value, linkMode)
+      CopyTextButton { clipboard.setText(AnnotatedString(wt.value)) }
     }
     SectionBottomSpacer()
   }
