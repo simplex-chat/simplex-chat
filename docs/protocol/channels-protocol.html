@@ -872,6 +872,23 @@ window.addEventListener('click',(e)=>{
 </li>
 </ol>
 <p>The announce is an optimisation. When it does not reach a subscriber — because the channel had no subscribers at announce time, because an older client or relay sits in the path, or because of a transient network failure — the subscriber reaches the same end state on the next channel open via its relay sync against the channel's link data.</p>
+<h3 id="relay-rejection" tabindex="-1">Relay rejection</h3>
+<p>When a relay operator removes the relay from a channel, the relay marks the channel as rejected and refuses future invitations from the same channel link:</p>
+<ol>
+<li>
+<p><strong>Leave.</strong> The relay operator runs <code>/leave #channel</code>. The relay marks the channel as rejected locally, keyed by the channel's short link.</p>
+</li>
+<li>
+<p><strong>Refuse.</strong> When the owner later sends <code>x.grp.relay.inv</code> for the same channel link — typically from a re-invitation — the relay does not accept the invitation as a relay. Instead it replies with <code>x.grp.relay.reject</code> over the owner-relay direct contact channel, carrying a rejection reason. The current reason is <code>rejoin_rejected</code>; older relays or future reasons fall through to an unknown reason for forward compatibility.</p>
+</li>
+<li>
+<p><strong>Owner handling.</strong> The owner marks the corresponding relay as rejected and notifies the operator UI. The owner also sets the relay member's status to <code>GSMemLeft</code> so the UI treats the rejected relay identically to one that ran <code>/leave</code>. The owner's next user-initiated relay addition for the same channel creates a fresh invitation, which the relay rejects again unless the rejection has been cleared.</p>
+</li>
+<li>
+<p><strong>Clear.</strong> The relay operator runs <code>/group allow &lt;groupId&gt;</code> to clear the rejection for the channel. After the next user-initiated relay addition, the relay accepts the invitation and rejoins as a relay.</p>
+</li>
+</ol>
+<p>An older owner client that does not recognise <code>x.grp.relay.reject</code> ignores the message and leaves the relay invitation in an invited state indefinitely — the same end state as a relay that does not respond. An older relay binary does not enforce rejection; in mixed-version deployments the operator can re-run <code>/leave</code> under the new binary to re-establish rejection.</p>
 <h3 id="subscriber-connection" tabindex="-1">Subscriber connection</h3>
 <p>A subscriber joins a channel through the following flow:</p>
 <ol>
