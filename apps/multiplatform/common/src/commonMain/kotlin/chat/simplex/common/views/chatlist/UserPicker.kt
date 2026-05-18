@@ -1,9 +1,6 @@
 package chat.simplex.common.views.chatlist
 
-import SectionDivider
-import SectionDividerSpaced
 import SectionItemView
-import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -144,7 +141,7 @@ fun UserPicker(
 
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val iconColor = MaterialTheme.colors.secondaryVariant
-  val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else canvasColorForCurrentTheme()
+  val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface
   PlatformUserPicker(
     modifier = Modifier
       .height(IntrinsicSize.Min)
@@ -212,19 +209,14 @@ fun UserPicker(
           )
         }
       } else if (currentUser != null) {
-        Spacer(Modifier.height(DEFAULT_PADDING))
-        SectionView {
-          SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 10.dp, end = DEFAULT_PADDING), disabled = stopped) {
-            ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
-          }
+        SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
         }
-        SectionDividerSpaced()
       }
     }
 
     @Composable
-    fun SecondSectionBody() {
-      val inactiveUsers = users.filter { !it.user.activeUser }
+    fun SecondSection() {
       UserPickerOptionRow(
         painterResource(MR.images.ic_qr_code),
         if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
@@ -240,17 +232,23 @@ fun UserPicker(
         }),
         disabled = stopped
       )
-      if (appPlatform.isDesktop && inactiveUsers.isNotEmpty()) {
-        Column(modifier = Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
-          UserPickerUsersSection(
-            users = inactiveUsers,
-            iconColor = iconColor,
-            onUserClicked = onUserClicked,
-            stopped = stopped
-          )
+      if (appPlatform.isDesktop) {
+        Divider(Modifier.padding(DEFAULT_PADDING))
+
+        val inactiveUsers = users.filter { !it.user.activeUser }
+
+        if (inactiveUsers.isNotEmpty()) {
+          Column(modifier = Modifier.padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)) {
+            UserPickerUsersSection(
+              users = inactiveUsers,
+              iconColor = iconColor,
+              onUserClicked = onUserClicked,
+              stopped = stopped
+            )
+          }
         }
-        SectionDivider()
       }
+
       if (chatModel.desktopNoUserNoRemote) {
         UserPickerOptionRow(
           painterResource(MR.images.ic_manage_accounts),
@@ -307,13 +305,11 @@ fun UserPicker(
     if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
       Column {
         FirstSection()
-        SectionView {
-          SecondSectionBody()
-          GlobalSettingsBody(
-            userPickerState = userPickerState,
-            setPerformLA = setPerformLA,
-          )
-        }
+        SecondSection()
+        GlobalSettingsSection(
+          userPickerState = userPickerState,
+          setPerformLA = setPerformLA,
+        )
       }
     } else {
       Column {
@@ -321,18 +317,16 @@ fun UserPicker(
         Row {
           Box(Modifier.weight(1f)) {
             Column {
-              SectionView { SecondSectionBody() }
+              SecondSection()
             }
           }
           VerticalDivider()
           Box(Modifier.weight(1f)) {
             Column {
-              SectionView {
-                GlobalSettingsBody(
-                  userPickerState = userPickerState,
-                  setPerformLA = setPerformLA,
-                )
-              }
+              GlobalSettingsSection(
+                userPickerState = userPickerState,
+                setPerformLA = setPerformLA,
+              )
             }
           }
         }
@@ -351,7 +345,7 @@ fun userPickerAlpha(): Float {
 }
 
 @Composable
-private fun GlobalSettingsBody(
+private fun GlobalSettingsSection(
   userPickerState: MutableStateFlow<AnimatedViewState>,
   setPerformLA: (Boolean) -> Unit,
 ) {
@@ -389,7 +383,8 @@ private fun GlobalSettingsBody(
       ModalManager.start.showModalCloseable { close ->
         SettingsView(chatModel, setPerformLA, close)
       }
-    }
+    },
+    padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
   ) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
@@ -485,7 +480,7 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
 
 @Composable
 fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
-  SectionItemView(click, disabled = disabled) {
+  SectionItemView(click, disabled = disabled, extraPadding = appPlatform.isDesktop) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
     TextIconSpaced()
     Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else Color.Unspecified)

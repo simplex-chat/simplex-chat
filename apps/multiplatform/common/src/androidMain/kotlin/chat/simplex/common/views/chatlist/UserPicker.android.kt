@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import CARD_PADDING
 import SectionItemView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.Orientation
@@ -51,7 +50,7 @@ actual fun UserPickerUsersSection(
         Row(
           modifier = Modifier.horizontalScroll(scrollState),
         ) {
-          Spacer(Modifier.width(CARD_PADDING))
+          Spacer(Modifier.width(DEFAULT_PADDING))
           Row(horizontalArrangement = Arrangement.spacedBy(USER_PICKER_ROW_PADDING)) {
             users.forEach { u ->
               UserPickerUserBox(u, stopped, modifier = Modifier.userBoxWidth(u.user, users.size, screenWidthDp)) {
@@ -63,7 +62,7 @@ actual fun UserPickerUsersSection(
               }
             }
           }
-          Spacer(Modifier.width(CARD_PADDING))
+          Spacer(Modifier.width(DEFAULT_PADDING))
         }
       }
     }
@@ -220,10 +219,10 @@ private fun Modifier.draggableBottomDrawerModifier(
 
 private fun Modifier.userBoxWidth(user: User, totalUsers: Int, windowWidth: Dp): Modifier {
   return if (totalUsers == 1) {
-    this.width(windowWidth - CARD_PADDING * 2)
+    this.width(windowWidth - DEFAULT_PADDING * 2)
   } else if (user.activeUser) {
-    this.width(windowWidth - CARD_PADDING - (USER_PICKER_ROW_PADDING * 3) - USER_PICKER_IMAGE_SIZE)
+    this.width(windowWidth - DEFAULT_PADDING - (USER_PICKER_ROW_PADDING * 3) - USER_PICKER_IMAGE_SIZE)
   } else {
-    this.widthIn(max = (windowWidth - (CARD_PADDING * 2)) * 0.618f)
+    this.widthIn(max = (windowWidth - (DEFAULT_PADDING * 2)) * 0.618f)
   }
 }
