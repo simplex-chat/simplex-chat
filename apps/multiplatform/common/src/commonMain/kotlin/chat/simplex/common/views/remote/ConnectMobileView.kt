@@ -213,7 +213,6 @@ private fun ConnectMobileViewLayout(
         }
       }
 
-
       if (deviceName != null || sessionCode != null) {
         SectionView(stringResource(MR.strings.connected_mobile)) {
           SelectionContainer {
