@@ -2,7 +2,6 @@ package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
 import SectionItemView
-import SectionView
 import SectionViewWithButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -236,63 +235,61 @@ fun GroupLinkLayout(
             } else null) {
           SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
         }
-        SectionView {
-          if (!isChannel && groupLink.shouldBeUpgraded) {
-            SettingsActionItem(
-              painterResource(MR.images.ic_add),
-              stringResource(MR.strings.upgrade_group_link),
-              click = { showAddShortLinkAlert(null) },
-              iconColor = MaterialTheme.colors.primary,
-              textColor = MaterialTheme.colors.primary,
-            )
-          }
-          val clipboard = LocalClipboardManager.current
+        if (!isChannel && groupLink.shouldBeUpgraded) {
           SettingsActionItem(
-            painterResource(MR.images.ic_share),
-            stringResource(MR.strings.share_link),
-            click = {
-              if (!isChannel && groupLink.shouldBeUpgraded) {
-                showAddShortLinkAlert {
-                  clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
-                }
-              } else {
+            painterResource(MR.images.ic_add),
+            stringResource(MR.strings.upgrade_group_link),
+            click = { showAddShortLinkAlert(null) },
+            iconColor = MaterialTheme.colors.primary,
+            textColor = MaterialTheme.colors.primary,
+          )
+        }
+        val clipboard = LocalClipboardManager.current
+        SettingsActionItem(
+          painterResource(MR.images.ic_share),
+          stringResource(MR.strings.share_link),
+          click = {
+            if (!isChannel && groupLink.shouldBeUpgraded) {
+              showAddShortLinkAlert {
                 clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
               }
+            } else {
+              clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
+            }
+          },
+          iconColor = MaterialTheme.colors.primary,
+          textColor = MaterialTheme.colors.primary,
+        )
+        if (shareGroupInfo != null && isChannel) {
+          SettingsActionItem(
+            painterResource(MR.images.ic_forward),
+            stringResource(MR.strings.share_via_chat),
+            click = {
+              chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
+              chatModel.chatId.value = null
+              ModalManager.closeAllModalsEverywhere()
             },
             iconColor = MaterialTheme.colors.primary,
             textColor = MaterialTheme.colors.primary,
           )
-          if (shareGroupInfo != null && isChannel) {
-            SettingsActionItem(
-              painterResource(MR.images.ic_forward),
-              stringResource(MR.strings.share_via_chat),
-              click = {
-                chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
-                chatModel.chatId.value = null
-                ModalManager.closeAllModalsEverywhere()
-              },
-              iconColor = MaterialTheme.colors.primary,
-              textColor = MaterialTheme.colors.primary,
-            )
-          }
-          if (!creatingGroup && !isChannel) {
-            SettingsActionItem(
-              painterResource(MR.images.ic_delete),
-              stringResource(MR.strings.delete_link),
-              click = deleteLink,
-              iconColor = Color.Red,
-              textColor = Color.Red,
-            )
-          }
-          if (creatingGroup && close != null) {
-            SettingsActionItem(
-              painterResource(MR.images.ic_check),
-              stringResource(MR.strings.continue_to_next_step),
-              click = close,
-              iconColor = MaterialTheme.colors.primary,
-              textColor = MaterialTheme.colors.primary,
-            )
-          }
+        }
+        if (!creatingGroup && !isChannel) {
+          SettingsActionItem(
+            painterResource(MR.images.ic_delete),
+            stringResource(MR.strings.delete_link),
+            click = deleteLink,
+            iconColor = Color.Red,
+            textColor = Color.Red,
+          )
+        }
+        if (creatingGroup && close != null) {
+          SettingsActionItem(
+            painterResource(MR.images.ic_check),
+            stringResource(MR.strings.continue_to_next_step),
+            click = close,
+            iconColor = MaterialTheme.colors.primary,
+            textColor = MaterialTheme.colors.primary,
+          )
         }
       }
     }
