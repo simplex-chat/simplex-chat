@@ -27,7 +27,7 @@ import kotlin.math.max
 @Composable
 private fun defaultProfileIconColor(): Color =
   if (CurrentColors.value.base == DefaultTheme.LIGHT)
-    MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.91f)
+    MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
   else
     MaterialTheme.colors.secondaryVariant
 
