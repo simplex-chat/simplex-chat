@@ -69,7 +69,7 @@ Both `ChatModel.users` (a `SnapshotStateList<UserInfo>` from `mutableStateListOf
 |---|---|
 | `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/DesktopApp.kt` | Replace `title = "SimpleX"` (line 130) with a `title = title` parameter computed from a `derivedStateOf { … }` block immediately above the `Window(…)` call. `MsgFilter` is reachable via the existing wildcard `import chat.simplex.common.model.*` (line 16); no new import is needed because we qualify the enum constants (`MsgFilter.All`, etc.). |
 
-That is the only file changed. The two file-chooser dialog titles (`DesktopApp.kt:136, 147, 158`) and the developer Terminal window title (line 213) remain as-is per the spec's scope.
+That is the only file changed. The three file-chooser dialog titles (`DesktopApp.kt:156, 167, 178`) remain `"SimpleX"`; the developer Terminal window (line 233) continues to use its localized `chat_console` string resource. Both are out of scope per the spec.
 
 No new resources, no new strings, no `build.gradle.kts` change, no `commonMain` change, no Android-side change.
 
