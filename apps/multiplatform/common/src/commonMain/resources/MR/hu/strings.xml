@@ -2795,4 +2795,9 @@
     <string name="appearance_minimize_to_tray">Kicsinyítés az értesítési területre az ablak bezárásakor</string>
     <string name="error_deleting_message">Hiba történt az üzenet törlésekor</string>
     <string name="from_history">Az előzményekből</string>
+    <string name="member_info_status">Állapot</string>
+    <string name="relay_status_rejected">elutasítva</string>
+    <string name="member_info_relay_status_rejected_by_operator">elutasítva az átjátszó üzemeltetője által</string>
+    <string name="another_instance_title">Az alkalmazás fut</string>
+    <string name="another_instance_not_responding">Lehet, hogy egy másik alkalmazáspéldány fut, vagy nem zárult be megfelelően. Így is elindítja?</string>
 </resources>
