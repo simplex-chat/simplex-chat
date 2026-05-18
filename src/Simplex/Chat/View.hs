@@ -227,7 +227,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
     | relayOwnStatus g == Just RSRejected ->
         ttyUser u
           [ ttyGroup' g <> ": you left the group (future invitations will be rejected)",
-            "use " <> highlight ("/relay allow #" <> viewGroupName g) <> " then " <> highlight ("/d #" <> viewGroupName g) <> " to delete the group"
+            "use " <> highlight ("/relay allow #" <> viewGroupName g) <> " to allow future invitations",
+            "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the group (also clears the rejection)"
           ]
     | otherwise -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g signed -> ttyUser u [ttyGroup' g <> ": you deleted the group" <> signedStr signed]

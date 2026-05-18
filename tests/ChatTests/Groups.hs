@@ -277,7 +277,6 @@ chatGroupTests = do
         it "operator allow clears rejection and relay accepts again" testRelayAllowAcceptsAgain
         it "rejection on channel A does not affect unrelated channel B" testRelayDoesNotRejectUnrelatedChannel
         it "concurrent fresh invitations both rejected" testRelayRejectRaceConcurrentInvitations
-        it "deleting a rejected channel is blocked until operator allow" testRelayDeleteRejectedBlocked
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -9481,7 +9480,8 @@ testChannelRelayLeave ps =
               threadDelay 100000
               bob ##> "/leave #team"
               bob <## "#team: you left the group (future invitations will be rejected)"
-              bob <## "use /relay allow #team then /d #team to delete the group"
+              bob <## "use /relay allow #team to allow future invitations"
+              bob <## "use /d #team to delete the group (also clears the rejection)"
               concurrentlyN_
                 [ alice <## "#team: bob left the group (signed)",
                   -- cath: not notified (relays not connected, owner doesn't forward)
@@ -9504,7 +9504,8 @@ testChannelRelayLeave ps =
               threadDelay 100000
               cath ##> "/leave #team"
               cath <## "#team: you left the group (future invitations will be rejected)"
-              cath <## "use /relay allow #team then /d #team to delete the group"
+              cath <## "use /relay allow #team to allow future invitations"
+              cath <## "use /d #team to delete the group (also clears the rejection)"
               concurrentlyN_
                 [ alice <## "#team: cath left the group (signed)",
                   dan <## "#team: cath left the group (signed)",
@@ -9876,7 +9877,8 @@ testChannelRemoveLeftRelay ps =
           concurrentlyN_
             [ do
                 bob <## "#team: you left the group (future invitations will be rejected)"
-                bob <## "use /relay allow #team then /d #team to delete the group",
+                bob <## "use /relay allow #team to allow future invitations"
+                bob <## "use /d #team to delete the group (also clears the rejection)",
               alice <## "#team: bob left the group (signed)",
               dan <## "#team: bob left the group (signed)"
             ]
@@ -9905,7 +9907,8 @@ testChannelRemoveLeftRelay ps =
           concurrentlyN_
             [ do
                 cath <## "#team: you left the group (future invitations will be rejected)"
-                cath <## "use /relay allow #team then /d #team to delete the group",
+                cath <## "use /relay allow #team to allow future invitations"
+                cath <## "use /d #team to delete the group (also clears the rejection)",
               alice <## "#team: cath left the group (signed)",
               dan <## "#team: cath left the group (signed)"
             ]
@@ -9971,7 +9974,8 @@ testRelayRejectAfterLeave ps =
         -- DJRelayRemoved job, then has no relay to forward subsequent messages.
         bob ##> "/leave #team"
         bob <## "#team: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #team then /d #team to delete the group"
+        bob <## "use /relay allow #team to allow future invitations"
+        bob <## "use /d #team to delete the group (also clears the rejection)"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
             cath <## "#team: bob left the group (signed)"
@@ -10036,7 +10040,8 @@ testRelayAllowAcceptsAgain ps =
 
         bob ##> "/leave #team"
         bob <## "#team: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #team then /d #team to delete the group"
+        bob <## "use /relay allow #team to allow future invitations"
+        bob <## "use /d #team to delete the group (also clears the rejection)"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
             cath <## "#team: bob left the group (signed)"
@@ -10106,7 +10111,8 @@ testRelayDoesNotRejectUnrelatedChannel ps =
 
         bob ##> "/leave #teama"
         bob <## "#teama: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #teama then /d #teama to delete the group"
+        bob <## "use /relay allow #teama to allow future invitations"
+        bob <## "use /d #teama to delete the group (also clears the rejection)"
         alice <## "#teama: bob left the group (signed)"
         threadDelay 100000
 
@@ -10148,7 +10154,8 @@ testRelayRejectRaceConcurrentInvitations ps =
 
         bob ##> "/leave #team"
         bob <## "#team: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #team then /d #team to delete the group"
+        bob <## "use /relay allow #team to allow future invitations"
+        bob <## "use /d #team to delete the group (also clears the rejection)"
         concurrentlyN_
           [ alice <## "#team: bob left the group (signed)",
             cath <## "#team: bob left the group (signed)"
@@ -10187,55 +10194,6 @@ testRelayRejectRaceConcurrentInvitations ps =
         checkRelayGroupCount bob 1
         finalStatuses <- listRelayOwnStatuses bob
         finalStatuses `shouldBe` [(1, "rejected")]
-
-testRelayDeleteRejectedBlocked :: HasCallStack => TestParams -> IO ()
-testRelayDeleteRejectedBlocked ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
-      withNewTestChat ps "cath" cathProfile $ \cath -> do
-        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
-        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
-        threadDelay 100000
-
-        -- baseline: subscriber receives forwarded messages via the active relay
-        alice #> "#team hello"
-        bob <# "#team> hello"
-        cath <# "#team> hello [>>]"
-
-        bob ##> "/leave #team"
-        bob <## "#team: you left the group (future invitations will be rejected)"
-        bob <## "use /relay allow #team then /d #team to delete the group"
-        concurrentlyN_
-          [ alice <## "#team: bob left the group (signed)",
-            cath <## "#team: bob left the group (signed)"
-          ]
-        threadDelay 100000
-
-        bobStatus <- queryRelayOwnStatus bob 1
-        bobStatus `shouldBe` Just "rejected"
-
-        -- no active relay → subscriber stops receiving
-        alice #> "#team after leave"
-        (cath </)
-
-        bob ##> "/d #team"
-        bob <## "bad chat command: cannot delete a rejected channel; run /relay allow #<channel> first"
-
-        stillRejected <- queryRelayOwnStatus bob 1
-        stillRejected `shouldBe` Just "rejected"
-
-        bob ##> "/relay allow #team"
-        bob <## "#team: relay rejection cleared"
-
-        bobInactive <- queryRelayOwnStatus bob 1
-        bobInactive `shouldBe` Just "inactive"
-
-        bob ##> "/d #team"
-        bob <## "#team: you deleted the group"
-
-        -- after bob deletes his copy, subscriber still has no relay forwarding to it
-        alice #> "#team after delete"
-        (cath </)
 
 testChannelCreateDeletedRelay :: HasCallStack => TestParams -> IO ()
 testChannelCreateDeletedRelay ps =
