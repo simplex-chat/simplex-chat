@@ -72,6 +72,20 @@ When the owner adds a relay to an existing channel:
 
 The announce is an optimisation. When it does not reach a subscriber — because the channel had no subscribers at announce time, because an older client or relay sits in the path, or because of a transient network failure — the subscriber reaches the same end state on the next channel open via its relay sync against the channel's link data.
 
+### Relay rejection
+
+When a relay operator removes the relay from a channel, the relay marks the channel as rejected and refuses future invitations from the same channel link:
+
+1. **Leave.** The relay operator runs `/leave #channel`. The relay marks the channel as rejected locally, keyed by the channel's short link.
+
+2. **Refuse.** When the owner later sends `x.grp.relay.inv` for the same channel link — typically from a re-invitation — the relay does not accept the invitation as a relay. Instead it replies with `x.grp.relay.reject` over the owner-relay direct contact channel, carrying a rejection reason. The current reason is `rejoin_rejected`; older relays or future reasons fall through to an unknown reason for forward compatibility.
+
+3. **Owner handling.** The owner marks the corresponding relay as rejected and notifies the operator UI. The owner also sets the relay member's status to `GSMemLeft` so the UI treats the rejected relay identically to one that ran `/leave`. The owner's next user-initiated relay addition for the same channel creates a fresh invitation, which the relay rejects again unless the rejection has been cleared.
+
+4. **Clear.** The relay operator runs `/group allow <groupId>` to clear the rejection for the channel. After the next user-initiated relay addition, the relay accepts the invitation and rejoins as a relay.
+
+An older owner client that does not recognise `x.grp.relay.reject` ignores the message and leaves the relay invitation in an invited state indefinitely — the same end state as a relay that does not respond. An older relay binary does not enforce rejection; in mixed-version deployments the operator can re-run `/leave` under the new binary to re-establish rejection.
+
 ### Subscriber connection
 
 A subscriber joins a channel through the following flow:

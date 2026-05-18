@@ -281,7 +281,7 @@ struct AddChannelView: View {
 
     private func progressStepView(_ gInfo: GroupInfo) -> some View {
         let failedCount = groupRelays.filter { relayMemberConnFailed($0) != nil }.count
-        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
+        let activeCount = groupRelays.filter { $0.relayStatus == .active && relayMemberConnFailed($0) == nil }.count
         let total = groupRelays.count
         return List {
             Group {
@@ -376,7 +376,7 @@ struct AddChannelView: View {
         .onChange(of: channelRelaysModel.groupRelays) { relays in
             guard channelRelaysModel.groupId == gInfo.groupId else { return }
             groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
-            if relays.allSatisfy({ $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }) {
+            if relays.allSatisfy({ $0.relayStatus == .active && relayMemberConnFailed($0) == nil }) {
                 showLinkStep = true
                 channelRelaysModel.reset()
             }
@@ -433,7 +433,7 @@ struct AddChannelView: View {
     }
 
     private func showCancelChannelAlert(_ gInfo: GroupInfo) {
-        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
+        let activeCount = groupRelays.filter { $0.relayStatus == .active && relayMemberConnFailed($0) == nil }.count
         let total = groupRelays.count
         showAlert(
             NSLocalizedString("Cancel creating channel?", comment: "alert title"),
@@ -486,8 +486,14 @@ func chatRelayDisplayName(_ relay: UserChatRelay) -> String {
 
 func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false, memberStatus: GroupMemberStatus? = nil) -> some View {
     let removed = memberStatus.map { [.memLeft, .memRemoved, .memGroupDeleted].contains($0) } ?? false
-    let color: Color = connFailed || removed ? .red : (status == .rsActive ? .green : .yellow)
-    let text: LocalizedStringKey = connFailed ? "failed" : memberStatus == .memLeft ? "removed by operator" : removed ? "removed" : status.text
+    let isRejected = status == .rejected
+    let color: Color = connFailed || removed || isRejected ? .red : (status == .active ? .green : .yellow)
+    let text: LocalizedStringKey =
+        connFailed ? "failed"
+        : isRejected ? "rejected"
+        : memberStatus == .memLeft ? "removed by operator"
+        : removed ? "removed"
+        : status.text
     return HStack(spacing: 4) {
         Circle()
             .fill(color)

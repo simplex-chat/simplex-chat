@@ -2011,7 +2011,7 @@ private fun ownerRelayState(chat: Chat, chatModel: ChatModel): OwnerRelayState? 
     relay to chatModel.groupMembers.value.firstOrNull { it.groupMemberId == relay.groupMemberId }
   }
   val removedCount = relayMembers.count { (_, m) -> relayMemberRemoved(m?.memberStatus) }
-  val activeCount = relayMembers.count { (relay, m) -> !relayMemberRemoved(m?.memberStatus) && relay.relayStatus == RelayStatus.RsActive && m?.activeConn?.connFailedErr == null }
+  val activeCount = relayMembers.count { (relay, m) -> !relayMemberRemoved(m?.memberStatus) && relay.relayStatus == RelayStatus.Active && m?.activeConn?.connFailedErr == null }
   val failedCount = relayMembers.count { (_, m) -> !relayMemberRemoved(m?.memberStatus) && m?.activeConn?.connFailedErr != null }
   val noActiveRelays = activeCount == 0 && (failedCount + removedCount) == relays.size
   return OwnerRelayState(relays, activeCount, failedCount, removedCount, noActiveRelays)

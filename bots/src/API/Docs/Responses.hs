@@ -73,6 +73,7 @@ chatResponsesDocsData =
     ("CRGroupRelays", ""),
     ("CRGroupRelaysAdded", ""),
     ("CRGroupRelaysAddFailed", ""),
+    ("CRRelayGroupAllowed", "Relay rejection cleared for a channel"),
     ("CRGroupMembers", ""),
     ("CRGroupUpdated", ""),
     ("CRGroupsList", "Groups"),

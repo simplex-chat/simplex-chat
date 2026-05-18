@@ -494,6 +494,12 @@ data GroupInfo = GroupInfo
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
 
+relayServesGroup :: GroupInfo -> Bool
+relayServesGroup GroupInfo {relayOwnStatus} = case relayOwnStatus of
+  Just RSInactive -> False
+  Just RSRejected -> False
+  _ -> True
+
 publicGroupEditor :: GroupInfo -> GroupMember -> Bool
 publicGroupEditor gInfo mem = useRelays' gInfo && memberRole' mem >= GRModerator
 
@@ -916,6 +922,26 @@ instance FromJSON GroupRejectionReason where
   parseJSON = strParseJSON "GroupRejectionReason"
 
 instance ToJSON GroupRejectionReason where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+data RelayRejectionReason
+  = RRRRejoinRejected
+  | RRRUnknown {text :: Text}
+  deriving (Eq, Show)
+
+instance StrEncoding RelayRejectionReason where
+  strEncode = \case
+    RRRRejoinRejected -> "rejoin_rejected"
+    RRRUnknown text -> encodeUtf8 text
+  strP =
+    "rejoin_rejected" $> RRRRejoinRejected
+    <|> RRRUnknown . safeDecodeUtf8 <$> A.takeByteString
+
+instance FromJSON RelayRejectionReason where
+  parseJSON = strParseJSON "RelayRejectionReason"
+
+instance ToJSON RelayRejectionReason where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
