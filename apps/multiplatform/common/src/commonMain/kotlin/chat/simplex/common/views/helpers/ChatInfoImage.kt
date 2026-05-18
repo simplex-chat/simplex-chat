@@ -25,9 +25,21 @@ import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
 
 @Composable
+// Default placeholder color for avatars rendered against a SectionView card
+// (white on LIGHT). 0.91 mix lands ~#E8, sitting 23 units below the white card —
+// visible without dominating.
 fun defaultProfileIconColor(): Color =
   if (CurrentColors.value.base == DefaultTheme.LIGHT)
-    MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+    MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.91f)
+  else
+    MaterialTheme.colors.secondaryVariant
+
+// Variant for avatars rendered directly on the off-white canvas (chat list,
+// members list outside a card). 0.85 mix lands ~#D9, sitting 23 units below
+// the ~#F0 canvas — same absolute contrast as the card variant achieves on white.
+fun defaultProfileIconColorOnCanvas(): Color =
+  if (CurrentColors.value.base == DefaultTheme.LIGHT)
+    MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.85f)
   else
     MaterialTheme.colors.secondaryVariant
 
