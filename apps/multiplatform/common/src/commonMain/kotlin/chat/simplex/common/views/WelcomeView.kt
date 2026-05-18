@@ -155,7 +155,6 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           }
           ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
         }
-        Spacer(Modifier.height(DEFAULT_PADDING))
         SectionView {
           SettingsActionItem(
             painterResource(MR.images.ic_check),
