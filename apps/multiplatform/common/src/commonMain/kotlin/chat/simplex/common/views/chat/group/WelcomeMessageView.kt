@@ -118,7 +118,7 @@ private fun GroupWelcomeLayout(
         color = if (welcomeTextFitsLimit(wt)) MaterialTheme.colors.secondary else Color.Red
       )
 
-      SectionDividerSpaced()
+      Spacer(Modifier.size(8.dp))
 
       SectionView {
         ChangeModeButton(
@@ -143,7 +143,6 @@ private fun GroupWelcomeLayout(
       SectionView(contentPadding = PaddingValues(vertical = DEFAULT_PADDING_HALF)) {
         TextPreview(wt.value, linkMode)
       }
-      SectionDividerSpaced()
       SectionView {
         CopyTextButton { clipboard.setText(AnnotatedString(wt.value)) }
       }

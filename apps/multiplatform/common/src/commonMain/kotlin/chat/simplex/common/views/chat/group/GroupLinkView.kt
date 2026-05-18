@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionView
 import SectionViewWithButton
@@ -237,7 +236,6 @@ fun GroupLinkLayout(
             } else null) {
           SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
         }
-        SectionDividerSpaced()
         SectionView {
           if (!isChannel && groupLink.shouldBeUpgraded) {
             SettingsActionItem(
