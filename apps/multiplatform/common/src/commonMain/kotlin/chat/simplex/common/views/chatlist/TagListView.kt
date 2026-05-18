@@ -3,7 +3,6 @@ package chat.simplex.common.views.chatlist
 import SectionCustomFooter
 import SectionDivider
 import SectionItemView
-import SectionView
 import TextIconSpaced
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.*
@@ -265,13 +264,11 @@ fun ModalData.TagListEditor(
         trimmedName.value.isEmpty() ||
         isDuplicateEmojiOrName.value
 
-    SectionView {
-      SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled) {
-        Text(
-          generalGetString(if (chat != null) MR.strings.add_to_list else MR.strings.save_list),
-          color = if (disabled) colors.secondary else colors.primary
-        )
-      }
+    SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled) {
+      Text(
+        generalGetString(if (chat != null) MR.strings.add_to_list else MR.strings.save_list),
+        color = if (disabled) colors.secondary else colors.primary
+      )
     }
     val showErrorMessage = isDuplicateEmojiOrName.value && saving.value != false
     SectionCustomFooter {
