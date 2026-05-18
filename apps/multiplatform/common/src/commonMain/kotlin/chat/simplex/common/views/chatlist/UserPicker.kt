@@ -218,7 +218,34 @@ fun UserPicker(
     }
 
     @Composable
-    fun ProfilesOptionRow() {
+    fun SecondSectionBody() {
+      val inactiveUsers = users.filter { !it.user.activeUser }
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_qr_code),
+        if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
+        showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
+      )
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_toggle_on),
+        stringResource(MR.strings.chat_preferences),
+        click = if (stopped) null else ({
+          showCustomModal { m, close ->
+            PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
+          }()
+        }),
+        disabled = stopped
+      )
+      if (appPlatform.isDesktop && inactiveUsers.isNotEmpty()) {
+        Column(modifier = Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
+          UserPickerUsersSection(
+            users = inactiveUsers,
+            iconColor = iconColor,
+            onUserClicked = onUserClicked,
+            stopped = stopped
+          )
+        }
+        SectionDivider()
+      }
       if (chatModel.desktopNoUserNoRemote) {
         UserPickerOptionRow(
           painterResource(MR.images.ic_manage_accounts),
@@ -270,38 +297,6 @@ fun UserPicker(
           disabled = stopped
         )
       }
-    }
-
-    @Composable
-    fun SecondSectionBody() {
-      val inactiveUsers = users.filter { !it.user.activeUser }
-      UserPickerOptionRow(
-        painterResource(MR.images.ic_qr_code),
-        if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
-        showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
-      )
-      UserPickerOptionRow(
-        painterResource(MR.images.ic_toggle_on),
-        stringResource(MR.strings.chat_preferences),
-        click = if (stopped) null else ({
-          showCustomModal { m, close ->
-            PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
-          }()
-        }),
-        disabled = stopped
-      )
-      if (appPlatform.isDesktop && inactiveUsers.isNotEmpty()) {
-        Column(modifier = Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
-          UserPickerUsersSection(
-            users = inactiveUsers,
-            iconColor = iconColor,
-            onUserClicked = onUserClicked,
-            stopped = stopped
-          )
-        }
-        SectionDivider()
-      }
-      ProfilesOptionRow()
     }
 
     if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
