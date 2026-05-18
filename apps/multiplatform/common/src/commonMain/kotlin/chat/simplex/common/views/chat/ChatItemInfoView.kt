@@ -4,7 +4,6 @@ import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
-import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -249,7 +248,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   @Composable
   fun Details() {
     AppBarTitle(stringResource(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message))
-    SectionView {
+    Column {
       InfoRow(stringResource(if (!ci.localNote) MR.strings.info_row_sent_at else MR.strings.info_row_created_at), localTimestamp(ci.meta.itemTs))
       if (!sent) {
         InfoRow(stringResource(MR.strings.info_row_received_at), localTimestamp(ci.meta.createdAt))
@@ -289,14 +288,14 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionDividerSpaced()
       val versions = ciInfo.itemVersions
       if (versions.isNotEmpty()) {
-        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.edit_history), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
           versions.forEachIndexed { i, ciVersion ->
             ItemVersionView(ciVersion, current = i == 0)
           }
         }
       } else {
-        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(MR.strings.no_history), color = MaterialTheme.colors.secondary)
           }
@@ -312,7 +311,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     ColumnWithScrollBar {
       Details()
       SectionDividerSpaced()
-      SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
       }
@@ -326,7 +325,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     ColumnWithScrollBar {
       Details()
       SectionDividerSpaced()
-      SectionView {
+      Column {
         Text(stringResource(if (local) MR.strings.saved_from_chat_item_info_title else MR.strings.forwarded_from_chat_item_info_title),
           style = MaterialTheme.typography.h2,
           modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING))
@@ -391,14 +390,14 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionDividerSpaced()
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)
       if (mss.isNotEmpty()) {
-        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.delivery), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
           mss.forEach { (member, status, sentViaProxy) ->
             MemberDeliveryStatusView(member, status, sentViaProxy)
           }
         }
       } else {
-        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(MR.strings.no_info_on_delivery), color = MaterialTheme.colors.secondary)
           }
@@ -442,7 +441,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     return numTabs
   }
 
-  Column {
+  Column(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
     if (numTabs() > 1) {
       Box(
         Modifier
