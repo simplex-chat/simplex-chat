@@ -167,26 +167,22 @@ private fun UserProfilesLayout(
   Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
   ColumnWithScrollBar {
     if (profileHidden.value) {
-      SectionView {
-        SettingsActionItem(painterResource(MR.images.ic_lock_open_right), stringResource(MR.strings.enter_password_to_show), click = {
-          profileHidden.value = false
-        })
-      }
+      SettingsActionItem(painterResource(MR.images.ic_lock_open_right), stringResource(MR.strings.enter_password_to_show), click = {
+        profileHidden.value = false
+      })
       SectionSpacer()
     }
     AppBarTitle(stringResource(MR.strings.your_chat_profiles), hostDevice(remember { chatModel.remoteHostId() }))
 
-    SectionView {
-      for (user in filteredUsers) {
-        UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
-        SectionDivider()
-      }
-      if (searchTextOrPassword.value.trim().isEmpty()) {
-        SectionItemView(addUser, minHeight = 68.dp) {
-          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
-          Spacer(Modifier.padding(horizontal = 4.dp))
-          Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)
-        }
+    for (user in filteredUsers) {
+      UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
+      SectionDivider()
+    }
+    if (searchTextOrPassword.value.trim().isEmpty()) {
+      SectionItemView(addUser, minHeight = 68.dp) {
+        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)
       }
     }
     SectionTextFooter(stringResource(MR.strings.tap_to_activate_profile))
