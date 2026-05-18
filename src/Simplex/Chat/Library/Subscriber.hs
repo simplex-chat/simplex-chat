@@ -1553,7 +1553,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           rejected <- withStore' $ \db -> isRelayGroupRejected db user groupLink
           initialDelay <- asks $ initialInterval . relayRequestRetryInterval . config
           if rejected
-            then rejectRelayInvitation user uclId vr groupRelayInv invId chatVRange initialDelay RRRRejoinRejected
+            then rejectRelayInvitationAsync user uclId vr groupRelayInv invId chatVRange initialDelay RRRRejoinRejected
             else do
               (_gInfo, _ownerMember) <- withStore $ \db ->
                 createRelayRequestGroup db vr user groupRelayInv invId chatVRange initialDelay GSMemAccepted RSInvited
