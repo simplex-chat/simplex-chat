@@ -25,7 +25,7 @@ import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
 
 @Composable
-fun defaultProfileIconColor(): Color =
+private fun defaultProfileIconColor(): Color =
   if (CurrentColors.value.base == DefaultTheme.LIGHT)
     MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
   else
