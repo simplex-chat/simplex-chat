@@ -718,13 +718,15 @@ fun ModalData.GroupChatInfoLayout(
               MemberListSearchRowView(searchText)
             }
           }
-          SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-            MemberRow(groupInfo.membership, user = true)
-          }
         }
       }
     }
     if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
+      item {
+        SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+          MemberRow(groupInfo.membership, user = true)
+        }
+      }
       items(filteredMembers.value, key = { it.groupMemberId }) { member ->
         val showMenu = remember(member.groupMemberId) { mutableStateOf(false) }
         val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
