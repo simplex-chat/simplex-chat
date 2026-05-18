@@ -645,7 +645,7 @@ private fun SingleOperatorUsageConditionsView(
     )
   }
 
-  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.surface).padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(String.format(stringResource(MR.strings.use_servers_of_operator_x), operator.tradeName), enableAlphaChanges = false, withPadding = false)
     if (operator.conditionsAcceptance is ConditionsAcceptance.Accepted) {
       // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted

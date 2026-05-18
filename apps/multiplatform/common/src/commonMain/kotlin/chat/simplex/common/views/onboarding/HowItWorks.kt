@@ -23,7 +23,7 @@ import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
-  Column(Modifier.fillMaxSize().padding(horizontal = if (appPlatform.isDesktop) DEFAULT_PADDING * 2 else DEFAULT_PADDING)) {
+  Column(Modifier.fillMaxSize().background(MaterialTheme.colors.surface).padding(horizontal = if (appPlatform.isDesktop) DEFAULT_PADDING * 2 else DEFAULT_PADDING)) {
     Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
     val paraPadding = PaddingValues(bottom = if (appPlatform.isDesktop) 10.dp else 12.dp)
     Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {

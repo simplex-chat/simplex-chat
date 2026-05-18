@@ -22,6 +22,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
@@ -777,7 +778,7 @@ fun UsageConditionsView(
     }
   }
 
-  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.surface).padding(horizontal = DEFAULT_PADDING)) {
     when (val conditionsAction = chatModel.conditions.value.conditionsAction) {
       is UsageConditionsAction.Review -> {
         AppBarTitle(stringResource(MR.strings.operator_updated_conditions), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)

@@ -138,7 +138,7 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
 
   val v = versionDescriptions[currentVersion.value]
 
-  ModalView(close = close) {
+  ModalView(close = close, background = MaterialTheme.colors.surface) {
     ColumnWithScrollBar(
       Modifier
         .padding(horizontal = DEFAULT_PADDING),
