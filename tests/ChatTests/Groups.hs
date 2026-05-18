@@ -296,7 +296,7 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
-    fdescribe "channel comments" $ do
+    describe "channel comments" $ do
       it "subscriber should comment on channel post" testChannelCommentSubscriberCanComment
       it "should reject comment in non-channel group" testChannelCommentNotInRegularGroup
       it "should reject comment when comments disabled on post" testChannelCommentDisabledRejected
