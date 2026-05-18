@@ -2831,4 +2831,9 @@
     <string name="tray_show">Mostra SimpleX</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="tray_tooltip_unread">SimpleX — %d non letto/i</string>
+    <string name="another_instance_not_responding">Un\'altra istanza dell\'app potrebbe essere in esecuzione o non si è chiusa correttamente. Avviare comunque?</string>
+    <string name="another_instance_title">L\'app è già in esecuzione</string>
+    <string name="relay_status_rejected">rifiutato</string>
+    <string name="member_info_relay_status_rejected_by_operator">rifiutato dall\'operatore del relay</string>
+    <string name="member_info_status">Stato</string>
 </resources>
