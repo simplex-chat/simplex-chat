@@ -1571,8 +1571,8 @@
     <string name="rcv_group_event_member_unblocked">feloldotta %s letiltását</string>
     <string name="snd_group_event_member_unblocked">Ön feloldotta %s letiltását</string>
     <string name="member_info_member_blocked">letiltva</string>
-    <string name="blocked_by_admin_item_description">letiltva az adminisztrátor által</string>
-    <string name="member_blocked_by_admin">Letiltva az adminisztrátor által</string>
+    <string name="blocked_by_admin_item_description">az adminisztrátor letiltotta</string>
+    <string name="member_blocked_by_admin">Az adminisztrátor letiltotta</string>
     <string name="rcv_group_event_member_blocked">letiltotta őt: %s</string>
     <string name="block_for_all">Letiltás</string>
     <string name="block_for_all_question">Az összes tag számára letiltja a tagot?</string>
@@ -2270,7 +2270,7 @@
     <string name="group_reports_member_reports">Tagok jelentései</string>
     <string name="group_reports_active_one">1 jelentés</string>
     <string name="chat_list_group_reports">Jelentések</string>
-    <string name="report_item_archived_by">%s által archivált jelentés</string>
+    <string name="report_item_archived_by">%s archiválta a jelentést</string>
     <string name="group_reports_active">%d jelentés</string>
     <string name="blocking_reason_spam">Kéretlen tartalom</string>
     <string name="blocking_reason_content">A tartalom sérti a használati feltételeket</string>
@@ -2382,7 +2382,7 @@
     <string name="snd_group_event_member_accepted">Ön befogadta ezt a tagot</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Befogadás tagként</string>
     <string name="rcv_group_event_member_accepted">befogadta őt: %1$s</string>
-    <string name="reviewed_by_admins">áttekintve a moderátorok által</string>
+    <string name="reviewed_by_admins">a moderátorok áttekintették</string>
     <string name="cant_send_message_generic">nem lehet üzeneteket küldeni</string>
     <string name="cant_send_message_contact_disabled">partner letiltva</string>
     <string name="cant_send_message_group_deleted">csoport törölve</string>
@@ -2797,7 +2797,7 @@
     <string name="from_history">Az előzményekből</string>
     <string name="member_info_status">Állapot</string>
     <string name="relay_status_rejected">elutasítva</string>
-    <string name="member_info_relay_status_rejected_by_operator">elutasítva az átjátszó üzemeltetője által</string>
-    <string name="another_instance_title">Az alkalmazás fut</string>
+    <string name="member_info_relay_status_rejected_by_operator">az átjátszó üzemeltetője elutasította</string>
+    <string name="another_instance_title">Az alkalmazás már fut</string>
     <string name="another_instance_not_responding">Lehet, hogy egy másik alkalmazáspéldány fut, vagy nem zárult be megfelelően. Így is elindítja?</string>
 </resources>
