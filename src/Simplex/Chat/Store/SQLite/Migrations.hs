@@ -154,6 +154,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260403_item_viewed
 import Simplex.Chat.Store.SQLite.Migrations.M20260407_channel_comments
 import Simplex.Chat.Store.SQLite.Migrations.M20260429_relay_request_retries
 import Simplex.Chat.Store.SQLite.Migrations.M20260507_relay_inactive_at
+import Simplex.Chat.Store.SQLite.Migrations.M20260514_relay_request_group_link_index
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -307,7 +308,8 @@ schemaMigrations =
     ("20260403_item_viewed", m20260403_item_viewed, Just down_m20260403_item_viewed),
     ("20260407_channel_comments", m20260407_channel_comments, Just down_m20260407_channel_comments),
     ("20260429_relay_request_retries", m20260429_relay_request_retries, Just down_m20260429_relay_request_retries),
-    ("20260507_relay_inactive_at", m20260507_relay_inactive_at, Just down_m20260507_relay_inactive_at)
+    ("20260507_relay_inactive_at", m20260507_relay_inactive_at, Just down_m20260507_relay_inactive_at),
+    ("20260514_relay_request_group_link_index", m20260514_relay_request_group_link_index, Just down_m20260514_relay_request_group_link_index)
   ]
 
 -- | The list of migrations in ascending order by date

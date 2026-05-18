@@ -417,10 +417,10 @@ A **channel** is a group with `groupInfo.useRelays == true`. These types support
 
 | Type | Kind | Description | Line |
 |------|------|-------------|------|
-| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive` | [L2659](../SimpleXChat/ChatTypes.swift#L2659) |
-| `RelayStatus.text` | `extension` | Localized display text: New/Invited/Accepted/Active | [L2730](../SimpleXChat/ChatTypes.swift#L2730) |
-| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status). Fetched at runtime via `apiGetGroupRelays` (owner only) | [L2721](../SimpleXChat/ChatTypes.swift#L2721) |
-| `UserChatRelay` | `struct` | User's chat relay configuration (ID, SMP address, name, domains, preset/tested/enabled/deleted flags) | [L2674](../SimpleXChat/ChatTypes.swift#L2674) |
+| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive`, `.rsInactive`, `.rsRejected` | [L2659](../SimpleXChat/ChatTypes.swift#L2659) |
+| `RelayStatus.text` | `extension` | Localized display text: New/Invited/Accepted/Active/Inactive/Rejected | [L2731](../SimpleXChat/ChatTypes.swift#L2731) |
+| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status). Fetched at runtime via `apiGetGroupRelays` (owner only) | [L2722](../SimpleXChat/ChatTypes.swift#L2722) |
+| `UserChatRelay` | `struct` | User's chat relay configuration (ID, SMP address, name, domains, preset/tested/enabled/deleted flags) | [L2675](../SimpleXChat/ChatTypes.swift#L2675) |
 
 #### New Enum Cases
 

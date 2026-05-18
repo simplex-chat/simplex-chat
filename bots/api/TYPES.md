@@ -589,6 +589,7 @@ ChatBanner:
 - "broadcast"
 - "internal"
 - "internalMark"
+- "history"
 
 
 ---
@@ -3349,6 +3350,7 @@ ParseError:
 - "accepted"
 - "active"
 - "inactive"
+- "rejected"
 
 
 ---

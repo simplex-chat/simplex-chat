@@ -1213,14 +1213,14 @@ object ChatController {
   suspend fun apiDeleteChatItems(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemIds: List<Long>, mode: CIDeleteMode): List<ChatItemDeletion>? {
     val r = sendCmd(rh, CC.ApiDeleteChatItem(type, id, scope, itemIds, mode))
     if (r is API.Result && r.res is CR.ChatItemsDeleted) return r.res.chatItemDeletions
-    Log.e(TAG, "apiDeleteChatItem bad response: ${r.responseType} ${r.details}")
+    apiErrorAlert("apiDeleteChatItems", generalGetString(MR.strings.error_deleting_message), r)
     return null
   }
 
   suspend fun apiDeleteMemberChatItems(rh: Long?, groupId: Long, itemIds: List<Long>): List<ChatItemDeletion>? {
     val r = sendCmd(rh, CC.ApiDeleteMemberChatItem(groupId, itemIds))
     if (r is API.Result && r.res is CR.ChatItemsDeleted) return r.res.chatItemDeletions
-    Log.e(TAG, "apiDeleteMemberChatItem bad response: ${r.responseType} ${r.details}")
+    apiErrorAlert("apiDeleteMemberChatItems", generalGetString(MR.strings.error_deleting_message), r)
     return null
   }
 
@@ -8042,6 +8042,7 @@ data class AppSettings(
   var privacyAskToApproveRelays: Boolean? = null,
   var privacyAcceptImages: Boolean? = null,
   var privacyLinkPreviews: Boolean? = null,
+  var privacySanitizeLinks: Boolean? = null,
   var privacyChatListOpenLinks: PrivacyChatListOpenLinksMode? = null,
   var privacyShowChatPreviews: Boolean? = null,
   var privacySaveLastDraft: Boolean? = null,
@@ -8078,6 +8079,7 @@ data class AppSettings(
     if (privacyAskToApproveRelays != def.privacyAskToApproveRelays) { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
     if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
     if (privacyLinkPreviews != def.privacyLinkPreviews) { empty.privacyLinkPreviews = privacyLinkPreviews }
+    if (privacySanitizeLinks != def.privacySanitizeLinks) { empty.privacySanitizeLinks = privacySanitizeLinks }
     if (privacyChatListOpenLinks != def.privacyChatListOpenLinks) { empty.privacyChatListOpenLinks = privacyChatListOpenLinks }
     if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
     if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
@@ -8125,6 +8127,7 @@ data class AppSettings(
     privacyAskToApproveRelays?.let { def.privacyAskToApproveRelays.set(it) }
     privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
     privacyLinkPreviews?.let { def.privacyLinkPreviews.set(it) }
+    privacySanitizeLinks?.let { def.privacySanitizeLinks.set(it) }
     privacyChatListOpenLinks?.let { def.privacyChatListOpenLinks.set(it) }
     privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
     privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
@@ -8162,6 +8165,7 @@ data class AppSettings(
         privacyAskToApproveRelays = true,
         privacyAcceptImages = true,
         privacyLinkPreviews = true,
+        privacySanitizeLinks = false,
         privacyChatListOpenLinks = PrivacyChatListOpenLinksMode.ASK,
         privacyShowChatPreviews = true,
         privacySaveLastDraft = true,
@@ -8200,6 +8204,7 @@ data class AppSettings(
           privacyAskToApproveRelays = def.privacyAskToApproveRelays.get(),
           privacyAcceptImages = def.privacyAcceptImages.get(),
           privacyLinkPreviews = def.privacyLinkPreviews.get(),
+          privacySanitizeLinks = def.privacySanitizeLinks.get(),
           privacyChatListOpenLinks = def.privacyChatListOpenLinks.get(),
           privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
           privacySaveLastDraft = def.privacySaveLastDraft.get(),

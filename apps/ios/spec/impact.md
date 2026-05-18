@@ -63,7 +63,7 @@
 | Shared/Views/Chat/Group/ChannelRelaysView.swift | PC31 | Medium | Channel relay status list |
 | Shared/Views/Chat/Group/AddGroupMembersView.swift | PC14, PC16 | Medium | Member invitation flow |
 | Shared/Views/Chat/Group/GroupLinkView.swift | PC15 | Low | Group link creation/sharing |
-| Shared/Views/Chat/Group/GroupMemberInfoView.swift | PC3, PC14, PC16, PC30 | Medium | Member details and role management |
+| Shared/Views/Chat/Group/GroupMemberInfoView.swift | PC3, PC14, PC16, PC30, PC31 | Medium | Member details and role management; rejected-by-operator status row for relay members |
 | Shared/Views/NewChat/NewChatView.swift | PC12, PC31 | High | New connection creation — onramp for all contacts and channels |
 | Shared/Views/NewChat/QRCode.swift | PC12 | Low | QR code display/scanning utility |
 | Shared/Views/Call/ActiveCallView.swift | PC17 | Medium | Call UI rendering |

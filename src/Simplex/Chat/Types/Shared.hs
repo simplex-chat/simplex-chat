@@ -87,6 +87,7 @@ data RelayStatus
   | RSAccepted
   | RSActive
   | RSInactive
+  | RSRejected
   deriving (Eq, Show)
 
 relayStatusText :: RelayStatus -> Text
@@ -96,6 +97,7 @@ relayStatusText = \case
   RSAccepted -> "accepted"
   RSActive -> "active"
   RSInactive -> "inactive"
+  RSRejected -> "rejected"
 
 instance TextEncoding RelayStatus where
   textEncode = \case
@@ -104,12 +106,14 @@ instance TextEncoding RelayStatus where
     RSAccepted -> "accepted"
     RSActive -> "active"
     RSInactive -> "inactive"
+    RSRejected -> "rejected"
   textDecode = \case
     "new" -> Just RSNew
     "invited" -> Just RSInvited
     "accepted" -> Just RSAccepted
     "active" -> Just RSActive
     "inactive" -> Just RSInactive
+    "rejected" -> Just RSRejected
     _ -> Nothing
 
 instance FromField RelayStatus where fromField = fromTextField_ textDecode
@@ -117,6 +121,7 @@ instance FromField RelayStatus where fromField = fromTextField_ textDecode
 instance ToField RelayStatus where toField = toField . textEncode
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
+
 
 data MsgSigStatus = MSSVerified | MSSSignedNoKey
   deriving (Eq, Show)

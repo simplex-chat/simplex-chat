@@ -1,6 +1,6 @@
 import pytest
 
-from simplex_chat import Bot, BotCommand, BotProfile, Middleware, SqliteDb
+from simplex_chat import Bot, BotCommand, BotProfile, Client, Middleware, Profile, SqliteDb
 from simplex_chat.api import ChatApi
 
 
@@ -57,9 +57,9 @@ def test_command_keyword_tuple():
 
 
 def test_bot_profile_to_wire_default():
-    """use_bot_profile=True (default) sets peerType=bot and disables calls/voice."""
+    """Bot's profile wire-form sets peerType=bot and disables calls/voice."""
     bot = _bot()
-    p = bot._bot_profile_to_wire()
+    p = bot._profile_to_wire()
     assert p["displayName"] == "x"
     assert p.get("peerType") == "bot"
     prefs = p.get("preferences") or {}
@@ -74,7 +74,7 @@ def test_bot_profile_to_wire_allow_files():
         db=SqliteDb(file_prefix="/tmp/test"),
         allow_files=True,
     )
-    prefs = bot._bot_profile_to_wire().get("preferences") or {}
+    prefs = bot._profile_to_wire().get("preferences") or {}
     assert prefs.get("files", {}).get("allow") == "yes"
 
 
@@ -84,32 +84,26 @@ def test_bot_profile_to_wire_with_commands():
         db=SqliteDb(file_prefix="/tmp/test"),
         commands=[BotCommand(keyword="ping", label="Ping bot"), BotCommand("help", "Show help")],
     )
-    cmds = bot._bot_profile_to_wire().get("preferences", {}).get("commands") or []
+    cmds = bot._profile_to_wire().get("preferences", {}).get("commands") or []
     assert len(cmds) == 2
     assert cmds[0] == {"type": "command", "keyword": "ping", "label": "Ping bot"}
     assert cmds[1] == {"type": "command", "keyword": "help", "label": "Show help"}
 
 
-def test_bot_profile_to_wire_no_bot_profile():
-    bot = Bot(
-        profile=BotProfile(display_name="x"),
-        db=SqliteDb(file_prefix="/tmp/test"),
-        use_bot_profile=False,
-    )
-    p = bot._bot_profile_to_wire()
+def test_client_profile_to_wire_has_no_bot_extras():
+    """Client's wire profile has no peerType=bot, no command list, no calls/voice prefs.
+    That's the whole point of having Client as a separate class."""
+    c = Client(profile=Profile(display_name="x"), db=SqliteDb(file_prefix="/tmp/test"))
+    p = c._profile_to_wire()
+    assert p["displayName"] == "x"
     assert "peerType" not in p
     assert "preferences" not in p
 
 
-def test_commands_without_bot_profile_raises():
-    bot = Bot(
-        profile=BotProfile(display_name="x"),
-        db=SqliteDb(file_prefix="/tmp/test"),
-        use_bot_profile=False,
-        commands=[BotCommand("ping", "Ping bot")],
-    )
-    with pytest.raises(ValueError, match="use_bot_profile=False"):
-        bot._bot_profile_to_wire()
+def test_bot_profile_alias_is_profile():
+    """`BotProfile` is kept as an alias for backwards compatibility."""
+    assert BotProfile is Profile
+    assert BotProfile(display_name="x") == Profile(display_name="x")
 
 
 def test_dispatch_message_first_match_wins():

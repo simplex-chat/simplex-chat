@@ -527,6 +527,7 @@ export enum CIDeleteMode {
   Broadcast = "broadcast",
   Internal = "internal",
   InternalMark = "internalMark",
+  History = "history",
 }
 
 export type CIDeleted = CIDeleted.Deleted | CIDeleted.Blocked | CIDeleted.BlockedByAdmin | CIDeleted.Moderated
@@ -3750,6 +3751,7 @@ export enum RelayStatus {
   Accepted = "accepted",
   Active = "active",
   Inactive = "inactive",
+  Rejected = "rejected",
 }
 
 export enum ReportReason {

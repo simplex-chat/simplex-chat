@@ -53,11 +53,11 @@ extension ChatLike {
     }
 }
 
-public func filterChatsToForwardTo<C: ChatLike>(chats: [C]) -> [C] {
+public func filterChatsToForwardTo<C: ChatLike>(chats: [C], includeLocal: Bool = true) -> [C] {
     var filteredChats = chats.filter { c in
         c.chatInfo.chatType != .local && canForwardToChat(c.chatInfo)
     }
-    if let privateNotes = chats.first(where: { $0.chatInfo.chatType == .local }) {
+    if includeLocal, let privateNotes = chats.first(where: { $0.chatInfo.chatType == .local }) {
         filteredChats.insert(privateNotes, at: 0)
     }
     return filteredChats
