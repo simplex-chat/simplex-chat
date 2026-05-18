@@ -33,7 +33,7 @@ fun ModalData.NewServerView(
       rhId,
       close = close
     )
-  }) {
+  }, background = MaterialTheme.colors.surface) {
     Box {
       NewServerLayout(
         newServer,

@@ -377,7 +377,7 @@ fun ModalData.NewChatRelayView(
 
   ModalView(close = {
     addChatRelay(relayToEdit.value, userServers, serverErrors, serverWarnings, rhId, close)
-  }) {
+  }, background = MaterialTheme.colors.surface) {
     NewChatRelayLayout(relayToEdit)
   }
 }

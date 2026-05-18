@@ -6,6 +6,7 @@ import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -56,6 +57,7 @@ private fun HiddenProfileLayout(
   user: User,
   saveProfilePassword: (String) -> Unit
 ) {
+  Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.hide_profile))
     SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
@@ -81,5 +83,6 @@ private fun HiddenProfileLayout(
     }
     SectionTextFooter(stringResource(MR.strings.to_reveal_profile_enter_password))
     SectionBottomSpacer()
+  }
   }
 }

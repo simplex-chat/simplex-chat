@@ -66,6 +66,7 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
         else -> showUnsavedChangesAlert({ save(close) }, close)
       }
     },
+    background = MaterialTheme.colors.surface,
   ) {
     GroupWelcomeLayout(
       welcomeText,

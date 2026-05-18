@@ -257,7 +257,7 @@ private fun ProfileStepView(
     sheetState = bottomSheetModalState,
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
   ) {
-    ModalView(close = close) {
+    ModalView(close = close, background = MaterialTheme.colors.surface) {
       ColumnWithScrollBar {
         AppBarTitle(generalGetString(MR.strings.create_channel_title), bottomPadding = DEFAULT_PADDING_HALF)
         Row(
@@ -405,6 +405,7 @@ private fun ProgressStepView(
 
   ModalView(
     close = { showCancelAlert() },
+    background = MaterialTheme.colors.surface,
     showClose = false,
   ) {
     ColumnWithScrollBar {
@@ -569,7 +570,7 @@ private fun LinkStepView(
       }
     }
   }
-  ModalView(close = close, showClose = false) {
+  ModalView(close = close, background = MaterialTheme.colors.surface, showClose = false) {
     GroupLinkView(
       chatModel = chatModel,
       rhId = null,

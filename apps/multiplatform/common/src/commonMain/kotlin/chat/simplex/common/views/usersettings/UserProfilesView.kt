@@ -8,6 +8,7 @@ import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -163,6 +164,7 @@ private fun UserProfilesLayout(
   unmuteUser: (User) -> Unit,
   showHiddenProfile: (User) -> Unit,
 ) {
+  Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
   ColumnWithScrollBar {
     if (profileHidden.value) {
       SectionView {
@@ -202,6 +204,7 @@ private fun UserProfilesLayout(
       }
     }
     SectionBottomSpacer()
+  }
   }
 }
 

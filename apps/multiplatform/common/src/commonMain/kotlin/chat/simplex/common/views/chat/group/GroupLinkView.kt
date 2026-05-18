@@ -5,6 +5,7 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionView
 import SectionViewWithButton
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -192,6 +193,7 @@ fun GroupLinkLayout(
     )
   }
 
+  Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(if (isChannel) MR.strings.channel_link else MR.strings.group_link))
     Text(
@@ -297,6 +299,7 @@ fun GroupLinkLayout(
       }
     }
     SectionBottomSpacer()
+  }
   }
 }
 

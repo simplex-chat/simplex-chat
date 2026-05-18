@@ -100,7 +100,7 @@ fun AddGroupLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      ModalView(close = close) {
+      ModalView(close = close, background = MaterialTheme.colors.surface) {
         ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId), bottomPadding = DEFAULT_PADDING_HALF)
           Row(

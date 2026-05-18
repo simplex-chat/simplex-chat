@@ -86,7 +86,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
   ) {
     Box(
-      modifier = Modifier.fillMaxSize()
+      modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.surface)
     ) {
       ColumnWithScrollBar {
         AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING_HALF)
@@ -243,6 +243,7 @@ private fun CreateFirstProfileMobile(chatModel: ChatModel, close: () -> Unit) {
     val refocusTrigger = remember { mutableStateOf(0) }
     ModalView(
       close = { onboardingBackAction(chatModel, close) },
+      background = MaterialTheme.colors.surface,
       endButtons = { MigrateButton(refocusTrigger) }
     ) {
       val displayName = rememberSaveable { mutableStateOf("") }
@@ -321,6 +322,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView(
       close = { onboardingBackAction(chatModel, close) },
+      background = MaterialTheme.colors.surface,
       endButtons = { MigrateButton(refocusTrigger) }
     ) {
       ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {

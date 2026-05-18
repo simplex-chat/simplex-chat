@@ -73,6 +73,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
     }
   val topPaddingToContent = topPaddingToContent(false)
 
+  Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
   LazyColumnWithScrollBar(
     modifier = if (reorderMode) Modifier.dragContainer(dragDropState) else Modifier,
     state = listState,
@@ -168,6 +169,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
         CreateList()
       }
     }
+  }
   }
 }
 
