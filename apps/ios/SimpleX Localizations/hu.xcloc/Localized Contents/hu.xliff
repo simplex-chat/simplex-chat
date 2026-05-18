@@ -1468,9 +1468,9 @@ a saját hálózatában</target>
         <target>Az összes feliratkozó számára letiltja a feliratkozót?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blocked by admin" xml:space="preserve">
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
         <source>Blocked by admin</source>
-        <target>Letiltva az adminisztrátor által</target>
+        <target state="translated">Az adminisztrátor letiltotta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur for better privacy." xml:space="preserve">
@@ -10813,9 +10813,9 @@ Az átjátszók hozzáférhetnek a csatornaüzenetekhez.</target>
         <target>letiltotta őt: %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="blocked by admin" xml:space="preserve">
+      <trans-unit id="blocked by admin" xml:space="preserve" approved="no">
         <source>blocked by admin</source>
-        <target>letiltva az adminisztrátor által</target>
+        <target state="translated">az adminisztrátor letiltotta</target>
         <note>blocked chat item
 marked deleted chat item preview text</note>
       </trans-unit>
@@ -11568,9 +11568,9 @@ time to disappear</note>
         <target>áttekintés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="reviewed by admins" xml:space="preserve">
+      <trans-unit id="reviewed by admins" xml:space="preserve" approved="no">
         <source>reviewed by admins</source>
-        <target>áttekintve a moderátorok által</target>
+        <target state="translated">a moderátorok áttekintették</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
