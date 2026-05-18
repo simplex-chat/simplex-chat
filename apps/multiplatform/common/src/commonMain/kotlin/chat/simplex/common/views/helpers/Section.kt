@@ -46,8 +46,7 @@ private fun Modifier.sectionItemDivider(): Modifier {
 
 @Composable
 fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = 8.dp, content: (@Composable ColumnScope.() -> Unit)) {
-  val cardColor = if (CurrentColors.value.base == DefaultTheme.LIGHT) Color.White
-    else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
+  val cardColor = sectionCardColor()
   Column {
     if (title != null) {
       Text(
@@ -77,8 +76,7 @@ fun SectionView(
   padding: PaddingValues = PaddingValues(),
   content: (@Composable ColumnScope.() -> Unit)
 ) {
-  val cardColor = if (CurrentColors.value.base == DefaultTheme.LIGHT) Color.White
-    else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
+  val cardColor = sectionCardColor()
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -101,8 +99,7 @@ fun SectionView(
 
 @Composable
 fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () -> Unit)?, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = 8.dp, content: (@Composable ColumnScope.() -> Unit)) {
-  val cardColor = if (CurrentColors.value.base == DefaultTheme.LIGHT) Color.White
-    else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
+  val cardColor = sectionCardColor()
   Column {
     if (title != null || titleButton != null) {
       Row(modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, end = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding).fillMaxWidth()) {

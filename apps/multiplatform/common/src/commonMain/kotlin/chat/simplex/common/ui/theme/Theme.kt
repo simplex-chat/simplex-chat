@@ -613,6 +613,15 @@ fun canvasColorForCurrentTheme(): Color {
   }
 }
 
+// Card background color for SectionView. LIGHT: pure white (raised above the
+// off-white canvas). DARK/BLACK/SIMPLEX: founder's mixWith formula (lifts cards
+// above palette bg using onBackground tint).
+fun sectionCardColor(): Color {
+  val theme = CurrentColors.value
+  return if (theme.base == DefaultTheme.LIGHT) Color.White
+  else theme.colors.background.mixWith(theme.colors.onBackground, 0.95f)
+}
+
 fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, bgLayerSize: MutableState<IntSize>?, bgLayer: GraphicsLayer?/*, shape: Shape = RectangleShape*/): Modifier {
   return drawBehind {
     copyBackgroundToAppBar(bgLayerSize, bgLayer) {
