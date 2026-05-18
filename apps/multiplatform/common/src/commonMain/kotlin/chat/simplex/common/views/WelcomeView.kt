@@ -1,7 +1,6 @@
 package chat.simplex.common.views
 
 import SectionTextFooter
-import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -155,22 +154,20 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           }
           ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
         }
-        SectionView {
-          SettingsActionItem(
-            painterResource(MR.images.ic_check),
-            stringResource(MR.strings.create_another_profile_button),
-            disabled = !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
-            textColor = MaterialTheme.colors.primary,
-            iconColor = MaterialTheme.colors.primary,
-            click = {
-              if (chatModel.localUserCreated.value == true) {
-                createProfileInProfiles(chatModel, displayName.value, shortDescr.value, profileImage.value, close)
-              } else {
-                createProfileInNoProfileSetup(displayName.value, profileImage.value, close)
-              }
-            },
-          )
-        }
+        SettingsActionItem(
+          painterResource(MR.images.ic_check),
+          stringResource(MR.strings.create_another_profile_button),
+          disabled = !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
+          textColor = MaterialTheme.colors.primary,
+          iconColor = MaterialTheme.colors.primary,
+          click = {
+            if (chatModel.localUserCreated.value == true) {
+              createProfileInProfiles(chatModel, displayName.value, shortDescr.value, profileImage.value, close)
+            } else {
+              createProfileInNoProfileSetup(displayName.value, profileImage.value, close)
+            }
+          },
+        )
         SectionTextFooter(generalGetString(MR.strings.your_profile_is_stored_on_your_device))
         SectionTextFooter(generalGetString(MR.strings.profile_is_only_shared_with_your_contacts))
 
