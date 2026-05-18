@@ -4,7 +4,6 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
-import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -161,10 +160,8 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
 
 @Composable
 private fun SaveButton(save: () -> Unit, disabled: Boolean) {
-  SectionView {
-    SectionItemView(save, disabled = disabled) {
-      Text(stringResource(MR.strings.save_and_update_group_profile), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
-    }
+  SectionItemView(save, disabled = disabled) {
+    Text(stringResource(MR.strings.save_and_update_group_profile), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
   }
 }
 

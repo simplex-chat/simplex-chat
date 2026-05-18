@@ -728,6 +728,7 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       items(filteredMembers.value, key = { it.groupMemberId }) { member ->
+        Divider()
         val showMenu = remember(member.groupMemberId) { mutableStateOf(false) }
         val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
         SectionItemViewLongClickable(
