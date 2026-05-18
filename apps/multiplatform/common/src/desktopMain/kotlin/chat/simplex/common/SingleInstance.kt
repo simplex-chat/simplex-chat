@@ -43,8 +43,18 @@ fun acquireSingleInstance(): Boolean {
       return true
     }
     LockResult.Taken -> {
+      // Ensure the signal file exists (createShowFile is a no-op if it does)
+      // and wait up to 1s for the primary's watcher to consume it. If still
+      // there after the wait, the primary is hung — let the user decide.
       createShowFile()
-      return false
+      val deadline = System.currentTimeMillis() + 1000
+      while (Files.exists(showPath) && System.currentTimeMillis() < deadline) {
+        try { Thread.sleep(50) } catch (_: InterruptedException) { break }
+      }
+      if (!Files.exists(showPath)) return false
+      val start = showSingleInstanceAlert()
+      if (start) deleteShowFile()
+      return start
     }
   }
 }
@@ -85,6 +95,17 @@ private fun createShowFile() {
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: cannot create show file: ${e.message}")
   }
+}
+
+private fun showSingleInstanceAlert(): Boolean {
+  val title = chat.simplex.common.views.helpers.generalGetString(chat.simplex.res.MR.strings.another_instance_title)
+  val message = chat.simplex.common.views.helpers.generalGetString(chat.simplex.res.MR.strings.another_instance_not_responding)
+  val result = javax.swing.JOptionPane.showConfirmDialog(
+    null, message, title,
+    javax.swing.JOptionPane.YES_NO_OPTION,
+    javax.swing.JOptionPane.WARNING_MESSAGE
+  )
+  return result == javax.swing.JOptionPane.YES_OPTION
 }
 
 private fun startShowFileWatcher() {
