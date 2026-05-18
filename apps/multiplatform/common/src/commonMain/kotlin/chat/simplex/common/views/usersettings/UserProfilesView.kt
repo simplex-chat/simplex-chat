@@ -176,7 +176,7 @@ private fun UserProfilesLayout(
 
     for (user in filteredUsers) {
       UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
-      SectionDivider()
+      Divider(Modifier.padding(horizontal = 8.dp))
     }
     if (searchTextOrPassword.value.trim().isEmpty()) {
       SectionItemView(addUser, minHeight = 68.dp) {
