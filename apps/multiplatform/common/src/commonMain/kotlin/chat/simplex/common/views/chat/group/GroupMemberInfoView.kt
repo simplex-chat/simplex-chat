@@ -895,7 +895,7 @@ private fun RoleSelectionRow(
 fun MemberProfileImage(
   size: Dp,
   mem: GroupMember,
-  color: Color = defaultProfileIconColorOnCanvas(),
+  color: Color = defaultProfileIconColor(),
   backgroundColor: Color? = null,
   async: Boolean = false
 ) {
