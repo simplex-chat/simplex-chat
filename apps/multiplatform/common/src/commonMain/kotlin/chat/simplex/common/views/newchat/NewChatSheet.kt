@@ -323,21 +323,34 @@ private fun ModalData.NewChatSheetLayout(
         DeletedChatsItem(actionButtonsOriginal.asReversed())
       }
       item {
-        if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
-          SectionDividerSpaced(maxBottomPadding = false)
-          SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {
-            filteredContactChats.forEachIndexed { index, chat ->
-              val nextChatSelected = remember(chat.id, filteredContactChats) {
-                derivedStateOf {
-                  chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+        when {
+          filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty() -> {
+            SectionDividerSpaced(maxBottomPadding = false)
+            SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {
+              filteredContactChats.forEachIndexed { index, chat ->
+                val nextChatSelected = remember(chat.id, filteredContactChats) {
+                  derivedStateOf {
+                    chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+                  }
                 }
+                ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
               }
-              ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
+            }
+            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          }
+          filteredContactChats.isNotEmpty() -> {
+            SectionView {
+              filteredContactChats.forEachIndexed { index, chat ->
+                val nextChatSelected = remember(chat.id, filteredContactChats) {
+                  derivedStateOf {
+                    chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+                  }
+                }
+                ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
+              }
             }
           }
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        } else {
-          NoFilteredContactsItem()
+          else -> NoFilteredContactsItem()
         }
       }
       if (appPlatform.isAndroid) {
@@ -408,20 +421,33 @@ private fun ModalData.NewChatSheetLayout(
         DeletedChatsItem(actionButtonsOriginal)
       }
       item {
-        if (filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty()) {
-          SectionDividerSpaced()
-          SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {
-            filteredContactChats.forEachIndexed { index, chat ->
-              val nextChatSelected = remember(chat.id, filteredContactChats) {
-                derivedStateOf {
-                  chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+        when {
+          filteredContactChats.isNotEmpty() && searchText.value.text.isEmpty() -> {
+            SectionDividerSpaced()
+            SectionView(stringResource(MR.strings.contact_list_header_title), headerBottomPadding = DEFAULT_PADDING_HALF) {
+              filteredContactChats.forEachIndexed { index, chat ->
+                val nextChatSelected = remember(chat.id, filteredContactChats) {
+                  derivedStateOf {
+                    chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+                  }
                 }
+                ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
               }
-              ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
             }
           }
-        } else {
-          NoFilteredContactsItem()
+          filteredContactChats.isNotEmpty() -> {
+            SectionView {
+              filteredContactChats.forEachIndexed { index, chat ->
+                val nextChatSelected = remember(chat.id, filteredContactChats) {
+                  derivedStateOf {
+                    chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+                  }
+                }
+                ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
+              }
+            }
+          }
+          else -> NoFilteredContactsItem()
         }
       }
       if (appPlatform.isAndroid) {
