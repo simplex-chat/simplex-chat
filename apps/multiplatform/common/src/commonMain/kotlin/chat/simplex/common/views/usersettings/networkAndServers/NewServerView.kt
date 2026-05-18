@@ -2,6 +2,7 @@ package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
