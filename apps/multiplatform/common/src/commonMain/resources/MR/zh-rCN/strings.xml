@@ -2814,4 +2814,9 @@
     <string name="close_behavior_dialog_close">关闭应用</string>
     <string name="error_deleting_message">删除消息出错</string>
     <string name="from_history">来自历史记录</string>
+    <string name="another_instance_not_responding">另一个应用实例可能正在运行或没有正确退出。仍要启动？</string>
+    <string name="another_instance_title">应用正在运行</string>
+    <string name="relay_status_rejected">被拒绝</string>
+    <string name="member_info_relay_status_rejected_by_operator">被中继运营方拒绝</string>
+    <string name="member_info_status">状态</string>
 </resources>
