@@ -47,12 +47,6 @@ val trayIsAvailable: Boolean by lazy {
   }
 }
 
-fun showWindow() {
-  simplexWindowState.windowVisible.value = true
-  simplexWindowState.window?.toFront()
-  simplexWindowState.window?.requestFocus()
-}
-
 @Composable
 fun ApplicationScope.SimplexTray() {
   if (!trayIsAvailable) return

@@ -23,6 +23,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import java.awt.Frame
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File
@@ -241,16 +242,27 @@ private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Bool
   val pref = ChatController.appPrefs.closeBehavior
   when (pref.get()) {
     CloseBehavior.Quit -> exitApplication()
-    CloseBehavior.MinimizeToTray -> if (trayIsAvailable) {
+    CloseBehavior.MinimizeToTray -> if (trayIsAvailable && singleInstanceLock) {
       simplexWindowState.windowVisible.value = false
     } else exitApplication()
-    CloseBehavior.Ask -> if (trayIsAvailable) {
+    CloseBehavior.Ask -> if (trayIsAvailable && singleInstanceLock) {
       requestCloseBehavior()
     } else {
       // Tray unavailable — Minimize is not a real option; remember Quit and exit.
       pref.set(CloseBehavior.Quit)
       exitApplication()
     }
+  }
+}
+
+fun showWindow() {
+  simplexWindowState.windowVisible.value = true
+  simplexWindowState.window?.apply {
+    // Clear ICONIFIED so a minimized window un-minimizes; preserves MAXIMIZED_BOTH
+    // when set. toFront() alone does not un-minimize on any AWT platform.
+    extendedState = extendedState and Frame.ICONIFIED.inv()
+    toFront()
+    requestFocus()
   }
 }
 
