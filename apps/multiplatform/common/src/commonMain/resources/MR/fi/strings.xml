@@ -715,7 +715,7 @@
     <string name="self_destruct">Itsetuho</string>
     <string name="self_destruct_passcode_changed">Itsetuhoutuva pääsykoodi vaihdettu!</string>
     <string name="self_destruct_passcode_enabled">Itsetuhoutuva pääsykoodi käytössä!</string>
-    <string name="settings_section_title_socks">Sukat välityspalvelin</string>
+    <string name="settings_section_title_socks">SOCKS välityspalvelin</string>
     <string name="new_database_archive">Uusi tietokanta-arkisto</string>
     <string name="no_received_app_files">Ei vastaanotettuja tai lähetettyjä tiedostoja</string>
     <string name="remove_passphrase_from_keychain">Poistetaanko tunnuslause Keystoresta\?</string>

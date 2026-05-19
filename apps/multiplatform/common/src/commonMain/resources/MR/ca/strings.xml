@@ -1952,7 +1952,7 @@
     <string name="settings_section_title_settings">Configuració</string>
     <string name="privacy_media_blur_radius_soft">Tou</string>
     <string name="privacy_media_blur_radius_strong">Fort</string>
-    <string name="settings_section_title_support">Suport SimpleX xat</string>
+    <string name="settings_section_title_support">Suport SimpleX Chat</string>
     <string name="settings_section_title_network_connection">Connexió a la xarxa</string>
     <string name="settings_section_title_private_message_routing">Encaminament de missatges privat</string>
     <string name="chat_item_ttl_none">mai</string>
