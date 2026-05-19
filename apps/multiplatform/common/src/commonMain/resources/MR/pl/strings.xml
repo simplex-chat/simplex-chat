@@ -522,7 +522,7 @@
     <string name="settings_section_title_settings">Ustawienia</string>
     <string name="settings_section_title_socks">Proxy SOCKS</string>
     <string name="stop_chat_question">Zatrzymać czat\?</string>
-    <string name="settings_section_title_support">Wspieraj SimpleX chat</string>
+    <string name="settings_section_title_support">Wspieraj SimpleX Chat</string>
     <string name="settings_section_title_themes">Motywy</string>
     <string name="settings_section_title_you">Ty</string>
     <string name="your_chat_database">Twoja baza danych czatu</string>

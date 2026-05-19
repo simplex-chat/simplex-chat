@@ -701,7 +701,7 @@
 \n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.
 \n3. Spojení je kompromitováno.</string>
     <string name="settings_section_title_you">Vy</string>
-    <string name="settings_section_title_support">Podpořit SimpleX chat</string>
+    <string name="settings_section_title_support">Podpořit SimpleX Chat</string>
     <string name="settings_developer_tools">Nástroje pro vývojáře</string>
     <string name="settings_section_title_incognito">Inkognito mód</string>
     <string name="your_chat_database">Vaše chat databáze</string>
@@ -2362,7 +2362,7 @@
     <string name="members_will_be_removed_from_group_cannot_be_undone">Členové budou odstraněny ze skupiny - toto nelze zvrátit!</string>
     <string name="button_remove_members_question">Odebrat členy?</string>
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Členové budou odstraněny z chatu - toto nelze zvrátit!</string>
-    <string name="onboarding_conditions_by_using_you_agree">Použitím SimpleX chatu souhlasíte že:\n- ve veřejných skupinách budete zasílat pouze legální obsah.\n- budete respektovat ostatní uživatele – žádný spam.</string>
+    <string name="onboarding_conditions_by_using_you_agree">Použitím SimpleX Chatu souhlasíte že:\n- ve veřejných skupinách budete zasílat pouze legální obsah.\n- budete respektovat ostatní uživatele – žádný spam.</string>
     <string name="onboarding_conditions_accept">Přijmout</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Zásady ochrany soukromí a podmínky používání.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Soukromé konverzace, skupiny a kontakty nejsou přístupné provozovatelům serverů.</string>

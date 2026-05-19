@@ -1152,7 +1152,7 @@
     <string name="color_title">Заглавие</string>
     <string name="to_share_with_your_contact">(за споделяне с вашия контакт)</string>
     <string name="alert_message_no_group">Тази група вече не съществува.</string>
-    <string name="settings_section_title_support">Подкрепете SimpleX chat</string>
+    <string name="settings_section_title_support">Подкрепете SimpleX Chat</string>
     <string name="contact_sent_large_file">Вашият контакт изпрати файл, който е по-голям от поддържания в момента максимален размер (%1$s).</string>
     <string name="in_developing_desc">Тази функция все още не се поддържа. Опитайте следващата версия.</string>
     <string name="tap_to_start_new_chat">Докосни за започване на нов чат</string>

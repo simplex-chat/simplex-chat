@@ -51,7 +51,7 @@
     <string name="full_backup">Uygulama veri yedekleme</string>
     <string name="all_app_data_will_be_cleared">Tüm uygulama verileri silinir.</string>
     <string name="settings_section_title_app">Uygulama</string>
-    <string name="settings_section_title_icon">Uygulama si̇mgesi̇</string>
+    <string name="settings_section_title_icon">Uygulama simgesi</string>
     <string name="chat_item_ttl_week">1 hafta</string>
     <string name="conn_event_ratchet_sync_started">şifreleme kabul ediliyor…</string>
     <string name="group_member_role_admin">yönetici</string>
@@ -86,7 +86,7 @@
     <string name="scan_code_from_contacts_app">Konuştuğunuz kişinin uygulamasından güvenlik kodunu okut.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICE sunucu adreslerinin doğru formatta olduğundan emin olun: Satırlara ayrılmış ve yinelenmemiş şekilde.</string>
     <string name="save_servers_button">Kaydet</string>
-    <string name="theme_colors_section_title">Arayüz renkleri̇</string>
+    <string name="theme_colors_section_title">Arayüz renkleri</string>
     <string name="save_auto_accept_settings">SimpleX adres ayarlarını kaydet</string>
     <string name="save_settings_question">Ayarlar kaydedilsin mi?</string>
     <string name="save_and_notify_contacts">Kaydet ve konuştuğun kişilere bildir</string>
@@ -184,7 +184,7 @@
     <string name="deleted_description">silindi</string>
     <string name="receiving_files_not_yet_supported">dosya alma henüz desteklenmiyor</string>
     <string name="sender_you_pronoun">sen</string>
-    <string name="invalid_chat">geçersi̇z sohbet</string>
+    <string name="invalid_chat">geçersiz sohbet</string>
     <string name="connection_local_display_name">bağlantı %1$d</string>
     <string name="simplex_link_mode_browser">Tarayıcı ile</string>
     <string name="simplex_link_connection">%1$s tarafından</string>
@@ -290,7 +290,7 @@
     <string name="settings_section_title_calls">Aramalar</string>
     <string name="settings_section_title_chats">Sohbetler</string>
     <string name="settings_section_title_you">Sen</string>
-    <string name="chat_database_section">Sohbet veri̇tabani</string>
+    <string name="chat_database_section">Sohbet veritabanı</string>
     <string name="remove_passphrase">Kaldır</string>
     <string name="wrong_passphrase_title">Yanlış parola!</string>
     <string name="confirm_database_upgrades">Veritabanı yükseltmelerini onayla</string>
@@ -634,7 +634,7 @@
     <string name="snd_group_event_group_profile_updated">grup profili güncellendi</string>
     <string name="group_member_status_group_deleted">grup silindi</string>
     <string name="error_updating_link_for_group">Toplu konuşma bağlantısı güncellenirken hata oluştu</string>
-    <string name="section_title_for_console">Uçbi̇ri̇m i̇çi̇n</string>
+    <string name="section_title_for_console">Uçbirim için</string>
     <string name="group_link">Grup bağlantısı</string>
     <string name="info_row_group">Grup</string>
     <string name="conn_level_desc_indirect">dolaylı (%1$s)</string>
@@ -1037,7 +1037,7 @@
     <string name="auth_stop_chat">Sohbeti durdur</string>
     <string name="connect_use_current_profile">Mevcut profili kullan</string>
     <string name="la_mode_system">Sistem</string>
-    <string name="settings_section_title_support">SimpleX chat\'i̇ destekle</string>
+    <string name="settings_section_title_support">SimpleX Chat\'i destekle</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Sohbet veri tabanını dışa aktarmak, içe aktarmak veya silmek için sohbeti durdur. Sohbet durdurulduğunda mesaj alamaz ve gönderemezsiniz.</string>
     <string name="desktop_device">Masaüstü</string>
     <string name="contact_tap_to_connect">Bağlanmak için dokun</string>
@@ -1134,7 +1134,7 @@
     <string name="share_link">Bağlantı paylaş</string>
     <string name="icon_descr_simplex_team">SimpleX Ekibi</string>
     <string name="rcv_group_event_3_members_connected">%s, %s ve %s bağlandı</string>
-    <string name="settings_section_title_socks">SOCKS veki̇li̇</string>
+    <string name="settings_section_title_socks">SOCKS vekili</string>
     <string name="desktop_devices">Masaüstür cihazlar</string>
     <string name="smp_servers">SMP sunucuları</string>
     <string name="not_compatible">Uyumlu değil!</string>
@@ -1361,7 +1361,7 @@
     <string name="icon_descr_contact_checked">Kişi doğrulandı</string>
     <string name="use_random_passphrase">Rasgele parola kullan</string>
     <string name="v5_0_app_passcode_descr">Sistem yetkilendirilmesi yerine ayarla.</string>
-    <string name="run_chat_section">Sohbeti̇ çaliştir</string>
+    <string name="run_chat_section">Sohbeti çalıştır</string>
     <string name="network_disable_socks">Direkt internet bağlantısı kullan?</string>
     <string name="rcv_group_event_updated_group_profile">grup profili güncellendi</string>
     <string name="network_use_onion_hosts_required_desc">Onion ana bilgisayarları bağlantı için gerekli olacaktır.
@@ -1778,7 +1778,7 @@
     <string name="network_smp_proxy_fallback_prohibit_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
     <string name="network_smp_proxy_fallback_allow_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
-    <string name="settings_section_title_private_message_routing">Gi̇zli̇ mesaj yönlendi̇rme</string>
+    <string name="settings_section_title_private_message_routing">Gizli mesaj yönlendirme</string>
     <string name="private_routing_show_message_status">Mesaj durumunu göster</string>
     <string name="private_routing_explanation">IP adresinizi korumak için,gizli yönlendirme mesajları iletmek için SMP sunucularınızı kullanır.</string>
     <string name="network_smp_proxy_mode_unprotected">Korumasız</string>

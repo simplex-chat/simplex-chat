@@ -1001,7 +1001,7 @@
     <string name="feature_off">desativado</string>
     <string name="downgrade_and_open_chat">Desatualizar e abrir o bate-papo</string>
     <string name="chat_preferences_off">desativado</string>
-    <string name="settings_section_title_support">Apoie SimpleX chat</string>
+    <string name="settings_section_title_support">Apoie SimpleX Chat</string>
     <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
     <string name="confirm_database_upgrades">Confirme as atualizações do banco de dados</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens.</string>

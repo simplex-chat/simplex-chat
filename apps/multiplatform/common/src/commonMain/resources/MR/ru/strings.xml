@@ -551,7 +551,7 @@
     <string name="settings_section_title_you">Вы</string>
     <string name="settings_section_title_settings">Настройки</string>
     <string name="settings_section_title_help">Помощь</string>
-    <string name="settings_section_title_support">Поддержать SimpleX chat</string>
+    <string name="settings_section_title_support">Поддержать SimpleX Chat</string>
     <string name="settings_section_title_device">Устройство</string>
     <string name="settings_section_title_chats">Чаты</string>
     <string name="settings_developer_tools">Инструменты разработчика</string>

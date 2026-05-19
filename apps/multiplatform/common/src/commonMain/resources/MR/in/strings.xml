@@ -644,7 +644,7 @@
     <string name="enable_self_destruct">Aktifkan hapus otomatis</string>
     <string name="set_passcode">Pasang kode sandi</string>
     <string name="settings_section_title_help">Bantuan</string>
-    <string name="settings_section_title_support">Dukung SimpleX chat</string>
+    <string name="settings_section_title_support">Dukung SimpleX Chat</string>
     <string name="settings_section_title_calls">Panggilan</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Mulai ulang aplikasi untuk buat profil obrolan baru.</string>
     <string name="delete_messages">Hapus pesan</string>

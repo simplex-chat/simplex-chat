@@ -86,7 +86,7 @@
     <string name="your_ICE_servers">Ο ΙCE διακομιστής σου</string>
     <string name="v5_0_app_passcode">Κωδικός πρόσβασης εφαρμογής</string>
     <string name="connect_via_member_address_alert_desc">Αίτημα σύνδεσης θα σταλεί σε αυτό το μέλος της ομάδας.</string>
-    <string name="settings_section_title_icon">Οικονα εφαρμογης</string>
+    <string name="settings_section_title_icon">Εικόνα εφαρμογής</string>
     <string name="settings_section_title_app">Εφαρμογή</string>
     <string name="your_settings">Οι ρυθμίσεις σου</string>
     <string name="app_version_name">Έκδοση εφαρμογής: v%s</string>
@@ -2309,7 +2309,7 @@
     <string name="subscription_results_ignored">Η εγγραφή αγνοήθηκε</string>
     <string name="migrate_from_device_bytes_uploaded">%s ανεβασμένα</string>
     <string name="v4_6_audio_video_calls_descr">Υποστήριξη bluetooth και άλλων βελτιώσεων.</string>
-    <string name="settings_section_title_support">Υποστηριξη SimpleX chat</string>
+    <string name="settings_section_title_support">Υποστηριξη SimpleX Chat</string>
     <string name="switch_verb">Ενάλλαξε</string>
     <string name="v6_1_better_calls_descr">Εναλλαγή ήχου και βίντεο κατά τη διάρκεια της κλήσης.</string>
     <string name="v6_1_switch_chat_profile_descr">Αλλαγή προφίλ συνομιλίας για προσκλήσεις 1-χρήσης.</string>

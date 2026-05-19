@@ -573,7 +573,7 @@
     <string name="this_text_is_available_in_settings">Este texto está disponível nas definições</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser alterado mais tarde através das definições.</string>
     <string name="settings_section_title_help">Ajuda</string>
-    <string name="settings_section_title_support">Suporte SimpleX chat</string>
+    <string name="settings_section_title_support">Suporte SimpleX Chat</string>
     <string name="settings_experimental_features">Funcionalidades experimentais</string>
     <string name="settings_section_title_themes">Temas</string>
     <string name="theme_dark">Escuro</string>

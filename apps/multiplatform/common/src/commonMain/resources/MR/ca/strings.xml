@@ -742,7 +742,7 @@
     <string name="contact_connection_pending">s\'està connectant…</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Les condicions s\'acceptaran per als operadors habilitats després de 30 dies.</string>
     <string name="system_restricted_background_desc">SimpleX no pot funcionar en segon pla. Només rebreu les notificacions quan obriu l\'aplicació.</string>
-    <string name="ntf_channel_calls">Trucades de SimpleX chat</string>
+    <string name="ntf_channel_calls">Trucades de SimpleX Chat</string>
     <string name="ntf_channel_messages">Missatges de xat de SimpleX</string>
     <string name="icon_descr_sent_msg_status_sent">enviat</string>
     <string name="icon_descr_received_msg_status_unread">per llegir</string>
@@ -781,7 +781,7 @@
     <string name="show_dev_options">Mostra:</string>
     <string name="hide_dev_options">Amaga:</string>
     <string name="theme_simplex">SimpleX</string>
-    <string name="v4_2_security_assessment_desc">La seguretat de SimpleX chat ha estat auditada per Trail of Bits.</string>
+    <string name="v4_2_security_assessment_desc">La seguretat de SimpleX Chat ha estat auditada per Trail of Bits.</string>
     <string name="email_invite_subject">Parlem a SimpleX Chat</string>
     <string name="invalid_name">El nom no és vàlid!</string>
     <string name="italic_text">cursiva</string>

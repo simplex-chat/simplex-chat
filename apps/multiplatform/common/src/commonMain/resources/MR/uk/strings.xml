@@ -418,7 +418,7 @@
     <string name="your_privacy">Конфіденційність</string>
     <string name="settings_section_title_settings">Налаштування</string>
     <string name="settings_section_title_help">Допомога</string>
-    <string name="settings_section_title_support">Підтримайте SimpleX chat</string>
+    <string name="settings_section_title_support">Підтримайте SimpleX Chat</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Зупиніть чат, щоб експортувати, імпортувати або видалити базу даних чату. Ви не зможете отримувати та надсилати повідомлення, поки чат зупинено.</string>
     <string name="error_deleting_database">Помилка видалення бази даних чату</string>
     <string name="notifications_will_be_hidden">Сповіщення будуть доставлятися лише до зупинки додатка!</string>

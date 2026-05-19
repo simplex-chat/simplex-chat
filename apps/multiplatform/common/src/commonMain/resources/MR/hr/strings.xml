@@ -1260,7 +1260,7 @@
     <string name="passcode_set">Pin kod postavljen!</string>
     <string name="all_app_data_will_be_cleared">Svi podaci u aplikaciji su odstranjeni.</string>
     <string name="app_passcode_replaced_with_self_destruct">Pin kod aplikacije je zamenjen pin kodom za samouništenje.</string>
-    <string name="settings_section_title_support">Potpori SimpleX chat</string>
+    <string name="settings_section_title_support">Potpori SimpleX Chat</string>
     <string name="settings_section_title_message_shape">Oblik poruke</string>
     <string name="settings_section_title_icon">Ikona aplikacije</string>
     <string name="database_passphrase">Pristupna fraza baze podataka</string>

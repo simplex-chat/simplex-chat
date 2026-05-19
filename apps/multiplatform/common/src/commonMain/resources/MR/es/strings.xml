@@ -794,7 +794,7 @@
     <string name="network_option_tcp_connection_timeout">Timeout de la conexión TCP</string>
     <string name="theme">Tema</string>
     <string name="set_group_preferences">Establece preferencias de grupo</string>
-    <string name="settings_section_title_support">Soporte SimpleX chat</string>
+    <string name="settings_section_title_support">Soporte SimpleX Chat</string>
     <string name="set_password_to_export">Escribe la contraseña para exportar</string>
     <string name="update_database">Actualizar</string>
     <string name="update_database_passphrase">Actualizar contraseña base de datos</string>

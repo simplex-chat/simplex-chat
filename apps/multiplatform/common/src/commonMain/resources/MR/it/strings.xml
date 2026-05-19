@@ -710,7 +710,7 @@
     <string name="stop_chat_confirmation">Ferma</string>
     <string name="stop_chat_question">Fermare la chat\?</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Ferma la chat per esportare, importare o eliminare il database della chat. Non potrai ricevere e inviare messaggi mentre la chat è ferma.</string>
-    <string name="settings_section_title_support">Supporta SimpleX chat</string>
+    <string name="settings_section_title_support">Supporta SimpleX Chat</string>
     <string name="settings_section_title_themes">Temi</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Questa azione non può essere annullata: il tuo profilo, i contatti, i messaggi e i file andranno persi in modo irreversibile.</string>
     <string name="settings_section_title_you">Tu</string>

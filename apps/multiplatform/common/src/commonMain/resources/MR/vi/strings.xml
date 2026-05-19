@@ -1896,7 +1896,7 @@
     <string name="v4_6_chinese_spanish_interface_descr">Xin gửi lời cảm ơn tới các người dùng đã góp công qua Weblate!</string>
     <string name="v5_0_polish_interface_descr">Xin gửi lời cảm ơn tới các người dùng đã góp công qua Weblate!</string>
     <string name="system_mode_toast">Chế độ hệ thống</string>
-    <string name="settings_section_title_support">Hỗ trợ SimpleX chat</string>
+    <string name="settings_section_title_support">Hỗ trợ SimpleX Chat</string>
     <string name="temporary_file_error">Lỗi tệp tạm thời</string>
     <string name="chat_help_tap_button">Nhấn nút</string>
     <string name="network_option_tcp_connection">Kết nối TCP</string>

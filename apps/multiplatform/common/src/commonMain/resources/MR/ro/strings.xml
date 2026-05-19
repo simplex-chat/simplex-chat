@@ -1973,7 +1973,7 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">Aplicația va cere să confirmați descărcările de pe servere de fișiere necunoscute (cu excepția celor .onion sau când proxy-ul SOCKS este activat).</string>
     <string name="la_mode_system">Sistem</string>
     <string name="receipts_section_description_1">Acestea pot fi ignorate în setările de contact și de grup.</string>
-    <string name="settings_section_title_support">Suport SimpleX chat</string>
+    <string name="settings_section_title_support">Suport SimpleX Chat</string>
     <string name="settings_section_title_socks">Proxy SOCKS</string>
     <string name="settings_section_title_themes">Teme</string>
     <string name="non_fatal_errors_occured_during_import">În timpul importului au apărut câteva erori non-fatale:</string>

@@ -603,7 +603,7 @@
     <string name="full_backup">Sauvegarde des données de l\'app</string>
     <string name="settings_section_title_you">Vous</string>
     <string name="settings_section_title_help">Aide</string>
-    <string name="settings_section_title_support">Soutenez SimpleX chat</string>
+    <string name="settings_section_title_support">Soutenez SimpleX Chat</string>
     <string name="settings_section_title_incognito">Mode Incognito</string>
     <string name="chat_is_running">Le chat est en cours d\'exécution</string>
     <string name="chat_is_stopped">Le chat est arrêté</string>
