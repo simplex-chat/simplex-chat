@@ -221,7 +221,6 @@ CREATE TABLE group_members(
   member_relations_vector BLOB,
   relay_link BLOB,
   member_pub_key BLOB,
-  sent_profile_vector BLOB NOT NULL DEFAULT x'',
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -735,7 +734,6 @@ CREATE TABLE delivery_jobs(
   job_scope_spec_tag TEXT,
   job_scope_include_pending INTEGER,
   job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
@@ -1220,9 +1218,6 @@ CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
 CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON delivery_jobs(
   job_scope_support_gm_id
-);
-CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(
-  single_sender_group_member_id
 );
 CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
   group_id,

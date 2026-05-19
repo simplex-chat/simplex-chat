@@ -83,7 +83,10 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
-      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      -- n < 254 keeps room for one prepended profile element per sender on
+      -- this body; prependBatchElement errors when the post-prepend count
+      -- exceeds 255 (one-byte length prefix in encodeBinaryBatch).
+      | n < 254 && len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where

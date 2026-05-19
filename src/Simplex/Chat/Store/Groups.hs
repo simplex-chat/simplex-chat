@@ -130,9 +130,7 @@ module Simplex.Chat.Store.Groups
     setMembersVectorsNewRelation,
     setMemberVectorRelationConnected,
     getMemberRelationsVector,
-    getSentProfileVector,
-    markProfilesSentToMembers,
-    clearSentProfileVector,
+    markVectorMembersAnnounced,
     createIntroReMember,
     createIntroReMemberConn,
     createIntroToMemberContact,
@@ -204,8 +202,7 @@ import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setNewRelations, setRelationConnected, toIntroDirInt, toRelationInt)
-import Simplex.Chat.Types.SentProfileVector (markSentPositions)
+import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setRelations, setNewRelations, setRelationConnected, toIntroDirInt, toRelationInt)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -2236,58 +2233,42 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
 
--- Sent-profile vector tracks which recipients have received this member's profile
--- (one byte per index_in_group; 0 = not sent, non-zero = sent). Empty vector means
--- no recipients have been sent the profile yet; the column is NOT NULL DEFAULT empty
--- per migration M20260515, so reads always return a ByteString.
-
-getSentProfileVector :: DB.Connection -> GroupMemberId -> IO ByteString
-getSentProfileVector db groupMemberId = do
-  v_ <-
-    maybeFirstRow fromOnly $
+-- Mark this member's vector at the given recipient indexes as MRIntroduced
+-- (the channel-side "this member has been announced to recipient i" bit).
+-- Monotonic: bits only flip 0→1, so this is idempotent on repeated calls.
+-- Preserves the introduction direction bit (setRelations masks only status bits).
+--
+-- NULL is treated as an empty vector. The M20251117 backfill only populates
+-- the column for groups whose user member has role NOT IN admin/owner; in
+-- channels the moderator rows (owner + admins) start with NULL and only get
+-- materialized by writes here. Treating NULL as empty lets dissemination work
+-- uniformly without needing a second backfill.
+markVectorMembersAnnounced :: DB.Connection -> GroupMemberId -> [Int64] -> ExceptT StoreError IO ()
+markVectorMembersAnnounced _ _ [] = pure ()
+markVectorMembersAnnounced db groupMemberId ixs = do
+  row :: Maybe (Only (Maybe ByteString)) <- liftIO $
+    maybeFirstRow id $
       DB.query
         db
-        "SELECT sent_profile_vector FROM group_members WHERE group_member_id = ?"
-        (Only groupMemberId)
-  -- defensive: empty vector if the row doesn't exist (the column itself is NOT NULL)
-  pure $ fromMaybe B.empty v_
-
-markProfilesSentToMembers :: DB.Connection -> GroupMemberId -> [Int64] -> IO ()
-markProfilesSentToMembers _ _ [] = pure ()
-markProfilesSentToMembers db groupMemberId positions = do
-  v_ <-
-    maybeFirstRow fromOnly $
-      DB.query
-        db
-        ( "SELECT sent_profile_vector FROM group_members WHERE group_member_id = ?"
+        ( "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
 #if defined(dbPostgres)
-            <> " FOR UPDATE"
+          <> " FOR UPDATE"
 #endif
         )
         (Only groupMemberId)
-  -- defensive: empty vector if the row doesn't exist (the column itself is NOT NULL)
-  let v' = markSentPositions positions $ fromMaybe B.empty v_
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE group_members
-      SET sent_profile_vector = ?, updated_at = ?
-      WHERE group_member_id = ?
-    |]
-    (Binary v', currentTs, groupMemberId)
-
-clearSentProfileVector :: DB.Connection -> GroupMemberId -> IO ()
-clearSentProfileVector db groupMemberId = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE group_members
-      SET sent_profile_vector = ?, updated_at = ?
-      WHERE group_member_id = ?
-    |]
-    (Binary B.empty, currentTs, groupMemberId)
+  case row of
+    Nothing -> throwError $ SEGroupMemberNotFound groupMemberId
+    Just (Only v_) -> do
+      let v' = setRelations [(i, MRIntroduced) | i <- ixs] $ fromMaybe B.empty v_
+      currentTs <- liftIO getCurrentTime
+      liftIO $ DB.execute
+        db
+        [sql|
+          UPDATE group_members
+          SET member_relations_vector = ?, updated_at = ?
+          WHERE group_member_id = ?
+        |]
+        (Binary v', currentTs, groupMemberId)
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> MemberInfo -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
 createIntroReMember

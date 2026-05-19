@@ -247,8 +247,8 @@ deleteDoneDeliveryTasks db createdAtCutoff = do
     |]
     (createdAtCutoff, DTSProcessed, DTSError)
 
-createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> JobSenders -> ByteString -> IO ()
-createMsgDeliveryJob db gInfo jobScope jobSenders body = do
+createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> [GroupMemberId] -> ByteString -> IO ()
+createMsgDeliveryJob db gInfo jobScope senderGMIds body = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -256,20 +256,18 @@ createMsgDeliveryJob db gInfo jobScope jobSenders body = do
       INSERT INTO delivery_jobs (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        single_sender_group_member_id, sender_group_member_ids, body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        sender_group_member_ids, body, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (singleColumn, multiColumn, Binary body, DJSPending, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (senderGMIdsBlob_, Binary body, DJSPending, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
-    -- The two columns are mutually exclusive by construction: SingleSender
-    -- writes only single_sender_group_member_id, MultiSender writes only
-    -- sender_group_member_ids (and the latter as NULL when the list is empty,
-    -- e.g. DJRelayRemoved with no senders to disseminate).
-    (singleColumn, multiColumn) = case jobSenders of
-      SingleSender s -> (Just s, Nothing)
-      MultiSender [] -> (Nothing, Nothing)
-      MultiSender ss -> (Nothing, Just $ Binary $ smpEncodeList ss)
+    -- Empty list → NULL (e.g. DJRelayRemoved triggered by the relay
+    -- leaving — no sender to disseminate). Non-empty → smpEncodeList.
+    senderGMIdsBlob_ :: Maybe (Binary ByteString)
+    senderGMIdsBlob_
+      | null senderGMIds = Nothing
+      | otherwise = Just $ Binary $ smpEncodeList senderGMIds
 
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerKey]
 getPendingDeliveryJobScopes db =
@@ -282,7 +280,7 @@ getPendingDeliveryJobScopes db =
     |]
     (Only DJSPending)
 
-type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe GroupMemberId, Maybe (Binary ByteString), Binary ByteString, Maybe GroupMemberId)
+type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe (Binary ByteString), Binary ByteString, Maybe GroupMemberId)
 
 getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryJob))
 getNextDeliveryJob db deliveryKey = do
@@ -312,27 +310,23 @@ getNextDeliveryJob db deliveryKey = do
             SELECT
               delivery_job_id,
               worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-              single_sender_group_member_id, sender_group_member_ids, body, cursor_group_member_id
+              sender_group_member_ids, body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           |]
           (Only jobId)
       where
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
-        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleColumn, multiColumn, Binary body, cursorGMId_)) = do
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsBlob_, Binary body, cursorGMId_)) = do
           jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
-          jobSenders <- case (singleColumn, multiColumn) of
-            (Just s, Nothing) -> Right $ SingleSender s
-            (Nothing, Nothing) -> Right $ MultiSender []
-            -- sender_group_member_ids is written by smpEncodeList; a parse failure means
-            -- on-disk corruption or a format change. Surface as job error rather than
-            -- silently degrading to the pre-feature "unknown member" behavior.
-            (Nothing, Just (Binary bs)) ->
-              first (const $ SEInvalidDeliveryJob jobId') $ MultiSender <$> parseAll smpListP bs
-            -- Both columns set is a writer-side bug; createMsgDeliveryJob enforces
-            -- mutual exclusion. Surface rather than silently pick one.
-            (Just _, Just _) -> Left $ SEInvalidDeliveryJob jobId'
-          Right $ MessageDeliveryJob {jobId = jobId', jobScope, jobSenders, body, cursorGMId_}
+          -- sender_group_member_ids is written by smpEncodeList; a parse failure means
+          -- on-disk corruption or a format change. Surface as job error rather than
+          -- silently degrading to the pre-feature "unknown member" behavior.
+          senderGMIds <- case senderGMIdsBlob_ of
+            Just (Binary bs) ->
+              first (const $ SEInvalidDeliveryJob jobId') $ parseAll smpListP bs
+            Nothing -> Right []
+          Right $ MessageDeliveryJob {jobId = jobId', jobScope, senderGMIds, body, cursorGMId_}
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)

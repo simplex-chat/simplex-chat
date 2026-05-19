@@ -1169,22 +1169,19 @@ introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-  -- The reverse-direction sent_profile_vector mark (subscriber's vector at each
-  -- moderator's index, since this XGrpMemNew delivers the subscriber's profile to
-  -- moderators) is deliberately omitted. The cost is one redundant XGrpMemNew
-  -- prepended to the subscriber's first authored forward to moderators, who already
-  -- know them; the receiver's xGrpMemNew no-ops in the "already-known" branch.
-  -- Self-healing on the second forward onwards.
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  -- Both directions are announcements: XGrpMemNew above carries the subscriber's
+  -- profile to moderators, and XGrpMemIntro below carries each moderator's profile
+  -- to the subscriber. Marking both stops the delivery worker re-prepending
+  -- XGrpMemNew on the subscriber's first authored forward (and vice versa).
+  withStore $ \db ->
+    markVectorMembersAnnounced db (groupMemberId' subscriber) (map indexInGroup modMs)
   let introEvts = map (memberIntroEvt gInfo) modMs
   forM_ (L.nonEmpty introEvts) $ \introEvts' -> do
     sendGroupMemberMessages user gInfo conn introEvts'
-    -- Each moderator's profile reached this subscriber via XGrpMemIntro above;
-    -- record it so the delivery worker doesn't re-prepend XGrpMemNew when
-    -- forwarding messages authored by these moderators to this subscriber.
-    withStore' $ \db ->
+    withStore $ \db ->
       forM_ modMs $ \modM ->
-        markProfilesSentToMembers db (groupMemberId' modM) [subscriberIdx]
+        markVectorMembersAnnounced db (groupMemberId' modM) [subscriberIdx]
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1210,6 +1207,12 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
 -- | Build a forwarded-element wrapping 'XGrpMemNew' for the given member's profile,
 -- attributed to the relay (gInfo.membership) so receivers process it via the same
 -- xGrpMsgForward path as ordinary forwarded events.
+--
+-- This element is the FIRST-INTRODUCTION channel only. Once a recipient's
+-- introduction bit is set (member_relations_vector at index_in_group =
+-- MRIntroduced), the dissemination worker stops prepending. Profile UPDATES
+-- ride the sender's own signed 'XInfo', forwarded unchanged by the relay
+-- (XInfo is allowed unverified between subscribers via 'unverifiedAllowed').
 --
 -- Attribution rationale: the alternative (fwdSender = the profile owner) would cause
 -- xGrpMemNew's checkHostRole to fire and fail for subscriber-authored profiles,

@@ -161,29 +161,21 @@ instance TextEncoding DeliveryTaskStatus where
 data MessageDeliveryJob = MessageDeliveryJob
   { jobId :: Int64,
     jobScope :: DeliveryJobScope,
-    jobSenders :: JobSenders,
+    senderGMIds :: [GroupMemberId],
     body :: ByteString,
     cursorGMId_ :: Maybe GroupMemberId
   }
   deriving (Show)
 
--- | Senders contributing to a delivery job's body. The two storage columns
--- (single_sender_group_member_id, sender_group_member_ids) are mutually
--- exclusive by construction here: SingleSender persists only the column,
--- MultiSender persists only the list (which may be empty for jobs with no
--- relevant senders, e.g. DJRelayRemoved triggered by the relay leaving).
-data JobSenders
-  = SingleSender GroupMemberId
-  | MultiSender [GroupMemberId]
-  deriving (Show)
-
--- | The sender member id used by getGroupMembersByCursor to exclude the sender
--- from recipients in the single-sender fast path. Nothing for multi-sender jobs,
--- which means cursor returns all current members (senders themselves included).
-singleSenderGMId :: JobSenders -> Maybe GroupMemberId
-singleSenderGMId = \case
-  SingleSender s -> Just s
-  MultiSender _ -> Nothing
+-- | The sender member id used by getGroupMembersByCursor to exclude the
+-- sender from recipients in the single-sender fast path. Nothing for
+-- multi-sender or sender-less jobs — the cursor then returns all current
+-- members, and the relay's own forwarding loop is no-op'd on the receiver
+-- side via sameMemberId checks.
+singleSenderGMId_ :: [GroupMemberId] -> Maybe GroupMemberId
+singleSenderGMId_ = \case
+  [s] -> Just s
+  _ -> Nothing
 
 deliveryJobId :: MessageDeliveryJob -> Int64
 deliveryJobId = jobId

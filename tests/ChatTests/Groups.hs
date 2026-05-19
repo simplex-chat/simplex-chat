@@ -18,8 +18,9 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Maybe (fromMaybe, listToMaybe, maybeToList)
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
@@ -251,6 +252,7 @@ chatGroupTests = do
         it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerNoHistoryReceivesProfile
         it "multi senders disseminate independently" testChannelMultiSendersIndependentDissemination
         it "extBody overflow falls back to bare body and skips vector mark" testChannelExtBodyOverflowSkipsVectorMark
+        it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
@@ -8889,21 +8891,144 @@ testChannelExtBodyOverflowSkipsVectorMark ps =
           dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
           dan <# "#team cath> hi [>>]"
 
-          -- Crucial regression assertion: cath.sent_profile_vector on the relay (bob)
-          -- is empty. Without the fix, the worker would have marked dan.idx (and
-          -- alice.idx) after the agent-rejected delivery, locking dan out of future
-          -- dissemination — the bug the fix closes.
-          checkSentProfileVectorEmpty bob "cath"
+          -- Crucial regression assertion: dan's bit in cath's
+          -- member_relations_vector (on the relay) is NOT set. Without the
+          -- fix, the worker would have marked dan.idx after the agent-rejected
+          -- delivery, locking dan out of future dissemination — the bug the
+          -- fix closes. The join-time introduction set bits for alice (owner)
+          -- and bob (relay) in cath's vector; only dan's bit reflects the
+          -- forward-marking path that the overflow branch must skip.
+          danIdx <- vectorIndexOf bob "dan"
+          checkVectorBitUnset bob "cath" danIdx
   where
-    checkSentProfileVectorEmpty :: HasCallStack => TestCC -> T.Text -> IO ()
-    checkSentProfileVectorEmpty cc senderName = do
-      lens <- withCCTransaction cc $ \db ->
+    vectorIndexOf :: HasCallStack => TestCC -> T.Text -> IO Int64
+    vectorIndexOf cc memberName = do
+      rows <- withCCTransaction cc $ \db ->
         DB.query
           db
-          "SELECT length(sent_profile_vector) FROM group_members WHERE local_display_name = ?"
+          "SELECT index_in_group FROM group_members WHERE local_display_name = ?"
+          (Only memberName) ::
+          IO [Only Int64]
+      case rows of
+        [Only i] -> pure i
+        _ -> error $ "vectorIndexOf: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
+    checkVectorBitUnset :: HasCallStack => TestCC -> T.Text -> Int64 -> IO ()
+    checkVectorBitUnset cc senderName idx = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT member_relations_vector FROM group_members WHERE local_display_name = ?"
           (Only senderName) ::
-          IO [Only Int]
-      map fromOnly lens `shouldBe` [0]
+          IO [Only (Maybe ByteString)]
+      case rows of
+        [Only mv] -> do
+          let v = fromMaybe B.empty mv
+              ix = fromIntegral idx
+              byte = if ix < B.length v then B.index v ix else '\x00'
+          (byte == '\x00') `shouldBe` True
+        _ -> error $ "checkVectorBitUnset: expected 1 row for " <> T.unpack senderName <> ", got " <> show (length rows)
+
+-- Profile updates flow through forwarded XInfo (signed by the sender), not through
+-- prepended XGrpMemNew. Once a recipient's introduction bit is set, the relay
+-- must NOT clear it on profile update; the recipient learns the new name from
+-- the forwarded XInfo while their bit stays set.
+--
+-- Asserted structurally via SQL on the relay's DB rather than terminal output,
+-- because the "updated profile" chat item rendering on relays/owners is
+-- order-sensitive in the test runner.
+testChannelProfileUpdateNoRePrepend :: HasCallStack => TestParams -> IO ()
+testChannelProfileUpdateNoRePrepend ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          -- cath's first message: dan learns cath via prepended XGrpMemNew,
+          -- the relay marks dan's index in cath's member_relations_vector.
+          cath #> "#team hi"
+          bob <# "#team cath> hi"
+          alice <# "#team cath> hi [>>]"
+          dan <## "#team: bob added cath (Catherine) to the group"
+          dan <# "#team cath> hi [>>]"
+
+          danIdx <- indexInGroupOf bob "dan"
+          cathGMId <- gmIdByName bob "cath"
+          checkVectorBitSet bob cathGMId danIdx
+          getProfileNameByGMId bob cathGMId `shouldReturn` Just "cath"
+
+          -- cath renames herself. /p only delivers XInfo to direct contacts;
+          -- for group members it piggybacks on the next group send via
+          -- shouldSendProfileUpdate inside sendGroupMessages.
+          cath ##> "/p kate Kate"
+          cath <## "user profile is changed to kate (Kate) (your 0 contacts are notified)"
+
+          -- Next send carries the XInfo to the relay AND the user message.
+          -- Structural assertions on the relay come after consuming downstream
+          -- terminal lines so test teardown finds clean queues. Peer order:
+          -- bob (relay) shows the direct message; alice + dan get forwarded
+          -- copies; dan must NOT see another "added cath/kate" line.
+          cath #> "#team hi again"
+          bob <# "#team kate> hi again"
+          alice <# "#team kate> hi again [>>]"
+          dan <# "#team kate> hi again [>>]"
+          threadDelay 500000
+          checkVectorBitSet bob cathGMId danIdx
+          getProfileNameByGMId bob cathGMId `shouldReturn` Just "kate"
+  where
+    indexInGroupOf :: HasCallStack => TestCC -> T.Text -> IO Int64
+    indexInGroupOf cc memberName = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT index_in_group FROM group_members WHERE local_display_name = ?"
+          (Only memberName) ::
+          IO [Only Int64]
+      case rows of
+        [Only i] -> pure i
+        _ -> error $ "indexInGroupOf: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
+    gmIdByName :: HasCallStack => TestCC -> T.Text -> IO Int64
+    gmIdByName cc memberName = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT group_member_id FROM group_members WHERE local_display_name = ?"
+          (Only memberName) ::
+          IO [Only Int64]
+      case rows of
+        [Only i] -> pure i
+        _ -> error $ "gmIdByName: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
+    getProfileNameByGMId :: HasCallStack => TestCC -> Int64 -> IO (Maybe T.Text)
+    getProfileNameByGMId cc gmId = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          [sql|
+            SELECT p.display_name
+            FROM group_members m
+            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+            WHERE m.group_member_id = ?
+          |]
+          (Only gmId) ::
+          IO [Only T.Text]
+      pure $ fromOnly <$> listToMaybe rows
+    checkVectorBitSet :: HasCallStack => TestCC -> Int64 -> Int64 -> IO ()
+    checkVectorBitSet cc gmId idx = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
+          (Only gmId) ::
+          IO [Only (Maybe ByteString)]
+      case rows of
+        [Only mv] -> do
+          let v = fromMaybe B.empty mv
+              ix = fromIntegral idx
+              byte = if ix < B.length v then B.index v ix else '\x00'
+          (byte /= '\x00') `shouldBe` True
+        _ -> error $ "checkVectorBitSet: expected 1 row for group_member_id=" <> show gmId <> ", got " <> show (length rows)
 
 testChannelMultiSendersIndependentDissemination :: HasCallStack => TestParams -> IO ()
 testChannelMultiSendersIndependentDissemination ps =

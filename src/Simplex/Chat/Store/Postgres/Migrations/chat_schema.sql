@@ -635,7 +635,6 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     job_scope_spec_tag text,
     job_scope_include_pending smallint,
     job_scope_support_gm_id bigint,
-    single_sender_group_member_id bigint,
     body bytea,
     cursor_group_member_id bigint,
     job_status text NOT NULL,
@@ -819,8 +818,7 @@ CREATE TABLE test_chat_schema.group_members (
     index_in_group bigint DEFAULT 0 NOT NULL,
     member_relations_vector bytea,
     relay_link bytea,
-    member_pub_key bytea,
-    sent_profile_vector bytea DEFAULT '\x'::bytea NOT NULL
+    member_pub_key bytea
 );
 
 
@@ -2205,10 +2203,6 @@ CREATE INDEX idx_delivery_jobs_next ON test_chat_schema.delivery_jobs USING btre
 
 
 
-CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON test_chat_schema.delivery_jobs USING btree (single_sender_group_member_id);
-
-
-
 CREATE INDEX idx_delivery_tasks_created_at ON test_chat_schema.delivery_tasks USING btree (created_at);
 
 
@@ -2834,11 +2828,6 @@ ALTER TABLE ONLY test_chat_schema.delivery_jobs
 
 ALTER TABLE ONLY test_chat_schema.delivery_jobs
     ADD CONSTRAINT delivery_jobs_job_scope_support_gm_id_fkey FOREIGN KEY (job_scope_support_gm_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.delivery_jobs
-    ADD CONSTRAINT delivery_jobs_single_sender_group_member_id_fkey FOREIGN KEY (single_sender_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 
