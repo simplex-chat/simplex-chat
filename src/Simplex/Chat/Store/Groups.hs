@@ -2233,16 +2233,10 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
 
--- Mark this member's vector at the given recipient indexes as MRIntroduced
--- (the channel-side "this member has been announced to recipient i" bit).
--- Monotonic: bits only flip 0→1, so this is idempotent on repeated calls.
--- Preserves the introduction direction bit (setRelations masks only status bits).
---
--- NULL is treated as an empty vector. The M20251117 backfill only populates
--- the column for groups whose user member has role NOT IN admin/owner; in
--- channels the moderator rows (owner + admins) start with NULL and only get
--- materialized by writes here. Treating NULL as empty lets dissemination work
--- uniformly without needing a second backfill.
+-- Mark this member's vector at the given recipient indexes as MRIntroduced.
+-- Idempotent and monotonic; preserves the introduction direction bit.
+-- NULL ↔ empty: M20251117's backfill skips admin/owner-led groups, so
+-- channel moderator rows start NULL and materialize on first write.
 markVectorMembersAnnounced :: DB.Connection -> GroupMemberId -> [Int64] -> ExceptT StoreError IO ()
 markVectorMembersAnnounced _ _ [] = pure ()
 markVectorMembersAnnounced db groupMemberId ixs = do

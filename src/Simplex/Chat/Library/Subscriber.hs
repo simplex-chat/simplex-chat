@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, nub, partition)
+import Data.List (find, foldl', nub, partition)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -46,7 +46,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, encodeBinaryBatch, encodeFwdElement, prependBatchElement)
+import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, encodeBinaryBatch, encodeFwdElement, packIntoBatches, packIntoBody)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
@@ -3610,29 +3610,17 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                     let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
                         senderGMIds
-                          -- Relay groups: tasks in nextTasks may have different senders.
-                          -- Only those accepted by batchDeliveryTasks1 (i.e. in `body`)
-                          -- contribute to dissemination tracking; "large" tasks (DTSError)
-                          -- and overflow-rejected tasks (left DTSNew for a later run) are
-                          -- not in body and their senders must not be marked as already
-                          -- disseminated by this job.
-                          --
-                          -- 254 caps the list at smpEncodeList's one-byte length-prefix
-                          -- limit AND the prependBatchElement count budget. Above it,
-                          -- excess senders simply don't get a profile prepend this batch;
-                          -- the next forward retries them. Logged because it is unusual.
+                          -- Relay groups: distinct senders in this body's accepted
+                          -- tasks. Tasks not in `body` (large or overflow-rejected)
+                          -- must not be marked as disseminated by this job.
                           | useRelays' gInfo =
                               let acceptedTasks = filter ((`elem` taskIds) . deliveryTaskId) (L.toList nextTasks)
-                                  ss = nub (map taskSenderGMId acceptedTasks)
-                               in take 254 ss
-                          -- Fully-connected groups: getNextDeliveryTasks filters by
-                          -- sender_group_member_id, so all nextTasks share one sender. Use
-                          -- the outer task's sender even when acceptedTasks is empty (all
-                          -- batched tasks rejected as "large"), preserving the fast-path
-                          -- contract that the worker has a known sender.
+                               in nub (map taskSenderGMId acceptedTasks)
+                          -- Fully-connected: getNextDeliveryTasks already filtered
+                          -- by sender; fall back to the outer task's sender when
+                          -- acceptedTasks is empty (all batched tasks rejected as
+                          -- "large") to keep the single-sender fast-path contract.
                           | otherwise = [taskSenderGMId task]
-                    when (useRelays' gInfo && length senderGMIds == 254) $
-                      logInfo $ "delivery task worker: capped senderGMIds at 254 for group " <> tshow groupId
                     withStore' $ \db -> do
                       createMsgDeliveryJob db gInfo jobScope senderGMIds body
                       forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
@@ -3723,21 +3711,10 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   -- there's no member review in channels, so job spec includePending is ignored
                   DJSGroup {} -> do
                     bucketSize <- asks $ deliveryBucketSize . config
-                    -- (sender, vector) snapshot read in one transaction so the
-                    -- per-recipient partition runs against a consistent
-                    -- point-in-time view. Within SQLite the connection MVar
-                    -- serializes; under Postgres READ COMMITTED a concurrent
-                    -- writer could still interleave between rows, but any
-                    -- divergence self-heals on the next forward (the vector
-                    -- is monotonic — bits only flip 0→1).
-                    --
-                    -- Missing senders (deleted between job creation and
-                    -- execution, e.g. via a concurrent XGrpMemDel) are
-                    -- skipped rather than aborting the whole job: their
-                    -- profile cannot be disseminated, but the rest of the
-                    -- batch ships normally. Recipients see "unknown member"
-                    -- for the missing sender's forwarded content only in
-                    -- this batch.
+                    -- Snapshot (sender, vector) in one tx so partitioning runs
+                    -- on a coherent point-in-time view. Missing senders
+                    -- (concurrent XGrpMemDel) are skipped — their content
+                    -- ships without a prepend.
                     senderProfiles <- withStore' $ \db ->
                       fmap catMaybes . forM senderGMIds $ \sId -> do
                         sender_ <- runExceptT $ getGroupMemberById db vr user sId
@@ -3751,63 +3728,55 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     let missingSenders = length senderGMIds - length senderProfiles
                     when (missingSenders > 0) $
                       logInfo $ "delivery job " <> tshow jobId <> ": " <> tshow missingSenders <> " senders missing; skipping their profile prepend"
-                    -- extBody prepends one XGrpMemNew per sender whose vector
-                    -- we hold. Profile updates do not invalidate the prepend:
-                    -- the relay's DB has the current profile (XInfo updates
-                    -- it on arrival), and the prepend is suppressed for any
-                    -- recipient whose bit is already set.
-                    extBody <-
+                    -- Small profiles ride inline (extBody); the rest spill
+                    -- into standalone batches that ship before the body.
+                    (extBody, inBodySenders, overflowBatches, activeSenders) <-
                       if null senderProfiles
-                        then pure body
+                        then pure (body, [], [], [])
                         else do
-                          fwdBrokerTs <- liftIO getCurrentTime
-                          let profileElements = map (\(sender, _) -> encodeMemberProfileElement vr gInfo sender fwdBrokerTs) senderProfiles
-                          pure $ foldr prependBatchElement body profileElements
-                    -- If prepending pushed extBody past the agent's per-message ceiling,
-                    -- the agent would reject delivery to the "needs profiles" recipients
-                    -- AND we'd still mark their vectors as if delivery had succeeded —
-                    -- silently locking them out of future dissemination for these senders.
-                    -- Fall back: deliver bare body to everyone in this job, skip the marks,
-                    -- and let the next forwarded message (likely smaller, since body filled
-                    -- the budget here) re-attempt the prepend.
-                    let extBodyOverflows = B.length extBody > maxEncodedMsgLength
-                        prependProfiles = not (null senderProfiles) && not extBodyOverflows
-                    when extBodyOverflows $
-                      logInfo $
-                        "delivery job "
-                          <> tshow jobId
-                          <> ": extBody "
-                          <> tshow (B.length extBody)
-                          <> " bytes exceeds maxEncodedMsgLength "
-                          <> tshow maxEncodedMsgLength
-                          <> "; falling back to bare body for all recipients in this job, skipping vector marks"
-                    sendLoop bucketSize startingCursor senderProfiles extBody prependProfiles
+                          let labeled = [(s, encodeMemberProfileElement vr gInfo s) | (s, _) <- senderProfiles]
+                              -- Singleton-batch budget: '=' + count(1) + Word16 length prefix + element.
+                              singletonOverhead = 4
+                              maxElement = maxEncodedMsgLength - singletonOverhead
+                              (validLabeled, oversized) = partition (\(_, b) -> B.length b <= maxElement) labeled
+                          -- Drop elements that overflow even a singleton batch (rare;
+                          -- requires an avatar near maxEncodedMsgLength). Senders stay
+                          -- unmarked; the operator sees a chat error per affected sender.
+                          unless (null oversized) $ do
+                            logInfo $ "delivery job " <> tshow jobId <> ": dropping " <> tshow (length oversized) <> " oversized profile element(s)"
+                            toView $ CEvtChatErrors [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | (s, _) <- oversized]
+                          let (extBody', inBody, overflowLabeled) = packIntoBody maxEncodedMsgLength body validLabeled
+                              overflowBatches' = packIntoBatches maxEncodedMsgLength overflowLabeled
+                          pure (extBody', inBody, overflowBatches', map fst validLabeled)
+                    sendLoop bucketSize startingCursor senderProfiles (extBody, inBodySenders, overflowBatches) activeSenders
                     where
-                      sendLoop :: Int -> Maybe GroupMemberId -> [(GroupMember, ByteString)] -> ByteString -> Bool -> CM ()
-                      sendLoop bucketSize cursorGMId_ senderProfiles extBody prependProfiles = do
+                      sendLoop :: Int -> Maybe GroupMemberId -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(ByteString, [GroupMember])]) -> [GroupMember] -> CM ()
+                      sendLoop bucketSize cursorGMId_ senderProfiles plan@(extBody, inBodySenders, overflowBatches) activeSenders = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSender_ bucketSize
                         unless (null mems) $ do
-                          if prependProfiles
-                            then do
-                              let knowsAll m = all (\(_, vec) -> getRelation (indexInGroup m) vec == MRIntroduced) senderProfiles
-                                  (hasAllProfiles, needsProfiles) = partition knowsAll mems
-                              unless (null needsProfiles) $ deliver extBody needsProfiles
-                              unless (null hasAllProfiles) $ deliver body hasAllProfiles
-                              -- mark only members the SMP-side call could deliver to (had a ready conn).
-                              -- marking pending-conn members would lose the profile on their reconnect.
-                              let readyIdxs = [indexInGroup m | m <- mems, isJust (readyMemberConn m)]
-                              unless (null readyIdxs) $
-                                withStore $ \db ->
-                                  forM_ senderProfiles $ \(sender, _) ->
-                                    markVectorMembersAnnounced db (groupMemberId' sender) readyIdxs
-                            else
-                              -- No dissemination this job: either no senders to disseminate,
-                              -- or the prepended bytes would exceed the agent's per-message
-                              -- ceiling. Vectors stay unchanged so the next forward retries.
-                              deliver body mems
+                          let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senderProfiles]
+                              missing r s = case M.lookup (groupMemberId' s) senderVec of
+                                Just vec -> getRelation (indexInGroup r) vec /= MRIntroduced
+                                Nothing -> False
+                              -- Per recipient: overflow batches they're missing senders from,
+                              -- then either extBody (missing an in-body sender) or plain body.
+                              recipientPieces r =
+                                [batch | (batch, ss) <- overflowBatches, any (missing r) ss]
+                                  <> [if any (missing r) inBodySenders then extBody else body]
+                              msgReqs = buildMsgReqs mems recipientPieces
+                          unless (null msgReqs) $ void $ withAgent (`sendMessages` msgReqs)
+                          -- Mark only senders whose profile actually shipped
+                          -- (in body or in a batch), at recipients with a
+                          -- ready connection. Oversized senders dropped above
+                          -- are excluded from activeSenders.
+                          let readyIdxs = [indexInGroup m | m <- mems, isJust (readyMemberConn m)]
+                          unless (null readyIdxs) $
+                            withStore $ \db ->
+                              forM_ activeSenders $ \sender ->
+                                markVectorMembersAnnounced db (groupMemberId' sender) readyIdxs
                           let cursorGMId' = groupMemberId' $ last mems
                           withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
-                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senderProfiles extBody prependProfiles
+                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senderProfiles plan activeSenders
                   DJSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
@@ -3872,6 +3841,25 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
                               Just 1 -> VRValue (Just 1) msgBody
                               Just _ -> VRRef 1
+                -- Per-recipient piece list -> flat MsgReq list, with distinct
+                -- body bytes deduped via VRValue (Just i) / VRRef i. First
+                -- piece for a connection carries aConnId conn; subsequent
+                -- pieces on the same connection carry empty ConnId (agent
+                -- groups by-connection on this convention).
+                buildMsgReqs :: [GroupMember] -> (GroupMember -> [ByteString]) -> [MsgReq]
+                buildMsgReqs mems recipientPieces =
+                  let (_, _, reqs) = foldl' addRecipient (M.empty, 1, []) mems
+                   in reverse reqs
+                  where
+                    addRecipient acc r = case readyMemberConn r of
+                      Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientPieces r)
+                      Nothing -> acc
+                    addPiece conn (k, (bodies, nextIdx, reqs)) b =
+                      let (bodies', nextIdx', vor) = case M.lookup b bodies of
+                            Just i -> (bodies, nextIdx, VRRef i)
+                            Nothing -> (M.insert b nextIdx bodies, nextIdx + 1, VRValue (Just nextIdx) b)
+                          connId = if k == 0 then aConnId conn else B.empty
+                       in (k + 1, (bodies', nextIdx', (connId, PQEncOff, MsgFlags False, vor) : reqs))
 
 -- Single worker processes all relay requests (XGrpRelayInv).
 -- We use map with a single key 1 to fit into existing worker management framework.

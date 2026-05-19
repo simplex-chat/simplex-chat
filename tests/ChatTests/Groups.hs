@@ -251,7 +251,8 @@ chatGroupTests = do
         it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
         it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerNoHistoryReceivesProfile
         it "multi senders disseminate independently" testChannelMultiSendersIndependentDissemination
-        it "extBody overflow falls back to bare body and skips vector mark" testChannelExtBodyOverflowSkipsVectorMark
+        it "large profile fits in body" testChannelLargeProfileFitsInBody
+        it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfilesPackedAcrossBatches
         it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
@@ -8851,13 +8852,14 @@ testChannelLateJoinerNoHistoryReceivesProfile ps =
           alice <# "#team cath> hi again [>>]"
           dan <# "#team cath> hi again [>>]"
 
--- Regression test for: prepended XGrpMemNew can push extBody past maxEncodedMsgLength,
--- causing the agent to reject delivery to "needs profiles" recipients while the worker
--- still marks their sent_profile_vector — silently locking them out of future
--- dissemination for that sender. With the fix, the worker falls back to delivering the
--- bare body (no prepend) and skips the vector mark, so the next forward retries.
-testChannelExtBodyOverflowSkipsVectorMark :: HasCallStack => TestParams -> IO ()
-testChannelExtBodyOverflowSkipsVectorMark ps =
+-- A single large profile rides inline in the body batch (the packer's
+-- in-body path). The regression target is the OLD extBody-overflow
+-- fallback that left dan stuck as "unknown member" with no vector mark;
+-- with the new packer the introduction lands and dan's bit is set.
+-- The multi-sender overflow path is covered by
+-- testChannelMultipleLargeProfilesPackedAcrossBatches.
+testChannelLargeProfileFitsInBody :: HasCallStack => TestParams -> IO ()
+testChannelLargeProfileFitsInBody ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -8866,40 +8868,31 @@ testChannelExtBodyOverflowSkipsVectorMark ps =
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
           memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
 
-          -- Inflate cath's profile image directly on the relay's database so the
-          -- prepended XGrpMemNew element for her overflows maxEncodedMsgLength even
-          -- with a tiny forwarded body. This bypasses the chat client's profile-size
-          -- validation; we're exercising the relay's overflow path, not the validator.
-          let bigImage = T.pack ("data:image/png;base64," <> replicate 16000 'A')
+          -- Inflate cath's profile image on the relay. ~14000 chars is small
+          -- enough to fit in a singleton batch (maxEncodedMsgLength-4) but
+          -- also small enough to pack inline with the forwarded "hi" body —
+          -- this exercises the in-body inline path of the new packer. The
+          -- regression target is the OLD behavior (extBody fallback + skipped
+          -- vector mark + recipient stuck as "unknown member"); both the
+          -- in-body and overflow paths reach the same observable end state.
+          let bigImage = T.pack ("data:image/png;base64," <> replicate 14000 'A')
           withCCTransaction bob $ \db ->
             DB.execute
               db
               "UPDATE contact_profiles SET image = ? WHERE display_name = ?"
               (bigImage, "cath" :: T.Text)
 
-          -- cath sends a small message. The relay loads cath's (now huge) profile from
-          -- its DB and tries to prepend it; extBody exceeds maxEncodedMsgLength. The
-          -- worker falls back to delivering the bare body to all recipients in this
-          -- job AND skips the vector marks. dan learns nothing about cath from this
-          -- batch — sees the familiar "unknown member" line — but recovery is not
-          -- locked out for future forwards.
+          -- cath sends a small message. dan dispatches the introduction
+          -- event and the forward arrives with the resolved sender name.
           cath #> "#team hi"
           bob <# "#team cath> hi"
-          -- alice already knows cath via the join-time XGrpMemNew; her view is unaffected.
           alice <# "#team cath> hi [>>]"
-          -- dan never received an XGrpMemNew for cath (no prepend in the overflowing batch).
-          dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+          dan <## "#team: bob added cath (Catherine) to the group"
           dan <# "#team cath> hi [>>]"
 
-          -- Crucial regression assertion: dan's bit in cath's
-          -- member_relations_vector (on the relay) is NOT set. Without the
-          -- fix, the worker would have marked dan.idx after the agent-rejected
-          -- delivery, locking dan out of future dissemination — the bug the
-          -- fix closes. The join-time introduction set bits for alice (owner)
-          -- and bob (relay) in cath's vector; only dan's bit reflects the
-          -- forward-marking path that the overflow branch must skip.
+          -- dan's bit IS set in cath's vector after delivery.
           danIdx <- vectorIndexOf bob "dan"
-          checkVectorBitUnset bob "cath" danIdx
+          checkVectorBitSet bob "cath" danIdx
   where
     vectorIndexOf :: HasCallStack => TestCC -> T.Text -> IO Int64
     vectorIndexOf cc memberName = do
@@ -8912,8 +8905,8 @@ testChannelExtBodyOverflowSkipsVectorMark ps =
       case rows of
         [Only i] -> pure i
         _ -> error $ "vectorIndexOf: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
-    checkVectorBitUnset :: HasCallStack => TestCC -> T.Text -> Int64 -> IO ()
-    checkVectorBitUnset cc senderName idx = do
+    checkVectorBitSet :: HasCallStack => TestCC -> T.Text -> Int64 -> IO ()
+    checkVectorBitSet cc senderName idx = do
       rows <- withCCTransaction cc $ \db ->
         DB.query
           db
@@ -8925,8 +8918,101 @@ testChannelExtBodyOverflowSkipsVectorMark ps =
           let v = fromMaybe B.empty mv
               ix = fromIntegral idx
               byte = if ix < B.length v then B.index v ix else '\x00'
-          (byte == '\x00') `shouldBe` True
-        _ -> error $ "checkVectorBitUnset: expected 1 row for " <> T.unpack senderName <> ", got " <> show (length rows)
+          (byte /= '\x00') `shouldBe` True
+        _ -> error $ "checkVectorBitSet: expected 1 row for " <> T.unpack senderName <> ", got " <> show (length rows)
+
+-- Two senders with large avatars and one multi-sender job: the packer puts
+-- each profile in its own overflow batch (neither fits in body together,
+-- nor fit pair-wise as one overflow). The unintroduced recipient receives
+-- both profile batches before the body, dispatches both introductions, and
+-- both vector bits are set.
+testChannelMultipleLargeProfilesPackedAcrossBatches :: HasCallStack => TestParams -> IO ()
+testChannelMultipleLargeProfilesPackedAcrossBatches ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- Inflate cath's and dan's profile images on the relay. Each is
+            -- ~14500 chars: small enough that ONE rides inline with the body,
+            -- but two together exceed the body's byte budget so the second
+            -- spills into an overflow batch.
+            let cathImage = T.pack ("data:image/png;base64," <> replicate 14500 'A')
+                danImage = T.pack ("data:image/png;base64," <> replicate 14500 'B')
+            withCCTransaction bob $ \db -> do
+              DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (cathImage, "cath" :: T.Text)
+              DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (danImage, "dan" :: T.Text)
+
+            -- cath and dan post in quick succession; with deliveryWorkerDelay=250ms
+            -- the relay accumulates both tasks into one multi-sender job before
+            -- the worker fires. The packer fits cath inline (first task / smaller
+            -- by stable sort) and spills dan to a standalone overflow batch.
+            cath #> "#team from cath"
+            bob <# "#team cath> from cath"
+            dan #> "#team from dan"
+            bob <# "#team dan> from dan"
+
+            -- alice already knows both via join-time XGrpMemNew; her view is
+            -- the bare forwarded messages.
+            alice
+              <### [ WithTime "#team cath> from cath [>>]",
+                     WithTime "#team dan> from dan [>>]"
+                   ]
+            -- cath and dan each receive the multi-sender batch too. Their own
+            -- forwarded message is deduped (SEDuplicateGroupMessage), and
+            -- their own XGrpMemNew is no-op'd via sameMemberId. They see the
+            -- introduction and forwarded message for the OTHER sender.
+            cath
+              <### [ "#team: bob added dan (Daniel) to the group",
+                     WithTime "#team dan> from dan [>>]"
+                   ]
+            dan
+              <### [ "#team: bob added cath (Catherine) to the group",
+                     WithTime "#team cath> from cath [>>]"
+                   ]
+            -- eve sees both introductions (one from the overflow batch, one
+            -- from the inline profile in the body) plus both forwarded
+            -- messages.
+            eve
+              <### [ "#team: bob added dan (Daniel) to the group",
+                     "#team: bob added cath (Catherine) to the group",
+                     WithTime "#team cath> from cath [>>]",
+                     WithTime "#team dan> from dan [>>]"
+                   ]
+
+            eveIdx <- vectorIndexOf bob "eve"
+            checkVectorBitSet bob "cath" eveIdx
+            checkVectorBitSet bob "dan" eveIdx
+  where
+    cfg = testCfg {deliveryWorkerDelay = 250000}
+    vectorIndexOf :: HasCallStack => TestCC -> T.Text -> IO Int64
+    vectorIndexOf cc memberName = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT index_in_group FROM group_members WHERE local_display_name = ?"
+          (Only memberName) ::
+          IO [Only Int64]
+      case rows of
+        [Only i] -> pure i
+        _ -> error $ "vectorIndexOf: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
+    checkVectorBitSet :: HasCallStack => TestCC -> T.Text -> Int64 -> IO ()
+    checkVectorBitSet cc senderName idx = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT member_relations_vector FROM group_members WHERE local_display_name = ?"
+          (Only senderName) ::
+          IO [Only (Maybe ByteString)]
+      case rows of
+        [Only mv] -> do
+          let v = fromMaybe B.empty mv
+              ix = fromIntegral idx
+              byte = if ix < B.length v then B.index v ix else '\x00'
+          (byte /= '\x00') `shouldBe` True
+        _ -> error $ "checkVectorBitSet: expected 1 row for " <> T.unpack senderName <> ", got " <> show (length rows)
 
 -- Profile updates flow through forwarded XInfo (signed by the sender), not through
 -- prepended XGrpMemNew. Once a recipient's introduction bit is set, the relay

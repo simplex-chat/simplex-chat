@@ -14,21 +14,24 @@ module Simplex.Chat.Messages.Batch
     batchMessages,
     batchDeliveryTasks1,
     prependBatchElement,
+    packIntoBody,
+    packIntoBatches,
   )
 where
 
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (chr, ord)
+import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (foldl')
+import Data.List (foldl', sortBy)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
-import Simplex.Chat.Types (VersionRangeChat)
+import Simplex.Chat.Types (GroupMember, VersionRangeChat)
 import Simplex.Messaging.Encoding (Large (..), smpEncode, smpEncodeList)
 
 data BatchMode = BMJson | BMBinary
@@ -83,10 +86,7 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
-      -- n < 254 keeps room for one prepended profile element per sender on
-      -- this body; prependBatchElement errors when the post-prepend count
-      -- exceeds 255 (one-byte length prefix in encodeBinaryBatch).
-      | n < 254 && len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
@@ -124,17 +124,10 @@ batchLen _ len 1 = len
 batchLen BMJson len n = len + n + 1 -- (n - 1) commas + 2 brackets
 batchLen BMBinary len n = len + n * 2 + 2 -- 2-byte length prefix per element + '=' + count
 
--- | Prepend one element to an existing binary-batch body without re-parsing the rest.
---
--- Body format produced by 'encodeBinaryBatch': '=' <count:1B> ( <len:Word16> <element> )*
--- where count is 'lenEncode (length elements)' (single byte, 0..255).
---
--- The input @element@ is the raw element body (without a length prefix); this
--- function wraps it with a Word16 length prefix and inserts it at position 0.
---
--- Calls 'error' on malformed input or count overflow (>= 255); both indicate
--- programmer error — callers must pass a body produced by 'encodeBinaryBatch'
--- with at most 254 elements.
+-- | Prepend one element to an existing binary-batch body without re-parsing
+-- the rest. Body format: '=' <count:1B> ( <len:Word16> <element> )*.
+-- 'error' on malformed input or count overflow — invariant assertions;
+-- packers below enforce the byte budget that keeps this unreachable.
 prependBatchElement :: ByteString -> ByteString -> ByteString
 prependBatchElement element body
   | B.null body = encodeBinaryBatch [element]
@@ -148,3 +141,39 @@ prependBatchElement element body
        in B.cons '=' (B.cons newCount (encodedElement <> rest))
   where
     oldCount = ord (B.index body 1)
+
+-- | Greedy-pack elements into 'body' smallest-first while the result fits
+-- 'maxLen'. Returns (extBody, accepted, overflow): the senders whose
+-- profile is now inline AND the labeled elements that did not fit.
+-- Per-element budget: 2-byte Word16 length prefix plus the element bytes.
+packIntoBody :: Int -> ByteString -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(GroupMember, ByteString)])
+packIntoBody maxLen body labeled =
+  let (b, accepted, overflow) = foldl' step (body, [], []) (sortBy (compare `on` (B.length . snd)) labeled)
+   in (b, reverse accepted, reverse overflow)
+  where
+    step (b, accepted, overflow) (s, e)
+      | B.length b + 2 + B.length e <= maxLen = (prependBatchElement e b, s : accepted, overflow)
+      | otherwise = (b, accepted, (s, e) : overflow)
+
+-- | Greedy-pack elements into one or more batches, each bounded by 'maxLen'.
+-- Returns each batch paired with the senders whose profile it carries, so
+-- the worker's recipient-misses-sender check uses 'GroupMember' identity
+-- rather than encoded bytes. Ascending size keeps small-only batches
+-- together.
+packIntoBatches :: Int -> [(GroupMember, ByteString)] -> [(ByteString, [GroupMember])]
+packIntoBatches maxLen = go . sortBy (compare `on` (B.length . snd))
+  where
+    go [] = []
+    go ((s, e) : rest) =
+      let (taken, left) = takeFitting [(s, e)] (singletonLen e) rest
+          batch = encodeBinaryBatch (reverse (map snd taken))
+       in (batch, reverse (map fst taken)) : go left
+    -- A one-element batch is encodeBinaryBatch [e] = '=' + 1-byte count +
+    -- 2-byte length + e bytes = B.length e + 4. Subsequent additions cost
+    -- 2 + B.length e (length prefix only — '=' and count are already in).
+    singletonLen e = B.length e + 4
+    takeFitting acc _ [] = (acc, [])
+    takeFitting acc accLen ((s, e) : rest)
+      | accLen + 2 + B.length e <= maxLen =
+          takeFitting ((s, e) : acc) (accLen + 2 + B.length e) rest
+      | otherwise = (acc, (s, e) : rest)

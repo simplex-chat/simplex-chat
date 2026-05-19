@@ -642,7 +642,7 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    sender_group_member_ids bytea
+    sender_group_member_ids text
 );
 
 

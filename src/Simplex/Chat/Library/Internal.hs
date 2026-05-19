@@ -1169,11 +1169,10 @@ introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
+  -- XGrpMemNew → mods (announces subscriber); XGrpMemIntro → subscriber
+  -- (introduces mods). Mark both directions so the worker doesn't re-prepend
+  -- on the first authored forward.
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
-  -- Both directions are announcements: XGrpMemNew above carries the subscriber's
-  -- profile to moderators, and XGrpMemIntro below carries each moderator's profile
-  -- to the subscriber. Marking both stops the delivery worker re-prepending
-  -- XGrpMemNew on the subscriber's first authored forward (and vice versa).
   withStore $ \db ->
     markVectorMembersAnnounced db (groupMemberId' subscriber) (map indexInGroup modMs)
   let introEvts = map (memberIntroEvt gInfo) modMs
@@ -1204,32 +1203,16 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
   where
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
 
--- | Build a forwarded-element wrapping 'XGrpMemNew' for the given member's profile,
--- attributed to the relay (gInfo.membership) so receivers process it via the same
--- xGrpMsgForward path as ordinary forwarded events.
---
--- This element is the FIRST-INTRODUCTION channel only. Once a recipient's
--- introduction bit is set (member_relations_vector at index_in_group =
--- MRIntroduced), the dissemination worker stops prepending. Profile UPDATES
--- ride the sender's own signed 'XInfo', forwarded unchanged by the relay
--- (XInfo is allowed unverified between subscribers via 'unverifiedAllowed').
---
--- Attribution rationale: the alternative (fwdSender = the profile owner) would cause
--- xGrpMemNew's checkHostRole to fire and fail for subscriber-authored profiles,
--- because subscribers have memberRole < GRAdmin. With fwdSender = relay the
--- 'isRelay m' guard in xGrpMemNew bypasses checkHostRole — consistent with the
--- existing direct relay announce in 'introduceInChannel'.
---
--- Unsigned because XGrpMemNew is not in 'requiresSignature' for relay groups, so
--- 'withVerifiedMsg' accepts 'VMUnsigned'. Threat-model impact: a compromised
--- relay can already inject members it would otherwise admit; this dissemination
--- path does not enlarge that surface.
-encodeMemberProfileElement :: VersionRangeChat -> GroupInfo -> GroupMember -> UTCTime -> ByteString
-encodeMemberProfileElement vr gInfo member fwdBrokerTs =
-  encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} (VMUnsigned chatMsg)
+-- | Direct (non-forwarded) 'XGrpMemNew' element for first-introduction
+-- dissemination. The relay's connection to each recipient identifies it
+-- as the connection's member; on the receiver, 'xGrpMemNew' takes 'm'
+-- from that connection and 'isRelay m' bypasses 'checkHostRole'.
+encodeMemberProfileElement :: VersionRangeChat -> GroupInfo -> GroupMember -> ByteString
+encodeMemberProfileElement vr gInfo member =
+  case encodeChatMessage (maxBound :: Int) chatMsg of
+    ECMEncoded bs -> bs
+    ECMLarge -> error "encodeMemberProfileElement: unreachable with maxBound"
   where
-    GroupMember {memberId = relayMemberId, localDisplayName = relayName} = membership gInfo
-    fwdSender = FwdMember relayMemberId relayName
     chatMsg :: ChatMessage 'Json
     chatMsg =
       ChatMessage

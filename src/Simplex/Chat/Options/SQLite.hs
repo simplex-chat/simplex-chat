@@ -12,7 +12,6 @@ import qualified Data.ByteString.Char8 as B
 import Foreign.C.String
 import Options.Applicative
 import Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
-import Simplex.Chat.Store.SQLite.Migrations.M20260515_delivery_job_senders
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 import Simplex.Messaging.Agent.Store.SQLite.Common (SQLiteFuncDef (..), SQLiteFuncPtrs (..))
 import Simplex.Messaging.Agent.Store.SQLite.DB (TrackQueries (..))
@@ -93,9 +92,7 @@ agentSuffix = "_agent.db"
 chatDBFunctions :: [SQLiteFuncDef]
 chatDBFunctions =
   [ SQLiteFuncDef "migrate_relations_vector" 3 (SQLiteAggrPtrs sqliteMemberRelationsStepPtr sqliteMemberRelationsFinalPtr),
-    SQLiteFuncDef "set_member_vector_new_relation" 4 (SQLiteFuncPtr True sqliteSetMemberVectorNewRelationPtr),
-    SQLiteFuncDef "encode_singleton_list" 1 (SQLiteFuncPtr True sqliteEncodeSingletonListPtr),
-    SQLiteFuncDef "decode_singleton_list" 1 (SQLiteFuncPtr True sqliteDecodeSingletonListPtr)
+    SQLiteFuncDef "set_member_vector_new_relation" 4 (SQLiteFuncPtr True sqliteSetMemberVectorNewRelationPtr)
   ]
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts

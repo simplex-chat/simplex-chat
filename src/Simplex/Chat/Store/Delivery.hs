@@ -30,11 +30,11 @@ module Simplex.Chat.Store.Delivery
 where
 
 import qualified Data.Aeson as J
-import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Delivery
 import Simplex.Chat.Protocol hiding (Binary)
@@ -44,9 +44,9 @@ import Simplex.Chat.Types.Shared (MsgSigStatus (..))
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Encoding (smpDecode, smpEncodeList, smpListP)
-import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.Encoding (smpDecode)
 import Simplex.Messaging.Util (eitherToMaybe, firstRow')
+import Text.Read (readMaybe)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (In (..), Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -259,15 +259,15 @@ createMsgDeliveryJob db gInfo jobScope senderGMIds body = do
         sender_group_member_ids, body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (senderGMIdsBlob_, Binary body, DJSPending, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (senderColumn, Binary body, DJSPending, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
-    -- Empty list → NULL (e.g. DJRelayRemoved triggered by the relay
-    -- leaving — no sender to disseminate). Non-empty → smpEncodeList.
-    senderGMIdsBlob_ :: Maybe (Binary ByteString)
-    senderGMIdsBlob_
+    -- NULL ↔ []; non-empty list ↔ comma-separated decimal Int64s.
+    -- Empty string is never written (would fail the reader's parse).
+    senderColumn :: Maybe Text
+    senderColumn
       | null senderGMIds = Nothing
-      | otherwise = Just $ Binary $ smpEncodeList senderGMIds
+      | otherwise = Just $ T.intercalate "," $ map (T.pack . show) senderGMIds
 
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerKey]
 getPendingDeliveryJobScopes db =
@@ -280,7 +280,7 @@ getPendingDeliveryJobScopes db =
     |]
     (Only DJSPending)
 
-type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe (Binary ByteString), Binary ByteString, Maybe GroupMemberId)
+type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe Text, Binary ByteString, Maybe GroupMemberId)
 
 getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryJob))
 getNextDeliveryJob db deliveryKey = do
@@ -317,16 +317,19 @@ getNextDeliveryJob db deliveryKey = do
           (Only jobId)
       where
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
-        toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsBlob_, Binary body, cursorGMId_)) = do
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsText_, Binary body, cursorGMId_)) = do
           jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
-          -- sender_group_member_ids is written by smpEncodeList; a parse failure means
-          -- on-disk corruption or a format change. Surface as job error rather than
-          -- silently degrading to the pre-feature "unknown member" behavior.
-          senderGMIds <- case senderGMIdsBlob_ of
-            Just (Binary bs) ->
-              first (const $ SEInvalidDeliveryJob jobId') $ parseAll smpListP bs
+          -- NULL means []; a non-NULL value must parse as a comma-separated
+          -- decimal Int64 list. An empty string or unparseable segment
+          -- surfaces as job error rather than silent degradation.
+          senderGMIds <- case senderGMIdsText_ of
             Nothing -> Right []
+            Just t -> maybe (Left $ SEInvalidDeliveryJob jobId') Right $ parseSenderGMIds t
           Right $ MessageDeliveryJob {jobId = jobId', jobScope, senderGMIds, body, cursorGMId_}
+        parseSenderGMIds :: Text -> Maybe [GroupMemberId]
+        parseSenderGMIds t
+          | T.null t = Nothing
+          | otherwise = traverse (readMaybe . T.unpack) (T.splitOn "," t)
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
