@@ -165,42 +165,42 @@ private fun UserProfilesLayout(
   showHiddenProfile: (User) -> Unit,
 ) {
   Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
-  ColumnWithScrollBar {
-    if (profileHidden.value) {
-      SettingsActionItem(painterResource(MR.images.ic_lock_open_right), stringResource(MR.strings.enter_password_to_show), click = {
-        profileHidden.value = false
-      })
-      SectionSpacer()
-    }
-    AppBarTitle(stringResource(MR.strings.your_chat_profiles), hostDevice(remember { chatModel.remoteHostId() }))
+    ColumnWithScrollBar {
+      if (profileHidden.value) {
+        SettingsActionItem(painterResource(MR.images.ic_lock_open_right), stringResource(MR.strings.enter_password_to_show), click = {
+          profileHidden.value = false
+        })
+        SectionSpacer()
+      }
+      AppBarTitle(stringResource(MR.strings.your_chat_profiles), hostDevice(remember { chatModel.remoteHostId() }))
 
-    for (user in filteredUsers) {
-      UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
-      Divider(Modifier.padding(horizontal = 8.dp))
-    }
-    if (searchTextOrPassword.value.trim().isEmpty()) {
-      SectionItemView(addUser, minHeight = 68.dp) {
-        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)
+      for (user in filteredUsers) {
+        UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
+        Divider(Modifier.padding(horizontal = 8.dp))
       }
-    }
-    SectionTextFooter(stringResource(MR.strings.tap_to_activate_profile))
-    LaunchedEffect(Unit) {
-      if (showHiddenProfilesNotice.state.value && users.size > 1) {
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.make_profile_private),
-          text = generalGetString(MR.strings.you_can_hide_or_mute_user_profile),
-          confirmText = generalGetString(MR.strings.ok),
-          dismissText = generalGetString(MR.strings.dont_show_again),
-          onDismiss = {
-            showHiddenProfilesNotice.set(false)
-          },
-        )
+      if (searchTextOrPassword.value.trim().isEmpty()) {
+        SectionItemView(addUser, minHeight = 68.dp) {
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
+          Spacer(Modifier.padding(horizontal = 4.dp))
+          Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)
+        }
       }
+      SectionTextFooter(stringResource(MR.strings.tap_to_activate_profile))
+      LaunchedEffect(Unit) {
+        if (showHiddenProfilesNotice.state.value && users.size > 1) {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.make_profile_private),
+            text = generalGetString(MR.strings.you_can_hide_or_mute_user_profile),
+            confirmText = generalGetString(MR.strings.ok),
+            dismissText = generalGetString(MR.strings.dont_show_again),
+            onDismiss = {
+              showHiddenProfilesNotice.set(false)
+            },
+          )
+        }
+      }
+      SectionBottomSpacer()
     }
-    SectionBottomSpacer()
-  }
   }
 }
 

@@ -73,102 +73,102 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
   val topPaddingToContent = topPaddingToContent(false)
 
   Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
-  LazyColumnWithScrollBar(
-    modifier = if (reorderMode) Modifier.dragContainer(dragDropState) else Modifier,
-    state = listState,
-    contentPadding = PaddingValues(
-      top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
-      bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
-    ),
-    verticalArrangement = if (oneHandUI.value) Arrangement.Bottom else Arrangement.Top,
-  ) {
-    @Composable fun CreateList() {
-      SectionItemView({
-        ModalManager.start.showModalCloseable { close ->
-          TagListEditor(rhId = rhId, close = close, chat = chat)
+    LazyColumnWithScrollBar(
+      modifier = if (reorderMode) Modifier.dragContainer(dragDropState) else Modifier,
+      state = listState,
+      contentPadding = PaddingValues(
+        top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
+        bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+      ),
+      verticalArrangement = if (oneHandUI.value) Arrangement.Bottom else Arrangement.Top,
+    ) {
+      @Composable fun CreateList() {
+        SectionItemView({
+          ModalManager.start.showModalCloseable { close ->
+            TagListEditor(rhId = rhId, close = close, chat = chat)
+          }
+        }) {
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
+          Spacer(Modifier.padding(horizontal = 4.dp))
+          Text(stringResource(MR.strings.create_list), color = MaterialTheme.colors.primary)
         }
-      }) {
-        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(MR.strings.create_list), color = MaterialTheme.colors.primary)
       }
-    }
 
-    if (oneHandUI.value && !reorderMode) {
-      item {
-        CreateList()
+      if (oneHandUI.value && !reorderMode) {
+        item {
+          CreateList()
+        }
       }
-    }
-    itemsIndexed(userTags.value, key = { _, item -> item.chatTagId }) { index, tag ->
-      DraggableItem(dragDropState, index) { isDragging ->
-        val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
+      itemsIndexed(userTags.value, key = { _, item -> item.chatTagId }) { index, tag ->
+        DraggableItem(dragDropState, index) { isDragging ->
+          val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
 
-        Card(
-          elevation = elevation,
-          backgroundColor = if (isDragging) colors.surface else Color.Unspecified
-        ) {
-          Column {
-            val selected = chatTagIds.value.contains(tag.chatTagId)
+          Card(
+            elevation = elevation,
+            backgroundColor = if (isDragging) colors.surface else Color.Unspecified
+          ) {
+            Column {
+              val selected = chatTagIds.value.contains(tag.chatTagId)
 
-            Row(
-              Modifier
-                .fillMaxWidth()
-                .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
-                .clickable(
-                  enabled = !saving.value && !reorderMode,
-                  onClick = {
-                    if (chat == null) {
-                      ModalManager.start.showModalCloseable { close ->
-                        TagListEditor(
-                          rhId = rhId,
-                          tagId = tag.chatTagId,
-                          close = close,
-                          emoji = tag.chatTagEmoji,
-                          name = tag.chatTagText,
-                        )
+              Row(
+                Modifier
+                  .fillMaxWidth()
+                  .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+                  .clickable(
+                    enabled = !saving.value && !reorderMode,
+                    onClick = {
+                      if (chat == null) {
+                        ModalManager.start.showModalCloseable { close ->
+                          TagListEditor(
+                            rhId = rhId,
+                            tagId = tag.chatTagId,
+                            close = close,
+                            emoji = tag.chatTagEmoji,
+                            name = tag.chatTagText,
+                          )
+                        }
+                      } else {
+                        saving.value = true
+                        setTag(rhId = rhId, tagId = if (selected) null else tag.chatTagId, chat = chat, close = {
+                          saving.value = false
+                          close()
+                        })
                       }
-                    } else {
-                      saving.value = true
-                      setTag(rhId = rhId, tagId = if (selected) null else tag.chatTagId, chat = chat, close = {
-                        saving.value = false
-                        close()
-                      })
-                    }
-                  },
+                    },
+                  )
+                  .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                if (tag.chatTagEmoji != null) {
+                  ReactionIcon(tag.chatTagEmoji, fontSize = 14.sp)
+                } else {
+                  Icon(painterResource(MR.images.ic_label), null, Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.onBackground)
+                }
+                Spacer(Modifier.padding(horizontal = 4.dp))
+                Text(
+                  tag.chatTagText,
+                  color = MenuTextColor,
+                  fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
                 )
-                .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              if (tag.chatTagEmoji != null) {
-                ReactionIcon(tag.chatTagEmoji, fontSize = 14.sp)
-              } else {
-                Icon(painterResource(MR.images.ic_label), null, Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.onBackground)
+                if (selected) {
+                  Spacer(Modifier.weight(1f))
+                  Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+                } else if (reorderMode) {
+                  Spacer(Modifier.weight(1f))
+                  Icon(painterResource(MR.images.ic_drag_handle), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+                }
               }
-              Spacer(Modifier.padding(horizontal = 4.dp))
-              Text(
-                tag.chatTagText,
-                color = MenuTextColor,
-                fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
-              )
-              if (selected) {
-                Spacer(Modifier.weight(1f))
-                Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-              } else if (reorderMode) {
-                Spacer(Modifier.weight(1f))
-                Icon(painterResource(MR.images.ic_drag_handle), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
-              }
+              SectionDivider()
             }
-            SectionDivider()
           }
         }
       }
-    }
-    if (!oneHandUI.value && !reorderMode) {
-      item {
-        CreateList()
+      if (!oneHandUI.value && !reorderMode) {
+        item {
+          CreateList()
+        }
       }
     }
-  }
   }
 }
 

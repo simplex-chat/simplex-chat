@@ -58,31 +58,31 @@ private fun HiddenProfileLayout(
   saveProfilePassword: (String) -> Unit
 ) {
   Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.hide_profile))
-    SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
-      UserProfileRow(user)
-    }
-    SectionSpacer()
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.hide_profile))
+      SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+        UserProfileRow(user)
+      }
+      SectionSpacer()
 
-    val hidePassword = rememberSaveable { mutableStateOf("") }
-    val confirmHidePassword = rememberSaveable { mutableStateOf("") }
-    val passwordValid by remember { derivedStateOf { hidePassword.value == hidePassword.value.trim() } }
-    val confirmValid by remember { derivedStateOf { confirmHidePassword.value == "" || hidePassword.value == confirmHidePassword.value } }
-    val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || !passwordValid || confirmHidePassword.value == "" || !confirmValid } }
-    SectionView(stringResource(MR.strings.hidden_profile_password)) {
-      SectionItemViewWithoutMinPadding {
-        PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), isValid = { passwordValid }, showStrength = true)
+      val hidePassword = rememberSaveable { mutableStateOf("") }
+      val confirmHidePassword = rememberSaveable { mutableStateOf("") }
+      val passwordValid by remember { derivedStateOf { hidePassword.value == hidePassword.value.trim() } }
+      val confirmValid by remember { derivedStateOf { confirmHidePassword.value == "" || hidePassword.value == confirmHidePassword.value } }
+      val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || !passwordValid || confirmHidePassword.value == "" || !confirmValid } }
+      SectionView(stringResource(MR.strings.hidden_profile_password)) {
+        SectionItemViewWithoutMinPadding {
+          PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), isValid = { passwordValid }, showStrength = true)
+        }
+        SectionItemViewWithoutMinPadding {
+          PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
+        }
+        SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {
+          Text(generalGetString(MR.strings.save_profile_password), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+        }
       }
-      SectionItemViewWithoutMinPadding {
-        PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
-      }
-      SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(MR.strings.save_profile_password), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
-      }
+      SectionTextFooter(stringResource(MR.strings.to_reveal_profile_enter_password))
+      SectionBottomSpacer()
     }
-    SectionTextFooter(stringResource(MR.strings.to_reveal_profile_enter_password))
-    SectionBottomSpacer()
-  }
   }
 }

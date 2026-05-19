@@ -192,109 +192,109 @@ fun GroupLinkLayout(
   }
 
   Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(if (isChannel) MR.strings.channel_link else MR.strings.group_link))
-    Text(
-      stringResource(if (isChannel) MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect else MR.strings.you_can_share_group_link_anybody_will_be_able_to_connect),
-      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 12.dp),
-      lineHeight = 22.sp
-    )
-    Column(
-      Modifier.fillMaxWidth(),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.SpaceEvenly
-    ) {
-      if (groupLink == null) {
-        Row(
-          horizontalArrangement = Arrangement.spacedBy(10.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
-        ) {
-          SimpleButton(stringResource(MR.strings.button_create_group_link), icon = painterResource(MR.images.ic_add_link), disabled = creatingLink, click = createLink)
-          if (creatingGroup && close != null) {
-            ContinueButton(close)
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(if (isChannel) MR.strings.channel_link else MR.strings.group_link))
+      Text(
+        stringResource(if (isChannel) MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect else MR.strings.you_can_share_group_link_anybody_will_be_able_to_connect),
+        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 12.dp),
+        lineHeight = 22.sp
+      )
+      Column(
+        Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
+      ) {
+        if (groupLink == null) {
+          Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
+          ) {
+            SimpleButton(stringResource(MR.strings.button_create_group_link), icon = painterResource(MR.images.ic_add_link), disabled = creatingLink, click = createLink)
+            if (creatingGroup && close != null) {
+              ContinueButton(close)
+            }
           }
-        }
-      } else {
-        if (!isChannel) {
-          RoleSelectionRow(groupInfo, groupLinkMemberRole)
-        }
-        var initialLaunch by remember { mutableStateOf(true) }
-        LaunchedEffect(groupLinkMemberRole.value) {
-          if (!initialLaunch) {
-            updateLink()
+        } else {
+          if (!isChannel) {
+            RoleSelectionRow(groupInfo, groupLinkMemberRole)
           }
-          initialLaunch = false
-        }
-        val showShortLink = remember { mutableStateOf(true) }
-        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        SectionViewWithButton(
-          titleButton =
-            if (!isChannel && groupLink.connLinkContact.connShortLink != null) {
-              { ToggleShortLinkButton(showShortLink) }
-            } else null) {
-          SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
-        }
-        if (!isChannel && groupLink.shouldBeUpgraded) {
+          var initialLaunch by remember { mutableStateOf(true) }
+          LaunchedEffect(groupLinkMemberRole.value) {
+            if (!initialLaunch) {
+              updateLink()
+            }
+            initialLaunch = false
+          }
+          val showShortLink = remember { mutableStateOf(true) }
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          SectionViewWithButton(
+            titleButton =
+              if (!isChannel && groupLink.connLinkContact.connShortLink != null) {
+                { ToggleShortLinkButton(showShortLink) }
+              } else null) {
+            SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
+          }
+          if (!isChannel && groupLink.shouldBeUpgraded) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_add),
+              stringResource(MR.strings.upgrade_group_link),
+              click = { showAddShortLinkAlert(null) },
+              iconColor = MaterialTheme.colors.primary,
+              textColor = MaterialTheme.colors.primary,
+            )
+          }
+          val clipboard = LocalClipboardManager.current
           SettingsActionItem(
-            painterResource(MR.images.ic_add),
-            stringResource(MR.strings.upgrade_group_link),
-            click = { showAddShortLinkAlert(null) },
-            iconColor = MaterialTheme.colors.primary,
-            textColor = MaterialTheme.colors.primary,
-          )
-        }
-        val clipboard = LocalClipboardManager.current
-        SettingsActionItem(
-          painterResource(MR.images.ic_share),
-          stringResource(MR.strings.share_link),
-          click = {
-            if (!isChannel && groupLink.shouldBeUpgraded) {
-              showAddShortLinkAlert {
+            painterResource(MR.images.ic_share),
+            stringResource(MR.strings.share_link),
+            click = {
+              if (!isChannel && groupLink.shouldBeUpgraded) {
+                showAddShortLinkAlert {
+                  clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
+                }
+              } else {
                 clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
               }
-            } else {
-              clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
-            }
-          },
-          iconColor = MaterialTheme.colors.primary,
-          textColor = MaterialTheme.colors.primary,
-        )
-        if (shareGroupInfo != null && isChannel) {
-          SettingsActionItem(
-            painterResource(MR.images.ic_forward),
-            stringResource(MR.strings.share_via_chat),
-            click = {
-              chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
-              chatModel.chatId.value = null
-              ModalManager.closeAllModalsEverywhere()
             },
             iconColor = MaterialTheme.colors.primary,
             textColor = MaterialTheme.colors.primary,
           )
-        }
-        if (!creatingGroup && !isChannel) {
-          SettingsActionItem(
-            painterResource(MR.images.ic_delete),
-            stringResource(MR.strings.delete_link),
-            click = deleteLink,
-            iconColor = Color.Red,
-            textColor = Color.Red,
-          )
-        }
-        if (creatingGroup && close != null) {
-          SettingsActionItem(
-            painterResource(MR.images.ic_check),
-            stringResource(MR.strings.continue_to_next_step),
-            click = close,
-            iconColor = MaterialTheme.colors.primary,
-            textColor = MaterialTheme.colors.primary,
-          )
+          if (shareGroupInfo != null && isChannel) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_forward),
+              stringResource(MR.strings.share_via_chat),
+              click = {
+                chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
+                chatModel.chatId.value = null
+                ModalManager.closeAllModalsEverywhere()
+              },
+              iconColor = MaterialTheme.colors.primary,
+              textColor = MaterialTheme.colors.primary,
+            )
+          }
+          if (!creatingGroup && !isChannel) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_delete),
+              stringResource(MR.strings.delete_link),
+              click = deleteLink,
+              iconColor = Color.Red,
+              textColor = Color.Red,
+            )
+          }
+          if (creatingGroup && close != null) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_check),
+              stringResource(MR.strings.continue_to_next_step),
+              click = close,
+              iconColor = MaterialTheme.colors.primary,
+              textColor = MaterialTheme.colors.primary,
+            )
+          }
         }
       }
+      SectionBottomSpacer()
     }
-    SectionBottomSpacer()
-  }
   }
 }
 
