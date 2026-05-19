@@ -2,7 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -183,36 +183,36 @@ private fun GroupPreferencesLayout(
     if (!groupInfo.useRelays) {
       if (groupInfo.businessChat == null) {
         MemberAdmissionButton(openMemberAdmission)
-        SectionDividerSpaced(maxBottomPadding = false)
+        SectionSpacer()
       }
       TimedMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       DirectMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       FullDeletePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       ReactionsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       VoicePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       FilesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       SimplexLinksPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       ReportsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       HistoryPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       SupportPreference(disabled = true)
     } else {
       TimedMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       FullDeletePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       ReactionsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       HistoryPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionSpacer()
       SupportPreference(notice = generalGetString(MR.strings.chat_with_admins_relay_note), onEnable = { revert ->
         AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.enable_chats_with_admins_question),
@@ -225,7 +225,7 @@ private fun GroupPreferencesLayout(
       })
     }
     if (groupInfo.isOwner) {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionSpacer()
       val saveTextId = if (groupInfo.useRelays) MR.strings.save_and_notify_channel_subscribers
         else MR.strings.save_and_notify_group_members
       ResetSaveButtons(

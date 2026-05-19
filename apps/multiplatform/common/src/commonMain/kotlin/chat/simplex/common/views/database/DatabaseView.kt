@@ -1,7 +1,7 @@
 package chat.simplex.common.views.database
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionTextFooter
 import SectionItemView
 import SectionView
@@ -184,7 +184,7 @@ fun DatabaseLayout(
           }
         }
       )
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionSpacer()
     }
     val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
     if (chatModel.localUserCreated.value == true) {
@@ -200,7 +200,7 @@ fun DatabaseLayout(
         RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
       if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionSpacer()
     }
 
     SectionView(stringResource(MR.strings.chat_database_section), card = true) {
@@ -260,7 +260,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
     }
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(stringResource(MR.strings.files_and_media_section), card = true) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0

@@ -3,7 +3,6 @@ package chat.simplex.common.views.chat
 import InfoRow
 import InfoRowEllipsis
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionSpacer
@@ -582,7 +581,7 @@ fun ChatInfoLayout(
           Text(customUserProfile.chatViewName, color = Indigo)
         }
       }
-      SectionDividerSpaced()
+      SectionSpacer()
     }
 
     SectionView(card = true) {
@@ -610,19 +609,19 @@ fun ChatInfoLayout(
         }
       }
     }
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionSpacer()
 
     SectionView(card = true) {
       ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
       SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
     }
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionSpacer()
 
     val conn = contact.activeConn
     if (conn != null) {
       SectionView(card = true) {
         InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
-        SectionDividerSpaced()
+        SectionSpacer()
       }
     }
 
@@ -633,7 +632,7 @@ fun ChatInfoLayout(
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
         SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionSpacer()
     }
 
     if (contact.ready && contact.active) {
@@ -670,7 +669,7 @@ fun ChatInfoLayout(
           }
         }
       }
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionSpacer()
     }
 
     SectionView(card = true) {
@@ -679,7 +678,7 @@ fun ChatInfoLayout(
     }
 
     if (developerTools) {
-      SectionDividerSpaced()
+      SectionSpacer()
       SectionView(title = stringResource(MR.strings.section_title_for_console), card = true) {
         InfoRow(stringResource(MR.strings.info_row_local_name), chat.chatInfo.localDisplayName)
         InfoRow(stringResource(MR.strings.info_row_database_id), chat.chatInfo.apiId.toString())

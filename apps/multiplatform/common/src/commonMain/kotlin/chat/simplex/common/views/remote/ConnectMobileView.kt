@@ -1,7 +1,7 @@
 package chat.simplex.common.views.remote
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionItemViewLongClickable
 import SectionTextFooter
@@ -98,7 +98,7 @@ fun ConnectMobileLayout(
       PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
         controller.appPrefs.offerRemoteMulticast.set(it)
       }
-      SectionDividerSpaced()
+      SectionSpacer()
     }
     SectionView(stringResource(MR.strings.devices), card = true) {
       if (chatModel.localUserCreated.value == true) {

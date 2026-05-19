@@ -628,7 +628,7 @@ fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base
       if (baseTheme == DefaultTheme.SIMPLEX) {
         drawRect(brush = themedBackgroundBrush())
       } else {
-        drawRect(canvasColorForCurrentTheme())
+        drawRect(CurrentColors.value.colors.background)
       }
     }
   }
@@ -684,7 +684,7 @@ val LightColorPalette = lightColors(
   primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
   primaryVariant = SimplexBlue,
   secondary = HighOrLowlight,
-  secondaryVariant = Color(0xFFE0E0E0),
+  secondaryVariant = LightGray,
   error = Color.Red,
 //  background = Color.White,
   surface = Color.White,

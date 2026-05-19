@@ -2,7 +2,6 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionTextFooter
@@ -423,7 +422,7 @@ fun GroupMemberInfoLayout(
     // TODO [relays] re-enable when relay management ships
     val canRemove = member.canBeRemoved(groupInfo) && member.memberRole != GroupMemberRole.Relay
     if (canBlockForAll || canRemove) {
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionSpacer()
       SectionView(card = true) {
         if (canBlockForAll) {
           if (member.blockedByAdmin) {
@@ -445,7 +444,7 @@ fun GroupMemberInfoLayout(
 
   @Composable
   fun NonAdminBlockSection() {
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionSpacer()
     SectionView(card = true) {
       if (member.blockedByAdmin) {
         SettingsActionItem(
@@ -557,12 +556,12 @@ fun GroupMemberInfoLayout(
 //          SynchronizeConnectionButtonForce(syncMemberConnectionForce)
 //        }
       }
-      SectionDividerSpaced()
+      SectionSpacer()
     } else if (groupInfo.useRelays && member.memberCurrent && showMemberSupportChat) {
       SectionView(card = true) {
         SupportChatButton()
       }
-      SectionDividerSpaced()
+      SectionSpacer()
     }
 
     if (member.contactLink != null) {
@@ -579,7 +578,7 @@ fun GroupMemberInfoLayout(
         }
         SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       }
-      SectionDividerSpaced()
+      SectionSpacer()
     }
 
     val memberSectionTitle = if (groupInfo.useRelays) {
@@ -627,7 +626,7 @@ fun GroupMemberInfoLayout(
       )
     }
     if (cStats != null) {
-      SectionDividerSpaced()
+      SectionSpacer()
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers), card = true) {
         val subStatus = cStats.subStatus
         if (subStatus != null) {
@@ -663,7 +662,7 @@ fun GroupMemberInfoLayout(
 
     val connFailedErr = member.activeConn?.connFailedErr
     if (connFailedErr != null) {
-      SectionDividerSpaced()
+      SectionSpacer()
       SectionView(title = stringResource(MR.strings.info_row_connection_failed), icon = painterResource(MR.images.ic_warning), iconTint = Color.Red, leadingIcon = true, card = true) {
         SectionItemView {
           Text(
@@ -681,7 +680,7 @@ fun GroupMemberInfoLayout(
     }
 
     if (developerTools) {
-      SectionDividerSpaced()
+      SectionSpacer()
       SectionView(title = stringResource(MR.strings.section_title_for_console), card = true) {
         InfoRow(stringResource(MR.strings.info_row_local_name), member.localDisplayName)
         InfoRow(stringResource(MR.strings.info_row_database_id), member.groupMemberId.toString())

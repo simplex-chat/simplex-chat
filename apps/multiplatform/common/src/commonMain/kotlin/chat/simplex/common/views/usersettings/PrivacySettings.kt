@@ -1,8 +1,8 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
+import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
@@ -58,7 +58,7 @@ fun PrivacySettingsView(
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_privacy))
     PrivacyDeviceSection(showSettingsModal, setPerformLA)
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats), card = true) {
       SettingsPreferenceItem(
@@ -91,7 +91,7 @@ fun PrivacySettingsView(
           }
         })
     }
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(stringResource(MR.strings.settings_section_title_files), card = true) {
       SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
@@ -171,7 +171,7 @@ fun PrivacySettingsView(
       }
 
       if (!chatModel.desktopNoUserNoRemote) {
-        SectionDividerSpaced(maxTopPadding = true)
+        SectionSpacer()
         ContacRequestsFromGroupsSection(
           currentUser = currentUser,
           setAutoAcceptGrpDirectInvs = { enable ->
@@ -179,7 +179,7 @@ fun PrivacySettingsView(
           }
         )
 
-        SectionDividerSpaced(maxTopPadding = true)
+        SectionSpacer()
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->
@@ -618,7 +618,7 @@ fun SimplexLockView(
         }
       }
       if (performLA.value && laMode.value == LAMode.PASSCODE) {
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(stringResource(MR.strings.self_destruct_passcode), card = true) {
           val openInfo = {
             ModalManager.start.showModal {

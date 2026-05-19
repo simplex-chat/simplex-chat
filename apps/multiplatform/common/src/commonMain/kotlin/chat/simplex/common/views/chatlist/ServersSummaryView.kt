@@ -3,7 +3,7 @@ package chat.simplex.common.views.chatlist
 import InfoRow
 import InfoRowTwoValues
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -463,7 +463,7 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
     IndentedInfoRow(generalGetString(MR.strings.other_label), numOrDash(stats._sentOtherErrs))
   }
 
-  SectionDividerSpaced()
+  SectionSpacer()
 
   SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_received_messages_header), card = true) {
     InfoRow(generalGetString(MR.strings.servers_info_detailed_statistics_received_total), numOrDash(stats._recvMsgs))
@@ -481,7 +481,7 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
     IndentedInfoRow(generalGetString(MR.strings.other_errors), numOrDash(stats._ackOtherErrs))
   }
 
-  SectionDividerSpaced()
+  SectionSpacer()
 
   SectionView(generalGetString(MR.strings.connections), card = true) {
     InfoRow(generalGetString(MR.strings.created), numOrDash(stats._connCreated))
@@ -509,7 +509,7 @@ fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Ins
     InfoRowTwoValues(generalGetString(MR.strings.chunks_deleted), generalGetString(MR.strings.attempts_label), stats._deletions, stats._deleteAttempts)
     InfoRow(generalGetString(MR.strings.deletion_errors), numOrDash(stats._deleteErrs))
   }
-  SectionDividerSpaced()
+  SectionSpacer()
   SectionView(generalGetString(MR.strings.downloaded_files), card = true) {
     InfoRow(generalGetString(MR.strings.size), prettySize(stats._downloadsSize))
     InfoRowTwoValues(generalGetString(MR.strings.chunks_downloaded), generalGetString(MR.strings.attempts_label), stats._downloads, stats._downloadAttempts)
@@ -540,13 +540,13 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
       )
     }
     if (summary.stats != null || summary.sessions != null) {
-      SectionDividerSpaced()
+      SectionSpacer()
     }
 
     if (summary.stats != null) {
       XFTPStatsView(stats = summary.stats, rh = rh, statsStartedAt = statsStartedAt)
       if (summary.sessions != null) {
-        SectionDividerSpaced(maxTopPadding = true)
+        SectionSpacer()
       }
     }
 
@@ -572,20 +572,20 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
       )
     }
     if (summary.stats != null || summary.subs != null || summary.sessions != null) {
-      SectionDividerSpaced()
+      SectionSpacer()
     }
 
     if (summary.stats != null) {
       SMPStatsView(stats = summary.stats, remoteHostInfo = rh, statsStartedAt = statsStartedAt)
       if (summary.subs != null || summary.sessions != null) {
-        SectionDividerSpaced(maxTopPadding = true)
+        SectionSpacer()
       }
     }
 
     if (summary.subs != null) {
       SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
       if (summary.sessions != null) {
-        SectionDividerSpaced()
+        SectionSpacer()
       }
     }
 
@@ -825,7 +825,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                   selectedUserCategory.value = it
                 }
               )
-              SectionDividerSpaced()
+              SectionSpacer()
             }
             when (index) {
               PresentedServerType.SMP.ordinal -> {
@@ -839,9 +839,9 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                   val statsStartedAt = it.statsStartedAt
 
                   SMPStatsView(totals.stats, statsStartedAt, rh)
-                  SectionDividerSpaced(maxTopPadding = true)
+                  SectionSpacer()
                   SMPSubscriptionsSection(totals)
-                  SectionDividerSpaced()
+                  SectionSpacer()
 
                   if (currentlyUsedSMPServers.isNotEmpty()) {
                     SMPServersListView(
@@ -850,7 +850,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                       header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
                       rh = rh
                     )
-                    SectionDividerSpaced()
+                    SectionSpacer()
                   }
 
                   if (previouslyUsedSMPServers.isNotEmpty()) {
@@ -860,7 +860,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                       header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
                       rh = rh
                     )
-                    SectionDividerSpaced()
+                    SectionSpacer()
                   }
 
                   if (proxySMPServers.isNotEmpty()) {
@@ -871,7 +871,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                       footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
                       rh = rh
                     )
-                    SectionDividerSpaced(maxTopPadding = true)
+                    SectionSpacer()
                   }
 
                   ServerSessionsView(totals.sessions)
@@ -888,7 +888,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                   val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
 
                   XFTPStatsView(totals.stats, statsStartedAt, rh)
-                  SectionDividerSpaced(maxTopPadding = true)
+                  SectionSpacer()
 
                   if (currentlyUsedXFTPServers.isNotEmpty()) {
                     XFTPServersListView(
@@ -897,7 +897,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                       generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
                       rh
                     )
-                    SectionDividerSpaced()
+                    SectionSpacer()
                   }
 
                   if (previouslyUsedXFTPServers.isNotEmpty()) {
@@ -907,7 +907,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                       generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
                       rh
                     )
-                    SectionDividerSpaced()
+                    SectionSpacer()
                   }
 
                   ServerSessionsView(totals.sessions)
@@ -915,7 +915,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
               }
             }
 
-            SectionDividerSpaced(maxBottomPadding = false)
+            SectionSpacer()
 
             SectionView(card = true) {
               ReconnectAllServersButton(rh)

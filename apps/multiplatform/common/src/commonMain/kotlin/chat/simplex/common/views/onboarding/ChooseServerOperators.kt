@@ -1,7 +1,7 @@
 package chat.simplex.common.views.onboarding
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -371,7 +371,7 @@ private fun ChooseServerOperatorsInfoView() {
       ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_for_routing))
     }
 
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(title = stringResource(MR.strings.onboarding_network_about_operators), card = true) {
       chatModel.conditions.value.serverOperators.forEach { op ->

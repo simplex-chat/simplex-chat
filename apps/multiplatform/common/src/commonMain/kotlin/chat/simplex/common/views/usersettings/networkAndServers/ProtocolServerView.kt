@@ -1,7 +1,7 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionView
@@ -152,7 +152,7 @@ private fun PresetServer(
       )
     }
   }
-  SectionDividerSpaced()
+  SectionSpacer()
   UseServerSection(server, true, testing, testServer)
 }
 
@@ -191,12 +191,12 @@ fun CustomServer(
         }
     }
   }
-  SectionDividerSpaced(maxTopPadding = true)
+  SectionSpacer()
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
 
   if (valid.value) {
-    SectionDividerSpaced()
+    SectionSpacer()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device), card = true) {
       QRCode(serverAddress.value, small = true)
     }

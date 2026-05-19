@@ -1,9 +1,8 @@
 package chat.simplex.common.views.helpers
 
 import SectionBottomSpacer
-import SectionDividerSpaced
-import SectionItemView
 import SectionSpacer
+import SectionItemView
 import SectionView
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
@@ -201,11 +200,11 @@ fun ModalData.UserWallpaperEditor(
         }
       )
 
-      SectionDividerSpaced()
+      SectionSpacer()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionSpacer()
 
       ImportExportThemeSection(null, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
@@ -436,11 +435,11 @@ fun ModalData.ChatWallpaperEditor(
         }
       )
 
-      SectionDividerSpaced()
+      SectionSpacer()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionSpacer()
       ImportExportThemeSection(themeModeOverride.value, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
           themeModeOverride.value = it

@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -98,7 +98,7 @@ fun YourServersViewLayout(
     }
 
     if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
-      SectionDividerSpaced()
+      SectionSpacer()
       SectionView(generalGetString(MR.strings.message_servers), card = true) {
         userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
           if (server.deleted) return@forEachIndexed
@@ -132,7 +132,7 @@ fun YourServersViewLayout(
     }
 
     if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
-      SectionDividerSpaced()
+      SectionSpacer()
       SectionView(generalGetString(MR.strings.media_and_file_servers), card = true) {
         userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
           if (server.deleted) return@forEachIndexed
@@ -170,7 +170,7 @@ fun YourServersViewLayout(
       userServers.value[operatorIndex].xftpServers.any { !it.deleted } ||
       userServers.value[operatorIndex].chatRelays.any { !it.deleted }
       ) {
-      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      SectionSpacer()
     }
 
     SectionView(card = true) {
@@ -195,7 +195,7 @@ fun YourServersViewLayout(
         ServersWarningFooter(serversWarn)
       }
     }
-    SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+    SectionSpacer()
 
     SectionView(card = true) {
       TestServersButton(

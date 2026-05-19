@@ -1,7 +1,7 @@
 package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionTextFooter
 import SectionView
 import SectionViewWithButton
@@ -147,7 +147,7 @@ private fun ContactConnectionInfoLayout(
     }
     SectionTextFooter(sharedProfileInfo(chatModel, contactConnection.incognito))
 
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionSpacer()
 
     DeleteButton(deleteConnection)
 

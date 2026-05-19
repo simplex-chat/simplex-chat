@@ -2,7 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionView
 import androidx.compose.foundation.layout.*
@@ -131,7 +131,7 @@ private fun AddGroupRelayLayout(
           fontSize = 14.sp
         )
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionSpacer()
       SectionView(generalGetString(MR.strings.select_relays), card = true) {
         availableRelays.forEach { item ->
           val selected = item.relayId in selectedRelayIds

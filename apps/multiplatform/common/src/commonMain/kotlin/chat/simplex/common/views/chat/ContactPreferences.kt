@@ -2,8 +2,8 @@ package chat.simplex.common.views.chat
 
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
+import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
@@ -90,27 +90,27 @@ private fun ContactPreferencesLayout(
     TimedMessagesFeatureSection(featuresAllowed, contact.mergedPreferences.timedMessages, timedMessages, onTTLUpdated) { allowed, ttl ->
       applyPrefs(featuresAllowed.copy(timedMessagesAllowed = allowed, timedMessagesTTL = ttl ?: currentFeaturesAllowed.timedMessagesTTL))
     }
-    SectionDividerSpaced(true)
+    SectionSpacer()
     val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
     FeatureSection(ChatFeature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
       applyPrefs(featuresAllowed.copy(fullDelete = it))
     }
-    SectionDividerSpaced(true)
+    SectionSpacer()
     val allowReactions: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.reactions) }
     FeatureSection(ChatFeature.Reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, allowReactions) {
       applyPrefs(featuresAllowed.copy(reactions = it))
     }
-    SectionDividerSpaced(true)
+    SectionSpacer()
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
     FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
     }
-    SectionDividerSpaced(true)
+    SectionSpacer()
     val allowCalls: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.calls) }
     FeatureSection(ChatFeature.Calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, allowCalls) {
       applyPrefs(featuresAllowed.copy(calls = it))
     }
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionSpacer()
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,

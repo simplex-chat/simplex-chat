@@ -1,10 +1,9 @@
 package chat.simplex.common.views.remote
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionItemViewLongClickable
-import SectionSpacer
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.layout.*
@@ -136,7 +135,7 @@ private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<Re
       }
     }
   }
-  SectionDividerSpaced()
+  SectionSpacer()
   ScanDesktopAddressView(sessionAddress)
   if (controller.appPrefs.developerTools.get()) {
     SectionSpacer()
@@ -196,7 +195,7 @@ private fun SearchingDesktop(deviceName: String, remoteCtrls: SnapshotStateList<
       }
     }
   }
-  SectionDividerSpaced()
+  SectionSpacer()
   SectionView(stringResource(MR.strings.found_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
     Text(stringResource(MR.strings.waiting_for_desktop), fontStyle = FontStyle.Italic)
   }
@@ -223,7 +222,7 @@ private fun FoundDesktop(
       }
     }
   }
-  SectionDividerSpaced()
+  SectionSpacer()
   SectionView(stringResource(MR.strings.found_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
     CtrlDeviceNameText(session, rc)
     CtrlDeviceVersionText(session)
@@ -425,7 +424,7 @@ private fun LinkedDesktopsView(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
 
       }
     }
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(stringResource(MR.strings.linked_desktop_options), card = true) {
       PreferenceToggle(stringResource(MR.strings.verify_connections), checked = remember { controller.appPrefs.confirmRemoteSessions.state }.value) {

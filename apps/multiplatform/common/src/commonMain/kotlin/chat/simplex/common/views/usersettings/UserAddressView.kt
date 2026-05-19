@@ -1,7 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -305,12 +305,12 @@ private fun UserAddressLayout(
             CreateAddressButton(createAddress)
           }
 
-          SectionDividerSpaced()
+          SectionSpacer()
           SectionView(generalGetString(MR.strings.or_to_share_privately), card = true) {
             CreateOneTimeLinkButton()
           }
 
-          SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+          SectionSpacer()
           SectionView(card = true) {
             LearnMoreButton(learnMore)
           }
@@ -359,16 +359,16 @@ private fun UserAddressLayout(
             }
           }
 
-          SectionDividerSpaced(maxTopPadding = addressSettingsState.value.businessAddress)
+          SectionSpacer()
           SectionView(generalGetString(MR.strings.or_to_share_privately), card = true) {
             CreateOneTimeLinkButton()
           }
-          SectionDividerSpaced(maxBottomPadding = false)
+          SectionSpacer()
           SectionView(card = true) {
             LearnMoreButton(learnMore)
           }
 
-          SectionDividerSpaced(maxBottomPadding = false)
+          SectionSpacer()
           SectionView(card = true) {
             DeleteAddressButton(deleteAddress)
             SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
@@ -510,12 +510,12 @@ private fun ModalData.UserAddressSettings(
             AcceptIncognitoToggle(addressSettingsState)
           }
         }
-        SectionDividerSpaced()
+        SectionSpacer()
 
         SectionView(stringResource(MR.strings.address_welcome_message), card = true) {
           AutoReplyEditor(addressSettingsState)
         }
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        SectionSpacer()
 
         saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
           saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)

@@ -1,11 +1,10 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionItemViewWithoutMinPadding
-import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -670,13 +669,13 @@ object AppearanceScope {
           },
         )
       }
-      SectionDividerSpaced()
+      SectionSpacer()
 
       CustomizeThemeColorsSection(currentTheme) { name ->
         editColor(name)
       }
 
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionSpacer()
 
       val currentOverrides = remember(currentTheme) { ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get()) }
       val canResetColors = currentTheme.base.hasChangedAnyColor(currentOverrides)

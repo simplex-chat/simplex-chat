@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionItemWithValue
 import SectionTextFooter
@@ -225,7 +225,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       if (footerText != null) {
         SectionTextFooter(footerText)
       }
-      SectionDividerSpaced()
+      SectionSpacer()
     }
 
     SectionView(generalGetString(MR.strings.settings_section_title_messages), card = true) {
@@ -264,9 +264,9 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
         SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
         if (networkUseSocksProxy.value) {
           SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
-          SectionDividerSpaced(maxTopPadding = true)
+          SectionSpacer()
         } else {
-          SectionDividerSpaced(maxBottomPadding = false)
+          SectionSpacer()
         }
       }
     }
@@ -295,14 +295,14 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       }
     }
 
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(generalGetString(MR.strings.settings_section_title_calls), card = true) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
     }
 
     if (appPlatform.isAndroid) {
-      SectionDividerSpaced()
+      SectionSpacer()
       SectionView(generalGetString(MR.strings.settings_section_title_network_connection), card = true) {
         val info = remember { chatModel.networkInfo }.value
         SettingsActionItemWithContent(icon = null, info.networkType.text) {
@@ -495,7 +495,7 @@ fun SocksProxySettings(
         SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
       }
 
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionSpacer()
 
       SectionView(stringResource(MR.strings.network_proxy_auth), card = true) {
         PreferenceToggle(
@@ -526,7 +526,7 @@ fun SocksProxySettings(
         SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
       }
 
-      SectionDividerSpaced(maxBottomPadding = false, maxTopPadding = true)
+      SectionSpacer()
 
       SectionView(card = true) {
         SectionItemView({

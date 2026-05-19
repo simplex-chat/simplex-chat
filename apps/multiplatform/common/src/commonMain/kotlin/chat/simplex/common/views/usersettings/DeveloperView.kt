@@ -1,7 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.runtime.*
@@ -35,7 +35,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
       )
     }
     if (devTools.value) {
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionSpacer()
       SectionView(stringResource(MR.strings.developer_options_section), card = true) {
         SettingsActionItemWithContent(painterResource(MR.images.ic_breaking_news), stringResource(MR.strings.debug_logs)) {
           DefaultSwitch(
@@ -59,7 +59,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
       }
     }
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionSpacer()
     SectionView(stringResource(MR.strings.deprecated_options_section), card = true) {
       val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {

@@ -2,10 +2,9 @@ package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionItemViewWithoutMinPadding
-import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -195,7 +194,7 @@ fun AddGroupMembersLayout(
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionSpacer()
       SectionView(stringResource(MR.strings.select_contacts), card = true) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)

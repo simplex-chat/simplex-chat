@@ -2,7 +2,6 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewLongClickable
 import SectionItemViewSpaceBetween
@@ -590,7 +589,7 @@ fun ModalData.GroupChatInfoLayout(
             Text(groupInfo.membership.chatViewName, color = Indigo)
           }
         }
-        SectionDividerSpaced()
+        SectionSpacer()
       }
 
       var anyTopSectionRowShow = false
@@ -658,7 +657,7 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       if (anyTopSectionRowShow) {
-        SectionDividerSpaced(maxBottomPadding = false)
+        SectionSpacer()
       }
       SectionView(card = true) {
         if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
@@ -677,7 +676,7 @@ fun ModalData.GroupChatInfoLayout(
         else if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs
         else MR.strings.only_chat_owners_can_change_prefs
       SectionTextFooter(stringResource(footerId))
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionSpacer()
 
       SectionView(card = true) {
         if (!groupInfo.useRelays) {
@@ -699,7 +698,7 @@ fun ModalData.GroupChatInfoLayout(
         ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
         SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
       }
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
+      SectionSpacer()
 
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
         SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1), card = true) {
@@ -758,7 +757,7 @@ fun ModalData.GroupChatInfoLayout(
     }
     item {
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        SectionSpacer()
       }
       SectionView(card = true) {
         if (groupInfo.useRelays && (groupInfo.isOwner || activeSortedMembers.any { it.memberRole == GroupMemberRole.Relay })) {
@@ -785,7 +784,7 @@ fun ModalData.GroupChatInfoLayout(
       }
 
       if (developerTools) {
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(title = stringResource(MR.strings.section_title_for_console), card = true) {
           InfoRow(stringResource(MR.strings.info_row_local_name), groupInfo.localDisplayName)
           InfoRow(stringResource(MR.strings.info_row_database_id), groupInfo.apiId.toString())

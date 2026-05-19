@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -237,7 +237,7 @@ fun OperatorViewLayout(
     if (operator.enabled) {
       if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
         val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(generalGetString(MR.strings.chat_relays), card = true) {
           userServers.value[operatorIndex].chatRelays.forEachIndexed { index, relay ->
             if (!relay.deleted) {
@@ -251,7 +251,7 @@ fun OperatorViewLayout(
       }
 
       if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(generalGetString(MR.strings.operator_use_for_messages), card = true) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
@@ -305,7 +305,7 @@ fun OperatorViewLayout(
 
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].smpServers.any { it.preset }) {
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(generalGetString(MR.strings.message_servers), card = true) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
             if (!server.preset) return@forEachIndexed
@@ -339,7 +339,7 @@ fun OperatorViewLayout(
       }
 
       if (userServers.value[operatorIndex].smpServers.any { !it.preset && !it.deleted }) {
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(generalGetString(MR.strings.operator_added_message_servers), card = true) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
@@ -355,7 +355,7 @@ fun OperatorViewLayout(
       }
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(generalGetString(MR.strings.operator_use_for_files), card = true) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
@@ -388,7 +388,7 @@ fun OperatorViewLayout(
 
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].xftpServers.any { it.preset }) {
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(generalGetString(MR.strings.media_and_file_servers), card = true) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (!server.preset) return@forEachIndexed
@@ -422,7 +422,7 @@ fun OperatorViewLayout(
       }
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.preset && !it.deleted}) {
-        SectionDividerSpaced()
+        SectionSpacer()
         SectionView(generalGetString(MR.strings.operator_added_xftp_servers), card = true) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
@@ -437,7 +437,7 @@ fun OperatorViewLayout(
         }
       }
 
-      SectionDividerSpaced()
+      SectionSpacer()
       SectionView(card = true) {
         TestServersButton(
           testing = testing,
@@ -490,7 +490,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
       }
     }
 
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionSpacer()
 
     val uriHandler = LocalUriHandler.current
     SectionView(card = true) {
@@ -507,7 +507,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
 
     val selfhost = serverOperator.info.selfhost
     if (selfhost != null) {
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionSpacer()
       SectionView(card = true) {
         SectionItemView {
           val (text, link) = selfhost

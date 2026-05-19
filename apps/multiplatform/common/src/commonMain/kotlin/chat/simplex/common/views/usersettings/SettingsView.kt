@@ -1,8 +1,8 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
+import SectionSpacer
 import SectionView
 import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -107,14 +107,14 @@ fun SettingsLayout(
       SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it) })
     }
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(stringResource(MR.strings.settings_section_title_chat_database), card = true) {
       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
     }
 
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(stringResource(MR.strings.settings_section_title_help), card = true) {
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName ?: "") }, disabled = stopped)
@@ -125,7 +125,7 @@ fun SettingsLayout(
       }
       SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
     }
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SectionView(stringResource(MR.strings.settings_section_title_support), card = true) {
       if (!BuildConfigCommon.ANDROID_BUNDLE) {
@@ -134,7 +134,7 @@ fun SettingsLayout(
       RateAppItem(uriHandler)
       StarOnGithubItem(uriHandler)
     }
-    SectionDividerSpaced()
+    SectionSpacer()
 
     SettingsSectionApp(showSettingsModal, showVersion, withAuth)
     SectionBottomSpacer()

@@ -2,7 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
+import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -85,7 +85,7 @@ private fun MemberAdmissionLayout(
       }
     }
     if (groupInfo.isOwner) {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionSpacer()
       ResetSaveButtons(
         reset = reset,
         save = saveAdmission,
