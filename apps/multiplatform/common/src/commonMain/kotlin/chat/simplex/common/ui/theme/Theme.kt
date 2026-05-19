@@ -603,13 +603,6 @@ data class ThemeModeOverride (
 // cards above. DARK/BLACK: palette bg (cards already raised via founder's
 // formula in Section.kt). SIMPLEX: gradient bottom stop (darker), since the
 // canvas itself is a gradient drawn by themedBackgroundBrush.
-//
-// Reads CurrentColors.value directly rather than via MaterialTheme/CompositionLocal
-// because this helper is called from two scopes: @Composable bodies (SectionView,
-// SectionDivider) and DrawScope (sectionItemDivider's drawWithContent). DrawScope
-// can't call @Composable getters, so a snapshot read keeps one helper usable in
-// both places. State invalidation still works — CurrentColors is a MutableStateFlow,
-// reads are tracked by Compose snapshot system.
 fun canvasColorForCurrentTheme(): Color {
   val theme = CurrentColors.value
   val c = theme.colors

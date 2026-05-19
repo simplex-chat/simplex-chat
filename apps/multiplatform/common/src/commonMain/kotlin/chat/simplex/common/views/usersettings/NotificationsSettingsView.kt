@@ -55,7 +55,7 @@ fun NotificationsSettingsLayout(
 
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.notifications))
-    SectionView(null) {
+    SectionView(null, card = true) {
       if (appPlatform == AppPlatform.ANDROID) {
         SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notifications_mode_title), { showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
           Text(
@@ -74,9 +74,9 @@ fun NotificationsSettingsLayout(
           color = MaterialTheme.colors.secondary
         )
       }
-    }
-    if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
-      SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
+      if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
+        SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
+      }
     }
     SectionBottomSpacer()
   }

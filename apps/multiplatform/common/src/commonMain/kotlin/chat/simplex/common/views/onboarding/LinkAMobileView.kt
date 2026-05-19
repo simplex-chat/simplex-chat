@@ -65,7 +65,7 @@ private fun LinkAMobileLayout(
           Modifier.weight(0.3f),
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          SectionView(generalGetString(MR.strings.this_device_name)) {
+          SectionView(generalGetString(MR.strings.this_device_name), card = true) {
             DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
             SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
             PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { ChatModel.controller.appPrefs.offerRemoteMulticast.state }.value) {

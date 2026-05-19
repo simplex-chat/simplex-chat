@@ -22,7 +22,6 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
@@ -211,13 +210,13 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     // TODO: Review this and socks.
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(generalGetString(MR.strings.network_preset_servers_title)) {
+      SectionView(generalGetString(MR.strings.network_preset_servers_title), card = true) {
         userServers.value.forEachIndexed { index, srv ->
           srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, serverWarnings, currentRemoteHost?.remoteHostId) }
         }
-        if (conditionsAction != null && anyOperatorEnabled.value) {
-          ConditionsButton(conditionsAction, rhId = currentRemoteHost?.remoteHostId)
-        }
+      }
+      if (conditionsAction != null && anyOperatorEnabled.value) {
+        ConditionsButton(conditionsAction, rhId = currentRemoteHost?.remoteHostId)
       }
       val footerText = if (conditionsAction is UsageConditionsAction.Review && conditionsAction.deadline != null && anyOperatorEnabled.value) {
         String.format(generalGetString(MR.strings.operator_conditions_will_be_accepted_on), localDate(conditionsAction.deadline))
@@ -229,7 +228,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       SectionDividerSpaced()
     }
 
-    SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
+    SectionView(generalGetString(MR.strings.settings_section_title_messages), card = true) {
       val nullOperatorIndex = userServers.value.indexOfFirst { it.operator == null }
 
       if (nullOperatorIndex != -1) {
@@ -263,25 +262,21 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
         SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) } })
         SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
-      }
-    }
-    if (currentRemoteHost == null) {
-      if (networkUseSocksProxy.value) {
-        SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
-        SectionDividerSpaced()
-      } else {
-        SectionDividerSpaced(maxBottomPadding = false)
+        if (networkUseSocksProxy.value) {
+          SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
+          SectionDividerSpaced(maxTopPadding = true)
+        } else {
+          SectionDividerSpaced(maxBottomPadding = false)
+        }
       }
     }
     val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
 
-    SectionView {
-      SectionItemView(
-        { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
-        disabled = saveDisabled,
-      ) {
-        Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
-      }
+    SectionItemView(
+      { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
+      disabled = saveDisabled,
+    ) {
+      Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
     }
     val serversErr = globalServersError(serverErrors.value)
     if (serversErr != null) {
@@ -302,13 +297,13 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
 
     SectionDividerSpaced()
 
-    SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
+    SectionView(generalGetString(MR.strings.settings_section_title_calls), card = true) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
     }
 
     if (appPlatform.isAndroid) {
       SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.settings_section_title_network_connection)) {
+      SectionView(generalGetString(MR.strings.settings_section_title_network_connection), card = true) {
         val info = remember { chatModel.networkInfo }.value
         SettingsActionItemWithContent(icon = null, info.networkType.text) {
           Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = if (info.online) Color.Green else MaterialTheme.colors.error)
@@ -340,10 +335,23 @@ fun UseSocksProxySwitch(
   networkUseSocksProxy: MutableState<Boolean>,
   toggleSocksProxy: (Boolean) -> Unit,
 ) {
-  SettingsActionItemWithContent(
-    icon = painterResource(MR.images.ic_settings_ethernet),
-    text = stringResource(MR.strings.network_socks_toggle_use_socks_proxy),
+  Row(
+    Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween
   ) {
+    Row(
+      Modifier.weight(1f).padding(horizontal = DEFAULT_PADDING),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Icon(
+        painterResource(MR.images.ic_settings_ethernet),
+        stringResource(MR.strings.network_socks_toggle_use_socks_proxy),
+        tint = MaterialTheme.colors.secondary
+      )
+      TextIconSpaced(false)
+      Text(generalGetString(MR.strings.network_socks_toggle_use_socks_proxy))
+    }
     DefaultSwitch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
@@ -461,7 +469,7 @@ fun SocksProxySettings(
   ) {
     ColumnWithScrollBar {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
-      SectionView(stringResource(MR.strings.network_socks_proxy)) {
+      SectionView(stringResource(MR.strings.network_socks_proxy), card = true) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           DefaultConfigurableTextField(
             hostUnsaved,
@@ -484,13 +492,12 @@ fun SocksProxySettings(
         UseOnionHosts(onionHosts, rememberUpdatedState(networkUseSocksProxy && proxyAuthRandomUnsaved.value)) {
           onionHosts.value = it
         }
+        SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
       }
-      UseOnionHostsDescription(onionHosts)
-      SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
 
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
 
-      SectionView(stringResource(MR.strings.network_proxy_auth)) {
+      SectionView(stringResource(MR.strings.network_proxy_auth), card = true) {
         PreferenceToggle(
           stringResource(MR.strings.network_proxy_random_credentials),
           checked = proxyAuthRandomUnsaved.value,
@@ -516,12 +523,12 @@ fun SocksProxySettings(
             )
           }
         }
+        SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
       }
-      SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
 
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxBottomPadding = false, maxTopPadding = true)
 
-      SectionView {
+      SectionView(card = true) {
         SectionItemView({
           hostUnsaved.value = hostUnsaved.value.copy("localhost", TextRange(9))
           portUnsaved.value = portUnsaved.value.copy("9050", TextRange(4))
@@ -560,8 +567,13 @@ private fun showUnsavedSocksHostPortAlert(confirmText: String, save: () -> Unit,
   )
 }
 
-private val onionHostsValues: List<ValueTitleDesc<OnionHosts>>
-  @Composable get() = remember {
+@Composable
+fun UseOnionHosts(
+  onionHosts: MutableState<OnionHosts>,
+  enabled: State<Boolean>,
+  useOnion: (OnionHosts) -> Unit,
+) {
+  val values = remember {
     OnionHosts.values().map {
       when (it) {
         OnionHosts.NEVER -> ValueTitleDesc(OnionHosts.NEVER, generalGetString(MR.strings.network_use_onion_hosts_no), AnnotatedString(generalGetString(MR.strings.network_use_onion_hosts_no_desc)))
@@ -571,37 +583,29 @@ private val onionHostsValues: List<ValueTitleDesc<OnionHosts>>
     }
   }
 
-@Composable
-fun UseOnionHosts(
-  onionHosts: MutableState<OnionHosts>,
-  enabled: State<Boolean>,
-  useOnion: (OnionHosts) -> Unit,
-) {
-  if (enabled.value) {
-    ExposedDropDownSettingRow(
-      generalGetString(MR.strings.network_use_onion_hosts),
-      onionHostsValues.map { it.value to it.title },
-      onionHosts,
-      icon = painterResource(MR.images.ic_security),
-      enabled = enabled,
-      onSelected = useOnion
-    )
-  } else {
-    // In reality, when socks proxy is disabled, this option acts like NEVER regardless of what was chosen before
-    ExposedDropDownSettingRow(
-      generalGetString(MR.strings.network_use_onion_hosts),
-      listOf(OnionHosts.NEVER to generalGetString(MR.strings.network_use_onion_hosts_no)),
-      remember { mutableStateOf(OnionHosts.NEVER) },
-      icon = painterResource(MR.images.ic_security),
-      enabled = enabled,
-      onSelected = {}
-    )
+  Column {
+    if (enabled.value) {
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.network_use_onion_hosts),
+        values.map { it.value to it.title },
+        onionHosts,
+        icon = painterResource(MR.images.ic_security),
+        enabled = enabled,
+        onSelected = useOnion
+      )
+    } else {
+      // In reality, when socks proxy is disabled, this option acts like NEVER regardless of what was chosen before
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.network_use_onion_hosts),
+        listOf(OnionHosts.NEVER to generalGetString(MR.strings.network_use_onion_hosts_no)),
+        remember { mutableStateOf(OnionHosts.NEVER) },
+        icon = painterResource(MR.images.ic_security),
+        enabled = enabled,
+        onSelected = {}
+      )
+    }
+    SectionTextFooter(values.firstOrNull { it.value == onionHosts.value }?.description ?: AnnotatedString(""))
   }
-}
-
-@Composable
-fun UseOnionHostsDescription(onionHosts: MutableState<OnionHosts>) {
-  SectionTextFooter(onionHostsValues.firstOrNull { it.value == onionHosts.value }?.description ?: AnnotatedString(""))
 }
 
 @Composable
@@ -778,7 +782,7 @@ fun UsageConditionsView(
     }
   }
 
-  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.surface).padding(horizontal = DEFAULT_PADDING)) {
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
     when (val conditionsAction = chatModel.conditions.value.conditionsAction) {
       is UsageConditionsAction.Review -> {
         AppBarTitle(stringResource(MR.strings.operator_updated_conditions), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)

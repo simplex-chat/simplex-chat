@@ -44,7 +44,7 @@ fun ChannelMembersView(
 
     if (groupInfo.isOwner) {
       val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
-      SectionView(title = subscriberCountStr(subscriberCount)) {
+      SectionView(title = subscriberCountStr(subscriberCount), card = true) {
         SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           ChannelMemberRow(groupInfo.membership, user = true, showRole = true)
         }
@@ -61,7 +61,7 @@ fun ChannelMembersView(
       }
     } else {
       val owners = members.filter { it.memberRole >= GroupMemberRole.Owner }
-      SectionView(title = generalGetString(MR.strings.channel_members_section_owners)) {
+      SectionView(title = generalGetString(MR.strings.channel_members_section_owners), card = true) {
         owners.forEachIndexed { index, member ->
           if (index > 0) {
             Divider()

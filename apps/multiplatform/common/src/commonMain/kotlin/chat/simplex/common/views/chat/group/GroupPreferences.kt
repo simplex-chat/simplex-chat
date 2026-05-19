@@ -186,33 +186,33 @@ private fun GroupPreferencesLayout(
         SectionDividerSpaced(maxBottomPadding = false)
       }
       TimedMessagesPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       DirectMessagesPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       FullDeletePreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       ReactionsPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       VoicePreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       FilesPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       SimplexLinksPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       ReportsPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       HistoryPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       SupportPreference(disabled = true)
     } else {
       TimedMessagesPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       FullDeletePreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       ReactionsPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       HistoryPreference()
-      SectionDividerSpaced()
+      SectionDividerSpaced(true, maxBottomPadding = false)
       SupportPreference(notice = generalGetString(MR.strings.chat_with_admins_relay_note), onEnable = { revert ->
         AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.enable_chats_with_admins_question),
@@ -225,7 +225,7 @@ private fun GroupPreferencesLayout(
       })
     }
     if (groupInfo.isOwner) {
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       val saveTextId = if (groupInfo.useRelays) MR.strings.save_and_notify_channel_subscribers
         else MR.strings.save_and_notify_group_members
       ResetSaveButtons(
@@ -260,7 +260,7 @@ private fun FeatureSection(
   notice: String? = null,
   onSelected: (GroupFeatureEnabled, GroupMemberRole?) -> Unit
 ) {
-  SectionView {
+  SectionView(card = true) {
     val on = enableFeature.value == GroupFeatureEnabled.ON
     val icon = if (on) feature.iconFilled() else feature.icon
     val iconTint = if (on) SimplexGreen else MaterialTheme.colors.secondary
@@ -325,7 +325,7 @@ private fun FeatureSection(
 
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean, saveTextId: StringResource) {
-  SectionView {
+  SectionView(card = true) {
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }

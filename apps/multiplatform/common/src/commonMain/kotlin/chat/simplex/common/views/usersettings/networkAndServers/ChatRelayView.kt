@@ -182,7 +182,7 @@ private fun ChatRelayLayout(
 
 @Composable
 private fun PresetRelay(relay: MutableState<UserChatRelay>, testing: MutableState<Boolean>) {
-  SectionView(stringResource(MR.strings.preset_relay_address)) {
+  SectionView(stringResource(MR.strings.preset_relay_address).uppercase()) {
     SelectionContainer {
       Text(
         relay.value.address,
@@ -192,7 +192,7 @@ private fun PresetRelay(relay: MutableState<UserChatRelay>, testing: MutableStat
     }
   }
   SectionDividerSpaced()
-  SectionView(stringResource(MR.strings.preset_relay_name)) {
+  SectionView(stringResource(MR.strings.preset_relay_name).uppercase()) {
     SectionItemView {
       Text(relay.value.displayName)
     }
@@ -229,7 +229,7 @@ private fun CustomRelay(
   }
 
   SectionView(
-    stringResource(MR.strings.your_relay_address),
+    stringResource(MR.strings.your_relay_address).uppercase(),
     icon = painterResource(MR.images.ic_error),
     iconTint = if (!validAddress.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
@@ -238,13 +238,13 @@ private fun CustomRelay(
       Modifier.height(144.dp)
     )
   }
-  SectionDividerSpaced()
+  SectionDividerSpaced(maxTopPadding = true)
 
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       Text(
-        stringResource(MR.strings.your_relay_name),
+        stringResource(MR.strings.your_relay_name).uppercase(),
         color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp
       )
       IconButton(
@@ -270,7 +270,7 @@ private fun CustomRelay(
   if (relay.value.tested != true) {
     SectionTextFooter(annotatedStringResource(MR.strings.test_relay_to_retrieve_name))
   }
-  SectionDividerSpaced()
+  SectionDividerSpaced(maxTopPadding = true)
 
   UseRelaySection(relay, validAddress.value, testing)
 
@@ -291,7 +291,7 @@ private fun UseRelaySection(
   testing: MutableState<Boolean>
 ) {
   val scope = rememberCoroutineScope()
-  SectionView(stringResource(MR.strings.use_relay)) {
+  SectionView(stringResource(MR.strings.use_relay).uppercase()) {
     SectionItemViewSpaceBetween(
       click = {
         testing.value = true
@@ -377,7 +377,7 @@ fun ModalData.NewChatRelayView(
 
   ModalView(close = {
     addChatRelay(relayToEdit.value, userServers, serverErrors, serverWarnings, rhId, close)
-  }, background = MaterialTheme.colors.surface) {
+  }) {
     NewChatRelayLayout(relayToEdit)
   }
 }

@@ -373,7 +373,7 @@ private fun ChooseServerOperatorsInfoView() {
 
     SectionDividerSpaced()
 
-    SectionView(title = stringResource(MR.strings.onboarding_network_about_operators)) {
+    SectionView(title = stringResource(MR.strings.onboarding_network_about_operators), card = true) {
       chatModel.conditions.value.serverOperators.forEach { op ->
         ServerOperatorRow(op)
       }

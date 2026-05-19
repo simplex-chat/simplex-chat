@@ -81,27 +81,27 @@ private fun PreferencesLayout(
       onTTLUpdated = onTTLUpdated
     )
 
-    SectionDividerSpaced()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
     FeatureSection(ChatFeature.FullDelete, allowFullDeletion) {
       applyPrefs(preferences.copy(fullDelete = SimpleChatPreference(allow = it)))
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.allow) }
     FeatureSection(ChatFeature.Reactions, allowReactions) {
       applyPrefs(preferences.copy(reactions = SimpleChatPreference(allow = it)))
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val allowCalls = remember(preferences) { mutableStateOf(preferences.calls.allow) }
     FeatureSection(ChatFeature.Calls, allowCalls) {
       applyPrefs(preferences.copy(calls = SimpleChatPreference(allow = it)))
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,
@@ -113,7 +113,7 @@ private fun PreferencesLayout(
 
 @Composable
 private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
-  SectionView {
+  SectionView(card = true) {
     ExposedDropDownSettingRow(
       feature.text,
       FeatureAllowed.values().map { it to it.text },
@@ -133,7 +133,7 @@ private fun TimedMessagesFeatureSection(
   onTTLUpdated: (Int?) -> Unit
 ) {
   val ttl = rememberSaveable(preferences) { mutableStateOf(preferences.timedMessages.ttl) }
-  SectionView {
+  SectionView(card = true) {
     PreferenceToggleWithIcon(
       ChatFeature.TimedMessages.text,
       ChatFeature.TimedMessages.icon,
@@ -163,7 +163,7 @@ private fun TimedMessagesFeatureSection(
 
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  SectionView {
+  SectionView(card = true) {
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }

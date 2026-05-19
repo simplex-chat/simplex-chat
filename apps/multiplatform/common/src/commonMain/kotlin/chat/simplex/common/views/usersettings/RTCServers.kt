@@ -2,7 +2,6 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionItemViewSpaceBetween
-import SectionView
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -102,21 +101,20 @@ fun RTCServersLayout(
 ) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_ICE_servers))
-    SectionView {
-      SectionItemViewSpaceBetween {
-        Text(stringResource(MR.strings.configure_ICE_servers), Modifier.padding(end = 24.dp))
-        DefaultSwitch(
-          checked = isUserRTCServers,
-          onCheckedChange = isUserRTCServersOnOff,
-        )
-      }
-    }
     Column(
       Modifier
         .fillMaxWidth()
         .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+      SectionItemViewSpaceBetween(padding = PaddingValues()) {
+        Text(stringResource(MR.strings.configure_ICE_servers), Modifier.padding(end = 24.dp))
+        DefaultSwitch(
+          checked = isUserRTCServers,
+          onCheckedChange = isUserRTCServersOnOff,
+        )
+      }
+
       if (!isUserRTCServers) {
         Text(stringResource(MR.strings.using_simplex_chat_servers), lineHeight = 22.sp)
       } else {

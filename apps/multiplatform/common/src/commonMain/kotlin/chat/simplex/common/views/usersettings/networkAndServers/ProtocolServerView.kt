@@ -140,7 +140,7 @@ private fun PresetServer(
   testing: Boolean,
   testServer: () -> Unit
 ) {
-  SectionView(stringResource(MR.strings.smp_servers_preset_address)) {
+  SectionView(stringResource(MR.strings.smp_servers_preset_address), card = true) {
     SelectionContainer {
       Text(
         server.value.server,
@@ -175,7 +175,7 @@ fun CustomServer(
     stringResource(MR.strings.smp_servers_your_server_address),
     icon = painterResource(MR.images.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
-    padding = PaddingValues(vertical = DEFAULT_PADDING_HALF),
+    card = true,
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
     TextEditor(
@@ -191,13 +191,13 @@ fun CustomServer(
         }
     }
   }
-  SectionDividerSpaced()
+  SectionDividerSpaced(maxTopPadding = true)
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
 
   if (valid.value) {
     SectionDividerSpaced()
-    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device)) {
+    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device), card = true) {
       QRCode(serverAddress.value, small = true)
     }
   }
@@ -211,7 +211,7 @@ private fun UseServerSection(
   testServer: () -> Unit,
   onDelete: (() -> Unit)? = null,
 ) {
-  SectionView(stringResource(MR.strings.smp_servers_use_server)) {
+  SectionView(stringResource(MR.strings.smp_servers_use_server), card = true) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
       Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server.value)

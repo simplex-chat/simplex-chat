@@ -228,19 +228,19 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
     AppBarTitle(stringResource(MR.strings.network_settings_title))
 
     if (currentRemoteHost == null) {
-      SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing)) {
+      SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing), card = true) {
         SMPProxyModePicker(smpProxyMode, showModal, updateSMPProxyMode)
         SMPProxyFallbackPicker(smpProxyFallback, showModal, updateSMPProxyFallback, enabled = remember { derivedStateOf { smpProxyMode.value != SMPProxyMode.Never } })
         SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
       }
       SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
 
-      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation)) {
+      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation), card = true) {
         SessionModePicker(sessionMode, showModal, updateSessionMode)
       }
       SectionDividerSpaced()
-      SectionView(stringResource(MR.strings.network_smp_web_port_section_title)) {
+      SectionView(stringResource(MR.strings.network_smp_web_port_section_title), card = true) {
         ExposedDropDownSettingRow(
           stringResource(MR.strings.network_smp_web_port_toggle),
           SMPWebPortServers.entries.map { it to stringResource(it.text) },
@@ -251,9 +251,9 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         if (smpWebPortServers.value == SMPWebPortServers.Preset) stringResource(MR.strings.network_smp_web_port_preset_footer)
         else String.format(stringResource(MR.strings.network_smp_web_port_footer), if (smpWebPortServers.value == SMPWebPortServers.All) "443" else "5223")
       )
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
 
-      SectionView(stringResource(MR.strings.network_option_tcp_connection)) {
+      SectionView(stringResource(MR.strings.network_option_tcp_connection), card = true) {
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeoutInteractive,
@@ -332,7 +332,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
 
     SectionDividerSpaced(maxBottomPadding = false)
 
-    SectionView {
+    SectionView(card = true) {
       SectionItemView(reset, disabled = resetDisabled) {
         Text(stringResource(MR.strings.network_options_reset_to_defaults), color = if (resetDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }

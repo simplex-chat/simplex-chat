@@ -106,7 +106,7 @@ private fun AddGroupRelayLayout(
         CircularProgressIndicator()
       }
     } else if (availableRelays.isEmpty()) {
-      SectionView {
+      SectionView(card = true) {
         SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(
             generalGetString(MR.strings.no_available_relays),
@@ -115,7 +115,7 @@ private fun AddGroupRelayLayout(
         }
       }
     } else {
-      SectionView {
+      SectionView(card = true) {
         AddRelaysButton(
           onClick = onAddRelays,
           disabled = selectedRelayIds.isEmpty() || isAdding
@@ -131,8 +131,8 @@ private fun AddGroupRelayLayout(
           fontSize = 14.sp
         )
       }
-      SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.select_relays)) {
+      SectionDividerSpaced(maxTopPadding = true)
+      SectionView(generalGetString(MR.strings.select_relays), card = true) {
         availableRelays.forEach { item ->
           val selected = item.relayId in selectedRelayIds
           SectionItemView(

@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import SectionDivider
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Divider
@@ -9,7 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.onRightClick
-import LocalInSectionCard
 import chat.simplex.common.views.helpers.*
 
 @Composable
@@ -40,9 +38,5 @@ actual fun ChatListNavLinkLayout(
       DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)
     }
   }
-  if (LocalInSectionCard.current) {
-    SectionDivider()
-  } else {
-    Divider(Modifier.padding(horizontal = 8.dp))
-  }
+  Divider(Modifier.padding(horizontal = 8.dp))
 }

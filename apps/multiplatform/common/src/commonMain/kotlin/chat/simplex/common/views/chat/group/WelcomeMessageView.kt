@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
+import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -64,7 +65,6 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
         else -> showUnsavedChangesAlert({ save(close) }, close)
       }
     },
-    background = MaterialTheme.colors.surface,
   ) {
     GroupWelcomeLayout(
       welcomeText,
@@ -160,8 +160,10 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
 
 @Composable
 private fun SaveButton(save: () -> Unit, disabled: Boolean) {
-  SectionItemView(save, disabled = disabled) {
-    Text(stringResource(MR.strings.save_and_update_group_profile), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+  SectionView {
+    SectionItemView(save, disabled = disabled) {
+      Text(stringResource(MR.strings.save_and_update_group_profile), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+    }
   }
 }
 

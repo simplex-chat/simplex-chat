@@ -1,6 +1,5 @@
 package chat.simplex.common.views.usersettings
 
-import CARD_ITEM_PADDING
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
@@ -101,7 +100,7 @@ fun SettingsLayout(
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_settings))
 
-    SectionView(stringResource(MR.strings.settings_section_title_settings)) {
+    SectionView(stringResource(MR.strings.settings_section_title_settings), card = true) {
       SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
@@ -110,14 +109,14 @@ fun SettingsLayout(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_chat_database)) {
+    SectionView(stringResource(MR.strings.settings_section_title_chat_database), card = true) {
       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
     }
 
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_help)) {
+    SectionView(stringResource(MR.strings.settings_section_title_help), card = true) {
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName ?: "") }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
@@ -128,7 +127,7 @@ fun SettingsLayout(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_support)) {
+    SectionView(stringResource(MR.strings.settings_section_title_support), card = true) {
       if (!BuildConfigCommon.ANDROID_BUNDLE) {
         ContributeItem(uriHandler)
       }
@@ -349,9 +348,9 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
     click,
     extraPadding = extraPadding,
     padding = if (extraPadding && icon != null)
-      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = CARD_ITEM_PADDING)
+      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
     else
-      PaddingValues(horizontal = CARD_ITEM_PADDING),
+      PaddingValues(horizontal = DEFAULT_PADDING),
     disabled = disabled
   ) {
     if (icon != null) {

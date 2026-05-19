@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
@@ -26,7 +25,7 @@ import chat.simplex.res.MR
 fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  Box(Modifier.fillMaxSize().background(MaterialTheme.colors.surface)) {
+  Box(Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
     val sharedContent = chatModel.sharedContent.value
     var isMediaOrFileAttachment = false
     var isVoice = false

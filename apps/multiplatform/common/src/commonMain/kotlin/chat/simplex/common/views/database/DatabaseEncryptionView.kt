@@ -119,7 +119,7 @@ fun DatabaseEncryptionLayout(
         ChatStoppedView()
         SectionSpacer()
       }
-      SectionView(if (migration) generalGetString(MR.strings.database_passphrase) else null) {
+      SectionView(if (migration) generalGetString(MR.strings.database_passphrase) else null, card = true) {
         SavePassphraseSetting(
           useKeychain.value,
           initialRandomDBPassphrase.value,

@@ -170,7 +170,7 @@ fun DatabaseLayout(
     AppBarTitle(stringResource(MR.strings.your_chat_database))
 
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(stringResource(MR.strings.messages_section_title)) {
+      SectionView(stringResource(MR.strings.messages_section_title), card = true) {
         TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
       }
       SectionTextFooter(
@@ -184,14 +184,14 @@ fun DatabaseLayout(
           }
         }
       )
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
     }
     val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
     if (chatModel.localUserCreated.value == true) {
       // still show the toggle in case database was stopped when the user opened this screen because it can be in the following situations:
       // - database was stopped after migration and the app relaunched
       // - something wrong happened with database operations and the database couldn't be launched when it should
-      SectionView(stringResource(MR.strings.run_chat_section)) {
+      SectionView(stringResource(MR.strings.run_chat_section), card = true) {
         if (!toggleEnabled) {
           SectionItemView(disconnectAllHosts) {
             Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
@@ -200,10 +200,10 @@ fun DatabaseLayout(
         RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
       if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
     }
 
-    SectionView(stringResource(MR.strings.chat_database_section)) {
+    SectionView(stringResource(MR.strings.chat_database_section), card = true) {
       if (chatModel.localUserCreated.value != true && !toggleEnabled) {
         SectionItemView(disconnectAllHosts) {
           Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
@@ -262,7 +262,7 @@ fun DatabaseLayout(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.files_and_media_section)) {
+    SectionView(stringResource(MR.strings.files_and_media_section), card = true) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,

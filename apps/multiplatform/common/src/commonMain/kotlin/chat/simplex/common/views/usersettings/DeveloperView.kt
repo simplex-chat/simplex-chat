@@ -24,19 +24,19 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
     val developerTools = m.controller.appPrefs.developerTools
     val devTools = remember { developerTools.state }
     val unchangedHints = mutableStateOf(unchangedHintPreferences())
-    SectionView {
+    SectionView(card = true) {
       InstallTerminalAppItem(uriHandler)
       ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.start.showModalCloseable { TerminalView(false) } } }
       ResetHintsItem(unchangedHints)
       SettingsPreferenceItem(painterResource(MR.images.ic_code), stringResource(MR.strings.show_developer_options), developerTools)
+      SectionTextFooter(
+        generalGetString(if (devTools.value) MR.strings.show_dev_options else MR.strings.hide_dev_options) + " " +
+            generalGetString(MR.strings.developer_options)
+      )
     }
-    SectionTextFooter(
-      generalGetString(if (devTools.value) MR.strings.show_dev_options else MR.strings.hide_dev_options) + " " +
-          generalGetString(MR.strings.developer_options)
-    )
     if (devTools.value) {
-      SectionDividerSpaced()
-      SectionView(stringResource(MR.strings.developer_options_section)) {
+      SectionDividerSpaced(maxTopPadding = true)
+      SectionView(stringResource(MR.strings.developer_options_section), card = true) {
         SettingsActionItemWithContent(painterResource(MR.images.ic_breaking_news), stringResource(MR.strings.debug_logs)) {
           DefaultSwitch(
             checked = remember { appPrefs.logLevel.state }.value <= LogLevel.DEBUG,
@@ -59,15 +59,15 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
       }
     }
-    SectionDividerSpaced()
-    SectionView(stringResource(MR.strings.deprecated_options_section)) {
+    SectionDividerSpaced(maxTopPadding = true)
+    SectionView(stringResource(MR.strings.deprecated_options_section), card = true) {
       val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })
+      SectionBottomSpacer()
     }
-    SectionBottomSpacer()
   }
 }
 

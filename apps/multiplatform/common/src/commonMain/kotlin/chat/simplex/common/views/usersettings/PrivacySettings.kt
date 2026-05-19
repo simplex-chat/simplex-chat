@@ -60,7 +60,7 @@ fun PrivacySettingsView(
     PrivacyDeviceSection(showSettingsModal, setPerformLA)
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_chats)) {
+    SectionView(stringResource(MR.strings.settings_section_title_chats), card = true) {
       SettingsPreferenceItem(
         painterResource(MR.images.ic_travel_explore),
         stringResource(MR.strings.send_link_previews),
@@ -93,7 +93,7 @@ fun PrivacySettingsView(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_files)) {
+    SectionView(stringResource(MR.strings.settings_section_title_files), card = true) {
       SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
@@ -171,7 +171,7 @@ fun PrivacySettingsView(
       }
 
       if (!chatModel.desktopNoUserNoRemote) {
-        SectionDividerSpaced()
+        SectionDividerSpaced(maxTopPadding = true)
         ContacRequestsFromGroupsSection(
           currentUser = currentUser,
           setAutoAcceptGrpDirectInvs = { enable ->
@@ -179,7 +179,7 @@ fun PrivacySettingsView(
           }
         )
 
-        SectionDividerSpaced()
+        SectionDividerSpaced(maxTopPadding = true)
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->
@@ -277,7 +277,7 @@ private fun ContacRequestsFromGroupsSection(
   currentUser: User,
   setAutoAcceptGrpDirectInvs: (Boolean) -> Unit
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_contact_requests_from_groups)) {
+  SectionView(stringResource(MR.strings.settings_section_title_contact_requests_from_groups), card = true) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_check), stringResource(MR.strings.auto_accept_contact)) {
       DefaultSwitch(
         checked = currentUser.autoAcceptMemberContacts,
@@ -306,7 +306,7 @@ private fun DeliveryReceiptsSection(
   setOrAskSendReceiptsContacts: (Boolean) -> Unit,
   setOrAskSendReceiptsGroups: (Boolean) -> Unit,
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts)) {
+  SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts), card = true) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.receipts_section_contacts)) {
       DefaultSwitch(
         checked = currentUser.sendRcptsContacts,
@@ -562,7 +562,7 @@ fun SimplexLockView(
 
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.chat_lock))
-    SectionView {
+    SectionView(card = true) {
       EnableLock(remember { appPrefs.performLA.state }) { performLAToggle ->
         showAuthScreen.value = performLAToggle
         chatModel.controller.appPrefs.laNoticeShown.set(true)
@@ -619,7 +619,7 @@ fun SimplexLockView(
       }
       if (performLA.value && laMode.value == LAMode.PASSCODE) {
         SectionDividerSpaced()
-        SectionView(stringResource(MR.strings.self_destruct_passcode)) {
+        SectionView(stringResource(MR.strings.self_destruct_passcode), card = true) {
           val openInfo = {
             ModalManager.start.showModal {
               SelfDestructInfoView()

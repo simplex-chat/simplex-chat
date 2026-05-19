@@ -98,7 +98,7 @@ fun UserProfileLayout(
           showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, shortDescr.value, profileImage.value) }, close)
         }
       }
-      ModalView(close = closeWithAlert, background = MaterialTheme.colors.surface) {
+      ModalView(close = closeWithAlert) {
         ColumnWithScrollBar(
           Modifier
             .padding(horizontal = DEFAULT_PADDING),

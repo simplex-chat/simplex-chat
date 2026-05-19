@@ -131,7 +131,8 @@ private fun ContactConnectionInfoLayout(
       Spacer(Modifier.height(DEFAULT_PADDING))
       SectionViewWithButton(
         stringResource(MR.strings.one_time_link),
-        titleButton = if (connLink.connShortLink == null) null else {{ ToggleShortLinkButton(showShortLink) }}
+        titleButton = if (connLink.connShortLink == null) null else {{ ToggleShortLinkButton(showShortLink) }},
+        card = true
       ) {
         SimpleXCreatedLinkQRCode(connLink, short = showShortLink.value)
         incognitoEnabled()
@@ -139,14 +140,14 @@ private fun ContactConnectionInfoLayout(
         OneTimeLinkLearnMoreButton(learnMore)
       }
     } else {
-      SectionView {
+      SectionView(card = true) {
         incognitoEnabled()
         OneTimeLinkLearnMoreButton(learnMore)
       }
     }
     SectionTextFooter(sharedProfileInfo(chatModel, contactConnection.incognito))
 
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
     DeleteButton(deleteConnection)
 

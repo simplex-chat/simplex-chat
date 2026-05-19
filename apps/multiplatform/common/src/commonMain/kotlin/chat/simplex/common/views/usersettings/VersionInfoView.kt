@@ -1,9 +1,6 @@
 package chat.simplex.common.views.usersettings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,7 +16,7 @@ import chat.simplex.res.MR
 @Composable
 fun VersionInfoView(info: CoreVersionInfo) {
   ColumnWithScrollBar(
-    Modifier.fillMaxSize().background(MaterialTheme.colors.surface).padding(horizontal = DEFAULT_PADDING),
+    Modifier.padding(horizontal = DEFAULT_PADDING),
   ) {
     AppBarTitle(stringResource(MR.strings.app_version_title), withPadding = false)
     if (appPlatform.isAndroid) {

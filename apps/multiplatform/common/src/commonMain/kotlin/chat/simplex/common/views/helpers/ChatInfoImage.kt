@@ -25,14 +25,7 @@ import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
 
 @Composable
-private fun defaultProfileIconColor(): Color =
-  if (CurrentColors.value.base == DefaultTheme.LIGHT)
-    MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.91f)
-  else
-    MaterialTheme.colors.secondaryVariant
-
-@Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = defaultProfileIconColor(), shadow: Boolean = false) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
@@ -59,7 +52,7 @@ fun ProfileImage(
   size: Dp,
   image: String? = null,
   icon: ImageResource = MR.images.ic_account_circle_filled,
-  color: Color = defaultProfileIconColor(),
+  color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   blurred: Boolean = false,
   async: Boolean = false

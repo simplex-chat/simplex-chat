@@ -86,7 +86,7 @@ fun YourServersViewLayout(
   Column {
     if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
       val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
-      SectionView(generalGetString(MR.strings.chat_relays)) {
+      SectionView(generalGetString(MR.strings.chat_relays), card = true) {
         userServers.value[operatorIndex].chatRelays.forEachIndexed { i, relay ->
           if (relay.deleted) return@forEachIndexed
           ChatRelayViewLink(relay, duplicateRelayAddresses) {
@@ -99,7 +99,7 @@ fun YourServersViewLayout(
 
     if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
       SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.message_servers)) {
+      SectionView(generalGetString(MR.strings.message_servers), card = true) {
         userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
           if (server.deleted) return@forEachIndexed
           SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -133,7 +133,7 @@ fun YourServersViewLayout(
 
     if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
       SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.media_and_file_servers)) {
+      SectionView(generalGetString(MR.strings.media_and_file_servers), card = true) {
         userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
           if (server.deleted) return@forEachIndexed
           SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -170,10 +170,10 @@ fun YourServersViewLayout(
       userServers.value[operatorIndex].xftpServers.any { !it.deleted } ||
       userServers.value[operatorIndex].chatRelays.any { !it.deleted }
       ) {
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
     }
 
-    SectionView {
+    SectionView(card = true) {
       SettingsActionItem(
         painterResource(MR.images.ic_add),
         stringResource(MR.strings.smp_servers_add),
@@ -195,9 +195,9 @@ fun YourServersViewLayout(
         ServersWarningFooter(serversWarn)
       }
     }
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
 
-    SectionView {
+    SectionView(card = true) {
       TestServersButton(
         testing = testing,
         smpServers = userServers.value[operatorIndex].smpServers,

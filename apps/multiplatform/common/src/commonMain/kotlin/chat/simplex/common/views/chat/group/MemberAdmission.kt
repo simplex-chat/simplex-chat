@@ -85,7 +85,7 @@ private fun MemberAdmissionLayout(
       }
     }
     if (groupInfo.isOwner) {
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       ResetSaveButtons(
         reset = reset,
         save = saveAdmission,
@@ -109,7 +109,7 @@ private fun AdmissionSection(
   groupInfo: GroupInfo,
   onSelected: (MemberCriteria?) -> Unit
 ) {
-  SectionView {
+  SectionView(card = true) {
     if (groupInfo.isOwner) {
       ExposedDropDownSettingRow(
         generalGetString(admissionStageStrId),
@@ -131,7 +131,7 @@ private fun AdmissionSection(
 
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  SectionView {
+  SectionView(card = true) {
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }

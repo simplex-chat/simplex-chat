@@ -301,17 +301,17 @@ private fun UserAddressLayout(
     ) {
       if (userAddress == null) {
         if (!onboarding) {
-          SectionView(generalGetString(MR.strings.for_social_media)) {
+          SectionView(generalGetString(MR.strings.for_social_media), card = true) {
             CreateAddressButton(createAddress)
           }
 
           SectionDividerSpaced()
-          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
+          SectionView(generalGetString(MR.strings.or_to_share_privately), card = true) {
             CreateOneTimeLinkButton()
           }
 
-          SectionDividerSpaced()
-          SectionView {
+          SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+          SectionView(card = true) {
             LearnMoreButton(learnMore)
           }
         }
@@ -336,7 +336,7 @@ private fun UserAddressLayout(
           val savedAddressSettingsState = remember { mutableStateOf(addressSettingsState.value) }
 
           SectionViewWithButton(
-            stringResource(MR.strings.for_social_media),
+            stringResource(MR.strings.for_social_media).uppercase(),
             titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
           ) {
             SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
@@ -359,20 +359,20 @@ private fun UserAddressLayout(
             }
           }
 
-          SectionDividerSpaced()
-          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
+          SectionDividerSpaced(maxTopPadding = addressSettingsState.value.businessAddress)
+          SectionView(generalGetString(MR.strings.or_to_share_privately), card = true) {
             CreateOneTimeLinkButton()
           }
           SectionDividerSpaced(maxBottomPadding = false)
-          SectionView {
+          SectionView(card = true) {
             LearnMoreButton(learnMore)
           }
 
           SectionDividerSpaced(maxBottomPadding = false)
-          SectionView {
+          SectionView(card = true) {
             DeleteAddressButton(deleteAddress)
+            SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
           }
-          SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
         }
       }
     }
@@ -503,7 +503,7 @@ private fun ModalData.UserAddressSettings(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceEvenly
       ) {
-        SectionView {
+        SectionView(card = true) {
           ShareWithContactsButton(shareViaProfile, setProfileAddress)
           AutoAcceptToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
           if (addressSettingsState.value.autoAccept && !chatModel.addressShortLinkDataSet() && !addressSettingsState.value.businessAddress) {
@@ -512,18 +512,13 @@ private fun ModalData.UserAddressSettings(
         }
         SectionDividerSpaced()
 
-        SectionView(
-          stringResource(MR.strings.address_welcome_message),
-          contentPadding = PaddingValues(vertical = DEFAULT_PADDING_HALF),
-        ) {
+        SectionView(stringResource(MR.strings.address_welcome_message), card = true) {
           AutoReplyEditor(addressSettingsState)
         }
-        SectionDividerSpaced()
+        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
-        SectionView {
-          saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
-            saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
-          }
+        saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
+          saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
         }
       }
     }

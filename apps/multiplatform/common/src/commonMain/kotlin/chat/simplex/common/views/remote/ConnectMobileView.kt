@@ -92,15 +92,15 @@ fun ConnectMobileLayout(
 ) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
-    SectionView(generalGetString(MR.strings.this_device_name)) {
+    SectionView(generalGetString(MR.strings.this_device_name), card = true) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
+      SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
       PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
         controller.appPrefs.offerRemoteMulticast.set(it)
       }
+      SectionDividerSpaced()
     }
-    SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
-    SectionDividerSpaced()
-    SectionView(stringResource(MR.strings.devices)) {
+    SectionView(stringResource(MR.strings.devices), card = true) {
       if (chatModel.localUserCreated.value == true) {
         SettingsActionItemWithContent(text = stringResource(MR.strings.this_device), icon = painterResource(MR.images.ic_desktop), click = connectDesktop) {
           if (connectedHost.value == null) {
@@ -189,7 +189,7 @@ private fun ConnectMobileViewLayout(
     if (title != null) {
       AppBarTitle(title)
     }
-    SectionView {
+    SectionView(card = true) {
       if (invitation != null && sessionCode == null && port != null) {
         Box {
           QRCode(invitation)
@@ -211,10 +211,11 @@ private fun ConnectMobileViewLayout(
             Text(generalGetString(MR.strings.share_link), color = MaterialTheme.colors.primary)
           }
         }
-      }
 
+        Spacer(Modifier.height(DEFAULT_PADDING))
+      }
       if (deviceName != null || sessionCode != null) {
-        SectionView(stringResource(MR.strings.connected_mobile)) {
+        SectionView(stringResource(MR.strings.connected_mobile), card = true) {
           SelectionContainer {
             Text(
               deviceName ?: stringResource(MR.strings.new_mobile_device),
@@ -227,7 +228,7 @@ private fun ConnectMobileViewLayout(
       }
 
       if (sessionCode != null) {
-        SectionView(stringResource(MR.strings.verify_code_on_mobile)) {
+        SectionView(stringResource(MR.strings.verify_code_on_mobile), card = true) {
           SelectionContainer {
             Text(
               sessionCode.substring(0, 23),

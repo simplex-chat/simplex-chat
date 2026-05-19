@@ -182,7 +182,7 @@ private fun SectionByState(
 @Composable
 private fun MutableState<MigrationFromState>.ChatStopInProgressView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_stopping_chat)) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_stopping_chat), card = true) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -192,7 +192,7 @@ private fun MutableState<MigrationFromState>.ChatStopInProgressView() {
 
 @Composable
 private fun MutableState<MigrationFromState>.ChatStopFailedView(reason: String) {
-  SectionView(stringResource(MR.strings.error_stopping_chat)) {
+  SectionView(stringResource(MR.strings.error_stopping_chat), card = true) {
     Text(reason)
     SectionSpacer()
     SettingsActionItemWithContent(
@@ -201,8 +201,8 @@ private fun MutableState<MigrationFromState>.ChatStopFailedView(reason: String) 
       textColor = MaterialTheme.colors.error,
       click = ::stopChat
     ){}
+    SectionTextFooter(stringResource(MR.strings.migrate_from_device_chat_should_be_stopped))
   }
-  SectionTextFooter(stringResource(MR.strings.migrate_from_device_chat_should_be_stopped))
 }
 
 @Composable
@@ -226,7 +226,7 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
       ChatStoppedView()
       SectionSpacer()
 
-      SectionView(stringResource(MR.strings.migrate_from_device_verify_database_passphrase)) {
+      SectionView(stringResource(MR.strings.migrate_from_device_verify_database_passphrase), card = true) {
         PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey, requestFocus = true)
 
         SettingsActionItemWithContent(
@@ -243,8 +243,8 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
             }
           }
         ) {}
+        SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
       }
-      SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
     }
     if (verifyingPassphrase.value) {
       ProgressView()
@@ -254,21 +254,21 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
 
 @Composable
 private fun MutableState<MigrationFromState>.UploadConfirmationView() {
-  SectionView(stringResource(MR.strings.migrate_from_device_confirm_upload)) {
+  SectionView(stringResource(MR.strings.migrate_from_device_confirm_upload), card = true) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_ios_share),
       text = stringResource(MR.strings.migrate_from_device_archive_and_upload),
       textColor = MaterialTheme.colors.primary,
       click = { state = MigrationFromState.Archiving }
     ){}
+    SectionTextFooter(stringResource(MR.strings.migrate_from_device_all_data_will_be_uploaded))
   }
-  SectionTextFooter(stringResource(MR.strings.migrate_from_device_all_data_will_be_uploaded))
 }
 
 @Composable
 private fun MutableState<MigrationFromState>.ArchivingView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_archiving_database)) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_archiving_database), card = true) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -279,7 +279,7 @@ private fun MutableState<MigrationFromState>.ArchivingView() {
 @Composable
 private fun MutableState<MigrationFromState>.DatabaseInitView(tempDatabaseFile: File, totalBytes: Long, archivePath: String) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_database_init)) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_database_init), card = true) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -298,7 +298,7 @@ private fun MutableState<MigrationFromState>.UploadProgressView(
   archivePath: String,
 ) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_uploading_archive)) {
+    SectionView(stringResource(MR.strings.migrate_from_device_uploading_archive), card = true) {
       val ratio = uploadedBytes.toFloat() / max(totalBytes, 1)
       LargeProgressView(ratio, "${(ratio * 100).toInt()}%", stringResource(MR.strings.migrate_from_device_bytes_uploaded).format(formatBytes(uploadedBytes)))
     }
@@ -310,7 +310,7 @@ private fun MutableState<MigrationFromState>.UploadProgressView(
 
 @Composable
 private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, archivePath: String, chatReceiver: MigrationFromChatReceiver?) {
-  SectionView(stringResource(MR.strings.migrate_from_device_upload_failed)) {
+  SectionView(stringResource(MR.strings.migrate_from_device_upload_failed), card = true) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_ios_share),
       text = stringResource(MR.strings.migrate_from_device_repeat_upload),
@@ -319,8 +319,8 @@ private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, 
         state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
       }
     ) {}
+    SectionTextFooter(stringResource(MR.strings.migrate_from_device_try_again))
   }
-  SectionTextFooter(stringResource(MR.strings.migrate_from_device_try_again))
   LaunchedEffect(Unit) {
     chatReceiver?.stopAndCleanUp()
   }
@@ -329,14 +329,14 @@ private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, 
 @Composable
 private fun LinkCreationView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_creating_archive_link)) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_creating_archive_link), card = true) {}
     ProgressView()
   }
 }
 
 @Composable
 private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
-  SectionView {
+  SectionView(card = true) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_close),
       text = stringResource(MR.strings.migrate_from_device_cancel_migration),
@@ -361,15 +361,15 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
         )
       }
     ) {}
+    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
+    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   }
-  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
-  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   SectionSpacer()
-  SectionView(stringResource(MR.strings.show_QR_code)) {
+  SectionView(stringResource(MR.strings.show_QR_code), card = true) {
     SimpleXLinkQRCode(link, onShare = {})
   }
   SectionSpacer()
-  SectionView(stringResource(MR.strings.migrate_from_device_or_share_this_file_link)) {
+  SectionView(stringResource(MR.strings.migrate_from_device_or_share_this_file_link), card = true) {
     LinkTextView(link, true)
   }
 }
@@ -377,7 +377,7 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
 @Composable
 private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_migration_complete)) {
+    SectionView(stringResource(MR.strings.migrate_from_device_migration_complete), card = true) {
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_play_arrow_filled),
         text = stringResource(MR.strings.migrate_from_device_start_chat),
@@ -410,9 +410,9 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
           )
         }
       ) {}
+      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
+      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     }
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     if (chatDeletion) {
       ProgressView()
     }

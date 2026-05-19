@@ -181,7 +181,7 @@ fun OperatorViewLayout(
   val duplicateHosts = findDuplicateHosts(serverErrors.value)
 
   Column {
-    SectionView(generalGetString(MR.strings.operator)) {
+    SectionView(generalGetString(MR.strings.operator), card = true) {
       SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }) {
         Row(
           Modifier.fillMaxWidth(),
@@ -238,7 +238,7 @@ fun OperatorViewLayout(
       if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
         val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.chat_relays)) {
+        SectionView(generalGetString(MR.strings.chat_relays), card = true) {
           userServers.value[operatorIndex].chatRelays.forEachIndexed { index, relay ->
             if (!relay.deleted) {
               ChatRelayViewLink(relay, duplicateRelayAddresses) {
@@ -252,7 +252,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_use_for_messages)) {
+        SectionView(generalGetString(MR.strings.operator_use_for_messages), card = true) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
               stringResource(MR.strings.operator_use_for_messages_receiving),
@@ -306,7 +306,7 @@ fun OperatorViewLayout(
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].smpServers.any { it.preset }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.message_servers)) {
+        SectionView(generalGetString(MR.strings.message_servers), card = true) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
             if (!server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -340,7 +340,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].smpServers.any { !it.preset && !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_added_message_servers)) {
+        SectionView(generalGetString(MR.strings.operator_added_message_servers), card = true) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -356,7 +356,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_use_for_files)) {
+        SectionView(generalGetString(MR.strings.operator_use_for_files), card = true) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
               stringResource(MR.strings.operator_use_for_sending),
@@ -389,7 +389,7 @@ fun OperatorViewLayout(
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].xftpServers.any { it.preset }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.media_and_file_servers)) {
+        SectionView(generalGetString(MR.strings.media_and_file_servers), card = true) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (!server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -423,7 +423,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.preset && !it.deleted}) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_added_xftp_servers)) {
+        SectionView(generalGetString(MR.strings.operator_added_xftp_servers), card = true) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -438,7 +438,7 @@ fun OperatorViewLayout(
       }
 
       SectionDividerSpaced()
-      SectionView {
+      SectionView(card = true) {
         TestServersButton(
           testing = testing,
           smpServers = userServers.value[operatorIndex].smpServers,
@@ -479,7 +479,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.operator_info_title))
 
-    SectionView {
+    SectionView(card = true) {
       SectionItemView {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           Image(painterResource(serverOperator.largeLogo), null, Modifier.height(48.dp))
@@ -493,7 +493,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
     SectionDividerSpaced(maxBottomPadding = false)
 
     val uriHandler = LocalUriHandler.current
-    SectionView {
+    SectionView(card = true) {
       SectionItemView {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           serverOperator.info.description.forEach { d ->
@@ -508,7 +508,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
     val selfhost = serverOperator.info.selfhost
     if (selfhost != null) {
       SectionDividerSpaced(maxBottomPadding = false)
-      SectionView {
+      SectionView(card = true) {
         SectionItemView {
           val (text, link) = selfhost
           Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(link) })
@@ -645,7 +645,7 @@ private fun SingleOperatorUsageConditionsView(
     )
   }
 
-  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().background(MaterialTheme.colors.surface).padding(horizontal = DEFAULT_PADDING)) {
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(String.format(stringResource(MR.strings.use_servers_of_operator_x), operator.tradeName), enableAlphaChanges = false, withPadding = false)
     if (operator.conditionsAcceptance is ConditionsAcceptance.Accepted) {
       // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted

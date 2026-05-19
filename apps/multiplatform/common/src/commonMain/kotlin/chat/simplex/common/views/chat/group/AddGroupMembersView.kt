@@ -175,7 +175,7 @@ fun AddGroupMembersLayout(
         )
       }
     } else {
-      SectionView {
+      SectionView(card = true) {
         if (creatingGroup) {
           SectionItemView(openMemberAdmission) {
             Text(stringResource(MR.strings.set_member_admission))
@@ -195,8 +195,8 @@ fun AddGroupMembersLayout(
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
-      SectionDividerSpaced()
-      SectionView(stringResource(MR.strings.select_contacts)) {
+      SectionDividerSpaced(maxTopPadding = true)
+      SectionView(stringResource(MR.strings.select_contacts), card = true) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
         }
