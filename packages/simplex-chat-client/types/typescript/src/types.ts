@@ -3751,6 +3751,7 @@ export enum RelayStatus {
   Accepted = "accepted",
   Active = "active",
   Inactive = "inactive",
+  Rejected = "rejected",
 }
 
 export enum ReportReason {

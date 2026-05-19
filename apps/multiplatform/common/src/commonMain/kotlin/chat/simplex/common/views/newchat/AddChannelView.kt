@@ -361,11 +361,11 @@ private fun ProgressStepView(
   cancelChannelCreation: () -> Unit
 ) {
   val failedCount = groupRelays.value.count { relayMemberConnFailed(chatModel, it) != null }
-  val activeCount = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
+  val activeCount = groupRelays.value.count { it.relayStatus == RelayStatus.Active && relayMemberConnFailed(chatModel, it) == null }
   val total = groupRelays.value.size
 
   fun showCancelAlert() {
-    val active = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
+    val active = groupRelays.value.count { it.relayStatus == RelayStatus.Active && relayMemberConnFailed(chatModel, it) == null }
     val tot = groupRelays.value.size
     AlertManager.shared.showAlertDialog(
       title = generalGetString(MR.strings.cancel_creating_channel_question),
@@ -394,7 +394,7 @@ private fun ProgressStepView(
       .collect { relays ->
         if (ChannelRelaysModel.groupId.value != gInfo.groupId) return@collect
         groupRelays.value = relays.sortedBy { relayDisplayName(it) }
-        if (relays.all { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }) {
+        if (relays.all { it.relayStatus == RelayStatus.Active && relayMemberConnFailed(chatModel, it) == null }) {
           onLinkReady()
           ChannelRelaysModel.reset()
         }
@@ -597,8 +597,14 @@ fun chatRelayDisplayName(relay: UserChatRelay): String {
 @Composable
 fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false, memberStatus: GroupMemberStatus? = null) {
   val removed = memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
-  val color = if (connFailed || removed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
-  val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator) else if (removed) generalGetString(MR.strings.relay_conn_status_removed) else status.text
+  val isRejected = status == RelayStatus.Rejected
+  val color = if (connFailed || removed || isRejected) Color.Red else if (status == RelayStatus.Active) Color.Green else WarningYellow
+  val text =
+    if (connFailed) generalGetString(MR.strings.relay_status_failed)
+    else if (isRejected) generalGetString(MR.strings.relay_status_rejected)
+    else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator)
+    else if (removed) generalGetString(MR.strings.relay_conn_status_removed)
+    else status.text
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)

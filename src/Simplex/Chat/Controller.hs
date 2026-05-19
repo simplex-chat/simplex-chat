@@ -407,6 +407,7 @@ data ChatCommand
   | SetUserChatRelays [CLINewRelay]
   | APITestChatRelay UserId ShortLinkContact
   | TestChatRelay ShortLinkContact
+  | APIAllowRelayGroup {groupId :: GroupId}
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
@@ -532,6 +533,7 @@ data ChatCommand
   | BlockForAll GroupName ContactName Bool
   | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool}
   | LeaveGroup GroupName
+  | AllowRelayGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
@@ -735,6 +737,7 @@ data ChatResponse
   | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CRPublicGroupCreationFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupRelays {user :: User, groupInfo :: GroupInfo, groupRelays :: [GroupRelay]}
+  | CRRelayGroupAllowed {user :: User, groupInfo :: GroupInfo}
   | CRGroupRelaysAdded {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CRGroupRelaysAddFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupMembers {user :: User, group :: Group}
@@ -945,6 +948,7 @@ data ChatEvent
 
 data TerminalEvent
   = TEGroupLinkRejected {user :: User, groupInfo :: GroupInfo, groupRejectionReason :: GroupRejectionReason}
+  | TERelayRejected {user :: User, groupInfo :: GroupInfo, relayRejectionReason :: RelayRejectionReason}
   | TERejectingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRejectionReason :: GroupRejectionReason}
   | TENewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | TEContactVerificationReset {user :: User, contact :: Contact}

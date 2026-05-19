@@ -37,7 +37,9 @@ struct ChannelRelaysView: View {
         }
         // TODO [relays] re-enable when relay management ships
         // .sheet(isPresented: $showAddRelay) {
-        //     let existingRelayIds = Set(groupRelays.filter { $0.relayStatus != .rsInactive }.compactMap { $0.userChatRelay.chatRelayId })
+        //     // Backend gate (APIAddGroupRelays) rejects any chatRelayId already in group_relays
+        //     // regardless of relayStatus, so all current rows must be excluded from the add list.
+        //     let existingRelayIds = Set(groupRelays.compactMap { $0.userChatRelay.chatRelayId })
         //     AddGroupRelayView(groupInfo: groupInfo, existingRelayIds: existingRelayIds) {
         //         Task { await chatModel.loadGroupMembers(groupInfo) }
         //     }
@@ -112,7 +114,10 @@ struct ChannelRelaysView: View {
     }
 
     private func ownerRelayStatusText(_ member: GroupMember) -> LocalizedStringKey {
-        if [.memLeft, .memRemoved, .memGroupDeleted].contains(member.memberStatus) {
+        let relayStatus = groupRelays.first(where: { $0.groupMemberId == member.groupMemberId })?.relayStatus
+        return if relayStatus == .rejected {
+            "rejected"
+        } else if [.memLeft, .memRemoved, .memGroupDeleted].contains(member.memberStatus) {
             relayConnStatus(member).text
         } else if case .failed = member.activeConn?.connStatus {
             "failed"
@@ -121,8 +126,7 @@ struct ChannelRelaysView: View {
         } else if member.activeConn?.connInactive ?? false {
             "inactive"
         } else {
-            groupRelays.first(where: { $0.groupMemberId == member.groupMemberId })?.relayStatus.text
-                ?? relayConnStatus(member).text
+            relayStatus?.text ?? relayConnStatus(member).text
         }
     }
 
