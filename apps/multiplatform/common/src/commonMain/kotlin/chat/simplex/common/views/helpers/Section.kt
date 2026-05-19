@@ -27,6 +27,7 @@ import chat.simplex.res.MR
 
 private val SectionCardShape = RoundedCornerShape(16.dp)
 val CARD_PADDING = 16.dp
+val ICON_TEXT_SPACING = 5.dp
 val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
 
 // Set to true by SectionView around its inner Column. SectionItemView reads it
@@ -341,7 +342,7 @@ fun SectionBottomSpacer() {
 
 @Composable
 fun TextIconSpaced(extraPadding: Boolean = false) {
-  Spacer(Modifier.padding(horizontal = if (extraPadding) 17.dp else 5.dp))
+  Spacer(Modifier.padding(horizontal = if (extraPadding) 17.dp else ICON_TEXT_SPACING))
 }
 
 @Composable
