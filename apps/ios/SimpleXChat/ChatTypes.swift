@@ -1358,6 +1358,10 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
 
 public struct GroupPreference: Codable, Equatable, Hashable {
     public var enable: GroupFeatureEnabled
+    // Backend types like FullDeleteGroupPreference carry a role gate; the client used to
+    // drop it. Now decoded and surfaced for UI gates that must mirror the backend's
+    // groupFeatureMemberAllowed / groupFeatureUserAllowed.
+    public var role: GroupMemberRole?
 
     public var on: Bool {
         enable == .on
@@ -1375,8 +1379,9 @@ public struct GroupPreference: Codable, Equatable, Hashable {
         }
     }
 
-    public init(enable: GroupFeatureEnabled) {
+    public init(enable: GroupFeatureEnabled, role: GroupMemberRole? = nil) {
         self.enable = enable
+        self.role = role
     }
 }
 

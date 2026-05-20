@@ -715,7 +715,12 @@ object ChatModel {
 
       // Under fullDelete the backend physically deletes the removed member's items
       // and files; the UI must drop them rather than show stale moderated placeholders.
-      val fullDelete = groupInfo.fullGroupPreferences.fullDelete.on
+      // The role check mirrors the backend's groupFeatureMemberAllowed: in business
+      // groups fullDelete may be gated by role (e.g. role = owner), and only the deleter
+      // satisfying that gate triggers physical deletion.
+      val fullDeletePref = groupInfo.fullGroupPreferences.fullDelete
+      val fullDelete = fullDeletePref.on &&
+        byMember.memberRole >= (fullDeletePref.role ?: GroupMemberRole.Observer)
       val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
         if (fullDelete) {
