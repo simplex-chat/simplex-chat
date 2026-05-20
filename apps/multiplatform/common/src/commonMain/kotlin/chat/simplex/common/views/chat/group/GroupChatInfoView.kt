@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat.group
 
+import CARD_PADDING
 import InfoRow
 import SectionBottomSpacer
 import SectionItemView
@@ -15,6 +16,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -703,7 +707,7 @@ fun ModalData.GroupChatInfoLayout(
       SectionSpacer()
 
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-        SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1), card = true) {
+        SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1), card = true, cardShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)) {
           if (groupInfo.canAddMembers) {
             val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
             val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -726,32 +730,36 @@ fun ModalData.GroupChatInfoLayout(
       }
     }
     if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-      items(filteredMembers.value, key = { it.groupMemberId }) { member ->
-        Divider()
-        val showMenu = remember { mutableStateOf(false) }
-        val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
-        SectionItemViewLongClickable(
-          click = {
-            if (selectedItems.value != null) {
-              if (canBeSelected) {
-                toggleItemSelection(member.groupMemberId, selectedItems)
+      itemsIndexed(filteredMembers.value, key = { _, m -> m.groupMemberId }) { index, member ->
+        val isLast = index == filteredMembers.value.lastIndex
+        val shape = if (isLast) RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp) else RectangleShape
+        Column(Modifier.padding(horizontal = CARD_PADDING).fillMaxWidth().clip(shape).background(sectionCardColor())) {
+          Divider()
+          val showMenu = remember { mutableStateOf(false) }
+          val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
+          SectionItemViewLongClickable(
+            click = {
+              if (selectedItems.value != null) {
+                if (canBeSelected) {
+                  toggleItemSelection(member.groupMemberId, selectedItems)
+                }
+              } else {
+                showMemberInfo(member, null)
               }
-            } else {
-              showMemberInfo(member, null)
-            }
-          },
-          longClick = { showMenu.value = true },
-          minHeight = 54.dp,
-          padding = PaddingValues(horizontal = DEFAULT_PADDING)
-        ) {
-          Box(contentAlignment = Alignment.CenterStart) {
-            androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
-              SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
-            }
-            val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
-            DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
-            Box(Modifier.padding(start = selectionOffset)) {
-              MemberRow(member)
+            },
+            longClick = { showMenu.value = true },
+            minHeight = 54.dp,
+            padding = PaddingValues(horizontal = DEFAULT_PADDING)
+          ) {
+            Box(contentAlignment = Alignment.CenterStart) {
+              androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
+                SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
+              }
+              val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
+              DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
+              Box(Modifier.padding(start = selectionOffset)) {
+                MemberRow(member)
+              }
             }
           }
         }

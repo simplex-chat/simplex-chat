@@ -477,7 +477,7 @@ fun OperatorViewLayout(
 
 @Composable
 fun OperatorInfoView(serverOperator: ServerOperator) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.operator_info_title))
 
     SectionView(card = true) {

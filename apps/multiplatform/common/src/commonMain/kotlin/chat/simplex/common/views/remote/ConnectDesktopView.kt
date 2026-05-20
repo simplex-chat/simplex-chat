@@ -407,7 +407,7 @@ private fun DesktopAddressView(sessionAddress: MutableState<String>) {
 
 @Composable
 private fun LinkedDesktopsView(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.linked_desktops))
     SectionView(stringResource(MR.strings.desktop_devices), card = true) {
       remoteCtrls.forEach { rc ->

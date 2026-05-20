@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -34,6 +35,7 @@ val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
 @Composable
 private fun CardColumnLayout(
   contentPadding: PaddingValues = PaddingValues(),
+  cardShape: Shape = SectionCardShape,
   content: @Composable () -> Unit
 ) {
   val dividerColor = canvasColorForCurrentTheme()
@@ -44,7 +46,7 @@ private fun CardColumnLayout(
     modifier = Modifier
       .padding(horizontal = CARD_PADDING)
       .fillMaxWidth()
-      .clip(SectionCardShape)
+      .clip(cardShape)
       .background(sectionCardColor())
       .padding(contentPadding)
       .drawBehind {
@@ -75,17 +77,18 @@ private fun CardColumnLayout(
 private fun CardColumn(
   card: Boolean,
   contentPadding: PaddingValues = PaddingValues(),
+  cardShape: Shape = SectionCardShape,
   content: @Composable () -> Unit
 ) {
   if (card) {
-    CardColumnLayout(contentPadding, content)
+    CardColumnLayout(contentPadding, cardShape, content)
   } else {
     Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
   }
 }
 
 @Composable
-fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, card: Boolean = false, content: (@Composable ColumnScope.() -> Unit)) {
+fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, card: Boolean = false, cardShape: Shape = SectionCardShape, content: (@Composable ColumnScope.() -> Unit)) {
   Column {
     if (title != null) {
       Text(
@@ -95,7 +98,7 @@ fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingVa
         fontWeight = if (card) FontWeight.Medium else FontWeight.Normal
       )
     }
-    CardColumn(card, contentPadding) { content() }
+    CardColumn(card, contentPadding, cardShape) { content() }
   }
 }
 

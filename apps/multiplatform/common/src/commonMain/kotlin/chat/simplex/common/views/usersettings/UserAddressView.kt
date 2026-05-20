@@ -497,7 +497,7 @@ private fun ModalData.UserAddressSettings(
   }
 
   ModalView(close = { onClose(close) }) {
-    ColumnWithScrollBar {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
       AppBarTitle(stringResource(MR.strings.address_settings), hostDevice(user?.remoteHostId))
       Column(
         Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),

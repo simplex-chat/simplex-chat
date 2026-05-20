@@ -631,7 +631,7 @@ fun ModalData.DetailedXFTPStatsView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -655,7 +655,7 @@ fun ModalData.DetailedSMPStatsView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -679,7 +679,7 @@ fun ModalData.XFTPServerSummaryView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -695,7 +695,7 @@ fun ModalData.XFTPServerSummaryView(
 
 @Composable
 fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableState<PresentedServersSummary?>) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     var showUserSelection by remember { mutableStateOf(false) }
     val selectedUserCategory =
       remember { stateGetOrPut("selectedUserCategory") { PresentedUserCategory.ALL_USERS } }

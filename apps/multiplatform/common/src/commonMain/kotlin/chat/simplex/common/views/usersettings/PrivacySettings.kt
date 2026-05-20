@@ -561,7 +561,7 @@ fun SimplexLockView(
     }
   }
 
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.chat_lock))
     SectionView(card = true) {
       EnableLock(remember { appPrefs.performLA.state }) { performLAToggle ->

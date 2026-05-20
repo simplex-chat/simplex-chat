@@ -465,7 +465,7 @@ fun SocksProxySettings(
       }
     },
   ) {
-    ColumnWithScrollBar {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
       SectionView(stringResource(MR.strings.network_socks_proxy), card = true) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {

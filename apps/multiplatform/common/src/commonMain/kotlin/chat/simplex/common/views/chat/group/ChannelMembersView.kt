@@ -5,7 +5,6 @@ import SectionItemView
 import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +34,7 @@ fun ChannelMembersView(
           && m.memberRole != GroupMemberRole.Relay
     }
 
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     val title = if (groupInfo.isOwner) {
       generalGetString(MR.strings.channel_members_title_subscribers)
     } else {
@@ -45,7 +44,7 @@ fun ChannelMembersView(
 
     if (groupInfo.isOwner) {
       val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
-      SectionView(title = subscriberCountStr(subscriberCount), card = true) {
+      SectionView(title = subscriberCountStr(subscriberCount)) {
         SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           ChannelMemberRow(groupInfo.membership, user = true, showRole = true)
         }
@@ -62,7 +61,7 @@ fun ChannelMembersView(
       }
     } else {
       val owners = members.filter { it.memberRole >= GroupMemberRole.Owner }
-      SectionView(title = generalGetString(MR.strings.channel_members_section_owners), card = true) {
+      SectionView(title = generalGetString(MR.strings.channel_members_section_owners)) {
         owners.forEachIndexed { index, member ->
           if (index > 0) {
             Divider()

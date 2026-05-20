@@ -360,7 +360,7 @@ private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorId
 
 @Composable
 private fun ChooseServerOperatorsInfoView() {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.onboarding_network_operators))
 
     Column(
