@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import itemHPadding
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -109,7 +110,7 @@ private fun MinimizeToTraySection() {
 @Composable
 fun DensityScaleSection() {
   val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
-  SectionView(stringResource(MR.strings.appearance_zoom), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
+  SectionView(stringResource(MR.strings.appearance_zoom), contentPadding = PaddingValues(horizontal = itemHPadding), card = true) {
     Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
       Box(Modifier.size(50.dp)
         .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
