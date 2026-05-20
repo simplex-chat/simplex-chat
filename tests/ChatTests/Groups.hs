@@ -41,6 +41,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
+import System.Directory (copyFile, doesFileExist)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -49,7 +50,6 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
-import System.Directory (copyFile)
 import System.FilePath ((</>))
 #endif
 
@@ -91,6 +91,7 @@ chatGroupTests = do
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
     it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
+    it "remove member with messages physically deletes items and files (full deletion is enabled)" testDeleteMemberFullDeleteFiles
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1941,9 +1942,10 @@ testDeleteMemberWithMessages =
       bob <## "#team: alice removed you from the group with all messages"
       bob <## "use /d #team to delete the group"
       cath <## "#team: alice removed bob from the group with all messages"
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by you]"), (1, "removed bob")])
-      bob #$> ("/_get chat #1 count=2", chat, [(1, "moderated [deleted by alice]"), (0, "removed you")])
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by alice]"), (0, "removed bob")])
+      -- Under fullDelete, bob's items are physically deleted on all sides; only the system event remains.
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "removed bob")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "removed you")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "removed bob")])
 
 testDeleteMemberMarkMessagesDeleted :: HasCallStack => TestParams -> IO ()
 testDeleteMemberMarkMessagesDeleted =
@@ -2020,6 +2022,89 @@ testDeleteMemberMessagesLeftRemoved =
       bob #$> ("/_get chat #1 count=4", chat, [(0, "1 [marked deleted by alice]"), (0, "2 [marked deleted by alice]"), (0, "left [marked deleted by alice]"), (0, "removed dan")])
       cath #$> ("/_get chat #1 count=3", chat, [(1, "1"), (0, "2"), (1, "left")])
       dan #$> ("/_get chat #1 count=4", chat, [(0, "1"), (1, "2"), (0, "left"), (0, "removed you")])
+
+-- Verifies that under fullDelete, removing a member with messages=on physically deletes their
+-- chat items AND their files on disk on every device:
+--   * Case A: bob is the removed user; bob's own sent file is gone from bob's files folder
+--             and bob's membership row remains (group is still openable).
+--   * Case B: alice (moderator) and cath (peer) had received bob's file; both copies are gone.
+-- Exercises both code paths: APIRemoveMembers on alice and XGrpMemDel on bob/cath.
+testDeleteMemberFullDeleteFiles :: HasCallStack => TestParams -> IO ()
+testDeleteMemberFullDeleteFiles =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> withXFTPServer $ do
+    createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+
+    threadDelay 750000
+    alice ##> "/set delete #team on"
+    alice <## "updated group preferences:"
+    alice <## "Full deletion: on"
+    concurrentlyN_
+      [ do
+          bob <## "alice updated group #team:"
+          bob <## "updated group preferences:"
+          bob <## "Full deletion: on",
+        do
+          cath <## "alice updated group #team:"
+          cath <## "updated group preferences:"
+          cath <## "Full deletion: on"
+      ]
+    threadDelay 750000
+
+    alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+    bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
+    cath #$> ("/_files_folder ./tests/tmp/cath_app_files", id, "ok")
+    copyFile "./tests/fixtures/test.jpg" "./tests/tmp/bob_app_files/test.jpg"
+
+    bob ##> "/_send #1 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"file from bob\"}}]"
+    bob <# "#team file from bob"
+    bob <# "/f #team test.jpg"
+    bob <## "use /fc 1 to cancel sending"
+
+    alice <# "#team bob> file from bob"
+    alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+    cath <# "#team bob> file from bob"
+    cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+    bob <## "completed uploading file 1 (test.jpg) for #team"
+
+    alice ##> "/fr 1"
+    alice
+      <### [ "saving file 1 from bob to test.jpg",
+             "started receiving file 1 (test.jpg) from bob"
+           ]
+    alice <## "completed receiving file 1 (test.jpg) from bob"
+
+    cath ##> "/fr 1"
+    cath
+      <### [ "saving file 1 from bob to test.jpg",
+             "started receiving file 1 (test.jpg) from bob"
+           ]
+    cath <## "completed receiving file 1 (test.jpg) from bob"
+
+    src <- B.readFile "./tests/fixtures/test.jpg"
+    B.readFile "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` src
+    B.readFile "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` src
+    B.readFile "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` src
+
+    threadDelay 1000000
+    alice ##> "/rm #team bob messages=on"
+    alice <## "#team: you removed bob from the group with all messages"
+    bob <## "#team: alice removed you from the group with all messages"
+    bob <## "use /d #team to delete the group"
+    cath <## "#team: alice removed bob from the group with all messages"
+
+    doesFileExist "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` False
+    doesFileExist "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` False
+    doesFileExist "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` False
+
+    -- Chat items: only the system event remains on every side.
+    -- bob's chat #1 still resolving (membership row preserved with GSMemRemoved) proves Case A.
+    alice #$> ("/_get chat #1 count=1", chat, [(1, "removed bob")])
+    bob #$> ("/_get chat #1 count=1", chat, [(0, "removed you")])
+    cath #$> ("/_get chat #1 count=1", chat, [(0, "removed bob")])
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =

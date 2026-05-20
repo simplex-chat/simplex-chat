@@ -330,22 +330,6 @@ Query:
           m.msg_type, m.msg_body, m.pq_encryption, s.internal_id, s.rcpt_status, r.user_ack
         FROM rcv_messages r
         JOIN messages m ON r.conn_id = m.conn_id AND r.internal_id = m.internal_id
-        JOIN connections c ON r.conn_id = c.conn_id AND c.last_internal_msg_id = r.internal_id
-        LEFT JOIN snd_messages s ON s.conn_id = r.conn_id AND s.rcpt_internal_id = r.internal_id
-        WHERE r.conn_id = ? AND r.broker_id = ?
-      
-Plan:
-SEARCH c USING PRIMARY KEY (conn_id=?)
-SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
-SEARCH r USING PRIMARY KEY (conn_id=?)
-SEARCH s USING PRIMARY KEY (conn_id=?) LEFT-JOIN
-
-Query: 
-        SELECT
-          r.internal_id, m.internal_ts, r.broker_id, r.broker_ts, r.external_snd_id, r.integrity, r.internal_hash,
-          m.msg_type, m.msg_body, m.pq_encryption, s.internal_id, s.rcpt_status, r.user_ack
-        FROM rcv_messages r
-        JOIN messages m ON r.conn_id = m.conn_id AND r.internal_id = m.internal_id
         LEFT JOIN snd_messages s ON s.conn_id = r.conn_id AND s.rcpt_internal_id = r.internal_id
         WHERE r.conn_id = ? AND r.internal_id = ?
       
@@ -1201,6 +1185,10 @@ Query: UPDATE connections SET smp_agent_version = ?, pq_support = ?, enable_ntfs
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
+Query: UPDATE deleted_snd_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE deleted_snd_chunk_replica_id = ?
+Plan:
+SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE messages SET msg_body = x'' WHERE conn_id = ? AND internal_id = ?
 Plan:
 SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
@@ -1208,10 +1196,6 @@ SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
 Query: UPDATE ratchets SET ratchet_state = ? WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
-
-Query: UPDATE rcv_file_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
-Plan:
-SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE rcv_file_chunk_replicas SET received = 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
 Plan:
