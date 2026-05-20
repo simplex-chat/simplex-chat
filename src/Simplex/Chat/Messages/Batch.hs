@@ -75,29 +75,29 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
           let encoded = encodeBatch mode bodies
            in Right (MsgBatch encoded msgs) : batches
 
--- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
+-- | Batches delivery tasks into (batch, accepted, large).
 -- Always uses binary batch format for relay groups.
-batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
+batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
 batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
-    addToBatch :: ([ByteString], [Int64], [Int64], Int, Int) -> MessageDeliveryTask -> ([ByteString], [Int64], [Int64], Int, Int)
-    addToBatch (msgBodies, taskIds, largeTaskIds, len, n) task
-      -- too large: skip, record taskId in largeTaskIds
-      | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
+    addToBatch :: ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int) -> MessageDeliveryTask -> ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int)
+    addToBatch (msgBodies, accepted, large, len, n) task
+      -- too large: skip, record in large
+      | msgLen > maxLen = (msgBodies, accepted, task : large, len, n)
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
-      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, task : accepted, large, len', n + 1)
       -- doesn't fit: stop adding further messages
-      | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
+      | otherwise = (msgBodies, accepted, large, len, n)
       where
-        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, verifiedMsg} = task
+        MessageDeliveryTask {fwdSender, brokerTs = fwdBrokerTs, verifiedMsg} = task
         msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} verifiedMsg
         msgLen = B.length msgBody
         len' = len + msgLen
-    toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
-    toResult (msgBodies, taskIds, largeTaskIds, _, _) =
+    toResult :: ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int) -> (ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
+    toResult (msgBodies, accepted, large, _, _) =
       let encoded = encodeBinaryBatch (reverse msgBodies)
-       in (encoded, reverse taskIds, reverse largeTaskIds)
+       in (encoded, reverse accepted, reverse large)
 
 -- | Encode a batch element for relay groups: ><GrpMsgForward>[/<sigs>]<body>.
 encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString

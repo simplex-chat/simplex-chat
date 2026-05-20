@@ -28,11 +28,12 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl', nub)
+import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -3608,27 +3609,13 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) "relay inactive"
               | otherwise ->
                   withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
-                    let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
-                        senderGMIds
-                          -- Relay groups: distinct senders in this body's accepted
-                          -- tasks. Tasks not in `body` (large or overflow-rejected)
-                          -- must not be marked as disseminated by this job.
-                          | useRelays' gInfo =
-                              let acceptedTasks = filter ((`elem` taskIds) . deliveryTaskId) (L.toList nextTasks)
-                               in nub (map taskSenderGMId acceptedTasks)
-                          -- Fully-connected: getNextDeliveryTasks already filtered
-                          -- by sender; fall back to the outer task's sender when
-                          -- acceptedTasks is empty (all batched tasks rejected as
-                          -- "large") to keep the single-sender fast-path contract.
-                          | otherwise = [taskSenderGMId task]
+                    let (body, acceptedTasks, largeTasks) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
+                        senderGMIds = S.toList . S.fromList $ map (\MessageDeliveryTask {senderGMId} -> senderGMId) acceptedTasks
                     withStore' $ \db -> do
                       createMsgDeliveryJob db gInfo jobScope senderGMIds body
-                      forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
-                      forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
+                      forM_ acceptedTasks $ \t -> updateDeliveryTaskStatus db (deliveryTaskId t) DTSProcessed
+                      forM_ largeTasks $ \t -> setDeliveryTaskErrStatus db (deliveryTaskId t) "large"
                     lift . void $ getDeliveryJobWorker True deliveryKey
-              where
-                taskSenderGMId :: MessageDeliveryTask -> GroupMemberId
-                taskSenderGMId MessageDeliveryTask {senderGMId} = senderGMId
             -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
