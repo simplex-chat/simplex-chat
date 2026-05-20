@@ -1853,7 +1853,7 @@ https://simplifiedprivacy.com/messengers/
 
 SimpleX Chat
 
-Talk
+Livestream, Video
 
 Image: simplex-new-frontiers-livestream.jpg
 
@@ -4115,7 +4115,7 @@ https://hackforums.net/blog/SimpleX-VS-Quiet
 
 SimpleX Chat
 
-Talk
+Conference talk
 
 MoneroKon 2024 conference talk by Evgeny Poberezkin on how SimpleX Chat bridges the gap between privacy-focused and mass-market messaging applications.
 
@@ -4130,7 +4130,7 @@ https://www.youtube.com/watch?v=Fl-QS0-qENw
 
 Monero Talk
 
-Interview
+Interview, Video
 
 Monero Talk episode 239 featuring a discussion of SimpleX Chat's integration with Monero, payment incentives for server operators, and the broader privacy messaging landscape.
 
@@ -4147,7 +4147,7 @@ https://www.youtube.com/live/quk4WY3fJCc?si=IQ0rutoHQpWtF2Un&t=3812
 
 SimpleX Chat
 
-Talk
+Conference talk, Video
 
 SimpleX Chat presentation at MoneroTopia 2026 conference in Mexico City, covering the latest developments in the SimpleX network and its alignment with the Monero privacy ecosystem.
 
@@ -4158,3 +4158,17 @@ Language: English
 Date: Feb 15, 2026
 
 https://www.youtube.com/live/Alp-hVCoF7c?si=FqOTt1mCeQJVo-cM&t=16688
+
+## SimpleX Chat - Simple Messaging With Unusually Good Privacy
+
+Bornhack 2023 conference, Chaos Computer Club
+
+Conference talk, Video
+
+This is a spontaneous talk about the relatively new (mobile apps released 2022) open source SimpleX Chat instant messenger protocol and software, and some reasons why it's a far better choice than in particular Matrix.
+
+Language: English
+
+Date: Aug 07, 2023
+
+https://media.ccc.de/v/bornhack2023-56143-simplex-chat-simple-m
