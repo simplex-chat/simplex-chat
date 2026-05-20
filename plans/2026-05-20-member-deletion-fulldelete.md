@@ -1,39 +1,65 @@
 # Full delete on member removal under fullDelete preference
 
-Plan for the next attempt at the change previously tried in PR #6831 (closed as too messy: the member row was deleted twice on one path, and the user's own membership row was deleted when the user was the one removed). This is a small change scoped to the `xGrpMemDel` handler and a couple of helpers.
+Plan for the next attempt at the change previously tried in PR #6831 (closed as too messy: the member row was deleted twice on one path, and the user's own membership row was deleted when the user was the one removed). The change is small: two SQL-function edits, one new chat-layer helper, and an explicit fullDelete branch plus order swap in two handlers.
 
 ## Problem
 
-When a member is removed via `XGrpMemDel` with `withMessages = True` and the group's `fullDelete` preference is on for the deleter's role, the member's chat items are currently rewritten to `CIModerated` placeholders by `updateMemberCIsModerated`, and the member row is preserved by `deleteOrUpdateMemberRecord` when any chat item references it. The intent of `fullDelete` is physical deletion. The current behavior leaves placeholder rows and, in the relay subpath of `deleteOrUpdateMemberRecord`, leaks files on disk.
+When a member is removed via `XGrpMemDel` with `withMessages = True` and the group's `fullDelete` preference is on for the deleter's role, the member's chat items are currently rewritten to `CIModerated` placeholders by `updateMemberCIsModerated`, and the member row is preserved by `deleteOrUpdateMemberRecord` when any item references it. The intent of `fullDelete` is physical deletion. The current behavior leaves placeholder rows and, because `deleteOrUpdateMemberRecord` runs before the items pass, the relay subpath of the latter deletes the member row first and the subsequent file collection returns nothing — files on disk leak. The same ordering bug exists on the moderator side (`APIRemoveMembers`).
 
 ## What changes
 
-Inside `xGrpMemDel` (`src/Simplex/Chat/Library/Subscriber.hs:3157`), only on the branch where `withMessages = True` AND `groupFeatureMemberAllowed SGFFullDelete m gInfo`:
+In `xGrpMemDel` (`src/Simplex/Chat/Library/Subscriber.hs:3157`), only on the branch where `withMessages = True` AND `groupFeatureMemberAllowed SGFFullDelete m gInfo`:
 
 **Case A — the deleted member is the user themselves (`memId == membership.memberId`).** The user's own sent items (those with `group_member_id IS NULL AND item_sent = 1`) and their files are physically deleted. The `membership` row stays with status `GSMemRemoved`, so the group can still be loaded in the chat list and opened.
 
-**Case B — the deleted member is somebody else.** The member's chat items and their files are physically deleted, then the `group_members` row is deleted. The current `deleteOrUpdateMemberRecord` "keep row if it has chat items" rule does not apply on this branch — chat items are deleted explicitly before the row, so no orphaned chat items with NULL `group_member_id` for the deleted member remain. Historical system event items that referenced this member as `item_deleted_by_group_member_id` survive with NULL via the existing `ON DELETE SET NULL`.
+**Case B — the deleted member is somebody else.** The member's chat items and their files are physically deleted, then the `group_members` row is deleted. Historical system event items that referenced this member as `item_deleted_by_group_member_id` survive with NULL via the existing `ON DELETE SET NULL`.
 
 The non-fullDelete branch, the `withMessages = False` branch, and the entire message-moderation path (`XMsgDel`, `APIDeleteMemberChatItem`, `deleteGroupCIs`, `markGroupCIsDeleted`, `createCIModeration`, `chat_item_moderations`) are not changed.
 
-## Implementation outline
+## Implementation
 
-Sequence for the fullDelete branch in both cases: (1) collect file info for the items that are about to be deleted; (2) `deleteCIFiles` to cancel in-progress transfers and remove files from disk — this must run before any row deletion because file paths live on `chat_items`; (3) delete the chat items explicitly; (4) Case B only: delete the `group_members` row, and run `deleteSupportChatIfExists` plus profile and incognito cleanup that the existing `deleteGroupMember` already performs.
+The whole change is two SQL-function edits in `Store/Messages.hs`, a new member-record helper in `Library/Internal.hs`, and explicit branching plus an order swap in both `xGrpMemDel` (recipient side) and `APIRemoveMembers` (moderator side).
 
-For Case A, two new functions in `Store/Messages.hs`: `getUserSentGroupFileInfo` (queries `WHERE group_member_id IS NULL AND item_sent = 1`) and `deleteUserSentGroupChatItems` (deletes those items and their side-table rows analogous to `deleteGroupChatItem`); plus a new `deleteMembershipCIs` wrapper in `Library/Internal.hs` that composes them with `deleteCIFiles`.
+**Edit 1 — rewrite `updateMemberCIsModerated` to physically delete.** Recommended rename: `deleteMemberCIs`. Keep the existing `memId == groupMemberId' membership` branch unchanged (the membership branch selects `WHERE group_member_id IS NULL AND item_sent = 1`; the other branch selects `WHERE group_member_id = ?`). Change the body from "UPDATE chat_items SET moderated content" to "physically delete chat_items + side-table rows analogous to `deleteGroupChatItem` in bulk": delete from `chat_item_messages`, `chat_item_versions`, `chat_item_reactions`, then `DELETE FROM chat_items`. The function loses the `byGroupMember`, `msgDir`, and `deletedTs` parameters since they were only used to construct the moderated content. The chat-layer wrappers `deleteGroupMemberCIs` and `deleteGroupMembersCIs` follow the same signature simplification.
 
-For Case B, rewrite `deleteGroupMemberCIs` so that instead of calling `updateMemberCIsModerated` it: collects files via `getGroupMemberFileInfo`, runs `deleteCIFiles`, then runs `deleteSupportChatIfExists` followed by `deleteGroupMember`. Return the updated `GroupInfo` so it can replace the prior `deleteOrUpdateMemberRecord` call in the handler. In the handler, the fullDelete branch must replace `deleteOrUpdateMemberRecord` entirely on that path, not run in addition to it, so the row is deleted exactly once.
+**Edit 2 — extend `getGroupMemberFileInfo` to handle the membership case.** Today it queries `WHERE group_member_id = ?` only, so for Case A it returns nothing and files for the user's own sent items leak (this is a pre-existing bug on both the off and on paths — `markGroupMemberCIsDeleted_` also relies on this function to cancel in-progress transfers). Add the same `memId == groupMemberId' membership` branch as in `deleteMemberCIs`: for the membership case, query `WHERE group_member_id IS NULL AND item_sent = 1`. The only two callers (`deleteGroupMemberCIs_` and `markGroupMemberCIsDeleted_`) both benefit from the fix.
 
-After this refactor, `updateMemberCIsModerated`, `deleteGroupMemberCIs_`, and `deleteGroupMembersCIs` are expected to be unused. Verify zero callers and delete them in the same PR.
+**Edit 3 — add `fullyDeleteMemberRecord` helper in `Library/Internal.hs` next to `deleteOrUpdateMemberRecord`.** Wraps `deleteSupportChatIfExists` + `deleteGroupMember`, returns updated `GroupInfo`. No `isRelay` branch and no `checkGroupMemberHasItems` query — the caller has already physically deleted the member's items, so the existence check would be a wasted query and the function communicates intent explicitly: unconditional row deletion. The `CM` wrapper plus an `IO` variant (`fullyDeleteMemberRecordIO`) mirror the shape of the existing `deleteOrUpdateMemberRecord` / `deleteOrUpdateMemberRecordIO`.
+
+**Edit 4 — swap order and add explicit branching in `xGrpMemDel` Case B (the `else` branch).** Move `when withMessages $ deleteMessages gInfo'' deletedMember' SMDRcv` to run *before* the member-record decision, on the same `gInfo` (the new `deleteMessages` reads only `groupId` and `membership` from the passed `gInfo`). Replace the current member-record dispatch with an explicit branch:
+
+```
+gInfo' <- case deliveryScope of
+  Just (DJSMemberSupport _) | shouldForward -> updateMemberRecordDeleted user gInfo deletedMember GSMemRemoved
+  _ -> if withMessages && groupFeatureMemberAllowed SGFFullDelete m gInfo
+         then fullyDeleteMemberRecord user gInfo deletedMember
+         else deleteOrUpdateMemberRecord user gInfo deletedMember
+```
+
+`deleteMemberItem` (the RGE event creation) keeps its current position after `updatePublicGroupData`. Case A (the `then` branch) needs no order change — the membership row is never deleted there, and `deleteMessages` already runs in the right relative position.
+
+The `DJSMemberSupport _ | shouldForward` subcase keeps its existing `updateMemberRecordDeleted` call regardless of fullDelete — the row is preserved for support-scope forwarding. Under fullDelete the items are still gone (the `deleteMessages` step ran first), the row stays.
+
+**Edit 5 — mirror the swap and explicit branching in `APIRemoveMembers` (`src/Simplex/Chat/Library/Commands.hs:2834`).** Inside `deleteMemsSend`, compute `fullDelete = withMessages && groupFeatureUserAllowed SGFFullDelete gInfo` once. Move the items pass to before `delMember`: run `deleteMessages user gInfo memsToDelete` inside `deleteMemsSend` before the `withStoreBatch'` that calls `delMember`. Change `delMember` to branch explicitly:
+
+```
+delMember db m = do
+  if fullDelete
+    then void $ fullyDeleteMemberRecordIO db user gInfo m
+    else void $ deleteOrUpdateMemberRecordIO db user gInfo m
+  pure m {memberStatus = GSMemRemoved}
+```
+
+`deletePendingMember` flows through `deleteMemsSend` and inherits the new behavior. The outer line 2864 call (`when withMessages $ deleteMessages user gInfo' deleted`) collapses — items are already handled inside `deleteMemsSend` for current and pending members, and invited members (handled by `deleteInvitedMems`) have no chat items. Remove it.
 
 ## Anti-patterns from PR #6831 to avoid
 
-No path may call `deleteGroupMember` twice. No path under Case A may call `deleteGroupMember` on `membership` — that row must survive. File info must be collected before any chat item deletion, since `getGroupMemberFileInfo` reads chat items. Do not rely on `ON DELETE SET NULL` to clean up the deleted member's own chat items — delete them explicitly. Preserve every side effect of `deleteGroupMember` (connection delete, profile cleanup, incognito cleanup) and the `deleteSupportChatIfExists` call that today is part of `deleteOrUpdateMemberRecord` / `updateMemberRecordDeleted`.
+No path may call `deleteGroupMember` twice. No path under Case A may delete the `membership` row — that row must survive. File info must be collected before any chat-item deletion, since `getGroupMemberFileInfo` reads `chat_items`. Do not rely on `ON DELETE SET NULL` to clean up the deleted member's authored items — they are deleted explicitly first. `fullyDeleteMemberRecord` is the only function that should call `deleteGroupMember` directly on the new path; do not duplicate that call in the handler.
 
 ## Tests
 
-Add cases in `tests/ChatTests/Groups.hs` for: Case A (user removed by admin, fullDelete on — user's sent items and their files are gone, `membership` row exists with `GSMemRemoved`, group is still in the chat list and loadable); Case B (member removed by admin, fullDelete on — member's items and files are gone, `group_members` row is gone, system event items previously referencing the removed member now have NULL `group_member_id` and still display correctly); regression for fullDelete=off (items become `CIModerated` placeholders, member row handled by `deleteOrUpdateMemberRecord` as today); regression for `withMessages = False` (items untouched, row handled by existing path); regression that message moderation under fullDelete=on still produces `CIModerated` placeholders, confirming the moderation path is unchanged.
+Add cases in `tests/ChatTests/Groups.hs` for: Case A (user removed by admin, fullDelete on — user's sent items and their files gone, `membership` row exists with `GSMemRemoved`, group still loadable); Case B (member removed by admin, fullDelete on — member's items and files gone, `group_members` row gone, system event items previously referencing the removed member now have NULL `item_deleted_by_group_member_id` and still display correctly); regression for fullDelete=off (items become `CIModerated` placeholders via `markMemberCIsDeleted`); regression for `withMessages = False` (items untouched, row handled by existing path); regression that message moderation under fullDelete=on still produces `CIModerated` placeholders, confirming the moderation path is unchanged. Verify the same Case A and Case B behaviors over both XGrpMemDel (recipient side, Subscriber.hs) and APIRemoveMembers (moderator side, Commands.hs).
 
-## Open item
+## Open items for review
 
-The `DJSMemberSupport _ | shouldForward` subcase in Case B today calls `updateMemberRecordDeleted ... GSMemRemoved` and explicitly keeps the member row alive because the support-scope forward still needs it. The plan defaults to preserving this exception even under fullDelete=ON: on the forward path, do not physically delete the row, behave as the non-fullDelete branch. If review concludes that subcase should also full-delete, flag before implementation.
+Naming of the rewritten `updateMemberCIsModerated`: `deleteMemberCIs` is the natural rename (the function physically deletes chat items associated with a member, handling the membership case internally). Naming of the new chat-layer helper: `fullyDeleteMemberRecord` (parallels `deleteOrUpdateMemberRecord`). Confirm or amend before implementation.
