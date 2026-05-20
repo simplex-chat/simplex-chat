@@ -29,13 +29,12 @@ import chat.simplex.res.MR
 
 private val SectionCardShape = RoundedCornerShape(16.dp)
 val CARD_PADDING = 16.dp
-val ICON_TEXT_SPACING = 5.dp
-val CARD_ITEM_PADDING = CARD_PADDING - 1.dp
+val ICON_TEXT_SPACING = CARD_PADDING / 2
 
 internal val LocalInCard = staticCompositionLocalOf { false }
 
 val itemHPadding: Dp
-  @Composable get() = if (LocalInCard.current) CARD_ITEM_PADDING else DEFAULT_PADDING
+  @Composable get() = if (LocalInCard.current) CARD_PADDING else DEFAULT_PADDING
 
 @Composable
 private fun CardColumnLayout(
@@ -355,7 +354,7 @@ fun SectionBottomSpacer() {
 
 @Composable
 fun TextIconSpaced(extraPadding: Boolean = false) {
-  Spacer(Modifier.padding(horizontal = if (extraPadding) 17.dp else if (LocalInCard.current) ICON_TEXT_SPACING  else DEFAULT_PADDING_HALF))
+  Spacer(Modifier.padding(horizontal = if (extraPadding) 17.dp else if (LocalInCard.current) ICON_TEXT_SPACING else DEFAULT_PADDING_HALF))
 }
 
 @Composable
