@@ -59,7 +59,7 @@ object AppearanceScope {
   fun ProfileImageSection() {
     SectionView(stringResource(MR.strings.settings_section_title_profile_images), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
       val image = remember { chatModel.currentUser }.value?.image
-      Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+      Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
         Box(Modifier.offset(x = -(size / 12).dp)) {
           if (!image.isNullOrEmpty()) {
@@ -93,6 +93,7 @@ object AppearanceScope {
       SectionView(stringResource(MR.strings.appearance_app_toolbars), card = true) {
         SectionItemViewWithoutMinPadding {
           Box(Modifier.weight(1f)) {
+            var fontScale by remember { mutableStateOf(1f) }
             Text(
               stringResource(MR.strings.appearance_in_app_bars_alpha),
               Modifier.clickable(
@@ -101,7 +102,9 @@ object AppearanceScope {
               ) {
                 appPrefs.inAppBarsAlpha.set(appPrefs.inAppBarsDefaultAlpha)
               },
-              maxLines = 1
+              maxLines = 1,
+              fontSize = MaterialTheme.typography.body1.fontSize * fontScale,
+              onTextLayout = { if (it.hasVisualOverflow && fontScale > 0.5f) fontScale -= 0.05f }
             )
           }
           Spacer(Modifier.padding(end = 10.dp))
@@ -205,7 +208,7 @@ object AppearanceScope {
   fun FontScaleSection() {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
     SectionView(stringResource(MR.strings.appearance_font_size), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
-      Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+      Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(50.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
           .clip(RoundedCornerShape(percent = 22))
@@ -520,9 +523,7 @@ object AppearanceScope {
     }
 
     SectionView(stringResource(MR.strings.settings_section_title_themes), card = true) {
-      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
       ThemeDestinationPicker(themeUserDestination)
-      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
 
       val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
         if (to != null) onImport(to)
