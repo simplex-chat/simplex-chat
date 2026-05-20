@@ -1849,19 +1849,19 @@ Date: 2024 (estimated)
 
 https://simplifiedprivacy.com/messengers/
 
-## SimpleX Chat: New Frontiers
+## SimpleX Network: Power to the People
 
 SimpleX Chat
 
 Livestream, Video
 
-Image: simplex-new-frontiers-livestream.jpg
+Image: simplex-power-to-people-livestream.jpg
 
 Language: English
 
-Date: Jul 27, 2023
+Date: Feb 11, 2025
 
-https://www.youtube.com/watch?v=7yjQFmhAftE
+https://www.youtube.com/watch?v=Uez2mfVGU7s
 
 ## Every Thing You Need to Know About SimpleX Chat
 
