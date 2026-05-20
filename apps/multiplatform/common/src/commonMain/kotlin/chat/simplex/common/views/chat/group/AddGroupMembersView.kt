@@ -146,7 +146,7 @@ fun AddGroupMembersLayout(
     }
   }
 
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.button_add_members))
     profileText()
     Spacer(Modifier.size(DEFAULT_PADDING))

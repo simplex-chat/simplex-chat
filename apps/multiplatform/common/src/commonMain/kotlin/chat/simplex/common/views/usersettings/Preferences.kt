@@ -8,6 +8,8 @@ import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
+import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.theme.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -66,7 +68,7 @@ private fun PreferencesLayout(
   reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.your_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.allow) }
     val onTTLUpdated = { ttl: Int? ->

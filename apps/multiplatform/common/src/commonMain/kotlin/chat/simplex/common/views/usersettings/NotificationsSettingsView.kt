@@ -4,8 +4,11 @@ import SectionBottomSpacer
 import SectionTextFooter
 import SectionView
 import SectionViewSelectable
+import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.theme.*
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
@@ -53,7 +56,7 @@ fun NotificationsSettingsLayout(
   val modes = remember { notificationModes() }
   val previewModes = remember { notificationPreviewModes() }
 
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.notifications))
     SectionView(null, card = true) {
       if (appPlatform == AppPlatform.ANDROID) {

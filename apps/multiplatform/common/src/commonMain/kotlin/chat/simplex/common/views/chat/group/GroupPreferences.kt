@@ -6,9 +6,11 @@ import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.saveable.rememberSaveable
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -175,7 +177,7 @@ private fun GroupPreferencesLayout(
       }
     }
   }
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     val titleId = if (groupInfo.useRelays) MR.strings.channel_preferences
       else if (groupInfo.businessChat == null) MR.strings.group_preferences
       else MR.strings.chat_preferences

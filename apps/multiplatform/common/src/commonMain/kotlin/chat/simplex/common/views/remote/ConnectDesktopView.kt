@@ -7,6 +7,7 @@ import SectionItemViewLongClickable
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -28,8 +29,7 @@ import chat.simplex.common.model.ChatController.switchToLocalSession
 import chat.simplex.common.model.ChatModel.connectedToRemote
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
@@ -75,7 +75,7 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
   val sessionAddress = remember { mutableStateOf("") }
   val remoteCtrls = remember { mutableStateListOf<RemoteCtrlInfo>() }
   val session = remember { chatModel.remoteCtrlSession }.value
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     val discovery = if (session == null) null else session.sessionState is UIRemoteCtrlSessionState.Searching
     if (discovery == true || (discovery == null && !showConnectScreen.value)) {
       SearchingDesktop(deviceName, remoteCtrls)

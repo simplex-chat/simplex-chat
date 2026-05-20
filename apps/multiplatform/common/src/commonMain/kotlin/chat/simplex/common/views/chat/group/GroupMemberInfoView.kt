@@ -7,6 +7,7 @@ import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.InlineTextContent
@@ -461,7 +462,7 @@ fun GroupMemberInfoLayout(
     }
   }
 
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center

@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -149,7 +150,7 @@ private fun MigrateFromDeviceLayout(
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
-  ColumnWithScrollBar(maxIntrinsicSize = true) {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme()), maxIntrinsicSize = true) {
     AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()

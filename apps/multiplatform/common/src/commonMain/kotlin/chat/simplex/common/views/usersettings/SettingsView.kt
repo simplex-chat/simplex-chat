@@ -97,7 +97,7 @@ fun SettingsLayout(
     hideKeyboard(view)
   }
   val uriHandler = LocalUriHandler.current
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.your_settings))
 
     SectionView(stringResource(MR.strings.settings_section_title_settings), card = true) {

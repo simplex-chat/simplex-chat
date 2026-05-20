@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionSpacer
 import SectionItemView
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.MaterialTheme.colors
@@ -31,7 +32,7 @@ fun ModalData.UserWallpaperEditor(
   globalThemeUsed: MutableState<Boolean>,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
@@ -227,7 +228,7 @@ fun ModalData.ChatWallpaperEditor(
   globalThemeUsed: MutableState<Boolean>,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }

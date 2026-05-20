@@ -7,6 +7,7 @@ import SectionView
 import SectionViewWithButton
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -105,7 +106,7 @@ private fun ContactConnectionInfoLayout(
     }
   }
 
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(
       stringResource(
         if (contactConnection.initiated) MR.strings.you_invited_a_contact

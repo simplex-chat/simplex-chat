@@ -5,6 +5,7 @@ import SectionSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
@@ -122,7 +123,7 @@ private fun ProtocolServerLayout(
   testServer: () -> Unit,
   onDelete: () -> Unit,
 ) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.XFTP) MR.strings.xftp_server else MR.strings.smp_server))
 
     if (server.value.preset) {

@@ -134,7 +134,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
 private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Long>>) {
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false) {
-      ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
+      ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme()), horizontalAlignment = Alignment.CenterHorizontally) {
         Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)

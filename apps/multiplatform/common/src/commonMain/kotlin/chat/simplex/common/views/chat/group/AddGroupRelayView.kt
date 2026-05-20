@@ -5,6 +5,7 @@ import SectionCustomFooter
 import SectionSpacer
 import SectionItemView
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -98,7 +99,7 @@ private fun AddGroupRelayLayout(
   onToggleRelay: (Long) -> Unit,
   onAddRelays: () -> Unit
 ) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(generalGetString(MR.strings.add_relays_title))
 
     if (isLoading) {

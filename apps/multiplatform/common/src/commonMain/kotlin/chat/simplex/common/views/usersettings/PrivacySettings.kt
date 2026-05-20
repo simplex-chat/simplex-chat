@@ -5,6 +5,7 @@ import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -55,7 +56,7 @@ fun PrivacySettingsView(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit
 ) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.your_privacy))
     PrivacyDeviceSection(showSettingsModal, setPerformLA)
     SectionSpacer()

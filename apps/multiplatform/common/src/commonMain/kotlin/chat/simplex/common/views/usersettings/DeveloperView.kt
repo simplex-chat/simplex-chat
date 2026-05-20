@@ -4,9 +4,12 @@ import SectionBottomSpacer
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -18,7 +21,7 @@ import chat.simplex.res.MR
 fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
   val m = chatModel
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     val uriHandler = LocalUriHandler.current
     AppBarTitle(stringResource(MR.strings.settings_developer_tools))
     val developerTools = m.controller.appPrefs.developerTools

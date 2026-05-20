@@ -6,7 +6,10 @@ import SectionSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.material.MaterialTheme
+import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.theme.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -74,7 +77,7 @@ private fun MemberAdmissionLayout(
   reset: () -> Unit,
   saveAdmission: () -> Unit,
 ) {
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.member_admission))
     val review = remember(admission) { mutableStateOf(admission?.review) }
     AdmissionSection(MR.strings.admission_stage_review, MR.strings.admission_stage_review_descr, review, groupInfo) { criteria ->

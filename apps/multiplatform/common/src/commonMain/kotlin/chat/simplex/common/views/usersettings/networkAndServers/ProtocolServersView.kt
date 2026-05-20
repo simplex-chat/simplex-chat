@@ -7,9 +7,11 @@ import SectionItemView
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.theme.*
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -46,7 +48,7 @@ fun ModalData.YourServersView(
   }
 
   Box {
-    ColumnWithScrollBar {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
       AppBarTitle(stringResource(MR.strings.your_servers))
       YourServersViewLayout(
         scope,

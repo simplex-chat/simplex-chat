@@ -11,6 +11,7 @@ import SectionView
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -519,6 +520,7 @@ fun ModalData.GroupChatInfoLayout(
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
   LazyColumnWithScrollBar(
+    modifier = Modifier.background(canvasColorForCurrentTheme()),
     state = listState,
     contentPadding = if (oneHandUI.value) {
       PaddingValues(

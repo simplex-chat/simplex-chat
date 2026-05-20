@@ -605,7 +605,7 @@ object AppearanceScope {
 
   @Composable
   fun CustomizeThemeView(onChooseType: (WallpaperType?) -> Unit) {
-    ColumnWithScrollBar {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
       val currentTheme by CurrentColors.collectAsState()
 
       AppBarTitle(stringResource(MR.strings.customize_theme_title))

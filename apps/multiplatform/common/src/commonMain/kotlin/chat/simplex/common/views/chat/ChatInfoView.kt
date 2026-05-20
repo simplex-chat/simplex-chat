@@ -542,7 +542,7 @@ fun ChatInfoLayout(
   KeyChangeEffect(chat.id) {
     scope.launch { scrollState.scrollTo(0) }
   }
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center

@@ -9,6 +9,7 @@ import SectionTextFooter
 import SectionView
 import SectionViewSelectable
 import TextIconSpaced
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
@@ -203,7 +204,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     }
   }
 
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     val showModal = { it: @Composable ModalData.() -> Unit -> ModalManager.start.showModal(content = it) }
     val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) } }
 

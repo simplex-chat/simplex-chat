@@ -8,6 +8,7 @@ import SectionTextFooter
 import SectionView
 import SectionViewSelectableCards
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -224,7 +225,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
 ) {
   val secondsLabel = stringResource(MR.strings.network_option_seconds_label)
 
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
     AppBarTitle(stringResource(MR.strings.network_settings_title))
 
     if (currentRemoteHost == null) {

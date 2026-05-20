@@ -206,7 +206,7 @@ fun DatabaseEncryptionLayout(
       Layout()
     }
   } else {
-    ColumnWithScrollBar(maxIntrinsicSize = true) {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme()), maxIntrinsicSize = true) {
       Layout()
     }
   }

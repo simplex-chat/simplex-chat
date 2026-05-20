@@ -10,6 +10,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +64,7 @@ fun OperatorView(
   }
 
   Box {
-    ColumnWithScrollBar(Modifier.alpha(if (testing.value) 0.6f else 1f)) {
+    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme()).alpha(if (testing.value) 0.6f else 1f)) {
       AppBarTitle(String.format(stringResource(MR.strings.operator_servers_title), operator.tradeName))
       OperatorViewLayout(
         currUserServers,
