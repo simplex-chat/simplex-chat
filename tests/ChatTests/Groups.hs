@@ -249,10 +249,10 @@ chatGroupTests = do
           it "number of recipients is NOT multiple of bucket size (3/2)" (testChannels1RelayDeliverLoop 2)
           it "number of recipients is equal to bucket size (3/3)" (testChannels1RelayDeliverLoop 3)
         it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
-        it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerNoHistoryReceivesProfile
-        it "multi senders disseminate independently" testChannelMultiSendersIndependentDissemination
-        it "large profile fits in body" testChannelLargeProfileFitsInBody
-        it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfilesPackedAcrossBatches
+        it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerReceivesProfile
+        it "multi senders disseminate independently" testChannelMultiSendersIndependent
+        it "large profile fits in body" testChannelLargeProfileFits
+        it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfiles
         it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
@@ -8826,8 +8826,8 @@ testChannelsSenderDeduplicateOwn ps = do
 -- must then disseminate that sender's profile cleanly via prepended XGrpMemNew.
 -- (The "with prior history" variant is covered by a follow-up task — sendHistory currently
 -- forwards the unknown-author chat-item path before dissemination can prepend.)
-testChannelLateJoinerNoHistoryReceivesProfile :: HasCallStack => TestParams -> IO ()
-testChannelLateJoinerNoHistoryReceivesProfile ps =
+testChannelLateJoinerReceivesProfile :: HasCallStack => TestParams -> IO ()
+testChannelLateJoinerReceivesProfile ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -8857,9 +8857,9 @@ testChannelLateJoinerNoHistoryReceivesProfile ps =
 -- fallback that left dan stuck as "unknown member" with no vector mark;
 -- with the new packer the introduction lands and dan's bit is set.
 -- The multi-sender overflow path is covered by
--- testChannelMultipleLargeProfilesPackedAcrossBatches.
-testChannelLargeProfileFitsInBody :: HasCallStack => TestParams -> IO ()
-testChannelLargeProfileFitsInBody ps =
+-- testChannelMultipleLargeProfiles.
+testChannelLargeProfileFits :: HasCallStack => TestParams -> IO ()
+testChannelLargeProfileFits ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -8926,8 +8926,8 @@ testChannelLargeProfileFitsInBody ps =
 -- nor fit pair-wise as one overflow). The unintroduced recipient receives
 -- both profile batches before the body, dispatches both introductions, and
 -- both vector bits are set.
-testChannelMultipleLargeProfilesPackedAcrossBatches :: HasCallStack => TestParams -> IO ()
-testChannelMultipleLargeProfilesPackedAcrossBatches ps =
+testChannelMultipleLargeProfiles :: HasCallStack => TestParams -> IO ()
+testChannelMultipleLargeProfiles ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -9116,8 +9116,8 @@ testChannelProfileUpdateNoRePrepend ps =
           (byte /= '\x00') `shouldBe` True
         _ -> error $ "checkVectorBitSet: expected 1 row for group_member_id=" <> show gmId <> ", got " <> show (length rows)
 
-testChannelMultiSendersIndependentDissemination :: HasCallStack => TestParams -> IO ()
-testChannelMultiSendersIndependentDissemination ps =
+testChannelMultiSendersIndependent :: HasCallStack => TestParams -> IO ()
+testChannelMultiSendersIndependent ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
