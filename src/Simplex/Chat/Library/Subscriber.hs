@@ -3712,44 +3712,38 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   -- there's no member review in channels, so job spec includePending is ignored
                   DJSGroup {} -> do
                     bucketSize <- asks $ deliveryBucketSize . config
-                    -- Snapshot (sender, vector) in one tx so partitioning runs
-                    -- on a coherent point-in-time view. Missing senders
-                    -- (concurrent XGrpMemDel) are skipped — their content
-                    -- ships without a prepend.
-                    senderProfiles <- withStore' $ \db ->
-                      fmap catMaybes . forM senderGMIds $ \sId -> do
-                        sender_ <- runExceptT $ getGroupMemberById db vr user sId
-                        case sender_ of
-                          Right sender -> do
-                            vec_ <- runExceptT $ getMemberRelationsVector db sender
-                            case vec_ of
-                              Right vec -> pure $ Just (sender, vec)
-                              Left _ -> pure Nothing
-                          Left _ -> pure Nothing
-                    let missingSenders = length senderGMIds - length senderProfiles
+                    -- Snapshot (sender, vector) in one tx so partitioning runs on a coherent point-in-time view.
+                    -- Missing senders are skipped — their content ships without a prepend.
+                    senders <- withStore' $ \db ->
+                      fmap catMaybes . forM senderGMIds $ \sId ->
+                        fmap eitherToMaybe . runExceptT $ do
+                          sender <- getGroupMemberById db vr user sId
+                          vec <- getMemberRelationsVector db sender
+                          pure (sender, vec)
+                    let missingSenders = length senderGMIds - length senders
                     when (missingSenders > 0) $
                       logInfo $ "delivery job " <> tshow jobId <> ": " <> tshow missingSenders <> " senders missing; skipping their profile prepend"
                     -- Small profiles ride inline (extBody); the rest spill
                     -- into standalone batches that ship before the body.
                     (extBody, inBodySenders, overflowBatches, activeSenders) <-
-                      if null senderProfiles
+                      if null senders
                         then pure (body, [], [], [])
                         else do
                           let (oversizedErrs, validLabeled) =
-                                partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew vr gInfo s | (s, _) <- senderProfiles]
+                                partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew vr gInfo s | (s, _) <- senders]
                           unless (null oversizedErrs) $ do
                             logInfo $ "delivery job " <> tshow jobId <> ": dropping " <> tshow (length oversizedErrs) <> " oversized profile element(s)"
                             toView $ CEvtChatErrors oversizedErrs
                           let (extBody', inBody, overflowLabeled) = packIntoBody maxEncodedMsgLength body validLabeled
                               overflowBatches' = packIntoBatches maxEncodedMsgLength overflowLabeled
                           pure (extBody', inBody, overflowBatches', map fst validLabeled)
-                    sendLoop bucketSize startingCursor senderProfiles (extBody, inBodySenders, overflowBatches) activeSenders
+                    sendLoop bucketSize startingCursor senders (extBody, inBodySenders, overflowBatches) activeSenders
                     where
                       sendLoop :: Int -> Maybe GroupMemberId -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(ByteString, [GroupMember])]) -> [GroupMember] -> CM ()
-                      sendLoop bucketSize cursorGMId_ senderProfiles plan@(extBody, inBodySenders, overflowBatches) activeSenders = do
+                      sendLoop bucketSize cursorGMId_ senders plan@(extBody, inBodySenders, overflowBatches) activeSenders = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
-                          let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senderProfiles]
+                          let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senders]
                               missing r s = case M.lookup (groupMemberId' s) senderVec of
                                 Just vec -> getRelation (indexInGroup r) vec /= MRIntroduced
                                 Nothing -> False
@@ -3771,7 +3765,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                 setMemberVectorNewRelations db sender [(i, (IDSubjectIntroduced, MRIntroduced)) | i <- readyIdxs]
                           let cursorGMId' = groupMemberId' $ last mems
                           withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
-                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senderProfiles plan activeSenders
+                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senders plan activeSenders
                   DJSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
