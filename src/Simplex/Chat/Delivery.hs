@@ -167,16 +167,6 @@ data MessageDeliveryJob = MessageDeliveryJob
   }
   deriving (Show)
 
--- | The sender member id used by getGroupMembersByCursor to exclude the
--- sender from recipients in the single-sender fast path. Nothing for
--- multi-sender or sender-less jobs — the cursor then returns all current
--- members, and the relay's own forwarding loop is no-op'd on the receiver
--- side via sameMemberId checks.
-singleSenderGMId_ :: [GroupMemberId] -> Maybe GroupMemberId
-singleSenderGMId_ = \case
-  [s] -> Just s
-  _ -> Nothing
-
 deliveryJobId :: MessageDeliveryJob -> Int64
 deliveryJobId = jobId
 

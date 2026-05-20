@@ -3702,11 +3702,9 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
             MessageDeliveryJob {jobId, jobScope, senderGMIds, body, cursorGMId_ = startingCursor} = job
-            -- Single-sender fast path for the cursor query's sender-exclusion filter.
-            -- For multi-sender (or sender-less) jobs the cursor returns all current
-            -- members, and the relay's own forwarding loop is no-op'd on the receiver
-            -- side via sameMemberId checks.
-            singleSender_ = singleSenderGMId_ senderGMIds
+            singleSenderGMId_ = case senderGMIds of
+              [s] -> Just s
+              _ -> Nothing
             sendBodyToMembers :: CM ()
             sendBodyToMembers
               -- channel
@@ -3749,7 +3747,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     where
                       sendLoop :: Int -> Maybe GroupMemberId -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(ByteString, [GroupMember])]) -> [GroupMember] -> CM ()
                       sendLoop bucketSize cursorGMId_ senderProfiles plan@(extBody, inBodySenders, overflowBatches) activeSenders = do
-                        mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSender_ bucketSize
+                        mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
                           let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senderProfiles]
                               missing r s = case M.lookup (groupMemberId' s) senderVec of
@@ -3780,17 +3778,17 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     let moderatorFilter m =
                           memberCurrent m
                             && maxVersion (memberChatVRange m) >= groupKnockingVersion
-                            && Just (groupMemberId' m) /= singleSender_
+                            && Just (groupMemberId' m) /= singleSenderGMId_
                         modMs' = filter moderatorFilter modMs
                     mems <-
-                      if Just scopeGMId == singleSender_
+                      if Just scopeGMId == singleSenderGMId_
                         then pure modMs'
                         else do
                           scopeMem <- withStore $ \db -> getGroupMemberById db vr user scopeGMId
                           pure $ scopeMem : modMs'
                     unless (null mems) $ deliver body mems
               -- fully connected group
-              | otherwise = case singleSender_ of
+              | otherwise = case singleSenderGMId_ of
                   Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required when not using relays"
                   Just sId -> do
                     sender <- withStore $ \db -> getGroupMemberById db vr user sId
