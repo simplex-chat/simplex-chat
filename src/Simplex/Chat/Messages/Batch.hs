@@ -13,9 +13,8 @@ module Simplex.Chat.Messages.Batch
     encodeBinaryBatch,
     batchMessages,
     batchDeliveryTasks1,
-    prependBatchElement,
-    packIntoBody,
-    packIntoBatches,
+    batchProfilesWithBody,
+    batchProfiles,
     maxBatchElementSize,
   )
 where
@@ -24,7 +23,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (chr, ord)
 import Data.Function (on)
-import Data.Int (Int64)
+import Data.Foldable (foldr')
 import Data.List (foldl', sortBy)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -32,7 +31,8 @@ import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
-import Simplex.Chat.Types (GroupMember, VersionRangeChat)
+import Data.Maybe (isJust)
+import Simplex.Chat.Types (GroupMember (..), LocalProfile (..), VersionRangeChat)
 import Simplex.Messaging.Encoding (Large (..), smpEncode, smpEncodeList)
 
 data BatchMode = BMJson | BMBinary
@@ -131,56 +131,70 @@ batchLen BMBinary len n = len + n * 2 + 2 -- 2-byte length prefix per element + 
 maxBatchElementSize :: Int
 maxBatchElementSize = maxEncodedMsgLength - 4
 
--- | Prepend one element to an existing binary-batch body without re-parsing
--- the rest. Body format: '=' <count:1B> ( <len:Word16> <element> )*.
--- 'error' on malformed input or count overflow — invariant assertions;
--- packers below enforce the byte budget that keeps this unreachable.
-prependBatchElement :: ByteString -> ByteString -> ByteString
-prependBatchElement element body
-  | B.null body = encodeBinaryBatch [element]
-  | B.head body /= '=' = error "prependBatchElement: invalid batch body (missing '=' prefix)"
-  | B.length body < 2 = error "prependBatchElement: invalid batch body (missing count byte)"
-  | oldCount >= 255 = error "prependBatchElement: batch element count overflow"
-  | otherwise =
-      let newCount = chr (oldCount + 1)
-          encodedElement = smpEncode (Large element)
-          rest = B.drop 2 body
-       in B.cons '=' (B.cons newCount (encodedElement <> rest))
-  where
-    oldCount = ord (B.index body 1)
+-- | Sort key for the profile packers: pack no-image members before
+-- image-bearing ones so the small profiles land together.
+hasImage :: GroupMember -> Bool
+hasImage GroupMember {memberProfile = LocalProfile {image}} = isJust image
 
--- | Greedy-pack elements into 'body' smallest-first while the result fits
--- 'maxLen'. Returns (extBody, accepted, overflow): the senders whose
--- profile is now inline AND the labeled elements that did not fit.
--- Per-element budget: 2-byte Word16 length prefix plus the element bytes.
-packIntoBody :: Int -> ByteString -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(GroupMember, ByteString)])
-packIntoBody maxLen body labeled =
-  let (b, accepted, overflow) = foldl' step (body, [], []) (sortBy (compare `on` (B.length . snd)) labeled)
-   in (b, reverse accepted, reverse overflow)
+-- | Greedy-pack profile elements with 'body' (no-image members first)
+-- while the result fits 'maxLen'. Returns (extBody, accepted, overflow,
+-- large): the senders whose profile is now inline, the labeled elements
+-- that did not fit, and the senders whose element doesn't fit even a
+-- singleton batch (must be dropped — equivalent to 'batchMessages'
+-- 'errLarge').
+batchProfilesWithBody :: Int -> ByteString -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(GroupMember, ByteString)], [GroupMember])
+batchProfilesWithBody maxLen body labeled =
+  let (_, _, acceptedPairs, overflow, large) =
+        foldr' step initState (sortBy (compare `on` (hasImage . fst)) labeled)
+   in (buildBody acceptedPairs, map fst acceptedPairs, overflow, large)
   where
-    step (b, accepted, overflow) (s, e)
-      | B.length b + 2 + B.length e <= maxLen = (prependBatchElement e b, s : accepted, overflow)
-      | otherwise = (b, accepted, (s, e) : overflow)
+    initEmpty = B.null body
+    initLen = B.length body
+    initCount = if initEmpty then 0 else ord (B.index body 1)
+    -- (predicted total bytes, predicted count, accepted pairs, overflow, large)
+    initState = (initLen, initCount, [], [], [])
+    step (s, e) (totalLen, count, acceptedPairs, overflow, large)
+      | B.length e + 4 > maxLen = (totalLen, count, acceptedPairs, overflow, s : large)
+      | count >= 255 = full
+      | candidateLen <= maxLen = (candidateLen, count + 1, (s, e) : acceptedPairs, overflow, large)
+      | otherwise = full
+      where
+        full = (totalLen, count, acceptedPairs, (s, e) : overflow, large)
+        -- First element on an empty body costs '=' + count(1) + Word16(2) + element;
+        -- every subsequent element costs just Word16(2) + element.
+        candidateLen
+          | initEmpty && null acceptedPairs = 4 + B.length e
+          | otherwise = totalLen + 2 + B.length e
+    -- Assemble the final body once: existing tail (sans '=' + count) with
+    -- the accepted elements (each length-prefixed) inserted in front, and
+    -- a refreshed count byte.
+    buildBody [] = body
+    buildBody acceptedPairs =
+      let prefixedNew = B.concat [smpEncode (Large e) | (_, e) <- acceptedPairs]
+          newCount = initCount + length acceptedPairs
+          tail_ = if initEmpty then B.empty else B.drop 2 body
+       in B.cons '=' (B.cons (chr newCount) (prefixedNew <> tail_))
 
--- | Greedy-pack elements into one or more batches, each bounded by 'maxLen'.
--- Returns each batch paired with the senders whose profile it carries, so
--- the worker's recipient-misses-sender check uses 'GroupMember' identity
--- rather than encoded bytes. Ascending size keeps small-only batches
--- together.
-packIntoBatches :: Int -> [(GroupMember, ByteString)] -> [(ByteString, [GroupMember])]
-packIntoBatches maxLen = go . sortBy (compare `on` (B.length . snd))
+-- | Pack labeled profile elements into one or more (batch, senders)
+-- pairs, each bounded by 'maxLen', plus a list of senders whose element
+-- doesn't fit even a singleton batch (must be dropped — equivalent to
+-- 'batchMessages' 'errLarge'). No-image members first (matches
+-- 'batchProfilesWithBody').
+batchProfiles :: Int -> [(GroupMember, ByteString)] -> ([(ByteString, [GroupMember])], [GroupMember])
+batchProfiles maxLen =
+  finish . foldr addToBatch ([], [], [], 0, 0, []) . sortBy (compare `on` (hasImage . fst))
   where
-    go [] = []
-    go ((s, e) : rest) =
-      let (taken, left) = takeFitting [(s, e)] (singletonLen e) rest
-          batch = encodeBinaryBatch (reverse (map snd taken))
-       in (batch, reverse (map fst taken)) : go left
-    -- A one-element batch is encodeBinaryBatch [e] = '=' + 1-byte count +
-    -- 2-byte length + e bytes = B.length e + 4. Subsequent additions cost
-    -- 2 + B.length e (length prefix only — '=' and count are already in).
-    singletonLen e = B.length e + 4
-    takeFitting acc _ [] = (acc, [])
-    takeFitting acc accLen ((s, e) : rest)
-      | accLen + 2 + B.length e <= maxLen =
-          takeFitting ((s, e) : acc) (accLen + 2 + B.length e) rest
-      | otherwise = (acc, (s, e) : rest)
+    addToBatch :: (GroupMember, ByteString) -> ([(ByteString, [GroupMember])], [ByteString], [GroupMember], Int, Int, [GroupMember]) -> ([(ByteString, [GroupMember])], [ByteString], [GroupMember], Int, Int, [GroupMember])
+    addToBatch (s, e) acc@(batches, elems, members, len, n, large)
+      | B.length e + 4 > maxLen = (batches, elems, members, len, n, s : large)
+      -- batch overhead: '=' + count (2) + 2-byte length prefix per element
+      | n + 1 <= 255 && len + B.length e + (n + 1) * 2 + 2 <= maxLen =
+          (batches, e : elems, s : members, len + B.length e, n + 1, large)
+      -- doesn't fit current — flush and start new with this element alone
+      | otherwise =
+          (flush acc, [e], [s], B.length e, 1, large)
+    flush :: ([(ByteString, [GroupMember])], [ByteString], [GroupMember], Int, Int, [GroupMember]) -> [(ByteString, [GroupMember])]
+    flush (batches, _, _, _, 0, _) = batches
+    flush (batches, elems, members, _, _, _) =
+      (encodeBinaryBatch elems, members) : batches
+    finish acc@(_, _, _, _, _, large) = (flush acc, large)

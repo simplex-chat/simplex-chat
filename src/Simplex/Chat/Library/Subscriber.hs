@@ -50,7 +50,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize, packIntoBatches, packIntoBody)
+import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
@@ -3732,14 +3732,17 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       if null senders
                         then pure (body, [], [], [])
                         else do
-                          let (oversizedErrs, validLabeled) =
+                          let (encoderErrs, validLabeled) =
                                 partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew vr gInfo s | (s, _) <- senders]
-                          unless (null oversizedErrs) $ do
-                            logInfo $ "delivery job " <> tshow jobId <> ": dropping " <> tshow (length oversizedErrs) <> " oversized profile element(s)"
-                            toView $ CEvtChatErrors oversizedErrs
-                          let (extBody', inBody, overflowLabeled) = packIntoBody maxEncodedMsgLength body validLabeled
-                              overflowBatches' = packIntoBatches maxEncodedMsgLength overflowLabeled
-                          pure (extBody', inBody, overflowBatches', map fst validLabeled)
+                              (extBody', inBody, overflowLabeled, largeWithBody) = batchProfilesWithBody maxEncodedMsgLength body validLabeled
+                              (overflowBatches', largeBatches) = batchProfiles maxEncodedMsgLength overflowLabeled
+                              packerErrs = [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | s <- largeWithBody <> largeBatches]
+                              allErrs = encoderErrs <> packerErrs
+                          unless (null allErrs) $ do
+                            logInfo $ "delivery job " <> tshow jobId <> ": dropping " <> tshow (length allErrs) <> " oversized profile element(s)"
+                            toView $ CEvtChatErrors allErrs
+                          let active = inBody <> concatMap snd overflowBatches'
+                          pure (extBody', inBody, overflowBatches', active)
                     sendLoop bucketSize startingCursor senders (extBody, inBodySenders, overflowBatches) activeSenders
                     where
                       sendLoop :: Int -> Maybe GroupMemberId -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(ByteString, [GroupMember])]) -> [GroupMember] -> CM ()
