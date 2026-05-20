@@ -1,5 +1,6 @@
 package chat.simplex.common.views.usersettings
 
+import CARD_PADDING
 import SectionBottomSpacer
 import SectionSpacer
 import SectionItemView
@@ -58,7 +59,7 @@ expect fun AppearanceView(m: ChatModel)
 object AppearanceScope {
   @Composable
   fun ProfileImageSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_profile_images), contentPadding = PaddingValues(horizontal = itemHPadding), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images), contentPadding = PaddingValues(horizontal = CARD_PADDING), card = true) {
       val image = remember { chatModel.currentUser }.value?.image
       Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
@@ -208,7 +209,7 @@ object AppearanceScope {
   @Composable
   fun FontScaleSection() {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
-    SectionView(stringResource(MR.strings.appearance_font_size), contentPadding = PaddingValues(horizontal = itemHPadding), card = true) {
+    SectionView(stringResource(MR.strings.appearance_font_size), contentPadding = PaddingValues(horizontal = CARD_PADDING), card = true) {
       Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(50.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
