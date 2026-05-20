@@ -1,7 +1,7 @@
 package chat.simplex.common.views.remote
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewLongClickable
 import SectionTextFooter
@@ -90,16 +90,17 @@ fun ConnectMobileLayout(
   connectDesktop: () -> Unit,
   deleteHost: (RemoteHostInfo) -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
-    SectionView(generalGetString(MR.strings.this_device_name), card = true) {
+    SectionView(generalGetString(MR.strings.this_device_name)) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
+      SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
       PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
         controller.appPrefs.offerRemoteMulticast.set(it)
       }
+      SectionDividerSpaced()
     }
-    SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
-    SectionView(stringResource(MR.strings.devices), card = true) {
+    SectionView(stringResource(MR.strings.devices)) {
       if (chatModel.localUserCreated.value == true) {
         SettingsActionItemWithContent(text = stringResource(MR.strings.this_device), icon = painterResource(MR.images.ic_desktop), click = connectDesktop) {
           if (connectedHost.value == null) {
@@ -188,7 +189,7 @@ private fun ConnectMobileViewLayout(
     if (title != null) {
       AppBarTitle(title)
     }
-    SectionView(card = true) {
+    SectionView {
       if (invitation != null && sessionCode == null && port != null) {
         Box {
           QRCode(invitation)
@@ -214,7 +215,7 @@ private fun ConnectMobileViewLayout(
         Spacer(Modifier.height(DEFAULT_PADDING))
       }
       if (deviceName != null || sessionCode != null) {
-        SectionView(stringResource(MR.strings.connected_mobile), card = true) {
+        SectionView(stringResource(MR.strings.connected_mobile)) {
           SelectionContainer {
             Text(
               deviceName ?: stringResource(MR.strings.new_mobile_device),
@@ -227,7 +228,7 @@ private fun ConnectMobileViewLayout(
       }
 
       if (sessionCode != null) {
-        SectionView(stringResource(MR.strings.verify_code_on_mobile), card = true) {
+        SectionView(stringResource(MR.strings.verify_code_on_mobile)) {
           SelectionContainer {
             Text(
               sessionCode.substring(0, 23),

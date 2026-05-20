@@ -387,7 +387,7 @@ private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, cha
 @Composable
 private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_to_device_importing_archive).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_to_device_importing_archive), card = true) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -397,7 +397,7 @@ private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: Strin
 
 @Composable
 private fun MutableState<MigrationToState?>.ArchiveImportFailedView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
-  SectionView(stringResource(MR.strings.migrate_to_device_import_failed).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_to_device_import_failed), card = true) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_download),
       text = stringResource(MR.strings.migrate_to_device_repeat_import),

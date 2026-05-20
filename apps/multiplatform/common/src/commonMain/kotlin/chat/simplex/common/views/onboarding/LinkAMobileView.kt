@@ -5,7 +5,6 @@ import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
-import androidx.compose.foundation.background
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.remote.AddingMobileDevice
 import chat.simplex.common.views.remote.DeviceNameField
@@ -57,7 +56,7 @@ private fun LinkAMobileLayout(
   updateDeviceName: (String) -> Unit,
 ) {
   ModalView({ appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) }) {
-    Column(Modifier.fillMaxSize().background(canvasColorForCurrentTheme()).padding(top = AppBarHeight * fontSizeSqrtMultiplier)) {
+    Column(Modifier.fillMaxSize().padding(top = AppBarHeight * fontSizeSqrtMultiplier)) {
       Box(Modifier.align(Alignment.CenterHorizontally)) {
         AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles), overrideTitleColor = MaterialTheme.colors.onBackground)
       }
@@ -66,7 +65,7 @@ private fun LinkAMobileLayout(
           Modifier.weight(0.3f),
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          SectionView(generalGetString(MR.strings.this_device_name), card = true) {
+          SectionView(generalGetString(MR.strings.this_device_name)) {
             DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
             SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
             PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { ChatModel.controller.appPrefs.offerRemoteMulticast.state }.value) {
