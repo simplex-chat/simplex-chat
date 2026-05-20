@@ -2805,4 +2805,9 @@
     <string name="tray_show">أظهر SimpleX</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="tray_tooltip_unread">SimpleX‏ — %d غير مقروءة</string>
+    <string name="another_instance_not_responding">قد تكون هناك نُسخة أخرى من التطبيق قيد التشغيل أو لم تُغلق بشكل صحيح. أتريد البدء على أي حال؟</string>
+    <string name="another_instance_title">التطبيق يعمل بالفعل</string>
+    <string name="relay_status_rejected">رُفض</string>
+    <string name="member_info_relay_status_rejected_by_operator">رُفض بواسطة مُشغل المُرحل</string>
+    <string name="member_info_status">الحالة</string>
 </resources>
