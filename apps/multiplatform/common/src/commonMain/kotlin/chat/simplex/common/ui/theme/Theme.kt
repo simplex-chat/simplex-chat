@@ -622,10 +622,12 @@ fun sectionCardColor(): Color {
   else theme.colors.background.mixWith(theme.colors.onBackground, 0.95f)
 }
 
-fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, bgLayerSize: MutableState<IntSize>?, bgLayer: GraphicsLayer?/*, shape: Shape = RectangleShape*/): Modifier {
+fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, bgLayerSize: MutableState<IntSize>?, bgLayer: GraphicsLayer?, overrideColor: Color? = null): Modifier {
   return drawBehind {
     copyBackgroundToAppBar(bgLayerSize, bgLayer) {
-      if (baseTheme == DefaultTheme.SIMPLEX) {
+      if (overrideColor != null) {
+        drawRect(overrideColor)
+      } else if (baseTheme == DefaultTheme.SIMPLEX) {
         drawRect(brush = themedBackgroundBrush())
       } else {
         drawRect(CurrentColors.value.colors.background)

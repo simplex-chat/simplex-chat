@@ -40,7 +40,7 @@ fun ModalView(
   }
   val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
-    Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
+    Box(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer, overrideColor = if (background != Color.Unspecified) background else null)) {
       Box(modifier = modifier) {
         content()
       }
