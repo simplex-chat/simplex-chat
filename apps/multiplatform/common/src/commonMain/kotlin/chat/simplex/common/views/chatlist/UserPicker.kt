@@ -380,7 +380,7 @@ private fun GlobalSettingsSection(
 
   SectionItemView(
     click = {
-      ModalManager.start.showModalCloseable { close ->
+      ModalManager.start.showModalCloseable(background = canvasColorForCurrentTheme()) { close ->
         SettingsView(chatModel, setPerformLA, close)
       }
     },
