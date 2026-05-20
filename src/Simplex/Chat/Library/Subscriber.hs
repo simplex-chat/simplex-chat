@@ -47,7 +47,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, encodeBinaryBatch, encodeFwdElement, packIntoBatches, packIntoBody)
+import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize, packIntoBatches, packIntoBody)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
@@ -3645,10 +3645,10 @@ getDeliveryJobWorker hasWork deliveryKey = do
     runDeliveryJobWorker a deliveryKey
 
 -- | Encode an XGrpMemNew for first-introduction dissemination as a direct
--- (non-forwarded) batch element. Left when the encoded element wouldn't fit
--- in a singleton batch (= maxEncodedMsgLength - 4 bytes for batch framing).
+-- (non-forwarded) batch element. 'Left' when the encoded element wouldn't
+-- fit a singleton batch (see 'maxBatchElementSize').
 encodeMemberNew :: VersionRangeChat -> GroupInfo -> GroupMember -> Either ChatError ByteString
-encodeMemberNew vr gInfo member = case encodeChatMessage (maxEncodedMsgLength - 4) chatMsg of
+encodeMemberNew vr gInfo member = case encodeChatMessage maxBatchElementSize chatMsg of
   ECMEncoded bs -> Right bs
   ECMLarge -> Left $ ChatError $ CEException $ "large profile element for member " <> show (groupMemberId' member)
   where

@@ -16,6 +16,7 @@ module Simplex.Chat.Messages.Batch
     prependBatchElement,
     packIntoBody,
     packIntoBatches,
+    maxBatchElementSize,
   )
 where
 
@@ -123,6 +124,12 @@ batchLen _ _ 0 = 0
 batchLen _ len 1 = len
 batchLen BMJson len n = len + n + 1 -- (n - 1) commas + 2 brackets
 batchLen BMBinary len n = len + n * 2 + 2 -- 2-byte length prefix per element + '=' + count
+
+-- | Largest element that fits a singleton 'encodeBinaryBatch' inside an
+-- agent SMP message: '=' + count(1) + Word16 length prefix(2) = 4 bytes
+-- of framing on top of the element.
+maxBatchElementSize :: Int
+maxBatchElementSize = maxEncodedMsgLength - 4
 
 -- | Prepend one element to an existing binary-batch body without re-parsing
 -- the rest. Body format: '=' <count:1B> ( <len:Word16> <element> )*.
