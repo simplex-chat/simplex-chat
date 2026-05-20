@@ -12,6 +12,7 @@
 module Simplex.Chat.Terminal.Output where
 
 import Control.Concurrent (ThreadId)
+import Control.Concurrent.MVar (MVar, newMVar, takeMVar, putMVar)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
@@ -49,7 +50,7 @@ data ChatTerminal = ChatTerminal
     termSize :: Size,
     liveMessageState :: TVar (Maybe LiveMessage),
     nextMessageRow :: TVar Int,
-    termLock :: TMVar (),
+    termLock :: MVar (),
     sendNotification :: Maybe (Notification -> IO ()),
     activeTo :: TVar String,
     currentRemoteUsers :: TMap RemoteHostId User
@@ -103,7 +104,10 @@ newChatTerminal t opts = do
   let lastRow = height termSize - 1
   termState <- newTVarIO mkTermState
   liveMessageState <- newTVarIO Nothing
-  termLock <- newTMVarIO ()
+  -- MVar (not TMVar) for FIFO fairness under contention: the terminal
+  -- input thread must not be starved by the output renderer when the
+  -- output thread is processing a backlog (see runTerminalOutput).
+  termLock <- newMVar ()
   nextMessageRow <- newTVarIO lastRow
   sendNotification <- if muteNotifications opts then pure Nothing else Just <$> initializeNotifications
   activeTo <- newTVarIO ""
@@ -137,9 +141,9 @@ mkAutoComplete = ACState {acVariants = [], acInputString = "", acTabPressed = Fa
 
 withTermLock :: MonadTerminal m => ChatTerminal -> m () -> m ()
 withTermLock ChatTerminal {termLock} action = do
-  _ <- atomically $ takeTMVar termLock
+  liftIO $ takeMVar termLock
   action
-  atomically $ putTMVar termLock ()
+  liftIO $ putMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
 runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} ChatOpts {markRead} = do
