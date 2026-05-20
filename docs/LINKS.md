@@ -670,20 +670,6 @@ Date: 2024 (estimated)
 
 https://www.youtube.com/watch?v=fUwPGhSYlLY
 
-## Why I'm Not Using SimpleX Chat
-
-Techlore Clips
-
-Video review
-
-Image: techlore-not-using-simplex.jpg
-
-Language: English
-
-Date: Jun 26, 2024
-
-https://www.youtube.com/watch?v=IVpEKS30ngQ
-
 ## Exploring SimpleX Chat: A Scriptable, Decentralized Messaging App
 
 Rick Carlino
@@ -1336,20 +1322,6 @@ Date: updated regularly
 
 https://www.freie-messenger.de/simplex/
 
-## SimpleX Chat: Private and Secure Messaging Platform Without User IDs
-
-Monero Community Workgroup
-
-Conference talk
-
-Image: conference-simplex-no-user-ids.jpg
-
-Language: English
-
-Date: Oct 22, 2023
-
-https://www.youtube.com/watch?v=mWBDmautqK0
-
 ## The Best Private Instant Messengers
 
 Privacy Guides
@@ -1879,9 +1851,9 @@ https://simplifiedprivacy.com/messengers/
 
 ## SimpleX Chat: New Frontiers
 
-epoberezkin
+SimpleX Chat
 
-Conference talk
+Talk
 
 Image: simplex-new-frontiers-livestream.jpg
 
@@ -4139,19 +4111,17 @@ Date: 2024 (estimated)
 https://hackforums.net/blog/SimpleX-VS-Quiet
 
 
-## SimpleX Chat: 1st Messaging Platform Bridging Between Privacy and Mass-Market Apps
+## MoneroKon 2024: SimpleX Chat talk
 
-Monero Community Workgroup
+SimpleX Chat
 
-Conference talk
+Talk
 
-MoneroKon 2025 conference talk by Evgeny Poberezkin on how SimpleX Chat bridges the gap between privacy-focused and mass-market messaging applications.
-
-Image: monerokon-2025-simplex.jpg
+MoneroKon 2024 conference talk by Evgeny Poberezkin on how SimpleX Chat bridges the gap between privacy-focused and mass-market messaging applications.
 
 Language: English
 
-Date: 2025
+Date: 2024
 
 https://www.youtube.com/watch?v=Fl-QS0-qENw
 
@@ -4173,11 +4143,11 @@ Date: 2024 (estimated)
 https://www.youtube.com/live/quk4WY3fJCc?si=IQ0rutoHQpWtF2Un&t=3812
 
 
-## MoneroTopia 2026: SimpleX Chat Presentation
+## MoneroTopia 2026: The Future of SimpleX Network
 
-Monero Talk
+SimpleX Chat
 
-Conference talk
+Talk
 
 SimpleX Chat presentation at MoneroTopia 2026 conference in Mexico City, covering the latest developments in the SimpleX network and its alignment with the Monero privacy ecosystem.
 
