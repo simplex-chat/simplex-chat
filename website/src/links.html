@@ -35,14 +35,33 @@ active_links: true
         padding: 4px 0;
         border: none;
         border-radius: 0;
-        font-size: 13px;
+        font-size: 15px;
         cursor: pointer;
         background: transparent;
-        color: #A8B0B4;
-        text-decoration: underline;
-        text-underline-offset: 3px;
-        transition: color 0.15s;
+        color: #1B95D2;
+        text-decoration: none;
         position: relative;
+        display: inline-block;
+        margin: 0 4px;
+    }
+    .dark .filter-chip {
+        color: #70F0F9;
+    }
+    .filter-chip::before {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 1px;
+        bottom: 0;
+        right: 0;
+        background-color: currentColor;
+        transition: width 0.25s ease-out;
+    }
+    .filter-chip:hover::before,
+    .filter-chip.active::before {
+        width: 100%;
+        left: 0;
+        right: auto;
     }
     .filter-chip::after {
         content: attr(data-label);
@@ -54,10 +73,6 @@ active_links: true
     }
     .filter-chip.active {
         font-weight: bold;
-        color: inherit;
-    }
-    .filter-chip:hover {
-        color: inherit;
     }
     .link-item {
         transition: background 0.3s;
