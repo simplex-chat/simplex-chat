@@ -31,6 +31,9 @@ import Data.Int (Int64)
 import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap.Strict as IM
+import qualified Data.IntSet as IS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -3740,24 +3743,23 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     sendLoop bucketSize startingCursor senders (extBody, inBodySenders, overflowBatches) activeSenders
                     where
                       sendLoop :: Int -> Maybe GroupMemberId -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(ByteString, [GroupMember])]) -> [GroupMember] -> CM ()
-                      sendLoop bucketSize cursorGMId_ senders plan@(extBody, inBodySenders, overflowBatches) activeSenders = do
+                      sendLoop bucketSize cursorGMId_ senders prepared@(extBody, inBodySenders, overflowBatches) activeSenders = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
                           let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senders]
                               missing r s = case M.lookup (groupMemberId' s) senderVec of
                                 Just vec -> getRelation (indexInGroup r) vec == MRNew
                                 Nothing -> True
-                              -- Per recipient: overflow batches they're missing senders from,
-                              -- then either extBody (missing an in-body sender) or plain body.
-                              recipientPieces r =
-                                [batch | (batch, ss) <- overflowBatches, any (missing r) ss]
-                                  <> [if any (missing r) inBodySenders then extBody else body]
-                              msgReqs = buildMsgReqs mems recipientPieces
+                              -- Body IDs: 0 = plain body, 1 = extBody, 2.. = overflow batches in order.
+                              overflowWithIds = zip [2 :: Int ..] overflowBatches
+                              bodyById = IM.fromList $ (0, body) : (1, extBody) : [(i, b) | (i, (b, _)) <- overflowWithIds]
+                              recipientBodyIds r =
+                                [i | (i, (_, ss)) <- overflowWithIds, any (missing r) ss]
+                                  <> [if any (missing r) inBodySenders then 1 else 0]
+                              msgReqs = buildMsgReqs mems bodyById recipientBodyIds
                           unless (null msgReqs) $ void $ withAgent (`sendMessages` msgReqs)
-                          -- Mark only senders whose profile actually shipped
-                          -- (in body or in a batch), at recipients with a
-                          -- ready connection. Oversized senders dropped above
-                          -- are excluded from activeSenders.
+                          -- Mark every active sender at every ready recipient — idempotent for
+                          -- recipients who already had the bit set.
                           let readyIdxs = [indexInGroup m | m <- mems, isJust (readyMemberConn m)]
                           unless (null readyIdxs) $
                             withStore' $ \db ->
@@ -3765,7 +3767,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                 setMemberVectorNewRelations db sender [(i, (IDSubjectIntroduced, MRIntroduced)) | i <- readyIdxs]
                           let cursorGMId' = groupMemberId' $ last mems
                           withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
-                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senders plan activeSenders
+                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senders prepared activeSenders
                   DJSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
@@ -3830,25 +3832,22 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
                               Just 1 -> VRValue (Just 1) msgBody
                               Just _ -> VRRef 1
-                -- Per-recipient piece list -> flat MsgReq list, with distinct
-                -- body bytes deduped via VRValue (Just i) / VRRef i. First
-                -- piece for a connection carries aConnId conn; subsequent
-                -- pieces on the same connection carry empty ConnId (agent
-                -- groups by-connection on this convention).
-                buildMsgReqs :: [GroupMember] -> (GroupMember -> [ByteString]) -> [MsgReq]
-                buildMsgReqs mems recipientPieces =
-                  let (_, _, reqs) = foldl' addRecipient (M.empty, 1, []) mems
-                   in reverse reqs
+                -- First recipient needing body i carries VRValue (Just i); rest use VRRef i.
+                -- First piece per connection: aConnId; rest: empty (agent convention).
+                buildMsgReqs :: [GroupMember] -> IntMap ByteString -> (GroupMember -> [Int]) -> [MsgReq]
+                buildMsgReqs mems bodyById recipientBodyIds =
+                  reverse . snd $ foldl' addRecipient (IS.empty, []) mems
                   where
                     addRecipient acc r = case readyMemberConn r of
-                      Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientPieces r)
+                      Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientBodyIds r)
                       Nothing -> acc
-                    addPiece conn (k, (bodies, nextIdx, reqs)) b =
-                      let (bodies', nextIdx', vor) = case M.lookup b bodies of
-                            Just i -> (bodies, nextIdx, VRRef i)
-                            Nothing -> (M.insert b nextIdx bodies, nextIdx + 1, VRValue (Just nextIdx) b)
+                    addPiece conn (k, (issued, reqs)) bid =
+                      let vor
+                            | IS.member bid issued = VRRef bid
+                            | otherwise = VRValue (Just bid) (bodyById IM.! bid)
+                          issued' = IS.insert bid issued
                           connId = if k == 0 then aConnId conn else B.empty
-                       in (k + 1, (bodies', nextIdx', (connId, PQEncOff, MsgFlags False, vor) : reqs))
+                       in (k + 1, (issued', (connId, PQEncOff, MsgFlags False, vor) : reqs))
 
 -- Single worker processes all relay requests (XGrpRelayInv).
 -- We use map with a single key 1 to fit into existing worker management framework.
