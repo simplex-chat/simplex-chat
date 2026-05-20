@@ -1173,14 +1173,14 @@ introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn,
   -- (introduces mods). Mark both directions so the worker doesn't re-prepend
   -- on the first authored forward.
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
-  withStore $ \db ->
-    markVectorMembersAnnounced db (groupMemberId' subscriber) (map indexInGroup modMs)
+  withStore' $ \db ->
+    setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   let introEvts = map (memberIntroEvt gInfo) modMs
   forM_ (L.nonEmpty introEvts) $ \introEvts' -> do
     sendGroupMemberMessages user gInfo conn introEvts'
-    withStore $ \db ->
+    withStore' $ \db ->
       forM_ modMs $ \modM ->
-        markVectorMembersAnnounced db (groupMemberId' modM) [subscriberIdx]
+        setMemberVectorNewRelations db modM [(subscriberIdx, (IDSubjectIntroduced, MRIntroduced))]
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks

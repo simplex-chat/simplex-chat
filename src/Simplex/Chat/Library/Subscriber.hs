@@ -3771,9 +3771,9 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                           -- are excluded from activeSenders.
                           let readyIdxs = [indexInGroup m | m <- mems, isJust (readyMemberConn m)]
                           unless (null readyIdxs) $
-                            withStore $ \db ->
+                            withStore' $ \db ->
                               forM_ activeSenders $ \sender ->
-                                markVectorMembersAnnounced db (groupMemberId' sender) readyIdxs
+                                setMemberVectorNewRelations db sender [(i, (IDSubjectIntroduced, MRIntroduced)) | i <- readyIdxs]
                           let cursorGMId' = groupMemberId' $ last mems
                           withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
                           unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senderProfiles plan activeSenders

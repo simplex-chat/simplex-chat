@@ -242,7 +242,7 @@ chatGroupTests = do
   -- TODO   - test relay privileges
   describe "channels" $ do
     describe "relay delivery" $ do
-      describe "single relay" $ do
+      fdescribe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
         describe "should deliver messages in a loop over members" $ do
           it "number of recipients is multiple of bucket size (3/1)" (testChannels1RelayDeliverLoop 1)

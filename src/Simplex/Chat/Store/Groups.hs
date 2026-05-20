@@ -130,7 +130,6 @@ module Simplex.Chat.Store.Groups
     setMembersVectorsNewRelation,
     setMemberVectorRelationConnected,
     getMemberRelationsVector,
-    markVectorMembersAnnounced,
     createIntroReMember,
     createIntroReMemberConn,
     createIntroToMemberContact,
@@ -202,7 +201,7 @@ import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setRelations, setNewRelations, setRelationConnected, toIntroDirInt, toRelationInt)
+import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setNewRelations, setRelationConnected, toIntroDirInt, toRelationInt)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -2232,37 +2231,6 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
       db
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
-
--- Mark this member's vector at the given recipient indexes as MRIntroduced.
--- Idempotent and monotonic; preserves the introduction direction bit.
--- NULL ↔ empty: M20251117's backfill skips admin/owner-led groups, so
--- channel moderator rows start NULL and materialize on first write.
-markVectorMembersAnnounced :: DB.Connection -> GroupMemberId -> [Int64] -> ExceptT StoreError IO ()
-markVectorMembersAnnounced _ _ [] = pure ()
-markVectorMembersAnnounced db groupMemberId ixs = do
-  row :: Maybe (Only (Maybe ByteString)) <- liftIO $
-    maybeFirstRow id $
-      DB.query
-        db
-        ( "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
-#if defined(dbPostgres)
-          <> " FOR UPDATE"
-#endif
-        )
-        (Only groupMemberId)
-  case row of
-    Nothing -> throwError $ SEGroupMemberNotFound groupMemberId
-    Just (Only v_) -> do
-      let v' = setRelations [(i, MRIntroduced) | i <- ixs] $ fromMaybe B.empty v_
-      currentTs <- liftIO getCurrentTime
-      liftIO $ DB.execute
-        db
-        [sql|
-          UPDATE group_members
-          SET member_relations_vector = ?, updated_at = ?
-          WHERE group_member_id = ?
-        |]
-        (Binary v', currentTs, groupMemberId)
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> MemberInfo -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
 createIntroReMember
