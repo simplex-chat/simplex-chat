@@ -1169,18 +1169,13 @@ introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-  -- XGrpMemNew → mods (announces subscriber); XGrpMemIntro → subscriber
-  -- (introduces mods). Mark both directions so the worker doesn't re-prepend
-  -- on the first authored forward.
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
-  withStore' $ \db ->
+  withStore' $ \db -> do
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
+    setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
   let introEvts = map (memberIntroEvt gInfo) modMs
-  forM_ (L.nonEmpty introEvts) $ \introEvts' -> do
+  forM_ (L.nonEmpty introEvts) $ \introEvts' ->
     sendGroupMemberMessages user gInfo conn introEvts'
-    withStore' $ \db ->
-      forM_ modMs $ \modM ->
-        setMemberVectorNewRelations db modM [(subscriberIdx, (IDSubjectIntroduced, MRIntroduced))]
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
