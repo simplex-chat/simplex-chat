@@ -28,8 +28,8 @@ import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 
 private val SectionCardShape = RoundedCornerShape(16.dp)
-val CARD_PADDING = 16.dp
-val ICON_TEXT_SPACING = CARD_PADDING / 2
+val CARD_PADDING = 18.dp
+val ICON_TEXT_SPACING = 8.dp
 
 internal val LocalInCard = staticCompositionLocalOf { false }
 
