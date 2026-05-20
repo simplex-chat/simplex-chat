@@ -1,0 +1,293 @@
+---
+layout: layouts/main.html
+title: "SimpleX Chat Links"
+description: "Reviews, articles, videos, podcasts, and community content about SimpleX Chat"
+permalink: /links/
+templateEngineOverride: njk
+active_links: true
+---
+{% set lang = page.url | getlang %}
+{% block css_links %}
+<style>
+    #links-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+    #links-filters select {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: white;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    .dark #links-filters select {
+        background: #0B2A59;
+        border-color: #1e3a5f;
+        color: white;
+    }
+    .filter-chip {
+        padding: 4px 12px;
+        border-radius: 16px;
+        border: 1px solid #ccc;
+        font-size: 13px;
+        cursor: pointer;
+        background: transparent;
+        color: inherit;
+        transition: all 0.15s;
+    }
+    .dark .filter-chip {
+        border-color: #1e3a5f;
+    }
+    .filter-chip.active {
+        background: #1B95D2;
+        border-color: #1B95D2;
+        color: white;
+    }
+    #filter-groups {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+    }
+    .filter-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+    }
+    .filter-group-label {
+        font-size: 12px;
+        color: #A8B0B4;
+        margin-right: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .link-item {
+        transition: background 0.3s;
+    }
+    .link-item[data-featured] {
+        border-left: 3px solid #1B95D2;
+    }
+    .link-item .share-anchor {
+        opacity: 0;
+        transition: opacity 0.15s;
+        cursor: pointer;
+        color: #A8B0B4;
+        text-decoration: none;
+        font-size: 16px;
+        margin-left: 6px;
+        font-weight: normal;
+    }
+    .link-item:hover .share-anchor {
+        opacity: 1;
+    }
+    .link-item.highlighted {
+        background: rgba(27, 149, 210, 0.08) !important;
+    }
+    .dark .link-item.highlighted {
+        background: rgba(27, 149, 210, 0.15) !important;
+    }
+    .link-publisher {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-top: 6px;
+    }
+    .dark .link-publisher {
+        color: #d1d5db;
+    }
+    .link-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        font-size: 12px;
+        color: #A8B0B4;
+        margin-top: 4px;
+        margin-bottom: 10px;
+    }
+    .link-meta span::after {
+        content: "·";
+        margin-left: 12px;
+    }
+    .link-meta span:last-child::after {
+        content: none;
+    }
+    .featured-badge {
+        display: inline-block;
+        padding: 1px 8px;
+        border-radius: 4px;
+        background: #FFF8E6;
+        color: #C49000;
+        font-size: 11px;
+        font-weight: 500;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+    .dark .featured-badge {
+        background: #2A2000;
+        color: #FFD54F;
+    }
+    .link-url {
+        display: block;
+        font-size: 13px;
+        color: #1B95D2;
+        text-decoration: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        margin-top: auto;
+    }
+    .dark .link-url {
+        color: #70F0F9;
+    }
+    .link-url:hover {
+        text-decoration: underline;
+    }
+    #links-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        margin-top: 32px;
+        padding: 10px 0;
+    }
+    #links-pagination button {
+        padding: 8px 12px;
+        border: none;
+        background-color: transparent;
+        color: #374151;
+        cursor: pointer;
+        border-radius: 50%;
+        font-size: 14px;
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .dark #links-pagination button {
+        color: #70F0F9;
+    }
+    #links-pagination button:hover {
+        background-color: #f3f4f6;
+    }
+    .dark #links-pagination button:hover {
+        background-color: #0B2A50;
+    }
+    #links-pagination button.active {
+        font-weight: bold;
+        color: #0B2A59;
+    }
+    .dark #links-pagination button.active {
+        color: #70F0F9;
+    }
+    #links-pagination button.text-btn {
+        border-radius: 20px;
+        min-width: auto;
+        padding: 8px 16px;
+    }
+    #links-pagination button:disabled {
+        opacity: 0.3;
+        cursor: default;
+    }
+    #links-count {
+        text-align: center;
+        font-size: 14px;
+        color: #A8B0B4;
+        margin-bottom: 16px;
+    }
+    @media (max-width: 640px) {
+        #links-pagination button:not(.text-btn):not(.active):not(.neighbor) {
+            display: none;
+        }
+        #links-pagination button.text-btn {
+            padding: 4px 8px;
+            height: 32px;
+            border-radius: 16px;
+            font-size: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block js_scripts %}
+<script src="/js/links.js" defer></script>
+{% endblock %}
+
+<section class="py-10 px-5 mt-[66px]" id="links-page">
+    <div class="container">
+        <h1 class="text-[38px] text-center font-bold mb-4">{{ "links-title" | i18n({}, lang) | safe }}</h1>
+        <p class="text-center text-[#A8B0B4] mb-8">{{ "links-subtitle" | i18n({}, lang) | safe }}</p>
+
+        <div id="links-filters">
+            <select id="filter-language">
+                <option value="">{{ "links-all-languages" | i18n({}, lang) | safe }}</option>
+                {% for l in linkLanguages %}
+                    <option value="{{ l }}">{{ l }}</option>
+                {% endfor %}
+            </select>
+
+            <div class="filter-group" id="pill-filters">
+                <button class="filter-chip active" data-pill="">All</button>
+                {% for p in linkPills %}
+                    <button class="filter-chip" data-pill="{{ p }}">{{ p }}</button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="links-count"></div>
+
+        <div id="links-list">
+            {% for item in links %}
+            <article
+                class="link-item w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#0B2A59] mb-8"
+                {% if loop.index0 >= 20 %}style="display:none"{% endif %}
+                id="{{ item.id }}"
+                data-lang="{{ item.language }}"
+                data-category="{{ item.category | lower }}"
+                data-media="{{ item.mediaType }}"
+                data-pill="{{ item.pill }}"
+                data-date="{{ item.dateSort }}"
+                {% if item.featured %}data-featured{% endif %}>
+                {% if item.image and item.imageExists %}
+                <div class="min-h-[160px] h-[inherit] self-stretch md:w-[168px] bg-[#DBEEFF] dark:bg-[#071C46] flex items-center justify-center flex-[1] relative overflow-hidden">
+                    <img class="w-full h-full object-cover" src="/links/images/{{ item.image }}" alt="" loading="lazy" />
+                </div>
+                {% else %}
+                <div class="min-h-[160px] h-[inherit] self-stretch md:w-[168px] bg-[#DBEEFF] dark:bg-[#071C46] flex items-center justify-center flex-[1] relative">
+                    <img class="h-[44px] self-center dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" />
+                    <img class="h-[44px] self-center hidden dark:inline-block" src="/img/new/logo-symbol-dark.svg" alt="" />
+                </div>
+                {% endif %}
+                <div class="p-6 md:py-8 flex-[2.5] flex flex-col">
+                    <div>
+                        <h2 class="text-grey-black dark:text-white !text-lg md:!text-xl font-bold">
+                            {{ item.title }}
+                            <a class="share-anchor" href="#link={{ item.id }}">#</a>
+                            {% if item.featured %}<span class="featured-badge">Featured</span>{% endif %}
+                        </h2>
+                        {% if item.originalTitle %}
+                        <p class="text-sm text-[#A8B0B4] mt-1 italic">{{ item.originalTitle }}</p>
+                        {% endif %}
+                        <p class="link-publisher">{{ item.publisher }}</p>
+                        <div class="link-meta">
+                            <span>{{ item.date }}{% if item.estimated %} (est.){% endif %}</span>
+                            <span>{{ item.language }}</span>
+                            <span>{{ item.category }}</span>
+                        </div>
+                        <p class="dark:text-white mb-4 text-sm">{{ item.preview }}</p>
+                    </div>
+                    <a class="link-url" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.url }}</a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <div id="links-pagination"></div>
+    </div>
+</section>

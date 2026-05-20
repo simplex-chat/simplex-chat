@@ -12,6 +12,15 @@ const pluginRss = require('@11ty/eleventy-plugin-rss')
 const { JSDOM } = require('jsdom')
 
 
+// Links page data
+const parseLinks = require('./parse_links')
+const linksFilePath = path.resolve(__dirname, '../docs/LINKS.md')
+const linksData = fs.existsSync(linksFilePath) ? parseLinks(linksFilePath) : []
+const linkImagesDir = path.resolve(__dirname, 'src/link-images')
+linksData.forEach(entry => {
+  entry.imageExists = entry.image && fs.existsSync(path.join(linkImagesDir, entry.image))
+})
+
 // The implementation of Glossary feature
 const md = new markdownIt()
 const glossaryMarkdownContent = fs.readFileSync(path.resolve(__dirname, '../docs/GLOSSARY.md'), 'utf8')
@@ -76,6 +85,14 @@ module.exports = function (ty) {
     const content = fs.readFileSync(fullPath, 'utf8');
     return markdownLib.render(content);
   });
+
+  ty.addGlobalData("links", linksData)
+  ty.addGlobalData("linkLanguages", [...new Set(linksData.map(e => e.language).filter(Boolean))].sort())
+  const pillCounts = {}
+  linksData.forEach(e => { if (e.pill) pillCounts[e.pill] = (pillCounts[e.pill] || 0) + 1 })
+  const mediaPills = ["Video", "Audio"].filter(p => linksData.some(e => e.mediaType === p.toLowerCase()))
+  const catPills = Object.entries(pillCounts).filter(([p]) => !mediaPills.includes(p)).sort((a, b) => b[1] - a[1]).map(([p]) => p)
+  ty.addGlobalData("linkPills", mediaPills.concat(catPills))
 
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
@@ -298,6 +315,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/call")
   ty.addPassthroughCopy("src/hero-phone")
   ty.addPassthroughCopy("src/hero-phone-dark")
+  ty.addPassthroughCopy({ "src/link-images": "links/images" })
   ty.addPassthroughCopy("src/blog/images")
   ty.addPassthroughCopy("src/docs/*.png")
   ty.addPassthroughCopy("src/docs/images")

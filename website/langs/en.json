@@ -368,5 +368,10 @@
     "file-proto-p-2": "File encryption key is present only in the URL hash fragment - your browser never sends it to a server. There are 3 encryption layers: TLS transport, per-recipient encryption (unique ephemeral key per transfer), and file end-to-end encryption.",
     "file-proto-h-4": "Independent data routers",
     "file-proto-p-4": "When file is split to fragments, it is sent via network routers operated by independent parties. No operator can see the actual file size or name. Even if a router is compromised, it can only see encrypted fragments of fixed size. File fragments are cached by network routers for approximately 48 hours.",
-    "file-proto-spec": "Read the XFTP protocol specification →"
+    "file-proto-spec": "Read the XFTP protocol specification →",
+    "links": "Links",
+    "links-title": "Community Links",
+    "links-subtitle": "What people say about SimpleX Chat",
+    "links-all-languages": "All languages",
+    "links-all": "All"
 }
