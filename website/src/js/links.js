@@ -57,9 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (filter === "cat") return el.getAttribute("data-category") === value
         return false
       })
-      pill.disabled = !has
       pill.style.opacity = has ? "" : "0.3"
-      pill.style.pointerEvents = has ? "" : "none"
     })
   }
 
@@ -246,6 +244,10 @@ document.addEventListener("DOMContentLoaded", function () {
       if (activeFilter === filter && activeValue === value) {
         setActivePill("", "")
       } else {
+        // If pill is greyed out (no items with current language), reset language first
+        if (pill.style.opacity === "0.3") {
+          langSelect.value = ""
+        }
         setActivePill(filter, value)
       }
       applyFilters()

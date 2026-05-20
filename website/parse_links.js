@@ -92,12 +92,20 @@ function parseLinks(linksFilePath) {
 
     if (!block.title || !url) continue
 
+    let contentCategory = category
+    let explicitMedia = ""
+    if (category.includes(", ")) {
+      const parts = category.split(", ")
+      contentCategory = parts[0].trim()
+      explicitMedia = parts[1].trim().toLowerCase()
+    }
+
     entries.push({
       id: slugify(block.title, { lower: true, strict: true }).slice(0, 80),
       title: block.title,
       originalTitle,
       publisher,
-      category,
+      category: contentCategory,
       featured,
       preview,
       image,
@@ -106,7 +114,7 @@ function parseLinks(linksFilePath) {
       dateSort: normalizeDateForSort(date),
       estimated,
       url,
-      mediaType: deriveMediaType(category),
+      mediaType: explicitMedia || deriveMediaType(category),
     })
   }
 

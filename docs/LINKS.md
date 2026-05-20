@@ -302,7 +302,7 @@ https://www.camarchecafonctionne.com/decouvrez-les-meilleures-applications-de-me
 
 HTR
 
-Video review
+Review, Video
 
 Image: htr-simplex-review.jpg
 
@@ -400,7 +400,7 @@ https://digitalunplug.ch/simplex.php
 
 Mental Outlaw
 
-Video review
+Review, Video
 
 Image: mental-outlaw-simplex-review.jpg
 
@@ -414,7 +414,7 @@ https://www.youtube.com/watch?v=0cRu98XSap0
 
 Techlore
 
-Video review
+Review, Video
 
 Image: techlore-recommend-simplex.jpg
 
@@ -660,7 +660,7 @@ https://www.tabnews.com.br/RafaelMesquita/simplex-chat-o-primeiro-mensageiro-sem
 
 Coach De Osasco
 
-Video review
+Review, Video
 
 Image: portuguese-simplex-revolutionary.jpg
 
@@ -762,7 +762,7 @@ https://www.notebookcheck-ru.com/CHat-SimpleX-s-otkrytym-iskhodnym-kodom-preuspe
 
 Первый отдел
 
-Video tutorial
+Guide, Video
 
 Image: russian-paranoid-messenger-tutorial.jpg
 
@@ -940,7 +940,7 @@ https://www.iphon.fr/post/on-a-trouve-lapp-de-messagerie-iphone-la-plus-incognit
 
 Paf LeGeek
 
-Video tutorial
+Guide, Video
 
 Image: paflegeek-simplex-selfhost.jpg
 
@@ -972,7 +972,7 @@ https://optoutpod.com/episodes/s3e02-simplexchat/
 
 Теплица социальных технологий
 
-Video review
+Review, Video
 
 Image: russian-simplex-max-protection.jpg
 
@@ -988,7 +988,7 @@ https://www.youtube.com/watch?v=g9HGLNCkEyk
 
 Теплица социальных технологий
 
-Video review
+Review, Video
 
 Image: russian-simplex-overview-functions.jpg
 
@@ -1004,7 +1004,7 @@ https://www.youtube.com/watch?v=fp1QUPNkxKI
 
 Чёрный Треугольник
 
-Video review
+Review, Video
 
 Image: russian-simplex-anonymous-no-id.jpg
 
@@ -1020,7 +1020,7 @@ https://www.youtube.com/watch?v=Ecx5jGUn-hQ
 
 RD CIPHER
 
-Video review
+Review, Video
 
 Image: spanish-simplex-ultra-private.jpg
 
@@ -1036,7 +1036,7 @@ https://www.youtube.com/watch?v=5vroKXgVZ3Q
 
 Elurk Informatica
 
-Video review
+Review, Video
 
 Image: spanish-simplex-sin-identificadores.jpg
 
@@ -1326,7 +1326,7 @@ https://www.freie-messenger.de/simplex/
 
 Privacy Guides
 
-Recommendation
+Review
 
 Privacy Guides recommends SimpleX Chat as an instant messenger that does not depend on any unique identifiers such as phone numbers or usernames. The page notes its double ratchet encryption with quantum resistance, metadata protection through unidirectional message delivery queues, and independent security audits conducted in July 2024 and October 2022.
 
@@ -1342,7 +1342,7 @@ https://www.privacyguides.org/en/real-time-communication/
 
 Whonix Wiki
 
-Recommendation
+Review
 
 The Whonix wiki describes SimpleX as a general-purpose instant messaging client with both client and server released as Freedom Software under GNU AGPLv3. It highlights mandatory end-to-end encryption, quantum-resistant encryption by default for one-on-one chats, and incognito mode, while providing detailed Flatpak installation instructions and warning that users must export their chat database before shutdown to avoid losing all data.
 
@@ -1360,7 +1360,7 @@ https://www.whonix.org/wiki/SimpleX
 
 Wikilibriste
 
-Recommendation
+Review
 
 This French privacy guide recommends SimpleX for users seeking a strict, intentionally confidential messaging model. It highlights SimpleX's unique reception addresses per contact, Double Ratchet encryption, incognito mode, and the absence of user identifiers, while noting that user IP remains visible to relay servers unless Tor is used.
 
@@ -1733,7 +1733,7 @@ https://it.moyens.net/app/app-messaggistica-piu-sicure-del-signal-session-simple
 
 Paranoia
 
-Video review
+Review, Video
 
 Image: portuguese-simplex-hidden-portal.jpg
 
@@ -1749,7 +1749,7 @@ https://www.youtube.com/watch?v=CCB9m0T7RIM
 
 Leandroibov
 
-Video review
+Review, Video
 
 Image: portuguese-simplex-ultra-annihilation.jpg
 
@@ -1765,7 +1765,7 @@ https://www.youtube.com/watch?v=gvVfpPB1srI
 
 Prometheus HODL
 
-Video tutorial
+Guide, Video
 
 Image: portuguese-simplex-tutorial.jpg
 
@@ -1779,7 +1779,7 @@ https://www.youtube.com/watch?v=JMPxptujnaQ
 
 The Digital Prepper
 
-Video review
+Review, Video
 
 Image: simplex-messaging-perfect-privacy.jpg
 
@@ -1793,7 +1793,7 @@ https://www.youtube.com/watch?v=aKRfDch_WBQ
 
 Remember Lads Subscribe to Big Bear
 
-Video review
+Review, Video
 
 Image: simplex-unusually-good-privacy.jpg
 
@@ -1807,7 +1807,7 @@ https://www.youtube.com/watch?v=zkEY9m2E-Y4
 
 402 Payment Required
 
-Video tutorial
+Guide, Video
 
 Image: selfhosted-simplex-tutorial.jpg
 
@@ -2367,7 +2367,7 @@ http://conea.pl/aktualnosci/Prywatnosc-zdefiniowana-na-nowo---Pierwszy-komunikat
 
 rdwei
 
-Video review
+Review, Video
 
 Image: italian-youtube-anonymous-chat.jpg
 
@@ -2381,7 +2381,7 @@ https://www.youtube.com/watch?v=Eamu0Ys63l4
 
 PeerTube Uno Italia
 
-Video review
+Review, Video
 
 Video review of SimpleX Chat v5.4 on Italian federated PeerTube instance. Covers connecting mobile and desktop apps via quantum-resistant protocol and improved group features.
 
@@ -2415,7 +2415,7 @@ https://securityinabox.org/tr/communication/tools/
 
 Paskoocheh / ASL19
 
-Recommendation
+Review
 
 Paskoocheh, a platform providing circumvention tools for Iranian users, offers SimpleX Chat for Android download. The listing describes SimpleX as a privacy-focused messenger with end-to-end encryption, decentralized architecture, and anonymous communication capabilities, noting it is particularly useful for civil activists, journalists, and anyone requiring confidentiality.
 
@@ -2499,7 +2499,7 @@ https://zhuanlan.zhihu.com/p/1916814606019584862
 
 极客小白
 
-Video tutorial
+Guide, Video
 
 Image: chinese-youtube-secure-tools.jpg
 
@@ -2515,7 +2515,7 @@ https://www.youtube.com/watch?v=UXH6wUOqnfk
 
 Kaiyuanapp.cn
 
-Recommendation
+Review
 
 This Chinese open-source app directory describes SimpleX as a decentralized privacy messaging app that operates without any form of user identifiers. It highlights the SimpleX Messaging Protocol with relay servers that only store encrypted messages temporarily, self-hosting capability, disappearing messages, and anonymous group chats, while noting limitations in voice/video calling, occasional messaging delays, and high Android battery consumption.
 
@@ -2895,7 +2895,7 @@ https://vc.ru/id2160811/779184
 
 RuTube
 
-Video review
+Review, Video
 
 This is the second video in a Russian-language series about SimpleX Chat, demonstrating its primary functionality including messaging, encrypted voice and video calls, automatic message deletion timers, incognito mode, and database backup capabilities.
 
@@ -3239,7 +3239,7 @@ https://www.youtube.com/watch?v=GH4u8pQLY90
 
 Tom Spark's Reviews
 
-Video review
+Review, Video
 
 Image: youtube-best-private-messenger.jpg
 
@@ -3253,7 +3253,7 @@ https://www.youtube.com/watch?v=PbYm1G-QVUc
 
 How to use apps?
 
-Video tutorial
+Guide, Video
 
 Image: youtube-simplex-tutorial.jpg
 
@@ -3267,7 +3267,7 @@ https://www.youtube.com/watch?v=X7CJlbBJNcc
 
 QuickLearn
 
-Video review
+Review, Video
 
 Image: youtube-simplex-review-2024.jpg
 
@@ -3379,7 +3379,7 @@ https://juraj.bednar.io/en/blog-en/2022/05/03/encrypted-messengers-comparison/
 
 IQ.wiki
 
-Recommendation
+Review
 
 This IQ.wiki page provides a comprehensive overview of SimpleX Chat, covering its custom protocols (SimpleXMQ and SMP), end-to-end encryption with the Signal Double Ratchet algorithm, and post-quantum resistant encryption via CRYSTALS-Kyber. It notes key milestones including the v1 mobile release in 2022, Jack Dorsey's investment in August 2024, and planned Community Vouchers utility token system for 2026.
 
@@ -3504,7 +3504,7 @@ https://406.neocities.org/a/apps_mensajeria/
 
 ひとりかくれんぼ / note.com
 
-Recommendation
+Review
 
 This Japanese article strongly recommends SimpleX Chat as the top choice for anonymous secure communication, emphasizing that it requires no phone number or email and doesn't use user identifiers or collect metadata. The author notes that user experience is mostly acceptable with only minor delays in call connections, and observes that SimpleX adoption remains relatively low in Japan.
 
@@ -3588,7 +3588,7 @@ https://tests.tips/en/?software/mobile-apps/simplex
 
 402 Payment Required
 
-Video tutorial
+Guide, Video
 
 Image: hospeda-simplex-chat.jpg
 
@@ -3604,7 +3604,7 @@ https://www.youtube.com/watch?v=p1NF68KIt7M
 
 Paranoia
 
-Video tutorial
+Guide, Video
 
 Image: simplex-whatsapp-libertario.jpg
 
@@ -3712,7 +3712,7 @@ https://www.taurix.net/simplex-chat/
 
 Taurix IT
 
-Bot
+Service
 
 This repository contains a Python-based customer service bot for SimpleX Chat that joins a specified control group and announces newly created customer chats. Control group members can then use commands to join customer conversations, automating the connection between customer service representatives and incoming inquiries.
 
@@ -3728,7 +3728,7 @@ https://code.taurix.net/TaurixIT/simplex-customerservicebot
 
 TempleOfSats
 
-Bot
+Service
 
 This open-source bot monitors the RoboSats peer-to-peer Bitcoin trading platform and sends alerts via SimpleX Chat when orders matching user-defined criteria (currency, premium rates, payment methods, trade amounts) are posted. Users manage alerts through simple commands, with a default 7-day alert lifetime and extension capabilities.
 
@@ -3776,7 +3776,7 @@ https://wiki.lunardao.net/simplexchat.html
 
 Monerica
 
-Recommendation
+Review
 
 This Monerica directory page lists several Monero-focused SimpleX Chat communities spanning multiple languages and regions, including groups for Monero discussion in Slovenian, German, Italian, and Hebrew. It includes an automated bot that sends hourly Monero price updates via SimpleX.
 
@@ -3792,7 +3792,7 @@ https://monerica.com/communities/simplex
 
 SplinterCon
 
-Recommendation
+Review
 
 The SplinterCon anti-censorship project page describes SimpleX as a decentralized messenger that operates without user IDs, using end-to-end encryption for messages and file transfers. It highlights that SimpleX can run on the Tor network and allows users to deploy their own servers, with messages routed through servers that can operate without persistence.
 
@@ -3950,7 +3950,7 @@ https://ludlowinstitute.org/community
 
 Taurix IT
 
-Bot
+Service
 
 TellMe is a notification system that monitors events (completed processes, server uptime, etc.) and sends alerts through SimpleX Chat or Matrix via websockets. It supports custom messages, process monitoring, periodic command output watching, and host ping availability tracking.
 
@@ -3966,7 +3966,7 @@ https://code.taurix.net/TaurixIT/tellme
 
 BitList.co
 
-Bot
+Service
 
 This Bitcointalk thread presents a notification bot for SimpleX Chat that monitors the forum for merit awards, mentions, quotes, specific users, topics, and keyword phrases. The developer notes that due to SimpleX's decentralized architecture, notifications may experience delays compared to Telegram alternatives, and data is stored for retry when users aren't connected.
 
