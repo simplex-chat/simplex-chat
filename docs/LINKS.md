@@ -4,7 +4,7 @@
 
 Help Net Security
 
-Product showcase
+Review
 
 Help Net Security showcases SimpleX Chat as a free, private, open-source messenger that eliminates traditional user identifiers and stores data locally on devices. The article highlights end-to-end encrypted communications, contact addition through one-time links or QR codes, encrypted audio/video calls via WebRTC with hidden IP addresses, and security verification through comparable security codes between contacts.
 
@@ -36,7 +36,7 @@ https://stateofsurveillance.org/guides/basic/secure-messaging-comparison/
 
 Citadel Dispatch
 
-Podcast interview
+Podcast
 
 This Citadel Dispatch podcast episode features Evgeny Poberezkin discussing SimpleX Chat's radically different approach to user identity, where addresses are assigned to connections rather than endpoints. The conversation covers critiques of the MLS protocol, upcoming scalable channels to rival Telegram, and a sustainability model where large channels fund network operations.
 
@@ -54,7 +54,7 @@ https://podcasts.apple.com/is/podcast/cd196-evgeny-poberezkin-simplex-private-ch
 
 Techlore
 
-Podcast interview
+Podcast
 
 Image: techlore-talks-simplex-interview.jpg
 
@@ -186,7 +186,7 @@ https://itforprof.com/blog/decentralizovannye-messendzhery/
 
 OpenNet.ru
 
-News article
+News
 
 This Russian tech news site covers the SimpleX Chat 6.5 release, highlighting the introduction of channels with stateful messaging capabilities and the establishment of the SimpleX Network Consortium for network independence and governance. The update also brings improved web access features and SOCKS proxy support.
 
@@ -202,7 +202,7 @@ https://opennet.ru/65337/
 
 Yahoo Finance
 
-News article
+News
 
 Yahoo Finance reports that Vitalik Buterin donated approximately $765,000 in Ethereum to privacy messaging apps Session and SimpleX. Buterin praised both apps for advancing permissionless account creation and metadata privacy, while acknowledging neither is perfect and both need improvements in user experience and security.
 
@@ -218,7 +218,7 @@ https://finance.yahoo.com/news/vitalik-buterin-donates-765k-ethereum-190102367.h
 
 Bitcoin.com News
 
-News article
+News
 
 Bitcoin.com reports that Vitalik Buterin donated 128 ETH (approximately $256,000) to SimpleX Chat and an equal amount to Session, totaling 256 ETH. Buterin emphasized the importance of permissionless account creation and metadata privacy, aiming to advance truly private messaging technologies that protect users from surveillance.
 
@@ -234,7 +234,7 @@ https://news.bitcoin.com/vitalik-buterin-supports-privacy-focused-messaging-plat
 
 CryptoSlate
 
-Analysis
+News
 
 CryptoSlate covers Vitalik Buterin's 256 ETH total grants to Session and SimpleX Chat, framing it as a signal that privacy infrastructure deserves funding when designed as a foundational architectural feature. The article highlights Buterin's support for metadata-resistant communication systems that operate entirely outside Ethereum's blockchain.
 
@@ -268,7 +268,7 @@ https://www.blog.brightcoding.dev/2025/09/18/simplex-chat-the-first-messaging-ap
 
 SysKB
 
-News article
+News
 
 This French tech site covers SimpleX Chat version 6.4.3, noting new features including bot support via commands, hypertext links in Markdown, and automatic removal of link tracking parameters. The article also mentions the project's $1.3 million funding round backed by Jack Dorsey in August 2024.
 
@@ -316,7 +316,7 @@ https://www.youtube.com/watch?v=rGrF1M7x0Nk
 
 Opt Out Podcast
 
-Podcast interview
+Podcast
 
 This Opt Out Podcast episode features Evgeny from SimpleX and Dan Keller from Flux discussing improvements to SimpleX Chat, including quantum-resistant encryption and privacy-preserving content moderation. The conversation also covers a new chat relay approach developed collaboratively between SimpleX and Flux, along with SimpleX's network operator monetization plans.
 
@@ -366,7 +366,7 @@ https://proton.me/blog/whatsapp-alternatives
 
 No Trust Verify
 
-Technical article
+Article
 
 This French-language article from NoTrustVerify describes SimpleX Chat as the first messaging platform with no identifiers that respects privacy by default. It explains the decentralized architecture using message queues instead of user accounts, and highlights features like Incognito Mode, Live Messages, and separate Chat Profiles for different conversations.
 
@@ -428,7 +428,7 @@ https://www.youtube.com/watch?v=DVKe8U-n8fU
 
 Notebookcheck
 
-News article
+News
 
 Notebookcheck argues that SimpleX Chat addresses privacy failures inherent in Telegram, highlighting that SimpleX requires no phone number, uses end-to-end encryption with onion routing, and allows users to select their own servers. The article notes that SimpleX operates in incognito mode by default and that even SimpleX itself cannot determine where messages originate.
 
@@ -688,7 +688,7 @@ https://www.youtube.com/watch?v=IVpEKS30ngQ
 
 Rick Carlino
 
-Technical article
+Article
 
 The author explores SimpleX Chat's bot-building capabilities using its CLI application with WebSocket support, finding the process remarkably straightforward and reminiscent of writing IRC scripts with a better UX. The article includes a functional TypeScript example demonstrating how to build chatbots through JSON commands, requiring minimal setup of just downloading an executable and connecting via WebSocket.
 
@@ -722,7 +722,7 @@ https://freedomnode.com/blog/session-and-simplex-encrypted-messenger-comparison/
 
 Habr / Privacy Accelerator
 
-Technical article
+Article
 
 This Russian-language Habr article introduces SimpleX Chat as a privacy-focused messenger that operates without user identifiers, using separate message queue identifiers for each contact. It highlights the SimpleX Messaging Protocol with end-to-end encryption, Tor routing support, open-source code, and a professional security audit by Trail of Bits.
 
@@ -758,7 +758,7 @@ https://habr.com/ru/articles/851866/
 
 Notebookcheck Russia
 
-News article
+News
 
 This Russian-language Notebookcheck article highlights how SimpleX Chat addresses privacy concerns that Telegram failed to handle, including not requiring phone numbers, using one-way onion routing, allowing users to select their own servers, and providing end-to-end encryption with local device encryption. Unlike Telegram, which made changes after government pressure, SimpleX maintains stronger anonymity protections.
 
@@ -838,7 +838,7 @@ https://freedom.tech/simplex-chat-review/
 
 NoBs Bitcoin
 
-News article
+News
 
 No BS Bitcoin reports that SimpleX Chat secured $1.3 million in pre-seed investment led by Jack Dorsey and Asymmetric Capital Partners. The v6.0 release includes protocol improvements reducing the messages needed for users to connect by half, a redesigned mobile interface, image blur options, and improved moderation tools supporting up to 20 message selections.
 
@@ -854,7 +854,7 @@ https://www.nobsbitcoin.com/simplex-chat-v6-0/
 
 NoBs Bitcoin
 
-News article
+News
 
 No BS Bitcoin covers SimpleX Chat v6.1, which enhances call functionality with camera activation and screen sharing from the desktop app during voice calls. The release also resolves iOS notification delivery problems, improves connectivity, and features a redesigned conversation layout with faster message operations.
 
@@ -870,7 +870,7 @@ https://www.nobsbitcoin.com/simplex-chat-v6-1-0/
 
 NoBs Bitcoin
 
-News article
+News
 
 No BS Bitcoin reports that SimpleX Chat v5.7 introduced quantum-resistant end-to-end encryption for all contacts and message forwarding without revealing the source. The article notes planned third-party security audits and the team's request for community donations to help cover audit costs exceeding $50,000.
 
@@ -886,7 +886,7 @@ https://www.nobsbitcoin.com/simplex-chat-v5-7-0/
 
 NoBs Bitcoin
 
-News article
+News
 
 No BS Bitcoin covers SimpleX Chat v5.8's introduction of private message routing, described as a 2-hop onion routing protocol inspired by Tor that protects both users' IP addresses and transport sessions. The update also adds file reception protections from unknown servers, chat themes with wallpapers, and improved group permissions for admins.
 
@@ -902,7 +902,7 @@ https://www.nobsbitcoin.com/simplex-chat-v5-8/
 
 Reclaim the Net
 
-News article
+News
 
 Reclaim The Net reports that SimpleX Chat launched a beta version of quantum-resistant encryption, implementing post-quantum cryptography with an improved quantum-resistant double ratchet algorithm. The article notes the use of fixed 16kb block sizes and lossless compression to prevent traffic analysis, with the feature currently optional for users.
 
@@ -918,7 +918,7 @@ https://reclaimthenet.org/simplex-chat-launches-quantum-resistant-encryption-in-
 
 Reclaim the Net
 
-News article
+News
 
 Reclaim The Net covers SimpleX Chat v5.8's private message routing protocol where the forwarding relay is chosen by the sender and the second by the recipient, ensuring neither party can observe the other's IP address. The developers rejected embedding Tor due to latency and metadata correlation issues, instead building their own solution that provides IP protection by default.
 
@@ -968,7 +968,7 @@ https://www.youtube.com/watch?v=66URjJ1RkeM
 
 Opt Out Podcast
 
-Podcast interview
+Podcast
 
 This Opt Out Podcast episode features SimpleX Chat founder Evgeny discussing how privacy aligns with the future of computing. The conversation covers data sovereignty, SimpleX's decentralized architecture, and the project's emphasis on user control, with resources provided on running independent servers.
 
@@ -1064,7 +1064,7 @@ https://www.youtube.com/watch?v=Uit79EFxTAs
 
 Marius
 
-Technical article
+Article
 
 This privacy-focused blog describes SimpleX as an open-source, decentralized instant messenger that lacks fixed user identifiers, requiring neither a phone number nor a username. However, the author withdrew their recommendation after SimpleX received venture capital funding from Jack Dorsey in August 2024, citing concerns about the investment's influence.
 
@@ -1080,7 +1080,7 @@ https://xn--gckvb8fzb.com/an-overview-of-privacy-focused-decentralized-instant-m
 
 No Trust Verify / Medium
 
-Explainer
+Article
 
 NoTrustVerify describes SimpleX Chat as the first messaging platform that requires no login and respects privacy by default, operating through a decentralized architecture using one-way message queues rather than centralized servers. The article discusses incognito mode, live message typing indicators, and separate chat profiles, while noting challenges around multi-device synchronization and large group management.
 
@@ -1096,7 +1096,7 @@ https://medium.com/notrustverify/what-is-simplex-chat-11124d39a318
 
 NoBs Bitcoin
 
-News article
+News
 
 No BS Bitcoin covers SimpleX Chat v5.4, which introduced the ability to link mobile and desktop apps via a secure quantum-resistant protocol on local networks. The update also improved group functionality with faster joining, incognito profile support for groups, and added screen sharing for video calls on desktop.
 
@@ -1112,7 +1112,7 @@ https://www.nobsbitcoin.com/simplex-chat-v5-4/
 
 NoBs Bitcoin
 
-News article
+News
 
 No BS Bitcoin reports on SimpleX Chat v5.3, which introduced a new desktop app, a directory service with group improvements, and encrypted local files and media with forward secrecy. The release also achieved a 40% reduction in memory usage and added new privacy controls for message visibility.
 
@@ -1128,7 +1128,7 @@ https://www.nobsbitcoin.com/simplex-chat-v5-3/
 
 Serokell
 
-Technical interview
+Interview
 
 Serokell interviews SimpleX Chat creator Evgeny Poberezkin about building the platform in Haskell, chosen for its strength in highly concurrent communication applications with features like green threads and transactional memory. The article discusses challenges of compiling Haskell to mobile devices and the project's exploration of monetization through optional subscriptions while remaining fully open-source.
 
@@ -1164,7 +1164,7 @@ https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/
 
 Heise Online
 
-News article
+News
 
 Heise reports on SimpleX Chat releasing smartphone apps for iPhone and Android after initially being available only as a command-line application. The article highlights the decentralized architecture where servers cannot know who communicated with whom, with users sharing QR codes to establish encrypted connections.
 
@@ -1182,7 +1182,7 @@ https://www.heise.de/news/Dezentral-anonym-verschluesselt-SimpleX-Messenger-jetz
 
 Heise Online
 
-News article
+News
 
 Heise covers SimpleX Chat version 3's privacy-focused iOS push notifications that contain no information about contacts or chat content, preventing any data from reaching Apple's servers. The update also introduced database export/import functionality and faster message transmission while maintaining backward compatibility.
 
@@ -1200,7 +1200,7 @@ https://www.heise.de/news/Damit-Apple-nichts-mitliest-SimpleX-Chat-aktualisiert-
 
 Heise Online
 
-News article
+News
 
 Heise reports on SimpleX Chat version 4.0 introducing private server authentication through password protection, allowing server operators to control who can receive messages while maintaining the platform's anonymous design. Previously all chat servers were public, but administrators can now restrict access by sharing passwords with intended users.
 
@@ -1218,7 +1218,7 @@ https://www.heise.de/news/Open-Source-Messenger-SimpleX-anonym-und-jetzt-auch-pr
 
 Heise Online
 
-News article
+News
 
 Heise covers SimpleX Chat reaching version 1.0.0, marking its protocol as stable with guaranteed compatibility for future releases. The article explains the dual-layer end-to-end encryption using a double-ratchet mechanism that changes keys for each message, with decentralized servers routing messages without storing user data or metadata.
 
@@ -1236,7 +1236,7 @@ https://www.heise.de/news/SimpleX-1-0-0-Dezentraler-Privatsphaere-achtender-und-
 
 iphone-ticker.de
 
-News article
+News
 
 German iPhone blog iphone-ticker covers SimpleX Chat's privacy approach of establishing direct connections through shared QR codes or links for end-to-end encrypted messaging. The article highlights version 3.0's push notifications that reveal nothing about chat content or contacts, and the addition of encrypted audio and video calling.
 
@@ -1254,7 +1254,7 @@ https://www.iphone-ticker.de/simplex-chat-will-vollstaendige-privatsphaere-biete
 
 GNU/Linux.ch
 
-News article
+News
 
 This Swiss GNU/Linux community site reports on SimpleX Chat's release of smartphone applications for iPhone and Android, expanding beyond its command-line interface. The article emphasizes end-to-end encryption, decentralized architecture, and QR code-based peer-to-peer connections without routing data through SimpleX servers.
 
@@ -1308,7 +1308,7 @@ https://digitalcourage.de/digitale-selbstverteidigung/messenger
 
 Linux-Magazin
 
-News article
+News
 
 German Linux Magazin reports on SimpleX as an anonymous, encrypted open-source messenger (AGPLv3) that uses no central server to track connections - servers only relay messages, and anyone can self-host a message broker using SimpleXMQ. The article highlights SimpleX's double ratchet end-to-end encryption with forward secrecy and metadata concealment, noting that at the time of writing only a command-line client was available with mobile apps in development.
 
@@ -1324,7 +1324,7 @@ https://www.linux-magazin.de/news/messenger-simplex-schuetzt-privatsphaere-und-i
 
 freie-messenger.de
 
-Reference
+Article
 
 This German free messenger comparison site provides a comprehensive overview of SimpleX Chat, noting its distinctive lack of user identifiers and end-to-end encryption with data stored only on client devices. The assessment concludes that while SimpleX is an innovative privacy-focused messenger suitable for individuals and activists, it has limitations for business use and lacks interoperability with standard protocols like XMPP.
 
@@ -1434,21 +1434,6 @@ Date: Feb 15, 2026
 
 https://webappsmagazine.blogspot.com/2026/02/simplex-chat-comunicare-online-in.html
 
-## Best Messaging Apps Without Phone Number: Comprehensive Comparison 2026
-
-3arbi4tech
-
-Comparison
-
-This Arabic-language comparison of messaging apps that do not require phone numbers gives SimpleX a maximum 5-star rating alongside Session. It highlights SimpleX's temporary per-conversation links, Double Ratchet encryption, metadata deletion, and rates it at the highest privacy tier among all apps reviewed.
-
-Image: 3arbi4tech-simplex-comparison.jpg
-
-Language: Arabic
-
-Date: Apr 2026
-
-https://www.3arbi4tech.com/2026/04/messaging-apps-without-phone-number.html
 
 ## SimpleX Chat: A Privacy-Optimized Chat App - Why Telegram Users Are Leaving
 
@@ -1492,7 +1477,7 @@ https://netxhack.com/apps/foss/alternatives-to-telegram/
 
 eKoreaNews
 
-News article
+News
 
 This Korean news article reports on users flocking to Telegram alternatives, positioning SimpleX as the first messenger without user IDs. It notes SimpleX's decentralized architecture and mentions its early funding support from Jack Dorsey, while contextualizing the migration trend against Telegram's policy changes allowing authorities access to user data.
 
@@ -1510,7 +1495,7 @@ https://www.ekoreanews.co.kr/news/articleView.html?idxno=75746
 
 New Economy / Gentosha
 
-News article
+News
 
 This Japanese article reports on Vitalik Buterin's donation of 128 ETH each to Session and SimpleX Chat on November 27, 2025. It quotes Buterin saying encrypted messaging is critical for digital privacy, and notes he identified permissionless account creation and metadata privacy as key development priorities, while acknowledging both apps have not yet achieved ideal user experience.
 
@@ -1528,7 +1513,7 @@ https://www.neweconomy.jp/posts/521981
 
 CRYPTO TIMES
 
-News article
+News
 
 This Japanese crypto news outlet reports on Vitalik Buterin's combined 256 ETH donation to Session and SimpleX Chat. It highlights SimpleX's approach of eliminating permanent user identifiers entirely, using QR codes and invitation links instead, with servers functioning as data conduits that maintain no information about who communicates with whom.
 
@@ -1546,7 +1531,7 @@ https://crypto-times.jp/news-ethereum-founder-makes-huge-donation-to-messaging-a
 
 VPN Taizen
 
-Tutorial
+Guide
 
 This Japanese setup guide describes SimpleX as having the highest privacy protection among messaging apps, explaining its encrypted queue system where servers cannot know who communicates with whom. The reviewer provides detailed instructions for profiles, contact management, and Tor integration, but criticizes the interface as "terrible" with confusing design and iOS stability issues.
 
@@ -1690,7 +1675,7 @@ https://ababtools.com/?post=955
 
 Notebookcheck China
 
-News article
+News
 
 This Chinese Notebookcheck article argues SimpleX succeeds where Telegram failed on privacy. It highlights that SimpleX requires no phone numbers, uses incognito mode with auto-generated usernames, employs one-way onion routing, and allows users to set up their own servers. The article notes unlimited group sizes but acknowledges SimpleX currently lacks widespread adoption.
 
@@ -1708,7 +1693,7 @@ https://www.notebookcheck-cn.com/SimpleX-Chat-Telegram.897088.0.html
 
 Notebookcheck Portugal
 
-News article
+News
 
 This Portuguese Notebookcheck article contrasts SimpleX with Telegram, emphasizing that SimpleX does not require phone numbers for registration, uses incognito mode and one-way onion routing, and offers end-to-end plus local device encryption. It positions SimpleX's open-source, decentralized approach against Telegram's conflicts with government agencies.
 
@@ -1864,7 +1849,7 @@ https://www.youtube.com/watch?v=1zMAGzYBgJY
 
 Daniel's Blog
 
-Tutorial
+Guide
 
 This blog post walks through self-hosting a SimpleX SMP server with Traefik and Docker after the author abandoned WhatsApp over privacy concerns. It highlights SimpleX's invite-link-based connections and decentralized relays that do not reveal participant information, while honestly noting the desktop app requires an active smartphone connection and lacks a web interface.
 
@@ -1896,7 +1881,7 @@ https://simplifiedprivacy.com/messengers/
 
 epoberezkin
 
-Livestream
+Conference talk
 
 Image: simplex-new-frontiers-livestream.jpg
 
@@ -1958,7 +1943,7 @@ https://blog.iode.tech/degoogle-your-private-life-4-instant-messaging/
 
 NoBs Bitcoin
 
-News article
+News
 
 This release announcement covers SimpleX Chat v5.2.0, highlighting new message delivery receipts with per-contact opt-out, conversation filtering by favorites and unread status, and group improvements including full context for replied messages. The developers emphasized their commitment to keeping SimpleX protocols open and in the public domain.
 
@@ -1974,7 +1959,7 @@ https://www.nobsbitcoin.com/simplex-chat-v5-2-0/
 
 NoBs Bitcoin
 
-News article
+News
 
 This article announces SimpleX Server availability on StartOS through the Start9 Registry. It explains SimpleX's server architecture where servers act as simple relays that do not store profiles, contacts, or groups, and each conversation typically uses two different servers - one chosen by each participant - with Tor server support built in.
 
@@ -2078,7 +2063,7 @@ https://ddpa.ru/p/simplex-chat
 
 Habr / GlobalSign
 
-Technical article
+Article
 
 This Habr article examines group P2P messaging and SimpleX as the first messenger without user IDs, using temporary anonymous paired message queue identifiers unique to each connection. It details incognito mode, decentralized storage, dual-layer encryption, and Tor compatibility, contrasting SimpleX's approach with all existing messengers that rely on some form of user identification.
 
@@ -2096,7 +2081,7 @@ https://habr.com/ru/companies/globalsign/articles/792986/
 
 Cnews.cz
 
-News article
+News
 
 This Czech tech news article presents SimpleX as safer than Signal or Telegram, highlighting its elimination of permanent user IDs in favor of temporary anonymous message identifiers deleted immediately after sending. It notes the project originated in 2020 and gained attention when Jack Dorsey endorsed it as potentially more secure than Signal or Telegram.
 
@@ -2114,7 +2099,7 @@ https://www.cnews.cz/bezpecnejsi-nez-signal-nebo-telegram-simplex-nabidne-absolu
 
 Kryptoanarchista.cz
 
-Blog review
+Review
 
 This Czech crypto-anarchist publication calls SimpleX a revolution in encrypted communication that surpasses Signal and Threema. It praises the temporary anonymous pairwise identifiers that prevent correlation attacks, and the phone-number-free setup via QR codes, while noting limitations in desktop availability and the need for an alternative channel to initiate contact.
 
@@ -2148,7 +2133,7 @@ https://juraj.bednar.io/blog/2022/04/05/sifrovane-komunikacne-nastroje-prehlad/
 
 Juraj Bednar
 
-Technical guide
+Guide
 
 Juraj Bednar chose SimpleX as his preferred solution for sending encrypted notifications between programs and mobile devices, valuing its lack of account creation requirements and absence of spam. He uses helper functions to send messages and files from scripts, while noting SimpleX still has bugs and does not guarantee delivery if the program finishes before transmission completes.
 
@@ -2164,7 +2149,7 @@ https://juraj.bednar.io/en/blog-en/2024/11/24/encrypted-communication-between-pr
 
 Michal Kodnar
 
-Blog comparison
+Comparison
 
 This comparison characterizes SimpleX as the first identifier-free messenger, using temporary anonymous paired message queues instead of user IDs. The author finds both Session and SimpleX are interesting projects but notes SimpleX remains buggy and incomplete, requiring QR codes for new connections and lacking disappearing messages at the time of writing.
 
@@ -2182,7 +2167,7 @@ https://michalkodnar.xyz/blog-en/culture-en/session-and-simlex-encrypted-messeng
 
 Romica Prihor
 
-Blog guide
+Guide
 
 This Romanian blog post promotes SimpleX as a revolution in secure and decentralized messaging without phone numbers or accounts. It provides installation instructions for Android, iOS, and desktop, and covers group management through invitation links with moderation features, positioning SimpleX as ideal for those prioritizing communication privacy without compromises.
 
@@ -2200,7 +2185,7 @@ https://romicaprihor.blogspot.com/2025/02/simplex-chat-revolutia-mesageriei.html
 
 Kostiantyn Korsun / Censor.net
 
-Expert review
+Review
 
 This Ukrainian blog post reviews SimpleX Chat's advantages and disadvantages, noting it requires no phone number, email, or any user identifier - a feature rare among messengers. The author highlights that SimpleX stores all data locally with no cloud storage, supports one-time profile links, an incognito mode with random display names per contact, and invitation-only group chats, while also being fundamentally different from Signal, WhatsApp, Threema, Wire, and Session which all rely on some form of user ID.
 
@@ -2218,7 +2203,7 @@ https://censor.net/ua/blogs/3525466/novyyi-super-zahyschenyyi-mesendjer-simplex-
 
 KR. Labs Research
 
-Comprehensive guide
+Guide
 
 This Ukrainian guide to secure messaging describes SimpleX as a decentralized P2P messenger where users own their own servers, requiring no phone numbers or usernames for registration. It highlights end-to-end encryption by default with no metadata collection, positioning SimpleX as an advanced privacy solution appealing to activists and journalists.
 
@@ -2236,7 +2221,7 @@ https://research.kr-labs.com.ua/secure-and-privacy-messaging-apps-guide/
 
 Hristo Hristov / Medium
 
-Technical overview
+Article
 
 This Bulgarian Medium article explains SimpleX as a decentralized client-server network that routes messages through disposable nodes while maintaining sender and receiver anonymity. It details the dual end-to-end encryption layers, DNS independence, and the absence of any global user identities, noting that network connections can only be discovered through observation of IP packet timing.
 
@@ -2272,7 +2257,7 @@ https://questona.com/kriptiran-chat/
 
 Bug.hr
 
-App of the Day
+Review
 
 This Croatian tech publication describes SimpleX as a highly secure, decentralized messaging app using Double Ratchet encryption with no user identifiers and local-only data storage. It highlights anonymous profiles, self-destructing messages, voice and video calls, and self-hosting capability, with one commenter noting it is "really top for privacy."
 
@@ -2290,7 +2275,7 @@ https://www.bug.hr/appdana/simplex-komunikacijski-klijent-za-stvarno-sigurnu-i-a
 
 Oppet Moln
 
-Blog article
+Article
 
 This Swedish article introduces SimpleX as an open and secure chat that requires no global identity such as phone number, username, or IP address. It claims superior security compared to Signal, XMPP/Matrix, and other P2P protocols, while acknowledging that users must evaluate the security claims themselves and that usability tradeoffs exist.
 
@@ -2308,7 +2293,7 @@ https://oppetmoln.se/20220512/simplex-chat-en-oppen-och-saker-chatt/
 
 TuDongChat
 
-Blog article
+Article
 
 This Vietnamese article lists SimpleX as the first decentralized, open-source messaging platform that eliminates user identification entirely, requiring no phone number, email, or personal identifier. It positions SimpleX as the highest-security option among Telegram alternatives for Vietnamese users, ideal for journalists, activists, and anyone requiring no digital footprint.
 
@@ -2324,7 +2309,7 @@ https://tudongchat.com/blog/nen-tang-nhan-tin-bao-mat/
 
 Free.com.tw
 
-Blog review
+Review
 
 This Taiwanese article introduces SimpleX as a privacy-focused messaging app launched in 2020 that requires no phone number or email, using decentralized networking instead of a single server. It notes the spam prevention benefit of link-based contact sharing and mentions the desktop version requires smartphone pairing, while flagging the small user base and lack of Traditional Chinese localization.
 
@@ -2340,7 +2325,7 @@ https://free.com.tw/simplex/
 
 FutaGuard
 
-Blog review
+Review
 
 This Chinese comparison of secure messaging platforms gives SimpleX the most favorable assessment, noting it supports message deletion, disappearing messages, channels, and bots. The author calls it "currently the only one with some promise" among privacy-focused alternatives to Telegram, praising its customizable relay servers while noting ongoing cross-device synchronization challenges.
 
@@ -2358,7 +2343,7 @@ https://blog.futa.gg/1/simple-x/
 
 opentech.guru
 
-Technical review
+Review
 
 This Polish article describes SimpleX as a fully open-source, decentralized messenger that eliminates user identifiers entirely, using separate one-way message queues per contact. It highlights double ratchet and post-quantum key exchange encryption, incognito mode, Tor connectivity, and availability across all major platforms including CLI, calling the servers "dumb pipes" with no knowledge of who connects with whom.
 
@@ -2376,7 +2361,7 @@ https://opentech.guru/simplex-chat-prywatnosc-bez-kompromisow/
 
 Programista Dla Pasji
 
-Blog comparison
+Comparison
 
 This Polish article evaluates multiple messengers, praising SimpleX for its decentralization where servers function merely as message relays, requiring no personal data. However, the author ultimately chooses Matrix over SimpleX for daily use due to Matrix's superior multi-device support, while acknowledging SimpleX's elegant simplicity and decentralized design.
 
@@ -2394,7 +2379,7 @@ https://programistadlapasji.pl/simplex-i-matrix-to-najlepsze-komunikatory-kropka
 
 CONEA
 
-Company blog
+Article
 
 Image: conea-simplex-privacy.jpg
 
@@ -2442,7 +2427,7 @@ https://peertube.uno/w/ecD1N1HjNC4SBvmWusnTC2
 
 Security in a Box / Front Line Defenders
 
-Security guide
+Guide
 
 This Turkish-language page from Security in a Box, a digital security guide, lists SimpleX Chat as a free, open-source secure messaging application. It notes SimpleX's decentralized network, lack of phone number requirements, absence of fixed user identifiers, end-to-end encryption by default, disappearing messages, and the Trail of Bits security assessment.
 
@@ -2458,7 +2443,7 @@ https://securityinabox.org/tr/communication/tools/
 
 Paskoocheh / ASL19
 
-Anti-censorship app store
+Recommendation
 
 Paskoocheh, a platform providing circumvention tools for Iranian users, offers SimpleX Chat for Android download. The listing describes SimpleX as a privacy-focused messenger with end-to-end encryption, decentralized architecture, and anonymous communication capabilities, noting it is particularly useful for civil activists, journalists, and anyone requiring confidentiality.
 
@@ -2474,7 +2459,7 @@ https://paskoocheh.com/tools/839/android.html
 
 Plaza.ir
 
-Comparison article
+Comparison
 
 Image: plaza-ir-secure-messaging.jpg
 
@@ -2490,7 +2475,7 @@ https://www.plaza.ir/241420/best-encrypted-messaging-apps
 
 TechFlow
 
-Crypto news
+News
 
 This Chinese crypto newsletter reports on Vitalik Buterin donating 128 ETH each to Session and SimpleX Chat, emphasizing that encrypted communication is crucial for protecting digital privacy. It notes Vitalik identified permissionless account creation and metadata privacy as key priorities, while acknowledging that decentralization, multi-device support, and Sybil/DoS resistance remain significant technical challenges.
 
@@ -2508,7 +2493,7 @@ https://www.techflowpost.com/newsletter/detail_106673.html
 
 BlockBeats
 
-Crypto analysis
+News
 
 This Chinese crypto outlet analyzes Vitalik's 256 ETH donation to Session and SimpleX, explaining SimpleX's radical approach of using one-directional message queues with no global user IDs. It contrasts Session's Web3 token model with SimpleX's rejection of tokenization, and notes the donation was timed one day after the EU's Chat Control proposal threatening end-to-end encryption.
 
@@ -2526,7 +2511,7 @@ https://www.theblockbeats.info/news/60368
 
 Zhihu
 
-Review article
+Review
 
 This Chinese article reviews three anonymous messaging tools - Session, SimpleX Chat, and TWT - from a week-long hands-on test. SimpleX is praised for its zero-metadata design where even the server cannot know who is communicating, with support for text, voice, and groups, but criticized for requiring manual connection-code sharing and a developer-oriented interface that makes onboarding friends difficult.
 
@@ -2558,7 +2543,7 @@ https://www.youtube.com/watch?v=UXH6wUOqnfk
 
 Kaiyuanapp.cn
 
-Open-source directory
+Recommendation
 
 This Chinese open-source app directory describes SimpleX as a decentralized privacy messaging app that operates without any form of user identifiers. It highlights the SimpleX Messaging Protocol with relay servers that only store encrypted messages temporarily, self-hosting capability, disappearing messages, and anonymous group chats, while noting limitations in voice/video calling, occasional messaging delays, and high Android battery consumption.
 
@@ -2576,7 +2561,7 @@ https://kaiyuanapp.cn/simplex-chat-%E6%97%A0%E9%9C%80%E7%94%A8%E6%88%B7%E6%A0%87
 
 Stackuj.cz Podcast
 
-Podcast episode
+Podcast
 
 Image: stackuj-luptak-podcast.jpg
 
@@ -2592,7 +2577,7 @@ https://www.youtube.com/watch?v=N0prtSOyeUU
 
 Tverezo.info
 
-Expert commentary
+Article
 
 This Ukrainian article, written by Kostyantyn Korsun, discusses General Zaluzhny's essay on technology in modern warfare and the Ukrainian military's widespread reliance on Signal for encrypted communications despite formal prohibitions. While focused on Signal's role in military contexts and the US Defense Secretary's controversy over using Signal for classified data, the article addresses the broader topic of encrypted messengers in sensitive operational environments.
 
@@ -2626,7 +2611,7 @@ https://dk.moyens.net/apps/top-mest-sikre-besked-apps-signal-session-simplex/
 
 BHB Community
 
-Tutorial
+Guide
 
 This Chinese tutorial covers SimpleX Chat setup and advanced features including post-quantum encryption, database password creation, server provider selection, security code verification, and group management. It notes SimpleX has no message recall function except for group admins, voice/video calls require VPN access, and file sizes are limited to 1GB.
 
@@ -2644,7 +2629,7 @@ https://boyshelpboys.com/thread-6844.htm
 
 BlockWeeks
 
-Crypto analysis
+News
 
 This Chinese crypto article analyzes Vitalik's donation of 128 ETH each to Session and SimpleX, timed strategically one day after the EU's Chat Control proposal. It contrasts SimpleX's rejection of tokenization with Session's Web3 SESH token model, and notes Session's token surged over 450% following the announcement while SimpleX views speculation as counterproductive to privacy goals.
 
@@ -2662,7 +2647,7 @@ https://blockweeks.com/article/189510
 
 Tencent News
 
-Year-end review
+News
 
 This Chinese article reviewing the top 10 influential figures in the crypto industry for 2025 mentions SimpleX briefly in the context of Vitalik Buterin donating 128 ETH each to Session and SimpleX Chat. It quotes Vitalik emphasizing that digital privacy protection through encrypted messaging is crucial, citing permissionless account creation and metadata privacy as key development directions.
 
@@ -2678,7 +2663,7 @@ https://news.qq.com/rain/a/20251222A01LTC00
 
 Zhousa.com
 
-Tech review
+Review
 
 This Chinese article presents SimpleX as a next-generation secure communication tool with an identity-free design requiring no phone number, email, or username. It explains the single-direction message queue architecture with rotating receiver addresses, and positions the platform for ordinary users, journalists, activists, and anyone valuing privacy.
 
@@ -2696,7 +2681,7 @@ https://www.zhousa.com/archives/60915.html
 
 Golden Finance / KasTop
 
-Crypto analysis
+News
 
 This Chinese article about Web3 encrypted social applications positions SimpleX as an important advancement in decentralized private communication, noting Vitalik's 128 ETH donation. While praising SimpleX's end-to-end encryption and lack of user identifiers, the article argues that comprehensive platforms combining privacy with full Web3 social features represent the next evolutionary stage beyond SimpleX.
 
@@ -2732,7 +2717,7 @@ https://bitcoinlighthouse.de/privacy/simplex-im-test/
 
 Heise Online
 
-News article
+News
 
 Heise, a major German tech publication, reports on SimpleX version 4.0 adding a German language pack. The update also introduced encryption of received and stored messages using SQLCipher, a TypeScript SDK for chatbot integration, and self-hosted WebRTC ICE server support. The article notes the founder was seeking donations for a $20,000 independent security audit.
 
@@ -2750,7 +2735,7 @@ https://www.heise.de/news/Deutsches-Sprachpaket-fuer-den-mobilen-Privatsphaere-N
 
 Tarnkappe.info
 
-Forum post
+Community
 
 This German security forum post announces SimpleX's stable 1.0.0 release, describing its two-layer end-to-end encryption with double-ratchet algorithm and unidirectional simplex queues with unique encryption keys per queue. It emphasizes that establishing secure channels requires exchanging encryption keys through QR codes or invitations, and notes the terminal client's availability plus a DigitalOcean one-click server deployment option.
 
@@ -2766,7 +2751,7 @@ https://tarnkappe.info/forum/t/simplex-1-0-0-dezentraler-privatsphaere-achtender
 
 GNU/Linux.ch
 
-Overview
+Article
 
 This GNU/Linux-focused Swiss German article explains SimpleX's architecture as a decentralized network using one-way nodes for asynchronous message forwarding, avoiding any form of identity for message routing. It details two layers of end-to-end encryption with forward secrecy, and notes that servers do not retain user records, do not communicate with each other, and have no way to obtain a complete list of participating servers.
 
@@ -2782,7 +2767,7 @@ https://gnulinux.ch/simplex-chat
 
 AdminForge
 
-Service announcement
+Service
 
 AdminForge, a German community infrastructure provider, announces hosting a new SimpleX Chat server at simplex.adminforge.de. It describes SimpleX's Double-Ratchet encryption, multiple profile support, anonymous group participation, and explains that SMP servers function only as relays holding messages until recipients reconnect while XFTP file transfer servers retain uploads temporarily.
 
@@ -2818,7 +2803,7 @@ https://www.privacy-handbuch.de/handbuch_89.htm
 
 Xakep.ru
 
-Comparative review
+Review
 
 This Russian security magazine calls SimpleX "the most interesting messenger in this selection, and also the most mysterious." The article highlights its anonymous registration requiring no phone number, federated architecture allowing user-hosted relay servers, and modern functionality including audio/video calls and disappearing messages.
 
@@ -2836,7 +2821,7 @@ https://xakep.ru/2024/08/27/5-private-messengers/
 
 SecurityLab.ru
 
-Analytical guide
+Guide
 
 This Russian security analysis categorizes SimpleX Chat as a decentralized and anonymous messenger prioritizing minimalism and maximum security. It notes SimpleX provides a high level of anonymity and eliminates metadata exposure, but acknowledges its restricted functionality and relatively low user awareness.
 
@@ -2854,7 +2839,7 @@ https://www.securitylab.ru/analytics/551634.php
 
 SecurityLab.ru
 
-Analytical guide
+Guide
 
 This Russian guide to decentralized chat alternatives describes SimpleX as using temporary anonymous message queue identifiers instead of traditional accounts, with no phone numbers or emails required. It notes the unfamiliar interaction model may confuse newcomers and potential delivery delays exist, but ranks SimpleX highly for anonymity and metadata protection.
 
@@ -2872,7 +2857,7 @@ https://www.securitylab.ru/analytics/562397.php
 
 Habr / GlobalSign
 
-Classification article
+News
 
 This Habr article classifies SimpleX Chat as an experimental, "extremely privacy-focused" messenger for enthusiasts, describing it as the first messenger without user IDs of any kind. It identifies SimpleX as one of only two messengers (alongside Briar) that meets all security criteria on the author's evaluation scale.
 
@@ -2890,7 +2875,7 @@ https://habr.com/ru/companies/globalsign/articles/719330/
 
 hi-tech.mail.ru
 
-Comparative review
+Review
 
 This Russian tech review highlights SimpleX's complete anonymity through having no telephone numbers or identifiers, and describes its support for audio/video calls, file transfer, disappearing messages, and personal relay servers. It notes all information is stored exclusively on user devices, with messages only temporarily held on relay servers during delivery.
 
@@ -2956,7 +2941,7 @@ https://rutube.ru/video/b3dcb8869291d7de55596392c05aa24c/
 
 Francisco Barral
 
-Blog article
+Article
 
 This Spanish article explains that SimpleX Chat uses no user identifiers and instead generates unique, temporary addresses for each connection. It describes the app's use of end-to-end encryption via the Signal Protocol, peer-to-peer connections where possible, and privacy features including disappearing messages, multiple chat profiles, and incognito mode.
 
@@ -3028,7 +3013,7 @@ https://esgeeks.com/mensajeros-descentralizados-mas-seguros/
 
 Computekni
 
-Blog review
+Review
 
 This Spanish article describes SimpleX Chat as the first messaging platform without user identifiers of any kind, using end-to-end encryption and QR codes for private connections. It highlights the app's availability on iOS, Android, and F-Droid, and notes its open-source codebase allows public inspection and quick resolution of security issues.
 
@@ -3046,7 +3031,7 @@ https://www.computekni.com/2023/05/simplex-chat-la-app-de-mensajeria.html
 
 WWWhatsnew
 
-News article
+News
 
 This Spanish tech news site explains that SimpleX Chat delivers messages without using sender or recipient identifiers, relying on the SimpleX Messaging Protocol (SMP) with persistent queues. It describes how users generate unique invitation codes for each contact, with messages stored directly on devices rather than centralized servers.
 
@@ -3080,7 +3065,7 @@ https://www.criptonoticias.com/tecnologia/alternativas-telegram-privacidad-mensa
 
 Bitcoin.ar
 
-Tutorial
+Guide
 
 This tutorial from ONG Bitcoin Argentina presents SimpleX as "the first mailbox without user identification," launched in 2021. It notes that while SimpleX includes standard messaging features, its ergonomics remain less fluid than WhatsApp or Signal and can be more restrictive when adding contacts, positioning it as suitable for privacy-conscious users willing to sacrifice daily convenience.
 
@@ -3098,7 +3083,7 @@ https://bitcoin.ar/tutoriales/simplex-chat/
 
 Noticias de Navarra
 
-News article
+News
 
 This Spanish news article reports that criminologist Maria Aperador highlights SimpleX as the most secure messaging application, citing its lack of user identifiers (not even random ones), end-to-end encryption, and impossibility of data tracking. She emphasizes that SimpleX contains no metadata and the app doesn't know who you are or where messages originate.
 
@@ -3116,7 +3101,7 @@ https://www.noticiasdenavarra.com/ciencia-y-tecnologia/2024/11/25/estas-son-apli
 
 Alex Emidio / Substack
 
-Tutorial
+Guide
 
 This Portuguese step-by-step guide covers SimpleX Chat's backup and data recovery features, including database encryption with user-created passwords and export of encrypted backups. It emphasizes the local-first approach where contacts and messages are stored on the user's device, and warns that the database password cannot be changed if lost.
 
@@ -3134,7 +3119,7 @@ https://alexemidio.substack.com/p/passo-a-passo-do-aplicativo-simplexchat
 
 LiveCoins
 
-Crypto news
+News
 
 This Brazilian article reports that Vitalik Buterin donated 128 ETH (approximately R$2.1 million) to SimpleX Chat as part of a larger donation to privacy-focused messengers. It notes Buterin acknowledged SimpleX still needs to address challenges including multi-device support and defense against Sybil/DoS attacks without requiring phone numbers.
 
@@ -3186,7 +3171,7 @@ https://soberano.news/guias-e-ferramentas/simplex-como-usar-o-app-de-mensagens-m
 
 Edivaldo Brito
 
-Tutorial
+Guide
 
 This Portuguese tutorial explains how to install SimpleX Chat on Linux via Flatpak, describing it as a private, open-source encrypted messenger with no user IDs. It lists SimpleX's features including end-to-end encrypted messages, files, images, audio/video calls, secret group chats, instant private notifications, and portable chat profiles, while emphasizing that SimpleX uses no phone numbers or other user identifiers and stores all data on client devices.
 
@@ -3220,7 +3205,7 @@ https://www.jacopococcia.com/10-migliori-app-messaggistica-per-chat-sicure-anoni
 
 No Trust Verify
 
-Explainer
+Article
 
 This article from the NoTrustVerify blog describes SimpleX as the first messaging platform that doesn't require any login, using the SimpleX Messaging Protocol (SMP) with one-way message queues. It highlights features like incognito mode with random names per contact and live message typing visibility, while acknowledging that multi-device synchronization and large group management still need improvement.
 
@@ -3268,7 +3253,7 @@ https://factually.co/product-reviews/electronics-tech/safe-private-messaging-app
 
 Tileris
 
-Video comparison
+Comparison
 
 Image: youtube-best-secure-2025.jpg
 
@@ -3326,7 +3311,7 @@ https://www.youtube.com/watch?v=cGGrRnXAh1w
 
 ひとりかくれんぼ / note.com
 
-Tutorial
+Guide
 
 This Japanese article covers SimpleX Chat's settings and usage, including configuration of global chat settings for complete message deletion, disabling link previews, activating SimpleX Lock with a passcode, and enabling self-destruct mode. The author recommends using a VPN alongside SimpleX for genuine anonymity and stresses that message deletion requires mutual consent between users.
 
@@ -3358,7 +3343,7 @@ https://dept.one/memo/simplex-chat/
 
 Kusaimara
 
-Blog article
+Article
 
 This Japanese blog post announces that SimpleX Chat added Japanese language support in version 5.1 released in late May 2023. It notes SimpleX doesn't assign unique user IDs and supports Tor network communication, while acknowledging that account portability requires database passphrase export rather than simple login across devices.
 
@@ -3374,7 +3359,7 @@ https://kusaimara.net/2023/06/444
 
 Coinspeaker
 
-Crypto news
+News
 
 This Japanese crypto news article reports that Vitalik Buterin donated 128 ETH to SimpleX Chat as part of a privacy-focused initiative. It describes SimpleX's one-way message queue design that eliminates global identifiers and enables account creation without linking personal information like phone numbers.
 
@@ -3390,7 +3375,7 @@ https://www.coinspeaker.com/jp/vitalik-buterin-donates-eth-privacy-apps/
 
 Yahoo Japan News
 
-News article
+News
 
 Image: yahoo-japan-vitalik-simplex.jpg
 
@@ -3422,7 +3407,7 @@ https://juraj.bednar.io/en/blog-en/2022/05/03/encrypted-messengers-comparison/
 
 IQ.wiki
 
-Encyclopedia entry
+Recommendation
 
 This IQ.wiki page provides a comprehensive overview of SimpleX Chat, covering its custom protocols (SimpleXMQ and SMP), end-to-end encryption with the Signal Double Ratchet algorithm, and post-quantum resistant encryption via CRYSTALS-Kyber. It notes key milestones including the v1 mobile release in 2022, Jack Dorsey's investment in August 2024, and planned Community Vouchers utility token system for 2026.
 
@@ -3474,7 +3459,7 @@ https://institute-for-libertarian.org/the-libertarian/2148/
 
 Gizli Kalsin / Medium
 
-Blog post
+Article
 
 This Turkish Medium article lists SimpleX Chat as one of six recommended secure messaging applications, describing it as a decentralized instant messaging app that operates without phone numbers or user IDs. It notes users join conversations by scanning QR codes or clicking invite links, and the application provides complete anonymity.
 
@@ -3492,7 +3477,7 @@ https://medium.com/@gizlikalsin/mesajla%C5%9Fma-uygulamalar%C4%B1-74dc81d78737
 
 BlockTop
 
-Crypto analysis
+News
 
 This Chinese article positions SimpleX alongside Session as representing truly decentralized privacy communication in the Web3 ecosystem. It highlights Vitalik Buterin's donation of 128 ETH to SimpleX and describes the platform's elimination of phone numbers, emails, or usernames in favor of the SimpleX Messaging Protocol, calling it potential "killer-level infrastructure" for the crypto industry.
 
@@ -3504,19 +3489,6 @@ Date: Dec 17, 2025
 
 https://blocktop.cn/newsContent/1/176524
 
-## Technical Review of SimpleX App
-
-Afaq Electronic Foundation
-
-Technical review
-
-Image: alfustat-simplex-arabic-review.jpg
-
-Language: Arabic
-
-Date: 2024 (estimated)
-
-https://alfustat.click/18226/
 
 ## Better and More Secure Messenger Than Signal
 
@@ -3524,7 +3496,7 @@ https://alfustat.click/18226/
 
 Selfhosty.pl
 
-Blog comparison
+Comparison
 
 This Polish article argues there are more secure messengers than Signal, noting that Signal's requirement for a phone number is a serious privacy weakness since phone numbers and IP addresses can be used to track users. The article recommends exploring alternatives that do not require a phone number for registration, positioning them as safer choices for users concerned about government surveillance and data breaches.
 
@@ -3542,7 +3514,7 @@ https://selfhosty.pl/lepszy-i-bezpieczniejszy-komunikator-niz-signal/
 
 Colectivo 406
 
-Security guide
+Guide
 
 This Spanish security guide describes SimpleX Chat as using unidirectional message queues with end-to-end encryption including post-quantum algorithms, where servers act only as message bridges with minimal knowledge. It notes SimpleX is fully self-hostable unlike Signal, but acknowledges the complex changing queue addresses make maintaining long-term contacts more difficult.
 
@@ -3560,7 +3532,7 @@ https://406.neocities.org/a/apps_mensajeria/
 
 ひとりかくれんぼ / note.com
 
-Recommendation list
+Recommendation
 
 This Japanese article strongly recommends SimpleX Chat as the top choice for anonymous secure communication, emphasizing that it requires no phone number or email and doesn't use user identifiers or collect metadata. The author notes that user experience is mostly acceptable with only minor delays in call connections, and observes that SimpleX adoption remains relatively low in Japan.
 
@@ -3594,7 +3566,7 @@ https://note.com/deeplife/n/nea6f1c4e08a7
 
 Hacking Articles
 
-Tutorial
+Guide
 
 This security-focused article describes SimpleX Chat as a privacy-focused messaging network that keeps profile and contact information hidden from its servers, using proprietary protocols designed with privacy as a core principle. It recommends SimpleX for lightweight, decentralized communication and anonymous use without central servers, while noting it may lack some advanced features compared to more established platforms.
 
@@ -3610,7 +3582,7 @@ https://www.hackingarticles.in/privacy-protection-instant-messaging/
 
 Yggdrasil Wiki
 
-Technical guide
+Guide
 
 This Russian wiki page describes SimpleX as the only messenger that uses no user profile identifiers, not even random numbers, with fully open-source client and server code that anyone can self-host. It explains that SimpleX delivers messages using per-contact message queue identifiers rather than user IDs, with plans to automate queue rotation so that even conversations will have no long-term network-visible identifiers.
 
@@ -3710,7 +3682,7 @@ https://appvisor.ru/post/news/kakie-messendzhery-rabotayut-v-rossii-a-kakie-zabl
 
 Bala Extra
 
-Podcast episode
+Podcast
 
 Image: bala-extra-simplex-podcast.jpg
 
@@ -3724,7 +3696,7 @@ https://www.listennotes.com/podcasts/bala-extra/simplex-mensajer%C3%ADa-z3pHYeVJ
 
 Closed Network Privacy Podcast
 
-Podcast episode
+Podcast
 
 Image: closed-network-protocols.jpg
 
@@ -3800,7 +3772,7 @@ https://github.com/TempleOfSats/Robosats-Orderbook-Alert-Bot-for-SimpleX-Chat
 
 Freedom Lab NYC
 
-Tutorial
+Guide
 
 FreedomLab provides a tutorial for self-hosting a SimpleX SMP (Simple Messaging Protocol) server on a Debian/Ubuntu VPS with Tor support. The guide covers installation steps for running your own private, decentralized messaging relay server as part of the SimpleX network.
 
@@ -3832,7 +3804,7 @@ https://wiki.lunardao.net/simplexchat.html
 
 Monerica
 
-Directory
+Recommendation
 
 This Monerica directory page lists several Monero-focused SimpleX Chat communities spanning multiple languages and regions, including groups for Monero discussion in Slovenian, German, Italian, and Hebrew. It includes an automated bot that sends hourly Monero price updates via SimpleX.
 
@@ -3848,7 +3820,7 @@ https://monerica.com/communities/simplex
 
 SplinterCon
 
-Project listing
+Recommendation
 
 The SplinterCon anti-censorship project page describes SimpleX as a decentralized messenger that operates without user IDs, using end-to-end encryption for messages and file transfers. It highlights that SimpleX can run on the Tor network and allows users to deploy their own servers, with messages routed through servers that can operate without persistence.
 
@@ -3864,7 +3836,7 @@ https://splintercon.net/project/simplex-chat/
 
 AnarSec
 
-Security guide
+Guide
 
 This anarchist security guide notes SimpleX Chat uses decentralized servers (not peer-to-peer) with in-memory storage and no phone number requirement. It recommends Cwtch over SimpleX for text-only communication but suggests SimpleX as an acceptable option for voice and video calls, noting that content padding exists to frustrate correlation attacks via message size.
 
@@ -3896,7 +3868,7 @@ https://beginnerprivacy.com/about/join-simplex-group/
 
 Sofwul
 
-Business adoption
+Service
 
 This Czech e-commerce site lists SimpleX as one of several encrypted messaging contact options for reaching their customer support, alongside Threema, Session, Jami, and Teleguard.
 
@@ -4038,7 +4010,7 @@ https://bitcointalk.org/index.php?topic=5535681.0
 
 nemental.de
 
-Tutorial
+Guide
 
 This guide explains how to host a SimpleX SMP server as a Tor hidden service using Docker containers, making the relay accessible only through .onion addresses. It notes that while SimpleX already has strong privacy by design, adding Tor hides the server's public IP and eliminates DNS exposure, pulling the relay further out of reach of traditional tracking.
 
@@ -4054,7 +4026,7 @@ https://nemental.de/simplex-without-tears-wrapped-in-onion-served-via-tor/
 
 Hack Liberty
 
-Tutorial
+Guide
 
 This Hack Liberty forum guide provides detailed instructions for deploying SimpleX Chat's SMP and XFTP servers using Docker Compose, with dual-network configuration for both clearnet and Tor operation. It covers port configuration, security measures including running containers as unprivileged users, and emphasizes backing up private CA keys before deletion from the server.
 
@@ -4088,7 +4060,7 @@ https://slcw.github.io/SimpleX-Themes/
 
 HUP.hu
 
-Forum discussion
+Community
 
 This Hungarian article shares a user's year-long experience with SimpleX Chat, praising that it requires no email, phone number, username, or password to register. The author describes the SimpleX address system, the Directory Bot for finding public groups, and notes the tradeoff that deleting the app without a database backup means permanently losing your profile and all contacts, while also referencing the Wired article about neo-Nazis on SimpleX and the SimpleX developer's response defending privacy.
 
@@ -4106,7 +4078,7 @@ https://hup.hu/node/186622
 
 V2EX
 
-Forum discussion
+Community
 
 This Chinese V2EX forum post recommends SimpleX as having the highest encryption strength among reviewed E2EE messaging apps, highlighting that unlike Session's fixed IDs, SimpleX eliminates even fixed identifiers entirely. It notes SimpleX uses temporary anonymous pairing identifiers, creates independent fingerprints per conversation, supports Tor integration, and can be self-hosted.
 
@@ -4124,7 +4096,7 @@ https://www.v2ex.com/t/1067954
 
 Matters.town
 
-Blog post
+Article
 
 This Chinese article recommends several end-to-end encrypted open-source chat apps that are far more secure than Telegram, written in the context of the Telegram founder's detention in France. It explains end-to-end encryption and mentions Session and SimpleX among the recommended alternatives that protect message content from being readable even by the relay servers.
 
@@ -4165,3 +4137,54 @@ Language: English
 Date: 2024 (estimated)
 
 https://hackforums.net/blog/SimpleX-VS-Quiet
+
+
+## SimpleX Chat: 1st Messaging Platform Bridging Between Privacy and Mass-Market Apps
+
+Monero Community Workgroup
+
+Conference talk
+
+MoneroKon 2025 conference talk by Evgeny Poberezkin on how SimpleX Chat bridges the gap between privacy-focused and mass-market messaging applications.
+
+Image: monerokon-2025-simplex.jpg
+
+Language: English
+
+Date: 2025
+
+https://www.youtube.com/watch?v=Fl-QS0-qENw
+
+
+## SimpleXChat on Monero + Price and More!
+
+Monero Talk
+
+Interview
+
+Monero Talk episode 239 featuring a discussion of SimpleX Chat's integration with Monero, payment incentives for server operators, and the broader privacy messaging landscape.
+
+Image: monero-talk-ep239-simplex.jpg
+
+Language: English
+
+Date: 2024 (estimated)
+
+https://www.youtube.com/live/quk4WY3fJCc?si=IQ0rutoHQpWtF2Un&t=3812
+
+
+## MoneroTopia 2026: SimpleX Chat Presentation
+
+Monero Talk
+
+Conference talk
+
+SimpleX Chat presentation at MoneroTopia 2026 conference in Mexico City, covering the latest developments in the SimpleX network and its alignment with the Monero privacy ecosystem.
+
+Image: monerotopia-2026-simplex.jpg
+
+Language: English
+
+Date: Feb 15, 2026
+
+https://www.youtube.com/live/Alp-hVCoF7c?si=FqOTt1mCeQJVo-cM&t=16688
