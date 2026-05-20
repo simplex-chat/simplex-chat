@@ -1058,6 +1058,10 @@ video {
   min-height: 131px;
 }
 
+.min-h-\[160px\] {
+  min-height: 160px;
+}
+
 .min-h-\[200px\] {
   min-height: 200px;
 }
@@ -1108,6 +1112,10 @@ video {
 
 .w-full {
   width: 100%;
+}
+
+.min-w-0 {
+  min-width: 0px;
 }
 
 .min-w-\[152px\] {
@@ -1580,6 +1588,11 @@ video {
 
 .fill-primary-light {
   fill: #0053D0;
+}
+
+.object-cover {
+  -o-object-fit: cover;
+     object-fit: cover;
 }
 
 .p-1 {
