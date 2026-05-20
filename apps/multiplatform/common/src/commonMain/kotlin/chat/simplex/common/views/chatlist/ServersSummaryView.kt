@@ -330,7 +330,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
       horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)
     ) {
       Text(
-        generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(),
+        generalGetString(MR.strings.servers_info_subscriptions_section_header),
         color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         fontSize = 12.sp
@@ -360,7 +360,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
       horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)
     ) {
       Text(
-        generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(),
+        generalGetString(MR.strings.servers_info_subscriptions_section_header),
         color = MaterialTheme.colors.secondary,
         style = MaterialTheme.typography.body2,
         fontSize = 12.sp
@@ -848,7 +848,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     SMPServersListView(
                       servers = currentlyUsedSMPServers,
                       statsStartedAt = statsStartedAt,
-                      header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                      header = generalGetString(MR.strings.servers_info_connected_servers_section_header),
                       rh = rh
                     )
                     SectionSpacer()
@@ -858,7 +858,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     SMPServersListView(
                       servers = previouslyUsedSMPServers,
                       statsStartedAt = statsStartedAt,
-                      header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                      header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header),
                       rh = rh
                     )
                     SectionSpacer()
@@ -868,7 +868,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     SMPServersListView(
                       servers = proxySMPServers,
                       statsStartedAt = statsStartedAt,
-                      header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
+                      header = generalGetString(MR.strings.servers_info_proxied_servers_section_header),
                       footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
                       rh = rh
                     )
@@ -895,7 +895,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     XFTPServersListView(
                       currentlyUsedXFTPServers,
                       statsStartedAt,
-                      generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                      generalGetString(MR.strings.servers_info_connected_servers_section_header),
                       rh
                     )
                     SectionSpacer()
@@ -905,7 +905,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                     XFTPServersListView(
                       previouslyUsedXFTPServers,
                       statsStartedAt,
-                      generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                      generalGetString(MR.strings.servers_info_previously_connected_servers_section_header),
                       rh
                     )
                     SectionSpacer()
