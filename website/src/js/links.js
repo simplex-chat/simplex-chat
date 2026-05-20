@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var currentPage = 1
 
   var langSelect = document.getElementById("filter-language")
-  var pills = Array.from(document.querySelectorAll("#pill-filters .filter-chip"))
+  var pills = Array.from(document.querySelectorAll("#links-filters .filter-chip"))
   var pagination = document.getElementById("links-pagination")
 
   var activeFilter = ""     // "" | "media" | "cat"
