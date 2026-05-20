@@ -3734,9 +3734,9 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         else do
                           let (encoderErrs, validLabeled) =
                                 partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew vr gInfo s | (s, _) <- senders]
-                              (extBody', inBody, overflowLabeled, largeWithBody) = batchProfilesWithBody maxEncodedMsgLength body validLabeled
-                              (overflowBatches', largeBatches) = batchProfiles maxEncodedMsgLength overflowLabeled
-                              packerErrs = [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | s <- largeWithBody <> largeBatches]
+                              (extBody', inBody, overflowLabeled, large1) = batchProfilesWithBody maxEncodedMsgLength body validLabeled
+                              (overflowBatches', large2) = batchProfiles maxEncodedMsgLength overflowLabeled
+                              packerErrs = [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | s <- large1 <> large2]
                               allErrs = encoderErrs <> packerErrs
                           unless (null allErrs) $ do
                             logInfo $ "delivery job " <> tshow jobId <> ": dropping " <> tshow (length allErrs) <> " oversized profile element(s)"
