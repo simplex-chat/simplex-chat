@@ -3745,8 +3745,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         unless (null mems) $ do
                           let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senders]
                               missing r s = case M.lookup (groupMemberId' s) senderVec of
-                                Just vec -> getRelation (indexInGroup r) vec /= MRIntroduced
-                                Nothing -> False
+                                Just vec -> getRelation (indexInGroup r) vec == MRNew
+                                Nothing -> True
                               -- Per recipient: overflow batches they're missing senders from,
                               -- then either extBody (missing an in-body sender) or plain body.
                               recipientPieces r =
