@@ -1,6 +1,6 @@
 # Full delete on member removal under fullDelete preference
 
-Plan for the next attempt at the change previously tried in PR #6831 (closed as too messy: the member row was deleted twice on one path, and the user's own membership row was deleted when the user was the one removed). The change is small: two SQL-function edits, one new chat-layer helper, and an explicit fullDelete branch plus order swap in two handlers.
+Plan for the next attempt at the change previously tried in PR #6831 (closed as too messy: the member row was deleted twice on one path, and the user's own membership row was deleted when the user was the one removed). The change is small: two SQL-function edits, one new chat-layer helper, an explicit fullDelete branch plus order swap in two backend handlers, and one in-memory removal branch in `removeMemberItems` on each UI platform.
 
 ## Problem
 
@@ -52,6 +52,12 @@ delMember db m = do
 
 `deletePendingMember` flows through `deleteMemsSend` and inherits the new behavior. The outer line 2864 call (`when withMessages $ deleteMessages user gInfo' deleted`) collapses — items are already handled inside `deleteMemsSend` for current and pending members, and invited members (handled by `deleteInvitedMems`) have no chat items. Remove it.
 
+**Edit 6 — extend `removeMemberItems` on both UI platforms to physically remove items from the in-memory list when `fullDelete.on`.** Today (iOS `apps/ios/Shared/Model/ChatModel.swift:814-846`, Kotlin `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt:699-734`) the function walks the in-memory items, identifies matches by direction and member id, and sets `itemDeleted = .moderated(...)`; under `fullDelete.on` it additionally rewrites content to `Snd/RcvModerated`. Items are never removed from `im.reversedChatItems` / `chatItems.value`. After the backend change, the chat_item rows are physically gone in DB while the UI keeps stale moderated placeholders until the next refetch — flicker. Extend the existing `fullDelete.on` branch so it also removes matching items from the in-memory list (iOS: drop them from `im.reversedChatItems`, decrement unread counters, stop voice playback on dropped items; Kotlin: `removeAllAndNotify { isMemberItem(it) }` equivalent, decrement counters, stop audio). The fullDelete-off branch is unchanged (still marks moderated in place).
+
+The three callers — iOS `removeMember` in `GroupChatInfoView.swift:977`, Kotlin `removeMembers` in `GroupChatInfoView.kt:1316`, Kotlin `removeMember` in `GroupMemberInfoView.kt:339`, and the event handlers for `.deletedMember`/`.deletedMemberUser` in `SimpleXAPI.swift:2578-2596` and `SimpleXAPI.kt:2945-2973` — all converge on the same `removeMemberItems` function on each platform and inherit the new behavior automatically. The chat-list preview path inside `removeMemberItems` (the `else` branch that updates `chat.chatItems[0]`) also needs to drop the preview item under fullDelete so the chat list doesn't show a stale moderated last-message.
+
+The `fullDelete.on` gate matches the backend's `groupFeatureMemberAllowed SGFFullDelete` / `groupFeatureUserAllowed SGFFullDelete` because FullDelete is a `GroupFeatureNoRoleI` feature — the role check collapses to the `.on` check.
+
 ## Anti-patterns from PR #6831 to avoid
 
 No path may call `deleteGroupMember` twice. No path under Case A may delete the `membership` row — that row must survive. File info must be collected before any chat-item deletion, since `getGroupMemberFileInfo` reads `chat_items`. Do not rely on `ON DELETE SET NULL` to clean up the deleted member's authored items — they are deleted explicitly first. `fullyDeleteMemberRecord` is the only function that should call `deleteGroupMember` directly on the new path; do not duplicate that call in the handler.
@@ -59,6 +65,8 @@ No path may call `deleteGroupMember` twice. No path under Case A may delete the 
 ## Tests
 
 Add cases in `tests/ChatTests/Groups.hs` for: Case A (user removed by admin, fullDelete on — user's sent items and their files gone, `membership` row exists with `GSMemRemoved`, group still loadable); Case B (member removed by admin, fullDelete on — member's items and files gone, `group_members` row gone, system event items previously referencing the removed member now have NULL `item_deleted_by_group_member_id` and still display correctly); regression for fullDelete=off (items become `CIModerated` placeholders via `markMemberCIsDeleted`); regression for `withMessages = False` (items untouched, row handled by existing path); regression that message moderation under fullDelete=on still produces `CIModerated` placeholders, confirming the moderation path is unchanged. Verify the same Case A and Case B behaviors over both XGrpMemDel (recipient side, Subscriber.hs) and APIRemoveMembers (moderator side, Commands.hs).
+
+UI checks for the manual smoke test: in a group with fullDelete on, remove a member with messages — that member's bubbles disappear immediately from the open chat view on both moderator's and recipients' devices, the chat list preview updates to the previous non-deleted message, and the unread/report counters decrement; with fullDelete off, the same removal produces moderated placeholders as today. Verify on iOS, Android, and Desktop.
 
 ## Open items for review
 
