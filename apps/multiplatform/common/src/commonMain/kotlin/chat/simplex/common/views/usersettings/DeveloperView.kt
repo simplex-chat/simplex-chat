@@ -32,11 +32,11 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
       ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.start.showModalCloseable { TerminalView(false) } } }
       ResetHintsItem(unchangedHints)
       SettingsPreferenceItem(painterResource(MR.images.ic_code), stringResource(MR.strings.show_developer_options), developerTools)
-      SectionTextFooter(
-        generalGetString(if (devTools.value) MR.strings.show_dev_options else MR.strings.hide_dev_options) + " " +
-            generalGetString(MR.strings.developer_options)
-      )
     }
+    SectionTextFooter(
+      generalGetString(if (devTools.value) MR.strings.show_dev_options else MR.strings.hide_dev_options) + " " +
+          generalGetString(MR.strings.developer_options)
+    )
     if (devTools.value) {
       SectionSpacer()
       SectionView(stringResource(MR.strings.developer_options_section), card = true) {

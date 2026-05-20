@@ -698,8 +698,8 @@ fun ModalData.GroupChatInfoLayout(
           }
         }
         ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
-        SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
       }
+      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
       SectionSpacer()
 
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {

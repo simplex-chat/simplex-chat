@@ -613,8 +613,8 @@ fun ChatInfoLayout(
 
     SectionView(card = true) {
       ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
-      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
     }
+    SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
     SectionSpacer()
 
     val conn = contact.activeConn
@@ -630,8 +630,8 @@ fun ChatInfoLayout(
         SimpleXLinkQRCode(contact.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       SectionSpacer()
     }
 
