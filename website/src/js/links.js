@@ -7,21 +7,15 @@ document.addEventListener("DOMContentLoaded", function () {
   var langSelect = document.getElementById("filter-language")
   var pills = Array.from(document.querySelectorAll("#pill-filters .filter-chip"))
   var pagination = document.getElementById("links-pagination")
-  var countEl = document.getElementById("links-count")
 
-  var activePill = ""
+  var activeFilter = ""     // "" | "media" | "cat"
+  var activeValue = ""      // "video" | "audio" | "review" | etc.
 
-  var MEDIA_PILLS = { "Video": "video", "Audio": "audio" }
-
-  function matchesPillFn(pill) {
-    if (!pill) return function () { return true }
-    var media = MEDIA_PILLS[pill]
-    if (media) return function (el) { return el.getAttribute("data-media") === media }
-    return function (el) { return el.getAttribute("data-pill") === pill }
-  }
-
-  function matchesPill(el) {
-    return matchesPillFn(activePill)(el)
+  function matchesActivePill(el) {
+    if (!activeFilter) return true
+    if (activeFilter === "media") return el.getAttribute("data-media") === activeValue
+    if (activeFilter === "cat") return el.getAttribute("data-category") === activeValue
+    return true
   }
 
   function matchesLang(el) {
@@ -31,42 +25,41 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function getFiltered() {
     return allItems.filter(function (el) {
-      return matchesPill(el) && matchesLang(el)
+      return matchesActivePill(el) && matchesLang(el)
     })
   }
 
-  // Cross-filter: update language options based on active pill
   function updateLanguageOptions() {
     var available = {}
     allItems.forEach(function (el) {
-      if (matchesPill(el)) {
+      if (matchesActivePill(el)) {
         var lang = el.getAttribute("data-lang")
         if (lang) available[lang] = true
       }
     })
     var options = langSelect.options
     for (var i = 1; i < options.length; i++) {
-      var hasItems = available[options[i].value]
-      options[i].disabled = !hasItems
-      options[i].style.display = hasItems ? "" : "none"
+      var has = !!available[options[i].value]
+      options[i].disabled = !has
+      options[i].style.display = has ? "" : "none"
     }
-    if (langSelect.value && !available[langSelect.value]) {
-      langSelect.value = ""
-    }
+    if (langSelect.value && !available[langSelect.value]) langSelect.value = ""
   }
 
-  // Cross-filter: update pill availability based on active language
   function updatePillAvailability() {
     pills.forEach(function (pill) {
-      var pillValue = pill.getAttribute("data-pill")
-      if (!pillValue) return
-      var matcher = matchesPillFn(pillValue)
-      var hasItems = allItems.some(function (el) {
-        return matcher(el) && matchesLang(el)
+      var filter = pill.getAttribute("data-filter")
+      if (filter === null || filter === "") return
+      var value = pill.getAttribute("data-value")
+      var has = allItems.some(function (el) {
+        if (!matchesLang(el)) return false
+        if (filter === "media") return el.getAttribute("data-media") === value
+        if (filter === "cat") return el.getAttribute("data-category") === value
+        return false
       })
-      pill.disabled = !hasItems
-      pill.style.opacity = hasItems ? "" : "0.3"
-      pill.style.pointerEvents = hasItems ? "" : "none"
+      pill.disabled = !has
+      pill.style.opacity = has ? "" : "0.3"
+      pill.style.pointerEvents = has ? "" : "none"
     })
   }
 
@@ -89,10 +82,6 @@ document.addEventListener("DOMContentLoaded", function () {
     for (var i = 0; i < filteredItems.length; i++) {
       filteredItems[i].style.display = (i >= start && i < end) ? "" : "none"
     }
-
-    countEl.textContent = filteredItems.length + " links" +
-      (filteredItems.length !== allItems.length ? " (filtered from " + allItems.length + ")" : "")
-
     renderPagination(totalPages)
   }
 
@@ -119,9 +108,7 @@ document.addEventListener("DOMContentLoaded", function () {
         btn.textContent = String(pages[i])
         if (pages[i] === currentPage) btn.className = "active"
         if (Math.abs(pages[i] - currentPage) === 1) btn.classList.add("neighbor")
-        ;(function (p) {
-          btn.addEventListener("click", function () { goToPage(p) })
-        })(pages[i])
+        ;(function (p) { btn.addEventListener("click", function () { goToPage(p) }) })(pages[i])
         pagination.appendChild(btn)
       }
     }
@@ -149,15 +136,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     var pages = [1]
     if (current > 3) pages.push("...")
-    var start = Math.max(2, current - 1)
-    var end = Math.min(total - 1, current + 1)
-    for (var i = start; i <= end; i++) pages.push(i)
+    var s = Math.max(2, current - 1), e = Math.min(total - 1, current + 1)
+    for (var i = s; i <= e; i++) pages.push(i)
     if (current < total - 2) pages.push("...")
     pages.push(total)
     return pages
   }
 
-  // Hash management
+  // Hash
   function getHashParams() {
     var hash = window.location.hash.slice(1)
     if (!hash) return {}
@@ -174,30 +160,36 @@ document.addEventListener("DOMContentLoaded", function () {
     if (params.link) parts.push("link=" + encodeURIComponent(params.link))
     else if (params.page && params.page > 1) parts.push("page=" + params.page)
     if (params.lang) parts.push("lang=" + encodeURIComponent(params.lang))
-    if (params.pill) parts.push("pill=" + encodeURIComponent(params.pill))
+    if (params.media) parts.push("media=" + encodeURIComponent(params.media))
+    if (params.cat) parts.push("cat=" + encodeURIComponent(params.cat))
     var hash = parts.join("&")
     history.replaceState(null, "", hash ? "#" + hash : window.location.pathname)
   }
 
   function updateHash() {
-    setHash({
-      page: currentPage,
-      lang: langSelect.value,
-      pill: activePill
+    var params = { page: currentPage, lang: langSelect.value }
+    if (activeFilter === "media") params.media = activeValue
+    if (activeFilter === "cat") params.cat = activeValue
+    setHash(params)
+  }
+
+  function setActivePill(filter, value) {
+    activeFilter = filter
+    activeValue = value
+    pills.forEach(function (p) {
+      var pf = p.getAttribute("data-filter")
+      var pv = p.getAttribute("data-value")
+      p.classList.toggle("active", pf === filter && (pv || "") === (value || ""))
     })
   }
 
   function readHashAndApply() {
     var params = getHashParams()
 
-    // Restore filters from hash
     if (params.lang) langSelect.value = params.lang
-    if (params.pill) {
-      activePill = params.pill
-    }
-    pills.forEach(function (p) {
-      p.classList.toggle("active", p.getAttribute("data-pill") === activePill)
-    })
+    if (params.media) setActivePill("media", params.media)
+    else if (params.cat) setActivePill("cat", params.cat)
+    else setActivePill("", "")
 
     filteredItems = getFiltered()
     updateLanguageOptions()
@@ -208,10 +200,8 @@ document.addEventListener("DOMContentLoaded", function () {
       if (target) {
         var idx = filteredItems.indexOf(target)
         if (idx === -1) {
-          // Item filtered out - clear filters to show it
+          setActivePill("", "")
           langSelect.value = ""
-          activePill = ""
-          pills.forEach(function (p) { p.classList.toggle("active", !p.getAttribute("data-pill")) })
           filteredItems = getFiltered()
           updateLanguageOptions()
           updatePillAvailability()
@@ -234,30 +224,29 @@ document.addEventListener("DOMContentLoaded", function () {
     render()
   }
 
-  // Share anchor click
+  // Share anchor
   document.getElementById("links-list").addEventListener("click", function (e) {
     var anchor = e.target.closest(".share-anchor")
     if (!anchor) return
     e.preventDefault()
     var id = anchor.getAttribute("href").split("=")[1]
-    setHash({ link: id, lang: langSelect.value, pill: activePill })
+    var params = { link: id, lang: langSelect.value }
+    if (activeFilter === "media") params.media = activeValue
+    if (activeFilter === "cat") params.cat = activeValue
+    setHash(params)
     if (navigator.clipboard) navigator.clipboard.writeText(window.location.href)
   })
 
-  // Language filter
   langSelect.addEventListener("change", applyFilters)
 
-  // Pill clicks
   pills.forEach(function (pill) {
     pill.addEventListener("click", function () {
-      var value = pill.getAttribute("data-pill")
-      activePill = (activePill === value) ? "" : value
-      if (!activePill) {
-        pills.forEach(function (p) { p.classList.remove("active") })
-        pills[0].classList.add("active")
+      var filter = pill.getAttribute("data-filter")
+      var value = pill.getAttribute("data-value") || ""
+      if (activeFilter === filter && activeValue === value) {
+        setActivePill("", "")
       } else {
-        pills.forEach(function (p) { p.classList.remove("active") })
-        pill.classList.add("active")
+        setActivePill(filter, value)
       }
       applyFilters()
     })

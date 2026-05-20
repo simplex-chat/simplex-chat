@@ -88,10 +88,11 @@ module.exports = function (ty) {
 
   ty.addGlobalData("links", linksData)
   ty.addGlobalData("linkLanguages", [...new Set(linksData.map(e => e.language).filter(Boolean))].sort())
-  const pillCounts = {}
-  linksData.forEach(e => { if (e.pill) pillCounts[e.pill] = (pillCounts[e.pill] || 0) + 1 })
+
+  const catCounts = {}
+  linksData.forEach(e => { if (e.category) { const c = e.category.toLowerCase(); catCounts[c] = (catCounts[c] || 0) + 1 } })
   const mediaPills = ["Video", "Audio"].filter(p => linksData.some(e => e.mediaType === p.toLowerCase()))
-  const catPills = Object.entries(pillCounts).filter(([p]) => !mediaPills.includes(p)).sort((a, b) => b[1] - a[1]).map(([p]) => p)
+  const catPills = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).map(([c]) => c)
   ty.addGlobalData("linkPills", mediaPills.concat(catPills))
 
   ty.addShortcode("cfg", (name) => globalConfig[name])

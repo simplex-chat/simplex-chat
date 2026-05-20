@@ -107,7 +107,6 @@ function parseLinks(linksFilePath) {
       estimated,
       url,
       mediaType: deriveMediaType(category),
-      pill: normalizeCategory(category),
     })
   }
 
@@ -140,19 +139,6 @@ function isMetadata(line) {
     line.startsWith("Language: ") ||
     line.startsWith("Date: ") ||
     line.startsWith("http")
-}
-
-function normalizeCategory(category) {
-  const lower = category.toLowerCase()
-  if (/review|app of the day|product showcase/.test(lower)) return "Review"
-  if (/comparison|comparative/.test(lower)) return "Comparison"
-  if (/news|analysis|year-end|classification|crypto/.test(lower)) return "News"
-  if (/tutorial|guide|how-to/.test(lower)) return "Guide"
-  if (/article|blog|explainer|overview|reference|commentary/.test(lower)) return "Article"
-  if (/podcast|interview|conference|livestream/.test(lower)) return "Interview"
-  if (/recommendation|directory|encyclopedia|listing|open-source|anti-censorship/.test(lower)) return "Resource"
-  if (/community|forum|service|bot|business|company/.test(lower)) return "Community"
-  return "Article"
 }
 
 function deriveMediaType(category) {

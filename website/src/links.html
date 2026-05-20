@@ -221,8 +221,7 @@ active_links: true
 
 <section class="py-10 px-5 mt-[66px]" id="links-page">
     <div class="container">
-        <h1 class="text-[38px] text-center font-bold mb-4">{{ "links-title" | i18n({}, lang) | safe }}</h1>
-        <p class="text-center text-[#A8B0B4] mb-8">{{ "links-subtitle" | i18n({}, lang) | safe }}</p>
+        <h1 class="text-[38px] text-center font-bold mb-8">{{ "links-title" | i18n({}, lang) | safe }}</h1>
 
         <div id="links-filters">
             <select id="filter-language">
@@ -233,14 +232,16 @@ active_links: true
             </select>
 
             <div class="filter-group" id="pill-filters">
-                <button class="filter-chip active" data-pill="">All</button>
+                <button class="filter-chip active" data-filter="" data-value="">All</button>
                 {% for p in linkPills %}
-                    <button class="filter-chip" data-pill="{{ p }}">{{ p }}</button>
+                    {% if p == "Video" or p == "Audio" %}
+                        <button class="filter-chip" data-filter="media" data-value="{{ p | lower }}">{{ p }}</button>
+                    {% else %}
+                        <button class="filter-chip" data-filter="cat" data-value="{{ p }}">{{ p | capitalize }}</button>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
-
-        <div id="links-count"></div>
 
         <div id="links-list">
             {% for item in links %}
@@ -251,7 +252,6 @@ active_links: true
                 data-lang="{{ item.language }}"
                 data-category="{{ item.category | lower }}"
                 data-media="{{ item.mediaType }}"
-                data-pill="{{ item.pill }}"
                 data-date="{{ item.dateSort }}"
                 {% if item.featured %}data-featured{% endif %}>
                 {% if item.image and item.imageExists %}
