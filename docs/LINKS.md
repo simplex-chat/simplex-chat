@@ -1,6 +1,5 @@
 # Links to Community Publications
 
-
 ## SimpleX Chat: Product Showcase - Removing User Identifiers From Messaging
 
 Help Net Security
@@ -15,9 +14,7 @@ Language: English
 
 Date: Apr 29, 2026
 
-
 https://www.helpnetsecurity.com/2026/04/29/product-showcase-simplex-chat-secure-messaging/
-
 
 ## Best Secure Messaging Apps: Signal vs Session vs SimpleX vs Briar
 
@@ -33,17 +30,13 @@ Language: English
 
 Date: May 2026
 
-
 https://stateofsurveillance.org/guides/basic/secure-messaging-comparison/
-
 
 ## Evgeny Poberezkin on SimpleX Private Chat
 
 Citadel Dispatch
 
 Podcast interview
-
-Featured
 
 This Citadel Dispatch podcast episode features Evgeny Poberezkin discussing SimpleX Chat's radically different approach to user identity, where addresses are assigned to connections rather than endpoints. The conversation covers critiques of the MLS protocol, upcoming scalable channels to rival Telegram, and a sustainability model where large channels fund network operations.
 
@@ -53,9 +46,7 @@ Language: English
 
 Date: Mar 20, 2026
 
-
 https://podcasts.apple.com/is/podcast/cd196-evgeny-poberezkin-simplex-private-chat/id1546393840?i=1000756411661
-
 
 ## The Messaging App With No User IDs
 
@@ -65,19 +56,13 @@ Techlore
 
 Podcast interview
 
-Featured
-
-
-
 Image: techlore-talks-simplex-interview.jpg
 
 Language: English
 
 Date: Jan 24, 2026
 
-
 https://www.youtube.com/watch?v=hfzf0t8ZCK4
-
 
 ## Which Encrypted Messenger Is Best Secured? Signal, Session and SimpleX
 
@@ -95,9 +80,7 @@ Language: French
 
 Date: Jan 2, 2026
 
-
 https://nicolasforcet.com/messagerie-chiffree-2026-signal-simplex-session/
-
 
 ## SimpleX Chat Review 2026: Open-Source Secure Messaging
 
@@ -113,9 +96,7 @@ Language: English
 
 Date: 2026
 
-
 https://darwindynamic.com/simplex-chat-review-2026/
-
 
 ## The 5 Best Private Chat and Message Apps for 2026
 
@@ -131,9 +112,7 @@ Language: English
 
 Date: 2026
 
-
 https://darwindynamic.com/5-best-private-chat-message-apps-for-2026/
-
 
 ## Best Decentralized Private Messengers in 2026
 
@@ -149,9 +128,7 @@ Language: English
 
 Date: 2026
 
-
 https://factually.co/product-reviews/electronics-tech/best-decentralized-private-messengers-2026-signal-session-simplex-matrix-a6216a
-
 
 ## 8 Best Secure Messaging Apps for Encrypted Chats in 2026
 
@@ -167,9 +144,7 @@ Language: English
 
 Date: 2026
 
-
 https://www.cloudsek.com/knowledge-base/best-secure-messaging-apps
-
 
 ## 10 Best Secure Messaging Apps You Should Check Out in 2026
 
@@ -185,9 +160,7 @@ Language: English
 
 Date: 2026
 
-
 https://beebom.com/best-secure-messaging-apps/
-
 
 ## Decentralized Messengers: 8 WhatsApp and Telegram Alternatives 2026
 
@@ -205,9 +178,7 @@ Language: Russian
 
 Date: 2026
 
-
 https://itforprof.com/blog/decentralizovannye-messendzhery/
-
 
 ## Release of SimpleX Chat 6.5
 
@@ -225,9 +196,7 @@ Language: Russian
 
 Date: 2026
 
-
 https://opennet.ru/65337/
-
 
 ## Vitalik Buterin Donates $765K in Ethereum to Privacy Messaging Apps
 
@@ -243,9 +212,7 @@ Language: English
 
 Date: Nov 2025
 
-
 https://finance.yahoo.com/news/vitalik-buterin-donates-765k-ethereum-190102367.html
-
 
 ## Vitalik Buterin Supports Privacy-Focused Messaging Platforms With Significant Ethereum Donation
 
@@ -261,9 +228,7 @@ Language: English
 
 Date: Nov 2025
 
-
 https://news.bitcoin.com/vitalik-buterin-supports-privacy-focused-messaging-platforms-with-significant-ethereum-donation/
-
 
 ## Inside Vitalik's 256 ETH Grants: When Ethereum Falls, Privacy Rises
 
@@ -279,9 +244,7 @@ Language: English
 
 Date: Dec 2, 2025
 
-
 https://cryptoslate.com/inside-vitaliks-256-eth-grants-when-eth-falls-privacy-rises/
-
 
 ## SimpleX Chat: The First Messaging App with No User Identifiers - Privacy by Design
 
@@ -297,9 +260,7 @@ Language: English
 
 Date: Sep 18, 2025
 
-
 https://www.blog.brightcoding.dev/2025/09/18/simplex-chat-the-first-messaging-app-with-no-user-identifiers-privacy-by-design/
-
 
 ## SimpleX Chat 6.4.3: New Features and Jack Dorsey's Support
 
@@ -317,9 +278,7 @@ Language: French
 
 Date: Aug 20, 2025
 
-
 https://syskb.com/simplex-chat-6-4-3-nouveautes/
-
 
 ## Discover the Best Secure Messaging Apps in 2025
 
@@ -337,9 +296,7 @@ Language: French
 
 Date: Aug 26, 2025
 
-
 https://www.camarchecafonctionne.com/decouvrez-les-meilleures-applications-de-messagerie-securisee-en-2025/
-
 
 ## SimpleX Chat Review - Secure and Private Messaging?
 
@@ -347,25 +304,19 @@ HTR
 
 Video review
 
-
-
 Image: htr-simplex-review.jpg
 
 Language: English
 
 Date: Feb 10, 2025
 
-
 https://www.youtube.com/watch?v=rGrF1M7x0Nk
-
 
 ## Improving SimpleX With Evgeny From SimpleX and Daniel Keller From Flux
 
 Opt Out Podcast
 
 Podcast interview
-
-Featured
 
 This Opt Out Podcast episode features Evgeny from SimpleX and Dan Keller from Flux discussing improvements to SimpleX Chat, including quantum-resistant encryption and privacy-preserving content moderation. The conversation also covers a new chat relay approach developed collaboratively between SimpleX and Flux, along with SimpleX's network operator monetization plans.
 
@@ -375,9 +326,7 @@ Language: English
 
 Date: Jan 24, 2025
 
-
 https://optoutpod.com/episodes/improving-simplex/
-
 
 ## Best WhatsApp Alternatives 2025
 
@@ -393,9 +342,7 @@ Language: English
 
 Date: 2025
 
-
 https://tuta.com/blog/best-whatsapp-alternatives-privacy
-
 
 ## Best WhatsApp Alternatives for Privacy
 
@@ -411,9 +358,7 @@ Language: English
 
 Date: 2025
 
-
 https://proton.me/blog/whatsapp-alternatives
-
 
 ## What Is SimpleX Chat?
 
@@ -423,8 +368,6 @@ No Trust Verify
 
 Technical article
 
-Featured
-
 This French-language article from NoTrustVerify describes SimpleX Chat as the first messaging platform with no identifiers that respects privacy by default. It explains the decentralized architecture using message queues instead of user accounts, and highlights features like Incognito Mode, Live Messages, and separate Chat Profiles for different conversations.
 
 Image: notrustverify-simplex-explainer.jpg
@@ -433,9 +376,7 @@ Language: French
 
 Date: May 5, 2025
 
-
 https://blog.notrustverify.ch/quest-ce-que-simplex-chat
-
 
 ## SimpleX Chat: Privacy-Friendly Messenger for Maximum Privacy
 
@@ -453,9 +394,7 @@ Language: German
 
 Date: 2025 (estimated)
 
-
 https://digitalunplug.ch/simplex.php
-
 
 ## SimpleX Chat - Next Level Private Messaging
 
@@ -463,19 +402,13 @@ Mental Outlaw
 
 Video review
 
-Featured
-
-
-
 Image: mental-outlaw-simplex-review.jpg
 
 Language: English
 
 Date: Oct 1, 2024
 
-
 https://www.youtube.com/watch?v=0cRu98XSap0
-
 
 ## Why We Recommend SimpleX Now
 
@@ -483,27 +416,19 @@ Techlore
 
 Video review
 
-Featured
-
-
-
 Image: techlore-recommend-simplex.jpg
 
 Language: English
 
 Date: Oct 7, 2024
 
-
 https://www.youtube.com/watch?v=DVKe8U-n8fU
-
 
 ## Open-Source SimpleX Chat Succeeds Where Telegram Failed
 
 Notebookcheck
 
 News article
-
-Featured
 
 Notebookcheck argues that SimpleX Chat addresses privacy failures inherent in Telegram, highlighting that SimpleX requires no phone number, uses end-to-end encryption with onion routing, and allows users to select their own servers. The article notes that SimpleX operates in incognito mode by default and that even SimpleX itself cannot determine where messages originate.
 
@@ -513,9 +438,7 @@ Language: English
 
 Date: Oct 2, 2024
 
-
 https://www.notebookcheck.net/Open-source-SimpleX-Chat-succeeds-where-Telegram-failed.896988.0.html
-
 
 ## SimpleX Chat Group Chat Tested in Practice
 
@@ -525,8 +448,6 @@ Kuketz IT-Security Blog
 
 Review
 
-Featured
-
 German privacy blogger Mike Kuketz documents significant performance issues with SimpleX's group chat functionality, including substantial message delays where one message sent at 19:39 arrived the next day at 11:50. The founder acknowledged that groups were never designed for more than 50 users, and the article concludes SimpleX is unsuitable for group chats exceeding that limit.
 
 Image: kuketz-group-chat-test.jpg
@@ -535,17 +456,13 @@ Language: German
 
 Date: Oct 14, 2024
 
-
 https://www.kuketz-blog.de/simplex-gruppenchat-funktion-im-praxistest/
-
 
 ## My Experience With SimpleX Chat: Is It the Ultimate Open Source Private Messaging App?
 
 It's FOSS
 
 Review
-
-Featured
 
 It's FOSS presents a highly positive experience with SimpleX Chat, praising its no-ID signup, quantum-resistant encryption, and intuitive messaging features. The main drawback noted was buggy video calls with audio and quality issues, but overall the reviewer concludes SimpleX sets a new standard for secure communication.
 
@@ -555,9 +472,7 @@ Language: English
 
 Date: Dec 2024
 
-
 https://itsfoss.com/news/simplex-chat/
-
 
 ## SimpleX Chat: A Decentralized Messaging App
 
@@ -575,9 +490,7 @@ Language: Italian
 
 Date: Sep 18, 2024
 
-
 https://blog.lealternative.net/2024/09/18/simplex-chat-unapp-di-messaggistica-decentralizzata/
-
 
 ## SimpleX: The Revolution of Private Messaging
 
@@ -595,9 +508,7 @@ Language: Italian
 
 Date: Jul 16, 2025
 
-
 https://www.aiutocomputerhelp.it/simplex-la-rivoluzione-della-messaggistica-privata/
-
 
 ## SimpleX: Messaging With Total Privacy
 
@@ -615,9 +526,7 @@ Language: Spanish
 
 Date: Nov 19, 2024
 
-
 https://verasoul.com/simplex-mensajeria-con-total-privacidad.html
-
 
 ## SimpleX Chat: The Messaging App Every Privacy Enthusiast Should Use
 
@@ -635,9 +544,7 @@ Language: Spanish
 
 Date: 2022 (estimated)
 
-
 https://gatooscuro.xyz/simplex-chat-la-aplicacion-de-mensajeria-que-todo-entusiasta-de-la-privacidad-deberia-utilizar/
-
 
 ## Interview With the Author of SimpleX Chat: The Most Secure Messaging by Design
 
@@ -655,9 +562,7 @@ Language: Spanish
 
 Date: 2024
 
-
 https://gatooscuro.xyz/entrevista-con-el-autor-de-simplex-chat-la-mensajeria-mas-segura-por-diseno/
-
 
 ## SimpleX Chat Messaging App
 
@@ -675,9 +580,7 @@ Language: Spanish
 
 Date: Aug 1, 2023
 
-
 https://medium.com/@burp.es/app-de-mensajer%C3%ADa-simplex-chat-c0ad46b50f1f
-
 
 ## SimpleX Is a Revolutionary Messaging Platform That Redefines Privacy
 
@@ -695,9 +598,7 @@ Language: Portuguese
 
 Date: Oct 10, 2023
 
-
 https://medium.com/@alexemidio/o-simplexchat-%C3%A9-uma-plataforma-de-mensagens-revolucion%C3%A1rias-que-redefinem-a-privacidade-sendo-o-4690f2a1b2d4
-
 
 ## SimpleX: The Chat Network That Preserves Metadata Privacy
 
@@ -715,9 +616,7 @@ Language: Portuguese
 
 Date: 2024 (estimated)
 
-
 https://www.edivaldobrito.com.br/simplex-a-rede-de-bate-papo-que-preserva-a-privacidade-de-metadados/
-
 
 ## SimpleX Is an Alternative to Telegram Focused on Privacy
 
@@ -735,9 +634,7 @@ Language: Portuguese
 
 Date: 2024 (estimated)
 
-
 https://midiasegura.com/simplex-e-uma-alternativa-ao-telegram-com-foco-na-privacidade/
-
 
 ## SimpleX Chat: The First Messenger Without User ID
 
@@ -755,9 +652,7 @@ Language: Portuguese
 
 Date: 2024 (estimated)
 
-
 https://www.tabnews.com.br/RafaelMesquita/simplex-chat-o-primeiro-mensageiro-sem-id-de-usuario
-
 
 ## SimpleX Chat: A Revolutionary Tool for Private and Even Anonymous Communications
 
@@ -767,17 +662,13 @@ Coach De Osasco
 
 Video review
 
-
-
 Image: portuguese-simplex-revolutionary.jpg
 
 Language: Portuguese
 
 Date: 2024 (estimated)
 
-
 https://www.youtube.com/watch?v=fUwPGhSYlLY
-
 
 ## Why I'm Not Using SimpleX Chat
 
@@ -785,17 +676,13 @@ Techlore Clips
 
 Video review
 
-
-
 Image: techlore-not-using-simplex.jpg
 
 Language: English
 
 Date: Jun 26, 2024
 
-
 https://www.youtube.com/watch?v=IVpEKS30ngQ
-
 
 ## Exploring SimpleX Chat: A Scriptable, Decentralized Messaging App
 
@@ -811,9 +698,7 @@ Language: English
 
 Date: 2024
 
-
 https://rickcarlino.com/2024/simplex-chat-bots.html
-
 
 ## Session and SimpleX: Encrypted Messenger Comparison
 
@@ -829,9 +714,7 @@ Language: English
 
 Date: Oct 29, 2023
 
-
 https://freedomnode.com/blog/session-and-simplex-encrypted-messenger-comparison/
-
 
 ## SimpleX: The First Messenger Without User Identifiers
 
@@ -849,9 +732,7 @@ Language: Russian
 
 Date: Dec 2022
 
-
 https://habr.com/ru/companies/privacyaccelerator/articles/705778/
-
 
 ## An Anonymous Messenger: A Mandatory Standard for Every Person
 
@@ -869,9 +750,7 @@ Language: Russian
 
 Date: Nov 2024
 
-
 https://habr.com/ru/articles/851866/
-
 
 ## Open-Source SimpleX Chat Succeeds Where Telegram Failed
 
@@ -889,9 +768,7 @@ Language: Russian
 
 Date: Oct 3, 2024
 
-
 https://www.notebookcheck-ru.com/CHat-SimpleX-s-otkrytym-iskhodnym-kodom-preuspel-tam-gde-Telegram-poterpel-neudachu.897103.0.html
-
 
 ## Messenger for Paranoids: Configuring SimpleX Chat
 
@@ -901,17 +778,13 @@ https://www.notebookcheck-ru.com/CHat-SimpleX-s-otkrytym-iskhodnym-kodom-preuspe
 
 Video tutorial
 
-
-
 Image: russian-paranoid-messenger-tutorial.jpg
 
 Language: Russian
 
 Date: Nov 3, 2024
 
-
 https://www.youtube.com/watch?v=3UcejFJ3TY0
-
 
 ## SimpleX Chat: A Damn Private Messaging Service
 
@@ -921,17 +794,13 @@ Siksik
 
 Review
 
-
-
 Image: siksik-simplex-review.jpg
 
 Language: French
 
 Date: 2024 (estimated)
 
-
 https://siksik.org/simplex-chat-une-messagerie-sacrement-privee/
-
 
 ## SimpleX Chat: A New Instant Messaging Application
 
@@ -941,17 +810,13 @@ AEKONE
 
 Review
 
-
-
 Image: aekone-simplex-review.jpg
 
 Language: French
 
 Date: 2024 (estimated)
 
-
 https://aek.one/simplex-chat-une-nouvelle-application-de-messagerie-instantannee/
-
 
 ## SimpleX Chat Review
 
@@ -967,9 +832,7 @@ Language: English
 
 Date: Sep 26, 2023
 
-
 https://freedom.tech/simplex-chat-review/
-
 
 ## SimpleX Raises $1.3M From Jack Dorsey and Asymmetric VC, Releases Chat v6.0
 
@@ -985,9 +848,7 @@ Language: English
 
 Date: Aug 2024
 
-
 https://www.nobsbitcoin.com/simplex-chat-v6-0/
-
 
 ## SimpleX Chat v6.1: Better Calls, iOS Notifications, UX Improvements
 
@@ -1003,9 +864,7 @@ Language: English
 
 Date: Oct 2024
 
-
 https://www.nobsbitcoin.com/simplex-chat-v6-1-0/
-
 
 ## SimpleX Chat v5.7: Quantum Resistant End-to-End Encryption
 
@@ -1021,9 +880,7 @@ Language: English
 
 Date: Apr 2024
 
-
 https://www.nobsbitcoin.com/simplex-chat-v5-7-0/
-
 
 ## SimpleX Chat v5.8: Private Message Routing
 
@@ -1039,9 +896,7 @@ Language: English
 
 Date: Jun 2024
 
-
 https://www.nobsbitcoin.com/simplex-chat-v5-8/
-
 
 ## SimpleX Launches Quantum-Resistant Encryption in Beta
 
@@ -1057,9 +912,7 @@ Language: English
 
 Date: Apr 2, 2024
 
-
 https://reclaimthenet.org/simplex-chat-launches-quantum-resistant-encryption-in-beta
-
 
 ## SimpleX Introduces Enhanced IP Privacy Measures
 
@@ -1075,9 +928,7 @@ Language: English
 
 Date: Jun 12, 2024
 
-
 https://reclaimthenet.org/simplex-introduces-enhanced-ip-privacy-measures
-
 
 ## We Found the Most Incognito iPhone Messaging App
 
@@ -1095,9 +946,7 @@ Language: French
 
 Date: Jul 15, 2023
 
-
 https://www.iphon.fr/post/on-a-trouve-lapp-de-messagerie-iphone-la-plus-incognito
-
 
 ## SimpleX: Secure Messaging With Self-Hosted Server
 
@@ -1107,25 +956,19 @@ Paf LeGeek
 
 Video tutorial
 
-
-
 Image: paflegeek-simplex-selfhost.jpg
 
 Language: French
 
 Date: Jun 19, 2023
 
-
 https://www.youtube.com/watch?v=66URjJ1RkeM
-
 
 ## SimpleX Chat and How Privacy Aligns With the Future of Computing
 
 Opt Out Podcast
 
 Podcast interview
-
-Featured
 
 This Opt Out Podcast episode features SimpleX Chat founder Evgeny discussing how privacy aligns with the future of computing. The conversation covers data sovereignty, SimpleX's decentralized architecture, and the project's emphasis on user control, with resources provided on running independent servers.
 
@@ -1135,9 +978,7 @@ Language: English
 
 Date: Feb 27, 2023
 
-
 https://optoutpod.com/episodes/s3e02-simplexchat/
-
 
 ## SimpleX Chat: Messenger Without UserID With Maximum Protection
 
@@ -1147,17 +988,13 @@ https://optoutpod.com/episodes/s3e02-simplexchat/
 
 Video review
 
-
-
 Image: russian-simplex-max-protection.jpg
 
 Language: Russian
 
 Date: Aug 8, 2023
 
-
 https://www.youtube.com/watch?v=g9HGLNCkEyk
-
 
 ## SimpleX Chat: Overview of Main Functions
 
@@ -1167,17 +1004,13 @@ https://www.youtube.com/watch?v=g9HGLNCkEyk
 
 Video review
 
-
-
 Image: russian-simplex-overview-functions.jpg
 
 Language: Russian
 
 Date: Aug 10, 2023
 
-
 https://www.youtube.com/watch?v=fp1QUPNkxKI
-
 
 ## SimpleX Chat: Anonymous Messenger Without ID
 
@@ -1187,17 +1020,13 @@ https://www.youtube.com/watch?v=fp1QUPNkxKI
 
 Video review
 
-
-
 Image: russian-simplex-anonymous-no-id.jpg
 
 Language: Russian
 
 Date: Aug 25, 2023
 
-
 https://www.youtube.com/watch?v=Ecx5jGUn-hQ
-
 
 ## SimpleX Chat: The Ultra-Private Messaging App Almost Nobody Knows
 
@@ -1207,17 +1036,13 @@ RD CIPHER
 
 Video review
 
-
-
 Image: spanish-simplex-ultra-private.jpg
 
 Language: Spanish
 
 Date: 2024 (estimated)
 
-
 https://www.youtube.com/watch?v=5vroKXgVZ3Q
-
 
 ## SimpleX: Messaging WITHOUT Identifiers
 
@@ -1227,17 +1052,13 @@ Elurk Informatica
 
 Video review
 
-
-
 Image: spanish-simplex-sin-identificadores.jpg
 
 Language: Spanish
 
 Date: 2024 (estimated)
 
-
 https://www.youtube.com/watch?v=Uit79EFxTAs
-
 
 ## An Overview of Privacy-Focused, Decentralized Instant Messengers
 
@@ -1253,9 +1074,7 @@ Language: English
 
 Date: 2024 (estimated)
 
-
 https://xn--gckvb8fzb.com/an-overview-of-privacy-focused-decentralized-instant-messengers/
-
 
 ## What Is SimpleX Chat?
 
@@ -1271,9 +1090,7 @@ Language: English
 
 Date: Jun 2023
 
-
 https://medium.com/notrustverify/what-is-simplex-chat-11124d39a318
-
 
 ## SimpleX Chat v5.4: Link Mobile and Desktop Apps via Quantum-Resistant Protocol
 
@@ -1289,9 +1106,7 @@ Language: English
 
 Date: Nov 2023
 
-
 https://www.nobsbitcoin.com/simplex-chat-v5-4/
-
 
 ## SimpleX Chat v5.3: Desktop App, Local File Encryption and Improved Groups
 
@@ -1307,17 +1122,13 @@ Language: English
 
 Date: Sep 2023
 
-
 https://www.nobsbitcoin.com/simplex-chat-v5-3/
-
 
 ## Haskell in Production: SimpleX
 
 Serokell
 
 Technical interview
-
-Featured
 
 Serokell interviews SimpleX Chat creator Evgeny Poberezkin about building the platform in Haskell, chosen for its strength in highly concurrent communication applications with features like green threads and transactional memory. The article discusses challenges of compiling Haskell to mobile devices and the project's exploration of monetization through optional subscriptions while remaining fully open-source.
 
@@ -1327,9 +1138,7 @@ Language: English
 
 Date: May 17, 2022
 
-
 https://serokell.io/blog/haskell-in-production-simplex
-
 
 ## SimpleX: Impressions From the Messenger Without Identifiers
 
@@ -1339,8 +1148,6 @@ Kuketz IT-Security Blog
 
 Review
 
-Featured
-
 German privacy blogger Mike Kuketz rates SimpleX as "conditionally recommended," praising its innovative no-identifier design and Tor support. He identifies weaknesses including the absence of contact verification, high battery consumption, and client instability, though notes the developer indicated these issues are being addressed.
 
 Image: kuketz-simplex-review.jpg
@@ -1349,9 +1156,7 @@ Language: German
 
 Date: Dec 2, 2022
 
-
 https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/
-
 
 ## Decentralized, Anonymous, Encrypted: SimpleX Messenger Now Also for Smartphones
 
@@ -1361,8 +1166,6 @@ Heise Online
 
 News article
 
-Featured
-
 Heise reports on SimpleX Chat releasing smartphone apps for iPhone and Android after initially being available only as a command-line application. The article highlights the decentralized architecture where servers cannot know who communicated with whom, with users sharing QR codes to establish encrypted connections.
 
 Image: heise-simplex-smartphone.jpg
@@ -1371,9 +1174,7 @@ Language: German
 
 Date: Mar 9, 2022
 
-
 https://www.heise.de/news/Dezentral-anonym-verschluesselt-SimpleX-Messenger-jetzt-auch-fuers-Smartphone-6544488.html
-
 
 ## So Apple Won't Read Along: SimpleX Chat Updated to Version 3
 
@@ -1391,9 +1192,7 @@ Language: German
 
 Date: Jul 12, 2022
 
-
 https://www.heise.de/news/Damit-Apple-nichts-mitliest-SimpleX-Chat-aktualisiert-auf-Version-3-7170288.html
-
 
 ## Open-Source Messenger SimpleX: Anonymous and Now Also Private Chatting
 
@@ -1411,9 +1210,7 @@ Language: German
 
 Date: Nov 29, 2022
 
-
 https://www.heise.de/news/Open-Source-Messenger-SimpleX-anonym-und-jetzt-auch-privat-chatten-7359889.html
-
 
 ## SimpleX 1.0.0: Decentralized, Privacy-Respecting and Encrypted Chat
 
@@ -1431,9 +1228,7 @@ Language: German
 
 Date: Jan 13, 2022
 
-
 https://www.heise.de/news/SimpleX-1-0-0-Dezentraler-Privatsphaere-achtender-und-verschluesselter-Chat-6325990.html
-
 
 ## SimpleX Chat Wants to Offer Complete Privacy
 
@@ -1451,9 +1246,7 @@ Language: German
 
 Date: Jul 13, 2022
 
-
 https://www.iphone-ticker.de/simplex-chat-will-vollstaendige-privatsphaere-bieten-194389/
-
 
 ## SimpleX Chat Now Also for Smartphones
 
@@ -1471,9 +1264,7 @@ Language: German
 
 Date: Mar 10, 2022
 
-
 https://gnulinux.ch/simplex-chat-smartphones
-
 
 ## SimpleX Chat: A Star on the Open-Source Messenger Horizon
 
@@ -1491,9 +1282,7 @@ Language: German
 
 Date: 2023 (estimated)
 
-
 https://hackspoiler.de/simplex-chat-verschluesselter-opensource-messenger/
-
 
 ## Good Messengers Instead of WhatsApp
 
@@ -1511,9 +1300,7 @@ Language: German
 
 Date: 2023 (estimated)
 
-
 https://digitalcourage.de/digitale-selbstverteidigung/messenger
-
 
 ## Messenger SimpleX Protects Privacy and Is Open Source
 
@@ -1531,9 +1318,7 @@ Language: German
 
 Date: 2022 (estimated)
 
-
 https://www.linux-magazin.de/news/messenger-simplex-schuetzt-privatsphaere-und-ist-open-source/
-
 
 ## SimpleX
 
@@ -1549,9 +1334,7 @@ Language: German
 
 Date: updated regularly
 
-
 https://www.freie-messenger.de/simplex/
-
 
 ## SimpleX Chat: Private and Secure Messaging Platform Without User IDs
 
@@ -1559,27 +1342,19 @@ Monero Community Workgroup
 
 Conference talk
 
-Featured
-
-
-
 Image: conference-simplex-no-user-ids.jpg
 
 Language: English
 
 Date: Oct 22, 2023
 
-
 https://www.youtube.com/watch?v=mWBDmautqK0
-
 
 ## The Best Private Instant Messengers
 
 Privacy Guides
 
 Recommendation
-
-Featured
 
 Privacy Guides recommends SimpleX Chat as an instant messenger that does not depend on any unique identifiers such as phone numbers or usernames. The page notes its double ratchet encryption with quantum resistance, metadata protection through unidirectional message delivery queues, and independent security audits conducted in July 2024 and October 2022.
 
@@ -1589,17 +1364,13 @@ Language: English
 
 Date: updated regularly
 
-
 https://www.privacyguides.org/en/real-time-communication/
-
 
 ## SimpleX
 
 Whonix Wiki
 
 Recommendation
-
-Featured
 
 The Whonix wiki describes SimpleX as a general-purpose instant messaging client with both client and server released as Freedom Software under GNU AGPLv3. It highlights mandatory end-to-end encryption, quantum-resistant encryption by default for one-on-one chats, and incognito mode, while providing detailed Flatpak installation instructions and warning that users must export their chat database before shutdown to avoid losing all data.
 
@@ -1609,9 +1380,7 @@ Language: English
 
 Date: updated regularly
 
-
 https://www.whonix.org/wiki/SimpleX
-
 
 ## Private Messaging: Wikilibriste Recommendations
 
@@ -1629,17 +1398,13 @@ Language: French
 
 Date: updated regularly
 
-
 https://www.wikilibriste.fr/messagerie-vie-privee/
-
 
 ## Messenger Matrix
 
 Kuketz IT-Security Blog
 
 Comparison
-
-Featured
 
 This comprehensive German messenger comparison table rates SimpleX on dozens of technical criteria. It notes SimpleX's decentralized architecture, post-quantum encryption, NaCl/Signal Protocol cryptography, and Trail of Bits security audit, but gives it a "very limited" recommendation and categorizes it as targeting advanced users rather than beginners.
 
@@ -1649,9 +1414,7 @@ Language: German
 
 Date: updated regularly
 
-
 https://www.messenger-matrix.de/messenger-matrix.html
-
 
 ## Communicate Online in Complete Anonymity
 
@@ -1669,9 +1432,7 @@ Language: Italian
 
 Date: Feb 15, 2026
 
-
 https://webappsmagazine.blogspot.com/2026/02/simplex-chat-comunicare-online-in.html
-
 
 ## Best Messaging Apps Without Phone Number: Comprehensive Comparison 2026
 
@@ -1687,9 +1448,7 @@ Language: Arabic
 
 Date: Apr 2026
 
-
 https://www.3arbi4tech.com/2026/04/messaging-apps-without-phone-number.html
-
 
 ## SimpleX Chat: A Privacy-Optimized Chat App - Why Telegram Users Are Leaving
 
@@ -1707,9 +1466,7 @@ Language: Korean
 
 Date: Oct 8, 2024
 
-
 https://billionnapkin.com/simplex-chat/
-
 
 ## Telegram Alternative Apps: Stronger Anonymous Messenger Recommendations
 
@@ -1727,9 +1484,7 @@ Language: Korean
 
 Date: Dec 17, 2025 (updated)
 
-
 https://netxhack.com/apps/foss/alternatives-to-telegram/
-
 
 ## Users Flocking to Telegram Alternative Apps
 
@@ -1747,9 +1502,7 @@ Language: Korean
 
 Date: Oct 11, 2024
 
-
 https://www.ekoreanews.co.kr/news/articleView.html?idxno=75746
-
 
 ## Vitalik Donates 128 ETH Each to Privacy Messaging Apps Session and SimpleX Chat
 
@@ -1767,9 +1520,7 @@ Language: Japanese
 
 Date: Nov 2025
 
-
 https://www.neweconomy.jp/posts/521981
-
 
 ## Ethereum Founder Makes Huge Donation to Messaging App
 
@@ -1787,9 +1538,7 @@ Language: Japanese
 
 Date: Dec 3, 2025
 
-
 https://crypto-times.jp/news-ethereum-founder-makes-huge-donation-to-messaging-app/
-
 
 ## Anonymous Messaging App SimpleX Chat: Setup and Usage Guide
 
@@ -1807,9 +1556,7 @@ Language: Japanese
 
 Date: 2025 (updated)
 
-
 https://vpn-taizen.com/how_to_use_anonymous_messaging_app_simplex_chat_that_doesnt_require_id/
-
 
 ## Privacy-Focused Chat Tool SimpleX: First Impressions
 
@@ -1827,9 +1574,7 @@ Language: Japanese
 
 Date: Sep 2022
 
-
 https://kusaimara.net/2022/09/20
-
 
 ## Anonymous Chat Showdown: Session vs SimpleX
 
@@ -1847,9 +1592,7 @@ Language: Japanese
 
 Date: Jul 2024
 
-
 https://kusaimara.net/2024/07/758
-
 
 ## Why I Recommend SimpleX Over Signal and Session
 
@@ -1867,9 +1610,7 @@ Language: Japanese
 
 Date: May 19, 2024
 
-
 https://ameblo.jp/vpn53049/entry-12852836589.html
-
 
 ## SimpleX's Revolutionary Idea
 
@@ -1887,9 +1628,7 @@ Language: Japanese
 
 Date: Sep 5, 2022
 
-
 https://ameblo.jp/vpn53049/entry-12786598980.html
-
 
 ## The Next Anonymous Messengers After Signal: Session and SimpleX Chat
 
@@ -1907,9 +1646,7 @@ Language: Japanese
 
 Date: Nov 21, 2025
 
-
 https://note.com/renaro/n/n8b3c9af1899f
-
 
 ## SimpleX Chat: Next-Generation Secure Communication Tool Without Identity Verification
 
@@ -1927,9 +1664,7 @@ Language: Chinese
 
 Date: 2024 (estimated)
 
-
 https://www.huluohu.com/posts/1221/
-
 
 ## SimpleX Chat: A Private and Encrypted Open-Source Communication Tool Without Any User IDs
 
@@ -1947,9 +1682,7 @@ Language: Chinese
 
 Date: Jan 7, 2024
 
-
 https://ababtools.com/?post=955
-
 
 ## Open-Source SimpleX Chat Succeeds Where Telegram Failed
 
@@ -1967,9 +1700,7 @@ Language: Chinese
 
 Date: Oct 3, 2024
 
-
 https://www.notebookcheck-cn.com/SimpleX-Chat-Telegram.897088.0.html
-
 
 ## Open-Source SimpleX Chat Succeeds Where Telegram Failed
 
@@ -1987,9 +1718,7 @@ Language: Portuguese
 
 Date: Oct 2024
 
-
 https://www.notebookcheck.info/O-SimpleX-Chat-de-codigo-aberto-tem-sucesso-onde-o-Telegram-falhou.897026.0.html
-
 
 ## Anonymous Messaging Apps
 
@@ -2007,9 +1736,7 @@ Language: Italian
 
 Date: Dec 14, 2022
 
-
 https://blog.lealternative.net/2022/12/14/app-di-messaggistica-anonime/
-
 
 ## SimpleX Chat
 
@@ -2025,9 +1752,7 @@ Language: Italian
 
 Date: Feb 17, 2026 (updated)
 
-
 https://www.freeonline.org/simplex-chat/
-
 
 ## 10 Most Secure Messaging Apps of 2024
 
@@ -2037,17 +1762,13 @@ Moyens I/O Italy
 
 Comparison
 
-
-
 Image: moyens-io-secure-apps-2024.jpg
 
 Language: Italian
 
 Date: 2024
 
-
 https://it.moyens.net/app/app-messaggistica-piu-sicure-del-signal-session-simplex/
-
 
 ## SimpleX Chat: The Hidden Portal of Privacy
 
@@ -2057,17 +1778,13 @@ Paranoia
 
 Video review
 
-
-
 Image: portuguese-simplex-hidden-portal.jpg
 
 Language: Portuguese
 
 Date: Oct 2024
 
-
 https://www.youtube.com/watch?v=CCB9m0T7RIM
-
 
 ## Anonymous Chat Without Phone and Email: Online Privacy With Ultra Metadata Annihilation
 
@@ -2077,17 +1794,13 @@ Leandroibov
 
 Video review
 
-
-
 Image: portuguese-simplex-ultra-annihilation.jpg
 
 Language: Portuguese
 
 Date: 2024 (estimated)
 
-
 https://www.youtube.com/watch?v=gvVfpPB1srI
-
 
 ## How to Use SimpleX Private Chat Without Identification
 
@@ -2097,17 +1810,13 @@ Prometheus HODL
 
 Video tutorial
 
-
-
 Image: portuguese-simplex-tutorial.jpg
 
 Language: Portuguese
 
 Date: 2024 (estimated)
 
-
 https://www.youtube.com/watch?v=JMPxptujnaQ
-
 
 ## SimpleX Chat: Messaging Meets Perfect Privacy
 
@@ -2115,17 +1824,13 @@ The Digital Prepper
 
 Video review
 
-
-
 Image: simplex-messaging-perfect-privacy.jpg
 
 Language: English
 
 Date: 2024 (estimated)
 
-
 https://www.youtube.com/watch?v=aKRfDch_WBQ
-
 
 ## SimpleX Chat: Simple Messaging With Unusually Good Privacy
 
@@ -2133,17 +1838,13 @@ Remember Lads Subscribe to Big Bear
 
 Video review
 
-
-
 Image: simplex-unusually-good-privacy.jpg
 
 Language: English
 
 Date: Dec 19, 2023
 
-
 https://www.youtube.com/watch?v=zkEY9m2E-Y4
-
 
 ## Self-Hosted SimpleX Chat
 
@@ -2151,17 +1852,13 @@ https://www.youtube.com/watch?v=zkEY9m2E-Y4
 
 Video tutorial
 
-
-
 Image: selfhosted-simplex-tutorial.jpg
 
 Language: English
 
 Date: Feb 8, 2024
 
-
 https://www.youtube.com/watch?v=1zMAGzYBgJY
-
 
 ## Setting Up SimpleX As Your Private Messenger
 
@@ -2177,9 +1874,7 @@ Language: English
 
 Date: 2025
 
-
 https://xfuture-blog.com/posts/setting-up-simplex-as-your-private-messenger/
-
 
 ## Showdown: Signal, Session, SimpleX, Matrix, XMPP, vs Briar
 
@@ -2195,9 +1890,7 @@ Language: English
 
 Date: 2024 (estimated)
 
-
 https://simplifiedprivacy.com/messengers/
-
 
 ## SimpleX Chat: New Frontiers
 
@@ -2205,17 +1898,13 @@ epoberezkin
 
 Livestream
 
-
-
 Image: simplex-new-frontiers-livestream.jpg
 
 Language: English
 
 Date: Jul 27, 2023
 
-
 https://www.youtube.com/watch?v=7yjQFmhAftE
-
 
 ## Every Thing You Need to Know About SimpleX Chat
 
@@ -2231,9 +1920,7 @@ Language: English
 
 Date: 2024 (estimated)
 
-
 https://www.libreselfhosted.com/project/simplex-chat/
-
 
 ## Privacy First Steps
 
@@ -2249,9 +1936,7 @@ Language: English
 
 Date: 2024 (estimated)
 
-
 https://github.com/sethforprivacy/sethforprivacy.com/blob/master/content/posts/privacy-first-steps.md
-
 
 ## Degoogle Your Private Life: Real-Time Messaging
 
@@ -2267,9 +1952,7 @@ Language: English
 
 Date: 2024 (estimated)
 
-
 https://blog.iode.tech/degoogle-your-private-life-4-instant-messaging/
-
 
 ## SimpleX Chat v5.2: Message Delivery Receipts
 
@@ -2285,9 +1968,7 @@ Language: English
 
 Date: 2023
 
-
 https://www.nobsbitcoin.com/simplex-chat-v5-2-0/
-
 
 ## SimpleX Server Now Available for StartOS
 
@@ -2303,9 +1984,7 @@ Language: English
 
 Date: 2023
 
-
 https://www.nobsbitcoin.com/simplex-server-now-available-for-startos/
-
 
 ## SimpleX Chat
 
@@ -2321,9 +2000,7 @@ Language: Spanish
 
 Date: Dec 5, 2023
 
-
 https://joselito.mataroa.blog/blog/simplex-chat/
-
 
 ## SimpleX Chat Part 2
 
@@ -2339,9 +2016,7 @@ Language: Spanish
 
 Date: Dec 7, 2023
 
-
 https://joselito.mataroa.blog/blog/simplex-chat-parte-2/
-
 
 ## 14 Best Secure Messengers of 2026
 
@@ -2359,9 +2034,7 @@ Language: Russian
 
 Date: 2026
 
-
 https://pro32.com/ru/article/14-samykh-bezopasnykh-messendzherov-kakoy-vybrat-dlya-lichnoy-i-rabochey-perepiski/
-
 
 ## Comparative Review of Protected Messengers
 
@@ -2379,9 +2052,7 @@ Language: Russian
 
 Date: 2024 (estimated)
 
-
 https://www.securitylab.ru/blog/personal/SimlpeHacker/354153.php
-
 
 ## SimpleX Chat Overview: What Is It?
 
@@ -2399,9 +2070,7 @@ Language: Russian
 
 Date: 2024 (estimated)
 
-
 https://ddpa.ru/p/simplex-chat
-
 
 ## Group P2P Chats and the First Messenger Without ID
 
@@ -2419,9 +2088,7 @@ Language: Russian
 
 Date: Feb 2024
 
-
 https://habr.com/ru/companies/globalsign/articles/792986/
-
 
 ## Safer Than Signal or Telegram? SimpleX Offers Absolute Privacy Without Creating a Personal ID
 
@@ -2441,7 +2108,6 @@ Date: May 27, 2023
 
 https://www.cnews.cz/bezpecnejsi-nez-signal-nebo-telegram-simplex-nabidne-absolutni-soukromi-bez-nutnosti-vytvareni-osobniho-id/
 
-
 ## SimpleX Chat Is a Revolution in Encrypted Communication
 
 (SimpleX Chat je revoluci v sifrovane komunikaci)
@@ -2459,7 +2125,6 @@ Language: Czech
 Date: Aug 17, 2023
 
 https://kryptoanarchista.cz/simplex-chat-je-revoluci-v-sifrovane-komunikaci/
-
 
 ## Overview and Comparison of Encrypted Communication Tools
 
@@ -2479,7 +2144,6 @@ Date: Apr 5, 2022
 
 https://juraj.bednar.io/blog/2022/04/05/sifrovane-komunikacne-nastroje-prehlad/
 
-
 ## Encrypted Communication Between Programs and Mobile Devices
 
 Juraj Bednar
@@ -2496,7 +2160,6 @@ Date: Nov 24, 2024
 
 https://juraj.bednar.io/en/blog-en/2024/11/24/encrypted-communication-between-programs-and-mobile-devices/
 
-
 ## Session and SimpleX: Encrypted Messenger Comparison
 
 Michal Kodnar
@@ -2512,7 +2175,6 @@ Language: English
 Date: Oct 2023
 
 https://michalkodnar.xyz/blog-en/culture-en/session-and-simlex-encrypted-messenger-comparison/
-
 
 ## Secure and Decentralized Chat Without Phone Number or Accounts
 
@@ -2532,7 +2194,6 @@ Date: Feb 2025
 
 https://romicaprihor.blogspot.com/2025/02/simplex-chat-revolutia-mesageriei.html
 
-
 ## New Super-Secure Messenger SimpleX Chat: Advantages and Disadvantages
 
 (Novyi super-zakhyshchenyi mesendzhder SimpleX Chat: perevahy y nedoliky)
@@ -2550,7 +2211,6 @@ Language: Ukrainian
 Date: 2023
 
 https://censor.net/ua/blogs/3525466/novyyi-super-zahyschenyyi-mesendjer-simplex-chat-perevagy-yi-nedoliky
-
 
 ## In Search of a Secure Messenger
 
@@ -2570,7 +2230,6 @@ Date: Oct 24, 2023
 
 https://research.kr-labs.com.ua/secure-and-privacy-messaging-apps-guide/
 
-
 ## SimpleX.Chat Is a Chat Network That Preserves Metadata Privacy
 
 (SimpleX.Chat e chat mrezha, koyato zapazva poveritelnostta na metadannite)
@@ -2588,7 +2247,6 @@ Language: Bulgarian
 Date: Jun 5, 2022
 
 https://hristo-hristov.medium.com/simplex-chat-%D0%B5-%D1%87%D0%B0%D1%82-%D0%BC%D1%80%D0%B5%D0%B6%D0%B0-%D0%BA%D0%BE%D1%8F%D1%82%D0%BE-%D0%B7%D0%B0%D0%BF%D0%B0%D0%B7%D0%B2%D0%B0-%D0%BF%D0%BE%D0%B2%D0%B5%D1%80%D0%B8%D1%82%D0%B5%D0%BB%D0%BD%D0%BE%D1%81%D1%82%D1%82%D0%B0-%D0%BD%D0%B0-%D0%BC%D0%B5%D1%82%D0%B0%D0%B4%D0%B0%D0%BD%D0%BD%D0%B8%D1%82%D0%B5-eb31243435a6
-
 
 ## Best Encrypted Chat Apps for 2025
 
@@ -2608,7 +2266,6 @@ Date: Jan 29, 2025
 
 https://questona.com/kriptiran-chat/
 
-
 ## SimpleX: Communication Client for Truly Secure and Anonymous Communication
 
 (SimpleX - komunikacijski klijent za stvarno sigurnu i anonimnu komunikaciju)
@@ -2626,7 +2283,6 @@ Language: Croatian
 Date: Feb 2, 2024
 
 https://www.bug.hr/appdana/simplex-komunikacijski-klijent-za-stvarno-sigurnu-i-anonimnu-komunikaciju-38082
-
 
 ## SimpleX Chat: An Open and Secure Chat
 
@@ -2646,7 +2302,6 @@ Date: May 12, 2022
 
 https://oppetmoln.se/20220512/simplex-chat-en-oppen-och-saker-chatt/
 
-
 ## Top 10 Secure Messaging Platforms to Replace Telegram in Vietnam 2025
 
 (Top 10 Nen Tang Nhan Tin Bao Mat Thay The Telegram Tai Viet Nam 2025)
@@ -2665,7 +2320,6 @@ Date: May 26, 2025
 
 https://tudongchat.com/blog/nen-tang-nhan-tin-bao-mat/
 
-
 ## SimpleX: The Safest Instant Messaging App?
 
 Free.com.tw
@@ -2682,7 +2336,6 @@ Date: Mar 26, 2025
 
 https://free.com.tw/simplex/
 
-
 ## SimpleX: Comparison of Secure Messaging Platforms
 
 FutaGuard
@@ -2698,7 +2351,6 @@ Language: Traditional Chinese
 Date: 2024
 
 https://blog.futa.gg/1/simple-x/
-
 
 ## SimpleX Chat: Privacy Without Compromise
 
@@ -2718,7 +2370,6 @@ Date: Feb 2026
 
 https://opentech.guru/simplex-chat-prywatnosc-bez-kompromisow/
 
-
 ## SimpleX and Matrix Are the Best Messengers. Period.
 
 (SimpleX i Matrix to najlepsze komunikatory. Kropka.)
@@ -2737,7 +2388,6 @@ Date: Sep 5, 2024
 
 https://programistadlapasji.pl/simplex-i-matrix-to-najlepsze-komunikatory-kropka/
 
-
 ## Privacy Redefined: First Messenger Without User IDs
 
 (Prywatnosc zdefiniowana na nowo - Pierwszy komunikator bez identyfikatorow uzytkownikow)
@@ -2745,8 +2395,6 @@ https://programistadlapasji.pl/simplex-i-matrix-to-najlepsze-komunikatory-kropka
 CONEA
 
 Company blog
-
-
 
 Image: conea-simplex-privacy.jpg
 
@@ -2756,7 +2404,6 @@ Date: 2024 (estimated)
 
 http://conea.pl/aktualnosci/Prywatnosc-zdefiniowana-na-nowo---Pierwszy-komunikator-bez-identyfikator%C3%B3w-uzytkownik%C3%B3w-(ID)_158
 
-
 ## The Only TRULY Anonymous Chat: SimpleX
 
 (L'unica chat VERAMENTE anonima | SimpleX)
@@ -2765,8 +2412,6 @@ rdwei
 
 Video review
 
-
-
 Image: italian-youtube-anonymous-chat.jpg
 
 Language: Italian
@@ -2774,7 +2419,6 @@ Language: Italian
 Date: Apr 2026
 
 https://www.youtube.com/watch?v=Eamu0Ys63l4
-
 
 ## SimpleX Chat Video Review
 
@@ -2791,7 +2435,6 @@ Language: Italian
 Date: Mar 8, 2026
 
 https://peertube.uno/w/ecD1N1HjNC4SBvmWusnTC2
-
 
 ## Security in a Box: Communication Tools
 
@@ -2811,7 +2454,6 @@ Date: 2024
 
 https://securityinabox.org/tr/communication/tools/
 
-
 ## SimpleX for Iran
 
 Paskoocheh / ASL19
@@ -2828,14 +2470,11 @@ Date: May 20, 2025
 
 https://paskoocheh.com/tools/839/android.html
 
-
 ## Most Secure Messaging Apps in the World
 
 Plaza.ir
 
 Comparison article
-
-
 
 Image: plaza-ir-secure-messaging.jpg
 
@@ -2844,7 +2483,6 @@ Language: Farsi
 Date: 2024
 
 https://www.plaza.ir/241420/best-encrypted-messaging-apps
-
 
 ## Vitalik Donates 128 ETH Each to Session and SimpleX, Supporting Privacy Communication Development
 
@@ -2864,7 +2502,6 @@ Date: Nov 27, 2025
 
 https://www.techflowpost.com/newsletter/detail_106673.html
 
-
 ## Donating 256 ETH: Vitalik's Bet on Privacy Communication - Why Session and SimpleX?
 
 (Juan zeng 256 ETH, Vitalik ya zhu yin si tong xun: wei shen me shi Session he SimpleX?)
@@ -2882,7 +2519,6 @@ Language: Chinese
 Date: Nov 2025
 
 https://www.theblockbeats.info/news/60368
-
 
 ## I Used Anonymous Chat Tools for a Week: These 3 Are Truly Safe
 
@@ -2902,14 +2538,11 @@ Date: 2025
 
 https://zhuanlan.zhihu.com/p/1916814606019584862
 
-
 ## Truly Secure and Anonymous Social Communication Tools
 
 极客小白
 
 Video tutorial
-
-
 
 Image: chinese-youtube-secure-tools.jpg
 
@@ -2918,7 +2551,6 @@ Language: Chinese
 Date: 2024
 
 https://www.youtube.com/watch?v=UXH6wUOqnfk
-
 
 ## SimpleX Chat: Decentralized Privacy Messaging App Without User Identifiers
 
@@ -2938,7 +2570,6 @@ Date: Apr 22, 2025
 
 https://kaiyuanapp.cn/simplex-chat-%E6%97%A0%E9%9C%80%E7%94%A8%E6%88%B7%E6%A0%87%E8%AF%86%E7%AC%A6%E7%9A%84%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96%E9%9A%90%E7%A7%81%E6%B6%88%E6%81%AF%E5%BA%94%E7%94%A8/
 
-
 ## Pavol Luptak on Censorship, Security, and Nomadism
 
 (SP21 Pavol Luptak o cenzure, bezpecnosti, nomadstvi)
@@ -2947,8 +2578,6 @@ Stackuj.cz Podcast
 
 Podcast episode
 
-
-
 Image: stackuj-luptak-podcast.jpg
 
 Language: Czech
@@ -2956,7 +2585,6 @@ Language: Czech
 Date: May 22, 2022
 
 https://www.youtube.com/watch?v=N0prtSOyeUU
-
 
 ## Kostiantyn Korsun: Zaluzhnyi and Messengers
 
@@ -2976,7 +2604,6 @@ Date: 2025
 
 https://tverezo.info/post/205151
 
-
 ## Top 10 Most Secure Messaging Apps in 2024
 
 (Top 10 mest sikre besked-apps i 2024)
@@ -2985,8 +2612,6 @@ Moyens I/O Denmark
 
 Comparison
 
-
-
 Image: moyens-dk-secure-apps.jpg
 
 Language: Danish
@@ -2994,7 +2619,6 @@ Language: Danish
 Date: 2024
 
 https://dk.moyens.net/apps/top-mest-sikre-besked-apps-signal-session-simplex/
-
 
 ## SimpleX Chat Tutorial Part 2: Fun Features
 
@@ -3014,7 +2638,6 @@ Date: Mar 20, 2025
 
 https://boyshelpboys.com/thread-6844.htm
 
-
 ## Vitalik Donated 256 ETH to 2 Chat Apps You've Never Heard Of - What's He Betting On?
 
 (Vitalik juan le 256 ge ETH gei 2 ge ni mei ting guo de liao tian ruan jian, dao di zai ya zhu shen me?)
@@ -3032,7 +2655,6 @@ Language: Chinese
 Date: Nov 28, 2025
 
 https://blockweeks.com/article/189510
-
 
 ## Looking Back at 2025: Top 10 Influential Figures in the Crypto Industry
 
@@ -3052,7 +2674,6 @@ Date: Dec 22, 2025
 
 https://news.qq.com/rain/a/20251222A01LTC00
 
-
 ## SimpleX Chat: Next-Generation Secure Communication Tool
 
 Zhousa.com
@@ -3068,7 +2689,6 @@ Language: Chinese
 Date: 2024
 
 https://www.zhousa.com/archives/60915.html
-
 
 ## From Privacy to Social: Web3 Needs an All-in-One Encrypted Social Application
 
@@ -3088,7 +2708,6 @@ Date: Dec 17, 2025
 
 https://www.kastop.com/Item/1995.aspx
 
-
 ## SimpleX in Test
 
 (SimpleX im Test)
@@ -3106,7 +2725,6 @@ Language: German
 Date: 2024
 
 https://bitcoinlighthouse.de/privacy/simplex-im-test/
-
 
 ## German Language Pack for Mobile Privacy Messaging Service SimpleX
 
@@ -3126,7 +2744,6 @@ Date: 2022
 
 https://www.heise.de/news/Deutsches-Sprachpaket-fuer-den-mobilen-Privatsphaere-Nachrichtendienst-SimpleX-7278902.html
 
-
 ## SimpleX 1.0.0: Decentralized, Privacy-Respecting and Encrypted Chat
 
 (SimpleX 1.0.0: Dezentraler, Privatsphaere achtender und verschluesselter Chat)
@@ -3145,7 +2762,6 @@ Date: Jan 13, 2022
 
 https://tarnkappe.info/forum/t/simplex-1-0-0-dezentraler-privatsphaere-achtender-und-verschluesselter-chat/9812
 
-
 ## SimpleX Chat Overview
 
 GNU/Linux.ch
@@ -3162,7 +2778,6 @@ Date: 2022
 
 https://gnulinux.ch/simplex-chat
 
-
 ## New Service: SimpleX Chat Server
 
 AdminForge
@@ -3178,7 +2793,6 @@ Language: German
 Date: Oct 4, 2023
 
 https://adminforge.de/tools/neuer-service-simplex-chat-server/
-
 
 ## Privacy Handbook: SimpleX
 
@@ -3198,7 +2812,6 @@ Date: 2024
 
 https://www.privacy-handbuch.de/handbuch_89.htm
 
-
 ## Signal's Brothers: Choosing From Five Most Private and Protected Messengers
 
 (Bratya Signal. Vybiraem iz pyati naibolee privatnykh i zashchishchyonnykh messendzherov)
@@ -3206,8 +2819,6 @@ https://www.privacy-handbuch.de/handbuch_89.htm
 Xakep.ru
 
 Comparative review
-
-Featured
 
 This Russian security magazine calls SimpleX "the most interesting messenger in this selection, and also the most mysterious." The article highlights its anonymous registration requiring no phone number, federated architecture allowing user-hosted relay servers, and modern functionality including audio/video calls and disappearing messages.
 
@@ -3218,7 +2829,6 @@ Language: Russian
 Date: Aug 27, 2024
 
 https://xakep.ru/2024/08/27/5-private-messengers/
-
 
 ## Decentralized Messengers: Choosing the Most Secure Way to Communicate
 
@@ -3238,7 +2848,6 @@ Date: Sep 1, 2024
 
 https://www.securitylab.ru/analytics/551634.php
 
-
 ## WhatsApp and Telegram Alternative: Full Guide to Decentralized Chats
 
 (Alternativa WhatsApp i Telegram: polnyj gid po detsentralizovannym chatam)
@@ -3256,7 +2865,6 @@ Language: Russian
 Date: Aug 14, 2025
 
 https://www.securitylab.ru/analytics/562397.php
-
 
 ## Classification of Secure Messengers: New Projects
 
@@ -3276,7 +2884,6 @@ Date: Feb 27, 2023
 
 https://habr.com/ru/companies/globalsign/articles/719330/
 
-
 ## Alternatives to Signal and Telegram: Which Secure Messenger to Use Now?
 
 (Alternativy Signal i Telegram: kakoj bezopasnyj messendzher ispol'zovat' teper'?)
@@ -3295,7 +2902,6 @@ Date: Sep 9, 2024
 
 https://hi-tech.mail.ru/review/114266-alternativy-signal-i-telegram-kakoj-bezopasnyj-messendzher-ispolzovat/
 
-
 ## SimpleX Chat Review
 
 te-st.org
@@ -3311,7 +2917,6 @@ Language: Russian
 Date: Aug 21, 2023
 
 https://te-st.org/2023/08/21/simplex-chat-review/
-
 
 ## VC.ru Article on SimpleX
 
@@ -3329,7 +2934,6 @@ Date: 2024
 
 https://vc.ru/id2160811/779184
 
-
 ## RuTube: SimpleX Chat Video
 
 RuTube
@@ -3345,7 +2949,6 @@ Language: Russian
 Date: 2024
 
 https://rutube.ru/video/b3dcb8869291d7de55596392c05aa24c/
-
 
 ## SimpleX: Messaging Proof Against the Curious
 
@@ -3365,7 +2968,6 @@ Date: 2024
 
 https://franciscobarral.es/simplex-la-mensajeria-a-prueba-de-curiosos/
 
-
 ## SimpleX Chat: Secure Messaging and Decentralized Communities
 
 (SimpleX Chat: Mensajeria segura y comunidades descentralizadas)
@@ -3383,7 +2985,6 @@ Language: Spanish
 Date: 2024
 
 https://ecosistemastartup.com/simplex-chat-mensajeria-segura-y-comunidades-descentralizadas/
-
 
 ## Secure Messaging Apps: Complete Technical Analysis
 
@@ -3403,7 +3004,6 @@ Date: 2024
 
 https://esgeeks.com/app-mensajeria-mas-segura/
 
-
 ## Most Secure Decentralized Messengers
 
 (Mensajeros descentralizados mas seguros)
@@ -3421,7 +3021,6 @@ Language: Spanish
 Date: 2024
 
 https://esgeeks.com/mensajeros-descentralizados-mas-seguros/
-
 
 ## SimpleX Chat: The Messaging App
 
@@ -3441,7 +3040,6 @@ Date: May 2023
 
 https://www.computekni.com/2023/05/simplex-chat-la-app-de-mensajeria.html
 
-
 ## This Is How This Secure Messaging App Works Without User Identifiers
 
 (Asi funciona esta app de mensajeria segura que carece de identificadores para los usuarios)
@@ -3459,7 +3057,6 @@ Language: Spanish
 Date: Aug 13, 2022
 
 https://wwwhatsnew.com/2022/08/13/asi-funciona-esta-app-de-mensajeria-segura-que-carece-de-identificadores-para-los-usuarios/
-
 
 ## Telegram Privacy Alternatives
 
@@ -3479,7 +3076,6 @@ Date: 2024
 
 https://www.criptonoticias.com/tecnologia/alternativas-telegram-privacidad-mensajeria/
 
-
 ## SimpleX Chat Tutorial
 
 Bitcoin.ar
@@ -3495,7 +3091,6 @@ Language: Spanish
 Date: 2024
 
 https://bitcoin.ar/tutoriales/simplex-chat/
-
 
 ## These Are the Most Secure Messaging Apps According to a Criminologist
 
@@ -3515,7 +3110,6 @@ Date: Nov 25, 2024
 
 https://www.noticiasdenavarra.com/ciencia-y-tecnologia/2024/11/25/estas-son-aplicaciones-mensajeria-mas-seguras-segun-una-criminologa-8972947.html
 
-
 ## Step-by-Step SimpleX Chat Guide
 
 (Passo a passo do aplicativo SimpleX Chat)
@@ -3533,7 +3127,6 @@ Language: Portuguese
 Date: May 26, 2024
 
 https://alexemidio.substack.com/p/passo-a-passo-do-aplicativo-simplexchat
-
 
 ## Ethereum Founder Donates R$4.2 Million to Privacy-Focused Messengers
 
@@ -3553,7 +3146,6 @@ Date: Nov 2025
 
 https://livecoins.com.br/fundador-do-ethereum-doa-r-42-milhoes-para-mensageiros-focados-em-privacidade-baixe-e-use/
 
-
 ## Top Most Secure Messaging Apps: Signal, Session, SimpleX
 
 (Top aplicativos de mensagens mais seguros)
@@ -3562,8 +3154,6 @@ Moyens I/O Portugal
 
 Comparison
 
-
-
 Image: moyens-pt-secure-apps.jpg
 
 Language: Portuguese
@@ -3571,7 +3161,6 @@ Language: Portuguese
 Date: 2024
 
 https://pt.moyens.net/aplicativos/top-aplicativos-mensagens-mais-seguros-signal-session-simplex/
-
 
 ## SimpleX: How to Use the World's Most Private Messaging App
 
@@ -3591,7 +3180,6 @@ Date: 2024
 
 https://soberano.news/guias-e-ferramentas/simplex-como-usar-o-app-de-mensagens-mais-privado-do-mundo/
 
-
 ## How to Install SimpleX Chat Messenger on Linux via Flatpak
 
 (Como instalar o mensageiro Simplex Chat no Linux via Flatpak)
@@ -3609,7 +3197,6 @@ Language: Portuguese
 Date: 2024
 
 https://www.edivaldobrito.com.br/como-instalar-o-mensageiro-simplex-chat-no-linux-via-flatpak/
-
 
 ## Top 10 Best Messaging Apps for Secure, Anonymous and Privacy-Respecting Chat
 
@@ -3629,7 +3216,6 @@ Date: 2024
 
 https://www.jacopococcia.com/10-migliori-app-messaggistica-per-chat-sicure-anonime-privacy/
 
-
 ## What Is SimpleX Chat?
 
 No Trust Verify
@@ -3645,7 +3231,6 @@ Language: English
 Date: 2024
 
 https://blog.notrustverify.ch/what-is-simplex-chat
-
 
 ## Interview With the Author of SimpleX Chat: The Most Secure Messaging by Design
 
@@ -3663,7 +3248,6 @@ Date: 2024
 
 https://gatooscuro.xyz/interview-with-the-author-of-simplex-chat-the-most-secure-messaging-by-design/
 
-
 ## Safe and Private Messaging Apps Similar to Signal
 
 Factually
@@ -3680,14 +3264,11 @@ Date: 2026
 
 https://factually.co/product-reviews/electronics-tech/safe-private-messaging-apps-similar-to-signal-84872a
 
-
 ## Best Secure Messaging Apps 2025: Private Chat Reviews
 
 Tileris
 
 Video comparison
-
-
 
 Image: youtube-best-secure-2025.jpg
 
@@ -3697,14 +3278,11 @@ Date: Jul 30, 2025
 
 https://www.youtube.com/watch?v=GH4u8pQLY90
 
-
 ## SimpleX: Best Private Messenger?
 
 Tom Spark's Reviews
 
 Video review
-
-
 
 Image: youtube-best-private-messenger.jpg
 
@@ -3714,14 +3292,11 @@ Date: 2024
 
 https://www.youtube.com/watch?v=PbYm1G-QVUc
 
-
 ## SimpleX Chat Tutorial
 
 How to use apps?
 
 Video tutorial
-
-
 
 Image: youtube-simplex-tutorial.jpg
 
@@ -3731,14 +3306,11 @@ Date: 2024
 
 https://www.youtube.com/watch?v=X7CJlbBJNcc
 
-
 ## SimpleX Chat Review
 
 QuickLearn
 
 Video review
-
-
 
 Image: youtube-simplex-review-2024.jpg
 
@@ -3747,7 +3319,6 @@ Language: English
 Date: 2024
 
 https://www.youtube.com/watch?v=cGGrRnXAh1w
-
 
 ## SimpleX Chat: Settings and Usage Guide
 
@@ -3767,7 +3338,6 @@ Date: 2024
 
 https://note.com/deeplife/n/n84b9e0a75ac5
 
-
 ## How to Bypass SimpleX Chat Blocking
 
 dept.one
@@ -3783,7 +3353,6 @@ Language: Japanese
 Date: 2024
 
 https://dept.one/memo/simplex-chat/
-
 
 ## SimpleX Chat: Another Kusaimara Article
 
@@ -3801,7 +3370,6 @@ Date: Jun 2023
 
 https://kusaimara.net/2023/06/444
 
-
 ## Vitalik Buterin Donates ETH to Privacy Apps
 
 Coinspeaker
@@ -3818,14 +3386,11 @@ Date: Nov 2025
 
 https://www.coinspeaker.com/jp/vitalik-buterin-donates-eth-privacy-apps/
 
-
 ## Yahoo Japan: Vitalik Buterin Donation Coverage
 
 Yahoo Japan News
 
 News article
-
-
 
 Image: yahoo-japan-vitalik-simplex.jpg
 
@@ -3834,7 +3399,6 @@ Language: Japanese
 Date: Nov 2025
 
 https://news.yahoo.co.jp/articles/a55ac83411dcaca913007857948d335b0ed4d21a
-
 
 ## Encrypted Messengers: Comparison
 
@@ -3854,7 +3418,6 @@ Date: May 3, 2022
 
 https://juraj.bednar.io/en/blog-en/2022/05/03/encrypted-messengers-comparison/
 
-
 ## SimpleX Chat on IQ.wiki
 
 IQ.wiki
@@ -3870,7 +3433,6 @@ Language: English
 Date: 2024
 
 https://iq.wiki/wiki/simplex-chat
-
 
 ## SimpleX: How to Use the Most Private Messaging App
 
@@ -3890,7 +3452,6 @@ Date: 2024
 
 https://soberano.news/en/guides-and-tools/simplex-how-to-use-the-worlds-most-private-messaging-app/
 
-
 ## Libertarian Institute Article on SimpleX
 
 Institute for Libertarian Ideas / Japan
@@ -3906,7 +3467,6 @@ Language: English
 Date: 2024
 
 https://institute-for-libertarian.org/the-libertarian/2148/
-
 
 ## Messaging Applications on Medium
 
@@ -3926,7 +3486,6 @@ Date: Sep 3, 2023
 
 https://medium.com/@gizlikalsin/mesajla%C5%9Fma-uygulamalar%C4%B1-74dc81d78737
 
-
 ## BlockTop: From Privacy to Social - Web3 and Encrypted Social Applications
 
 (Cong yin si dao she jiao: Web3 xu yao yi zhan shi jia mi she jiao ying yong)
@@ -3945,14 +3504,11 @@ Date: Dec 17, 2025
 
 https://blocktop.cn/newsContent/1/176524
 
-
 ## Technical Review of SimpleX App
 
 Afaq Electronic Foundation
 
 Technical review
-
-
 
 Image: alfustat-simplex-arabic-review.jpg
 
@@ -3961,7 +3517,6 @@ Language: Arabic
 Date: 2024 (estimated)
 
 https://alfustat.click/18226/
-
 
 ## Better and More Secure Messenger Than Signal
 
@@ -3981,7 +3536,6 @@ Date: 2024
 
 https://selfhosty.pl/lepszy-i-bezpieczniejszy-komunikator-niz-signal/
 
-
 ## Security in Instant Messaging Services
 
 (Seguridad en servicios de mensajeria instantanea)
@@ -3999,7 +3553,6 @@ Language: Spanish
 Date: Oct 27, 2024
 
 https://406.neocities.org/a/apps_mensajeria/
-
 
 ## Anonymous Messaging Apps: Recommended List
 
@@ -4019,7 +3572,6 @@ Date: 2024 (estimated)
 
 https://note.com/deeplife/n/ne7ffdd8a50cd
 
-
 ## Building Your First Anonymous Digital Life: Fundamentals
 
 (Tokumei de ikiru tame no saisho no kankyo kochiku to kihon no hanashi)
@@ -4038,7 +3590,6 @@ Date: 2024 (estimated)
 
 https://note.com/deeplife/n/nea6f1c4e08a7
 
-
 ## Privacy Protection: Instant Messaging
 
 Hacking Articles
@@ -4054,7 +3605,6 @@ Language: English
 Date: Sep 17, 2025
 
 https://www.hackingarticles.in/privacy-protection-instant-messaging/
-
 
 ## SimpleX on Yggdrasil Network
 
@@ -4072,7 +3622,6 @@ Date: 2024 (estimated)
 
 https://yggwiki.cc/social_media:simplex
 
-
 ## SimpleX Chat Review
 
 Tests & Tips
@@ -4089,7 +3638,6 @@ Date: 2024 (estimated)
 
 https://tests.tips/en/?software/mobile-apps/simplex
 
-
 ## Self-Host SimpleX Chat
 
 (Hospeda SimpleX Chat)
@@ -4097,8 +3645,6 @@ https://tests.tips/en/?software/mobile-apps/simplex
 402 Payment Required
 
 Video tutorial
-
-
 
 Image: hospeda-simplex-chat.jpg
 
@@ -4108,7 +3654,6 @@ Date: Feb 10, 2024
 
 https://www.youtube.com/watch?v=p1NF68KIt7M
 
-
 ## SimpleX Chat: The Libertarian WhatsApp
 
 (SimpleX Chat - Whatsapp libertario)
@@ -4117,8 +3662,6 @@ Paranoia
 
 Video tutorial
 
-
-
 Image: simplex-whatsapp-libertario.jpg
 
 Language: Portuguese
@@ -4126,7 +3669,6 @@ Language: Portuguese
 Date: Jan 9, 2025
 
 https://www.youtube.com/watch?v=4sOvaD-YZLU
-
 
 ## SimpleX Chat Is a Revolution in Encrypted Communication
 
@@ -4143,7 +3685,6 @@ Language: English
 Date: Aug 17, 2023
 
 https://kryptoanarchista.cz/en/simplex-chat-is-a-revolution-in-encrypted-communication/
-
 
 ## Which Messengers Work in Russia and Which Are Blocked
 
@@ -4163,7 +3704,6 @@ Date: Mar 6, 2026
 
 https://appvisor.ru/post/news/kakie-messendzhery-rabotayut-v-rossii-a-kakie-zablokirovany/
 
-
 ## SimpleX: Ultra-Private Messaging
 
 (SimpleX, mensajeria ultraprivada)
@@ -4171,8 +3711,6 @@ https://appvisor.ru/post/news/kakie-messendzhery-rabotayut-v-rossii-a-kakie-zabl
 Bala Extra
 
 Podcast episode
-
-
 
 Image: bala-extra-simplex-podcast.jpg
 
@@ -4182,14 +3720,11 @@ Date: Nov 25, 2025
 
 https://www.listennotes.com/podcasts/bala-extra/simplex-mensajer%C3%ADa-z3pHYeVJcA2/
 
-
 ## Protocols Not Platforms: NOSTR, BTC, SimpleX
 
 Closed Network Privacy Podcast
 
 Podcast episode
-
-
 
 Image: closed-network-protocols.jpg
 
@@ -4199,14 +3734,11 @@ Date: 2024 (estimated)
 
 https://closednetwork.io/podcast/episode-38-protocols-not-platforms-nostr-btc-simplex/
 
-
 ## Introducing TorGuard's New Private VPN Cloud App: SimpleX Server
 
 TorGuard
 
 Service
-
-
 
 Image: torguard-simplex-server.jpg
 
@@ -4215,7 +3747,6 @@ Language: English
 Date: 2025 (estimated)
 
 https://blog.torguard.net/introducing-torguards-new-private-vpn-cloud-app-simplex-server/
-
 
 ## SimpleX Chat Hosting and Services
 
@@ -4233,7 +3764,6 @@ Date: 2025 (estimated)
 
 https://www.taurix.net/simplex-chat/
 
-
 ## Taurix SimpleX Customer Service Bot
 
 Taurix IT
@@ -4249,7 +3779,6 @@ Language: English
 Date: 2025 (estimated)
 
 https://code.taurix.net/TaurixIT/simplex-customerservicebot
-
 
 ## RoboSats Orderbook Alert Bot for SimpleX Chat
 
@@ -4267,7 +3796,6 @@ Date: 2024 (estimated)
 
 https://github.com/TempleOfSats/Robosats-Orderbook-Alert-Bot-for-SimpleX-Chat
 
-
 ## SimpleX SMP Server Setup Guide
 
 Freedom Lab NYC
@@ -4283,7 +3811,6 @@ Language: English
 Date: 2025 (estimated)
 
 https://freedomlab.nyc/resources/simplex-smp/
-
 
 ## SimpleX Chat on LunarDAO Wiki
 
@@ -4301,7 +3828,6 @@ Date: 2024 (estimated)
 
 https://wiki.lunardao.net/simplexchat.html
 
-
 ## SimpleX Communities on Monerica
 
 Monerica
@@ -4317,7 +3843,6 @@ Language: English
 Date: 2025 (estimated)
 
 https://monerica.com/communities/simplex
-
 
 ## SimpleX Chat: Censorship-Resistant Communication
 
@@ -4335,7 +3860,6 @@ Date: 2025 (estimated)
 
 https://splintercon.net/project/simplex-chat/
 
-
 ## Tech Guides for Anarchists: End-to-End Encrypted Messaging
 
 AnarSec
@@ -4351,7 +3875,6 @@ Language: English
 Date: 2024 (estimated)
 
 https://www.anarsec.guide/posts/e2ee/
-
 
 ## Join Beginner Privacy on SimpleX
 
@@ -4369,7 +3892,6 @@ Date: 2025 (estimated)
 
 https://beginnerprivacy.com/about/join-simplex-group/
 
-
 ## Sofwul.cz: E-Commerce with SimpleX Contact
 
 Sofwul
@@ -4385,7 +3907,6 @@ Language: Czech
 Date: 2025 (estimated)
 
 https://www.sofwul.cz/kontakty-messengery
-
 
 ## SimpleX Chat Server Now Available for StartOS
 
@@ -4403,14 +3924,11 @@ Date: 2023 (estimated)
 
 https://stacker.news/items/196092
 
-
 ## Hack Liberty: Cypherpunk Community on SimpleX
 
 Hack Liberty
 
 Community
-
-
 
 Image: hackliberty-simplex-community.jpg
 
@@ -4419,7 +3937,6 @@ Language: English
 Date: 2024 (estimated)
 
 https://links.hackliberty.org/
-
 
 ## Nowhere.moe: Privacy Hosting with SimpleX Infrastructure
 
@@ -4437,7 +3954,6 @@ Date: 2024 (estimated)
 
 https://nowhere.moe/
 
-
 ## XMRBazaar: Monero Marketplace on SimpleX
 
 XMRBazaar
@@ -4453,7 +3969,6 @@ Language: English
 Date: 2024 (estimated)
 
 https://monero.town/post/4623536
-
 
 ## Simplified Privacy: Tech Groups on SimpleX
 
@@ -4471,7 +3986,6 @@ Date: 2024 (estimated)
 
 https://simplifiedprivacy.com/techgroups/
 
-
 ## NBTV Community on SimpleX
 
 NBTV / Ludlow Institute
@@ -4487,7 +4001,6 @@ Language: English
 Date: 2025 (estimated)
 
 https://ludlowinstitute.org/community
-
 
 ## Taurix "tellme" Bot
 
@@ -4505,7 +4018,6 @@ Date: 2025 (estimated)
 
 https://code.taurix.net/TaurixIT/tellme
 
-
 ## BitList.co Bitcointalk Notification Bot
 
 BitList.co
@@ -4521,7 +4033,6 @@ Language: English
 Date: 2025 (estimated)
 
 https://bitcointalk.org/index.php?topic=5535681.0
-
 
 ## SimpleX Without Tears: Wrapped in Onion, Served via Tor
 
@@ -4539,7 +4050,6 @@ Date: 2025 (estimated)
 
 https://nemental.de/simplex-without-tears-wrapped-in-onion-served-via-tor/
 
-
 ## SimpleX Server Docker Installation Guide (SMP/XFTP)
 
 Hack Liberty
@@ -4556,7 +4066,6 @@ Date: 2024 (estimated)
 
 https://forum.hackliberty.org/t/simplex-server-docker-installation-guide-smp-xftp/140
 
-
 ## SimpleX Theme Archive
 
 SimpleX-Themes
@@ -4572,7 +4081,6 @@ Language: English
 Date: 2025 (estimated)
 
 https://slcw.github.io/SimpleX-Themes/
-
 
 ## Goodbye Telegram, Welcome SimpleX!
 
@@ -4592,7 +4100,6 @@ Date: Oct 2024
 
 https://hup.hu/node/186622
 
-
 ## Sharing Several E2EE Open-Source Chat Apps 100x Safer Than Telegram
 
 (Fen xiang ji ge bi dian bao Telegram an quan 100 bei de duan dui duan jia mi kai yuan liao tian ruan jian)
@@ -4610,7 +4117,6 @@ Language: Chinese
 Date: Aug 26, 2024
 
 https://www.v2ex.com/t/1067954
-
 
 ## Sharing E2EE Open-Source Chat Apps 100x Safer Than Telegram
 
@@ -4630,14 +4136,11 @@ Date: Aug 26, 2024
 
 https://matters.town/a/hvb8p0wepluy
 
-
 ## Comparison of Instant Messengers
 
 Eylenburg
 
 Comparison
-
-Featured
 
 This comprehensive messenger comparison states that SimpleX "probably has the best privacy and anonymity of all the messengers compared here," noting it requires no accounts or IDs and users connect via one-time invitation links. It identifies the main limitation as adoption - being a relatively new app with few users makes it impractical for most people who need to communicate with existing contacts.
 
@@ -4649,14 +4152,11 @@ Date: Apr 2026 (updated)
 
 https://eylenburg.github.io/im_comparison.htm
 
-
 ## SimpleX VS Quiet: Privacy and Security
 
 Hack Forums
 
 Comparison
-
-
 
 Image: hackforums-simplex-vs-quiet.jpg
 
