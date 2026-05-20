@@ -1198,24 +1198,6 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
   where
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
 
--- | Direct (non-forwarded) 'XGrpMemNew' element for first-introduction
--- dissemination. The relay's connection to each recipient identifies it
--- as the connection's member; on the receiver, 'xGrpMemNew' takes 'm'
--- from that connection and 'isRelay m' bypasses 'checkHostRole'.
-encodeMemberProfileElement :: VersionRangeChat -> GroupInfo -> GroupMember -> ByteString
-encodeMemberProfileElement vr gInfo member =
-  case encodeChatMessage (maxBound :: Int) chatMsg of
-    ECMEncoded bs -> bs
-    ECMLarge -> error "encodeMemberProfileElement: unreachable with maxBound"
-  where
-    chatMsg :: ChatMessage 'Json
-    chatMsg =
-      ChatMessage
-        { chatVRange = vr,
-          msgId = Nothing,
-          chatMsgEvent = XGrpMemNew (memberInfo gInfo member) Nothing
-        }
-
 redactedMemberProfile :: Bool -> Profile -> Profile
 redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType} =
   Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType}

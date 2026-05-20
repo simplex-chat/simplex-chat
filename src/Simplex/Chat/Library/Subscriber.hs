@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl', nub, partition)
+import Data.List (find, foldl', nub)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -2678,7 +2678,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
                     toView $ CEvtContactUpdated user mCt ct'
                   pure m'
-                else pure m -- profile update rejected (active contact connection); no change
+                else pure m
               where
                 canUpdateProfile ct
                   | not (contactActive ct) = True
@@ -3657,6 +3657,22 @@ getDeliveryJobWorker hasWork deliveryKey = do
   getAgentWorker "delivery_job" hasWork a deliveryKey ws $
     runDeliveryJobWorker a deliveryKey
 
+-- | Encode an XGrpMemNew for first-introduction dissemination as a direct
+-- (non-forwarded) batch element. Left when the encoded element wouldn't fit
+-- in a singleton batch (= maxEncodedMsgLength - 4 bytes for batch framing).
+encodeMemberNew :: VersionRangeChat -> GroupInfo -> GroupMember -> Either ChatError ByteString
+encodeMemberNew vr gInfo member = case encodeChatMessage (maxEncodedMsgLength - 4) chatMsg of
+  ECMEncoded bs -> Right bs
+  ECMLarge -> Left $ ChatError $ CEException $ "large profile element for member " <> show (groupMemberId' member)
+  where
+    chatMsg :: ChatMessage 'Json
+    chatMsg =
+      ChatMessage
+        { chatVRange = vr,
+          msgId = Nothing,
+          chatMsgEvent = XGrpMemNew (memberInfo gInfo member) Nothing
+        }
+
 runDeliveryJobWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
 runDeliveryJobWorker a deliveryKey Worker {doWork} = do
   delay <- asks $ deliveryWorkerDelay . config
@@ -3734,17 +3750,11 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       if null senderProfiles
                         then pure (body, [], [], [])
                         else do
-                          let labeled = [(s, encodeMemberProfileElement vr gInfo s) | (s, _) <- senderProfiles]
-                              -- Singleton-batch budget: '=' + count(1) + Word16 length prefix + element.
-                              singletonOverhead = 4
-                              maxElement = maxEncodedMsgLength - singletonOverhead
-                              (validLabeled, oversized) = partition (\(_, b) -> B.length b <= maxElement) labeled
-                          -- Drop elements that overflow even a singleton batch (rare;
-                          -- requires an avatar near maxEncodedMsgLength). Senders stay
-                          -- unmarked; the operator sees a chat error per affected sender.
-                          unless (null oversized) $ do
-                            logInfo $ "delivery job " <> tshow jobId <> ": dropping " <> tshow (length oversized) <> " oversized profile element(s)"
-                            toView $ CEvtChatErrors [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | (s, _) <- oversized]
+                          let (oversizedErrs, validLabeled) =
+                                partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew vr gInfo s | (s, _) <- senderProfiles]
+                          unless (null oversizedErrs) $ do
+                            logInfo $ "delivery job " <> tshow jobId <> ": dropping " <> tshow (length oversizedErrs) <> " oversized profile element(s)"
+                            toView $ CEvtChatErrors oversizedErrs
                           let (extBody', inBody, overflowLabeled) = packIntoBody maxEncodedMsgLength body validLabeled
                               overflowBatches' = packIntoBatches maxEncodedMsgLength overflowLabeled
                           pure (extBody', inBody, overflowBatches', map fst validLabeled)
