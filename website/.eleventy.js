@@ -92,7 +92,7 @@ module.exports = function (ty) {
   const catCounts = {}
   linksData.forEach(e => { if (e.category) { const c = e.category.toLowerCase(); catCounts[c] = (catCounts[c] || 0) + 1 } })
   const mediaPills = ["Video", "Audio"].filter(p => linksData.some(e => e.mediaType === p.toLowerCase()))
-  const catPills = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).map(([c]) => c)
+  const catPills = Object.keys(catCounts).sort()
   ty.addGlobalData("linkPills", mediaPills.concat(catPills))
 
   ty.addShortcode("cfg", (name) => globalConfig[name])

@@ -32,41 +32,32 @@ active_links: true
         padding-right: 16px;
     }
     .filter-chip {
-        padding: 4px 12px;
-        border-radius: 16px;
-        border: 1px solid #ccc;
+        padding: 4px 0;
+        border: none;
+        border-radius: 0;
         font-size: 13px;
         cursor: pointer;
         background: transparent;
-        color: inherit;
-        transition: all 0.15s;
+        color: #A8B0B4;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        transition: color 0.15s;
+        position: relative;
     }
-    .dark .filter-chip {
-        border-color: #1e3a5f;
+    .filter-chip::after {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+        height: 0;
+        overflow: hidden;
+        visibility: hidden;
     }
     .filter-chip.active {
-        background: #1B95D2;
-        border-color: #1B95D2;
-        color: white;
+        font-weight: bold;
+        color: inherit;
     }
-    #filter-groups {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        align-items: center;
-    }
-    .filter-group {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        align-items: center;
-    }
-    .filter-group-label {
-        font-size: 12px;
-        color: #A8B0B4;
-        margin-right: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+    .filter-chip:hover {
+        color: inherit;
     }
     .link-item {
         transition: background 0.3s;
@@ -233,12 +224,12 @@ active_links: true
                 {% endfor %}
             </select>
 
-            <button class="filter-chip active" data-filter="" data-value="">All</button>
+            <button class="filter-chip active" data-filter="" data-value="" data-label="All">All</button>
             {% for p in linkPills %}
                 {% if p == "Video" or p == "Audio" %}
-            <button class="filter-chip" data-filter="media" data-value="{{ p | lower }}">{{ p }}</button>
+            <button class="filter-chip" data-filter="media" data-value="{{ p | lower }}" data-label="{{ p }}">{{ p }}</button>
                 {% else %}
-            <button class="filter-chip" data-filter="cat" data-value="{{ p }}">{{ p | capitalize }}</button>
+            <button class="filter-chip" data-filter="cat" data-value="{{ p }}" data-label="{{ p | capitalize }}">{{ p | capitalize }}</button>
                 {% endif %}
             {% endfor %}
         </div>
