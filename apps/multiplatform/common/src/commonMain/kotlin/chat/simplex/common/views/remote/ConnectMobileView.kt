@@ -94,12 +94,11 @@ fun ConnectMobileLayout(
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
     SectionView(generalGetString(MR.strings.this_device_name), card = true) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
-      SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
       PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
         controller.appPrefs.offerRemoteMulticast.set(it)
       }
-      SectionSpacer()
     }
+    SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
     SectionView(stringResource(MR.strings.devices), card = true) {
       if (chatModel.localUserCreated.value == true) {
         SettingsActionItemWithContent(text = stringResource(MR.strings.this_device), icon = painterResource(MR.images.ic_desktop), click = connectDesktop) {

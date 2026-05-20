@@ -244,8 +244,8 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
             }
           }
         ) {}
-        SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
       }
+      SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
     }
     if (verifyingPassphrase.value) {
       ProgressView()
@@ -362,9 +362,9 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
         )
       }
     ) {}
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   }
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   SectionSpacer()
   SectionView(stringResource(MR.strings.show_QR_code), card = true) {
     SimpleXLinkQRCode(link, onShare = {})
@@ -411,9 +411,9 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
           )
         }
       ) {}
-      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
-      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     }
+    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
+    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     if (chatDeletion) {
       ProgressView()
     }

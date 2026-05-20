@@ -501,8 +501,8 @@ private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DB
         }
       ) {}
     }
-    SectionTextFooter(footer)
   }
+  SectionTextFooter(footer)
 }
 
 @Composable

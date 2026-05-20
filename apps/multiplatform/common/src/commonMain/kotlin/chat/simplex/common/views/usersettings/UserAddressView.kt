@@ -337,8 +337,9 @@ private fun UserAddressLayout(
           val savedAddressSettingsState = remember { mutableStateOf(addressSettingsState.value) }
 
           SectionViewWithButton(
-            stringResource(MR.strings.for_social_media).uppercase(),
-            titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
+            stringResource(MR.strings.for_social_media),
+            titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null,
+            card = true
           ) {
             SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
             if (userAddress.shouldBeUpgraded) {
@@ -354,10 +355,9 @@ private fun UserAddressLayout(
             // ShareViaEmailButton { sendEmail(userAddress) }
             BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
             AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
-
-            if (addressSettingsState.value.businessAddress) {
-              SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
-            }
+          }
+          if (addressSettingsState.value.businessAddress) {
+            SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
           }
 
           SectionSpacer()
@@ -372,8 +372,8 @@ private fun UserAddressLayout(
           SectionSpacer()
           SectionView(card = true) {
             DeleteAddressButton(deleteAddress)
-            SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
           }
+          SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
         }
       }
     }
