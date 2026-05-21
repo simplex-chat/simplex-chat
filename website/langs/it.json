@@ -369,5 +369,8 @@
     "file-proto-h-4": "Instradatori indipendenti di dati",
     "file-proto-p-4": "Quando il file è diviso in frammenti, viene inviato tramite instradatori di rete operati da parti indipendenti. Nessun operatore può vedere la vera dimensione o il nome del file. Anche se un instradatore venisse compromesso, potrà vedere solo frammenti cifrati di dimensione fissa. I frammenti di file restano in cache dagli instradatori di rete per circa 48 ore.",
     "file-proto-spec": "Leggi le specifiche del protocollo XFTP →",
-    "send-file": "Invia file"
+    "send-file": "Invia file",
+    "links": "Collegamenti",
+    "links-title": "Link della comunità",
+    "links-all-languages": "Tutte le lingue"
 }
