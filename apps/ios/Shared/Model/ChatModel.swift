@@ -812,6 +812,63 @@ final class ChatModel: ObservableObject {
     }
 
     func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
+        func isMemberItem(_ item: ChatItem) -> Bool {
+            if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
+                return true
+            } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
+                return true
+            }
+            return false
+        }
+
+        let cInfo = ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil)
+        // When fullDelete is on, items are fully deleted from DB by backend —
+        // remove them from UI immediately so no "moderated" bubbles are shown.
+        if groupInfo.fullGroupPreferences.fullDelete.on {
+            // Update chat list preview
+            if let chat = getChat(groupInfo.id),
+               chat.chatItems.count > 0,
+               isMemberItem(chat.chatItems[0]) {
+                chat.chatItems = [ChatItem.deletedItemDummy()]
+            }
+            // Remove from open chat view
+            if chatId == groupInfo.id {
+                var indicesToRemove: [Int] = []
+                for i in 0..<im.reversedChatItems.count {
+                    let item = im.reversedChatItems[i]
+                    if isMemberItem(item) {
+                        VoiceItemState.stopVoiceInChatView(cInfo, item) // stop voice message if playing
+                        if item.isRcvNew {
+                            unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: item.meta.userMention ? -1 : 0)
+                        }
+                        if item.isActiveReport {
+                            decreaseGroupReportsCounter(groupInfo.id)
+                        }
+                        indicesToRemove.append(i)
+                    }
+                }
+                withAnimation {
+                    let removed = indicesToRemove.enumerated().map { (offset, i) in
+                        let item = im.reversedChatItems.remove(at: i - offset)
+                        return (item.id, i, item.isRcvNew)
+                    }
+                    if !removed.isEmpty {
+                        im.chatState.itemsRemoved(removed, im.reversedChatItems.reversed())
+                    }
+                }
+            }
+            return
+        }
+        // When fullDelete is off, mark items as moderated (original behavior)
+        func removedUpdatedItem(_ item: ChatItem) -> ChatItem? {
+            if !isMemberItem(item) { return nil }
+            var updatedItem = item
+            updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
+            if item.isActiveReport {
+                decreaseGroupReportsCounter(groupInfo.id)
+            }
+            return updatedItem
+        }
         if chatId == groupInfo.id {
             for i in 0..<im.reversedChatItems.count {
                 if let updatedItem = removedUpdatedItem(im.reversedChatItems[i]) {
@@ -822,26 +879,6 @@ final class ChatModel: ObservableObject {
                   chat.chatItems.count > 0,
                   let updatedItem = removedUpdatedItem(chat.chatItems[0]) {
                 chat.chatItems = [updatedItem]
-        }
-
-        func removedUpdatedItem(_ item: ChatItem) -> ChatItem? {
-            let newContent: CIContent
-            if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
-                newContent = .sndModerated
-            } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
-                newContent = .rcvModerated
-            } else {
-                return nil
-            }
-            var updatedItem = item
-            updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
-            if groupInfo.fullGroupPreferences.fullDelete.on {
-                updatedItem.content = newContent
-            }
-            if item.isActiveReport {
-                decreaseGroupReportsCounter(groupInfo.id)
-            }
-            return updatedItem
         }
     }
 
