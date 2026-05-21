@@ -254,6 +254,7 @@ chatGroupTests = do
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
     describe "deliver member profiles via relay" $ do
       it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerReceivesProfile
+      it "2 relays: deduplicate member announcement" testChannel2RelaysDeduplicateProfile
       it "multi senders disseminate independently" testChannelMultiSendersIndependent
       it "large profile fits in body" testChannelLargeProfileFits
       it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfiles
@@ -8862,6 +8863,70 @@ testChannelLateJoinerReceivesProfile ps =
           bob <# "#team cath> hi again"
           alice <# "#team cath> hi again [>>]"
           dan <# "#team cath> hi again [>>]"
+
+          memberIntroducedTo bob "cath" "alice"
+          memberIntroducedTo bob "cath" "dan"
+
+          -- profile update: rename piggybacks on next send; no re-prepend, bits stay set.
+          cath ##> "/p kate Kate"
+          cath <## "user profile is changed to kate (Kate) (your 0 contacts are notified)"
+
+          cath #> "#team renamed"
+          bob <# "#team kate> renamed"
+          alice <# "#team kate> renamed [>>]"
+          dan <# "#team kate> renamed [>>]"
+          threadDelay 500000
+          memberIntroducedTo bob "kate" "alice"
+          memberIntroducedTo bob "kate" "dan"
+
+testChannel2RelaysDeduplicateProfile :: HasCallStack => TestParams -> IO ()
+testChannel2RelaysDeduplicateProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+            memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink dan
+            memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink eve
+
+            -- first forward: both relays prepend XGrpMemNew(dan) for eve;
+            -- second hits xGrpMemNew's "already created via another relay" branch.
+            dan #> "#team hi"
+            bob <# "#team dan> hi"
+            cath <# "#team dan> hi"
+            alice <# "#team dan> hi [>>]"
+            eve .<## " introduced dan (Daniel) in the channel"
+            eve <# "#team dan> hi [>>]"
+
+            -- second forward: eve's bit is set on both relays, no prepend.
+            dan #> "#team hi again"
+            bob <# "#team dan> hi again"
+            cath <# "#team dan> hi again"
+            alice <# "#team dan> hi again [>>]"
+            eve <# "#team dan> hi again [>>]"
+
+            -- both relays independently mark eve in dan's vector;
+            -- alice's bit was set at join via introduceInChannel and stays set.
+            memberIntroducedTo bob "dan" "alice"
+            memberIntroducedTo bob "dan" "eve"
+            memberIntroducedTo cath "dan" "alice"
+            memberIntroducedTo cath "dan" "eve"
+
+            -- profile update: rename piggybacks on next send; no re-prepend, bits stay set.
+            dan ##> "/p dean Dean"
+            dan <## "user profile is changed to dean (Dean) (your 0 contacts are notified)"
+
+            dan #> "#team renamed"
+            bob <# "#team dean> renamed"
+            cath <# "#team dean> renamed"
+            alice <# "#team dean> renamed [>>]"
+            eve <# "#team dean> renamed [>>]"
+            threadDelay 500000
+            memberIntroducedTo bob "dean" "alice"
+            memberIntroducedTo bob "dean" "eve"
+            memberIntroducedTo cath "dean" "alice"
+            memberIntroducedTo cath "dean" "eve"
 
 testChannelLargeProfileFits :: HasCallStack => TestParams -> IO ()
 testChannelLargeProfileFits ps =
