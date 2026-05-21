@@ -3751,7 +3751,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       sendLoop bucketSize cursorGMId_ senderVec overflowWithIds inBodySenders extBody activeSenders = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
-                          let msgReqs = buildMsgReqs mems recipientBodyPieces
+                          let msgReqs = buildMsgReqs mems
                           unless (null msgReqs) $ void $ withAgent (`sendMessages` msgReqs)
                           -- Mark every active sender at every ready recipient — idempotent for
                           -- recipients who already had the bit set.
@@ -3765,12 +3765,28 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                           unless (length mems < bucketSize) $
                             sendLoop bucketSize (Just cursorGMId') senderVec overflowWithIds inBodySenders extBody activeSenders
                         where
-                          missing r s = case M.lookup (groupMemberId' s) senderVec of
-                            Just vec -> getRelation (indexInGroup r) vec == MRNew
-                            Nothing -> True
-                          recipientBodyPieces r =
-                            [(i, b) | (i, (b, ss)) <- overflowWithIds, any (missing r) ss]
-                              <> [if any (missing r) inBodySenders then (1, extBody) else (0, body)]
+                          -- First recipient needing body i carries VRValue (Just i); rest use VRRef i.
+                          -- First piece per connection: aConnId; rest: empty (agent convention).
+                          buildMsgReqs :: [GroupMember] -> [MsgReq]
+                          buildMsgReqs mems = reverse . snd $ foldl' addRecipient (IS.empty, []) mems
+                            where
+                              addRecipient acc r = case readyMemberConn r of
+                                Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientBodyPieces r)
+                                Nothing -> acc
+                              addPiece conn (k, (issued, reqs)) (bid, msgBody) =
+                                let vor
+                                      | IS.member bid issued = VRRef bid
+                                      | otherwise = VRValue (Just bid) msgBody
+                                    issued' = IS.insert bid issued
+                                    connId = if k == 0 then aConnId conn else B.empty
+                                 in (k + 1, (issued', (connId, PQEncOff, MsgFlags False, vor) : reqs))
+                              recipientBodyPieces r =
+                                [(i, b) | (i, (b, ss)) <- overflowWithIds, any missing ss]
+                                  <> [if any missing inBodySenders then (1, extBody) else (0, body)]
+                                where
+                                  missing s = case M.lookup (groupMemberId' s) senderVec of
+                                    Just vec -> getRelation (indexInGroup r) vec == MRNew
+                                    Nothing -> True
                   DJSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
@@ -3835,22 +3851,6 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
                               Just 1 -> VRValue (Just 1) msgBody
                               Just _ -> VRRef 1
-                -- First recipient needing body i carries VRValue (Just i); rest use VRRef i.
-                -- First piece per connection: aConnId; rest: empty (agent convention).
-                buildMsgReqs :: [GroupMember] -> (GroupMember -> [(Int, ByteString)]) -> [MsgReq]
-                buildMsgReqs mems recipientBodyPieces =
-                  reverse . snd $ foldl' addRecipient (IS.empty, []) mems
-                  where
-                    addRecipient acc r = case readyMemberConn r of
-                      Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientBodyPieces r)
-                      Nothing -> acc
-                    addPiece conn (k, (issued, reqs)) (bid, msgBody) =
-                      let vor
-                            | IS.member bid issued = VRRef bid
-                            | otherwise = VRValue (Just bid) msgBody
-                          issued' = IS.insert bid issued
-                          connId = if k == 0 then aConnId conn else B.empty
-                       in (k + 1, (issued', (connId, PQEncOff, MsgFlags False, vor) : reqs))
 
 -- Single worker processes all relay requests (XGrpRelayInv).
 -- We use map with a single key 1 to fit into existing worker management framework.
