@@ -26,6 +26,18 @@ ALTER TABLE delivery_jobs DROP COLUMN single_sender_group_member_id;
 down_m20260515_delivery_job_senders :: Query
 down_m20260515_delivery_job_senders =
   [sql|
+-- Pre-up the FK was ON DELETE CASCADE, so orphan delivery_jobs cannot
+-- exist. After up the FK was dropped and orphans may accumulate. Drop
+-- them here, matching pre-up semantics, before re-adding the FK column.
+DELETE FROM delivery_jobs
+WHERE sender_group_member_ids IS NOT NULL
+  AND length(sender_group_member_ids) > 0
+  AND instr(sender_group_member_ids, ',') = 0
+  AND NOT EXISTS (
+    SELECT 1 FROM group_members
+    WHERE group_member_id = CAST(sender_group_member_ids AS INTEGER)
+  );
+
 ALTER TABLE delivery_jobs ADD COLUMN single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE;
 
 UPDATE delivery_jobs
