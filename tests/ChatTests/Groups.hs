@@ -33,7 +33,7 @@ import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelation)
+import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -8553,10 +8553,10 @@ testChannels1RelayDeliver ps =
             alice <# "#team cath> > hi"
             alice <## "    + 👍"
             -- dan/eve learn cath via prepended XGrpMemNew before the forwarded reaction
-            dan <## "#team: bob added cath (Catherine) to the group"
+            dan <## "#team: bob introduced cath (Catherine) in the channel"
             dan <# "#team cath> > hi"
             dan <## "    + 👍"
-            eve <## "#team: bob added cath (Catherine) to the group"
+            eve <## "#team: bob introduced cath (Catherine) in the channel"
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
 
@@ -8696,7 +8696,7 @@ memberJoinChannel' gName gId relaySfx ownerSfx memberRelaySfx relays owners shor
              relay <## ("#" <> gName <> ": " <> sfxMName relaySfx <> " joined the group")
          | relay <- relays
          ]
-      <> [ owner <### [EndsWith ("added " <> sfxName ownerSfx <> " to the group")]
+      <> [ owner <### [EndsWith ("introduced " <> sfxName ownerSfx <> " in the channel")]
          | owner <- owners
          ]
 
@@ -8728,10 +8728,55 @@ memberJoinChannelIncognito gName relays owners shortLink fullLink member = do
              relay <## ("#" <> gName <> ": " <> memIncognito <> " joined the group")
          | relay <- relays
          ]
-      <> [ owner <### [EndsWith ("added " <> memIncognito <> " to the group")]
+      <> [ owner <### [EndsWith ("introduced " <> memIncognito <> " in the channel")]
          | owner <- owners
          ]
   pure memIncognito
+
+memberIndexInGroup :: HasCallStack => TestCC -> T.Text -> IO Int64
+memberIndexInGroup cc memberName = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT index_in_group FROM group_members WHERE local_display_name = ?" (Only memberName) ::
+      IO [Only Int64]
+  case rows of
+    [Only i] -> pure i
+    _ -> error $ "memberIndexInGroup: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
+
+memberGMIdByName :: HasCallStack => TestCC -> T.Text -> IO Int64
+memberGMIdByName cc memberName = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT group_member_id FROM group_members WHERE local_display_name = ?" (Only memberName) ::
+      IO [Only Int64]
+  case rows of
+    [Only i] -> pure i
+    _ -> error $ "memberGMIdByName: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
+
+memberProfileNameByGMId :: HasCallStack => TestCC -> Int64 -> IO (Maybe T.Text)
+memberProfileNameByGMId cc gmId = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query
+      db
+      [sql|
+        SELECT p.display_name
+        FROM group_members m
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE m.group_member_id = ?
+      |]
+      (Only gmId) ::
+      IO [Only T.Text]
+  pure $ fromOnly <$> listToMaybe rows
+
+-- | True iff sender's member_relations_vector has 'MRIntroduced' at the
+-- given recipient index. Looks up by group_member_id so it survives the
+-- subsequent rename in updateMemberProfile.
+memberIntroducedTo :: HasCallStack => TestCC -> Int64 -> Int64 -> IO Bool
+memberIntroducedTo cc senderGMId recipientIdx = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?" (Only senderGMId) ::
+      IO [Only (Maybe ByteString)]
+  case rows of
+    [Only mv] -> pure $ getRelation recipientIdx (fromMaybe B.empty mv) == MRIntroduced
+    _ -> error $ "memberIntroducedTo: expected 1 row for group_member_id=" <> show senderGMId <> ", got " <> show (length rows)
 
 testChannels1RelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
 testChannels1RelayDeliverLoop deliveryBucketSize ps =
@@ -8752,10 +8797,10 @@ testChannels1RelayDeliverLoop deliveryBucketSize ps =
             bob <## "    + 👍"
             alice <# "#team cath> > hi"
             alice <## "    + 👍"
-            dan <## "#team: bob added cath (Catherine) to the group"
+            dan <## "#team: bob introduced cath (Catherine) in the channel"
             dan <# "#team cath> > hi"
             dan <## "    + 👍"
-            eve <## "#team: bob added cath (Catherine) to the group"
+            eve <## "#team: bob introduced cath (Catherine) in the channel"
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
   where
@@ -8794,14 +8839,14 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team dan> 6 [>>]"
                    ]
             cath
-              <### [ "#team: bob added dan (Daniel) to the group",
+              <### [ "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
                      WithTime "#team dan> 6 [>>]"
                    ]
             dan
-              <### [ "#team: bob added cath (Catherine) to the group",
+              <### [ "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
@@ -8809,8 +8854,8 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team cath> 5 [>>]"
                    ]
             eve
-              <### [ "#team: bob added cath (Catherine) to the group",
-                     "#team: bob added dan (Daniel) to the group",
+              <### [ "#team: bob introduced cath (Catherine) in the channel",
+                     "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
@@ -8821,11 +8866,6 @@ testChannelsSenderDeduplicateOwn ps = do
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
 
--- Late joiner with no prior history: subscriber joins a channel where no prior messages
--- exist, so sendHistory has nothing to replay. The first forward from another subscriber
--- must then disseminate that sender's profile cleanly via prepended XGrpMemNew.
--- (The "with prior history" variant is covered by a follow-up task — sendHistory currently
--- forwards the unknown-author chat-item path before dissemination can prepend.)
 testChannelLateJoinerReceivesProfile :: HasCallStack => TestParams -> IO ()
 testChannelLateJoinerReceivesProfile ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -8834,30 +8874,21 @@ testChannelLateJoinerReceivesProfile ps =
         withNewTestChat ps "dan" danProfile $ \dan -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
-          -- dan joins AFTER cath, but before any messages exist; sendHistory has nothing.
           memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
 
-          -- cath sends the first message. cath.sent_profile_vector is empty on the relay,
-          -- so both alice (already knows cath via XGrpMemNew at join) and dan (does not
-          -- know cath) are in needsProfiles. dan learns cath via the prepended XGrpMemNew.
+          -- first forward: dan learns cath via prepended XGrpMemNew.
           cath #> "#team hi"
           bob <# "#team cath> hi"
           alice <# "#team cath> hi [>>]"
-          dan <## "#team: bob added cath (Catherine) to the group"
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# "#team cath> hi [>>]"
 
-          -- Second send from cath: dan's bit is now set, no prepend, no view event.
+          -- second forward: dan's bit is set, no prepend, no view event.
           cath #> "#team hi again"
           bob <# "#team cath> hi again"
           alice <# "#team cath> hi again [>>]"
           dan <# "#team cath> hi again [>>]"
 
--- A single large profile rides inline in the body batch (the packer's
--- in-body path). The regression target is the OLD extBody-overflow
--- fallback that left dan stuck as "unknown member" with no vector mark;
--- with the new packer the introduction lands and dan's bit is set.
--- The multi-sender overflow path is covered by
--- testChannelMultipleLargeProfiles.
 testChannelLargeProfileFits :: HasCallStack => TestParams -> IO ()
 testChannelLargeProfileFits ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -8868,64 +8899,22 @@ testChannelLargeProfileFits ps =
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
           memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
 
-          -- Inflate cath's profile image on the relay. ~14000 chars is small
-          -- enough to fit in a singleton batch (maxEncodedMsgLength-4) but
-          -- also small enough to pack inline with the forwarded "hi" body —
-          -- this exercises the in-body inline path of the new packer. The
-          -- regression target is the OLD behavior (extBody fallback + skipped
-          -- vector mark + recipient stuck as "unknown member"); both the
-          -- in-body and overflow paths reach the same observable end state.
+          -- ~14000 chars: profile fits in a singleton batch AND packs
+          -- inline with the forwarded body (exercises the in-body path).
           let bigImage = T.pack ("data:image/png;base64," <> replicate 14000 'A')
           withCCTransaction bob $ \db ->
-            DB.execute
-              db
-              "UPDATE contact_profiles SET image = ? WHERE display_name = ?"
-              (bigImage, "cath" :: T.Text)
+            DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (bigImage, "cath" :: T.Text)
 
-          -- cath sends a small message. dan dispatches the introduction
-          -- event and the forward arrives with the resolved sender name.
           cath #> "#team hi"
           bob <# "#team cath> hi"
           alice <# "#team cath> hi [>>]"
-          dan <## "#team: bob added cath (Catherine) to the group"
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# "#team cath> hi [>>]"
 
-          -- dan's bit IS set in cath's vector after delivery.
-          danIdx <- vectorIndexOf bob "dan"
-          checkVectorBitSet bob "cath" danIdx
-  where
-    vectorIndexOf :: HasCallStack => TestCC -> T.Text -> IO Int64
-    vectorIndexOf cc memberName = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT index_in_group FROM group_members WHERE local_display_name = ?"
-          (Only memberName) ::
-          IO [Only Int64]
-      case rows of
-        [Only i] -> pure i
-        _ -> error $ "vectorIndexOf: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
-    checkVectorBitSet :: HasCallStack => TestCC -> T.Text -> Int64 -> IO ()
-    checkVectorBitSet cc senderName idx = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT member_relations_vector FROM group_members WHERE local_display_name = ?"
-          (Only senderName) ::
-          IO [Only (Maybe ByteString)]
-      case rows of
-        [Only mv] -> do
-          let v = fromMaybe B.empty mv
-              ix = fromIntegral idx
-              byte = if ix < B.length v then B.index v ix else '\x00'
-          (byte /= '\x00') `shouldBe` True
-        _ -> error $ "checkVectorBitSet: expected 1 row for " <> T.unpack senderName <> ", got " <> show (length rows)
+          danIdx <- memberIndexInGroup bob "dan"
+          cathGMId <- memberGMIdByName bob "cath"
+          memberIntroducedTo bob cathGMId danIdx `shouldReturn` True
 
--- Two senders with large avatars and one multi-sender job: the packer puts
--- each profile in its own overflow batch (neither fits in body together,
--- nor fit pair-wise as one overflow). The unintroduced recipient receives
--- both profile batches before the body, dispatches both introductions, and
--- both vector bits are set.
 testChannelMultipleLargeProfiles :: HasCallStack => TestParams -> IO ()
 testChannelMultipleLargeProfiles ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -8935,93 +8924,50 @@ testChannelMultipleLargeProfiles ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
-            -- Inflate cath's and dan's profile images on the relay. Each is
-            -- ~14500 chars: small enough that ONE rides inline with the body,
-            -- but two together exceed the body's byte budget so the second
-            -- spills into an overflow batch.
+            -- ~14500 chars each: one rides inline with the body,
+            -- the other spills into a standalone overflow batch.
             let cathImage = T.pack ("data:image/png;base64," <> replicate 14500 'A')
                 danImage = T.pack ("data:image/png;base64," <> replicate 14500 'B')
             withCCTransaction bob $ \db -> do
               DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (cathImage, "cath" :: T.Text)
               DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (danImage, "dan" :: T.Text)
 
-            -- cath and dan post in quick succession; with deliveryWorkerDelay=250ms
-            -- the relay accumulates both tasks into one multi-sender job before
-            -- the worker fires. The packer fits cath inline (first task / smaller
-            -- by stable sort) and spills dan to a standalone overflow batch.
+            -- deliveryWorkerDelay=250ms lets the relay coalesce cath's and
+            -- dan's sends into one multi-sender job.
             cath #> "#team from cath"
             bob <# "#team cath> from cath"
             dan #> "#team from dan"
             bob <# "#team dan> from dan"
 
-            -- alice already knows both via join-time XGrpMemNew; her view is
-            -- the bare forwarded messages.
             alice
               <### [ WithTime "#team cath> from cath [>>]",
                      WithTime "#team dan> from dan [>>]"
                    ]
-            -- cath and dan each receive the multi-sender batch too. Their own
-            -- forwarded message is deduped (SEDuplicateGroupMessage), and
-            -- their own XGrpMemNew is no-op'd via sameMemberId. They see the
-            -- introduction and forwarded message for the OTHER sender.
             cath
-              <### [ "#team: bob added dan (Daniel) to the group",
+              <### [ "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team dan> from dan [>>]"
                    ]
             dan
-              <### [ "#team: bob added cath (Catherine) to the group",
+              <### [ "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team cath> from cath [>>]"
                    ]
-            -- eve sees both introductions (one from the overflow batch, one
-            -- from the inline profile in the body) plus both forwarded
-            -- messages.
             eve
-              <### [ "#team: bob added dan (Daniel) to the group",
-                     "#team: bob added cath (Catherine) to the group",
+              <### [ "#team: bob introduced dan (Daniel) in the channel",
+                     "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team cath> from cath [>>]",
                      WithTime "#team dan> from dan [>>]"
                    ]
 
-            eveIdx <- vectorIndexOf bob "eve"
-            checkVectorBitSet bob "cath" eveIdx
-            checkVectorBitSet bob "dan" eveIdx
+            eveIdx <- memberIndexInGroup bob "eve"
+            cathGMId <- memberGMIdByName bob "cath"
+            danGMId <- memberGMIdByName bob "dan"
+            memberIntroducedTo bob cathGMId eveIdx `shouldReturn` True
+            memberIntroducedTo bob danGMId eveIdx `shouldReturn` True
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
-    vectorIndexOf :: HasCallStack => TestCC -> T.Text -> IO Int64
-    vectorIndexOf cc memberName = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT index_in_group FROM group_members WHERE local_display_name = ?"
-          (Only memberName) ::
-          IO [Only Int64]
-      case rows of
-        [Only i] -> pure i
-        _ -> error $ "vectorIndexOf: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
-    checkVectorBitSet :: HasCallStack => TestCC -> T.Text -> Int64 -> IO ()
-    checkVectorBitSet cc senderName idx = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT member_relations_vector FROM group_members WHERE local_display_name = ?"
-          (Only senderName) ::
-          IO [Only (Maybe ByteString)]
-      case rows of
-        [Only mv] -> do
-          let v = fromMaybe B.empty mv
-              ix = fromIntegral idx
-              byte = if ix < B.length v then B.index v ix else '\x00'
-          (byte /= '\x00') `shouldBe` True
-        _ -> error $ "checkVectorBitSet: expected 1 row for " <> T.unpack senderName <> ", got " <> show (length rows)
 
--- Profile updates flow through forwarded XInfo (signed by the sender), not through
--- prepended XGrpMemNew. Once a recipient's introduction bit is set, the relay
--- must NOT clear it on profile update; the recipient learns the new name from
--- the forwarded XInfo while their bit stays set.
---
--- Asserted structurally via SQL on the relay's DB rather than terminal output,
--- because the "updated profile" chat item rendering on relays/owners is
--- order-sensitive in the test runner.
+-- Asserted via SQL on the relay's DB rather than terminal output: the
+-- "updated profile" chat item rendering on relays/owners is order-sensitive.
 testChannelProfileUpdateNoRePrepend :: HasCallStack => TestParams -> IO ()
 testChannelProfileUpdateNoRePrepend ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -9032,89 +8978,29 @@ testChannelProfileUpdateNoRePrepend ps =
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
           memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
 
-          -- cath's first message: dan learns cath via prepended XGrpMemNew,
-          -- the relay marks dan's index in cath's member_relations_vector.
           cath #> "#team hi"
           bob <# "#team cath> hi"
           alice <# "#team cath> hi [>>]"
-          dan <## "#team: bob added cath (Catherine) to the group"
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# "#team cath> hi [>>]"
 
-          danIdx <- indexInGroupOf bob "dan"
-          cathGMId <- gmIdByName bob "cath"
-          checkVectorBitSet bob cathGMId danIdx
-          getProfileNameByGMId bob cathGMId `shouldReturn` Just "cath"
+          danIdx <- memberIndexInGroup bob "dan"
+          cathGMId <- memberGMIdByName bob "cath"
+          memberIntroducedTo bob cathGMId danIdx `shouldReturn` True
+          memberProfileNameByGMId bob cathGMId `shouldReturn` Just "cath"
 
-          -- cath renames herself. /p only delivers XInfo to direct contacts;
-          -- for group members it piggybacks on the next group send via
-          -- shouldSendProfileUpdate inside sendGroupMessages.
+          -- /p only delivers XInfo to direct contacts; for group members it
+          -- piggybacks on the next group send via shouldSendProfileUpdate.
           cath ##> "/p kate Kate"
           cath <## "user profile is changed to kate (Kate) (your 0 contacts are notified)"
 
-          -- Next send carries the XInfo to the relay AND the user message.
-          -- Structural assertions on the relay come after consuming downstream
-          -- terminal lines so test teardown finds clean queues. Peer order:
-          -- bob (relay) shows the direct message; alice + dan get forwarded
-          -- copies; dan must NOT see another "added cath/kate" line.
           cath #> "#team hi again"
           bob <# "#team kate> hi again"
           alice <# "#team kate> hi again [>>]"
           dan <# "#team kate> hi again [>>]"
           threadDelay 500000
-          checkVectorBitSet bob cathGMId danIdx
-          getProfileNameByGMId bob cathGMId `shouldReturn` Just "kate"
-  where
-    indexInGroupOf :: HasCallStack => TestCC -> T.Text -> IO Int64
-    indexInGroupOf cc memberName = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT index_in_group FROM group_members WHERE local_display_name = ?"
-          (Only memberName) ::
-          IO [Only Int64]
-      case rows of
-        [Only i] -> pure i
-        _ -> error $ "indexInGroupOf: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
-    gmIdByName :: HasCallStack => TestCC -> T.Text -> IO Int64
-    gmIdByName cc memberName = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT group_member_id FROM group_members WHERE local_display_name = ?"
-          (Only memberName) ::
-          IO [Only Int64]
-      case rows of
-        [Only i] -> pure i
-        _ -> error $ "gmIdByName: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
-    getProfileNameByGMId :: HasCallStack => TestCC -> Int64 -> IO (Maybe T.Text)
-    getProfileNameByGMId cc gmId = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          [sql|
-            SELECT p.display_name
-            FROM group_members m
-            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-            WHERE m.group_member_id = ?
-          |]
-          (Only gmId) ::
-          IO [Only T.Text]
-      pure $ fromOnly <$> listToMaybe rows
-    checkVectorBitSet :: HasCallStack => TestCC -> Int64 -> Int64 -> IO ()
-    checkVectorBitSet cc gmId idx = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query
-          db
-          "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
-          (Only gmId) ::
-          IO [Only (Maybe ByteString)]
-      case rows of
-        [Only mv] -> do
-          let v = fromMaybe B.empty mv
-              ix = fromIntegral idx
-              byte = if ix < B.length v then B.index v ix else '\x00'
-          (byte /= '\x00') `shouldBe` True
-        _ -> error $ "checkVectorBitSet: expected 1 row for group_member_id=" <> show gmId <> ", got " <> show (length rows)
+          memberIntroducedTo bob cathGMId danIdx `shouldReturn` True
+          memberProfileNameByGMId bob cathGMId `shouldReturn` Just "kate"
 
 testChannelMultiSendersIndependent :: HasCallStack => TestParams -> IO ()
 testChannelMultiSendersIndependent ps =
@@ -9129,18 +9015,18 @@ testChannelMultiSendersIndependent ps =
             cath #> "#team from cath"
             bob <# "#team cath> from cath"
             alice <# "#team cath> from cath [>>]"
-            dan <## "#team: bob added cath (Catherine) to the group"
+            dan <## "#team: bob introduced cath (Catherine) in the channel"
             dan <# "#team cath> from cath [>>]"
-            eve <## "#team: bob added cath (Catherine) to the group"
+            eve <## "#team: bob introduced cath (Catherine) in the channel"
             eve <# "#team cath> from cath [>>]"
 
             -- dan posts: cath and eve learn dan independently of cath's vector
             dan #> "#team from dan"
             bob <# "#team dan> from dan"
             alice <# "#team dan> from dan [>>]"
-            cath <## "#team: bob added dan (Daniel) to the group"
+            cath <## "#team: bob introduced dan (Daniel) in the channel"
             cath <# "#team dan> from dan [>>]"
-            eve <## "#team: bob added dan (Daniel) to the group"
+            eve <## "#team: bob introduced dan (Daniel) in the channel"
             eve <# "#team dan> from dan [>>]"
 
             -- second post from cath: all recipients have cath marked, no prepend
@@ -9172,10 +9058,10 @@ testChannels2RelaysDeliver ps =
               cath <## "    + 👍"
               alice <# "#team dan> > hi"
               alice <## "    + 👍"
-              eve .<## " added dan (Daniel) to the group"
+              eve .<## " introduced dan (Daniel) in the channel"
               eve <# "#team dan> > hi"
               eve <## "    + 👍"
-              frank .<## " added dan (Daniel) to the group"
+              frank .<## " introduced dan (Daniel) in the channel"
               frank <# "#team dan> > hi"
               frank <## "    + 👍"
 
@@ -9210,10 +9096,10 @@ testChannels2RelaysIncognito ps =
               cath <## "    + 👍"
               alice <# ("#team " <> danIncognito <> "> > hi")
               alice <## "    + 👍"
-              eve .<## (" added " <> danIncognito <> " to the group")
+              eve .<## (" introduced " <> danIncognito <> " in the channel")
               eve <# ("#team " <> danIncognito <> "> > hi")
               eve <## "    + 👍"
-              frank .<## (" added " <> danIncognito <> " to the group")
+              frank .<## (" introduced " <> danIncognito <> " in the channel")
               frank <# ("#team " <> danIncognito <> "> > hi")
               frank <## "    + 👍"
 
@@ -9426,10 +9312,10 @@ testChannelChangeRoleSigned ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob added cath (Catherine) to the group"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob added cath (Catherine) to the group"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9481,10 +9367,10 @@ testChannelBlockMemberSigned ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob added cath (Catherine) to the group"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob added cath (Catherine) to the group"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9544,10 +9430,10 @@ testChannelRemoveMemberSigned ps =
             concurrentlyN_
               [ alice <# "#team eve> hello from eve [>>]",
                 do
-                  dan <## "#team: bob added eve (Eve) to the group"
+                  dan <## "#team: bob introduced eve (Eve) in the channel"
                   dan <# "#team eve> hello from eve [>>]",
                 do
-                  cath <## "#team: bob added eve (Eve) to the group"
+                  cath <## "#team: bob introduced eve (Eve) in the channel"
                   cath <# "#team eve> hello from eve [>>]"
               ]
 
@@ -9712,10 +9598,10 @@ testChannelSubscriberLeave ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob added cath (Catherine) to the group"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob added cath (Catherine) to the group"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9768,7 +9654,7 @@ testChannelSubscriberLeave ps =
             alice <## "#team: dan left the group (signed)"
             -- dan never sent before leaving, so dan's profile is disseminated to eve
             -- via prepended XGrpMemNew before the forwarded XGrpLeave
-            eve <## "#team: bob added dan (Daniel) to the group"
+            eve <## "#team: bob introduced dan (Daniel) in the channel"
             alice #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             bob #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(1, "left (signed)")])
@@ -9967,10 +9853,10 @@ testChannelSubscriberProfileUpdate ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob added cath (Catherine) to the group"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob added cath (Catherine) to the group"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -10013,10 +9899,10 @@ testChannelSubscriberProfileUpdate ps =
             concurrentlyN_
               [ alice <# "#team dave> hello from dave [>>]",
                 do
-                  eve <## "#team: bob added dave to the group"
+                  eve <## "#team: bob introduced dave in the channel"
                   eve <# "#team dave> hello from dave [>>]",
                 do
-                  cath <## "#team: bob added dave to the group"
+                  cath <## "#team: bob introduced dave in the channel"
                   cath <# "#team dave> hello from dave [>>]"
               ]
             -- no profile update items in main scope (dan has no support chat, item not created)
@@ -10781,11 +10667,11 @@ testChannelMessageQuote ps =
                   alice <# "#team cath> > hello from channel [>>]"
                   alice <## "      replying to channel [>>]",
                 do
-                  dan <## "#team: bob added cath (Catherine) to the group"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> > hello from channel [>>]"
                   dan <## "      replying to channel [>>]",
                 do
-                  eve <## "#team: bob added cath (Catherine) to the group"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> > hello from channel [>>]"
                   eve <## "      replying to channel [>>]"
               ]
@@ -11141,9 +11027,9 @@ testChannelMemberMessageUpdate ps =
             bob <# "#team cath> hello"
             concurrentlyN_
               [ alice <# "#team cath> hello [>>]",
-                do dan <## "#team: bob added cath (Catherine) to the group"
+                do dan <## "#team: bob introduced cath (Catherine) in the channel"
                    dan <# "#team cath> hello [>>]",
-                do eve <## "#team: bob added cath (Catherine) to the group"
+                do eve <## "#team: bob introduced cath (Catherine) in the channel"
                    eve <# "#team cath> hello [>>]"
               ]
 
@@ -11172,9 +11058,9 @@ testChannelMemberMessageDelete ps =
             bob <# "#team cath> hello"
             concurrentlyN_
               [ alice <# "#team cath> hello [>>]",
-                do dan <## "#team: bob added cath (Catherine) to the group"
+                do dan <## "#team: bob introduced cath (Catherine) in the channel"
                    dan <# "#team cath> hello [>>]",
-                do eve <## "#team: bob added cath (Catherine) to the group"
+                do eve <## "#team: bob introduced cath (Catherine) in the channel"
                    eve <# "#team cath> hello [>>]"
               ]
 
