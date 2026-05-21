@@ -655,24 +655,23 @@ object AppearanceScope {
       }
       SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.settings_section_title_chat_colors)) {
-        WallpaperSetupView(
-          wallpaperType,
-          baseTheme,
-          MaterialTheme.wallpaper,
-          MaterialTheme.appColors.sentMessage,
-          MaterialTheme.appColors.sentQuote,
-          MaterialTheme.appColors.receivedMessage,
-          MaterialTheme.appColors.receivedQuote,
-          editColor = { name ->
-            editColor(name)
-          },
-          onTypeChange = { type ->
-            ThemeManager.saveAndApplyWallpaper(baseTheme, type)
-            saveThemeToDatabase(null)
-          },
-        )
-      }
+      WallpaperSetupView(
+        wallpaperType,
+        baseTheme,
+        MaterialTheme.wallpaper,
+        MaterialTheme.appColors.sentMessage,
+        MaterialTheme.appColors.sentQuote,
+        MaterialTheme.appColors.receivedMessage,
+        MaterialTheme.appColors.receivedQuote,
+        editColor = { name ->
+          editColor(name)
+        },
+        onTypeChange = { type ->
+          ThemeManager.saveAndApplyWallpaper(baseTheme, type)
+          saveThemeToDatabase(null)
+        },
+        firstSectionTitle = stringResource(MR.strings.settings_section_title_chat_colors),
+      )
       SectionDividerSpaced()
 
       CustomizeThemeColorsSection(currentTheme) { name ->
@@ -1193,75 +1192,82 @@ fun WallpaperSetupView(
   initialReceivedQuoteColor: Color,
   editColor: (ThemeColor) -> Unit,
   onTypeChange: (WallpaperType?) -> Unit,
+  firstSectionTitle: String? = null,
 ) {
-  if (wallpaperType is WallpaperType.Image) {
-    val state = remember(wallpaperType.scaleType, initialWallpaper?.type) { mutableStateOf(wallpaperType.scaleType ?: (initialWallpaper?.type as? WallpaperType.Image)?.scaleType ?: WallpaperScaleType.FILL) }
-    val values = remember {
-      WallpaperScaleType.entries.map { it to generalGetString(it.text) }
-    }
-    ExposedDropDownSettingRow(
-      stringResource(MR.strings.wallpaper_scale),
-      values,
-      state,
-      onSelected = { scaleType ->
-        onTypeChange(wallpaperType.copy(scaleType = scaleType))
-      }
-    )
-  }
+  val hasWallpaperSettings = wallpaperType is WallpaperType.Preset || wallpaperType is WallpaperType.Image
 
-  if (wallpaperType is WallpaperType.Preset || (wallpaperType is WallpaperType.Image && wallpaperType.scaleType == WallpaperScaleType.REPEAT)) {
-    val state = remember(wallpaperType, initialWallpaper?.type?.scale) { mutableStateOf(wallpaperType.scale ?: initialWallpaper?.type?.scale ?: 1f) }
-    Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
-      Text("${state.value}".substring(0, min("${state.value}".length, 4)), Modifier.width(50.dp))
-      Slider(
-        state.value,
-        valueRange = 0.5f..2f,
-        onValueChange = {
-          if (wallpaperType is WallpaperType.Preset) {
-            onTypeChange(wallpaperType.copy(scale = it))
-          } else if (wallpaperType is WallpaperType.Image) {
-            onTypeChange(wallpaperType.copy(scale = it))
-          }
+  if (hasWallpaperSettings) {
+    SectionView(firstSectionTitle) {
+      if (wallpaperType is WallpaperType.Image) {
+        val state = remember(wallpaperType.scaleType, initialWallpaper?.type) { mutableStateOf(wallpaperType.scaleType ?: (initialWallpaper?.type as? WallpaperType.Image)?.scaleType ?: WallpaperScaleType.FILL) }
+        val values = remember {
+          WallpaperScaleType.entries.map { it to generalGetString(it.text) }
         }
-      )
-    }
-  }
+        ExposedDropDownSettingRow(
+          stringResource(MR.strings.wallpaper_scale),
+          values,
+          state,
+          onSelected = { scaleType ->
+            onTypeChange(wallpaperType.copy(scaleType = scaleType))
+          }
+        )
+      }
 
-  if (wallpaperType is WallpaperType.Preset || wallpaperType is WallpaperType.Image) {
-    val wallpaperBackgroundColor = initialWallpaper?.background ?: wallpaperType.defaultBackgroundColor(theme, MaterialTheme.colors.background)
-    SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_BACKGROUND) }) {
-      val title = generalGetString(MR.strings.color_wallpaper_background)
-      Text(title)
-      Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperBackgroundColor)
-    }
-    val wallpaperTintColor = initialWallpaper?.tint ?: wallpaperType.defaultTintColor(theme)
-    SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT) }) {
-      val title = generalGetString(MR.strings.color_wallpaper_tint)
-      Text(title)
-      Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
+      if (wallpaperType is WallpaperType.Preset || (wallpaperType is WallpaperType.Image && wallpaperType.scaleType == WallpaperScaleType.REPEAT)) {
+        val state = remember(wallpaperType, initialWallpaper?.type?.scale) { mutableStateOf(wallpaperType.scale ?: initialWallpaper?.type?.scale ?: 1f) }
+        Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
+          Text("${state.value}".substring(0, min("${state.value}".length, 4)), Modifier.width(50.dp))
+          Slider(
+            state.value,
+            valueRange = 0.5f..2f,
+            onValueChange = {
+              if (wallpaperType is WallpaperType.Preset) {
+                onTypeChange(wallpaperType.copy(scale = it))
+              } else if (wallpaperType is WallpaperType.Image) {
+                onTypeChange(wallpaperType.copy(scale = it))
+              }
+            }
+          )
+        }
+      }
+
+      val wallpaperBackgroundColor = initialWallpaper?.background ?: wallpaperType.defaultBackgroundColor(theme, MaterialTheme.colors.background)
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_BACKGROUND) }) {
+        val title = generalGetString(MR.strings.color_wallpaper_background)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperBackgroundColor)
+      }
+      val wallpaperTintColor = initialWallpaper?.tint ?: wallpaperType.defaultTintColor(theme)
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.WALLPAPER_TINT) }) {
+        val title = generalGetString(MR.strings.color_wallpaper_tint)
+        Text(title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
+      }
     }
     SectionDividerSpaced()
   }
 
-  SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
-    val title = generalGetString(MR.strings.color_sent_message)
-    Text(title)
-    Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialSentColor)
-  }
-  SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_QUOTE) }) {
-    val title = generalGetString(MR.strings.color_sent_quote)
-    Text(title)
-    Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialSentQuoteColor)
-  }
-  SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
-    val title = generalGetString(MR.strings.color_received_message)
-    Text(title)
-    Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialReceivedColor)
-  }
-  SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_QUOTE) }) {
-    val title = generalGetString(MR.strings.color_received_quote)
-    Text(title)
-    Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialReceivedQuoteColor)
+  SectionView(if (!hasWallpaperSettings) firstSectionTitle else null) {
+    SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {
+      val title = generalGetString(MR.strings.color_sent_message)
+      Text(title)
+      Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialSentColor)
+    }
+    SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_QUOTE) }) {
+      val title = generalGetString(MR.strings.color_sent_quote)
+      Text(title)
+      Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialSentQuoteColor)
+    }
+    SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE) }) {
+      val title = generalGetString(MR.strings.color_received_message)
+      Text(title)
+      Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialReceivedColor)
+    }
+    SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_QUOTE) }) {
+      val title = generalGetString(MR.strings.color_received_quote)
+      Text(title)
+      Icon(painterResource(MR.images.ic_circle_filled), title, tint = initialReceivedQuoteColor)
+    }
   }
 }
 

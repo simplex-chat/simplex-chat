@@ -125,19 +125,17 @@ fun ModalData.UserWallpaperEditor(
 
     SectionDividerSpaced()
 
-    SectionView {
-      WallpaperSetupView(
-        themeModeOverride.value.type,
-        CurrentColors.collectAsState().value.base,
-        currentTheme.wallpaper,
-        currentTheme.appColors.sentMessage,
-        currentTheme.appColors.sentQuote,
-        currentTheme.appColors.receivedMessage,
-        currentTheme.appColors.receivedQuote,
-        editColor = { name -> editColor(name) },
-        onTypeChange = onTypeChange,
-      )
-    }
+    WallpaperSetupView(
+      themeModeOverride.value.type,
+      CurrentColors.collectAsState().value.base,
+      currentTheme.wallpaper,
+      currentTheme.appColors.sentMessage,
+      currentTheme.appColors.sentQuote,
+      currentTheme.appColors.receivedMessage,
+      currentTheme.appColors.receivedQuote,
+      editColor = { name -> editColor(name) },
+      onTypeChange = onTypeChange,
+    )
 
     SectionDividerSpaced()
 
@@ -371,19 +369,17 @@ fun ModalData.ChatWallpaperEditor(
 
     SectionDividerSpaced()
 
-    SectionView {
-      WallpaperSetupView(
-        themeModeOverride.value.type,
-        CurrentColors.collectAsState().value.base,
-        currentTheme.wallpaper,
-        currentTheme.appColors.sentMessage,
-        currentTheme.appColors.sentQuote,
-        currentTheme.appColors.receivedMessage,
-        currentTheme.appColors.receivedQuote,
-        editColor = editColor,
-        onTypeChange = onTypeChange,
-      )
-    }
+    WallpaperSetupView(
+      themeModeOverride.value.type,
+      CurrentColors.collectAsState().value.base,
+      currentTheme.wallpaper,
+      currentTheme.appColors.sentMessage,
+      currentTheme.appColors.sentQuote,
+      currentTheme.appColors.receivedMessage,
+      currentTheme.appColors.receivedQuote,
+      editColor = editColor,
+      onTypeChange = onTypeChange,
+    )
 
     SectionDividerSpaced()
 
