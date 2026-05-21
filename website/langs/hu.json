@@ -369,5 +369,8 @@
     "file-proto-h-4": "Független útválasztók",
     "file-proto-p-4": "Amikor a fájl töredékekre oszlik, akkor a független felek által üzemeltetett hálózati útválasztókon keresztül kerül továbbításra. Egyetlen üzemeltető sem láthatja a fájl tényleges méretét és nevét. Még ha egy útválasztó biztonsága meg is sérül, csak a rögzített méretű titkosított töredékeket „láthatja”. A fájltöredékeket a hálózati útválasztók körülbelül 48 órán át tárolják a gyorsítótárban.",
     "file-proto-spec": "Olvassa el az XFTP-protokoll leírását →",
-    "send-file": "Fájl küldése"
+    "send-file": "Fájl küldése",
+    "links": "Hivatkozások",
+    "links-title": "Közösségi hivatkozások",
+    "links-all-languages": "Összes nyelv"
 }
