@@ -249,14 +249,15 @@ chatGroupTests = do
           it "number of recipients is NOT multiple of bucket size (3/2)" (testChannels1RelayDeliverLoop 2)
           it "number of recipients is equal to bucket size (3/3)" (testChannels1RelayDeliverLoop 3)
         it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
-        it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerReceivesProfile
-        it "multi senders disseminate independently" testChannelMultiSendersIndependent
-        it "large profile fits in body" testChannelLargeProfileFits
-        it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfiles
-        it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
+    describe "deliver member profiles via relay" $ do
+      it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerReceivesProfile
+      it "multi senders disseminate independently" testChannelMultiSendersIndependent
+      it "large profile fits in body" testChannelLargeProfileFits
+      it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfiles
+      it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
     describe "channel operations" $ do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
