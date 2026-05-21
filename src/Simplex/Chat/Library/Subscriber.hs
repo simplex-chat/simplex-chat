@@ -3713,8 +3713,6 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   -- there's no member review in channels, so job spec includePending is ignored
                   DJSGroup {} -> do
                     bucketSize <- asks $ deliveryBucketSize . config
-                    -- Snapshot (sender, vector) in one tx so partitioning runs on a coherent point-in-time view.
-                    -- Missing senders are skipped — their content ships without a prepend.
                     senders <- withStore' $ \db ->
                       fmap catMaybes . forM senderGMIds $ \sId ->
                         fmap eitherToMaybe . runExceptT $ do
