@@ -412,25 +412,25 @@ object AppearanceScope {
       )
     }
 
+    val gridPadding = 14.dp
     if (appPlatform.isDesktop) {
-      val itemWidth = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
-      val itemHeight = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - DEFAULT_PADDING * 2) / 4
+      val itemSize = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - gridPadding * 5) / 4
       val rows = ceil((PresetWallpaper.entries.size + 2) / 4f).roundToInt()
       LazyVerticalGrid(
         columns = GridCells.Fixed(4),
-        Modifier.height(itemHeight * rows + DEFAULT_PADDING_HALF * (rows - 1) + DEFAULT_PADDING * 2),
-        contentPadding = PaddingValues(DEFAULT_PADDING),
-        verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF),
-        horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF),
+        Modifier.height(itemSize * rows + gridPadding * (rows + 1)),
+        contentPadding = PaddingValues(gridPadding),
+        verticalArrangement = Arrangement.spacedBy(gridPadding),
+        horizontalArrangement = Arrangement.spacedBy(gridPadding),
       ) {
-        gridContent(itemWidth, itemHeight)
+        gridContent(itemSize, itemSize)
       }
     } else {
       LazyHorizontalGrid(
         rows = GridCells.Fixed(1),
-        Modifier.height(80.dp + DEFAULT_PADDING * 2),
-        contentPadding = PaddingValues(DEFAULT_PADDING),
-        horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF),
+        Modifier.height(80.dp + gridPadding * 2),
+        contentPadding = PaddingValues(gridPadding),
+        horizontalArrangement = Arrangement.spacedBy(gridPadding),
       ) {
         gridContent(80.dp, 80.dp)
       }
