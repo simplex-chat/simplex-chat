@@ -937,6 +937,17 @@ class CorruptionCheckTest {
     assertTrue(image.width > 0 && image.height > 0)
   }
 
+  @Test fun testStrippedWebpDecodable() {
+    // Verifies that (a) the WebP stripper produces a valid file and (b) the TwelveMonkeys
+    // imageio-webp plugin is registered on desktop so `ImageIO.read` doesn't return null —
+    // without the plugin the desktop image picker rejects every WebP with "cannot be decoded".
+    val input = loadResource("webp_with_exif.webp")
+    val output = stripWebPMetadata(input)
+    val image = javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(output))
+    assertNotNull(image, "Stripped WebP should be decodable via ImageIO")
+    assertTrue(image.width > 0 && image.height > 0)
+  }
+
   @Test fun testStrippedMp4HasValidStructure() {
     val inputFile = File.createTempFile("test_", ".mp4")
     inputFile.writeBytes(loadResource("mp4_with_gps.mp4"))
