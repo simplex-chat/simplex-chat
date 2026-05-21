@@ -1805,7 +1805,7 @@ https://www.youtube.com/watch?v=zkEY9m2E-Y4
 
 ## Self-Hosted SimpleX Chat
 
-402 Payment Required
+Simple Messaging With Unusually Good Privacy
 
 Guide, Video
 
@@ -3586,7 +3586,7 @@ https://tests.tips/en/?software/mobile-apps/simplex
 
 (Hospeda SimpleX Chat)
 
-402 Payment Required
+CLASES DE LINUX
 
 Guide, Video
 
