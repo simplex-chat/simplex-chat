@@ -586,23 +586,23 @@ object AppearanceScope {
         }
         saveThemeToDatabase(null)
       }
-    }
-    SectionItemView(click = {
-      val user = themeUserDestination.value
-      if (user == null) {
-        ModalManager.start.showModal {
-          val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
-            if (to != null) onImport(to)
+      SectionItemView(click = {
+        val user = themeUserDestination.value
+        if (user == null) {
+          ModalManager.start.showModal(cardScreen = true) {
+            val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+              if (to != null) onImport(to)
+            }
+            CustomizeThemeView { onChooseType(it, importWallpaperLauncher) }
           }
-          CustomizeThemeView { onChooseType(it, importWallpaperLauncher) }
+        } else {
+          ModalManager.start.showModalCloseable(cardScreen = true) { close ->
+            UserWallpaperEditorModal(chatModel.remoteHostId(), user.first, close)
+          }
         }
-      } else {
-        ModalManager.start.showModalCloseable { close ->
-          UserWallpaperEditorModal(chatModel.remoteHostId(), user.first, close)
-        }
+      }) {
+        Text(stringResource(MR.strings.customize_theme_title))
       }
-    }) {
-      Text(stringResource(MR.strings.customize_theme_title))
     }
   }
 
@@ -628,31 +628,32 @@ object AppearanceScope {
         )
       }
 
-      WallpaperPresetSelector(
-        selectedWallpaper = wallpaperType,
-        baseTheme = currentTheme.base,
-        currentColors = { type ->
-          ThemeManager.currentColors(type, null, null, appPrefs.themeOverrides.get())
-        },
-        onChooseType = onChooseType
-      )
-
-      val type = MaterialTheme.wallpaper.type
-      if (type is WallpaperType.Image) {
-        SectionItemView(disabled = chatModel.remoteHostId != null, click = {
-          val defaultActiveTheme = ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get())
-          ThemeManager.saveAndApplyWallpaper(baseTheme, null)
-          ThemeManager.removeTheme(defaultActiveTheme?.themeId)
-          removeWallpaperFile(type.filename)
-          saveThemeToDatabase(null)
-        }) {
-          Text(
-            stringResource(MR.strings.theme_remove_image),
-            color = if (chatModel.remoteHostId == null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-          )
+      SectionView {
+        WallpaperPresetSelector(
+          selectedWallpaper = wallpaperType,
+          baseTheme = currentTheme.base,
+          currentColors = { type ->
+            ThemeManager.currentColors(type, null, null, appPrefs.themeOverrides.get())
+          },
+          onChooseType = onChooseType
+        )
+        val type = MaterialTheme.wallpaper.type
+        if (type is WallpaperType.Image) {
+          SectionItemView(disabled = chatModel.remoteHostId != null, click = {
+            val defaultActiveTheme = ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get())
+            ThemeManager.saveAndApplyWallpaper(baseTheme, null)
+            ThemeManager.removeTheme(defaultActiveTheme?.themeId)
+            removeWallpaperFile(type.filename)
+            saveThemeToDatabase(null)
+          }) {
+            Text(
+              stringResource(MR.strings.theme_remove_image),
+              color = if (chatModel.remoteHostId == null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+            )
+          }
         }
-        SectionDividerSpaced()
       }
+      SectionDividerSpaced()
 
       SectionView(stringResource(MR.strings.settings_section_title_chat_colors)) {
         WallpaperSetupView(
@@ -683,11 +684,13 @@ object AppearanceScope {
       val currentOverrides = remember(currentTheme) { ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get()) }
       val canResetColors = currentTheme.base.hasChangedAnyColor(currentOverrides)
       if (canResetColors) {
-        SectionItemView({
-          ThemeManager.resetAllThemeColors()
-          saveThemeToDatabase(null)
-        }) {
-          Text(generalGetString(MR.strings.reset_color), color = colors.primary)
+        SectionView {
+          SectionItemView({
+            ThemeManager.resetAllThemeColors()
+            saveThemeToDatabase(null)
+          }) {
+            Text(generalGetString(MR.strings.reset_color), color = colors.primary)
+          }
         }
         SectionDividerSpaced()
       }

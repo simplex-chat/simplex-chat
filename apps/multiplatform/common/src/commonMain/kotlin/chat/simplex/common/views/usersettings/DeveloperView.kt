@@ -69,8 +69,8 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })
-      SectionBottomSpacer()
     }
+    SectionBottomSpacer()
   }
 }
 

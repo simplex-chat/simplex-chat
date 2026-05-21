@@ -692,7 +692,7 @@ fun ModalData.GroupChatInfoLayout(
           }
         }
         WallpaperButton {
-          ModalManager.end.showModal {
+          ModalManager.end.showModal(cardScreen = true) {
             val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
             val c = chat.value
             if (c != null) {
