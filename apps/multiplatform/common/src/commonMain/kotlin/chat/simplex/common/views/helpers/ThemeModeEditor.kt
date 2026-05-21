@@ -121,6 +121,11 @@ fun ModalData.UserWallpaperEditor(
         },
         onChooseType = onChooseType
       )
+    }
+
+    SectionDividerSpaced()
+
+    SectionView {
       WallpaperSetupView(
         themeModeOverride.value.type,
         CurrentColors.collectAsState().value.base,
@@ -362,6 +367,11 @@ fun ModalData.ChatWallpaperEditor(
           }
         },
       )
+    }
+
+    SectionDividerSpaced()
+
+    SectionView {
       WallpaperSetupView(
         themeModeOverride.value.type,
         CurrentColors.collectAsState().value.base,
