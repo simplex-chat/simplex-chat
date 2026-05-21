@@ -1175,9 +1175,8 @@ introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn,
   let introEvts = map (memberIntroEvt gInfo) modMs
   forM_ (L.nonEmpty introEvts) $ \introEvts' ->
     sendGroupMemberMessages user gInfo conn introEvts'
-  unless (null modMs) $
-    withStore' $ \db ->
-      setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
+  withStore' $ \db ->
+    setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks

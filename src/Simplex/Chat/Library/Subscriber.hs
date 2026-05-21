@@ -3743,18 +3743,12 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                           pure (extBody', inBody, overflowBatches', active)
                     -- Per-job constants — independent of the cursor page in sendLoop.
                     let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senders]
-                        missing r s = case M.lookup (groupMemberId' s) senderVec of
-                          Just vec -> getRelation (indexInGroup r) vec == MRNew
-                          Nothing -> True
                         -- Body IDs: 0 = plain body, 1 = extBody, 2.. = overflow batches in order.
                         overflowWithIds = zip [2 :: Int ..] overflowBatches
-                        recipientBodyPieces r =
-                          [(i, b) | (i, (b, ss)) <- overflowWithIds, any (missing r) ss]
-                            <> [if any (missing r) inBodySenders then (1, extBody) else (0, body)]
-                    sendLoop bucketSize startingCursor activeSenders recipientBodyPieces
+                    sendLoop bucketSize startingCursor senderVec overflowWithIds inBodySenders extBody activeSenders
                     where
-                      sendLoop :: Int -> Maybe GroupMemberId -> [GroupMember] -> (GroupMember -> [(Int, ByteString)]) -> CM ()
-                      sendLoop bucketSize cursorGMId_ activeSenders recipientBodyPieces = do
+                      sendLoop :: Int -> Maybe GroupMemberId -> Map GroupMemberId ByteString -> [(Int, (ByteString, [GroupMember]))] -> [GroupMember] -> ByteString -> [GroupMember] -> CM ()
+                      sendLoop bucketSize cursorGMId_ senderVec overflowWithIds inBodySenders extBody activeSenders = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
                           let msgReqs = buildMsgReqs mems recipientBodyPieces
@@ -3768,7 +3762,15 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                 setMemberVectorNewRelations db sender [(i, (IDSubjectIntroduced, MRIntroduced)) | i <- readyIdxs]
                           let cursorGMId' = groupMemberId' $ last mems
                           withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
-                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') activeSenders recipientBodyPieces
+                          unless (length mems < bucketSize) $
+                            sendLoop bucketSize (Just cursorGMId') senderVec overflowWithIds inBodySenders extBody activeSenders
+                        where
+                          missing r s = case M.lookup (groupMemberId' s) senderVec of
+                            Just vec -> getRelation (indexInGroup r) vec == MRNew
+                            Nothing -> True
+                          recipientBodyPieces r =
+                            [(i, b) | (i, (b, ss)) <- overflowWithIds, any (missing r) ss]
+                              <> [if any (missing r) inBodySenders then (1, extBody) else (0, body)]
                   DJSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
