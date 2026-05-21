@@ -31,8 +31,6 @@ import Data.Int (Int64)
 import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.IntMap.Strict (IntMap)
-import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -3743,23 +3741,23 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                             toView $ CEvtChatErrors allErrs
                           let active = inBody <> concatMap snd overflowBatches'
                           pure (extBody', inBody, overflowBatches', active)
-                    sendLoop bucketSize startingCursor senders (extBody, inBodySenders, overflowBatches) activeSenders
+                    -- Per-job constants — independent of the cursor page in sendLoop.
+                    let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senders]
+                        missing r s = case M.lookup (groupMemberId' s) senderVec of
+                          Just vec -> getRelation (indexInGroup r) vec == MRNew
+                          Nothing -> True
+                        -- Body IDs: 0 = plain body, 1 = extBody, 2.. = overflow batches in order.
+                        overflowWithIds = zip [2 :: Int ..] overflowBatches
+                        recipientBodyPieces r =
+                          [(i, b) | (i, (b, ss)) <- overflowWithIds, any (missing r) ss]
+                            <> [if any (missing r) inBodySenders then (1, extBody) else (0, body)]
+                    sendLoop bucketSize startingCursor activeSenders recipientBodyPieces
                     where
-                      sendLoop :: Int -> Maybe GroupMemberId -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(ByteString, [GroupMember])]) -> [GroupMember] -> CM ()
-                      sendLoop bucketSize cursorGMId_ senders prepared@(extBody, inBodySenders, overflowBatches) activeSenders = do
+                      sendLoop :: Int -> Maybe GroupMemberId -> [GroupMember] -> (GroupMember -> [(Int, ByteString)]) -> CM ()
+                      sendLoop bucketSize cursorGMId_ activeSenders recipientBodyPieces = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
-                          let senderVec = M.fromList [(groupMemberId' s, v) | (s, v) <- senders]
-                              missing r s = case M.lookup (groupMemberId' s) senderVec of
-                                Just vec -> getRelation (indexInGroup r) vec == MRNew
-                                Nothing -> True
-                              -- Body IDs: 0 = plain body, 1 = extBody, 2.. = overflow batches in order.
-                              overflowWithIds = zip [2 :: Int ..] overflowBatches
-                              bodyById = IM.fromList $ (0, body) : (1, extBody) : [(i, b) | (i, (b, _)) <- overflowWithIds]
-                              recipientBodyIds r =
-                                [i | (i, (_, ss)) <- overflowWithIds, any (missing r) ss]
-                                  <> [if any (missing r) inBodySenders then 1 else 0]
-                              msgReqs = buildMsgReqs mems bodyById recipientBodyIds
+                          let msgReqs = buildMsgReqs mems recipientBodyPieces
                           unless (null msgReqs) $ void $ withAgent (`sendMessages` msgReqs)
                           -- Mark every active sender at every ready recipient — idempotent for
                           -- recipients who already had the bit set.
@@ -3770,7 +3768,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                 setMemberVectorNewRelations db sender [(i, (IDSubjectIntroduced, MRIntroduced)) | i <- readyIdxs]
                           let cursorGMId' = groupMemberId' $ last mems
                           withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
-                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') senders prepared activeSenders
+                          unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId') activeSenders recipientBodyPieces
                   DJSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
@@ -3837,17 +3835,17 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Just _ -> VRRef 1
                 -- First recipient needing body i carries VRValue (Just i); rest use VRRef i.
                 -- First piece per connection: aConnId; rest: empty (agent convention).
-                buildMsgReqs :: [GroupMember] -> IntMap ByteString -> (GroupMember -> [Int]) -> [MsgReq]
-                buildMsgReqs mems bodyById recipientBodyIds =
+                buildMsgReqs :: [GroupMember] -> (GroupMember -> [(Int, ByteString)]) -> [MsgReq]
+                buildMsgReqs mems recipientBodyPieces =
                   reverse . snd $ foldl' addRecipient (IS.empty, []) mems
                   where
                     addRecipient acc r = case readyMemberConn r of
-                      Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientBodyIds r)
+                      Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientBodyPieces r)
                       Nothing -> acc
-                    addPiece conn (k, (issued, reqs)) bid =
+                    addPiece conn (k, (issued, reqs)) (bid, msgBody) =
                       let vor
                             | IS.member bid issued = VRRef bid
-                            | otherwise = VRValue (Just bid) (bodyById IM.! bid)
+                            | otherwise = VRValue (Just bid) msgBody
                           issued' = IS.insert bid issued
                           connId = if k == 0 then aConnId conn else B.empty
                        in (k + 1, (issued', (connId, PQEncOff, MsgFlags False, vor) : reqs))

@@ -1170,12 +1170,14 @@ introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ C
 introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
-  withStore' $ \db -> do
+  withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
-    setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
   let introEvts = map (memberIntroEvt gInfo) modMs
   forM_ (L.nonEmpty introEvts) $ \introEvts' ->
     sendGroupMemberMessages user gInfo conn introEvts'
+  unless (null modMs) $
+    withStore' $ \db ->
+      setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks

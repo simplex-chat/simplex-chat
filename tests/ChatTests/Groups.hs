@@ -8733,50 +8733,23 @@ memberJoinChannelIncognito gName relays owners shortLink fullLink member = do
          ]
   pure memIncognito
 
-memberIndexInGroup :: HasCallStack => TestCC -> T.Text -> IO Int64
-memberIndexInGroup cc memberName = do
-  rows <- withCCTransaction cc $ \db ->
-    DB.query db "SELECT index_in_group FROM group_members WHERE local_display_name = ?" (Only memberName) ::
-      IO [Only Int64]
-  case rows of
-    [Only i] -> pure i
-    _ -> error $ "memberIndexInGroup: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
-
-memberGMIdByName :: HasCallStack => TestCC -> T.Text -> IO Int64
-memberGMIdByName cc memberName = do
-  rows <- withCCTransaction cc $ \db ->
-    DB.query db "SELECT group_member_id FROM group_members WHERE local_display_name = ?" (Only memberName) ::
-      IO [Only Int64]
-  case rows of
-    [Only i] -> pure i
-    _ -> error $ "memberGMIdByName: expected 1 row for " <> T.unpack memberName <> ", got " <> show (length rows)
-
-memberProfileNameByGMId :: HasCallStack => TestCC -> Int64 -> IO (Maybe T.Text)
-memberProfileNameByGMId cc gmId = do
+-- | Assert that sender's member_relations_vector has 'MRIntroduced' at
+-- the recipient's index, looked up by display name on the same DB.
+memberIntroducedTo :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
+memberIntroducedTo cc senderName recipientName = do
   rows <- withCCTransaction cc $ \db ->
     DB.query
       db
       [sql|
-        SELECT p.display_name
-        FROM group_members m
-        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        WHERE m.group_member_id = ?
+        SELECT s.member_relations_vector, r.index_in_group
+        FROM group_members s, group_members r
+        WHERE s.local_display_name = ? AND r.local_display_name = ?
       |]
-      (Only gmId) ::
-      IO [Only T.Text]
-  pure $ fromOnly <$> listToMaybe rows
-
--- | True iff sender's member_relations_vector has 'MRIntroduced' at the
--- given recipient index. Looks up by group_member_id so it survives the
--- subsequent rename in updateMemberProfile.
-memberIntroducedTo :: HasCallStack => TestCC -> Int64 -> Int64 -> IO Bool
-memberIntroducedTo cc senderGMId recipientIdx = do
-  rows <- withCCTransaction cc $ \db ->
-    DB.query db "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?" (Only senderGMId) ::
-      IO [Only (Maybe ByteString)]
+      (senderName, recipientName) ::
+      IO [(Maybe ByteString, Int64)]
   case rows of
-    [Only mv] -> pure $ getRelation recipientIdx (fromMaybe B.empty mv) == MRIntroduced
-    _ -> error $ "memberIntroducedTo: expected 1 row for group_member_id=" <> show senderGMId <> ", got " <> show (length rows)
+    [(mv, idx)] -> getRelation idx (fromMaybe B.empty mv) `shouldBe` MRIntroduced
+    _ -> expectationFailure $ "memberIntroducedTo: expected exactly one row for " <> show (senderName, recipientName) <> ", got " <> show (length rows)
 
 testChannels1RelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
 testChannels1RelayDeliverLoop deliveryBucketSize ps =
@@ -8911,9 +8884,7 @@ testChannelLargeProfileFits ps =
           dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# "#team cath> hi [>>]"
 
-          danIdx <- memberIndexInGroup bob "dan"
-          cathGMId <- memberGMIdByName bob "cath"
-          memberIntroducedTo bob cathGMId danIdx `shouldReturn` True
+          memberIntroducedTo bob "cath" "dan"
 
 testChannelMultipleLargeProfiles :: HasCallStack => TestParams -> IO ()
 testChannelMultipleLargeProfiles ps =
@@ -8958,11 +8929,8 @@ testChannelMultipleLargeProfiles ps =
                      WithTime "#team dan> from dan [>>]"
                    ]
 
-            eveIdx <- memberIndexInGroup bob "eve"
-            cathGMId <- memberGMIdByName bob "cath"
-            danGMId <- memberGMIdByName bob "dan"
-            memberIntroducedTo bob cathGMId eveIdx `shouldReturn` True
-            memberIntroducedTo bob danGMId eveIdx `shouldReturn` True
+            memberIntroducedTo bob "cath" "eve"
+            memberIntroducedTo bob "dan" "eve"
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
 
@@ -8984,10 +8952,7 @@ testChannelProfileUpdateNoRePrepend ps =
           dan <## "#team: bob introduced cath (Catherine) in the channel"
           dan <# "#team cath> hi [>>]"
 
-          danIdx <- memberIndexInGroup bob "dan"
-          cathGMId <- memberGMIdByName bob "cath"
-          memberIntroducedTo bob cathGMId danIdx `shouldReturn` True
-          memberProfileNameByGMId bob cathGMId `shouldReturn` Just "cath"
+          memberIntroducedTo bob "cath" "dan"
 
           -- /p only delivers XInfo to direct contacts; for group members it
           -- piggybacks on the next group send via shouldSendProfileUpdate.
@@ -8999,8 +8964,7 @@ testChannelProfileUpdateNoRePrepend ps =
           alice <# "#team kate> hi again [>>]"
           dan <# "#team kate> hi again [>>]"
           threadDelay 500000
-          memberIntroducedTo bob cathGMId danIdx `shouldReturn` True
-          memberProfileNameByGMId bob cathGMId `shouldReturn` Just "kate"
+          memberIntroducedTo bob "kate" "dan"
 
 testChannelMultiSendersIndependent :: HasCallStack => TestParams -> IO ()
 testChannelMultiSendersIndependent ps =

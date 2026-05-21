@@ -263,7 +263,6 @@ createMsgDeliveryJob db gInfo jobScope senderGMIds body = do
   where
     GroupInfo {groupId} = gInfo
     -- NULL ↔ []; non-empty list ↔ comma-separated decimal Int64s.
-    -- Empty string is never written (would fail the reader's parse).
     senderColumn :: Maybe Text
     senderColumn
       | null senderGMIds = Nothing
@@ -319,16 +318,16 @@ getNextDeliveryJob db deliveryKey = do
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
         toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsText_, Binary body, cursorGMId_)) = do
           jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
-          -- NULL means []; a non-NULL value must parse as a comma-separated
-          -- decimal Int64 list. An empty string or unparseable segment
-          -- surfaces as job error rather than silent degradation.
+          -- NULL or empty string means []; otherwise the value must parse
+          -- as a comma-separated decimal Int64 list. An unparseable
+          -- segment surfaces as job error rather than silent degradation.
           senderGMIds <- case senderGMIdsText_ of
             Nothing -> Right []
             Just t -> maybe (Left $ SEInvalidDeliveryJob jobId') Right $ parseSenderGMIds t
           Right $ MessageDeliveryJob {jobId = jobId', jobScope, senderGMIds, body, cursorGMId_}
         parseSenderGMIds :: Text -> Maybe [GroupMemberId]
         parseSenderGMIds t
-          | T.null t = Nothing
+          | T.null t = Just []
           | otherwise = traverse (readMaybe . T.unpack) (T.splitOn "," t)
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =

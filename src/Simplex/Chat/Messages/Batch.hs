@@ -20,13 +20,16 @@ module Simplex.Chat.Messages.Batch
 where
 
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B
-import Data.Char (chr, ord)
+import Data.Char (ord)
 import Data.Function (on)
 import Data.Foldable (foldr')
 import Data.List (foldl', sortBy)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
+import Data.Ord (Down (..))
+import Data.Word (Word8)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
@@ -131,8 +134,9 @@ batchLen BMBinary len n = len + n * 2 + 2 -- 2-byte length prefix per element + 
 maxBatchElementSize :: Int
 maxBatchElementSize = maxEncodedMsgLength - 4
 
--- | Sort key for the profile packers: pack no-image members before
--- image-bearing ones so the small profiles land together.
+-- | Sort key for the profile packers. No-image profiles are processed
+-- first so they pack densely; image-bearing profiles take any remaining
+-- space or spill to overflow.
 hasImage :: GroupMember -> Bool
 hasImage GroupMember {memberProfile = LocalProfile {image}} = isJust image
 
@@ -142,10 +146,15 @@ hasImage GroupMember {memberProfile = LocalProfile {image}} = isJust image
 -- that did not fit, and the senders whose element doesn't fit even a
 -- singleton batch (must be dropped — equivalent to 'batchMessages'
 -- 'errLarge').
+--
+-- Precondition on 'body': must be either 'B.empty' or output of
+-- 'encodeBinaryBatch' — the function reads byte 1 as the existing
+-- element count and drops bytes 0-1 before reassembly. Passing
+-- arbitrary bytes produces malformed output.
 batchProfilesWithBody :: Int -> ByteString -> [(GroupMember, ByteString)] -> (ByteString, [GroupMember], [(GroupMember, ByteString)], [GroupMember])
 batchProfilesWithBody maxLen body labeled =
   let (_, _, acceptedPairs, overflow, large) =
-        foldr' step initState (sortBy (compare `on` (hasImage . fst)) labeled)
+        foldl' step initState (sortBy (compare `on` (hasImage . fst)) labeled)
    in (buildBody acceptedPairs, map fst acceptedPairs, overflow, large)
   where
     initEmpty = B.null body
@@ -153,7 +162,7 @@ batchProfilesWithBody maxLen body labeled =
     initCount = if initEmpty then 0 else ord (B.index body 1)
     -- (predicted total bytes, predicted count, accepted pairs, overflow, large)
     initState = (initLen, initCount, [], [], [])
-    step (s, e) (totalLen, count, acceptedPairs, overflow, large)
+    step (totalLen, count, acceptedPairs, overflow, large) (s, e)
       | B.length e + 4 > maxLen = (totalLen, count, acceptedPairs, overflow, s : large)
       | count >= 255 = full
       | candidateLen <= maxLen = (candidateLen, count + 1, (s, e) : acceptedPairs, overflow, large)
@@ -173,7 +182,7 @@ batchProfilesWithBody maxLen body labeled =
       let prefixedNew = B.concat [smpEncode (Large e) | (_, e) <- acceptedPairs]
           newCount = initCount + length acceptedPairs
           tail_ = if initEmpty then B.empty else B.drop 2 body
-       in B.cons '=' (B.cons (chr newCount) (prefixedNew <> tail_))
+       in B.concat [B.singleton '=', BS.singleton (fromIntegral newCount :: Word8), prefixedNew, tail_]
 
 -- | Pack labeled profile elements into one or more (batch, senders)
 -- pairs, each bounded by 'maxLen', plus a list of senders whose element
@@ -182,7 +191,7 @@ batchProfilesWithBody maxLen body labeled =
 -- 'batchProfilesWithBody').
 batchProfiles :: Int -> [(GroupMember, ByteString)] -> ([(ByteString, [GroupMember])], [GroupMember])
 batchProfiles maxLen =
-  finish . foldr addToBatch ([], [], [], 0, 0, []) . sortBy (compare `on` (hasImage . fst))
+  finish . foldr addToBatch ([], [], [], 0, 0, []) . sortBy (compare `on` (Down . hasImage . fst))
   where
     addToBatch :: (GroupMember, ByteString) -> ([(ByteString, [GroupMember])], [ByteString], [GroupMember], Int, Int, [GroupMember]) -> ([(ByteString, [GroupMember])], [ByteString], [GroupMember], Int, Int, [GroupMember])
     addToBatch (s, e) acc@(batches, elems, members, len, n, large)
