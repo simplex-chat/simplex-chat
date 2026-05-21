@@ -2,7 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -52,6 +52,7 @@ fun MemberAdmissionView(m: ChatModel, rhId: Long?, chatId: String, close: () -> 
       if (admission == currentAdmission) close()
       else showUnsavedChangesAlert({ saveAdmission(close) }, close)
     },
+    cardScreen = true,
   ) {
     MemberAdmissionLayout(
       admission,
@@ -77,7 +78,7 @@ private fun MemberAdmissionLayout(
   reset: () -> Unit,
   saveAdmission: () -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.member_admission))
     val review = remember(admission) { mutableStateOf(admission?.review) }
     AdmissionSection(MR.strings.admission_stage_review, MR.strings.admission_stage_review_descr, review, groupInfo) { criteria ->
@@ -88,7 +89,7 @@ private fun MemberAdmissionLayout(
       }
     }
     if (groupInfo.isOwner) {
-      SectionSpacer()
+      SectionDividerSpaced()
       ResetSaveButtons(
         reset = reset,
         save = saveAdmission,
@@ -112,7 +113,7 @@ private fun AdmissionSection(
   groupInfo: GroupInfo,
   onSelected: (MemberCriteria?) -> Unit
 ) {
-  SectionView(card = true) {
+  SectionView {
     if (groupInfo.isOwner) {
       ExposedDropDownSettingRow(
         generalGetString(admissionStageStrId),
@@ -134,7 +135,7 @@ private fun AdmissionSection(
 
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  SectionView(card = true) {
+  SectionView {
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }

@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import CARD_PADDING
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import itemHPadding
@@ -44,9 +44,9 @@ fun AppearanceScope.AppearanceLayout(
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_language), contentPadding = PaddingValues(), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_language), contentPadding = PaddingValues()) {
       val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
       LangSelector(state) {
         state.value = it
@@ -66,27 +66,27 @@ fun AppearanceScope.AppearanceLayout(
         SettingsPreferenceItem(icon = null, stringResource(MR.strings.chat_bottom_bar), ChatModel.controller.appPrefs.chatBottomBar)
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
 
     if (trayIsAvailable) {
-      SectionSpacer()
+      SectionDividerSpaced()
       MinimizeToTraySection()
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
     AppToolbarsSection()
 
-    SectionSpacer()
+    SectionDividerSpaced()
     MessageShapeSection()
 
-    SectionSpacer()
+    SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionSpacer()
+    SectionDividerSpaced()
     FontScaleSection()
 
-    SectionSpacer()
+    SectionDividerSpaced()
     DensityScaleSection()
 
     SectionBottomSpacer()
@@ -97,7 +97,7 @@ fun AppearanceScope.AppearanceLayout(
 private fun MinimizeToTraySection() {
   val pref = remember { appPrefs.closeBehavior.state }
   val on = pref.value == CloseBehavior.MinimizeToTray
-  SectionView(card = true) {
+  SectionView {
     PreferenceToggle(
       stringResource(MR.strings.appearance_minimize_to_tray),
       checked = on,
@@ -111,7 +111,7 @@ private fun MinimizeToTraySection() {
 @Composable
 fun DensityScaleSection() {
   val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
-  SectionView(stringResource(MR.strings.appearance_zoom), contentPadding = PaddingValues(horizontal = CARD_PADDING), card = true) {
+  SectionView(stringResource(MR.strings.appearance_zoom), contentPadding = PaddingValues(horizontal = CARD_PADDING)) {
     Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
       Box(Modifier.size(50.dp)
         .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))

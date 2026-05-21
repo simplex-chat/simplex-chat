@@ -3,7 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import itemHPadding
 import SectionItemView
-import SectionSpacer
+import SectionDividerSpaced
 import SectionView
 import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -47,12 +47,13 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
     user?.displayName,
     setPerformLA = setPerformLA,
     showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
-    showSettingsModal = { modalView -> { ModalManager.start.showModal(true) { modalView(chatModel) } } },
+    showSettingsModal = { modalView -> { ModalManager.start.showModal(settings = true, cardScreen = true) { modalView(chatModel) } } },
     showSettingsModalWithSearch = { modalView ->
       ModalManager.start.showCustomModal { close ->
         val search = rememberSaveable { mutableStateOf("") }
         ModalView(
           { close() },
+          cardScreen = true,
           showSearch = true,
           searchAlwaysVisible = true,
           onSearchValueChanged = { search.value = it },
@@ -98,26 +99,26 @@ fun SettingsLayout(
     hideKeyboard(view)
   }
   val uriHandler = LocalUriHandler.current
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_settings))
 
-    SectionView(stringResource(MR.strings.settings_section_title_settings), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_settings)) {
       SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it) })
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_chat_database), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_chat_database)) {
       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_help), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_help)) {
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName ?: "") }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
@@ -126,16 +127,16 @@ fun SettingsLayout(
       }
       SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_support), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_support)) {
       if (!BuildConfigCommon.ANDROID_BUNDLE) {
         ContributeItem(uriHandler)
       }
       RateAppItem(uriHandler)
       StarOnGithubItem(uriHandler)
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     SettingsSectionApp(showSettingsModal, showVersion, withAuth)
     SectionBottomSpacer()

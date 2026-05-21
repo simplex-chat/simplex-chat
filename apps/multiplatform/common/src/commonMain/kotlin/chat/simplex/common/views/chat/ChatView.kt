@@ -406,7 +406,7 @@ fun ChatView(
                 val selectedItems: MutableState<Set<Long>?> = mutableStateOf(null)
                 ModalManager.end.showCustomModal { close ->
                   val appBar = remember { mutableStateOf(null as @Composable (BoxScope.() -> Unit)?) }
-                  ModalView(close, appBar = appBar.value) {
+                  ModalView(close, cardScreen = true, appBar = appBar.value) {
                     val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
                       var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
@@ -509,7 +509,7 @@ fun ChatView(
                 if (chatsCtx.secondaryContextFilter == null) {
                   ModalManager.end.closeModals()
                 }
-                ModalManager.end.showModalCloseable(true) { close ->
+                ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
                     GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
                   }
@@ -801,7 +801,7 @@ fun ChatView(
       }
       is ChatInfo.ContactConnection -> {
         val close = { chatModel.chatId.value = null }
-          ModalView(close, showClose = appPlatform.isAndroid, content = {
+          ModalView(close, showClose = appPlatform.isAndroid, cardScreen = true, content = {
             ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, false, close)
           })
           LaunchedEffect(chatInfo.id) {

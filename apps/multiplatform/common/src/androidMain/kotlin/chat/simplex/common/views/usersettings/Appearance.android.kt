@@ -1,7 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionView
 import android.app.Activity
 import android.content.ComponentName
@@ -76,9 +76,9 @@ fun AppearanceScope.AppearanceLayout(
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_interface), contentPadding = PaddingValues(), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_interface), contentPadding = PaddingValues()) {
       val context = LocalContext.current
       //      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       //        SectionItemWithValue(
@@ -113,21 +113,21 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
 
-    SectionSpacer()
+    SectionDividerSpaced()
     AppToolbarsSection()
 
-    SectionSpacer()
+    SectionDividerSpaced()
     MessageShapeSection()
 
-    SectionSpacer()
+    SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_icon), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_icon), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
@@ -151,7 +151,7 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
     FontScaleSection()
 
     SectionBottomSpacer()

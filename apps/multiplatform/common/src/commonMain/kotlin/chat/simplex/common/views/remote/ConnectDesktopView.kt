@@ -1,7 +1,7 @@
 package chat.simplex.common.views.remote
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewLongClickable
 import SectionView
@@ -52,7 +52,7 @@ fun ConnectDesktopView(close: () -> Unit) {
       showDisconnectDesktopAlert(close)
     }
   }
-  ModalView(close = closeWithAlert) {
+  ModalView(close = closeWithAlert, cardScreen = true) {
     ConnectDesktopLayout(
       deviceName = deviceName.value!!,
       close
@@ -75,7 +75,7 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
   val sessionAddress = remember { mutableStateOf("") }
   val remoteCtrls = remember { mutableStateListOf<RemoteCtrlInfo>() }
   val session = remember { chatModel.remoteCtrlSession }.value
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     val discovery = if (session == null) null else session.sessionState is UIRemoteCtrlSessionState.Searching
     if (discovery == true || (discovery == null && !showConnectScreen.value)) {
       SearchingDesktop(deviceName, remoteCtrls)
@@ -127,7 +127,7 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
 @Composable
 private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<RemoteCtrlInfo>, sessionAddress: MutableState<String>) {
   AppBarTitle(stringResource(MR.strings.connect_to_desktop))
-  SectionView(stringResource(MR.strings.this_device_name), card = true) {
+  SectionView(stringResource(MR.strings.this_device_name)) {
     DevicesView(deviceName, remoteCtrls) {
       if (it != "") {
         setDeviceName(it)
@@ -135,10 +135,10 @@ private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<Re
       }
     }
   }
-  SectionSpacer()
+  SectionDividerSpaced()
   ScanDesktopAddressView(sessionAddress)
   if (controller.appPrefs.developerTools.get()) {
-    SectionSpacer()
+    SectionDividerSpaced()
     DesktopAddressView(sessionAddress)
   }
 }
@@ -146,22 +146,22 @@ private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<Re
 @Composable
 private fun ConnectingDesktop(session: RemoteCtrlSession, rc: RemoteCtrlInfo?) {
   AppBarTitle(stringResource(MR.strings.connecting_to_desktop))
-  SectionView(stringResource(MR.strings.connecting_to_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
+  SectionView(stringResource(MR.strings.connecting_to_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     CtrlDeviceNameText(session, rc)
     Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
   }
 
   if (session.sessionCode != null) {
-    SectionSpacer()
-    SectionView(stringResource(MR.strings.session_code), card = true) {
+    SectionDividerSpaced()
+    SectionView(stringResource(MR.strings.session_code)) {
       SessionCodeText(session.sessionCode!!)
     }
   }
 
-  SectionSpacer()
+  SectionDividerSpaced()
 
-  SectionView(card = true) {
+  SectionView {
     DisconnectButton(onClick = ::disconnectDesktop)
   }
 
@@ -187,7 +187,7 @@ private fun ProgressIndicator() {
 @Composable
 private fun SearchingDesktop(deviceName: String, remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
   AppBarTitle(stringResource(MR.strings.connecting_to_desktop))
-  SectionView(stringResource(MR.strings.this_device_name), card = true) {
+  SectionView(stringResource(MR.strings.this_device_name)) {
     DevicesView(deviceName, remoteCtrls) {
       if (it != "") {
         setDeviceName(it)
@@ -195,11 +195,11 @@ private fun SearchingDesktop(deviceName: String, remoteCtrls: SnapshotStateList<
       }
     }
   }
-  SectionSpacer()
-  SectionView(stringResource(MR.strings.found_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
+  SectionDividerSpaced()
+  SectionView(stringResource(MR.strings.found_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Text(stringResource(MR.strings.waiting_for_desktop), fontStyle = FontStyle.Italic)
   }
-  SectionSpacer()
+  SectionDividerSpaced()
   DisconnectButton(stringResource(MR.strings.scan_QR_code).replace('\n', ' '), MR.images.ic_qr_code, ::disconnectDesktop)
 }
 
@@ -214,7 +214,7 @@ private fun FoundDesktop(
   sessionAddress: MutableState<String>,
 ) {
   AppBarTitle(stringResource(MR.strings.found_desktop))
-  SectionView(stringResource(MR.strings.this_device_name), card = true) {
+  SectionView(stringResource(MR.strings.this_device_name)) {
     DevicesView(deviceName, remoteCtrls) {
       if (it != "") {
         setDeviceName(it)
@@ -222,8 +222,8 @@ private fun FoundDesktop(
       }
     }
   }
-  SectionSpacer()
-  SectionView(stringResource(MR.strings.found_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
+  SectionDividerSpaced()
+  SectionView(stringResource(MR.strings.found_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     CtrlDeviceNameText(session, rc)
     CtrlDeviceVersionText(session)
     if (!compatible) {
@@ -231,7 +231,7 @@ private fun FoundDesktop(
     }
   }
 
-  SectionSpacer()
+  SectionDividerSpaced()
 
   if (compatible) {
     SectionItemView({ withBGApi { confirmKnownDesktop(sessionAddress, rc) } }) {
@@ -255,19 +255,19 @@ private fun FoundDesktop(
 @Composable
 private fun VerifySession(session: RemoteCtrlSession, rc: RemoteCtrlInfo?, sessCode: String, remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
   AppBarTitle(stringResource(MR.strings.verify_connection))
-  SectionView(stringResource(MR.strings.connected_to_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
+  SectionView(stringResource(MR.strings.connected_to_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     CtrlDeviceNameText(session, rc)
     Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
   }
 
-  SectionSpacer()
+  SectionDividerSpaced()
 
-  SectionView(stringResource(MR.strings.verify_code_with_desktop), card = true) {
+  SectionView(stringResource(MR.strings.verify_code_with_desktop)) {
     SessionCodeText(sessCode)
   }
 
-  SectionSpacer()
+  SectionDividerSpaced()
 
   SectionItemView({ verifyDesktopSessionCode(remoteCtrls, sessCode) }) {
     Icon(painterResource(MR.images.ic_check), generalGetString(MR.strings.confirm_verb), tint = MaterialTheme.colors.secondary)
@@ -275,7 +275,7 @@ private fun VerifySession(session: RemoteCtrlSession, rc: RemoteCtrlInfo?, sessC
     Text(generalGetString(MR.strings.confirm_verb))
   }
 
-  SectionView(card = true) {
+  SectionView {
     DisconnectButton(onClick = ::disconnectDesktop)
   }
 }
@@ -310,22 +310,22 @@ private fun CtrlDeviceVersionText(session: RemoteCtrlSession) {
 @Composable
 private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo, close: () -> Unit) {
   AppBarTitle(stringResource(MR.strings.connected_to_desktop))
-  SectionView(stringResource(MR.strings.connected_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING), card = true) {
+  SectionView(stringResource(MR.strings.connected_desktop), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Text(rc.deviceViewName)
     Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
   }
 
   if (session.sessionCode != null) {
-    SectionSpacer()
-    SectionView(stringResource(MR.strings.session_code), card = true) {
+    SectionDividerSpaced()
+    SectionView(stringResource(MR.strings.session_code)) {
       SessionCodeText(session.sessionCode!!)
     }
   }
 
-  SectionSpacer()
+  SectionDividerSpaced()
 
-  SectionView(card = true) {
+  SectionView {
     DisconnectButton { disconnectDesktop(close) }
   }
 }
@@ -354,7 +354,7 @@ private fun DevicesView(deviceName: String, remoteCtrls: SnapshotStateList<Remot
 
 @Composable
 private fun ScanDesktopAddressView(sessionAddress: MutableState<String>) {
-  SectionView(stringResource(MR.strings.scan_qr_code_from_desktop), card = true) {
+  SectionView(stringResource(MR.strings.scan_qr_code_from_desktop)) {
     QRCodeScanner { text ->
       sessionAddress.value = text
       connectDesktopAddress(sessionAddress, text)
@@ -365,7 +365,7 @@ private fun ScanDesktopAddressView(sessionAddress: MutableState<String>) {
 @Composable
 private fun DesktopAddressView(sessionAddress: MutableState<String>) {
   val clipboard = LocalClipboardManager.current
-  SectionView(stringResource(MR.strings.desktop_address), card = true) {
+  SectionView(stringResource(MR.strings.desktop_address)) {
     if (sessionAddress.value.isEmpty()) {
       SettingsActionItem(
         painterResource(MR.images.ic_content_paste),
@@ -407,9 +407,9 @@ private fun DesktopAddressView(sessionAddress: MutableState<String>) {
 
 @Composable
 private fun LinkedDesktopsView(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.linked_desktops))
-    SectionView(stringResource(MR.strings.desktop_devices), card = true) {
+    SectionView(stringResource(MR.strings.desktop_devices)) {
       remoteCtrls.forEach { rc ->
         val showMenu = rememberSaveable { mutableStateOf(false) }
         SectionItemViewLongClickable(click = {}, longClick = { showMenu.value = true }) {
@@ -424,9 +424,9 @@ private fun LinkedDesktopsView(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
 
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.linked_desktop_options), card = true) {
+    SectionView(stringResource(MR.strings.linked_desktop_options)) {
       PreferenceToggle(stringResource(MR.strings.verify_connections), checked = remember { controller.appPrefs.confirmRemoteSessions.state }.value) {
         controller.appPrefs.confirmRemoteSessions.set(it)
       }

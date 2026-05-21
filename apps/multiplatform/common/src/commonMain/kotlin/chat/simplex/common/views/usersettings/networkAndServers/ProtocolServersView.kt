@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -48,7 +48,7 @@ fun ModalData.YourServersView(
   }
 
   Box {
-    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+    ColumnWithScrollBar {
       AppBarTitle(stringResource(MR.strings.your_servers))
       YourServersViewLayout(
         scope,
@@ -88,7 +88,7 @@ fun YourServersViewLayout(
   Column {
     if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
       val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
-      SectionView(generalGetString(MR.strings.chat_relays), card = true) {
+      SectionView(generalGetString(MR.strings.chat_relays)) {
         userServers.value[operatorIndex].chatRelays.forEachIndexed { i, relay ->
           if (relay.deleted) return@forEachIndexed
           ChatRelayViewLink(relay, duplicateRelayAddresses) {
@@ -100,8 +100,8 @@ fun YourServersViewLayout(
     }
 
     if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
-      SectionSpacer()
-      SectionView(generalGetString(MR.strings.message_servers), card = true) {
+      SectionDividerSpaced()
+      SectionView(generalGetString(MR.strings.message_servers)) {
         userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
           if (server.deleted) return@forEachIndexed
           SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -134,8 +134,8 @@ fun YourServersViewLayout(
     }
 
     if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
-      SectionSpacer()
-      SectionView(generalGetString(MR.strings.media_and_file_servers), card = true) {
+      SectionDividerSpaced()
+      SectionView(generalGetString(MR.strings.media_and_file_servers)) {
         userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
           if (server.deleted) return@forEachIndexed
           SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -172,10 +172,10 @@ fun YourServersViewLayout(
       userServers.value[operatorIndex].xftpServers.any { !it.deleted } ||
       userServers.value[operatorIndex].chatRelays.any { !it.deleted }
       ) {
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
-    SectionView(card = true) {
+    SectionView {
       SettingsActionItem(
         painterResource(MR.images.ic_add),
         stringResource(MR.strings.smp_servers_add),
@@ -197,9 +197,9 @@ fun YourServersViewLayout(
         ServersWarningFooter(serversWarn)
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(card = true) {
+    SectionView {
       TestServersButton(
         testing = testing,
         smpServers = userServers.value[operatorIndex].smpServers,

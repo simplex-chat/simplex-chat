@@ -1,7 +1,7 @@
 package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import SectionViewWithButton
@@ -106,7 +106,7 @@ private fun ContactConnectionInfoLayout(
     }
   }
 
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(
       stringResource(
         if (contactConnection.initiated) MR.strings.you_invited_a_contact
@@ -132,8 +132,7 @@ private fun ContactConnectionInfoLayout(
       Spacer(Modifier.height(DEFAULT_PADDING))
       SectionViewWithButton(
         stringResource(MR.strings.one_time_link),
-        titleButton = if (connLink.connShortLink == null) null else {{ ToggleShortLinkButton(showShortLink) }},
-        card = true
+        titleButton = if (connLink.connShortLink == null) null else {{ ToggleShortLinkButton(showShortLink) }}
       ) {
         SimpleXCreatedLinkQRCode(connLink, short = showShortLink.value)
         incognitoEnabled()
@@ -141,14 +140,14 @@ private fun ContactConnectionInfoLayout(
         OneTimeLinkLearnMoreButton(learnMore)
       }
     } else {
-      SectionView(card = true) {
+      SectionView {
         incognitoEnabled()
         OneTimeLinkLearnMoreButton(learnMore)
       }
     }
     SectionTextFooter(sharedProfileInfo(chatModel, contactConnection.incognito))
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     DeleteButton(deleteConnection)
 

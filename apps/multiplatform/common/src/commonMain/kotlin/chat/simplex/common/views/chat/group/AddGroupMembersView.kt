@@ -2,7 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewWithoutMinPadding
 import SectionView
@@ -146,7 +146,7 @@ fun AddGroupMembersLayout(
     }
   }
 
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.button_add_members))
     profileText()
     Spacer(Modifier.size(DEFAULT_PADDING))
@@ -160,7 +160,7 @@ fun AddGroupMembersLayout(
         iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight
       )
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (contactsToAdd.isEmpty() && searchText.value.text.isEmpty()) {
       Row(
@@ -174,7 +174,7 @@ fun AddGroupMembersLayout(
         )
       }
     } else {
-      SectionView(card = true) {
+      SectionView {
         if (creatingGroup) {
           SectionItemView(openMemberAdmission) {
             Text(stringResource(MR.strings.set_member_admission))
@@ -194,8 +194,8 @@ fun AddGroupMembersLayout(
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
-      SectionSpacer()
-      SectionView(stringResource(MR.strings.select_contacts), card = true) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.select_contacts)) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
         }

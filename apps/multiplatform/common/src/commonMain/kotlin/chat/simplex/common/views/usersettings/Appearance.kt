@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import CARD_PADDING
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import itemHPadding
 import SectionItemViewSpaceBetween
@@ -59,7 +59,7 @@ expect fun AppearanceView(m: ChatModel)
 object AppearanceScope {
   @Composable
   fun ProfileImageSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_profile_images), contentPadding = PaddingValues(horizontal = CARD_PADDING), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images), contentPadding = PaddingValues(horizontal = CARD_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
       Row(Modifier.padding(vertical = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
@@ -92,7 +92,7 @@ object AppearanceScope {
   @Composable
   fun AppToolbarsSection() {
     BoxWithConstraints {
-      SectionView(stringResource(MR.strings.appearance_app_toolbars), card = true) {
+      SectionView(stringResource(MR.strings.appearance_app_toolbars)) {
         SectionItemViewWithoutMinPadding {
           Box(Modifier.weight(1f)) {
             var fontScale by remember { mutableStateOf(1f) }
@@ -179,7 +179,7 @@ object AppearanceScope {
   @Composable
   fun MessageShapeSection() {
     BoxWithConstraints {
-      SectionView(stringResource(MR.strings.settings_section_title_message_shape), card = true) {
+      SectionView(stringResource(MR.strings.settings_section_title_message_shape)) {
         SectionItemViewWithoutMinPadding {
           Text(stringResource(MR.strings.settings_message_shape_corner), Modifier.weight(1f))
           Spacer(Modifier.width(10.dp))
@@ -209,7 +209,7 @@ object AppearanceScope {
   @Composable
   fun FontScaleSection() {
     val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
-    SectionView(stringResource(MR.strings.appearance_font_size), contentPadding = PaddingValues(horizontal = CARD_PADDING), card = true) {
+    SectionView(stringResource(MR.strings.appearance_font_size), contentPadding = PaddingValues(horizontal = CARD_PADDING)) {
       Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(50.dp)
           .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
@@ -524,7 +524,7 @@ object AppearanceScope {
       }
     }
 
-    SectionView(stringResource(MR.strings.settings_section_title_themes), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_themes)) {
       ThemeDestinationPicker(themeUserDestination)
 
       val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
@@ -557,7 +557,7 @@ object AppearanceScope {
             color = if (chatModel.remoteHostId != null && themeUserDestination.value != null) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
           )
         }
-        SectionSpacer()
+        SectionDividerSpaced()
       }
 
       val state: State<DefaultThemeMode?> = remember(appPrefs.currentTheme.get()) {
@@ -608,7 +608,7 @@ object AppearanceScope {
 
   @Composable
   fun CustomizeThemeView(onChooseType: (WallpaperType?) -> Unit) {
-    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+    ColumnWithScrollBar {
       val currentTheme by CurrentColors.collectAsState()
 
       AppBarTitle(stringResource(MR.strings.customize_theme_title))
@@ -651,10 +651,10 @@ object AppearanceScope {
             color = if (chatModel.remoteHostId == null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
           )
         }
-        SectionSpacer()
+        SectionDividerSpaced()
       }
 
-      SectionView(stringResource(MR.strings.settings_section_title_chat_colors), card = true) {
+      SectionView(stringResource(MR.strings.settings_section_title_chat_colors)) {
         WallpaperSetupView(
           wallpaperType,
           baseTheme,
@@ -672,13 +672,13 @@ object AppearanceScope {
           },
         )
       }
-      SectionSpacer()
+      SectionDividerSpaced()
 
       CustomizeThemeColorsSection(currentTheme) { name ->
         editColor(name)
       }
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       val currentOverrides = remember(currentTheme) { ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get()) }
       val canResetColors = currentTheme.base.hasChangedAnyColor(currentOverrides)
@@ -689,10 +689,10 @@ object AppearanceScope {
         }) {
           Text(generalGetString(MR.strings.reset_color), color = colors.primary)
         }
-        SectionSpacer()
+        SectionDividerSpaced()
       }
 
-      SectionView(card = true) {
+      SectionView {
         val theme = remember { mutableStateOf(null as String?) }
         val exportThemeLauncher = rememberFileChooserLauncher(false) { to: URI? ->
           val themeValue = theme.value
@@ -945,7 +945,7 @@ object AppearanceScope {
 
   @Composable
   fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, editColor: (ThemeColor) -> Unit) {
-    SectionView(stringResource(MR.strings.theme_colors_section_title), card = true) {
+    SectionView(stringResource(MR.strings.theme_colors_section_title)) {
       SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY) }) {
         val title = generalGetString(MR.strings.color_primary)
         Text(title)
@@ -1009,7 +1009,7 @@ object AppearanceScope {
         SimpleXThemeOverride(currentColors()) {
           ChatThemePreview(theme, wallpaperImage, wallpaperType, previewBackgroundColor, previewTintColor)
         }
-        SectionSpacer()
+        SectionDividerSpaced()
       }
 
       var currentColor by remember { mutableStateOf(initialColor) }
@@ -1086,7 +1086,7 @@ object AppearanceScope {
       }) {
         Text(generalGetString(MR.strings.reset_single_color), color = colors.primary)
       }
-      SectionSpacer()
+      SectionDividerSpaced()
     }
   }
 
@@ -1237,7 +1237,7 @@ fun WallpaperSetupView(
       Text(title)
       Icon(painterResource(MR.images.ic_circle_filled), title, tint = wallpaperTintColor)
     }
-    SectionSpacer()
+    SectionDividerSpaced()
   }
 
   SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE) }) {

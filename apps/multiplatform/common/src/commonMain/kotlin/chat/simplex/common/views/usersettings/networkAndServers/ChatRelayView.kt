@@ -149,7 +149,8 @@ fun ChatRelayView(
           text = generalGetString(MR.strings.check_relay_address)
         )
       }
-    }
+    },
+    cardScreen = true,
   ) {
     ChatRelayLayout(
       relayToEdit,
@@ -377,7 +378,7 @@ fun ModalData.NewChatRelayView(
 
   ModalView(close = {
     addChatRelay(relayToEdit.value, userServers, serverErrors, serverWarnings, rhId, close)
-  }) {
+  }, cardScreen = true) {
     NewChatRelayLayout(relayToEdit)
   }
 }

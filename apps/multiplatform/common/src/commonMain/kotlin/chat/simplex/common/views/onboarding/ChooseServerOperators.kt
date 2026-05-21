@@ -1,7 +1,7 @@
 package chat.simplex.common.views.onboarding
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -55,7 +55,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
     OnboardingConditionsDesktop(selectedOperatorIds)
   } else {
     CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-      ModalView({}, showClose = false, showAppBar = false) {
+      ModalView({}, showClose = false, showAppBar = false, cardScreen = true) {
         OnboardingShrinkingLayout(
           modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
             .systemBarsPadding()
@@ -133,8 +133,8 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
 @Composable
 private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Long>>) {
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView({}, showClose = false) {
-      ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme()), horizontalAlignment = Alignment.CenterHorizontally) {
+    ModalView({}, showClose = false, cardScreen = true) {
+      ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
         Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
@@ -184,7 +184,7 @@ fun ModalData.ChooseServerOperators(
     prepareChatBeforeFinishingOnboarding()
   }
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView(close, enableClose = selectedOperatorIds.value.isNotEmpty()) {
+    ModalView(close, enableClose = selectedOperatorIds.value.isNotEmpty(), cardScreen = true) {
       ColumnWithScrollBar(
         Modifier
           .themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
@@ -360,7 +360,7 @@ private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorId
 
 @Composable
 private fun ChooseServerOperatorsInfoView() {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.onboarding_network_operators))
 
     Column(
@@ -371,9 +371,9 @@ private fun ChooseServerOperatorsInfoView() {
       ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_for_routing))
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(title = stringResource(MR.strings.onboarding_network_about_operators), card = true) {
+    SectionView(title = stringResource(MR.strings.onboarding_network_about_operators)) {
       chatModel.conditions.value.serverOperators.forEach { op ->
         ServerOperatorRow(op)
       }

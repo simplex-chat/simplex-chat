@@ -21,7 +21,7 @@ actual fun SettingsSectionApp(
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_app), card = true) {
+  SectionView(stringResource(MR.strings.settings_section_title_app)) {
     SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(withAuth) })
     val selectedChannel = remember { appPrefs.appUpdateChannel.state }
     val values = AppUpdatesChannel.entries.map { it to it.text }

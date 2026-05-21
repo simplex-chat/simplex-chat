@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionItemView
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
@@ -49,6 +49,7 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
       if (preferences == currentPreferences) close()
       else  showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
+    cardScreen = true,
   ) {
     PreferencesLayout(
       preferences,
@@ -68,7 +69,7 @@ private fun PreferencesLayout(
   reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.allow) }
     val onTTLUpdated = { ttl: Int? ->
@@ -83,27 +84,27 @@ private fun PreferencesLayout(
       onTTLUpdated = onTTLUpdated
     )
 
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
     FeatureSection(ChatFeature.FullDelete, allowFullDeletion) {
       applyPrefs(preferences.copy(fullDelete = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.allow) }
     FeatureSection(ChatFeature.Reactions, allowReactions) {
       applyPrefs(preferences.copy(reactions = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     val allowCalls = remember(preferences) { mutableStateOf(preferences.calls.allow) }
     FeatureSection(ChatFeature.Calls, allowCalls) {
       applyPrefs(preferences.copy(calls = SimpleChatPreference(allow = it)))
     }
-    SectionSpacer()
+    SectionDividerSpaced()
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,
@@ -115,7 +116,7 @@ private fun PreferencesLayout(
 
 @Composable
 private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
-  SectionView(card = true) {
+  SectionView {
     ExposedDropDownSettingRow(
       feature.text,
       FeatureAllowed.values().map { it to it.text },
@@ -135,7 +136,7 @@ private fun TimedMessagesFeatureSection(
   onTTLUpdated: (Int?) -> Unit
 ) {
   val ttl = rememberSaveable(preferences) { mutableStateOf(preferences.timedMessages.ttl) }
-  SectionView(card = true) {
+  SectionView {
     PreferenceToggleWithIcon(
       ChatFeature.TimedMessages.text,
       ChatFeature.TimedMessages.icon,
@@ -165,7 +166,7 @@ private fun TimedMessagesFeatureSection(
 
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  SectionView(card = true) {
+  SectionView {
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }

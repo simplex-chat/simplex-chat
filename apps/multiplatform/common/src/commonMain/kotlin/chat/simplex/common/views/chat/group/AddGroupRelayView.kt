@@ -2,7 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionView
 import androidx.compose.foundation.background
@@ -99,7 +99,7 @@ private fun AddGroupRelayLayout(
   onToggleRelay: (Long) -> Unit,
   onAddRelays: () -> Unit
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(generalGetString(MR.strings.add_relays_title))
 
     if (isLoading) {
@@ -107,7 +107,7 @@ private fun AddGroupRelayLayout(
         CircularProgressIndicator()
       }
     } else if (availableRelays.isEmpty()) {
-      SectionView(card = true) {
+      SectionView {
         SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(
             generalGetString(MR.strings.no_available_relays),
@@ -116,7 +116,7 @@ private fun AddGroupRelayLayout(
         }
       }
     } else {
-      SectionView(card = true) {
+      SectionView {
         AddRelaysButton(
           onClick = onAddRelays,
           disabled = selectedRelayIds.isEmpty() || isAdding
@@ -132,8 +132,8 @@ private fun AddGroupRelayLayout(
           fontSize = 14.sp
         )
       }
-      SectionSpacer()
-      SectionView(generalGetString(MR.strings.select_relays), card = true) {
+      SectionDividerSpaced()
+      SectionView(generalGetString(MR.strings.select_relays)) {
         availableRelays.forEach { item ->
           val selected = item.relayId in selectedRelayIds
           SectionItemView(

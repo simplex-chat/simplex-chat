@@ -1,7 +1,7 @@
 package chat.simplex.common.views.helpers
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionView
 import androidx.compose.foundation.background
@@ -32,7 +32,7 @@ fun ModalData.UserWallpaperEditor(
   globalThemeUsed: MutableState<Boolean>,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
@@ -133,7 +133,7 @@ fun ModalData.UserWallpaperEditor(
       onTypeChange = onTypeChange,
     )
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (!globalThemeUsed.value) {
       ResetToGlobalThemeButton(true) {
@@ -174,7 +174,7 @@ fun ModalData.UserWallpaperEditor(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (showMore) {
       val values by remember { mutableStateOf(
@@ -201,11 +201,11 @@ fun ModalData.UserWallpaperEditor(
         }
       )
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       ImportExportThemeSection(null, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
@@ -228,7 +228,7 @@ fun ModalData.ChatWallpaperEditor(
   globalThemeUsed: MutableState<Boolean>,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
@@ -368,7 +368,7 @@ fun ModalData.ChatWallpaperEditor(
       onTypeChange = onTypeChange,
     )
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (!globalThemeUsed.value) {
       ResetToGlobalThemeButton(remember { chatModel.currentUser }.value?.uiThemes?.preferredMode(isInDarkTheme()) == null) {
@@ -409,7 +409,7 @@ fun ModalData.ChatWallpaperEditor(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (showMore) {
       val values by remember { mutableStateOf(
@@ -436,11 +436,11 @@ fun ModalData.ChatWallpaperEditor(
         }
       )
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionSpacer()
+      SectionDividerSpaced()
       ImportExportThemeSection(themeModeOverride.value, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
           themeModeOverride.value = it
@@ -457,7 +457,7 @@ fun ModalData.ChatWallpaperEditor(
 
 @Composable
 private fun ImportExportThemeSection(perChat: ThemeModeOverride?, perUser: ThemeModeOverrides?, save: (ThemeModeOverride) -> Unit) {
-  SectionView(card = true) {
+  SectionView {
     val theme = remember { mutableStateOf(null as String?) }
     val exportThemeLauncher = rememberFileChooserLauncher(false) { to: URI? ->
       val themeValue = theme.value

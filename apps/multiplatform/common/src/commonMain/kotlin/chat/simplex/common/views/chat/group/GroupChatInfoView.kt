@@ -6,7 +6,7 @@ import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewLongClickable
 import SectionItemViewSpaceBetween
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.animation.*
@@ -130,7 +130,7 @@ fun ModalData.GroupChatInfoView(
           } else {
             member to null
           }
-          ModalManager.end.showModalCloseable(true) { closeCurrent ->
+          ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
               GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, groupRelay = groupRelay, close = closeCurrent) {
                 closeCurrent()
@@ -524,7 +524,6 @@ fun ModalData.GroupChatInfoLayout(
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
   LazyColumnWithScrollBar(
-    modifier = Modifier.background(canvasColorForCurrentTheme()),
     state = listState,
     contentPadding = if (oneHandUI.value) {
       PaddingValues(
@@ -557,7 +556,7 @@ fun ModalData.GroupChatInfoLayout(
 
       LocalAliasEditor(chat.id, groupInfo.localAlias, isContact = false, updateValue = onLocalAliasChanged)
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       Box(
         Modifier.fillMaxWidth(),
@@ -586,16 +585,16 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       if (groupInfo.useRelays && groupInfo.membership.memberIncognito) {
-        SectionView(generalGetString(MR.strings.incognito), card = true) {
+        SectionView(generalGetString(MR.strings.incognito)) {
           SectionItemViewSpaceBetween {
             Text(generalGetString(MR.strings.incognito_random_profile))
             Text(groupInfo.membership.chatViewName, color = Indigo)
           }
         }
-        SectionSpacer()
+        SectionDividerSpaced()
       }
 
       var anyTopSectionRowShow = false
@@ -605,7 +604,7 @@ fun ModalData.GroupChatInfoLayout(
           || groupInfo.membership.supportChat != null)
 
       if (groupInfo.useRelays) {
-        SectionView(card = true) {
+        SectionView {
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
@@ -635,7 +634,7 @@ fun ModalData.GroupChatInfoLayout(
           SectionTextFooter(stringResource(MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect))
         }
       } else {
-        SectionView(card = true) {
+        SectionView {
           if (groupInfo.canAddMembers && groupInfo.businessChat == null) {
             anyTopSectionRowShow = true
             if (groupLink == null) {
@@ -663,9 +662,9 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       if (anyTopSectionRowShow) {
-        SectionSpacer()
+        SectionDividerSpaced()
       }
-      SectionView(card = true) {
+      SectionView {
         if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
           val editProfileTitleId = if (groupInfo.useRelays) MR.strings.button_edit_channel_profile else MR.strings.button_edit_group_profile
           EditGroupProfileButton(editProfileTitleId, editGroupProfile)
@@ -682,9 +681,9 @@ fun ModalData.GroupChatInfoLayout(
         else if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs
         else MR.strings.only_chat_owners_can_change_prefs
       SectionTextFooter(stringResource(footerId))
-      SectionSpacer()
+      SectionDividerSpaced()
 
-      SectionView(card = true) {
+      SectionView {
         if (!groupInfo.useRelays) {
           if (activeSortedMembers.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
             SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
@@ -704,10 +703,10 @@ fun ModalData.GroupChatInfoLayout(
         ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
       }
       SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
-      SectionSpacer()
+      SectionDividerSpaced()
 
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-        SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1), card = true, cardShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)) {
+        SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1), cardShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)) {
           if (groupInfo.canAddMembers) {
             val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
             val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -767,9 +766,9 @@ fun ModalData.GroupChatInfoLayout(
     }
     item {
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-        SectionSpacer()
+        SectionDividerSpaced()
       }
-      SectionView(card = true) {
+      SectionView {
         if (groupInfo.useRelays && (groupInfo.isOwner || activeSortedMembers.any { it.memberRole == GroupMemberRole.Relay })) {
           ChannelRelaysButton(chat.remoteHostId, groupInfo, showMemberInfo)
         }
@@ -794,8 +793,8 @@ fun ModalData.GroupChatInfoLayout(
       }
 
       if (developerTools) {
-        SectionSpacer()
-        SectionView(title = stringResource(MR.strings.section_title_for_console), card = true) {
+        SectionDividerSpaced()
+        SectionView(title = stringResource(MR.strings.section_title_for_console)) {
           InfoRow(stringResource(MR.strings.info_row_local_name), groupInfo.localDisplayName)
           InfoRow(stringResource(MR.strings.info_row_database_id), groupInfo.apiId.toString())
         }

@@ -1,7 +1,7 @@
 package chat.simplex.common.views.database
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
 import SectionView
@@ -167,11 +167,11 @@ fun DatabaseLayout(
 ) {
   val operationsDisabled = progressIndicator && !chatModel.desktopNoUserNoRemote
 
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_chat_database))
 
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(stringResource(MR.strings.messages_section_title), card = true) {
+      SectionView(stringResource(MR.strings.messages_section_title)) {
         TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
       }
       SectionTextFooter(
@@ -185,14 +185,14 @@ fun DatabaseLayout(
           }
         }
       )
-      SectionSpacer()
+      SectionDividerSpaced()
     }
     val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
     if (chatModel.localUserCreated.value == true) {
       // still show the toggle in case database was stopped when the user opened this screen because it can be in the following situations:
       // - database was stopped after migration and the app relaunched
       // - something wrong happened with database operations and the database couldn't be launched when it should
-      SectionView(stringResource(MR.strings.run_chat_section), card = true) {
+      SectionView(stringResource(MR.strings.run_chat_section)) {
         if (!toggleEnabled) {
           SectionItemView(disconnectAllHosts) {
             Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
@@ -201,10 +201,10 @@ fun DatabaseLayout(
         RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
       if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
-    SectionView(stringResource(MR.strings.chat_database_section), card = true) {
+    SectionView(stringResource(MR.strings.chat_database_section)) {
       if (chatModel.localUserCreated.value != true && !toggleEnabled) {
         SectionItemView(disconnectAllHosts) {
           Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
@@ -215,7 +215,7 @@ fun DatabaseLayout(
         if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
         else painterResource(MR.images.ic_lock),
         stringResource(MR.strings.database_passphrase),
-        click = { ModalManager.start.showModal { DatabaseEncryptionView(chatModel, false) } },
+        click = { ModalManager.start.showModal(cardScreen = true) { DatabaseEncryptionView(chatModel, false) } },
         iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
@@ -261,9 +261,9 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.files_and_media_section), card = true) {
+    SectionView(stringResource(MR.strings.files_and_media_section)) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,

@@ -119,7 +119,7 @@ fun DatabaseEncryptionLayout(
         ChatStoppedView()
         SectionSpacer()
       }
-      SectionView(if (migration) generalGetString(MR.strings.database_passphrase) else null, card = true) {
+      SectionView(if (migration) generalGetString(MR.strings.database_passphrase) else null) {
         SavePassphraseSetting(
           useKeychain.value,
           initialRandomDBPassphrase.value,
@@ -206,7 +206,7 @@ fun DatabaseEncryptionLayout(
       Layout()
     }
   } else {
-    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme()), maxIntrinsicSize = true) {
+    ColumnWithScrollBar(maxIntrinsicSize = true) {
       Layout()
     }
   }

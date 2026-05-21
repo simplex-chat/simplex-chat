@@ -5,7 +5,7 @@ import InfoRowEllipsis
 import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -542,7 +542,7 @@ fun ChatInfoLayout(
   KeyChangeEffect(chat.id) {
     scope.launch { scrollState.scrollTo(0) }
   }
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
@@ -552,7 +552,7 @@ fun ChatInfoLayout(
 
     LocalAliasEditor(chat.id, localAlias, updateValue = onLocalAliasChanged)
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     Box(
       Modifier.fillMaxWidth(),
@@ -572,19 +572,19 @@ fun ChatInfoLayout(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (customUserProfile != null) {
-      SectionView(generalGetString(MR.strings.incognito), card = true) {
+      SectionView(generalGetString(MR.strings.incognito)) {
         SectionItemViewSpaceBetween {
           Text(generalGetString(MR.strings.incognito_random_profile))
           Text(customUserProfile.chatViewName, color = Indigo)
         }
       }
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
-    SectionView(card = true) {
+    SectionView {
       if (contact.ready && contact.active) {
         if (connectionCode != null) {
           VerifyCodeButton(contact.verified, verifyClicked)
@@ -609,34 +609,34 @@ fun ChatInfoLayout(
         }
       }
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(card = true) {
+    SectionView {
       ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
     }
     SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
-    SectionSpacer()
+    SectionDividerSpaced()
 
     val conn = contact.activeConn
     if (conn != null) {
-      SectionView(card = true) {
+      SectionView {
         InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
-        SectionSpacer()
+        SectionDividerSpaced()
       }
     }
 
     if (contact.contactLink != null) {
-      SectionView(stringResource(MR.strings.address_section_title), card = true) {
+      SectionView(stringResource(MR.strings.address_section_title)) {
         SimpleXLinkQRCode(contact.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
       }
       SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
     if (contact.ready && contact.active) {
-      SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers), card = true) {
+      SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
         val chatSubStatus = chatModel.chatSubStatus.value
         if (chatSubStatus != null) {
           SectionItemView({
@@ -669,17 +669,17 @@ fun ChatInfoLayout(
           }
         }
       }
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
-    SectionView(card = true) {
+    SectionView {
       ClearChatButton(clearChat)
       DeleteContactButton(deleteContact)
     }
 
     if (developerTools) {
-      SectionSpacer()
-      SectionView(title = stringResource(MR.strings.section_title_for_console), card = true) {
+      SectionDividerSpaced()
+      SectionView(title = stringResource(MR.strings.section_title_for_console)) {
         InfoRow(stringResource(MR.strings.info_row_local_name), chat.chatInfo.localDisplayName)
         InfoRow(stringResource(MR.strings.info_row_database_id), chat.chatInfo.apiId.toString())
         SectionItemView({

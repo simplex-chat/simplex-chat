@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -64,7 +64,7 @@ fun OperatorView(
   }
 
   Box {
-    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme()).alpha(if (testing.value) 0.6f else 1f)) {
+    ColumnWithScrollBar(Modifier.alpha(if (testing.value) 0.6f else 1f)) {
       AppBarTitle(String.format(stringResource(MR.strings.operator_servers_title), operator.tradeName))
       OperatorViewLayout(
         currUserServers,
@@ -182,7 +182,7 @@ fun OperatorViewLayout(
   val duplicateHosts = findDuplicateHosts(serverErrors.value)
 
   Column {
-    SectionView(generalGetString(MR.strings.operator), card = true) {
+    SectionView(generalGetString(MR.strings.operator)) {
       SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }) {
         Row(
           Modifier.fillMaxWidth(),
@@ -238,8 +238,8 @@ fun OperatorViewLayout(
     if (operator.enabled) {
       if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
         val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
-        SectionSpacer()
-        SectionView(generalGetString(MR.strings.chat_relays), card = true) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.chat_relays)) {
           userServers.value[operatorIndex].chatRelays.forEachIndexed { index, relay ->
             if (!relay.deleted) {
               ChatRelayViewLink(relay, duplicateRelayAddresses) {
@@ -252,8 +252,8 @@ fun OperatorViewLayout(
       }
 
       if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
-        SectionSpacer()
-        SectionView(generalGetString(MR.strings.operator_use_for_messages), card = true) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.operator_use_for_messages)) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
               stringResource(MR.strings.operator_use_for_messages_receiving),
@@ -306,8 +306,8 @@ fun OperatorViewLayout(
 
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].smpServers.any { it.preset }) {
-        SectionSpacer()
-        SectionView(generalGetString(MR.strings.message_servers), card = true) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.message_servers)) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
             if (!server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -340,8 +340,8 @@ fun OperatorViewLayout(
       }
 
       if (userServers.value[operatorIndex].smpServers.any { !it.preset && !it.deleted }) {
-        SectionSpacer()
-        SectionView(generalGetString(MR.strings.operator_added_message_servers), card = true) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.operator_added_message_servers)) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -356,8 +356,8 @@ fun OperatorViewLayout(
       }
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
-        SectionSpacer()
-        SectionView(generalGetString(MR.strings.operator_use_for_files), card = true) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.operator_use_for_files)) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
               stringResource(MR.strings.operator_use_for_sending),
@@ -389,8 +389,8 @@ fun OperatorViewLayout(
 
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].xftpServers.any { it.preset }) {
-        SectionSpacer()
-        SectionView(generalGetString(MR.strings.media_and_file_servers), card = true) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.media_and_file_servers)) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (!server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -423,8 +423,8 @@ fun OperatorViewLayout(
       }
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.preset && !it.deleted}) {
-        SectionSpacer()
-        SectionView(generalGetString(MR.strings.operator_added_xftp_servers), card = true) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.operator_added_xftp_servers)) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -438,8 +438,8 @@ fun OperatorViewLayout(
         }
       }
 
-      SectionSpacer()
-      SectionView(card = true) {
+      SectionDividerSpaced()
+      SectionView {
         TestServersButton(
           testing = testing,
           smpServers = userServers.value[operatorIndex].smpServers,
@@ -477,10 +477,10 @@ fun OperatorViewLayout(
 
 @Composable
 fun OperatorInfoView(serverOperator: ServerOperator) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.operator_info_title))
 
-    SectionView(card = true) {
+    SectionView {
       SectionItemView {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           Image(painterResource(serverOperator.largeLogo), null, Modifier.height(48.dp))
@@ -491,10 +491,10 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     val uriHandler = LocalUriHandler.current
-    SectionView(card = true) {
+    SectionView {
       SectionItemView {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           serverOperator.info.description.forEach { d ->
@@ -508,8 +508,8 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
 
     val selfhost = serverOperator.info.selfhost
     if (selfhost != null) {
-      SectionSpacer()
-      SectionView(card = true) {
+      SectionDividerSpaced()
+      SectionView {
         SectionItemView {
           val (text, link) = selfhost
           Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(link) })

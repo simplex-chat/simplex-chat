@@ -2,7 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -66,6 +66,7 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
       if (preferences == currentPreferences) close()
       else showUnsavedChangesAlert({ savePrefs(close) }, close, saveTextId)
     },
+    cardScreen = true,
   ) {
     GroupPreferencesLayout(
       preferences,
@@ -177,7 +178,7 @@ private fun GroupPreferencesLayout(
       }
     }
   }
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     val titleId = if (groupInfo.useRelays) MR.strings.channel_preferences
       else if (groupInfo.businessChat == null) MR.strings.group_preferences
       else MR.strings.chat_preferences
@@ -185,36 +186,36 @@ private fun GroupPreferencesLayout(
     if (!groupInfo.useRelays) {
       if (groupInfo.businessChat == null) {
         MemberAdmissionButton(openMemberAdmission)
-        SectionSpacer()
+        SectionDividerSpaced()
       }
       TimedMessagesPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       DirectMessagesPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       FullDeletePreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       ReactionsPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       VoicePreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       FilesPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       SimplexLinksPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       ReportsPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       HistoryPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       SupportPreference(disabled = true)
     } else {
       TimedMessagesPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       FullDeletePreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       ReactionsPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       HistoryPreference()
-      SectionSpacer()
+      SectionDividerSpaced()
       SupportPreference(notice = generalGetString(MR.strings.chat_with_admins_relay_note), onEnable = { revert ->
         AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.enable_chats_with_admins_question),
@@ -227,7 +228,7 @@ private fun GroupPreferencesLayout(
       })
     }
     if (groupInfo.isOwner) {
-      SectionSpacer()
+      SectionDividerSpaced()
       val saveTextId = if (groupInfo.useRelays) MR.strings.save_and_notify_channel_subscribers
         else MR.strings.save_and_notify_group_members
       ResetSaveButtons(
@@ -262,7 +263,7 @@ private fun FeatureSection(
   notice: String? = null,
   onSelected: (GroupFeatureEnabled, GroupMemberRole?) -> Unit
 ) {
-  SectionView(card = true) {
+  SectionView {
     val on = enableFeature.value == GroupFeatureEnabled.ON
     val icon = if (on) feature.iconFilled() else feature.icon
     val iconTint = if (on) SimplexGreen else MaterialTheme.colors.secondary
@@ -327,7 +328,7 @@ private fun FeatureSection(
 
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean, saveTextId: StringResource) {
-  SectionView(card = true) {
+  SectionView {
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }

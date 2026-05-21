@@ -1,7 +1,7 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionView
@@ -81,7 +81,8 @@ fun ProtocolServerView(
           )
         }
       }
-    }
+    },
+    cardScreen = true,
   ) {
     Box {
       ProtocolServerLayout(
@@ -123,7 +124,7 @@ private fun ProtocolServerLayout(
   testServer: () -> Unit,
   onDelete: () -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.XFTP) MR.strings.xftp_server else MR.strings.smp_server))
 
     if (server.value.preset) {
@@ -141,7 +142,7 @@ private fun PresetServer(
   testing: Boolean,
   testServer: () -> Unit
 ) {
-  SectionView(stringResource(MR.strings.smp_servers_preset_address), card = true) {
+  SectionView(stringResource(MR.strings.smp_servers_preset_address)) {
     SelectionContainer {
       Text(
         server.value.server,
@@ -153,7 +154,7 @@ private fun PresetServer(
       )
     }
   }
-  SectionSpacer()
+  SectionDividerSpaced()
   UseServerSection(server, true, testing, testServer)
 }
 
@@ -176,7 +177,6 @@ fun CustomServer(
     stringResource(MR.strings.smp_servers_your_server_address),
     icon = painterResource(MR.images.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
-    card = true,
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
     TextEditor(
@@ -192,13 +192,13 @@ fun CustomServer(
         }
     }
   }
-  SectionSpacer()
+  SectionDividerSpaced()
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
 
   if (valid.value) {
-    SectionSpacer()
-    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device), card = true) {
+    SectionDividerSpaced()
+    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device)) {
       QRCode(serverAddress.value, small = true)
     }
   }
@@ -212,7 +212,7 @@ private fun UseServerSection(
   testServer: () -> Unit,
   onDelete: (() -> Unit)? = null,
 ) {
-  SectionView(stringResource(MR.strings.smp_servers_use_server), card = true) {
+  SectionView(stringResource(MR.strings.smp_servers_use_server)) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
       Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server.value)

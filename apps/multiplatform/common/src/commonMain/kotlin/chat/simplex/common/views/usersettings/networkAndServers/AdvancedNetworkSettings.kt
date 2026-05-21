@@ -1,7 +1,7 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
 import SectionTextFooter
@@ -159,6 +159,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         }, close)
       }
     },
+    cardScreen = true,
   ) {
     AdvancedNetworkSettingsLayout(
       currentRemoteHost = currentRemoteHost,
@@ -225,23 +226,23 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
 ) {
   val secondsLabel = stringResource(MR.strings.network_option_seconds_label)
 
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.network_settings_title))
 
     if (currentRemoteHost == null) {
-      SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing), card = true) {
+      SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing)) {
         SMPProxyModePicker(smpProxyMode, showModal, updateSMPProxyMode)
         SMPProxyFallbackPicker(smpProxyFallback, showModal, updateSMPProxyFallback, enabled = remember { derivedStateOf { smpProxyMode.value != SMPProxyMode.Never } })
         SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
       }
       SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
-      SectionSpacer()
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation), card = true) {
+      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation)) {
         SessionModePicker(sessionMode, showModal, updateSessionMode)
       }
-      SectionSpacer()
-      SectionView(stringResource(MR.strings.network_smp_web_port_section_title), card = true) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.network_smp_web_port_section_title)) {
         ExposedDropDownSettingRow(
           stringResource(MR.strings.network_smp_web_port_toggle),
           SMPWebPortServers.entries.map { it to stringResource(it.text) },
@@ -252,9 +253,9 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         if (smpWebPortServers.value == SMPWebPortServers.Preset) stringResource(MR.strings.network_smp_web_port_preset_footer)
         else String.format(stringResource(MR.strings.network_smp_web_port_footer), if (smpWebPortServers.value == SMPWebPortServers.All) "443" else "5223")
       )
-      SectionSpacer()
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.network_option_tcp_connection), card = true) {
+      SectionView(stringResource(MR.strings.network_option_tcp_connection)) {
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeoutInteractive,
@@ -331,9 +332,9 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(card = true) {
+    SectionView {
       SectionItemView(reset, disabled = resetDisabled) {
         Text(stringResource(MR.strings.network_options_reset_to_defaults), color = if (resetDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }

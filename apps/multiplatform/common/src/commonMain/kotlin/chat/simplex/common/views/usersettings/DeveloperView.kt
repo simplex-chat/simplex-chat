@@ -1,7 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.background
@@ -21,13 +21,13 @@ import chat.simplex.res.MR
 fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
   val m = chatModel
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     val uriHandler = LocalUriHandler.current
     AppBarTitle(stringResource(MR.strings.settings_developer_tools))
     val developerTools = m.controller.appPrefs.developerTools
     val devTools = remember { developerTools.state }
     val unchangedHints = mutableStateOf(unchangedHintPreferences())
-    SectionView(card = true) {
+    SectionView {
       InstallTerminalAppItem(uriHandler)
       ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.start.showModalCloseable { TerminalView(false) } } }
       ResetHintsItem(unchangedHints)
@@ -38,8 +38,8 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
           generalGetString(MR.strings.developer_options)
     )
     if (devTools.value) {
-      SectionSpacer()
-      SectionView(stringResource(MR.strings.developer_options_section), card = true) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.developer_options_section)) {
         SettingsActionItemWithContent(painterResource(MR.images.ic_breaking_news), stringResource(MR.strings.debug_logs)) {
           DefaultSwitch(
             checked = remember { appPrefs.logLevel.state }.value <= LogLevel.DEBUG,
@@ -62,8 +62,8 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
       }
     }
-    SectionSpacer()
-    SectionView(stringResource(MR.strings.deprecated_options_section), card = true) {
+    SectionDividerSpaced()
+    SectionView(stringResource(MR.strings.deprecated_options_section)) {
       val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)

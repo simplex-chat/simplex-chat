@@ -1,7 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -172,7 +172,7 @@ fun UserAddressView(
     )
   }
 
-  ModalView(close = close) {
+  ModalView(close = close, cardScreen = true) {
     showLayout()
   }
 
@@ -279,7 +279,7 @@ private fun UserAddressLayout(
   deleteAddress: () -> Unit,
   saveAddressSettings: (AddressSettingsState, MutableState<AddressSettingsState>) -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     if (!onboarding) {
       AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId))
     }
@@ -302,17 +302,17 @@ private fun UserAddressLayout(
     ) {
       if (userAddress == null) {
         if (!onboarding) {
-          SectionView(generalGetString(MR.strings.for_social_media), card = true) {
+          SectionView(generalGetString(MR.strings.for_social_media)) {
             CreateAddressButton(createAddress)
           }
 
-          SectionSpacer()
-          SectionView(generalGetString(MR.strings.or_to_share_privately), card = true) {
+          SectionDividerSpaced()
+          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
             CreateOneTimeLinkButton()
           }
 
-          SectionSpacer()
-          SectionView(card = true) {
+          SectionDividerSpaced()
+          SectionView {
             LearnMoreButton(learnMore)
           }
         }
@@ -338,8 +338,7 @@ private fun UserAddressLayout(
 
           SectionViewWithButton(
             stringResource(MR.strings.for_social_media),
-            titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null,
-            card = true
+            titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
           ) {
             SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
             if (userAddress.shouldBeUpgraded) {
@@ -360,17 +359,17 @@ private fun UserAddressLayout(
             SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
           }
 
-          SectionSpacer()
-          SectionView(generalGetString(MR.strings.or_to_share_privately), card = true) {
+          SectionDividerSpaced()
+          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
             CreateOneTimeLinkButton()
           }
-          SectionSpacer()
-          SectionView(card = true) {
+          SectionDividerSpaced()
+          SectionView {
             LearnMoreButton(learnMore)
           }
 
-          SectionSpacer()
-          SectionView(card = true) {
+          SectionDividerSpaced()
+          SectionView {
             DeleteAddressButton(deleteAddress)
           }
           SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
@@ -496,27 +495,27 @@ private fun ModalData.UserAddressSettings(
     }
   }
 
-  ModalView(close = { onClose(close) }) {
-    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ModalView(close = { onClose(close) }, cardScreen = true) {
+    ColumnWithScrollBar {
       AppBarTitle(stringResource(MR.strings.address_settings), hostDevice(user?.remoteHostId))
       Column(
         Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceEvenly
       ) {
-        SectionView(card = true) {
+        SectionView {
           ShareWithContactsButton(shareViaProfile, setProfileAddress)
           AutoAcceptToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
           if (addressSettingsState.value.autoAccept && !chatModel.addressShortLinkDataSet() && !addressSettingsState.value.businessAddress) {
             AcceptIncognitoToggle(addressSettingsState)
           }
         }
-        SectionSpacer()
+        SectionDividerSpaced()
 
-        SectionView(stringResource(MR.strings.address_welcome_message), card = true) {
+        SectionView(stringResource(MR.strings.address_welcome_message)) {
           AutoReplyEditor(addressSettingsState)
         }
-        SectionSpacer()
+        SectionDividerSpaced()
 
         saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
           saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)

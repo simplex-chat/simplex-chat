@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionItemView
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.background
@@ -56,12 +56,12 @@ fun PrivacySettingsView(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit
 ) {
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_privacy))
     PrivacyDeviceSection(showSettingsModal, setPerformLA)
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_chats), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_chats)) {
       SettingsPreferenceItem(
         painterResource(MR.images.ic_travel_explore),
         stringResource(MR.strings.send_link_previews),
@@ -92,9 +92,9 @@ fun PrivacySettingsView(
           }
         })
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_files), card = true) {
+    SectionView(stringResource(MR.strings.settings_section_title_files)) {
       SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
@@ -172,7 +172,7 @@ fun PrivacySettingsView(
       }
 
       if (!chatModel.desktopNoUserNoRemote) {
-        SectionSpacer()
+        SectionDividerSpaced()
         ContacRequestsFromGroupsSection(
           currentUser = currentUser,
           setAutoAcceptGrpDirectInvs = { enable ->
@@ -180,7 +180,7 @@ fun PrivacySettingsView(
           }
         )
 
-        SectionSpacer()
+        SectionDividerSpaced()
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->
@@ -278,7 +278,7 @@ private fun ContacRequestsFromGroupsSection(
   currentUser: User,
   setAutoAcceptGrpDirectInvs: (Boolean) -> Unit
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_contact_requests_from_groups), card = true) {
+  SectionView(stringResource(MR.strings.settings_section_title_contact_requests_from_groups)) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_check), stringResource(MR.strings.auto_accept_contact)) {
       DefaultSwitch(
         checked = currentUser.autoAcceptMemberContacts,
@@ -307,7 +307,7 @@ private fun DeliveryReceiptsSection(
   setOrAskSendReceiptsContacts: (Boolean) -> Unit,
   setOrAskSendReceiptsGroups: (Boolean) -> Unit,
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts), card = true) {
+  SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts)) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.receipts_section_contacts)) {
       DefaultSwitch(
         checked = currentUser.sendRcptsContacts,
@@ -561,9 +561,9 @@ fun SimplexLockView(
     }
   }
 
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.chat_lock))
-    SectionView(card = true) {
+    SectionView {
       EnableLock(remember { appPrefs.performLA.state }) { performLAToggle ->
         showAuthScreen.value = performLAToggle
         chatModel.controller.appPrefs.laNoticeShown.set(true)
@@ -619,8 +619,8 @@ fun SimplexLockView(
         }
       }
       if (performLA.value && laMode.value == LAMode.PASSCODE) {
-        SectionSpacer()
-        SectionView(stringResource(MR.strings.self_destruct_passcode), card = true) {
+        SectionDividerSpaced()
+        SectionView(stringResource(MR.strings.self_destruct_passcode)) {
           val openInfo = {
             ModalManager.start.showModal {
               SelfDestructInfoView()

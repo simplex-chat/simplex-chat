@@ -56,9 +56,9 @@ fun NotificationsSettingsLayout(
   val modes = remember { notificationModes() }
   val previewModes = remember { notificationPreviewModes() }
 
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.notifications))
-    SectionView(null, card = true) {
+    SectionView(null) {
       if (appPlatform == AppPlatform.ANDROID) {
         SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notifications_mode_title), { showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
           Text(

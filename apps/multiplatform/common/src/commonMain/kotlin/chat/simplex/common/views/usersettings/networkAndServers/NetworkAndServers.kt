@@ -2,7 +2,7 @@ package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import SectionCustomFooter
-import SectionSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
 import SectionTextFooter
@@ -85,7 +85,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       onClose(close = { ModalManager.start.closeModals() })
     }
   }
-  ModalView(close = { onClose(closeNetworkAndServers) }) {
+  ModalView(close = { onClose(closeNetworkAndServers) }, cardScreen = true) {
     NetworkAndServersLayout(
       currentRemoteHost = currentRemoteHost,
       networkUseSocksProxy = networkUseSocksProxy,
@@ -204,14 +204,14 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     }
   }
 
-  ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+  ColumnWithScrollBar {
     val showModal = { it: @Composable ModalData.() -> Unit -> ModalManager.start.showModal(content = it) }
     val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) } }
 
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     // TODO: Review this and socks.
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(generalGetString(MR.strings.network_preset_servers_title), card = true) {
+      SectionView(generalGetString(MR.strings.network_preset_servers_title)) {
         userServers.value.forEachIndexed { index, srv ->
           srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, serverWarnings, currentRemoteHost?.remoteHostId) }
         }
@@ -226,10 +226,10 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       if (footerText != null) {
         SectionTextFooter(footerText)
       }
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
-    SectionView(generalGetString(MR.strings.settings_section_title_messages), card = true) {
+    SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
       val nullOperatorIndex = userServers.value.indexOfFirst { it.operator == null }
 
       if (nullOperatorIndex != -1) {
@@ -293,15 +293,15 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
-    SectionView(generalGetString(MR.strings.settings_section_title_calls), card = true) {
+    SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
     }
 
     if (appPlatform.isAndroid) {
-      SectionSpacer()
-      SectionView(generalGetString(MR.strings.settings_section_title_network_connection), card = true) {
+      SectionDividerSpaced()
+      SectionView(generalGetString(MR.strings.settings_section_title_network_connection)) {
         val info = remember { chatModel.networkInfo }.value
         SettingsActionItemWithContent(icon = null, info.networkType.text) {
           Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = if (info.online) Color.Green else MaterialTheme.colors.error)
@@ -464,10 +464,11 @@ fun SocksProxySettings(
         )
       }
     },
+    cardScreen = true,
   ) {
-    ColumnWithScrollBar(Modifier.background(canvasColorForCurrentTheme())) {
+    ColumnWithScrollBar {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
-      SectionView(stringResource(MR.strings.network_socks_proxy), card = true) {
+      SectionView(stringResource(MR.strings.network_socks_proxy)) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           DefaultConfigurableTextField(
             hostUnsaved,
@@ -493,9 +494,9 @@ fun SocksProxySettings(
         SectionTextFooter(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
       }
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.network_proxy_auth), card = true) {
+      SectionView(stringResource(MR.strings.network_proxy_auth)) {
         PreferenceToggle(
           stringResource(MR.strings.network_proxy_random_credentials),
           checked = proxyAuthRandomUnsaved.value,
@@ -524,9 +525,9 @@ fun SocksProxySettings(
         SectionTextFooter(proxyAuthFooter(usernameUnsaved.value.text, passwordUnsaved.value.text, proxyAuthModeUnsaved.value, sessionMode))
       }
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
-      SectionView(card = true) {
+      SectionView {
         SectionItemView({
           hostUnsaved.value = hostUnsaved.value.copy("localhost", TextRange(9))
           portUnsaved.value = portUnsaved.value.copy("9050", TextRange(4))
