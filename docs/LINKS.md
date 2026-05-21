@@ -2287,7 +2287,7 @@ This Taiwanese article introduces SimpleX as a privacy-focused messaging app lau
 
 Image: free-com-tw-simplex.jpg
 
-Language: Traditional Chinese
+Language: Chinese (Tr.)
 
 Date: Mar 26, 2025
 
@@ -2303,7 +2303,7 @@ This Chinese comparison of secure messaging platforms gives SimpleX the most fav
 
 Image: futa-gg-simplex-comparison.jpg
 
-Language: Traditional Chinese
+Language: Chinese (Tr.)
 
 Date: 2024
 

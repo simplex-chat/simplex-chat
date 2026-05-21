@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  var ITEMS_PER_PAGE = 20
+  var ITEMS_PER_PAGE = 10
   var allItems = Array.from(document.querySelectorAll("#links-list .link-item"))
   var filteredItems = allItems.slice()
   var currentPage = 1

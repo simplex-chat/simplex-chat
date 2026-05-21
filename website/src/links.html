@@ -257,7 +257,7 @@ active_links: true
             {% for item in links %}
             <article
                 class="link-item w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#0B2A59] mb-8"
-                {% if loop.index0 >= 20 %}style="display:none"{% endif %}
+                {% if loop.index0 >= 10 %}style="display:none"{% endif %}
                 id="{{ item.id }}"
                 data-lang="{{ item.language }}"
                 data-category="{{ item.category | lower }}"
@@ -266,7 +266,7 @@ active_links: true
                 {% if item.featured %}data-featured{% endif %}>
                 {% if item.image and item.imageExists %}
                 <div class="min-h-[160px] h-[inherit] self-stretch md:w-[168px] bg-[#DBEEFF] dark:bg-[#071C46] flex items-center justify-center flex-[1] relative overflow-hidden">
-                    <img class="w-full h-full object-cover" src="/links/images/{{ item.image }}" alt="" loading="lazy" />
+                    <img class="w-full h-auto object-contain" src="/links/images/{{ item.image }}" alt="" loading="lazy" />
                 </div>
                 {% else %}
                 <div class="min-h-[160px] h-[inherit] self-stretch md:w-[168px] bg-[#DBEEFF] dark:bg-[#071C46] flex items-center justify-center flex-[1] relative">
