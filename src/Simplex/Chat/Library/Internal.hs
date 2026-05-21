@@ -525,8 +525,6 @@ deleteGroupMembersCIs user gInfo members = do
   filesInfo <- withStore' $ \db -> fmap concat $ forM members $ deleteGroupMemberCIs_ db user gInfo
   deleteCIFiles user filesInfo
 
--- File info MUST be collected before deleting chat_items so that
--- in-progress transfers are cancelled and on-disk files removed.
 deleteGroupMemberCIs_ :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO [CIFileInfo]
 deleteGroupMemberCIs_ db user gInfo member = do
   fs <- getGroupMemberFileInfo db user gInfo member
@@ -1850,9 +1848,7 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
         Nothing -> deleteGroupMember db user m'
   pure gInfo'
 
--- Unconditionally deletes the member record. Caller MUST have already
--- physically deleted the member's chat items so that file info can be
--- collected first; this helper skips checkGroupMemberHasItems intentionally.
+-- Unlike deleteOrUpdateMemberRecord, skips checkGroupMemberHasItems.
 fullyDeleteMemberRecord :: User -> GroupInfo -> GroupMember -> CM GroupInfo
 fullyDeleteMemberRecord user gInfo m =
   withStore' $ \db -> fullyDeleteMemberRecordIO db user gInfo m

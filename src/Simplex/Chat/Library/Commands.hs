@@ -2905,8 +2905,7 @@ processChatCommand vr nm = \case
                 Left e -> Just $ Left e
               itemsData = mapMaybe skipUnwantedItem itemsData_
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) False itemsData Nothing False
-          -- Items pass MUST run before delMember: physical deletion under fullDelete needs
-          -- the group_members row to still resolve file info for the removed members.
+          -- MUST run before delMember so getGroupMemberFileInfo can still resolve file info under fullDelete.
           when withMessages $ deleteMessages user gInfo memsToDelete
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)

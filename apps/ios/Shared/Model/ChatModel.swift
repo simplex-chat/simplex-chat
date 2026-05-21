@@ -812,11 +812,7 @@ final class ChatModel: ObservableObject {
     }
 
     func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
-        // Under fullDelete, the backend physically deletes the removed member's items
-        // and files; the UI must drop them rather than show stale moderated placeholders.
-        // The role check mirrors the backend's groupFeatureMemberAllowed: in business
-        // groups fullDelete may be gated by role (e.g. role = owner), and only the deleter
-        // satisfying that gate triggers physical deletion.
+        // Mirrors backend groupFeatureMemberAllowed: fullDelete may be role-gated in business groups.
         let fullDeletePref = groupInfo.fullGroupPreferences.fullDelete
         let fullDelete = fullDeletePref.on
             && byMember.memberRole >= (fullDeletePref.role ?? .observer)

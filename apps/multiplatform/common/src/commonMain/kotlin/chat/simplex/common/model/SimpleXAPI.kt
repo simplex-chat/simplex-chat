@@ -6068,9 +6068,6 @@ data class GroupPreferences(
 @Serializable
 data class GroupPreference(
   val enable: GroupFeatureEnabled,
-  // Backend types like FullDeleteGroupPreference carry a role gate; the client used to
-  // drop it (Json.ignoreUnknownKeys = true). Now parsed and surfaced for UI gates that
-  // must mirror the backend's groupFeatureMemberAllowed / groupFeatureUserAllowed.
   val role: GroupMemberRole? = null,
 ) {
   val on: Boolean get() = enable == GroupFeatureEnabled.ON

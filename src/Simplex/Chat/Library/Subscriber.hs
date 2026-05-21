@@ -3166,8 +3166,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             updateGroupMemberStatus db userId membership GSMemRemoved
             when (maybe False (/= RSRejected) (relayOwnStatus gInfo)) $ updateRelayOwnStatus_ db gInfo RSInactive
           let membership' = membership {memberStatus = GSMemRemoved}
-          -- Case A: user's own membership row is kept (status GSMemRemoved);
-          -- only the user's sent items + their files are physically deleted under fullDelete.
           when withMessages $ deleteMessages gInfo membership'
           deleteMemberItem msg gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
@@ -3189,9 +3187,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else deleteMemberConnection deletedMember
                 let deliveryScope = memberEventDeliveryScope deletedMember
                     deletedMember' = deletedMember {memberStatus = GSMemRemoved}
-                -- Case B: items must be deleted BEFORE the member record so that
-                -- getGroupMemberFileInfo can read chat_items (group_member_id has ON DELETE SET NULL
-                -- on chat_items, so deleting the row first would lose the join key for file collection).
                 when withMessages $ deleteMessages gInfo deletedMember'
                 gInfo' <- case deliveryScope of
                   -- Keep member record if it's support scope - it will be required for forwarding inside that scope.
