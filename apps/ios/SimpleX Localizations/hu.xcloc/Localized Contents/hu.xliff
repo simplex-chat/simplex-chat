@@ -255,14 +255,14 @@ channel relay bar</note>
         <target>%1$d/%2$d átjátszó aktív, %3$d eltávolítva</target>
         <note>channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays connected" xml:space="preserve">
+      <trans-unit id="%d/%d relays connected" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays connected</source>
-        <target>%1$d/%2$d átjátszó kapcsolódva</target>
+        <target state="translated">%1$d/%2$d átjátszó kapcsolódott</target>
         <note>channel subscriber relay bar progress</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve">
+      <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays connected, %3$d errors</source>
-        <target>%1$d/%2$d átjátszó kapcsolódva, %3$d hiba</target>
+        <target state="translated">%1$d/%2$d átjátszó kapcsolódott, %3$d hiba</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d failed" xml:space="preserve">
@@ -1358,9 +1358,9 @@ in your network</source>
 a saját hálózatában</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Be free in your network." xml:space="preserve">
+      <trans-unit id="Be free in your network." xml:space="preserve" approved="no">
         <source>Be free in your network.</source>
-        <target>Legyen szabad a saját hálózatában.</target>
+        <target state="translated">Váljon szabaddá a saját hálózatában.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Because we destroyed the power to know who you are. So that your power can never be taken." xml:space="preserve">
@@ -4659,9 +4659,9 @@ Hiba: %2$@</target>
         <target>Rejtett profiljelszó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide" xml:space="preserve">
+      <trans-unit id="Hide" xml:space="preserve" approved="no">
         <source>Hide</source>
-        <target>Összecsukás</target>
+        <target state="translated">Elrejtés</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
@@ -4724,9 +4724,9 @@ Hiba: %2$@</target>
         <target>Használati útmutató</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to use your servers" xml:space="preserve">
+      <trans-unit id="How to use your servers" xml:space="preserve" approved="no">
         <source>How to use your servers</source>
-        <target>Hogyan használja a saját kiszolgálóit</target>
+        <target state="translated">Útmutató a saját kiszolgálók használatához</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hungarian interface" xml:space="preserve">
@@ -4936,9 +4936,9 @@ További fejlesztések hamarosan!</target>
         <target>Kezdeti szerepkör</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Install SimpleX Chat for terminal" xml:space="preserve">
+      <trans-unit id="Install SimpleX Chat for terminal" xml:space="preserve" approved="no">
         <source>Install SimpleX Chat for terminal</source>
-        <target>A SimpleX Chat terminálhoz telepítése</target>
+        <target state="translated">SimpleX Chat telepítése a terminálhoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant" xml:space="preserve">
@@ -7287,14 +7287,14 @@ swipe action</note>
         <target>Átjátszóeredmények:</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
+      <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve" approved="no">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
-        <target>Az átjátszó csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címét.</target>
+        <target state="translated">Az átjátszó kiszolgáló csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címét.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve">
+      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve" approved="no">
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
-        <target>Az átjátszó megvédi az IP-címét, de megfigyelheti a hívás időtartamát.</target>
+        <target state="translated">Az átjátszó kiszolgáló megvédi az IP-címét, de megfigyelheti a hívás időtartamát.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Relay test failed!" xml:space="preserve">
@@ -8969,9 +8969,9 @@ Az átjátszó címe ennek az átjátszónak a beállítására szolgált a csat
         <target>Ideiglenes fájlhiba</target>
         <note>file error alert title</note>
       </trans-unit>
-      <trans-unit id="Test failed at step %@." xml:space="preserve">
+      <trans-unit id="Test failed at step %@." xml:space="preserve" approved="no">
         <source>Test failed at step %@.</source>
-        <target>A teszt a(z) %@ lépésnél sikertelen volt.</target>
+        <target state="translated">A teszt a(z) %@. lépésnél sikertelen volt.</target>
         <note>relay test failure
 server test failure</note>
       </trans-unit>
@@ -10173,9 +10173,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Ön már kapcsolódott a következőhöz: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connected with %@." xml:space="preserve">
+      <trans-unit id="You are already connected with %@." xml:space="preserve" approved="no">
         <source>You are already connected with %@.</source>
-        <target>Ön már kapcsolódva van vele: %@.</target>
+        <target state="translated">Ön már kapcsolatban van vele: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
@@ -11674,7 +11674,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="updated channel profile" xml:space="preserve" approved="no">
         <source>updated channel profile</source>
-        <target state="translated">frissítette csatorna profilját</target>
+        <target state="translated">frissítette a csatorna profilját</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve" approved="no">
@@ -12137,9 +12137,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Nem támogatott formátum</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wait" xml:space="preserve">
+      <trans-unit id="Wait" xml:space="preserve" approved="no">
         <source>Wait</source>
-        <target>Várjon</target>
+        <target state="translated">Várakozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
