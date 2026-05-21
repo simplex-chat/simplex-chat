@@ -185,7 +185,9 @@ private fun GroupPreferencesLayout(
     AppBarTitle(stringResource(titleId))
     if (!groupInfo.useRelays) {
       if (groupInfo.businessChat == null) {
-        MemberAdmissionButton(openMemberAdmission)
+        SectionView {
+          MemberAdmissionButton(openMemberAdmission)
+        }
         SectionDividerSpaced()
       }
       TimedMessagesPreference()

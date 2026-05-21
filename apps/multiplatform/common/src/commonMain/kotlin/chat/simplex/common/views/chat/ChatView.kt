@@ -3193,7 +3193,7 @@ fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close:
   withBGApi {
     setGroupMembers(rhId, groupInfo, chatModel)
     close?.invoke()
-    ModalManager.end.showModalCloseable(true) { close ->
+    ModalManager.end.showModalCloseable(showClose = true) { close ->
       AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
     }
   }
@@ -3204,7 +3204,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
   withBGApi {
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
-    ModalManager.end.showModalCloseable(true) {
+    ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) {
       GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo)
     }
   }

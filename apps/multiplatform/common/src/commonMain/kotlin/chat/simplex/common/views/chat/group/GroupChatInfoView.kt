@@ -115,7 +115,7 @@ fun ModalData.GroupChatInfoView(
           setGroupMembers(rhId, groupInfo, chatModel)
           if (!isActive) return@launch
 
-          ModalManager.end.showModalCloseable(true) { close ->
+          ModalManager.end.showModalCloseable(showClose = true) { close ->
             AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
           }
         }
@@ -171,7 +171,7 @@ fun ModalData.GroupChatInfoView(
       clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo) }
+          ModalManager.end.showModal(cardScreen = true) { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo) }
       },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
@@ -1194,7 +1194,9 @@ private fun ChannelLinkButton(onClick: () -> Unit) {
 @Composable
 private fun ChannelLinkQRCodeSection(groupLink: String) {
   val clipboard = LocalClipboardManager.current
-  SimpleXLinkQRCode(connReq = groupLink)
+  Box(Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
+    SimpleXLinkQRCode(connReq = groupLink)
+  }
   SectionItemView({
     clipboard.shareText(simplexChatLink(groupLink))
   }) {

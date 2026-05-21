@@ -117,7 +117,7 @@ private fun ChannelRelaysLayout(
           // Backend gate (APIAddGroupRelays) rejects any chatRelayId already in group_relays
           // regardless of relayStatus, so all current rows must be excluded from the add list.
           val existingRelayIds = groupRelays.mapNotNull { it.userChatRelay.chatRelayId }.toSet()
-          ModalManager.end.showModalCloseable(true) { close ->
+          ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
             AddGroupRelayView(
               groupInfo = groupInfo,
               existingRelayIds = existingRelayIds,
