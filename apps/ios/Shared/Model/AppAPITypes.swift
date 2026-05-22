@@ -42,10 +42,12 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetSettings(settings: AppSettings)
     case apiGetChatTags(userId: Int64)
     case apiGetChats(userId: Int64)
-    case apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag?, pagination: ChatPagination, search: String)
+    case apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag?, pagination: ChatPagination, search: String, parentItemId: Int64? = nil)
     case apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope?)
     case apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64)
     case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiSendComment(groupId: Int64, parentItemId: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiSetCommentsDisabled(groupId: Int64, parentItemId: Int64, disabled: Bool)
     case apiCreateChatTag(tag: ChatTagData)
     case apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64])
     case apiDeleteChatTag(tagId: Int64)
@@ -231,9 +233,10 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiGetSettings(settings): return "/_get app settings \(encodeJSON(settings))"
             case let .apiGetChatTags(userId): return "/_get tags \(userId)"
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
-            case let .apiGetChat(chatId, scope, contentTag, pagination, search):
+            case let .apiGetChat(chatId, scope, contentTag, pagination, search, parentItemId):
+                let parent = parentItemId != nil ? " parent=\(parentItemId!)" : ""
                 let tag = contentTag != nil ? " content=\(contentTag!.rawValue)" : ""
-                return "/_get chat \(chatId)\(scopeRef(scope))\(tag) \(pagination.cmdString)" + (search == "" ? "" : " search=\(search)")
+                return "/_get chat \(chatId)\(scopeRef(scope))\(parent)\(tag) \(pagination.cmdString)" + (search == "" ? "" : " search=\(search)")
             case let .apiGetChatContentTypes(chatId, scope): return "/_get content types \(chatId)\(scopeRef(scope))"
             case let .apiGetChatItemInfo(type, id, scope, itemId): return "/_get item info \(ref(type, id, scope: scope)) \(itemId)"
             case let .apiSendMessages(type, id, scope, sendAsGroup, live, ttl, composedMessages):
@@ -241,6 +244,12 @@ enum ChatCommand: ChatCmdProtocol {
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
                 let asGroup = sendAsGroup ? "(as_group=on)" : ""
                 return "/_send \(ref(type, id, scope: scope))\(asGroup) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+            case let .apiSendComment(groupId, parentItemId, live, ttl, composedMessages):
+                let msgs = encodeJSON(composedMessages)
+                let ttlStr = ttl != nil ? "\(ttl!)" : "default"
+                return "/_comment #\(groupId) \(parentItemId) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+            case let .apiSetCommentsDisabled(groupId, parentItemId, disabled):
+                return "/_comments_disabled #\(groupId) \(parentItemId) \(onOff(disabled))"
             case let .apiCreateChatTag(tag): return "/_create tag \(encodeJSON(tag))"
             case let .apiSetChatTags(type, id, tagIds): return "/_tags \(ref(type, id, scope: nil)) \(tagIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiDeleteChatTag(tagId): return "/_delete tag \(tagId)"
@@ -442,6 +451,8 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiGetChatContentTypes: return "apiGetChatContentTypes"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
             case .apiSendMessages: return "apiSendMessages"
+            case .apiSendComment: return "apiSendComment"
+            case .apiSetCommentsDisabled: return "apiSetCommentsDisabled"
             case .apiCreateChatTag: return "apiCreateChatTag"
             case .apiSetChatTags: return "apiSetChatTags"
             case .apiDeleteChatTag: return "apiDeleteChatTag"

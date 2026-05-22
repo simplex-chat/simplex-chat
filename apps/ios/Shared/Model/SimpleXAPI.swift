@@ -450,8 +450,8 @@ func apiGetChatTagsAsync() async throws -> [ChatTag] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag? = nil, pagination: ChatPagination, search: String = "") async throws -> (Chat, NavigationInfo) {
-    let r: ChatResponse0 = try await chatSendCmd(.apiGetChat(chatId: chatId, scope: scope, contentTag: contentTag, pagination: pagination, search: search))
+func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag? = nil, pagination: ChatPagination, search: String = "", parentItemId: Int64? = nil) async throws -> (Chat, NavigationInfo) {
+    let r: ChatResponse0 = try await chatSendCmd(.apiGetChat(chatId: chatId, scope: scope, contentTag: contentTag, pagination: pagination, search: search, parentItemId: parentItemId))
     if case let .apiChat(_, chat, navInfo) = r { return (Chat.init(chat), navInfo ?? NavigationInfo()) }
     throw r.unexpected
 }
@@ -545,6 +545,21 @@ func apiReorderChatTags(tagIds: [Int64]) async throws {
 func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool = false, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
     let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, sendAsGroup: sendAsGroup, live: live, ttl: ttl, composedMessages: composedMessages)
     return await processSendMessageCmd(toChatType: type, cmd: cmd)
+}
+
+// Send a comment on a channel post. The target chat is always a channel (group with useRelays);
+// the recipient is the relay, which forwards the comment to other subscribers.
+// Returns the locally-created ChatItem(s) for the sender's view; typically a singleton.
+func apiSendComment(groupId: Int64, parentItemId: Int64, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiSendComment(groupId: groupId, parentItemId: parentItemId, live: live, ttl: ttl, composedMessages: composedMessages)
+    return await processSendMessageCmd(toChatType: .group, cmd: cmd)
+}
+
+// Toggle commentsDisabled on a channel post via XMsgUpdate.prefs. The Haskell handler
+// returns CRCmdOk; the local parent ChatItem update arrives via the owner's own echo
+// of XMsgUpdate.prefs through the standard receive pipeline. No item returned here.
+func apiSetCommentsDisabled(groupId: Int64, parentItemId: Int64, disabled: Bool) async throws {
+    try await sendCommandOkResp(.apiSetCommentsDisabled(groupId: groupId, parentItemId: parentItemId, disabled: disabled))
 }
 
 private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async -> [ChatItem]? {
@@ -2919,7 +2934,7 @@ func groupChatItemsDeleted(_ user: UserRef, _ groupInfo: GroupInfo, _ chatItemID
         return
     }
     let im = ItemsModel.shared
-    let cInfo = ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil)
+    let cInfo = ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil, channelMsgInfo: nil)
     await MainActor.run {
         m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
     }

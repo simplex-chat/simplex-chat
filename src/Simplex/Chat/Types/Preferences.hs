@@ -252,7 +252,8 @@ allGroupFeatures =
     AGF SGFSimplexLinks,
     AGF SGFReports,
     AGF SGFHistory,
-    AGF SGFSupport
+    AGF SGFSupport,
+    AGF SGFComments
   ]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
@@ -490,7 +491,7 @@ defaultGroupPrefs =
       history = HistoryGroupPreference {enable = FEOff},
       support = SupportGroupPreference {enable = FEOn},
       sessions = SessionsGroupPreference {enable = FEOff, role = Nothing},
-      comments = CommentsGroupPreference {enable = FEOff, duration = Nothing},
+      comments = CommentsGroupPreference {enable = FEOff, closeAfter = Nothing},
       commands = ListDef []
     }
 
@@ -667,11 +668,11 @@ data SessionsGroupPreference = SessionsGroupPreference
   {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
 
--- Channel comments. ``duration` is time in seconds since post creation
--- after which a channel post stops accepting new comments; `Nothing` means accept comments indefinitely.
+-- Channel comments. `closeAfter` is the duration in seconds since post creation
+-- after which a channel post stops accepting new comments; `Nothing` means never close.
 data CommentsGroupPreference = CommentsGroupPreference
   { enable :: GroupFeatureEnabled,
-    duration :: Maybe Int
+    closeAfter :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -793,7 +794,7 @@ instance GroupFeatureI 'GFSessions where
 instance GroupFeatureI 'GFComments where
   type GroupFeaturePreference 'GFComments = CommentsGroupPreference
   sGroupFeature = SGFComments
-  groupPrefParam CommentsGroupPreference {duration} = duration
+  groupPrefParam CommentsGroupPreference {closeAfter} = closeAfter
   groupPrefRole _ = Nothing
 
 instance GroupFeatureNoRoleI 'GFTimedMessages
@@ -1164,7 +1165,7 @@ $(J.deriveToJSON defaultJSON ''CommentsGroupPreference)
 
 instance FromJSON CommentsGroupPreference where
   parseJSON v = $(J.mkParseJSON defaultJSON ''CommentsGroupPreference) v
-  omittedField = Just CommentsGroupPreference {enable = FEOff, duration = Nothing}
+  omittedField = Just CommentsGroupPreference {enable = FEOff, closeAfter = Nothing}
 
 $(J.deriveJSON defaultJSON ''GroupPreferences)
 

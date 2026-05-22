@@ -82,7 +82,7 @@ struct ChatInfoToolbar: View {
     }
 
     private var channelSubscriberCount: Int64? {
-        if case let .group(groupInfo, _) = chat.chatInfo,
+        if case let .group(groupInfo, _, _) = chat.chatInfo,
            groupInfo.useRelays,
            let count = groupInfo.groupSummary.publicMemberCount,
            count > 0 {

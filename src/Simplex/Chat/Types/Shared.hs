@@ -19,6 +19,7 @@ data GroupMemberRole
   = GRUnknown Text -- unknown role from a newer client
   | GRRelay -- chat relay: forwards messages, can't send its own messages
   | GRObserver -- connects to all group members and receives all messages, can't send messages
+  | GRCommenter -- + can comment on channel posts, can't send messages to the main channel
   | GRAuthor -- reserved, unused
   | GRMember -- + can send messages to all group members
   | GRModerator -- + moderate messages and block members (excl. Admins and Owners)
@@ -37,6 +38,7 @@ instance TextEncoding GroupMemberRole where
     GRModerator -> "moderator"
     GRMember -> "member"
     GRAuthor -> "author"
+    GRCommenter -> "commenter"
     GRObserver -> "observer"
     GRRelay -> "relay"
     GRUnknown t -> t
@@ -46,6 +48,7 @@ instance TextEncoding GroupMemberRole where
     "moderator" -> GRModerator
     "member" -> GRMember
     "author" -> GRAuthor
+    "commenter" -> GRCommenter
     "observer" -> GRObserver
     "relay" -> GRRelay
     t -> GRUnknown t

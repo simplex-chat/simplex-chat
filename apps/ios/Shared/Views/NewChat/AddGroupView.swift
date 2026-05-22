@@ -204,7 +204,7 @@ struct AddGroupView: View {
             Task {
                 await m.loadGroupMembers(gInfo)
             }
-            let c = Chat(chatInfo: .group(groupInfo: gInfo, groupChatScope: nil), chatItems: [])
+            let c = Chat(chatInfo: .group(groupInfo: gInfo, groupChatScope: nil, channelMsgInfo: nil), chatItems: [])
             m.addChat(c)
             withAnimation {
                 groupInfo = gInfo

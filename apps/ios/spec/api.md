@@ -81,19 +81,21 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | Command | Parameters | Description | Source |
 |---------|-----------|-------------|--------|
 | `apiGetChats` | `userId: Int64` | Get all chat previews for user | [L44](../Shared/Model/AppAPITypes.swift#L44) |
-| `apiGetChat` | `chatId, scope, contentTag, pagination, search` | Get messages for a chat | [L45](../Shared/Model/AppAPITypes.swift#L45) |
+| `apiGetChat` | `chatId, scope, contentTag, pagination, search, parentItemId` | Get messages for a chat. When `parentItemId` is non-nil, returns the comments thread under that channel post (mutually exclusive with `scope`). | [L45](../Shared/Model/AppAPITypes.swift#L45) |
 | `apiGetChatContentTypes` | `chatId, scope` | Get content type counts for a chat | [L46](../Shared/Model/AppAPITypes.swift#L46) |
 | `apiGetChatItemInfo` | `type, id, scope, itemId` | Get detailed info for a message | [L47](../Shared/Model/AppAPITypes.swift#L47) |
 | `apiSendMessages` | `type, id, scope, sendAsGroup, live, ttl, composedMessages` | Send one or more messages; `sendAsGroup` sends as channel owner | [L48](../Shared/Model/AppAPITypes.swift#L48) |
-| `apiCreateChatItems` | `noteFolderId, composedMessages` | Create items in notes folder | [L54](../Shared/Model/AppAPITypes.swift#L54) |
-| `apiUpdateChatItem` | `type, id, scope, itemId, updatedMessage, live` | Edit a sent message | [L56](../Shared/Model/AppAPITypes.swift#L56) |
-| `apiDeleteChatItem` | `type, id, scope, itemIds, mode` | Delete messages | [L57](../Shared/Model/AppAPITypes.swift#L57) |
-| `apiDeleteMemberChatItem` | `groupId, itemIds` | Moderate group messages | [L58](../Shared/Model/AppAPITypes.swift#L58) |
-| `apiChatItemReaction` | `type, id, scope, itemId, add, reaction` | Add/remove emoji reaction | [L61](../Shared/Model/AppAPITypes.swift#L61) |
-| `apiGetReactionMembers` | `userId, groupId, itemId, reaction` | Get who reacted | [L62](../Shared/Model/AppAPITypes.swift#L62) |
-| `apiPlanForwardChatItems` | `fromChatType, fromChatId, fromScope, itemIds` | Plan message forwarding | [L63](../Shared/Model/AppAPITypes.swift#L63) |
-| `apiForwardChatItems` | `toChatType, toChatId, toScope, sendAsGroup, from..., itemIds, ttl` | Forward messages; `sendAsGroup` forwards as channel owner | [L64](../Shared/Model/AppAPITypes.swift#L64) |
-| `apiReportMessage` | `groupId, chatItemId, reportReason, reportText` | Report group message | [L55](../Shared/Model/AppAPITypes.swift#L55) |
+| `apiSendComment` | `groupId, parentItemId, live, ttl, composedMessages` | Send one or more comments under a channel post. Maps to Haskell `/_comment #<groupId> <parentItemId>`; requires `useRelays' gInfo`. Outbound: only structural and content validation runs locally (quoted items must be in the same comment section). Authorization (role gate, `commentsDisabled` gate) is enforced at the receiver via the same XMsgNew/XMsgUpdate inbound gates that protect channel posts. | [L49](../Shared/Model/AppAPITypes.swift#L49) |
+| `apiSetCommentsDisabled` | `groupId, parentItemId, disabled` | Per-post comments override. Maps to Haskell `/_comments_disabled #<groupId> <parentItemId> on|off`; requires `useRelays' gInfo` and caller role at or above `GRModerator`. Returns `CRCmdOk` (the Swift wrapper is `async throws -> Void`). | [L50](../Shared/Model/AppAPITypes.swift#L50) |
+| `apiCreateChatItems` | `noteFolderId, composedMessages` | Create items in notes folder | [L56](../Shared/Model/AppAPITypes.swift#L56) |
+| `apiUpdateChatItem` | `type, id, scope, itemId, updatedMessage, live` | Edit a sent message | [L58](../Shared/Model/AppAPITypes.swift#L58) |
+| `apiDeleteChatItem` | `type, id, scope, itemIds, mode` | Delete messages | [L59](../Shared/Model/AppAPITypes.swift#L59) |
+| `apiDeleteMemberChatItem` | `groupId, itemIds` | Moderate group messages | [L60](../Shared/Model/AppAPITypes.swift#L60) |
+| `apiChatItemReaction` | `type, id, scope, itemId, add, reaction` | Add/remove emoji reaction (also valid on a comment item: reactions on comments are sent with `scope = nil` and reach all thread participants via the comment's `parent` chain) | [L63](../Shared/Model/AppAPITypes.swift#L63) |
+| `apiGetReactionMembers` | `userId, groupId, itemId, reaction` | Get who reacted | [L64](../Shared/Model/AppAPITypes.swift#L64) |
+| `apiPlanForwardChatItems` | `fromChatType, fromChatId, fromScope, itemIds` | Plan message forwarding | [L65](../Shared/Model/AppAPITypes.swift#L65) |
+| `apiForwardChatItems` | `toChatType, toChatId, toScope, sendAsGroup, from..., itemIds, ttl` | Forward messages; `sendAsGroup` forwards as channel owner | [L66](../Shared/Model/AppAPITypes.swift#L66) |
+| `apiReportMessage` | `groupId, chatItemId, reportReason, reportText` | Report group message | [L57](../Shared/Model/AppAPITypes.swift#L57) |
 | `apiChatRead` | `type, id, scope` | Mark entire chat as read | [L166](../Shared/Model/AppAPITypes.swift#L166) |
 | `apiChatItemsRead` | `type, id, scope, itemIds` | Mark specific items as read | [L167](../Shared/Model/AppAPITypes.swift#L167) |
 | `apiChatUnread` | `type, id, unreadChat` | Toggle unread badge | [L168](../Shared/Model/AppAPITypes.swift#L168) |
@@ -154,11 +156,11 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | Command | Parameters | Description | Source |
 |---------|-----------|-------------|--------|
 | `apiGetChatTags` | `userId` | Get all user tags | [L43](../Shared/Model/AppAPITypes.swift#L43) |
-| `apiCreateChatTag` | `tag: ChatTagData` | Create a new tag | [L49](../Shared/Model/AppAPITypes.swift#L49) |
-| `apiSetChatTags` | `type, id, tagIds` | Assign tags to a chat | [L50](../Shared/Model/AppAPITypes.swift#L50) |
-| `apiDeleteChatTag` | `tagId` | Delete a tag | [L51](../Shared/Model/AppAPITypes.swift#L51) |
-| `apiUpdateChatTag` | `tagId, tagData` | Update tag name/emoji | [L52](../Shared/Model/AppAPITypes.swift#L52) |
-| `apiReorderChatTags` | `tagIds` | Reorder tags | [L53](../Shared/Model/AppAPITypes.swift#L53) |
+| `apiCreateChatTag` | `tag: ChatTagData` | Create a new tag | [L51](../Shared/Model/AppAPITypes.swift#L51) |
+| `apiSetChatTags` | `type, id, tagIds` | Assign tags to a chat | [L52](../Shared/Model/AppAPITypes.swift#L52) |
+| `apiDeleteChatTag` | `tagId` | Delete a tag | [L53](../Shared/Model/AppAPITypes.swift#L53) |
+| `apiUpdateChatTag` | `tagId, tagData` | Update tag name/emoji | [L54](../Shared/Model/AppAPITypes.swift#L54) |
+| `apiReorderChatTags` | `tagIds` | Reorder tags | [L55](../Shared/Model/AppAPITypes.swift#L55) |
 
 ### 2.7 File Operations
 

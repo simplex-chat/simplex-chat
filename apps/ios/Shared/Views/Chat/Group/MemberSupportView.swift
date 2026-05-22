@@ -83,7 +83,7 @@ struct MemberSupportView: View {
 
                 NavigationLink(isActive: $memberSupportChatNavLinkActive) {
                     SecondaryChatView(
-                        chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                        chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo, channelMsgInfo: nil), chatItems: [], chatStats: ChatStats()),
                         scrollToItemId: $scrollToItemId
                     )
                 } label: {

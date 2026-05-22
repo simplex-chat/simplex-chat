@@ -46,14 +46,16 @@
 
 ## 1. Swift Source Impact
 
+[GAP] `product/views/comments.md` is not yet defined. Channel-comments slice 3 (data model + API surface) landed in `ChatTypes.swift`, `ChatModel.swift`, `AppAPITypes.swift`, `SimpleXAPI.swift` and ~16 view files (pattern-match cascade for the third `ChatInfo.group` associated value). The view-layer product concept will be created in slice 5 — see channel-comments plan §5.4. Until then, treat the channel-comments rows below as affecting PC31 (Channels) only.
+
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | Shared/ContentView.swift | PC1, PC2, PC3 | High | Root navigation — affects all chat access |
 | Shared/SimpleXApp.swift | PC1 through PC31 | High | App entry point — initialization affects everything |
 | Shared/AppDelegate.swift | PC18 | Medium | Push notification registration |
 | Shared/Views/ChatList/ChatListView.swift | PC1, PC28 | High | Main screen rendering and filtering |
-| Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31 | High | Core conversation UI — most messaging features, channel message rendering |
-| Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11, PC31 | High | Message composition — send path for all messages, channel sendAsGroup |
+| Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31 | High | Core conversation UI — most messaging features, channel message rendering. Slice 3: pattern-match cascade for `ChatInfo.group` third arg. [GAP] product/views/comments.md (slice 5). |
+| Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11, PC31 | High | Message composition — send path for all messages, channel sendAsGroup. Slice 3: pattern-match cascade for `ChatInfo.group` third arg (no compose logic changes yet — compose-as-comment lands in slice 4). [GAP] product/views/comments.md (slice 5). |
 | Shared/Views/Chat/ChatItem/ | PC2, PC3, PC5, PC7, PC8, PC9, PC10, PC11 | Medium | Individual message rendering components |
 | Shared/Views/Chat/ChatInfoView.swift | PC2, PC13, PC20 | Medium | Contact details and verification |
 | Shared/Views/Chat/Group/GroupChatInfoView.swift | PC3, PC14, PC15, PC16, PC30, PC31 | High | Group management hub, channel info adaptations |
@@ -75,13 +77,13 @@
 | Shared/Views/LocalAuth/ | PC22 | Medium | App lock functionality |
 | Shared/Views/Database/ | PC23, PC26 | High | Database encryption and export |
 | Shared/Views/Migration/ | PC26 | High | Device migration — data portability |
-| Shared/Model/ChatModel.swift | PC1 through PC31 | High | Central state — all features depend on it |
-| Shared/Model/SimpleXAPI.swift | PC1 through PC31 | High | FFI bridge — all commands flow through here |
-| Shared/Model/AppAPITypes.swift | PC1 through PC31 | High | Command/response types — all API communication |
+| Shared/Model/ChatModel.swift | PC1 through PC31 | High | Central state — all features depend on it. Slice 3: added `SecondaryItemsModelFilter.groupChannelMsgContext`, `ItemsModel.loadSecondaryChat` comments branch with `injectChannelMsgInfo`, `getCIItemsModel` comments-thread branch, four `cInfo.channelMsgInfo() == nil` gating sites. [GAP] product/views/comments.md (slice 5). |
+| Shared/Model/SimpleXAPI.swift | PC1 through PC31 | High | FFI bridge — all commands flow through here. Slice 3: added `apiSendComment`, `apiSetCommentsDisabled`, `apiGetChat(parentItemId:)` extension. [GAP] product/views/comments.md (slice 5). |
+| Shared/Model/AppAPITypes.swift | PC1 through PC31 | High | Command/response types — all API communication. Slice 3: added `apiSendComment` and `apiSetCommentsDisabled` enum cases, `parentItemId` parameter on `apiGetChat`. [GAP] product/views/comments.md (slice 5). |
 | Shared/Model/NtfManager.swift | PC18 | High | Notification delivery |
 | Shared/Model/BGManager.swift | PC18 | Medium | Background fetch scheduling |
 | Shared/Theme/ThemeManager.swift | PC24 | Medium | Theme resolution engine |
-| SimpleXChat/ChatTypes.swift | PC1 through PC31 | High | Core data types — all features use them |
+| SimpleXChat/ChatTypes.swift | PC1 through PC31 | High | Core data types — all features use them. Slice 3: extended `ChatInfo.group` to three associated values (added `ChannelMsgInfo?` carrier), added `ChannelMsgInfo` struct, added `ChatItem.parentChatItemId`/`commentsTotal`/`commentsDisabled` (hoisted from `meta` on decode), added `CIMeta.itemSharedMsgId`. [GAP] product/views/comments.md (slice 5). |
 | SimpleXChat/APITypes.swift | PC1 through PC31 | High | API result types and error handling |
 | SimpleXChat/CallTypes.swift | PC17 | Medium | Call-specific data types |
 | SimpleXChat/FileUtils.swift | PC10, PC23, PC26 | Medium | File paths and encryption utilities |

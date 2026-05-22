@@ -355,7 +355,7 @@ struct GroupMemberInfoView: View {
             }
         }
         .onChange(of: chat.chatInfo) { c in
-            if case let .group(gI, _) = chat.chatInfo {
+            if case let .group(gI, _, _) = chat.chatInfo {
                 groupInfo = gI
             }
         }
@@ -569,7 +569,7 @@ struct GroupMemberInfoView: View {
             let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: member.wrapped)
             NavigationLink(isActive: $navLinkActive) {
                 SecondaryChatView(
-                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo, channelMsgInfo: nil), chatItems: [], chatStats: ChatStats()),
                     scrollToItemId: $scrollToItemId
                 )
             } label: {

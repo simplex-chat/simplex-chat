@@ -116,7 +116,7 @@ defaultChatConfig =
       highlyAvailable = False,
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
-      channelSubscriberRole = GRObserver,
+      channelSubscriberRole = GRCommenter,
       relayChecksInterval = 15 * 60, -- 15 minutes
       relayInactiveTTL = nominalDay,
       relayRequestRetryInterval = RetryInterval {initialInterval = 5_000000, increaseAfter = 0, maxInterval = 600_000000},

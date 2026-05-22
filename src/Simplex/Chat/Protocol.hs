@@ -82,12 +82,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 15 - support specifying message scopes for group messages (2025-03-12)
 -- 16 - support short link data (2025-06-10)
 -- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
+-- 18 - support comments on channel posts (2026-04-07)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 17
+currentChatVersion = VersionChat 18
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -153,6 +154,10 @@ shortLinkDataVersion = VersionChat 16
 -- support host voice messages during member approval regardless of group voice setting
 memberSupportVoiceVersion :: VersionChat
 memberSupportVoiceVersion = VersionChat 17
+
+-- support comments on channel posts (merged MsgContainer with optional `parent`, MsgPrefs in XMsgUpdate)
+commentsVersion :: VersionChat
+commentsVersion = VersionChat 18
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -252,6 +257,15 @@ data MsgRef = MsgRef
   deriving (Eq, Show)
 
 $(JQ.deriveJSON defaultJSON ''MsgRef)
+
+-- Per-message preferences carried in XMsgUpdate.
+-- `commentsDisabled = True` locks commenting on the addressed channel post.
+data MsgPrefs = MsgPrefs
+  { commentsDisabled :: Bool
+  }
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''MsgPrefs)
 
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
   deriving (Eq, Show)
@@ -422,7 +436,7 @@ encodeChatBinding cb bindingData = smpEncode cb <> bindingData
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool, prefs :: Maybe MsgPrefs} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
@@ -485,9 +499,8 @@ deriving instance Show AChatMsgEvent
 -- actual filtering on forwarding is done in processEvent
 isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
-  XMsgNew mc -> case mc of
-    MsgContainer {file = Just FileInvitation {fileInline = Just _}} -> False
-    _ -> True
+  XMsgNew MsgContainer {file = Just FileInvitation {fileInline = Just _}} -> False
+  XMsgNew _ -> True
   XMsgFileDescr _ _ -> True
   XMsgUpdate {} -> True
   XMsgDel {} -> True
@@ -662,10 +675,13 @@ data MsgContainer = MsgContainer
   }
   deriving (Eq, Show)
 
-mcSimple :: MsgContent -> MsgContainer
-mcSimple content =
+-- Base value used by the smart constructors and for record-update on send sites.
+-- Named mcEmpty (not mc) to avoid shadowing the conventional local variable name
+-- `mc` used at MsgContainer pattern-match sites across the codebase.
+mcEmpty :: MsgContainer
+mcEmpty =
   MsgContainer
-    { content,
+    { content = MCText "",
       mentions = MsgMentions M.empty,
       file = Nothing,
       ttl = Nothing,
@@ -677,14 +693,20 @@ mcSimple content =
       forward = Nothing
     }
 
+mcSimple :: MsgContent -> MsgContainer
+mcSimple c = mcEmpty {content = c}
+
 mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
-mcQuote q c = (mcSimple c) {quote = Just q}
+mcQuote q c = mcEmpty {content = c, quote = Just q}
 
 mcComment :: MsgRef -> MsgContent -> MsgContainer
-mcComment p c = (mcSimple c) {parent = Just p}
+mcComment p c = mcEmpty {content = c, parent = Just p}
 
 mcForward :: MsgContent -> MsgContainer
-mcForward c = (mcSimple c) {forward = Just True}
+mcForward c = mcEmpty {content = c, forward = Just True}
+
+isMCForward :: MsgContainer -> Bool
+isMCForward MsgContainer {forward} = forward == Just True
 
 data MsgContent
   = MCText {text :: Text}
@@ -741,7 +763,7 @@ msgContentHasText :: MsgContent -> Bool
 msgContentHasText =
   not . T.null . \case
     MCVoice {text} -> text
-    mc -> msgContentText mc
+    c -> msgContentText c
 
 isVoice :: MsgContent -> Bool
 isVoice = \case
@@ -857,8 +879,6 @@ instance ToJSON MsgContent where
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
     MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
 
-$(JQ.deriveJSON defaultJSON ''MsgContainer)
-
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, - 16 for block encryption ("rounded" to 15602)
 maxEncodedMsgLength :: Int
@@ -949,9 +969,42 @@ markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
+parseMsgContainer :: J.Object -> JT.Parser MsgContainer
+parseMsgContainer v = do
+  content <- v .: "content"
+  file <- v .:? "file"
+  ttl <- v .:? "ttl"
+  live <- v .:? "live"
+  mentions <- MsgMentions . fromMaybe M.empty <$> (v .:? "mentions")
+  scope <- v .:? "scope"
+  asGroup <- v .:? "asGroup"
+  quote <- v .:? "quote"
+  parent <- v .:? "parent"
+  forward <- (v .:? "forward") >>= parseForward
+  pure MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward}
+  where
+    -- Backward compatibility: legacy clients encode forward either as a Bool or as an
+    -- object (the latter is used by public group links). Any present form → Just True.
+    parseForward :: Maybe J.Value -> JT.Parser (Maybe Bool)
+    parseForward Nothing = pure Nothing
+    parseForward (Just (J.Bool b)) = pure (justTrue b)
+    parseForward (Just (J.Object _)) = pure (Just True)
+    parseForward (Just _) = fail "invalid forward field"
+
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
 justTrue False = Nothing
+
+msgContainerJSON :: MsgContainer -> J.Object
+msgContainerJSON MsgContainer {content, mentions = MsgMentions mentions, file, ttl, live, scope, asGroup, quote, parent, forward} =
+  JM.fromList $
+    discriminators
+      <> ("file" .=? file) (("ttl" .=? ttl) (("live" .=? live) (("mentions" .=? nonEmptyMap mentions) (("scope" .=? scope) (("asGroup" .=? asGroup) ["content" .= content])))))
+  where
+    discriminators =
+      ["quote" .= q | Just q <- [quote]]
+        <> ["parent" .= p | Just p <- [parent]]
+        <> ["forward" .= True | forward == Just True]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
@@ -1282,7 +1335,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     opt key = JT.parseEither (.:? key) params
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
-      XMsgNew_ -> XMsgNew <$> JT.parseEither parseJSON (J.Object params)
+      XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
       XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
       XMsgUpdate_ -> do
         msgId' <- p "msgId"
@@ -1292,7 +1345,8 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         live <- opt "live"
         scope <- opt "scope"
         asGroup <- opt "asGroup"
-        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup}
+        prefs <- opt "prefs"
+        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, prefs}
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> (fromMaybe False <$> opt "onlyHistory")
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
@@ -1367,11 +1421,9 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
     o = JM.fromList
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
-      XMsgNew mc -> case toJSON mc of
-        J.Object obj -> obj
-        _ -> JM.empty
+      XMsgNew container -> msgContainerJSON container
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, prefs} -> o $ ("prefs" .=? prefs) $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]

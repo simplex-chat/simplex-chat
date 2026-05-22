@@ -699,7 +699,7 @@ struct GroupChatInfoView: View {
             let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
             NavigationLink(isActive: $navLinkActive) {
                 SecondaryChatView(
-                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo, channelMsgInfo: nil), chatItems: [], chatStats: ChatStats()),
                     scrollToItemId: $scrollToItemId
                 )
             } label: {
@@ -750,7 +750,7 @@ struct GroupChatInfoView: View {
         var body: some View {
             NavigationLink(isActive: $navLinkActive) {
                 SecondaryChatView(
-                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: .reports), chatItems: [], chatStats: ChatStats()),
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: .reports, channelMsgInfo: nil), chatItems: [], chatStats: ChatStats()),
                     scrollToItemId: $scrollToItemId
                 )
             } label: {
