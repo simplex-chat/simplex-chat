@@ -3730,8 +3730,13 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       if null senders
                         then pure (body, [], [], [])
                         else do
+                          -- Skip role > GRMember (mirrors xGrpMemNew gate).
+                          -- TODO [relays] public groups: revisit if mods/admins are introduced via this sidecar.
                           let (encoderErrs, validLabeled) =
-                                partitionEithers [(\bs -> (s, bs)) <$> encodeMemberNew vr gInfo s | (s, _) <- senders]
+                                partitionEithers
+                                  [ (\bs -> (s, bs)) <$> encodeMemberNew vr gInfo s
+                                  | (s, _) <- senders, memberRole' s <= GRMember
+                                  ]
                               (extBody', inBody, overflowLabeled, large1) = batchProfilesWithBody maxEncodedMsgLength body validLabeled
                               (overflowBatches', large2) = batchProfiles maxEncodedMsgLength overflowLabeled
                               packerErrs = [ChatError (CEInternalError $ "oversized profile element for member " <> show (groupMemberId' s)) | s <- large1 <> large2]
