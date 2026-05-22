@@ -184,7 +184,7 @@
     <string name="connected_mobile">Társított hordozható eszköz</string>
     <string name="server_connected">kapcsolódott</string>
     <string name="change_role">Szerepkör módosítása</string>
-    <string name="icon_descr_server_status_connected">kapcsolódott</string>
+    <string name="icon_descr_server_status_connected">Kapcsolódott</string>
     <string name="auth_confirm_credential">Hitelesítési adat megerősítése</string>
     <string name="switch_receiving_address_question">Módosítja a fogadási címet?</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">módosította a címet az Ön számára</string>
@@ -631,7 +631,7 @@
     <string name="onboarding_notifications_mode_service">Azonnali</string>
     <string name="v5_4_incognito_groups">Inkognitócsoportok</string>
     <string name="how_to">Útmutató</string>
-    <string name="hide_verb">Elrejtés</string>
+    <string name="hide_verb">Összecsukás</string>
     <string name="gallery_image_button">Kép</string>
     <string name="v4_3_improved_privacy_and_security">Továbbfejlesztett adatvédelem és biztonság</string>
     <string name="ignore">Mellőzés</string>
@@ -2761,7 +2761,7 @@
     <string name="members_can_chat_with_admins_channel">A feliratkozók cseveghetnek az adminisztrátorokkal.</string>
     <string name="why_simplex_is_built">Miért jött létre a SimpleX?</string>
     <string name="onboarding_your_network">Saját hálózat</string>
-    <string name="onboarding_your_profile">Saját profil</string>
+    <string name="onboarding_your_profile">Saját profil létrehozása</string>
     <string name="onboarding_first_network">Az első hálózat, ahol Ön birtokolja\na saját kapcsolatait és csoportjait.</string>
     <string name="one_hand_ui_bottom_bar">Alsó sáv</string>
     <string name="link_previews_alert_desc_socks">A hivatkozások előnézetét SOCKS proxyn keresztül kéri le a kliens. A DNS-lekérdezés viszont továbbra is történhet helyi szinten, a saját DNS-kiszolgálón keresztül.</string>
