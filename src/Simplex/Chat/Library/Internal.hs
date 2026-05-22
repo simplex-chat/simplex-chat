@@ -1167,12 +1167,16 @@ memberIntroEvt gInfo reMember =
 -- This doesn't create introduction records in db, compared to above methods.
 introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn} = do
+introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  withStore' $ \db ->
+    setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   let introEvts = map (memberIntroEvt gInfo) modMs
   forM_ (L.nonEmpty introEvts) $ \introEvts' ->
     sendGroupMemberMessages user gInfo conn introEvts'
+  withStore' $ \db ->
+    setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks

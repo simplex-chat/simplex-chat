@@ -1326,7 +1326,7 @@ viewJoinedGroupMemberConnecting g@GroupInfo {groupId} host m@GroupMember {groupM
     [ (ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting and pending review...), ")
       <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
     ]
-  _ | useRelays' g -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group"]
+  _ | useRelays' g -> [ttyGroup' g <> ": " <> ttyMember host <> " introduced " <> ttyFullMember m <> " in the channel"]
     | otherwise -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
 
 viewConnectedToGroupMember :: GroupInfo -> GroupMember -> [StyledString]
