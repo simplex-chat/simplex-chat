@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import CARD_PADDING
+import LocalCardScreen
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
@@ -412,9 +413,10 @@ object AppearanceScope {
       )
     }
 
-    val gridPadding = 14.dp
+    val gridPadding = 12.dp
     if (appPlatform.isDesktop) {
-      val itemSize = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - gridPadding * 5) / 4
+      val cardPadding = if (LocalCardScreen.current) CARD_PADDING * 2 else 0.dp
+      val itemSize = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - cardPadding - gridPadding * 5) / 4
       val rows = ceil((PresetWallpaper.entries.size + 2) / 4f).roundToInt()
       LazyVerticalGrid(
         columns = GridCells.Fixed(4),
