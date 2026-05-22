@@ -3763,13 +3763,18 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         unless (null mems) $ do
                           let msgReqs = buildMsgReqs mems
                           unless (null msgReqs) $ void $ withAgent (`sendMessages` msgReqs)
-                          -- Mark every active sender at every ready recipient — idempotent for
-                          -- recipients who already had the bit set.
-                          let readyIdxs = [indexInGroup m | m <- mems, isJust (readyMemberConn m)]
-                          unless (null readyIdxs) $
+                          -- Mark only (sender, recipient) pairs where the bit was MRNew —
+                          -- skip recipients already MRIntroduced (steady-case savings).
+                          let readyMems = [m | m <- mems, isJust (readyMemberConn m)]
+                              markFor sender = do
+                                vec <- M.lookup (groupMemberId' sender) senderVec
+                                let ms = [(indexInGroup r, (IDSubjectIntroduced, MRIntroduced)) | r <- readyMems, getRelation (indexInGroup r) vec == MRNew]
+                                if null ms then Nothing else Just (sender, ms)
+                              senderMarks = mapMaybe markFor activeSenders
+                          unless (null senderMarks) $
                             withStore' $ \db ->
-                              forM_ activeSenders $ \sender ->
-                                setMemberVectorNewRelations db sender [(i, (IDSubjectIntroduced, MRIntroduced)) | i <- readyIdxs]
+                              forM_ senderMarks $ \(sender, ms) ->
+                                setMemberVectorNewRelations db sender ms
                           let cursorGMId' = groupMemberId' $ last mems
                           withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
                           unless (length mems < bucketSize) $
