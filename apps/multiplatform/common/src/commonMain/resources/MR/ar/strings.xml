@@ -1091,7 +1091,7 @@
     <string name="scan_qr_to_connect_to_contact">للاتصال، يمكن لجهة الاتصال مسح رمز QR أو استخدام الرابط في التطبيق.</string>
     <string name="smp_servers_test_servers">اختبر الخوادم</string>
     <string name="first_platform_without_user_ids">لا معرّفات مُستخدم</string>
-    <string name="settings_section_title_support">دعم SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">دعم SimpleX Chat</string>
     <string name="switch_verb">بدِّل</string>
     <string name="color_title">العنوان الرئيسي</string>
     <string name="moderate_message_will_be_marked_warning">سيتم وضع علامة على الرسالة على أنها تحت الإشراف لجميع الأعضاء.</string>

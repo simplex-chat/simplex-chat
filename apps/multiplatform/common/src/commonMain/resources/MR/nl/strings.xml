@@ -5,7 +5,7 @@
     <string name="call_on_lock_screen">Oproepen op vergrendelscherm:</string>
     <string name="callstatus_in_progress">oproep bezig</string>
     <string name="icon_descr_call_progress">Gesprek bezig</string>
-    <string name="settings_section_title_calls">OPROEPEN</string>
+    <string name="settings_section_title_calls">Oproepen</string>
     <string name="cancel_verb">Annuleren</string>
     <string name="icon_descr_cancel_file_preview">Bestandsvoorbeeld annuleren</string>
     <string name="icon_descr_cancel_image_preview">Annuleer afbeeldingsvoorbeeld</string>
@@ -23,7 +23,7 @@
     <string name="allow_to_send_voice">Sta toe om spraak berichten te verzenden.</string>
     <string name="chat_is_running">Chat is actief</string>
     <string name="clear_chat_menu_action">Wissen</string>
-    <string name="chat_database_section">CHAT DATABASE</string>
+    <string name="chat_database_section">Chat database</string>
     <string name="chat_console">Chat console</string>
     <string name="chat_database_imported">Chat database geïmporteerd</string>
     <string name="chat_database_deleted">Chat database verwijderd</string>
@@ -85,7 +85,7 @@
     <string name="app_version_code">App build: %s</string>
     <string name="notifications_mode_off_desc">App kan alleen meldingen ontvangen wanneer deze actief is, er wordt geen achtergrondservice gestart</string>
     <string name="appearance_settings">Uiterlijk</string>
-    <string name="settings_section_title_icon">APP ICON</string>
+    <string name="settings_section_title_icon">App icon</string>
     <string name="app_version_title">App versie</string>
     <string name="app_version_name">App versie: v%s</string>
     <string name="network_session_mode_user_description"><![CDATA[Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chatprofiel dat je in de app hebt </b>.]]></string>
@@ -119,7 +119,7 @@
     <string name="chat_is_stopped_indication">Chat is gestopt</string>
     <string name="chat_preferences">Chat voorkeuren</string>
     <string name="network_session_mode_user">Chatprofiel</string>
-    <string name="settings_section_title_chats">CHATS</string>
+    <string name="settings_section_title_chats">Chats</string>
     <string name="chat_with_developers">Praat met de ontwikkelaars</string>
     <string name="smp_servers_check_address">Controleer het server adres en probeer het opnieuw.</string>
     <string name="choose_file">Bestand</string>
@@ -231,7 +231,7 @@
     <string name="full_deletion">Verwijderen voor iedereen</string>
     <string name="delete_link">Link verwijderen</string>
     <string name="conn_level_desc_direct">direct</string>
-    <string name="settings_section_title_device">APPARAAT</string>
+    <string name="settings_section_title_device">Apparaat</string>
     <string name="delete_files_and_media_all">Verwijder alle bestanden</string>
     <string name="delete_messages_after">Berichten verwijderen na</string>
     <string name="direct_messages">Directe berichten</string>
@@ -309,7 +309,7 @@
     <string name="encrypted_video_call">e2e versleuteld video gesprek</string>
     <string name="allow_accepting_calls_from_lock_screen">Schakel oproepen vanaf het vergrendelscherm in via Instellingen.</string>
     <string name="icon_descr_hang_up">Ophangen</string>
-    <string name="settings_section_title_help">HELP</string>
+    <string name="settings_section_title_help">Help</string>
     <string name="settings_experimental_features">Experimentele functies</string>
     <string name="error_starting_chat">Fout bij het starten van de chat</string>
     <string name="export_database">Database exporteren</string>
@@ -358,7 +358,7 @@
     <string name="error_accepting_contact_request">Fout bij het accepteren van een contactverzoek</string>
     <string name="group_invitation_expired">Groep uitnodiging verlopen</string>
     <string name="icon_descr_file">Bestand</string>
-    <string name="section_title_for_console">VOOR CONSOLE</string>
+    <string name="section_title_for_console">Voor console</string>
     <string name="group_profile_is_stored_on_members_devices">Groep profiel wordt opgeslagen op de apparaten van de leden, niet op de servers.</string>
     <string name="notification_preview_mode_hidden">Verborgen</string>
     <string name="delete_group_for_self_cannot_undo_warning">De groep wordt voor u verwijderd, dit kan niet ongedaan worden gemaakt!</string>
@@ -473,8 +473,8 @@
     <string name="leave_group_button">Verlaten</string>
     <string name="group_member_role_member">Lid</string>
     <string name="image_descr_link_preview">link voorbeeld afbeelding</string>
-    <string name="member_info_section_title_member">LID</string>
-    <string name="settings_section_title_messages">BERICHTEN EN BESTANDEN</string>
+    <string name="member_info_section_title_member">Lid</string>
+    <string name="settings_section_title_messages">Berichten en bestanden</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobiel: tik op <b>Openen in mobiele app</b> en tik vervolgens op <b>Verbinden</b> in de app.]]></string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Lid wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="message_delivery_error_title">Fout bij bezorging van bericht</string>
@@ -730,10 +730,10 @@
     <string name="protect_app_screen">App scherm verbergen</string>
     <string name="your_privacy">Uw privacy</string>
     <string name="send_link_previews">Link voorbeelden verzenden</string>
-    <string name="settings_section_title_settings">INSTELLINGEN</string>
-    <string name="settings_section_title_support">ONDERSTEUNING SIMPLEX CHAT</string>
-    <string name="settings_section_title_you">JIJ</string>
-    <string name="run_chat_section">CHAT UITVOEREN</string>
+    <string name="settings_section_title_settings">Instellingen</string>
+    <string name="settings_section_title_support">Ondersteuning SimpleX Chat</string>
+    <string name="settings_section_title_you">Jij</string>
+    <string name="run_chat_section">Chat uitvoeren</string>
     <string name="your_chat_database">Uw chat database</string>
     <string name="set_password_to_export">Wachtwoord instellen om te exporteren</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Start de app opnieuw om een nieuw chatprofiel aan te maken.</string>
@@ -790,7 +790,7 @@
     <string name="button_send_direct_message">Direct bericht sturen</string>
     <string name="member_role_will_be_changed_with_invitation">De rol wordt gewijzigd in "%s". De gebruiker ontvangt een nieuwe uitnodiging.</string>
     <string name="sending_via">Verzenden via</string>
-    <string name="conn_stats_section_title_servers">SERVERS</string>
+    <string name="conn_stats_section_title_servers">Servers</string>
     <string name="network_options_reset_to_defaults">Resetten naar standaardwaarden</string>
     <string name="switch_receiving_address">Ontvangst adres wijzigen</string>
     <string name="network_option_protocol_timeout">Protocol timeout</string>
@@ -874,11 +874,11 @@
     <string name="share_message">Bericht delen…</string>
     <string name="la_notice_title_simplex_lock">SimpleX Vergrendelen</string>
     <string name="save_passphrase_in_keychain">Sla het wachtwoord op in Keychain</string>
-    <string name="settings_section_title_socks">SOCKS PROXY</string>
+    <string name="settings_section_title_socks">SOCKS proxy</string>
     <string name="v4_5_italian_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
     <string name="periodic_notifications_desc">De app haalt regelmatig nieuwe berichten op - het gebruikt een paar procent van de batterij per dag. De app maakt geen gebruik van push meldingen, gegevens van uw apparaat worden niet naar de servers verzonden.</string>
     <string name="image_decoding_exception_desc">De afbeelding kan niet worden gedecodeerd. Probeer een andere afbeelding of neem contact op met de ontwikkelaars.</string>
-    <string name="settings_section_title_themes">THEMA\'S</string>
+    <string name="settings_section_title_themes">Thema\'s</string>
     <string name="smp_servers_scan_qr">Scan server QR-code</string>
     <string name="this_string_is_not_a_connection_link">Deze string is geen verbinding link!</string>
     <string name="enable_automatic_deletion_message">Deze actie kan niet ongedaan worden gemaakt, de berichten die eerder zijn verzonden en ontvangen dan geselecteerd, worden verwijderd. Het kan enkele minuten duren.</string>
@@ -994,7 +994,7 @@
     <string name="developer_options">Database-ID\'s en Transport isolatie optie.</string>
     <string name="hide_dev_options">Verbergen:</string>
     <string name="show_developer_options">Ontwikkelaars opties tonen</string>
-    <string name="settings_section_title_experimenta">EXPERIMENTEEL</string>
+    <string name="settings_section_title_experimenta">Experimenteel</string>
     <string name="delete_profile">Verwijder profiel</string>
     <string name="profile_password">Profiel wachtwoord</string>
     <string name="unhide_chat_profile">Chatprofiel zichtbaar maken</string>
@@ -1146,7 +1146,7 @@
     <string name="import_theme_error_desc">Zorg ervoor dat het bestand de juiste YAML-syntaxis heeft. Exporteer het thema om een voorbeeld te hebben van de themabestandsstructuur.</string>
     <string name="opening_database">Database openen…</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Lees meer in de <font color="#0088ff">Gebruikershandleiding</font>.]]></string>
-    <string name="theme_colors_section_title">INTERFACE KLEUREN</string>
+    <string name="theme_colors_section_title">Interface kleuren</string>
     <string name="you_can_share_your_address">U kunt uw adres delen als een link of QR-code - iedereen kan verbinding met u maken.</string>
     <string name="all_app_data_will_be_cleared">Alle app-gegevens worden verwijderd.</string>
     <string name="empty_chat_profile_is_created">Er wordt een leeg chatprofiel met de opgegeven naam gemaakt en de app wordt zoals gewoonlijk geopend.</string>
@@ -1226,7 +1226,7 @@
     <string name="item_info_no_text">geen tekst</string>
     <string name="non_fatal_errors_occured_during_import">Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren:</string>
     <string name="shutdown_alert_question">Afsluiten\?</string>
-    <string name="settings_section_title_app">APP</string>
+    <string name="settings_section_title_app">App</string>
     <string name="settings_restart_app">Herstarten</string>
     <string name="settings_shutdown">Afsluiten</string>
     <string name="shutdown_alert_desc">Meldingen werken niet meer totdat u de app opnieuw start</string>
@@ -1285,7 +1285,7 @@
     <string name="receipts_contacts_enable_keep_overrides">Inschakelen (overschrijvingen behouden)</string>
     <string name="receipts_contacts_override_disabled">Het verzenden van ontvangst bevestiging is uitgeschakeld voor %d-contactpersonen</string>
     <string name="receipts_contacts_disable_for_all">Uitschakelen voor iedereen</string>
-    <string name="settings_section_title_delivery_receipts">STUUR ONTVANGST BEVESTIGING NAAR</string>
+    <string name="settings_section_title_delivery_receipts">Stuur ontvangst bevestiging naar</string>
     <string name="send_receipts">Ontvangst bevestiging verzenden</string>
     <string name="v5_2_message_delivery_receipts_descr">De tweede vink die we gemist hebben! ✅</string>
     <string name="v5_2_favourites_filter_descr">Filter ongelezen en favoriete chats.</string>
@@ -1779,13 +1779,13 @@
     <string name="private_routing_explanation">Om uw IP-adres te beschermen, gebruikt privéroutering uw SMP-servers om berichten te bezorgen.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Stuur GEEN berichten rechtstreeks, zelfs als uw of de bestemmingsserver geen privéroutering ondersteunt.</string>
     <string name="update_network_smp_proxy_fallback_question">Terugval op berichtroutering</string>
-    <string name="settings_section_title_private_message_routing">PRIVÉBERICHT ROUTING</string>
+    <string name="settings_section_title_private_message_routing">Privébericht routing</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.</string>
     <string name="file_not_approved_title">Onbekende servers!</string>
     <string name="file_not_approved_descr">Zonder Tor of VPN is uw IP-adres zichtbaar voor deze XFTP-relays:
 \n%1$s.</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Zonder Tor of VPN is uw IP-adres zichtbaar voor bestandsservers.</string>
-    <string name="settings_section_title_files">BESTANDEN</string>
+    <string name="settings_section_title_files">Bestanden</string>
     <string name="protect_ip_address">Bescherm het IP-adres</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">De app vraagt om downloads van onbekende bestandsservers te bevestigen (behalve .onion of wanneer SOCKS-proxy is ingeschakeld).</string>
     <string name="error_initializing_web_view">Fout bij het initialiseren van WebView. Update uw systeem naar de nieuwe versie. Neem contact op met ontwikkelaars.
@@ -2055,7 +2055,7 @@
     <string name="select_chat_profile">Selecteer chatprofiel</string>
     <string name="new_chat_share_profile">Profiel delen</string>
     <string name="switching_profile_error_message">Uw verbinding is verplaatst naar %s, maar er is een onverwachte fout opgetreden tijdens het omleiden naar het profiel.</string>
-    <string name="settings_section_title_chat_database">CHAT DATABASE</string>
+    <string name="settings_section_title_chat_database">Chat database</string>
     <string name="system_mode_toast">Systeemmodus</string>
     <string name="migrate_from_device_remove_archive_question">Archief verwijderen?</string>
     <string name="delete_messages_cannot_be_undone_warning">Berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
