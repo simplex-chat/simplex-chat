@@ -2824,65 +2824,57 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
   pure ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
 
--- Physically deletes all chat items authored by a member in a group, together with
--- their messages and reactions. The chat_items cascade clears chat_item_messages,
--- chat_item_versions, chat_item_mentions, group_snd_item_statuses, and calls;
--- messages have ON DELETE SET NULL on chat_item_id so they are deleted explicitly.
--- For the membership case (the user is the removed member), items selected are the
--- user's own sent items (group_member_id IS NULL AND item_sent = 1).
 deleteMemberCIs :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO ()
-deleteMemberCIs db User {userId} GroupInfo {groupId, membership} member
-  | groupMemberId' member == groupMemberId' membership = do
+deleteMemberCIs db User {userId} GroupInfo {groupId, membership} member = do
+  items <- selectItems
+  let itemMemberId = memberId' member
+#if defined(dbPostgres)
+  let itemIds = map fst items
+      sharedMsgIds = mapMaybe snd items
+  unless (null itemIds) $ do
+    DB.execute
+      db
+      [sql|
+        DELETE FROM messages WHERE message_id IN (
+          SELECT message_id FROM chat_item_messages WHERE chat_item_id IN ?
+        )
+      |]
+      (Only (In itemIds))
+    DB.execute db "DELETE FROM chat_item_versions WHERE chat_item_id IN ?" (Only (In itemIds))
+  unless (null sharedMsgIds) $
+    DB.execute
+      db
+      "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id IN ? AND item_member_id IS NOT DISTINCT FROM ?"
+      (groupId, In sharedMsgIds, itemMemberId)
+  unless (null itemIds) $
+    DB.execute db "DELETE FROM chat_items WHERE chat_item_id IN ?" (Only (In itemIds))
+#else
+  forM_ items $ \(itemId, itemSharedMsgId_) -> do
+    deleteChatItemMessages_ db itemId
+    deleteChatItemVersions_ db itemId
+    forM_ itemSharedMsgId_ $ \sharedMsgId ->
       DB.execute
         db
-        [sql|
-          DELETE FROM messages WHERE message_id IN (
-            SELECT message_id FROM chat_item_messages WHERE chat_item_id IN (
-              SELECT chat_item_id FROM chat_items
-              WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND item_sent = 1
-            )
-          )
-        |]
-        (userId, groupId)
-      -- For user-authored items reactions may store item_member_id as NULL
-      -- (e.g. channel sends) or as membership.memberId; cover both via OR.
-      DB.execute
-        db
-        [sql|
-          DELETE FROM chat_item_reactions
-          WHERE group_id = ?
-            AND (item_member_id IS NULL OR item_member_id = ?)
-            AND shared_msg_id IN (
-              SELECT shared_msg_id FROM chat_items
-              WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND item_sent = 1 AND shared_msg_id IS NOT NULL
-            )
-        |]
-        (groupId, memberId' membership, userId, groupId)
-      DB.execute
-        db
-        "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND item_sent = 1"
-        (userId, groupId)
-  | otherwise = do
-      let memId = groupMemberId' member
-      DB.execute
-        db
-        [sql|
-          DELETE FROM messages WHERE message_id IN (
-            SELECT message_id FROM chat_item_messages WHERE chat_item_id IN (
-              SELECT chat_item_id FROM chat_items
-              WHERE user_id = ? AND group_id = ? AND group_member_id = ?
-            )
-          )
-        |]
-        (userId, groupId, memId)
-      DB.execute
-        db
-        "DELETE FROM chat_item_reactions WHERE group_id = ? AND item_member_id = ?"
-        (groupId, memberId' member)
-      DB.execute
-        db
-        "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?"
-        (userId, groupId, memId)
+        "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ?"
+        (groupId, sharedMsgId, itemMemberId)
+    DB.execute
+      db
+      "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND chat_item_id = ?"
+      (userId, groupId, itemId)
+#endif
+  where
+    selectItems :: IO [(ChatItemId, Maybe SharedMsgId)]
+    selectItems
+      | groupMemberId' member == groupMemberId' membership =
+          DB.query
+            db
+            "SELECT chat_item_id, shared_msg_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND item_sent = 1"
+            (userId, groupId)
+      | otherwise =
+          DB.query
+            db
+            "SELECT chat_item_id, shared_msg_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?"
+            (userId, groupId, groupMemberId' member)
 
 updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> UTCTime -> IO (ChatItem 'CTGroup d)
 updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
