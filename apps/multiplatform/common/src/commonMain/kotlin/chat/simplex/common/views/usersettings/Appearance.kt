@@ -413,8 +413,8 @@ object AppearanceScope {
       )
     }
 
-    val gridPadding = 12.dp
     if (appPlatform.isDesktop) {
+      val gridPadding = 12.dp
       val cardPadding = if (LocalCardScreen.current) CARD_PADDING * 2 else 0.dp
       val itemSize = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - cardPadding - gridPadding * 5) / 4
       val rows = ceil((PresetWallpaper.entries.size + 2) / 4f).roundToInt()
@@ -428,13 +428,15 @@ object AppearanceScope {
         gridContent(itemSize, itemSize)
       }
     } else {
-      LazyHorizontalGrid(
+      val gridPadding = 14.dp
+      val itemSize = 81.dp
+        LazyHorizontalGrid(
         rows = GridCells.Fixed(1),
-        Modifier.height(80.dp + gridPadding * 2),
+        Modifier.height(itemSize + gridPadding * 2),
         contentPadding = PaddingValues(gridPadding),
         horizontalArrangement = Arrangement.spacedBy(gridPadding),
       ) {
-        gridContent(80.dp, 80.dp)
+        gridContent(itemSize, itemSize)
       }
     }
   }
