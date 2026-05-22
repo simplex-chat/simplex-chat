@@ -4661,7 +4661,7 @@ Hiba: %2$@</target>
       </trans-unit>
       <trans-unit id="Hide" xml:space="preserve" approved="no">
         <source>Hide</source>
-        <target state="translated">Elrejtés</target>
+        <target state="translated">Összecsukás</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
