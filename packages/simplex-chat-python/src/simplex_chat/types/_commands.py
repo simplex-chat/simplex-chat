@@ -340,6 +340,18 @@ def APIAddGroupRelays_cmd_string(self: APIAddGroupRelays) -> str:
 APIAddGroupRelays_Response = CR.GroupRelaysAdded | CR.GroupRelaysAddFailed | CR.ChatCmdError
 
 
+# Clear relay rejection for a channel (relay operator).
+# Network usage: background.
+class APIAllowRelayGroup(TypedDict):
+    groupId: int  # int64
+
+
+def APIAllowRelayGroup_cmd_string(self: APIAllowRelayGroup) -> str:
+    return '/_relay allow #' + str(self['groupId'])
+
+APIAllowRelayGroup_Response = CR.RelayGroupAllowed | CR.ChatCmdError
+
+
 # Update group profile.
 # Network usage: background.
 class APIUpdateGroupProfile(TypedDict):

@@ -32,6 +32,7 @@ export type ChatResponse =
   | CR.GroupRelays
   | CR.GroupRelaysAdded
   | CR.GroupRelaysAddFailed
+  | CR.RelayGroupAllowed
   | CR.GroupMembers
   | CR.GroupUpdated
   | CR.GroupsList
@@ -89,6 +90,7 @@ export namespace CR {
     | "groupRelays"
     | "groupRelaysAdded"
     | "groupRelaysAddFailed"
+    | "relayGroupAllowed"
     | "groupMembers"
     | "groupUpdated"
     | "groupsList"
@@ -291,6 +293,12 @@ export namespace CR {
     type: "groupRelaysAddFailed"
     user: T.User
     addRelayResults: T.AddRelayResult[]
+  }
+
+  export interface RelayGroupAllowed extends Interface {
+    type: "relayGroupAllowed"
+    user: T.User
+    groupInfo: T.GroupInfo
   }
 
   export interface GroupMembers extends Interface {

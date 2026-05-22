@@ -33,6 +33,7 @@ This file is generated automatically.
 - [APINewPublicGroup](#apinewpublicgroup)
 - [APIGetGroupRelays](#apigetgrouprelays)
 - [APIAddGroupRelays](#apiaddgrouprelays)
+- [APIAllowRelayGroup](#apiallowrelaygroup)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -1072,6 +1073,43 @@ GroupRelaysAddFailed: Group relays add failed.
 - type: "groupRelaysAddFailed"
 - user: [User](./TYPES.md#user)
 - addRelayResults: [[AddRelayResult](./TYPES.md#addrelayresult)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIAllowRelayGroup
+
+Clear relay rejection for a channel (relay operator).
+
+*Network usage*: background.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_relay allow #<groupId>
+```
+
+```javascript
+'/_relay allow #' + groupId // JavaScript
+```
+
+```python
+'/_relay allow #' + str(groupId) # Python
+```
+
+**Responses**:
+
+RelayGroupAllowed: Relay rejection cleared for a channel.
+- type: "relayGroupAllowed"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

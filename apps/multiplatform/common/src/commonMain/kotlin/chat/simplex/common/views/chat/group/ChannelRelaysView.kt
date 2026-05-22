@@ -114,7 +114,9 @@ private fun ChannelRelaysLayout(
     if (groupInfo.isOwner) {
       SectionView {
         SectionItemView(click = {
-          val existingRelayIds = groupRelays.filter { it.relayStatus != RelayStatus.RsInactive }.mapNotNull { it.userChatRelay.chatRelayId }.toSet()
+          // Backend gate (APIAddGroupRelays) rejects any chatRelayId already in group_relays
+          // regardless of relayStatus, so all current rows must be excluded from the add list.
+          val existingRelayIds = groupRelays.mapNotNull { it.userChatRelay.chatRelayId }.toSet()
           ModalManager.end.showModalCloseable(true) { close ->
             AddGroupRelayView(
               groupInfo = groupInfo,
@@ -179,7 +181,10 @@ private fun subscriberRelayStatusText(member: GroupMember): String {
 }
 
 private fun ownerRelayStatusText(member: GroupMember, groupRelays: List<GroupRelay>): String {
-  return if (member.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)) {
+  val relayStatus = groupRelays.firstOrNull { it.groupMemberId == member.groupMemberId }?.relayStatus
+  return if (relayStatus == RelayStatus.Rejected) {
+    generalGetString(MR.strings.relay_status_rejected)
+  } else if (member.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)) {
     relayConnStatus(member).first
   } else if (member.activeConn?.connStatus is ConnStatus.Failed) {
     generalGetString(MR.strings.relay_conn_status_failed)
@@ -188,8 +193,7 @@ private fun ownerRelayStatusText(member: GroupMember, groupRelays: List<GroupRel
   } else if (member.activeConn?.connInactive == true) {
     generalGetString(MR.strings.member_info_member_inactive)
   } else {
-    groupRelays.firstOrNull { it.groupMemberId == member.groupMemberId }?.relayStatus?.text
-      ?: relayConnStatus(member).first
+    relayStatus?.text ?: relayConnStatus(member).first
   }
 }
 

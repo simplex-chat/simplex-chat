@@ -1587,6 +1587,9 @@ processChatCommand vr nm = \case
                   Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
   TestChatRelay address -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APITestChatRelay userId address
+  APIAllowRelayGroup groupId -> withUser $ \user -> do
+    gInfo' <- withStore $ \db -> allowRelayGroup db vr user groupId
+    pure $ CRRelayGroupAllowed user gInfo'
   GetUserChatRelays -> withUser $ \user -> do
     srvs <- withFastStore (`getUserServers` user)
     liftIO $ CRUserServers user <$> groupByOperator (onlyRelays srvs)
@@ -2939,9 +2942,13 @@ processChatCommand vr nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' scopeInfo) ci]
       -- TODO delete direct connections that were unused
       deleteGroupLinkIfExists user gInfo'
+      let relayRejected = useRelays' gInfo && isRelay membership
       -- member records are not deleted to keep history
-      withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
-      pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
+      withFastStore' $ \db -> do
+        updateGroupMemberStatus db userId membership GSMemLeft
+        when relayRejected $ updateRelayOwnStatus_ db gInfo RSRejected
+      let relayOwnStatus' = if relayRejected then Just RSRejected else relayOwnStatus gInfo
+      pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}, relayOwnStatus = relayOwnStatus'}
     where
       -- Relay leaving channel: create delivery job for cursor-based sending and async connection cleanup.
       leaveChannelRelay gInfo = do
@@ -2993,6 +3000,9 @@ processChatCommand vr nm = \case
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand vr nm $ APILeaveGroup groupId
+  AllowRelayGroup gName -> withUser $ \user -> do
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
+    processChatCommand vr nm $ APIAllowRelayGroup groupId
   DeleteGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand vr nm $ APIDeleteChat (ChatRef CTGroup groupId Nothing) (CDMFull True)
@@ -5041,6 +5051,8 @@ chatCommandP =
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
       "/_relay test " *> (APITestChatRelay <$> A.decimal <* A.space <*> strP),
       "/relay test " *> (TestChatRelay <$> strP),
+      "/_relay allow #" *> (APIAllowRelayGroup <$> A.decimal),
+      "/group allow #" *> (AllowRelayGroup <$> displayNameP),
       "/relays " *> (SetUserChatRelays <$> chatRelaysP),
       "/relays" $> GetUserChatRelays,
       "/_operators" $> APIGetServerOperators,
