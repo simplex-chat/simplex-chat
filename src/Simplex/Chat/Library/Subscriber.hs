@@ -2948,7 +2948,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _ _) msgScope_ msg brokerTs = do
-      unless (useRelays' gInfo && isRelay m) $ checkHostRole m memRole
+      if useRelays' gInfo && isRelay m
+        then when (memRole > GRMember) $ throwChatError $ CEException "x.grp.mem.new: relay cannot introduce role above member in channel"
+        else checkHostRole m memRole
       if sameMemberId memId (membership gInfo)
         then pure Nothing
         else do
