@@ -3647,6 +3647,11 @@ getDeliveryJobWorker hasWork deliveryKey = do
   getAgentWorker "delivery_job" hasWork a deliveryKey ws $
     runDeliveryJobWorker a deliveryKey
 
+-- TODO [relays] dissemination here is unsigned (relay-asserted profile).
+-- Future: members sign an XMember on channel join, relay stores it per
+-- member and forwards the signed XMember via this sidecar — enables
+-- subscribers to verify member profiles out-of-band without trusting the relay.
+
 -- | Encode an XGrpMemNew for first-introduction dissemination as a direct
 -- (non-forwarded) batch element. 'Left' when the encoded element wouldn't
 -- fit a singleton batch (see 'maxBatchElementSize').
