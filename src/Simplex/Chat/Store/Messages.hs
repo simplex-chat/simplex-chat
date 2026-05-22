@@ -2847,7 +2847,10 @@ deleteMemberCIs db User {userId} GroupInfo {groupId, membership} member = do
       "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id IN ? AND item_member_id IS NOT DISTINCT FROM ?"
       (groupId, In sharedMsgIds, itemMemberId)
   unless (null itemIds) $
-    DB.execute db "DELETE FROM chat_items WHERE chat_item_id IN ?" (Only (In itemIds))
+    DB.execute
+      db
+      "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND chat_item_id IN ?"
+      (userId, groupId, In itemIds)
 #else
   forM_ items $ \(itemId, itemSharedMsgId_) -> do
     deleteChatItemMessages_ db itemId
