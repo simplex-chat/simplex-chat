@@ -11,19 +11,16 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-actual fun SettingsSectionApp(
+actual fun AdvancedSettingsAppSection(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showVersion: () -> Unit,
-  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
+  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_app)) {
+  SectionView {
     SettingsActionItem(painterResource(MR.images.ic_restart_alt), stringResource(MR.strings.settings_restart_app), ::restartApp)
     SettingsActionItem(painterResource(MR.images.ic_power_settings_new), stringResource(MR.strings.settings_shutdown), { shutdownAppAlert(::shutdownApp) })
     SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(withAuth) })
-    AppVersionItem(showVersion)
   }
 }
-
 
 fun restartApp() {
   ProcessPhoenix.triggerRebirth(androidAppContext)
