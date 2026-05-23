@@ -12,14 +12,8 @@ DNS-based naming is vulnerable to domain seizure and requires WHOIS entries. Blo
 
 ### MVP
 
-- **Plain names**: globally unique (e.g., `simplex`, `privacy`, `my channel`). Allowed: letters (Latin, Cyrillic, Arabic, CJK, Kana), digits, hyphens, spaces.
-- **Name rules**:
-  - Must start with a letter.
-  - No dots or punctuation.
-  - No digits-only in lookup keys.
-  - No leading/trailing/consecutive spaces or hyphens. Rejected at registration, not silently normalized.
-  - Hyphens and spaces equivalent in lookup key: `my-channel` = `my channel` = `mychannel`.
-- **Display name and lookup key**: owner chooses display name (e.g., "My Channel"). Lookup key derived by lowercasing, stripping spaces/hyphens, collapsing Unicode confusables. `MyChannel`, `my channel`, `My-Channel` all produce lookup key `mychannel`. Once taken, no variant can register. Owner must be able to change display name as long as lookup key does not change. `mychannel` can become `My Channel`.
+- **Names**: TLD `.simplex` (e.g., `privacy.simplex`, `my-channel.simplex`). Subdomains: `support.acme.simplex`. In markdown, `.simplex` can be omitted: `#privacy` = `privacy.simplex`.
+- **Name rules**: see [Name rules](#name-rules).
 - **Two address types**: each name stores channel links (set) and contact links (set). Client uses the first; set provides forward-compatible redundancy. Either can be empty.
 - **Optional metadata**: admin SimpleX address, admin email.
 - **Registration**: commit-reveal to prevent frontrunning. Length-based ETH pricing. Annual renewal. Dutch auction on expiry.
@@ -29,16 +23,15 @@ DNS-based naming is vulnerable to domain seizure and requires WHOIS entries. Blo
 - **Resolution**: client queries two independent name servers (Ethereum light clients) via two SMP proxies. Agreement = trusted. Disagreement = warning.
 - **Double resolution**: name -> short link (on-chain), short link -> connection data (existing protocol).
 - **Verification**: if on-chain link matches profile address, name is verified. Manual "verify" button + optional auto-verify on profile open.
-- **Markdown**: `#name`, `#'my name'`, `#namespace:name` (e.g., `#testnet:myname`). In CLI, `#` is local in group commands, global in `/c` and message bodies.
-- **Search**: `#name` auto-resolves. Disable in "More privacy" settings.
+- **Markdown**: `#name` (`.simplex` implied), `#name.simplex` (explicit), `#testnet:name` for test namespace. In CLI, `#` is local in group commands, global in `/c` and message bodies.
+- **Search**: `#name.simplex` auto-resolves. Disable in "More privacy" settings.
 - **Router role**: `names` added to `ServerRoles`. Not all routers support it.
 - **Contract**: ENS fork on Ethereum mainnet. ETH payment. Upgradeable.
 
 ### Post-MVP
 
-- **Domain names**: dot-separated, requiring DNS domain ownership proof. Dots are prohibited in MVP.
 - **Multiple links**: redundant entries per name. Forward-compatible schema in MVP where practical.
-- **Contact syntax**: `:name`, `:'my name'`. Same namespace, different link type. - this should be supported in MVP parser, there is no cost. I think no cost to allow resolving contact addresses too. The only cost is UI support.
+- **Contact syntax**: `:name.simplex`, `:my-name.simplex`. Same namespace, different link type. MVP parser supports this syntax; resolution works; UI support is post-MVP.
 - **Community Credits**: replace ETH for private registration.
 - **Unicode expansion**: add scripts as user base grows.
 
@@ -46,14 +39,17 @@ DNS-based naming is vulnerable to domain seizure and requires WHOIS entries. Blo
 
 ### Overview
 
-ENS fork on Ethereum mainnet. Retains commit-reveal, pricing, expiry, Dutch auction. Compatible with ENS dApp. Upgradeable. All irrelevant ENS features removed.
+ENS fork on Ethereum mainnet. Retains commit-reveal, pricing, expiry, Dutch auction. Compatible with ENS dApp. Upgradeable.
+
+ENS source:
+- Contracts: https://github.com/ensdomains/ens-contracts
+- dApp: https://github.com/ensdomains/ens-app-v3
+- JS library: https://github.com/ensdomains/ensjs
 
 ### Contract state
 
 ```
-Name record:
-  displayName    : string       -- "My Channel"
-  lookupKey      : string       -- "mychannel"
+Name record (ENS structure + SimpleX resolver fields):
   owner          : address
   channelLinks   : string[]
   contactLinks   : string[]
@@ -71,45 +67,28 @@ Global state:
 
 There must be maps to track names by owner, but specific contract design should be based on ENS.
 
-### Name normalization
+### Name rules
 
-Lookup key determines uniqueness.
+ENS normalization (ENSIP-15) with additional restrictions enforced in dApp (registration) and resolvers (resolution). Contract follows ENS as-is.
 
-Derivation:
-1. Lowercase
-2. Strip hyphens
-3. Strip whitespace
-4. Map Cyrillic look-alikes to Latin equivalents (~33 chars: а->a, в->b, е->e, etc.) and accented Latin to base Latin (é->e, ü->u, etc.). Mapping enforced in contract and dApp. SimpleX client only resolves.
-
-Stored as plain string, not hashed.
-
-Display name validation:
-1. Starts with letter
-2. No leading/trailing spaces or hyphens
-3. No consecutive spaces or hyphens
-4. No dots or punctuation
-5. Not digits-only or digits-plus-hyphens-only
-6. Single-script (digits, spaces, hyphens are script-neutral)
-
-### Allowed characters
-
-- Latin (including accented), Cyrillic, Arabic, CJK, Kana
-- Digits (0-9)
-- Space and hyphen (equivalent in lookup key)
+Additional restrictions beyond ENSIP-15:
+- No consecutive hyphens.
+- No accented characters. Latin is `a-z` only (same as DNS LDH rule).
+- Allowed scripts: Latin, Cyrillic, Arabic, Hebrew, Devanagari, Bengali, Thai, Greek, CJK, Hangul, Kana. Expandable as user base grows.
 
 ### Registration flow
 
 1. NFT check
 2. Limit check (5 paid / 5 test)
-3. `commit(hash(lookupKey, owner, secret))`
+3. `commit(hash(name, owner, secret))`
 4. Wait (min 1 minute)
-5. `reveal(displayName, owner, secret)` + ETH (zero for test)
+5. `reveal(name, owner, secret)` + ETH (zero for test)
 6. Validate: well-formed, not taken, not reserved, fee covered
 7. Store record
 
 ### Pricing
 
-Annual fees by lookup key length:
+Annual fees by name length:
 
 | Length | Fee |
 |---|---|
@@ -127,7 +106,7 @@ Annual renewal. Grace period, then Dutch auction decaying to base price.
 
 ### Updates
 
-Owner can update links, admin address, admin email. Display name immutable. Transfer follows ENS mechanics.
+Owner can update links, admin address, admin email. Transfer follows ENS mechanics.
 
 ### Reserved names
 
@@ -138,16 +117,16 @@ List for community channels (e.g., `books`, `games`, `music`, `news`):
 ### Retained ENS features
 
 - **Resolver pattern**: registry maps name -> (owner, resolver). A SimpleX Resolver contract stores channel links, contact links, admin fields. Allows future extensibility without registry changes.
-- **DNS/DNSSEC**: on-chain verification of DNS domain ownership. Enables post-MVP domain name import for signed domains. Oracle path for unsigned domains can be added later.
 - **Multicoin address records**: BTC/ETH/XMR donation addresses per name. Subscribers see donation options from name resolution.
 - **Text records**: generic key-value store for future metadata without contract upgrades.
-- **Reverse resolution**: link -> name lookup. Enables verification and discovery (client can check if a channel has a registered name).
-- **Subdomain registrar**: owner of `acme` can create `acme/support`, `acme/sales` without additional on-chain registration. Syntax uses `/` not `.` to distinguish from DNS domains.
+- **Reverse resolution**: name lookup by address. Enables verification and discovery.
+- **Subdomain registrar**: owner of `acme.simplex` can create `support.acme.simplex`, `sales.acme.simplex` without additional on-chain registration.
 
 ### Removed ENS features
 
-- Avatar, contenthash (IPFS pointers) - not needed.
-- ENS-specific integrations (e.g., `.eth` TLD infrastructure).
+- Avatar/image records.
+- `.eth` TLD and ENS name imports.
+- DNS name registration (DNSSEC imports).
 
 ### Governance
 
@@ -175,7 +154,7 @@ Uses existing SMP proxy infrastructure. Client sends queries through a proxy, no
 
 ```
 Client -> Proxy -> Name Server:
-  RSLV <lookup_key>
+  RSLV <namehash>
 
 Name Server -> Proxy -> Client:
   NAME <name_record>
@@ -229,17 +208,19 @@ Default router list updated to include name-capable routers.
 
 ### Markdown
 
-- `#name`, `#'my name'` - global names
-- `#namespace:name` - namespaced (e.g., `#testnet:myname`)
+- `#name` or `#name.simplex` - native names (no dot = `.simplex` implied)
+- `#my-name` or `#my-name.simplex` - hyphenated names
+- `#sub.name.simplex` - subdomains (explicit TLD)
+- `#testnet:name` - test namespace
 - Rendered as clickable resolve-and-connect links
 
 CLI: `#` = local in group commands, global in `/c` and messages.
 
-`:name`, `:'my name'` - contact addresses (same namespace, different link type). MVP parser supports this syntax; resolution works; UI support is post-MVP.
+`:name.simplex`, `:my-name.simplex` - contact addresses (same namespace, different link type). MVP parser supports this syntax; resolution works; UI support is post-MVP.
 
 ### Resolution flow
 
-1. Normalize to lookup key
+1. Normalize per ENSIP-15, compute namehash
 2. `RSLV` to two name servers via two proxies
 3. Compare results
 4. First channel link -> short link resolution -> connection data
@@ -247,7 +228,7 @@ CLI: `#` = local in group commands, global in `/c` and messages.
 
 ### Search
 
-`#` prefix triggers resolution. Disable in "More privacy" settings.
+`#...simplex` triggers resolution. Disable in "More privacy" settings.
 
 ### Verification
 
@@ -258,7 +239,7 @@ On-chain link matches profile address = verified. Only name owner can set on-cha
 
 ### Display
 
-Show owner's display name and verification status. `#` is syntax, not part of the name.
+Show name and verification status. `#` is syntax, not part of the name.
 
 ## Open questions
 
