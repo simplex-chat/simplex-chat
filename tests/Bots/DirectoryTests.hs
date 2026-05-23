@@ -7,7 +7,6 @@
 module Bots.DirectoryTests where
 
 import ChatClient
-import ChatTests.ChatRelays (withRelay)
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
@@ -1998,7 +1997,7 @@ testRegisterChannelViaCard ps =
           [ do
               relay <## "'SimpleX Directory': accepting request to join group #news..."
               relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
           ]
         -- owner sends a message to trigger member introduction
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
@@ -2097,7 +2096,7 @@ testDeleteChannelRegistration ps =
           [ do
               relay <## "'SimpleX Directory': accepting request to join group #news..."
               relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
           ]
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
@@ -2141,7 +2140,7 @@ testReregistrationAlreadyListed ps =
           [ do
               relay <## "'SimpleX Directory': accepting request to join group #news..."
               relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
           ]
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
@@ -2200,7 +2199,7 @@ testLinkCheckUpdatesCount ps = do
               [ do
                   relay <## "'SimpleX Directory': accepting request to join group #news..."
                   relay <## "#news: 'SimpleX Directory' joined the group",
-                bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+                bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
               ]
             bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
             superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"

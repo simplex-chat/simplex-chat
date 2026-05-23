@@ -1271,6 +1271,10 @@ Query: UPDATE connections SET smp_agent_version = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
+Query: UPDATE connections SET smp_agent_version = ?, pq_support = ?, enable_ntfs = ? WHERE conn_id = ?
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
+
 Query: UPDATE messages SET msg_body = x'' WHERE conn_id = ? AND internal_id = ?
 Plan:
 SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)

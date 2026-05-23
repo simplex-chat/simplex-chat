@@ -2286,18 +2286,20 @@ data class GroupShortLinkData (
 
 @Serializable
 enum class RelayStatus {
-  @SerialName("new") RsNew,
-  @SerialName("invited") RsInvited,
-  @SerialName("accepted") RsAccepted,
-  @SerialName("active") RsActive,
-  @SerialName("inactive") RsInactive;
+  @SerialName("new") New,
+  @SerialName("invited") Invited,
+  @SerialName("accepted") Accepted,
+  @SerialName("active") Active,
+  @SerialName("inactive") Inactive,
+  @SerialName("rejected") Rejected;
 
   val text: String get() = when (this) {
-    RsNew -> generalGetString(MR.strings.relay_status_new)
-    RsInvited -> generalGetString(MR.strings.relay_status_invited)
-    RsAccepted -> generalGetString(MR.strings.relay_status_accepted)
-    RsActive -> generalGetString(MR.strings.relay_status_active)
-    RsInactive -> generalGetString(MR.strings.relay_status_inactive)
+    New -> generalGetString(MR.strings.relay_status_new)
+    Invited -> generalGetString(MR.strings.relay_status_invited)
+    Accepted -> generalGetString(MR.strings.relay_status_accepted)
+    Active -> generalGetString(MR.strings.relay_status_active)
+    Inactive -> generalGetString(MR.strings.relay_status_inactive)
+    Rejected -> generalGetString(MR.strings.relay_status_rejected)
   }
 }
 
@@ -3735,7 +3737,8 @@ sealed class CIForwardedFrom {
 enum class CIDeleteMode(val deleteMode: String) {
   @SerialName("internal") cidmInternal("internal"),
   @SerialName("internalMark") cidmInternalMark("internalMark"),
-  @SerialName("broadcast") cidmBroadcast("broadcast");
+  @SerialName("broadcast") cidmBroadcast("broadcast"),
+  @SerialName("history") cidmHistory("history");
 }
 
 interface ItemContent {

@@ -589,6 +589,7 @@ ChatBanner:
 - "broadcast"
 - "internal"
 - "internalMark"
+- "history"
 
 
 ---
@@ -1373,7 +1374,7 @@ ChatType.cmdString(chatType) + chatId + (chatScope ? GroupChatScope.cmdString(ch
 ```
 
 ```python
-str(chatType) + str(chatId) + ((str(chatScope)) if chatScope is not None else '') # Python
+ChatType_cmd_string(chatType) + str(chatId) + ((GroupChatScope_cmd_string(chatScope)) if chatScope is not None else '') # Python
 ```
 
 
@@ -3347,6 +3348,7 @@ ParseError:
 - "accepted"
 - "active"
 - "inactive"
+- "rejected"
 
 
 ---

@@ -583,7 +583,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
     onClick = {
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
-      ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
+      ModalManager.center.showModalCloseable(settings = true, showClose = appPlatform.isAndroid, cardScreen = true) { close ->
         ContactConnectionInfoView(chatModel, rhId, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, true, close)
       }
       showMenu.value = false

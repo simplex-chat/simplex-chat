@@ -191,7 +191,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing
   it "x.msg.del" $
     "{\"v\":\"1\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
-      #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing
+      #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing False
   it "x.msg.deleted" $
     "{\"v\":\"1\",\"event\":\"x.msg.deleted\",\"params\":{}}"
       #==# XMsgDeleted

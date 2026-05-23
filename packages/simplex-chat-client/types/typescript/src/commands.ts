@@ -387,6 +387,20 @@ export namespace APIAddGroupRelays {
   }
 }
 
+// Clear relay rejection for a channel (relay operator).
+// Network usage: background.
+export interface APIAllowRelayGroup {
+  groupId: number // int64
+}
+
+export namespace APIAllowRelayGroup {
+  export type Response = CR.RelayGroupAllowed | CR.ChatCmdError
+
+  export function cmdString(self: APIAllowRelayGroup): string {
+    return '/_relay allow #' + self.groupId
+  }
+}
+
 // Update group profile.
 // Network usage: background.
 export interface APIUpdateGroupProfile {

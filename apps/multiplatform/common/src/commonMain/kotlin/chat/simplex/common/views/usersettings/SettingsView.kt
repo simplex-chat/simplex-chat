@@ -1,8 +1,9 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import itemHPadding
 import SectionItemView
+import SectionDividerSpaced
 import SectionView
 import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -46,12 +47,13 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
     user?.displayName,
     setPerformLA = setPerformLA,
     showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
-    showSettingsModal = { modalView -> { ModalManager.start.showModal(true) { modalView(chatModel) } } },
+    showSettingsModal = { modalView -> { ModalManager.start.showModal(settings = true, cardScreen = true) { modalView(chatModel) } } },
     showSettingsModalWithSearch = { modalView ->
       ModalManager.start.showCustomModal { close ->
         val search = rememberSaveable { mutableStateOf("") }
         ModalView(
           { close() },
+          cardScreen = true,
           showSearch = true,
           searchAlwaysVisible = true,
           onSearchValueChanged = { search.value = it },
@@ -295,14 +297,10 @@ fun ChatLockItem(
 }
 
 private fun resetHintPreferences() {
-  for ((pref, def) in appPreferences.hintPreferences) {
-    pref.set(def)
-  }
+  appPreferences.hintPreferences.forEach { it.reset() }
 }
 
-fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { (pref, def) ->
-  pref.state.value == def
-}
+fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { it.isUnchanged() }
 
 @Composable
 fun AppVersionItem(showVersion: () -> Unit) {
@@ -352,9 +350,9 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
     click,
     extraPadding = extraPadding,
     padding = if (extraPadding && icon != null)
-      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding)
     else
-      PaddingValues(horizontal = DEFAULT_PADDING),
+      PaddingValues(horizontal = itemHPadding),
     disabled = disabled
   ) {
     if (icon != null) {

@@ -4,8 +4,11 @@ import SectionBottomSpacer
 import SectionTextFooter
 import SectionView
 import SectionViewSelectable
+import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.theme.*
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
@@ -74,9 +77,9 @@ fun NotificationsSettingsLayout(
           color = MaterialTheme.colors.secondary
         )
       }
-      if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
-        SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
-      }
+    }
+    if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
+      SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
     }
     SectionBottomSpacer()
   }

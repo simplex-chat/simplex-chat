@@ -1058,6 +1058,28 @@ acceptRelayJoinRequestAsync
       ownerMember' <- getGroupMemberById db vr user groupMemberId
       pure (gInfo', ownerMember')
 
+rejectRelayInvitationAsync
+  :: User
+  -> Int64
+  -> VersionRangeChat
+  -> GroupRelayInvitation
+  -> InvitationId
+  -> VersionRangeChat
+  -> Int64
+  -> RelayRejectionReason
+  -> CM ()
+rejectRelayInvitationAsync user uclId vr groupRelayInv invId reqChatVRange initialDelay reason = do
+  (_gInfo, ownerMember) <- withStore $ \db ->
+    createRelayRequestGroup db vr user groupRelayInv invId reqChatVRange initialDelay GSMemInvited RSRejected
+  let GroupMember {groupMemberId} = ownerMember
+      msg = XGrpRelayReject reason
+  subMode <- chatReadVar subscriptionMode
+  chatVR <- chatVersionRange
+  let chatV = chatVR `peerConnChatVersion` reqChatVRange
+  connIds <- agentAcceptContactAsync user False invId msg subMode PQSupportOff chatV
+  withStore' $ \db ->
+    createJoiningMemberConnection db user uclId connIds chatV reqChatVRange groupMemberId subMode
+
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
   GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, publicGroup = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
@@ -1144,12 +1166,16 @@ memberIntroEvt gInfo reMember =
 -- This doesn't create introduction records in db, compared to above methods.
 introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn} = do
+introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  withStore' $ \db ->
+    setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   let introEvts = map (memberIntroEvt gInfo) modMs
   forM_ (L.nonEmpty introEvts) $ \introEvts' ->
     sendGroupMemberMessages user gInfo conn introEvts'
+  withStore' $ \db ->
+    setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1319,6 +1345,18 @@ setGroupLinkDataAsync user gInfo gLink = do
     (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
+
+connectToRelayAsync :: User -> GroupInfo -> ShortLinkContact -> CM ()
+connectToRelayAsync user gInfo relayLink = do
+  vr <- chatVersionRange
+  gVar <- asks random
+  relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink
+  case activeConn of
+    Just _ -> pure ()
+    Nothing -> do
+      subMode <- chatReadVar subscriptionMode
+      newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
+      withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
 
 updatePublicGroupData :: User -> GroupInfo -> CM GroupInfo
 updatePublicGroupData user gInfo

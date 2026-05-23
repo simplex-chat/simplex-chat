@@ -29,7 +29,7 @@
     <string name="callstatus_accepted">prihvati poziv</string>
     <string name="permissions_required">Dodeliti dozvolu</string>
     <string name="audio_device_wired_headphones">Slušalice</string>
-    <string name="settings_section_title_help">POMOĆ</string>
+    <string name="settings_section_title_help">Pomoć</string>
     <string name="delete_group_for_self_cannot_undo_warning">Grupa će biti obrisana za Vas – ovo ne može da se poništi!</string>
     <string name="color_primary">Akcenat</string>
     <string name="v4_2_group_links">Grupni linkovi</string>
@@ -120,15 +120,15 @@
     <string name="servers_info_modal_error_title">Greška</string>
     <string name="create_1_time_link">Napravi jednokratnu poveznicu</string>
     <string name="paste_button">Nalepiti</string>
-    <string name="settings_section_title_settings">PODEŠAVANJE</string>
+    <string name="settings_section_title_settings">Podešavanje</string>
     <string name="settings_section_title_profile_images">Profilne slike</string>
     <string name="acknowledged">Razumeo</string>
     <string name="deleted">Odstranjeno</string>
     <string name="deleted_description">odstranjeno</string>
     <string name="create_profile_button">Napraviti</string>
-    <string name="settings_section_title_messages">PORUKE I DATOTEKE</string>
+    <string name="settings_section_title_messages">Poruke i datoteke</string>
     <string name="compose_message_placeholder">Poruka</string>
-    <string name="conn_stats_section_title_servers">SERVERI</string>
+    <string name="conn_stats_section_title_servers">Serveri</string>
     <string name="delete_chat_profile">Odstraniti profil razgovora</string>
     <string name="feature_roles_admins">administratori</string>
     <string name="random_port">Nasumično</string>
@@ -240,7 +240,7 @@
     <string name="forward_files_not_accepted_receive_files">Preuzimanje</string>
     <string name="network_settings_title">Napredna podešavanja</string>
     <string name="icon_descr_call_progress">Poziv u toku</string>
-    <string name="settings_section_title_calls">POZIVI</string>
+    <string name="settings_section_title_calls">Pozivi</string>
     <string name="v5_4_block_group_members">Blokiraj članove grupe</string>
     <string name="file_not_approved_title">Nepoznati serveri!</string>
     <string name="icon_descr_file">Datoteka</string>
@@ -253,7 +253,7 @@
     <string name="blocked_items_description">%d poruka blokirano</string>
     <string name="server_connecting">povezivanje</string>
     <string name="connected_mobile">Povezan telefon</string>
-    <string name="settings_section_title_you">VI</string>
+    <string name="settings_section_title_you">Vi</string>
     <string name="v6_0_privacy_blur">Zamućeno za bolju privatnost.</string>
     <string name="ttl_months">%d meseca(i)</string>
     <string name="icon_descr_call_ended">Poziv završen</string>
@@ -295,7 +295,7 @@
     <string name="la_minutes">%d minut(a)</string>
     <string name="app_check_for_updates">Proveri ažuriranje</string>
     <string name="app_check_for_updates_stable">Stabilno</string>
-    <string name="settings_section_title_files">DATOTEKE</string>
+    <string name="settings_section_title_files">Datoteke</string>
     <string name="migrate_from_device_bytes_uploaded">%s otpremljeno</string>
     <string name="disable_notifications_button">Onemogućiti obavještenja</string>
     <string name="is_not_verified">%s nije verifikovan</string>
@@ -312,7 +312,7 @@
     <string name="scan_QR_code">Skenirati QR kod</string>
     <string name="network_session_mode_server">Server</string>
     <string name="no_call_on_lock_screen">Onemogućiti</string>
-    <string name="settings_section_title_chat_database">BAZA PODATAKA CHATA</string>
+    <string name="settings_section_title_chat_database">Baza podataka chata</string>
     <string name="send_receipts_disabled">onemogućeno</string>
     <string name="import_theme_error">Greška pri uvoženju teme</string>
     <string name="files_are_prohibited_in_group">Datoteke i medijski sadržaji su zabranjeni.</string>
@@ -328,7 +328,7 @@
     <string name="or_scan_qr_code">Ili skenirati QR kod</string>
     <string name="app_check_for_updates_disabled">Onemogućeno</string>
     <string name="settings_section_title_app">Aplikacija</string>
-    <string name="settings_section_title_chats">RAZGOVORI</string>
+    <string name="settings_section_title_chats">Razgovori</string>
     <string name="files_and_media_prohibited">Datoteke i medijski sadržaji su zabranjeni!</string>
     <string name="disappearing_prohibited_in_this_chat">Poruke koje nestaju su zabranjene u ovom razgovoru.</string>
     <string name="chat_is_stopped_indication">Chat je zaustavljen</string>
@@ -370,7 +370,7 @@
     <string name="image_descr_qr_code">QR kod</string>
     <string name="chat_is_running">Chat je pokrenut</string>
     <string name="import_database">Uvesti bazu podataka</string>
-    <string name="chat_database_section">BAZA PODATAKA CHATA</string>
+    <string name="chat_database_section">Baza podataka chata</string>
     <string name="chat_is_stopped">Chat je zaustavljen</string>
     <string name="rcv_group_event_n_members_connected">%s, %s i %d ostali članovi povezani</string>
     <string name="migrate_to_device_import_failed">Uvoz neuspešan</string>
@@ -428,7 +428,7 @@
     <string name="simplex_address">SimpleX adresa</string>
     <string name="image_descr_simplex_logo">SimpleX Logo</string>
     <string name="show_dev_options">Prikazati:</string>
-    <string name="settings_section_title_device">UREĐAJ</string>
+    <string name="settings_section_title_device">Uređaj</string>
     <string name="new_message">Nova poruka</string>
     <string name="color_secondary">Sekundarni</string>
     <string name="receipts_section_contacts">Kontakti</string>
@@ -474,7 +474,7 @@
     <string name="favorite_chat">Omiljen</string>
     <string name="network_smp_proxy_mode_never">Nikada</string>
     <string name="network_session_mode_entity">Veza</string>
-    <string name="settings_section_title_themes">TEME</string>
+    <string name="settings_section_title_themes">Teme</string>
     <string name="audio_video_calls">Audio/video pozivi</string>
     <string name="chat_preferences_no">ne</string>
     <string name="conn_event_ratchet_sync_ok">šifrovanje ok</string>
@@ -491,7 +491,7 @@
     <string name="icon_descr_address">SimpleX Adresa</string>
     <string name="save_servers_button">Sačuvati</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-    <string name="settings_section_title_experimenta">EKSPERIMENTALNO</string>
+    <string name="settings_section_title_experimenta">Eksperimentalno</string>
     <string name="chat_item_ttl_none">nikada</string>
     <string name="clear_contacts_selection_button">Očistiti</string>
     <string name="v4_6_chinese_spanish_interface_descr">Zahvaljujući korisnicima – doprinesi pomoću Weblate!</string>
@@ -694,7 +694,7 @@
     <string name="select_chat_profile">Izabrati profil razgovora</string>
     <string name="smp_servers_scan_qr">Skenirati QR kod servera</string>
     <string name="network_settings">Napredna mrežna podešavanja</string>
-    <string name="settings_section_title_socks">SOCKS PROXY</string>
+    <string name="settings_section_title_socks">SOCKS proxy</string>
     <string name="settings_section_title_incognito">Anonimni režim</string>
     <string name="network_option_ping_count">broj PING</string>
     <string name="servers_info_reset_stats_alert_title">Obnoviti statistiku?</string>
@@ -725,7 +725,7 @@
     <string name="migrate_from_device_archiving_database">Arhiviraj bazu podataka</string>
     <string name="onboarding_notifications_mode_periodic">Periodično</string>
     <string name="remove_member_confirmation">Ukloniti</string>
-    <string name="member_info_section_title_member">ČLAN</string>
+    <string name="member_info_section_title_member">Član</string>
     <string name="joining_group">Pristupanje grupi</string>
     <string name="smp_server">SMP server</string>
     <string name="invite_to_chat_button">Pozvati u razgovor</string>
@@ -986,7 +986,7 @@
     <string name="smp_servers_new_server">Novi server</string>
     <string name="subscription_percentage">Prikazati procente</string>
     <string name="exit_without_saving">Napustiti bez čuvanja</string>
-    <string name="run_chat_section">POKRENUTI RAZGOVOR</string>
+    <string name="run_chat_section">Pokrenuti razgovor</string>
     <string name="unblock_for_all_question">Odblokirati člana za sve?</string>
     <string name="migrate_to_device_database_init">Priprema za preuzimanje</string>
     <string name="proxied">Proxied(posredovan)</string>
@@ -1260,9 +1260,9 @@
     <string name="passcode_set">Pin kod postavljen!</string>
     <string name="all_app_data_will_be_cleared">Svi podaci u aplikaciji su odstranjeni.</string>
     <string name="app_passcode_replaced_with_self_destruct">Pin kod aplikacije je zamenjen pin kodom za samouništenje.</string>
-    <string name="settings_section_title_support">POTPORI SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">Potpori SimpleX Chat</string>
     <string name="settings_section_title_message_shape">Oblik poruke</string>
-    <string name="settings_section_title_icon">IKONA APLIKACIJE</string>
+    <string name="settings_section_title_icon">Ikona aplikacije</string>
     <string name="database_passphrase">Pristupna fraza baze podataka</string>
     <string name="set_passphrase">Odrediti pristupnu frazu</string>
     <string name="database_will_be_encrypted">Baza podataka će biti šifrovana.</string>

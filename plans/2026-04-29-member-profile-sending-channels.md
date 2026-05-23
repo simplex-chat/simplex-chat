@@ -1,5 +1,16 @@
 # Plan: Member Profile Sending in Channels
 
+## Implementation note (2026-05-18)
+
+The shipped implementation is **monotonic and reuses `member_relations_vector`**, not a new `sent_profile_vector` column:
+
+- The introduction bit lives in `group_members.member_relations_vector` with status `MRIntroduced`. The M20251117 backfill already populates this column for channel rows (relay role is not admin/owner), and `createNewGroupMember` writes `Binary B.empty` for new members.
+- Bits flip 0 → 1 when the relay first announces the member to a recipient via prepended `XGrpMemNew` (or via `XGrpMemIntro` in `introduceInChannel`'s join-time direct path). They are **never cleared**.
+- Profile updates propagate via the sender's own signed `XInfo`, forwarded unchanged by the relay. The relay updates its DB on receipt; subscribers verify with the key obtained from the earlier `XGrpMemNew`. Section 5 below ("Clear vector on profile update") is superseded by this — no clearing happens.
+- The mutually-exclusive two-column delivery-jobs storage (`single_sender_group_member_id` + `sender_group_member_ids`) collapses into a single nullable `sender_group_member_ids BYTEA` column: `[s]` for single-sender jobs, `[s1, s2, ...]` for multi-sender batches, NULL for sender-less jobs (`DJRelayRemoved`).
+
+The plan body below is preserved for historical context.
+
 ## Context
 
 In channels (relayed groups), subscribers don't know profiles of other subscribers. When subscriber A sends a reaction/message that gets forwarded to subscriber B, B creates an "unknown member" record with a synthesized name. This degrades UX — subscribers see "unknown member" instead of real profiles.
