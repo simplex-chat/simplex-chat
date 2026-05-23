@@ -12,7 +12,6 @@
     <string name="ignore">Yok say</string>
     <string name="settings_audio_video_calls">Sesli ve görüntülü aramalar</string>
     <string name="icon_descr_video_call">Görüntülü ara</string>
-    <string name="privacy_and_security">Gizlilik ve güvenlik</string>
     <string name="incognito">Gizli</string>
     <string name="your_chats">Sohbetler</string>
     <string name="connect_via_link">Bağlantı ile bağlan</string>
@@ -39,7 +38,6 @@
     <string name="send_disappearing_message_1_minute">1 dakika</string>
     <string name="clear_chat_warning">Tüm mesajlar silinecektir. Bu, geri alınamaz! Mesajlar, YALNIZCA senin için silinecektir.</string>
     <string name="smp_servers_add">Sunucu ekle</string>
-    <string name="database_passphrase_and_export">Veri tabanı ayarları</string>
     <string name="one_time_link_short">tek kullanımlık bağlantı</string>
     <string name="network_settings">Gelişmiş ağ ayarları</string>
     <string name="app_version_title">Uygulama sürümü</string>
@@ -50,7 +48,6 @@
     <string name="answer_call">Aramayı cevapla</string>
     <string name="full_backup">Uygulama veri yedekleme</string>
     <string name="all_app_data_will_be_cleared">Tüm uygulama verileri silinir.</string>
-    <string name="settings_section_title_app">Uygulama</string>
     <string name="settings_section_title_icon">Uygulama simgesi</string>
     <string name="chat_item_ttl_week">1 hafta</string>
     <string name="conn_event_ratchet_sync_started">şifreleme kabul ediliyor…</string>
@@ -1037,7 +1034,6 @@
     <string name="auth_stop_chat">Sohbeti durdur</string>
     <string name="connect_use_current_profile">Mevcut profili kullan</string>
     <string name="la_mode_system">Sistem</string>
-    <string name="settings_section_title_support">SimpleX Chat\'i destekle</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Sohbet veri tabanını dışa aktarmak, içe aktarmak veya silmek için sohbeti durdur. Sohbet durdurulduğunda mesaj alamaz ve gönderemezsiniz.</string>
     <string name="desktop_device">Masaüstü</string>
     <string name="contact_tap_to_connect">Bağlanmak için dokun</string>
@@ -1889,7 +1885,6 @@
     <string name="invite_friends_short">Davet</string>
     <string name="create_address_button">Yarat</string>
     <string name="privacy_media_blur_radius_off">Kapalı</string>
-    <string name="settings_section_title_chat_database">Mesajlaşma Veritabanı</string>
     <string name="chat_database_exported_continue">Devam et</string>
     <string name="share_text_message_status">Mesaj durumu: %s</string>
     <string name="appearance_font_size">Yazı tipi boyutu</string>

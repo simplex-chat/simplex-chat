@@ -33,7 +33,6 @@
     <string name="allow_to_send_disappearing">Дозволити надсилати зникаючі повідомлення.</string>
     <string name="callstatus_accepted">прийнятий виклик</string>
     <string name="always_use_relay">Завжди використовувати реле</string>
-    <string name="settings_section_title_app">Додаток</string>
     <string name="allow_direct_messages">Дозволити надсилання приватних повідомлень учасникам.</string>
     <string name="allow_to_delete_messages">Дозволити безповоротно видаляти надіслані повідомлення. (24 години)</string>
     <string name="allow_to_send_voice">Дозволяйте надсилати голосові повідомлення.</string>
@@ -414,11 +413,9 @@
     <string name="icon_descr_call_pending_sent">Очікування виклику</string>
     <string name="icon_descr_call_missed">Пропущений виклик</string>
     <string name="icon_descr_call_connecting">Підключення виклику</string>
-    <string name="privacy_and_security">Конфіденційність і безпека</string>
     <string name="your_privacy">Конфіденційність</string>
     <string name="settings_section_title_settings">Налаштування</string>
     <string name="settings_section_title_help">Допомога</string>
-    <string name="settings_section_title_support">Підтримайте SimpleX Chat</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Зупиніть чат, щоб експортувати, імпортувати або видалити базу даних чату. Ви не зможете отримувати та надсилати повідомлення, поки чат зупинено.</string>
     <string name="error_deleting_database">Помилка видалення бази даних чату</string>
     <string name="notifications_will_be_hidden">Сповіщення будуть доставлятися лише до зупинки додатка!</string>
@@ -619,7 +616,6 @@
     <string name="security_code">Код безпеки</string>
     <string name="mark_code_verified">Позначити, що перевірено</string>
     <string name="your_chat_profiles">Ваші профілі</string>
-    <string name="database_passphrase_and_export">Пароль бази даних та експорт</string>
     <string name="markdown_in_messages">Markdown у повідомленнях</string>
     <string name="chat_with_the_founder">Надсилайте питання та ідеї</string>
     <string name="smp_servers_enter_manually">Ввести сервер вручну</string>
@@ -2049,7 +2045,6 @@
     <string name="reset_all_hints">Скинути всі підказки</string>
     <string name="app_check_for_updates_update_available">Доступно оновлення: %s</string>
     <string name="app_check_for_updates_canceled">Завантаження оновлення скасовано</string>
-    <string name="settings_section_title_chat_database">База даних чату</string>
     <string name="select_chat_profile">Вибрати профіль чату</string>
     <string name="switching_profile_error_title">Помилка при зміні профілю</string>
     <string name="delete_messages_cannot_be_undone_warning">Повідомлення будуть видалені — це не можна скасувати!</string>

@@ -299,7 +299,6 @@
     <string name="dark_theme">מצב כהה</string>
     <string name="info_row_database_id">מזהה מסד נתונים</string>
     <string name="v4_5_transport_isolation">בידוד תעבורה</string>
-    <string name="database_passphrase_and_export">סיסמה וייצוא של מסד הנתונים</string>
     <string name="delete_after">מחק אחרי</string>
     <string name="delete_files_and_media_all">מחק את כל הקבצים</string>
     <string name="for_me_only">מחק עבורי</string>
@@ -716,7 +715,6 @@
     <string name="paste_button">הדבק</string>
     <string name="port_verb">פורט</string>
     <string name="network_proxy_port">פורט %d</string>
-    <string name="privacy_and_security">פרטיות ואבטחה</string>
     <string name="passcode_set">קוד גישה הוגדר!</string>
     <string name="passcode_not_changed">קוד גישה לא השתנה!</string>
     <string name="passcode_changed">קוד גישה השתנה!</string>
@@ -973,7 +971,6 @@
     <string name="icon_descr_speaker_off">רמקול כבוי</string>
     <string name="icon_descr_speaker_on">רמקול פעיל</string>
     <string name="settings_section_title_settings">הגדרות</string>
-    <string name="settings_section_title_support">תמיכה ב־SimpleX Chat</string>
     <string name="stop_chat_question">לעצור צ׳אט\?</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">עיצרו את הצ׳אט כדי לייצא, לייבא או למחוק את מסד הנתונים. לא תוכלו לקבל ולשלוח הודעות בזמן שהצ׳אט מופסק.</string>
     <string name="stop_chat_confirmation">עצור</string>
@@ -1231,7 +1228,6 @@
     <string name="abort_switch_receiving_address">בטל שינוי כתובת</string>
     <string name="error_aborting_address_change">שגיאה בביטול שינוי הכתובת</string>
     <string name="settings_shutdown">כיבוי</string>
-    <string name="settings_section_title_app">אפליקציה</string>
     <string name="allow_to_send_files">אפשר לשלוח קבצים ומדיה.</string>
     <string name="favorite_chat">הוסף למועדפים</string>
     <string name="files_and_media">קבצים ומדיה</string>
@@ -1927,7 +1923,6 @@
     <string name="cant_call_member_alert_title">לא ניתן להתקשר לחבר קבוצה</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[התנאי שימוש יאושרו למפעיל/ים: <b>%s</b>.]]></string>
     <string name="report_archive_alert_title">להעביר דיווח לארכיון?</string>
-    <string name="settings_section_title_chat_database">מסד נתונים של הצא\'טים</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">בדוק עבור הודעות חדשות כל 10 דקות</string>
     <string name="operator_conditions_accepted_on">אישרת את תנאי השימוש ב:%s.</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">הצ\'אט יימחק עבור כל החברים - לא ניתן לבטל את זה!</string>

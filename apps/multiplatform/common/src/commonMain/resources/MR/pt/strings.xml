@@ -573,7 +573,6 @@
     <string name="this_text_is_available_in_settings">Este texto está disponível nas definições</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser alterado mais tarde através das definições.</string>
     <string name="settings_section_title_help">Ajuda</string>
-    <string name="settings_section_title_support">Suporte SimpleX Chat</string>
     <string name="settings_experimental_features">Funcionalidades experimentais</string>
     <string name="settings_section_title_themes">Temas</string>
     <string name="theme_dark">Escuro</string>
@@ -595,7 +594,6 @@
     <string name="enter_correct_current_passphrase">Insira a senha atual correta.</string>
     <string name="update_database_passphrase">Atualizar senha da base de dados</string>
     <string name="notification_preview_new_message">nova mensagem</string>
-    <string name="database_passphrase_and_export">Palavra-passe da base de dados &amp; exportação</string>
     <string name="set_password_to_export_desc">A base de dados está encriptada com uma palavra-passe aleatória. Por favor, altere-a antes de exportar.</string>
     <string name="database_passphrase_will_be_updated">A palavra-passe de encriptação da base de dados será atualizada.</string>
     <string name="store_passphrase_securely">Por favor armazene a senha de forma segura, você NÃO será capaz de a alterar se a perder.</string>

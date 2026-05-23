@@ -87,7 +87,6 @@
     <string name="v5_0_app_passcode">Κωδικός πρόσβασης εφαρμογής</string>
     <string name="connect_via_member_address_alert_desc">Αίτημα σύνδεσης θα σταλεί σε αυτό το μέλος της ομάδας.</string>
     <string name="settings_section_title_icon">Εικόνα εφαρμογής</string>
-    <string name="settings_section_title_app">Εφαρμογή</string>
     <string name="your_settings">Οι ρυθμίσεις σου</string>
     <string name="app_version_name">Έκδοση εφαρμογής: v%s</string>
     <string name="callstatus_error">σφάλμα κλήσης</string>
@@ -252,7 +251,6 @@
     <string name="icon_descr_audio_on">Eνεργοποίηση ήχου</string>
     <string name="alert_title_msg_bad_hash">Κακό μήνυμα hash</string>
     <string name="privacy_media_blur_radius">Θάμπωση των μέσων</string>
-    <string name="settings_section_title_chat_database">Βάση δεδομένων συνομιλίας</string>
     <string name="keychain_is_storing_securely">Το Android Keystore χρησιμοποιείται για την ασφαλή αποθήκευση της φράσης πρόσβασης - επιτρέπει την υπηρεσία ειδοποιήσεων να λειτουργεί.</string>
     <string name="member_info_member_blocked">αποκλεισμένος</string>
     <string name="member_blocked_by_admin">Αποκλεισμένος από τον διαχειριστή</string>
@@ -659,7 +657,6 @@
     <string name="encrypted_with_random_passphrase">Η βάση δεδομένων είναι κρυπτογραφημένη με τυχαία φράση πρόσβασης, μπορείς να την αλλάξεις.</string>
     <string name="database_migration_in_progress">Η μετεγκατάσταση της βάσης δεδομένων βρίσκεται σε εξέλιξη.\nΜπορεί να χρειαστούν λίγα λεπτά.</string>
     <string name="database_passphrase">Φράση πρόσβασης βάσης δεδομένων</string>
-    <string name="database_passphrase_and_export">Φράση πρόσβασης βάσης δεδομένων και εξαγωγή αυτής</string>
     <string name="passphrase_is_different">Η φράση πρόσβασης της βάσης δεδομένων διαφέρει από αυτή που έχει αποθηκευτεί στο Keystore.</string>
     <string name="database_passphrase_is_required">Η φράση πρόσβασης της βάσης δεδομένων απαιτείται για να ανοίξεις τη συνομιλία.</string>
     <string name="database_upgrade">Αναβάθμιση βάσης δεδομένων</string>
@@ -1858,7 +1855,6 @@
     <string name="v6_2_business_chats_descr">Προστασία της ιδιωτικότητας των πελατών σου.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Πολιτική απορρήτου και όροι χρήσης.</string>
     <string name="privacy_redefined">Επαναπροσδιορισμός της ιδιωτικότητας</string>
-    <string name="privacy_and_security">Απόρρητο &amp; ασφάλεια</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Οι ιδιωτικές συνομιλίες, οι ομάδες και οι επαφές σου δεν είναι προσβάσιμες στους χειριστές του διακομιστή.</string>
     <string name="v4_5_private_filenames">Ιδιωτικά ονόματα αρχείων</string>
     <string name="v6_3_private_media_file_names">Ιδιωτικά ονόματα αρχείων πολυμέσων.</string>
@@ -2309,7 +2305,6 @@
     <string name="subscription_results_ignored">Η εγγραφή αγνοήθηκε</string>
     <string name="migrate_from_device_bytes_uploaded">%s ανεβασμένα</string>
     <string name="v4_6_audio_video_calls_descr">Υποστήριξη bluetooth και άλλων βελτιώσεων.</string>
-    <string name="settings_section_title_support">Υποστήριξη SimpleX Chat</string>
     <string name="switch_verb">Ενάλλαξε</string>
     <string name="v6_1_better_calls_descr">Εναλλαγή ήχου και βίντεο κατά τη διάρκεια της κλήσης.</string>
     <string name="v6_1_switch_chat_profile_descr">Αλλαγή προφίλ συνομιλίας για προσκλήσεις 1-χρήσης.</string>

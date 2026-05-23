@@ -472,7 +472,6 @@
     <string name="share_invitation_link">اشتراک‌گذاری لینک یک بار مصرف</string>
     <string name="or_scan_qr_code">یا کد QR را اسکن کنید</string>
     <string name="retry_verb">تلاش مجدد</string>
-    <string name="database_passphrase_and_export">عبارت عبور و اکسپورت پایگاه داده</string>
     <string name="smp_servers_preset_add">افزودن سرورهای از پیش تنظیم شده</string>
     <string name="smp_servers_add_to_another_device">افزودن به دستگاه دیگر</string>
     <string name="smp_servers_delete_server">حذف سرور</string>
@@ -781,7 +780,6 @@
     <string name="la_mode_off">خاموش</string>
     <string name="receipts_groups_override_enabled">ارسال رسید برای %d گروه فعال است</string>
     <string name="receipts_groups_override_disabled">ارسال رسید برای %d گروه غیرفعال است</string>
-    <string name="settings_section_title_support">حمایت از SimpleX Chat</string>
     <string name="settings_section_title_socks">پروکسی SOCKS</string>
     <string name="settings_section_title_use_from_desktop">استفاده از کامپیوتر</string>
     <string name="new_database_archive">آرشیو پایگاه داده جدید</string>
@@ -822,7 +820,6 @@
     <string name="your_ice_servers">سرورهای ICE شما</string>
     <string name="icon_descr_call_progress">تماس در جریان است</string>
     <string name="integrity_msg_bad_id">شناسه پیام ناصحیح</string>
-    <string name="privacy_and_security">حریم خصوصی و امنیت</string>
     <string name="new_passcode">کد عبور جدید</string>
     <string name="authentication_cancelled">تصدیق لغو شد</string>
     <string name="privacy_show_last_messages">نمایش آخرین پیام‌ها</string>
@@ -872,7 +869,6 @@
     <string name="change_self_destruct_passcode">تغییر کد عبور خودتخریبی</string>
     <string name="settings_section_title_delivery_receipts">رسیدهای تحویل ارسال شوند به</string>
     <string name="settings_developer_tools">ابزارهای توسعه‌دهنده</string>
-    <string name="settings_section_title_app">برنامه</string>
     <string name="settings_section_title_device">دستگاه</string>
     <string name="settings_section_title_experimenta">آزمایشی</string>
     <string name="settings_section_title_network_connection">اتصال شبکه</string>
@@ -2315,7 +2311,6 @@
     <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[شما در حال حاضر با <b>%1$s</b> متصل هستید.]]></string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[شما تنها <b>پس از پذیرش درخواست‌تان</b> قادر به ارسال پیام خواهید بود.]]></string>
     <string name="change_automatic_deletion_question">تغییر حذف خودکار پیام؟</string>
-    <string name="settings_section_title_chat_database">پایگاه داده چت</string>
     <string name="duplicates_label">تکراری‌ها</string>
     <string name="edit_chat_list_menu_action">تغییر</string>
     <string name="v6_2_network_decentralization_enable_flux">Flux را در تنظیمات شبکه و سرورها فعال کنید تا حریم خصوصی فراداده بهتر شود.</string>

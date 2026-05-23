@@ -316,7 +316,6 @@
     <string name="clear_verification">Annulla la verifica</string>
     <string name="connect_button">Connetti</string>
     <string name="connect_via_link">Connetti via link</string>
-    <string name="database_passphrase_and_export">Password del database ed esportazione</string>
     <string name="smp_servers_enter_manually">Inserisci il server manualmente</string>
     <string name="how_to_use_simplex_chat">Come si usa</string>
     <string name="all_your_contacts_will_remain_connected">Tutti i tuoi contatti resteranno connessi.</string>
@@ -677,7 +676,6 @@
     <string name="open_simplex_chat_to_accept_call">Apri SimpleX Chat per accettare la chiamata</string>
     <string name="call_connection_peer_to_peer">peer-to-peer</string>
     <string name="icon_descr_call_pending_sent">Chiamata in sospeso</string>
-    <string name="privacy_and_security">Privacy e sicurezza</string>
     <string name="protect_app_screen">Proteggi la schermata dell\'app</string>
     <string name="show_call_on_lock_screen">Mostra</string>
     <string name="alert_title_skipped_messages">Messaggi saltati</string>
@@ -710,7 +708,6 @@
     <string name="stop_chat_confirmation">Ferma</string>
     <string name="stop_chat_question">Fermare la chat\?</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Ferma la chat per esportare, importare o eliminare il database della chat. Non potrai ricevere e inviare messaggi mentre la chat è ferma.</string>
-    <string name="settings_section_title_support">Supporta SimpleX Chat</string>
     <string name="settings_section_title_themes">Temi</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Questa azione non può essere annullata: il tuo profilo, i contatti, i messaggi e i file andranno persi in modo irreversibile.</string>
     <string name="settings_section_title_you">Tu</string>
@@ -1230,7 +1227,6 @@
     <string name="item_info_no_text">nessun testo</string>
     <string name="non_fatal_errors_occured_during_import">Si sono verificati alcuni errori non fatali durante l\'importazione:</string>
     <string name="settings_restart_app">Riavvia</string>
-    <string name="settings_section_title_app">App</string>
     <string name="shutdown_alert_desc">Le notifiche smetteranno di funzionare fino a quando non riavvierai l\'app</string>
     <string name="settings_shutdown">Spegni</string>
     <string name="shutdown_alert_question">Spegnere\?</string>
@@ -2056,7 +2052,6 @@
     <string name="switching_profile_error_title">Errore nel cambio di profilo</string>
     <string name="select_chat_profile">Seleziona il profilo di chat</string>
     <string name="new_chat_share_profile">Condividi il profilo</string>
-    <string name="settings_section_title_chat_database">Database della chat</string>
     <string name="system_mode_toast">Modalità di sistema</string>
     <string name="migrate_from_device_remove_archive_question">Rimuovere l\'archivio?</string>
     <string name="delete_messages_cannot_be_undone_warning">I messaggi verranno eliminati. Non è reversibile!</string>

@@ -155,7 +155,6 @@
     <string name="allow_disappearing_messages_only_if">Az eltűnő üzenetek küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
     <string name="icon_descr_audio_off">Hang kikapcsolva</string>
     <string name="allow_direct_messages">A közvetlen üzenetek küldése a tagok között engedélyezve van.</string>
-    <string name="settings_section_title_app">Alkalmazás</string>
     <string name="icon_descr_call_progress">Hívás folyamatban</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Mindkét fél hozzáadhat az üzenetekhez reakciókat.</string>
     <string name="both_you_and_your_contact_can_make_calls">Mindkét fél tud hívásokat kezdeményezni.</string>
@@ -421,7 +420,6 @@
     <string name="la_seconds">%d mp</string>
     <string name="delete_files_and_media_all">Összes fájl törlése</string>
     <string name="database_will_be_encrypted">Az adatbázis titkosítva lesz.</string>
-    <string name="database_passphrase_and_export">Adatbázis-jelmondat és -exportálás</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Az adatbázis titkosítva lesz, a jelmondat pedig a Keystore-ban lesz tárolva.</string>
     <string name="enable_automatic_deletion_question">Engedélyezi az automatikus üzenettörlést?</string>
     <string name="delete_contact_menu_action">Törlés</string>
@@ -1023,12 +1021,10 @@
     <string name="smp_save_servers_question">Menti a kiszolgálókat?</string>
     <string name="v4_2_security_assessment_desc">A SimpleX Chat biztonsága a Trail of Bits által lett auditálva.</string>
     <string name="rcv_group_event_updated_group_profile">frissítette a csoportprofilt</string>
-    <string name="settings_section_title_support">SimpleX Chat támogatása</string>
     <string name="simplex_service_notification_title">SimpleX Chat szolgáltatás</string>
     <string name="observer_cant_send_message_title">Ön megfigyelő</string>
     <string name="is_verified">%s ellenőrizve</string>
     <string name="password_to_show">Jelszó a megjelenítéshez</string>
-    <string name="privacy_and_security">Adatvédelem és biztonság</string>
     <string name="button_remove_member">Eltávolítás</string>
     <string name="passcode_set">A jelkód beállítva!</string>
     <string name="sent_message">Elküldött üzenet</string>
@@ -2019,7 +2015,6 @@
     <string name="delete_messages_cannot_be_undone_warning">Az üzenetek törölve lesznek – ez a művelet nem vonható vissza!</string>
     <string name="migrate_from_device_remove_archive_question">Eltávolítja az archívumot?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">A feltöltött adatbázis-archívum véglegesen el lesz távolítva a kiszolgálókról.</string>
-    <string name="settings_section_title_chat_database">Csevegési adatbázis</string>
     <string name="new_chat_share_profile">Profil megosztása</string>
     <string name="system_mode_toast">Rendszerbeállítások használata</string>
     <string name="select_chat_profile">Csevegési profil kiválasztása</string>

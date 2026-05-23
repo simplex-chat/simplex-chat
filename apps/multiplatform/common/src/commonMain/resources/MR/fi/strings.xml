@@ -270,7 +270,6 @@
     <string name="connection_request_sent">Yhteyspyyntö lähetetty!</string>
     <string name="connect_via_link">Yhdistä linkin kautta</string>
     <string name="about_simplex_chat">Tietoja SimpleX Chatistä</string>
-    <string name="database_passphrase_and_export">Tietokannan tunnuslause ja vienti</string>
     <string name="create_profile">Luo profiili</string>
     <string name="create_profile_button">Luo</string>
     <string name="no_call_on_lock_screen">Poista käytöstä</string>
@@ -647,7 +646,6 @@
     <string name="relay_server_if_necessary">Välityspalvelinta käytetään vain tarvittaessa. Toinen osapuoli voi tarkkailla IP-osoitettasi.</string>
     <string name="open_verb">Avaa</string>
     <string name="icon_descr_call_missed">Vastaamaton puhelu</string>
-    <string name="privacy_and_security">Yksityisyys ja turvallisuus</string>
     <string name="no_contacts_selected">Kontakteja ei ole valittu</string>
     <string name="network_option_protocol_timeout">Protokollan aikakatkaisu</string>
     <string name="network_option_tcp_connection_timeout">TCP-yhteyden aikakatkaisu</string>
@@ -835,7 +833,6 @@
     <string name="relay_server_protects_ip">Välityspalvelin suojaa IP-osoitteesi, mutta se voi tarkkailla puhelun kestoa.</string>
     <string name="open_simplex_chat_to_accept_call">Avaa SimpleX Chat hyväksyäksesi puhelun</string>
     <string name="status_no_e2e_encryption">ei e2e-salausta</string>
-    <string name="settings_section_title_support">TUE SIMPLEX CHATia</string>
     <string name="settings_section_title_messages">Viestit ja tiedostot</string>
     <string name="share_address">Jaa osoite</string>
     <string name="users_delete_data_only">Vain paikalliset profiilitiedot</string>
@@ -1228,7 +1225,6 @@
     <string name="custom_time_unit_weeks">viikkoa</string>
     <string name="shutdown_alert_desc">Ilmoitukset lakkaavat toimimasta, kunnes käynnistät sovelluksen uudelleen</string>
     <string name="settings_shutdown">Sulje</string>
-    <string name="settings_section_title_app">Sovellus</string>
     <string name="settings_restart_app">Käynnistä uudelleen</string>
     <string name="shutdown_alert_question">Sulje\?</string>
     <string name="la_mode_off">Pois</string>

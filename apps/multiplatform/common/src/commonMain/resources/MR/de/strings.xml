@@ -344,7 +344,6 @@
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Einstellungen</string>
     <string name="your_simplex_contact_address">Ihre SimpleX-Adresse</string>
-    <string name="database_passphrase_and_export">Datenbank-Passwort &amp; -Export</string>
     <string name="about_simplex_chat">Über SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Wie man SimpleX nutzt</string>
     <string name="markdown_help">Markdown-Hilfe</string>
@@ -542,7 +541,6 @@
 \n2. Die Nachrichten-Entschlüsselung ist fehlgeschlagen, da von Ihnen oder Ihrem Kontakt ein altes Datenbank-Backup genutzt wurde.
 \n3. Die Verbindung wurde kompromittiert.</string>
     <!-- Privacy settings -->
-    <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
     <string name="your_privacy">Privatsphäre</string>
     <string name="protect_app_screen">App-Bildschirm schützen</string>
     <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
@@ -552,7 +550,6 @@
     <string name="settings_section_title_you">Meine Daten</string>
     <string name="settings_section_title_settings">Einstellungen</string>
     <string name="settings_section_title_help">Hilfe</string>
-    <string name="settings_section_title_support">Unterstützung von SimpleX Chat</string>
     <string name="settings_section_title_device">Gerät</string>
     <string name="settings_section_title_chats">Chats</string>
     <string name="settings_developer_tools">Entwicklertools</string>
@@ -1309,7 +1306,6 @@
     <string name="non_fatal_errors_occured_during_import">Während des Imports sind nicht schwerwiegende Fehler aufgetreten:</string>
     <string name="shutdown_alert_question">Herunterfahren\?</string>
     <string name="shutdown_alert_desc">Bis zum Neustart der App erhalten Sie keine Benachrichtigungen mehr</string>
-    <string name="settings_section_title_app">App</string>
     <string name="settings_restart_app">Neustart</string>
     <string name="settings_shutdown">Herunterfahren</string>
     <string name="error_aborting_address_change">Fehler beim Beenden des Adresswechsels</string>
@@ -2126,7 +2122,6 @@
     <string name="new_message">Neue Nachricht</string>
     <string name="error_parsing_uri_desc">Bitte überprüfen Sie, ob der SimpleX-Link korrekt ist.</string>
     <string name="error_parsing_uri_title">Ungültiger Link</string>
-    <string name="settings_section_title_chat_database">Chat-Datenbank</string>
     <string name="switching_profile_error_title">Fehler beim Wechseln des Profils</string>
     <string name="delete_messages_cannot_be_undone_warning">Die Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="new_chat_share_profile">Profil teilen</string>

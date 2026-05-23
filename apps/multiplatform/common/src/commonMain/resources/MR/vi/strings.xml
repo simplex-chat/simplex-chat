@@ -93,7 +93,6 @@
     <string name="notifications_mode_off_desc">Ứng dụng chỉ có thể nhận thông báo khi nó đang chạy, không có dịch vụ nền nào được khởi động</string>
     <string name="app_version_code">Bản dựng ứng dụng: %s</string>
     <string name="appearance_settings">Giao diện</string>
-    <string name="settings_section_title_app">Ứng dụng</string>
     <string name="v5_6_app_data_migration">Di chuyển dữ liệu ứng dụng</string>
     <string name="full_backup">Sao lưu dữ liệu ứng dụng</string>
     <string name="app_passcode_replaced_with_self_destruct">Mã truy cập ứng dụng đã được thay thế bằng mã tự hủy.</string>
@@ -410,7 +409,6 @@
     <string name="database_will_be_encrypted">Cơ sở dữ liệu sẽ được mã hóa.</string>
     <string name="database_migration_in_progress">Việc di chuyển cơ sở dữ liệu đang diễn ra.
 \nQuá trình này có thể mất một vài phút.</string>
-    <string name="database_passphrase_and_export">Mật khẩu cơ sở dữ liệu và xuất dữ liệu</string>
     <string name="passphrase_is_different">Mật khẩu cơ sở dữ liệu khác với mật khẩu được lưu trong Keystore.</string>
     <string name="database_passphrase_is_required">Mật khẩu cơ sở dữ liệu là cần thiết để mở kết nối trò chuyện.</string>
     <string name="database_error">Lỗi cơ sở dữ liệu</string>
@@ -776,7 +774,6 @@
     <string name="file_will_be_received_when_contact_is_online">Tệp sẽ được nhận khi liên hệ của bạn hoạt động, vui lòng chờ hoặc kiểm tra lại sau!</string>
     <string name="share_text_file_status">Trạng thái tệp: %s</string>
     <string name="wallpaper_scale_fill">Lấp đầy</string>
-    <string name="settings_section_title_chat_database">Cơ sở dữ liệu trò chuyện</string>
     <string name="switching_profile_error_title">Lỗi chuyển đổi hồ sơ</string>
     <string name="v5_2_favourites_filter_descr">Lọc các cuộc hội thoại chưa đọc và các cuộc hội thoại yêu thích.</string>
     <string name="v5_1_message_reactions_descr">Cuối cùng, chúng ta đã có chúng! 🚀</string>
@@ -1314,7 +1311,6 @@
     <string name="app_check_for_updates_installed_successfully_desc">Xin vui lòng khởi động lại ứng dụng.</string>
     <string name="servers_info_previously_connected_servers_section_header">Các máy chủ đã kết nối trước đó</string>
     <string name="privacy_redefined">Định hình lại sự riêng tư</string>
-    <string name="privacy_and_security">Quyền riêng tư &amp; bảo mật</string>
     <string name="profile_update_will_be_sent_to_contacts">Bản cập nhật hồ sơ sẽ được gửi đến các liên hệ của bạn.</string>
     <string name="prohibit_message_reactions">Cấm thả cảm xúc tin nhắn.</string>
     <string name="prohibit_calls">Cấm các cuộc gọi thoại/video.</string>
@@ -1896,7 +1892,6 @@
     <string name="v4_6_chinese_spanish_interface_descr">Xin gửi lời cảm ơn tới các người dùng đã góp công qua Weblate!</string>
     <string name="v5_0_polish_interface_descr">Xin gửi lời cảm ơn tới các người dùng đã góp công qua Weblate!</string>
     <string name="system_mode_toast">Chế độ hệ thống</string>
-    <string name="settings_section_title_support">Hỗ trợ SimpleX Chat</string>
     <string name="temporary_file_error">Lỗi tệp tạm thời</string>
     <string name="chat_help_tap_button">Nhấn nút</string>
     <string name="network_option_tcp_connection">Kết nối TCP</string>

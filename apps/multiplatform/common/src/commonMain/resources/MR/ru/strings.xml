@@ -341,7 +341,6 @@
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш адрес SimpleX</string>
-    <string name="database_passphrase_and_export">Пароль и экспорт базы</string>
     <string name="about_simplex_chat">Информация о SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
@@ -541,7 +540,6 @@
     <string name="alert_title_skipped_messages">Пропущенные сообщения</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Это может произойти, когда:\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.\n3. Соединение компроментировано.</string>
     <!-- Privacy settings -->
-    <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
     <string name="protect_app_screen">Защитить экран приложения</string>
     <string name="auto_accept_images">Автоприём изображений</string>
@@ -551,7 +549,6 @@
     <string name="settings_section_title_you">Вы</string>
     <string name="settings_section_title_settings">Настройки</string>
     <string name="settings_section_title_help">Помощь</string>
-    <string name="settings_section_title_support">Поддержать SimpleX Chat</string>
     <string name="settings_section_title_device">Устройство</string>
     <string name="settings_section_title_chats">Чаты</string>
     <string name="settings_developer_tools">Инструменты разработчика</string>
@@ -1347,7 +1344,6 @@
     <string name="only_owners_can_enable_files_and_media">Только владельцы группы могут разрешить файлы и медиа.</string>
     <string name="files_and_media">Файлы и медиа</string>
     <string name="shutdown_alert_question">Выключить\?</string>
-    <string name="settings_section_title_app">Приложение</string>
     <string name="settings_restart_app">Перезапустить</string>
     <string name="settings_shutdown">Выключить</string>
     <string name="receipts_contacts_disable_for_all">Выключить для всех</string>
@@ -2151,7 +2147,6 @@
     <string name="forward_multiple">Переслать сообщения…</string>
     <string name="error_parsing_uri_desc">Проверьте правильность ссылки SimpleX.</string>
     <string name="error_parsing_uri_title">Ошибка ссылки</string>
-    <string name="settings_section_title_chat_database">База данных</string>
     <string name="error_initializing_web_view_wrong_arch">Ошибка инициализации WebView. Убедитесь, что у вас установлен WebView и его поддерживаемая архитектура - arm64.\nОшибка: %s</string>
     <string name="icon_descr_sound_muted">Звук отключен</string>
     <string name="delete_messages_cannot_be_undone_warning">Сообщения будут удалены - это нельзя отменить!</string>

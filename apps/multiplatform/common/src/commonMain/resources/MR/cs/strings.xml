@@ -370,7 +370,6 @@
     <string name="to_verify_compare">Chcete-li ověřit koncové šifrování u svého kontaktu, porovnejte (nebo naskenujte) kód na svých zařízeních.</string>
     <string name="your_settings">Vaše nastavení</string>
     <string name="your_simplex_contact_address">Vaše SimpleX adresa</string>
-    <string name="database_passphrase_and_export">Přístupová fráze k databázi a export</string>
     <string name="your_chat_profiles">Profily chatu</string>
     <string name="chat_with_the_founder">Zaslat otázky a nápady</string>
     <string name="smp_servers_test_server">Test serveru</string>
@@ -445,7 +444,6 @@
     <string name="integrity_msg_bad_id">špatné ID zprávy</string>
     <string name="integrity_msg_duplicate">duplicitní zpráva</string>
     <string name="alert_title_skipped_messages">Přeskočené zprávy</string>
-    <string name="privacy_and_security">Soukromí a zabezpečení</string>
     <string name="your_privacy">Vaše soukromí</string>
     <string name="protect_app_screen">Skrývat aplikaci</string>
     <string name="send_link_previews">Odesílat náhledy odkazů</string>
@@ -701,7 +699,6 @@
 \n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.
 \n3. Spojení je kompromitováno.</string>
     <string name="settings_section_title_you">Vy</string>
-    <string name="settings_section_title_support">Podpořit SimpleX Chat</string>
     <string name="settings_developer_tools">Nástroje pro vývojáře</string>
     <string name="settings_section_title_incognito">Inkognito mód</string>
     <string name="your_chat_database">Vaše chat databáze</string>
@@ -1254,7 +1251,6 @@
     <string name="error_aborting_address_change">Chyba přerušení změny adresy</string>
     <string name="abort_switch_receiving_address_confirm">Přerušit</string>
     <string name="abort_switch_receiving_address_question">Přerušit změnu adresy\?</string>
-    <string name="settings_section_title_app">Aplikace</string>
     <string name="no_filtered_chats">Žádné filtrované chaty</string>
     <string name="abort_switch_receiving_address_desc">Změna adresy bude přerušena. Budou použity staré přijímací adresy.</string>
     <string name="favorite_chat">Oblíbené</string>
@@ -1878,7 +1874,6 @@
     <string name="app_check_for_updates_button_remind_later">Připomenout později</string>
     <string name="app_check_for_updates_notice_title">Zkontrolovat aktualizace</string>
     <string name="privacy_media_blur_radius_off">Vypnuto</string>
-    <string name="settings_section_title_chat_database">Chat databáze</string>
     <string name="member_info_member_disabled">vypnut</string>
     <string name="message_queue_info_server_info">info fronty serveru: %1$s\n\nposlední obdržená zpráva: %2$s</string>
     <string name="network_options_save_and_reconnect">Uložit a připojit znovu</string>
