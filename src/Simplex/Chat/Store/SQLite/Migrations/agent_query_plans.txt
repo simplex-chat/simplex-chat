@@ -549,6 +549,15 @@ SEARCH s USING PRIMARY KEY (conn_id=? AND internal_snd_id=?)
 SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
 
 Query: 
+        UPDATE rcv_messages
+        SET receive_attempts = receive_attempts + 1
+        WHERE conn_id = ? AND internal_id = ?
+        RETURNING receive_attempts
+      
+Plan:
+SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
+
+Query: 
       DELETE FROM conn_confirmations
       WHERE conn_id = ?
     
@@ -1331,9 +1340,9 @@ Query: UPDATE rcv_queues SET rcv_primary = ?, replace_rcv_queue_id = ? WHERE con
 Plan:
 SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=? AND rcv_queue_id=?)
 
-Query: UPDATE rcv_queues SET rcv_service_assoc = 1 WHERE rcv_id = ?
+Query: UPDATE rcv_queues SET rcv_service_assoc = 1 WHERE host = ? AND port = ? AND rcv_id = ?
 Plan:
-SCAN rcv_queues USING COVERING INDEX idx_rcv_queues_client_notice_id
+SEARCH rcv_queues USING PRIMARY KEY (host=? AND port=? AND rcv_id=?)
 
 Query: UPDATE rcv_queues SET to_subscribe = 0 WHERE to_subscribe = 1
 Plan:
