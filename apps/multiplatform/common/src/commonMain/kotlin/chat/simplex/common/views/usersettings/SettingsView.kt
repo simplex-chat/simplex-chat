@@ -33,13 +33,11 @@ import chat.simplex.res.MR
 
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: () -> Unit) {
-  val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
   SettingsLayout(
     stopped,
     chatModel.chatDbEncrypted.value == true,
     remember { chatModel.controller.appPrefs.storeDBPassphrase.state }.value,
-    user?.displayName,
     setPerformLA = setPerformLA,
     showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
     showSettingsModal = { modalView -> { ModalManager.start.showModal(settings = true, cardScreen = true) { modalView(chatModel) } } },
@@ -79,7 +77,6 @@ fun SettingsLayout(
   stopped: Boolean,
   encrypted: Boolean,
   passphraseSaved: Boolean,
-  userDisplayName: String?,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -103,7 +100,7 @@ fun SettingsLayout(
     SectionDividerSpaced()
 
     SectionView {
-      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, userDisplayName, showModal, showCustomModal, showVersion) })
+      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal, showVersion) })
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.advanced_settings), showSettingsModal { AdvancedSettingsView(it, showModal, showSettingsModal, showCustomModal, withAuth) })
     }
@@ -407,7 +404,6 @@ fun PreviewSettingsLayout() {
       stopped = false,
       encrypted = false,
       passphraseSaved = false,
-      userDisplayName = "Alice",
       setPerformLA = { _ -> },
       showModal = { {} },
       showSettingsModal = { {} },

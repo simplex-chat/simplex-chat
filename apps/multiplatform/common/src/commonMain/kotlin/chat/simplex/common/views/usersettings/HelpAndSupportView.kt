@@ -22,18 +22,18 @@ import dev.icerock.moko.resources.compose.stringResource
 @Composable
 fun HelpAndSupportView(
   chatModel: ChatModel,
-  userDisplayName: String?,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
 ) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
+  val userDisplayName = chatModel.currentUser.value?.displayName ?: ""
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.help_and_support))
 
     SectionView(stringResource(MR.strings.settings_section_title_help)) {
-      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName ?: "") }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped)
     }
     SectionDividerSpaced()

@@ -26,24 +26,18 @@ fun NotificationsSettingsView(
 ) {
   NotificationsSettingsLayout(
     notificationsMode = remember { chatModel.controller.appPrefs.notificationsMode.state },
-    showPage = { page ->
+    showNotificationsMode = {
       ModalManager.start.showModalCloseable(true) {
-        when (page) {
-          CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.controller.appPrefs.notificationsMode.state) { changeNotificationsMode(it, chatModel) }
-        }
+        NotificationsModeView(chatModel.controller.appPrefs.notificationsMode.state) { changeNotificationsMode(it, chatModel) }
       }
     },
   )
 }
 
-enum class CurrentPage {
-  NOTIFICATIONS_MODE
-}
-
 @Composable
 fun NotificationsSettingsLayout(
   notificationsMode: State<NotificationsMode>,
-  showPage: (CurrentPage) -> Unit,
+  showNotificationsMode: () -> Unit,
 ) {
   val modes = remember { notificationModes() }
 
@@ -51,7 +45,7 @@ fun NotificationsSettingsLayout(
     AppBarTitle(stringResource(MR.strings.notifications))
     SectionView(null) {
       if (appPlatform == AppPlatform.ANDROID) {
-        SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notifications_mode_title), { showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
+        SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notifications_mode_title), showNotificationsMode) {
           Text(
             modes.firstOrNull { it.value == notificationsMode.value }?.title ?: "",
             maxLines = 1,
