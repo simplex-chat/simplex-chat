@@ -295,6 +295,7 @@
     <string name="chat_console">Konsola czatu</string>
     <string name="smp_servers_check_address">Sprawdź adres serwera i spróbuj ponownie.</string>
     <string name="configure_ICE_servers">Skonfiguruj serwery ICE</string>
+    <string name="database_passphrase_and_export">Hasło do bazy danych i eksport</string>
     <string name="smp_servers_delete_server">Usuń serwer</string>
     <string name="smp_servers_enter_manually">Wprowadź serwer ręcznie</string>
     <string name="how_to">Jak</string>
@@ -490,6 +491,7 @@
 \n1. Wiadomości wygasły w wysyłającym kliencie po 2 dniach lub na serwerze po 30 dniach.
 \n2. Odszyfrowanie wiadomości nie powiodło się, ponieważ Ty lub Twój kontakt użyliście starej kopii zapasowej bazy danych.
 \n3. Połączenie zostało skompromitowane.</string>
+    <string name="privacy_and_security">Prywatność i bezpieczeństwo</string>
     <string name="alert_title_skipped_messages">Pominięte wiadomości</string>
     <string name="your_privacy">Twoja prywatność</string>
     <string name="full_backup">Kopia zapasowa danych aplikacji</string>
@@ -520,6 +522,7 @@
     <string name="settings_section_title_settings">Ustawienia</string>
     <string name="settings_section_title_socks">Proxy SOCKS</string>
     <string name="stop_chat_question">Zatrzymać czat\?</string>
+    <string name="settings_section_title_support">Wspieraj SimpleX Chat</string>
     <string name="settings_section_title_themes">Motywy</string>
     <string name="settings_section_title_you">Ty</string>
     <string name="your_chat_database">Twoja baza danych czatu</string>
@@ -1226,6 +1229,7 @@
     <string name="item_info_no_text">brak tekstu</string>
     <string name="non_fatal_errors_occured_during_import">Podczas importu wystąpiły niekrytyczne błędy:</string>
     <string name="settings_restart_app">Restart</string>
+    <string name="settings_section_title_app">Aplikacja</string>
     <string name="shutdown_alert_desc">Powiadomienia przestaną działać do momentu ponownego uruchomienia aplikacji.</string>
     <string name="settings_shutdown">Wyłączenie</string>
     <string name="shutdown_alert_question">Wyłączyć\?</string>
@@ -2061,6 +2065,7 @@
     <string name="forward_files_in_progress_desc">%1$d plik(ów/i) dalej są pobierane.</string>
     <string name="forward_files_failed_to_receive_desc">%1$d plik(ów/i) nie udało się pobrać.</string>
     <string name="switching_profile_error_title">Błąd zmiany profilu</string>
+    <string name="settings_section_title_chat_database">Baza czatu</string>
     <string name="n_file_errors">%1$d błędów plików:\n%2$s</string>
     <string name="n_other_file_errors">%1$d innych błędów plików.</string>
     <string name="forward_files_messages_deleted_after_selection_desc">Wiadomości zostały usunięte po wybraniu ich.</string>

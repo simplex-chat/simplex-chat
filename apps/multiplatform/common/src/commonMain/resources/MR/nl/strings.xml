@@ -142,6 +142,7 @@
     <string name="database_will_be_encrypted">Database wordt versleuteld.</string>
     <string name="group_member_status_creator">creator</string>
     <string name="delete_address__question">Adres verwijderen\?</string>
+    <string name="database_passphrase_and_export">Database wachtwoord &amp; exporteren</string>
     <string name="passphrase_is_different">Het wachtwoord van de database verschilt van het wachtwoord dat is opgeslagen in de keychain.</string>
     <string name="ttl_d">%dd</string>
     <string name="delete_verb">Verwijderen</string>
@@ -527,6 +528,7 @@
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Controleer of u de juiste link heeft gebruikt of vraag uw contact om u een andere te sturen.</string>
     <string name="image_descr_profile_image">profielfoto</string>
     <string name="privacy_redefined">Privacy opnieuw gedefinieerd</string>
+    <string name="privacy_and_security">Privacy en beveiliging</string>
     <string name="network_error_desc">Controleer uw netwerkverbinding met %1$s en probeer het opnieuw.</string>
     <string name="error_smp_test_certificate">Mogelijk is de certificaat vingerafdruk in het server adres onjuist</string>
     <string name="periodic_notifications">Periodieke meldingen</string>
@@ -729,6 +731,7 @@
     <string name="your_privacy">Uw privacy</string>
     <string name="send_link_previews">Link voorbeelden verzenden</string>
     <string name="settings_section_title_settings">Instellingen</string>
+    <string name="settings_section_title_support">Ondersteuning SimpleX Chat</string>
     <string name="settings_section_title_you">Jij</string>
     <string name="run_chat_section">Chat uitvoeren</string>
     <string name="your_chat_database">Uw chat database</string>
@@ -1223,6 +1226,7 @@
     <string name="item_info_no_text">geen tekst</string>
     <string name="non_fatal_errors_occured_during_import">Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren:</string>
     <string name="shutdown_alert_question">Afsluiten\?</string>
+    <string name="settings_section_title_app">App</string>
     <string name="settings_restart_app">Herstarten</string>
     <string name="settings_shutdown">Afsluiten</string>
     <string name="shutdown_alert_desc">Meldingen werken niet meer totdat u de app opnieuw start</string>
@@ -2051,6 +2055,7 @@
     <string name="select_chat_profile">Selecteer chatprofiel</string>
     <string name="new_chat_share_profile">Profiel delen</string>
     <string name="switching_profile_error_message">Uw verbinding is verplaatst naar %s, maar er is een onverwachte fout opgetreden tijdens het omleiden naar het profiel.</string>
+    <string name="settings_section_title_chat_database">Chat database</string>
     <string name="system_mode_toast">Systeemmodus</string>
     <string name="migrate_from_device_remove_archive_question">Archief verwijderen?</string>
     <string name="delete_messages_cannot_be_undone_warning">Berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!</string>

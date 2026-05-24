@@ -98,6 +98,7 @@
     <string name="rcv_group_and_other_events">și %d alte evenimente</string>
     <string name="answer_call">Răspunde la apel</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore va fi folosit pentru a stoca în siguranță parola după ce repornești aplicația sau schimbi parola — acest lucru va permite primirea de notificări.</string>
+    <string name="settings_section_title_app">Aplicație</string>
     <string name="create_group_button">Creează grup</string>
     <string name="v4_6_audio_video_calls">Apeluri audio și video</string>
     <string name="migrate_from_device_archive_and_upload">Arhivează și încarcă</string>
@@ -683,6 +684,7 @@
     <string name="app_check_for_updates_notice_title">Verifică pentru actualizări</string>
     <string name="create_address_button">Creează</string>
     <string name="privacy_media_blur_radius">Estompează media</string>
+    <string name="settings_section_title_chat_database">Bază de date conversație</string>
     <string name="v6_0_connect_faster_descr">Conectează-te cu prietenii mai ușor.</string>
     <string name="attempts_label">încercări</string>
     <string name="completed">Finalizat</string>
@@ -697,6 +699,7 @@
     <string name="contacts_can_mark_messages_for_deletion">Contactele pot marca mesajele pentru ștergere; tu le vei putea vizualiza.</string>
     <string name="database_downgrade">Downgrade al bazei de date</string>
     <string name="database_migration_in_progress">Migrarea bazei de date este în curs.\nAceasta poate dura câteva minute.</string>
+    <string name="database_passphrase_and_export">Parola și exportul bazei de date</string>
     <string name="all_users">Toate profilurile</string>
     <string name="current_user">Profil actual</string>
     <string name="confirm_delete_contact_question">Confirmi ștergerea contactului?</string>
@@ -1622,6 +1625,7 @@
     <string name="onboarding_notifications_mode_periodic">Periodic</string>
     <string name="network_preset_servers_title">Servere presetate</string>
     <string name="la_please_remember_to_store_password">Reține parola sau păstreaz-o în siguranță – nu există nicio modalitate de a o recupera dacă o pierzi!</string>
+    <string name="privacy_and_security">Confidențialitate și securitate</string>
     <string name="protect_app_screen">Protejează ecranul aplicației</string>
     <string name="settings_section_title_profile_images">Imagini de profil</string>
     <string name="store_passphrase_securely_without_recover">Te rugăm să stochezi parola în siguranță, altfel NU vei putea accesa conversația dacă o pierzi.</string>
@@ -1969,6 +1973,7 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">Aplicația va cere să confirmați descărcările de pe servere de fișiere necunoscute (cu excepția celor .onion sau când proxy-ul SOCKS este activat).</string>
     <string name="la_mode_system">Sistem</string>
     <string name="receipts_section_description_1">Acestea pot fi ignorate în setările de contact și de grup.</string>
+    <string name="settings_section_title_support">Suport SimpleX Chat</string>
     <string name="settings_section_title_socks">Proxy SOCKS</string>
     <string name="settings_section_title_themes">Teme</string>
     <string name="non_fatal_errors_occured_during_import">În timpul importului au apărut câteva erori non-fatale:</string>

@@ -348,6 +348,7 @@
     <string name="delete_pending_connection__question">ลบการเชื่อมต่อที่รอดำเนินการหรือไม่\?</string>
     <string name="icon_descr_help">ความช่วยเหลือ</string>
     <string name="icon_descr_email">อีเมล</string>
+    <string name="database_passphrase_and_export">รหัสผ่านฐานข้อมูล &amp; ส่งออก</string>
     <string name="how_to_use_simplex_chat">วิธีการใช้งาน</string>
     <string name="smp_servers_enter_manually">ใส่เซิร์ฟเวอร์ด้วยตนเอง</string>
     <string name="smp_servers_delete_server">ลบเซิร์ฟเวอร์</string>
@@ -767,6 +768,7 @@
     <string name="read_more_in_github_with_link"><![CDATA[อ่านเพิ่มเติมใน <font color="#0088ff"> GitHub repository </font> ของเรา]]></string>
     <string name="onboarding_notifications_mode_title">การแจ้งเตือนส่วนตัว</string>
     <string name="alert_text_fragment_please_report_to_developers">โปรดรายงานไปยังผู้พัฒนาแอป</string>
+    <string name="privacy_and_security">ความเป็นส่วนตัวและความปลอดภัย</string>
     <string name="protect_app_screen">ปกป้องหน้าจอแอป</string>
     <string name="store_passphrase_securely">โปรดจัดเก็บรหัสผ่านอย่างปลอดภัย คุณจะไม่สามารถเปลี่ยนรหัสผ่านได้หากคุณทำรหัสผ่านหาย</string>
     <string name="store_passphrase_securely_without_recover">โปรดเก็บรหัสผ่านไว้อย่างปลอดภัย คุณจะไม่สามารถเข้าถึงแชทได้หากทำหาย</string>
@@ -843,6 +845,7 @@
     <string name="feature_received_prohibited">ได้รับ, ห้าม</string>
     <string name="v4_4_live_messages_desc">ผู้รับจะเห็นการอัปเดตเมื่อคุณพิมพ์</string>
     <string name="v4_5_reduced_battery_usage">ลดการใช้แบตเตอรี่</string>
+    <string name="settings_section_title_app">แอป</string>
     <string name="shutdown_alert_desc">การแจ้งเตือนจะหยุดทํางานจนกว่าคุณจะปิดและเปิดแอปอีกครั้ง</string>
     <string name="settings_restart_app">รีสตาร์ท</string>
     <string name="save_passphrase_and_open_chat">บันทึกรหัสผ่านและเปิดแชท</string>
@@ -993,6 +996,7 @@
     <string name="alert_title_skipped_messages">ข้อความที่ข้ามไป</string>
     <string name="submit_passcode">ส่ง</string>
     <string name="la_mode_system">ระบบ</string>
+    <string name="settings_section_title_support">สนับสนุน SimpleX Chat</string>
     <string name="settings_section_title_socks">พร็อกซี SOCKS</string>
     <string name="stop_chat_confirmation">หยุด</string>
     <string name="stop_chat_question">หยุดแชท\?</string>

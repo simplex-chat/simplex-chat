@@ -312,6 +312,7 @@
     <string name="scan_QR_code">Skenirati QR kod</string>
     <string name="network_session_mode_server">Server</string>
     <string name="no_call_on_lock_screen">Onemogućiti</string>
+    <string name="settings_section_title_chat_database">Baza podataka chata</string>
     <string name="send_receipts_disabled">onemogućeno</string>
     <string name="import_theme_error">Greška pri uvoženju teme</string>
     <string name="files_are_prohibited_in_group">Datoteke i medijski sadržaji su zabranjeni.</string>
@@ -326,6 +327,7 @@
     <string name="la_seconds">%d sekunde(i)</string>
     <string name="or_scan_qr_code">Ili skenirati QR kod</string>
     <string name="app_check_for_updates_disabled">Onemogućeno</string>
+    <string name="settings_section_title_app">Aplikacija</string>
     <string name="settings_section_title_chats">Razgovori</string>
     <string name="files_and_media_prohibited">Datoteke i medijski sadržaji su zabranjeni!</string>
     <string name="disappearing_prohibited_in_this_chat">Poruke koje nestaju su zabranjene u ovom razgovoru.</string>
@@ -1258,6 +1260,7 @@
     <string name="passcode_set">Pin kod postavljen!</string>
     <string name="all_app_data_will_be_cleared">Svi podaci u aplikaciji su odstranjeni.</string>
     <string name="app_passcode_replaced_with_self_destruct">Pin kod aplikacije je zamenjen pin kodom za samouništenje.</string>
+    <string name="settings_section_title_support">Potpori SimpleX Chat</string>
     <string name="settings_section_title_message_shape">Oblik poruke</string>
     <string name="settings_section_title_icon">Ikona aplikacije</string>
     <string name="database_passphrase">Pristupna fraza baze podataka</string>
@@ -1343,9 +1346,11 @@
     <string name="moderate_verb">Moderirati</string>
     <string name="moderated_items_description">%1$d poruke moderirane %2$s</string>
     <string name="unblock_member_desc">Poruke od %s biće prikazane!</string>
+    <string name="database_passphrase_and_export">Pristupna fraza baze podataka i izvoz</string>
     <string name="network_smp_proxy_mode_unknown_description">Koristite privatno usmeravanje sa nepoznatim serverima.</string>
     <string name="privacy_media_blur_radius_strong">Intenzivno</string>
     <string name="delete_message_mark_deleted_warning">Poruka će biti označena za ostranjivanje. Primaoci će moći da otkriju ovu poruku.</string>
+    <string name="privacy_and_security">Privatnost i bezbednost</string>
     <string name="ntf_channel_messages">SimpleX Chat poruke</string>
     <string name="migrate_from_device_try_again">Možete pokušati ponovo.</string>
     <string name="migrate_from_device_error_saving_settings">Greška pri čuvanju podešavanja</string>

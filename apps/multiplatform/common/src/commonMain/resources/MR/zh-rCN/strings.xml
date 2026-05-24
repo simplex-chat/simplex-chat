@@ -188,6 +188,7 @@
     <string name="description_via_one_time_link_incognito">通过一次性链接隐身</string>
     <string name="only_group_owners_can_enable_voice">只有群主可以启用语音信息。</string>
     <string name="your_privacy">你的隐私设置</string>
+    <string name="privacy_and_security">隐私和安全</string>
     <string name="smp_servers_save">保存服务器</string>
     <string name="incognito_info_allows">它允许在一个聊天资料中有多个匿名连接，而它们之间没有任何共享数据。</string>
     <string name="incognito_info_share">当你与某人共享隐身聊天资料时，该资料将用于他们邀请你加入的群。</string>
@@ -382,6 +383,7 @@
     <string name="error_creating_link_for_group">创建群链接错误</string>
     <string name="group_member_status_introduced">连接中（已介绍）</string>
     <string name="set_password_to_export_desc">数据库使用随机密码进行加密。请在导出前更改它。</string>
+    <string name="database_passphrase_and_export">数据库密码和导出</string>
     <string name="smp_server_test_delete_queue">删除队列</string>
     <string name="smp_servers_delete_server">删除服务器</string>
     <string name="simplex_link_mode_description">描述</string>
@@ -752,6 +754,7 @@
     <string name="next_generation_of_private_messaging">下一代私密通讯软件</string>
     <string name="paste_the_link_you_received">粘贴你收到的链接</string>
     <string name="alert_title_skipped_messages">已跳过消息</string>
+    <string name="settings_section_title_support">支持 SimpleX Chat</string>
     <string name="send_link_previews">发送链接预览</string>
     <string name="settings_section_title_socks">SOCKS 代理</string>
     <string name="stop_chat_question">停止聊天程序？</string>
@@ -1216,6 +1219,7 @@
 \n- 自定义限时消息。
 \n- 编辑消息历史。</string>
     <string name="non_fatal_errors_occured_during_import">导入过程中发生了一些非致命错误：</string>
+    <string name="settings_section_title_app">应用程序</string>
     <string name="settings_restart_app">重启</string>
     <string name="shutdown_alert_desc">通知将停止工作直到你重启应用程序</string>
     <string name="shutdown_alert_question">关闭？</string>
@@ -2035,6 +2039,7 @@
     <string name="new_message">新消息</string>
     <string name="error_parsing_uri_desc">请检查 Simple X 链接是否正确。</string>
     <string name="error_parsing_uri_title">无效链接</string>
+    <string name="settings_section_title_chat_database">聊天数据库</string>
     <string name="system_mode_toast">系统模式</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">上传的数据库存档将永久性从服务器被删除。</string>
     <string name="network_proxy_incorrect_config_desc">确保代理配置正确</string>

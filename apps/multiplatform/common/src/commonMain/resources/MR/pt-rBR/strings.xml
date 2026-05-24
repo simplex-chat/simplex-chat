@@ -189,6 +189,7 @@
     <string name="group_connection_pending">conectando…</string>
     <string name="delete_contact_question">Excluir contato\?</string>
     <string name="confirm_verb">Confirmar</string>
+    <string name="database_passphrase_and_export">Senha e exportação do banco de dados</string>
     <string name="icon_descr_call_connecting">Conectando chamada</string>
     <string name="delete_messages">Excluir mensagens</string>
     <string name="database_passphrase_will_be_updated">Senha de criptografia do banco de dados será atualizada.</string>
@@ -587,6 +588,7 @@
     <string name="integrity_msg_skipped">%1$d mensagem(ens) ignorada(s)</string>
     <string name="protect_app_screen">Proteger a tela do aplicativo</string>
     <string name="send_link_previews">Enviar prévias de links</string>
+    <string name="privacy_and_security">Privacidade e segurança</string>
     <string name="join_group_button">Junte-se</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Você pode compartilhar um link ou um QR code - qualquer um poderá entrar no grupo. Você não perderá membros do grupo se você deletá-los mais tarde.</string>
     <string name="users_delete_data_only">Somente dados de perfil local</string>
@@ -999,6 +1001,7 @@
     <string name="feature_off">desativado</string>
     <string name="downgrade_and_open_chat">Desatualizar e abrir o bate-papo</string>
     <string name="chat_preferences_off">desativado</string>
+    <string name="settings_section_title_support">Apoie SimpleX Chat</string>
     <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
     <string name="confirm_database_upgrades">Confirme as atualizações do banco de dados</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens.</string>
@@ -1250,6 +1253,7 @@
     <string name="fix_connection_not_supported_by_group_member">Correção não suportada pelo membro do grupo</string>
     <string name="conn_event_ratchet_sync_started">concordando com criptografia…</string>
     <string name="allow_to_send_files">Permitir o envio de arquivos e mídia.</string>
+    <string name="settings_section_title_app">App</string>
     <string name="conn_event_ratchet_sync_ok">criptografia OK</string>
     <string name="conn_event_ratchet_sync_required">renegociação de criptografia necessária</string>
     <string name="snd_conn_event_ratchet_sync_agreed">criptografia concordada para %s</string>
@@ -2051,6 +2055,7 @@
     <string name="one_hand_ui">Barras de ferramentas de aplicativos acessível</string>
     <string name="forward_files_failed_to_receive_desc">Falha no baixar de %1$d arquivo(s).</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s mensagens não encaminhadas.</string>
+    <string name="settings_section_title_chat_database">Dados do bate-papo</string>
     <string name="network_proxy_random_credentials">Utilize credenciais aleatórias</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">O arquivo de banco de dados enviado será removido permanentemente dos servidores.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Use credenciais diferentes de proxy para cada conexão.</string>

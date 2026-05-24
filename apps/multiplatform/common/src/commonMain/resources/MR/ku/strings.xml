@@ -337,6 +337,7 @@
     <string name="strikethrough_text">xet/xêz/xîşk</string>
     <string name="privacy_media_blur_radius_strong">Biqewet</string>
     <string name="subscribed">Abonekirî</string>
+    <string name="settings_section_title_support">Pişt bide SimpleX Chatê</string>
     <string name="switch_verb">Biguhere</string>
     <string name="la_mode_system">Sîstem</string>
     <string name="color_mode_system">Sîstem</string>
@@ -633,6 +634,7 @@
     <string name="privacy_chat_list_open_full_web_link">Lînka timam veke</string>
     <string name="privacy_chat_list_open_clean_web_link">Lînka paqij veke</string>
     <string name="settings_section_title_help">Arîkarî</string>
+    <string name="settings_section_title_app">Aplîkasyon</string>
     <string name="settings_section_title_files">Dosya</string>
     <string name="settings_restart_app">Ji nû ve veke</string>
     <string name="settings_section_title_socks">Proksiya SOCKSê</string>

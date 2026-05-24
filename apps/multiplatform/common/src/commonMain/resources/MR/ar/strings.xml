@@ -54,6 +54,7 @@
     <string name="chat_preferences_always">دائمًا</string>
     <string name="allow_to_send_disappearing">السماح بإرسال رسائل تختفي.</string>
     <string name="allow_to_send_voice">السماح بإرسال رسائل صوتية.</string>
+    <string name="settings_section_title_app">تطبيق</string>
     <string name="color_secondary_variant">ثانوي إضافي</string>
     <string name="allow_your_contacts_adding_message_reactions">السماح لجهات اتصالك بإضافة ردود الفعل للرسالة.</string>
     <string name="allow_your_contacts_to_call">السماح لجهات اتصالك بالاتصال بك.</string>
@@ -330,6 +331,7 @@
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d فشل فك تعمية الرسائل.</string>
     <string name="dark_theme">سمة داكنة</string>
     <string name="deleted_description">حُذفت</string>
+    <string name="database_passphrase_and_export">عبارة مرور قاعدة البيانات وتصديرها</string>
     <string name="delete_files_and_media_all">احذف جميع الملفات</string>
     <string name="delete_after">احذف بعد</string>
     <string name="smp_server_test_delete_file">احذف الملف</string>
@@ -836,6 +838,7 @@
     <string name="save_auto_accept_settings">احفظ إعدادات عنوان SimpleX</string>
     <string name="privacy_redefined">إعادة تعريف الخصوصية</string>
     <string name="alert_text_fragment_please_report_to_developers">يُرجى إبلاغ المطوِّرين بذلك.</string>
+    <string name="privacy_and_security">الخصوصية والأمان</string>
     <string name="remove_passphrase">أزل</string>
     <string name="remove_passphrase_from_keychain">إزالة عبارة المرور من Keystore؟</string>
     <string name="enter_correct_current_passphrase">الرجاء إدخال عبارة المرور الحالية الصحيحة.</string>
@@ -1088,6 +1091,7 @@
     <string name="scan_qr_to_connect_to_contact">للاتصال، يمكن لجهة الاتصال مسح رمز QR أو استخدام الرابط في التطبيق.</string>
     <string name="smp_servers_test_servers">اختبر الخوادم</string>
     <string name="first_platform_without_user_ids">لا معرّفات مُستخدم</string>
+    <string name="settings_section_title_support">دعم SimpleX Chat</string>
     <string name="switch_verb">بدِّل</string>
     <string name="color_title">العنوان الرئيسي</string>
     <string name="moderate_message_will_be_marked_warning">سيتم وضع علامة على الرسالة على أنها تحت الإشراف لجميع الأعضاء.</string>
@@ -2039,6 +2043,7 @@
     <string name="migrate_from_device_uploaded_archive_will_be_removed">سيتم إزالة أرشيف قاعدة البيانات المرفوعة نهائيًا من الخوادم.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_user">استخدم بيانات اعتماد الوسيط المختلفة لكل ملف تعريف.</string>
     <string name="network_proxy_random_credentials">استخدم بيانات اعتماد عشوائية</string>
+    <string name="settings_section_title_chat_database">قاعدة بيانات الدردشة</string>
     <string name="forward_files_missing_desc">حُذف %1$d ملف/ات.</string>
     <string name="forward_files_in_progress_desc">لا يزال يتم تنزيل %1$d ملف/ات.</string>
     <string name="network_proxy_auth_mode_no_auth">لا تستخدم بيانات الاعتماد مع الوسيط.</string>

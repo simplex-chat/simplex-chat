@@ -238,6 +238,7 @@
     <string name="icon_descr_email">Email</string>
     <string name="connect_button">Conectar</string>
     <string name="connect_via_link">Conectar mediante enlace</string>
+    <string name="database_passphrase_and_export">Base de Datos y Contraseña</string>
     <string name="contribute">Contribuye</string>
     <string name="core_version">Core versión: v%s</string>
     <string name="delete_image">Eliminar imagen</string>
@@ -649,6 +650,7 @@
     <string name="reject">Rechazar</string>
     <string name="open_verb">Abrir</string>
     <string name="icon_descr_call_pending_sent">Llamada pendiente</string>
+    <string name="privacy_and_security">Privacidad y Seguridad</string>
     <string name="store_passphrase_securely_without_recover">Guarda la contraseña de forma segura, NO podrás acceder al chat si la pierdes.</string>
     <string name="restore_database_alert_desc">Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</string>
     <string name="rcv_group_event_user_deleted">te ha expulsado</string>
@@ -792,6 +794,7 @@
     <string name="network_option_tcp_connection_timeout">Timeout de la conexión TCP</string>
     <string name="theme">Tema</string>
     <string name="set_group_preferences">Establece preferencias de grupo</string>
+    <string name="settings_section_title_support">Soporte SimpleX Chat</string>
     <string name="set_password_to_export">Escribe la contraseña para exportar</string>
     <string name="update_database">Actualizar</string>
     <string name="update_database_passphrase">Actualizar contraseña base de datos</string>
@@ -1226,6 +1229,7 @@
     <string name="item_info_no_text">sin texto</string>
     <string name="non_fatal_errors_occured_during_import">Han ocurrido algunos errores no críticos durante la importación:</string>
     <string name="shutdown_alert_question">¿Salir de SimpleX?</string>
+    <string name="settings_section_title_app">Aplicación</string>
     <string name="settings_restart_app">Reiniciar</string>
     <string name="settings_shutdown">Salir</string>
     <string name="shutdown_alert_desc">Las notificaciones dejarán de funcionar hasta que vuelvas a iniciar la aplicación</string>
@@ -2049,6 +2053,7 @@
     <string name="error_parsing_uri_desc">Por favor, comprueba que el enlace SimpleX es correcto.</string>
     <string name="forward_files_in_progress_desc">%1$d archivo(s) se está(n) descargando todavía.</string>
     <string name="n_other_file_errors">%1$d otro(s) error(es) de archivo.</string>
+    <string name="settings_section_title_chat_database">Base de datos</string>
     <string name="error_forwarding_messages">Error en reenvío de mensajes</string>
     <string name="forward_alert_title_messages_to_forward">¿Reenviar %1$s mensaje(s)?</string>
     <string name="forward_multiple">Reenviar mensajes…</string>

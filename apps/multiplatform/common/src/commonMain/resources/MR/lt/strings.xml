@@ -77,6 +77,7 @@
     <string name="ignore">Nepaisyti</string>
     <string name="icon_descr_flip_camera">Apversti kamerą</string>
     <string name="icon_descr_call_rejected">Atmestas skambutis</string>
+    <string name="privacy_and_security">Privatumas ir saugumas</string>
     <string name="settings_section_title_device">Įrenginys</string>
     <string name="settings_section_title_help">Pagalba</string>
     <string name="encrypt_database">Šifruoti</string>
@@ -117,6 +118,7 @@
     <string name="icon_descr_help">pagalba</string>
     <string name="icon_descr_email">El. paštas</string>
     <string name="scan_code">Skenuoti kodą</string>
+    <string name="database_passphrase_and_export">Duomenų bazės slaptafrazė ir eksportavimas</string>
     <string name="smp_servers_delete_server">Ištrinti serverį</string>
     <string name="error_saving_ICE_servers">Klaida įrašant ICE serverius</string>
     <string name="save_servers_button">Įrašyti</string>
@@ -543,6 +545,7 @@
     <string name="icon_descr_audio_off">Išjungti garsą</string>
     <string name="all_app_data_will_be_cleared">Visi programėlės duomenys bus ištrinti.</string>
     <string name="empty_chat_profile_is_created">Sukuriamas tuščias pokalbių profilis nurodytu pavadinimu ir programėlė atveriama kaip įprasta.</string>
+    <string name="settings_section_title_app">Programėlė</string>
     <string name="keychain_is_storing_securely">Saugiam slaptafrazės saugojimui yra naudojama „Android Keystore“ – tai įgalina pranešimų tarnybą veikti.</string>
     <string name="color_secondary_variant">Papildoma antrinė spalva</string>
     <string name="color_primary_variant">Papildomas akcentavimas</string>
@@ -1214,6 +1217,7 @@
     <string name="set_database_passphrase">Nustatyti duomenų slaptafrazę</string>
     <string name="set_passphrase">Nustatyti slaptafrazę</string>
     <string name="privacy_show_last_messages">Rodyti paskutines žinutes</string>
+    <string name="settings_section_title_support">Palaikykite SimpleX Chat</string>
     <string name="receipts_section_description_1">Jų galima nepaisyti kontaktų ir grupių nustatymuose.</string>
     <string name="enable_automatic_deletion_message">Šis veiksmas negali būti atšauktas - žinutės išsiųstos ir gautos anksčiau nei pasirinkta bus ištrintos. Tai gali užtrukti kelias minutes.</string>
     <string name="rcv_group_event_n_members_connected">%s, %s ir %d kiti nariai prisijungė</string>

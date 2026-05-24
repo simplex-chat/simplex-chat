@@ -393,6 +393,7 @@
     <string name="is_verified">%s est vérifié·e</string>
     <string name="is_not_verified">%s n\'est pas vérifié·e</string>
     <string name="your_simplex_contact_address">Votre adresse SimpleX</string>
+    <string name="database_passphrase_and_export">Phrase secrète et exportation de la base de données</string>
     <string name="chat_with_the_founder">Envoyez vos questions et idées</string>
     <string name="send_us_an_email">Envoyez nous un e-mail</string>
     <string name="smp_servers_preset_address">Adresse du serveur prédéfinie</string>
@@ -596,11 +597,13 @@
     <string name="integrity_msg_bad_hash">mauvais hachage du message</string>
     <string name="integrity_msg_duplicate">message dupliqué</string>
     <string name="alert_title_skipped_messages">Messages manqués</string>
+    <string name="privacy_and_security">Vie privée et sécurité</string>
     <string name="protect_app_screen">Protéger l\'écran de l\'app</string>
     <string name="auto_accept_images">Acceptation automatique des images</string>
     <string name="full_backup">Sauvegarde des données de l\'app</string>
     <string name="settings_section_title_you">Vous</string>
     <string name="settings_section_title_help">Aide</string>
+    <string name="settings_section_title_support">Soutenez SimpleX Chat</string>
     <string name="settings_section_title_incognito">Mode Incognito</string>
     <string name="chat_is_running">Le chat est en cours d\'exécution</string>
     <string name="chat_is_stopped">Le chat est arrêté</string>
@@ -1229,6 +1232,7 @@
     <string name="shutdown_alert_question">Arrêt \?</string>
     <string name="settings_shutdown">Mise à l\'arrêt</string>
     <string name="settings_restart_app">Redémarrer</string>
+    <string name="settings_section_title_app">App</string>
     <string name="abort_switch_receiving_address_confirm">Abandonner</string>
     <string name="error_aborting_address_change">Erreur lors de l\'annulation du changement d\'adresse</string>
     <string name="abort_switch_receiving_address_question">Abandonner le changement d\'adresse \?</string>
@@ -2087,6 +2091,7 @@
     <string name="network_proxy_random_credentials">Utiliser des identifiants aléatoires</string>
     <string name="network_proxy_username">Nom d\'utilisateur</string>
     <string name="delete_messages_cannot_be_undone_warning">Les messages seront supprimés - il n\'est pas possible de revenir en arrière !</string>
+    <string name="settings_section_title_chat_database">Base de données du chat</string>
     <string name="system_mode_toast">Mode système</string>
     <string name="network_session_mode_server">Serveur</string>
     <string name="network_session_mode_server_description">De nouveaux identifiants SOCKS seront utilisées pour chaque serveur.</string>

@@ -340,6 +340,7 @@
     <string name="your_simplex_contact_address">Tava SimpleX kontaktadreses</string>
     <string name="your_chat_profiles">Tavi čata profili</string>
     <string name="create_chat_profile">Izveidot čata profilu</string>
+    <string name="database_passphrase_and_export">Datubāzes parole un eksportēšana</string>
     <string name="about_simplex_chat">Par SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Kā lietot SimpleX Chat</string>
     <string name="markdown_help">Markdown palīdzība</string>
@@ -493,6 +494,7 @@
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Brīdinājums: Fragmentu šifrēšana nav sinhronizēta, vecā datubāze</string>
     <string name="alert_text_encryption_renegotiation_failed">Brīdinājums: Neizdevās šifrēšanas atkārtota vienošanās</string>
     <string name="alert_text_fragment_please_report_to_developers">Brīdinājums: Lūdzu, ziņojiet par šo kļūdu izstrādātājiem</string>
+    <string name="privacy_and_security">Privātums un drošība</string>
     <string name="your_privacy">Tavs privātums</string>
     <string name="protect_app_screen">Aizsargāt lietotnes ekrānu</string>
     <string name="encrypt_local_files">Šifrēt lokālās datnes</string>
@@ -1640,7 +1642,10 @@
     <string name="privacy_chat_list_open_clean_web_link">Privātuma čata saraksta atvērt tīru tīmekļa saiti</string>
     <string name="settings_section_title_you">Iestatījumi jūs</string>
     <string name="settings_section_title_settings">Iestatījumi</string>
+    <string name="settings_section_title_chat_database">Iestatījumi čata datubāze</string>
     <string name="settings_section_title_help">Iestatījumi palīdzība</string>
+    <string name="settings_section_title_support">Iestatījumi atbalsts</string>
+    <string name="settings_section_title_app">Iestatījumi lietotne</string>
     <string name="settings_section_title_device">Iestatījumi ierīce</string>
     <string name="settings_section_title_chats">Iestatījumi čati</string>
     <string name="settings_section_title_files">Iestatījumi faili</string>

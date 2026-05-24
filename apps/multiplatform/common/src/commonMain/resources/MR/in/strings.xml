@@ -44,6 +44,7 @@
     <string name="smp_servers_add_to_another_device">Tambahkan ke perangkat lain</string>
     <string name="turn_off_battery_optimization_button">Boleh</string>
     <string name="network_smp_proxy_mode_always">Selalu</string>
+    <string name="settings_section_title_app">Aplikasi</string>
     <string name="appearance_settings">Tampilan</string>
     <string name="about_simplex_chat">Tentang SimpleX Chat</string>
     <string name="accept">Terima</string>
@@ -434,6 +435,7 @@
     <string name="icon_descr_call_connecting">Menghubungkan panggilan</string>
     <string name="alert_title_skipped_messages">Pesan yang terlewati</string>
     <string name="alert_text_msg_bad_hash">Hash dari pesan sebelumnya berbeda.</string>
+    <string name="privacy_and_security">Privasi &amp; keamanan</string>
     <string name="encrypt_local_files">Enkripsi berkas lokal</string>
     <string name="auto_accept_images">Terima gambar otomatis</string>
     <string name="protect_app_screen">Lindungi layar aplikasi</string>
@@ -642,6 +644,7 @@
     <string name="enable_self_destruct">Aktifkan hapus otomatis</string>
     <string name="set_passcode">Pasang kode sandi</string>
     <string name="settings_section_title_help">Bantuan</string>
+    <string name="settings_section_title_support">Dukung SimpleX Chat</string>
     <string name="settings_section_title_calls">Panggilan</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Mulai ulang aplikasi untuk buat profil obrolan baru.</string>
     <string name="delete_messages">Hapus pesan</string>
@@ -728,6 +731,7 @@
     <string name="privacy_media_blur_radius_strong">Kuat</string>
     <string name="settings_section_title_you">Anda</string>
     <string name="privacy_media_blur_radius_soft">Lunak</string>
+    <string name="settings_section_title_chat_database">Basis data obrolan</string>
     <string name="set_password_to_export">Setel frasa sandi untuk diekspor</string>
     <string name="open_database_folder">Buka folder basis data</string>
     <string name="rcv_group_event_user_deleted">menghapus anda</string>
@@ -812,6 +816,7 @@
     <string name="security_code">Kode keamanan</string>
     <string name="incorrect_code">Kode keamanan salah!</string>
     <string name="how_to_use_simplex_chat">Cara menggunakannya</string>
+    <string name="database_passphrase_and_export">Frasa sandi &amp; ekspor basis data</string>
     <string name="create_chat_profile">Buat profil obrolan</string>
     <string name="markdown_in_messages">Markdown dalam pesan</string>
     <string name="smp_servers_save">Simpan server</string>

@@ -126,6 +126,7 @@
     <string name="all_app_data_will_be_cleared">S\'eliminaran totes les dades de l\'aplicació.</string>
     <string name="empty_chat_profile_is_created">Es crea un perfil de xat buit amb el nom proporcionat i l\'aplicació s\'obre com de costum.</string>
     <string name="app_passcode_replaced_with_self_destruct">La contrasenya de l\'aplicació es substitueix per una contrasenya d\'autodestrucció.</string>
+    <string name="settings_section_title_app">Aplicació</string>
     <string name="settings_section_title_icon">Icona aplicació</string>
     <string name="privacy_media_blur_radius">Desenfocar els mitjans</string>
     <string name="settings_section_title_calls">Trucades</string>
@@ -362,6 +363,7 @@
     <string name="delete_contact_menu_action">Suprimeix</string>
     <string name="delete_group_menu_action">Suprimeix</string>
     <string name="delete_pending_connection__question">Voleu suprimir la connexió pendent?</string>
+    <string name="database_passphrase_and_export">Contrasenya i exportació de la base de dades</string>
     <string name="smp_servers_delete_server">Suprimeix el servidor</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Estableix <i>Utilitza els hosts .onion</i> a No si el servidor SOCKS no els admet.]]></string>
     <string name="app_check_for_updates_disabled">Desactivat</string>
@@ -512,6 +514,7 @@
     <string name="change_self_destruct_mode">Canvia el mode l\'autodestrucció</string>
     <string name="change_self_destruct_passcode">Canvia el codi d\'autodestrucció</string>
     <string name="confirm_passcode">Confirmeu el codi d\'accés</string>
+    <string name="settings_section_title_chat_database">Base de dades dels xats</string>
     <string name="settings_section_title_chats">Xats</string>
     <string name="settings_section_title_chat_theme">Tema del xat</string>
     <string name="settings_section_title_chat_colors">Colors del xat</string>
@@ -1936,6 +1939,7 @@
     <string name="relay_server_protects_ip">El servidor de retransmissió protegeix la vostra adreça IP, però pot veure la durada de la trucada.</string>
     <string name="webrtc_ice_servers">Servidors WebRTC ICE</string>
     <string name="your_ice_servers">Servidors ICE</string>
+    <string name="privacy_and_security">Privacitat i seguretat</string>
     <string name="protect_app_screen">Protegeix la pantalla de l\'aplicació</string>
     <string name="protect_ip_address">Protegir l\'adreça IP</string>
     <string name="your_privacy">Privacitat</string>
@@ -1948,6 +1952,7 @@
     <string name="settings_section_title_settings">Configuració</string>
     <string name="privacy_media_blur_radius_soft">Tou</string>
     <string name="privacy_media_blur_radius_strong">Fort</string>
+    <string name="settings_section_title_support">Suport SimpleX Chat</string>
     <string name="settings_section_title_network_connection">Connexió a la xarxa</string>
     <string name="settings_section_title_private_message_routing">Encaminament de missatges privat</string>
     <string name="chat_item_ttl_none">mai</string>

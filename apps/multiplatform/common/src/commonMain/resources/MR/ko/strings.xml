@@ -216,6 +216,7 @@
     <string name="delete_group_menu_action">삭제</string>
     <string name="delete_pending_connection__question">대기 중인 연결을 삭제할까요\?</string>
     <string name="clear_verification">인증 지우기</string>
+    <string name="database_passphrase_and_export">데이터베이스 암호 &amp; 내보내기</string>
     <string name="smp_servers_delete_server">서버 삭제</string>
     <string name="delete_address">주소 삭제</string>
     <string name="delete_address__question">주소를 삭제할까요\?</string>
@@ -680,6 +681,7 @@
     <string name="reject_contact_button">거절</string>
     <string name="password_to_show">비밀번호 표시</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[사용자 디바이스에만 <b>2계층 종단 간 암호화</b> 로 전송된 사용자 프로필, 연락처, 그룹 및 메시지를 저장되어요.]]></string>
+    <string name="privacy_and_security">개인 정보 보호 및 보안</string>
     <string name="notifications_will_be_hidden">알림은 앱이 중지되기 전까지만 전달될 거예요!</string>
     <string name="only_you_can_send_disappearing">당신만 사라지는 메시지를 보낼 수 있습니다.</string>
     <string name="prohibit_sending_disappearing_messages">사라지는 메시지 전송은 허용되지 않습니다.</string>
@@ -820,6 +822,7 @@
     <string name="settings_section_title_settings">설정</string>
     <string name="send_link_previews">링크 미리보기 보내기</string>
     <string name="settings_section_title_socks">SOCKS 프록시</string>
+    <string name="settings_section_title_support">SimpleX Chat 도와주기</string>
     <string name="settings_section_title_you">나</string>
     <string name="settings_experimental_features">실험적 기능</string>
     <string name="show_dev_options">표시 :</string>
@@ -891,6 +894,7 @@
     <string name="address_section_title">주소</string>
     <string name="color_primary_variant">추가 강조</string>
     <string name="color_background">배경</string>
+    <string name="settings_section_title_app">앱</string>
     <string name="one_time_link_short">일회용 링크</string>
     <string name="add_address_to_your_profile">다른 사람과 대화하기 위한 주소를 프로필에 추가합니다. 프로필 업데이트를 대화로 보냅니다.</string>
     <string name="color_secondary_variant">추가 세컨더리</string>
@@ -994,6 +998,7 @@
     <string name="connections">연결</string>
     <string name="call_service_notification_audio_call">음성 통화</string>
     <string name="in_developing_title">곧 출시 예정입니다!</string>
+    <string name="settings_section_title_chat_database">채팅 데이터베이스</string>
     <string name="settings_section_title_chat_theme">채팅 테마</string>
     <string name="v6_0_connect_faster_descr">친구들과 더 빠르게 연결하세요.</string>
     <string name="remote_ctrl_was_disconnected_title">연결이 중지됨</string>

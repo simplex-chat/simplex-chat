@@ -533,6 +533,7 @@
     <string name="is_not_verified">%s 並未驗證</string>
     <string name="your_simplex_contact_address">你的 SimpleX 聯絡地址</string>
     <string name="your_chat_profiles">你的個人檔案</string>
+    <string name="database_passphrase_and_export">資料庫密碼和匯出</string>
     <string name="send_us_an_email">傳送電郵</string>
     <string name="chat_lock">SimpleX 鎖定</string>
     <string name="smp_servers">SMP 伺服器</string>
@@ -655,6 +656,7 @@
     <string name="status_no_e2e_encryption">沒有端對端加密</string>
     <string name="icon_descr_speaker_off">關閉喇叭</string>
     <string name="settings_section_title_messages">訊息和檔案</string>
+    <string name="privacy_and_security">隱私和安全性</string>
     <string name="settings_section_title_themes">主題</string>
     <string name="v4_4_french_interface">法語介面</string>
     <string name="encrypted_audio_call">端對端加密的語音通話</string>
@@ -666,6 +668,7 @@
     <string name="settings_section_title_device">裝置</string>
     <string name="settings_section_title_help">幫助</string>
     <string name="settings_section_title_settings">設定</string>
+    <string name="settings_section_title_support">幫助 SimpleX Chat</string>
     <string name="settings_section_title_chats">聊天</string>
     <string name="settings_developer_tools">開發者工具</string>
     <string name="settings_section_title_socks">SOCKS 代理伺服器</string>
@@ -1256,6 +1259,7 @@
     <string name="chat_theme_apply_to_all_modes">所有顏色模式</string>
     <string name="chat_theme_apply_to_mode">應用到</string>
     <string name="la_app_passcode">應用程式密碼</string>
+    <string name="settings_section_title_app">應用程式</string>
     <string name="settings_section_title_chat_colors">聊天顏色</string>
     <string name="chat_is_stopped_you_should_transfer_database">聊天已停止。如果你已經在另一台設備使用過此資料庫，你應該在啟動聊天前將資料庫傳輸回來。</string>
     <string name="in_developing_title">即將推出！</string>
@@ -1798,6 +1802,7 @@
     <string name="chat_item_ttl_default">預設（%s）</string>
     <string name="chat_list_contacts">聯絡人</string>
     <string name="contact_list_header_title">你的聯絡人</string>
+    <string name="settings_section_title_chat_database">聊天資料庫</string>
     <string name="privacy_chat_list_open_links_ask">詢問</string>
     <string name="privacy_media_blur_radius_strong">強</string>
     <string name="reset_single_color">重設顏色</string>
