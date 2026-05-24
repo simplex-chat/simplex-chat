@@ -59,11 +59,18 @@ data Format
   -- showText is Nothing for the usual Uri without text
   | HyperLink {showText :: Maybe Text, linkUri :: Text}
   | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
+  | SimplexName {nameType :: SimplexNameType, namespace :: SimplexNamespace, domain :: Text, subDomain :: [Text], original :: Text}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
   | Unknown {json :: J.Value}
+  deriving (Eq, Show)
+
+data SimplexNamespace = NSSimplex | NSTesting | NSWeb
+  deriving (Eq, Show)
+
+data SimplexNameType = NTPublicGroup | NTContact
   deriving (Eq, Show)
 
 mentionedNames :: MarkdownList -> [Text]
@@ -184,6 +191,7 @@ isLink = \case
   Uri -> True
   HyperLink {} -> True
   SimplexLink {} -> True
+  SimplexName {} -> True
   _ -> False
 
 hasLinks :: MarkdownList -> Bool
@@ -202,11 +210,12 @@ markdownP = mconcat <$> A.many' fragmentP
           '_' -> formattedP '_' Italic
           '~' -> formattedP '~' StrikeThrough
           '`' -> formattedP '`' Snippet
-          '#' -> A.char '#' *> secretP
+          '#' -> A.char '#' *> (secretP' <|> simplexNameP NTPublicGroup <|> secretFallback)
           '!' -> styledP <|> wordP
           '@' -> mentionP <|> wordP
           '/' -> commandP <|> wordP
           '[' -> sowLinkP <|> wordP
+          ':' -> (A.char ':' *> simplexNameP NTContact) <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -220,15 +229,51 @@ markdownP = mconcat <$> A.many' fragmentP
       | T.null s || T.head s == ' ' || T.last s == ' ' =
           unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
-    secretP :: Parser Markdown
-    secretP = secret <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile (== '#')
-    secret :: Text -> Text -> Text -> Markdown
-    secret b s a
-      | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
-          unmarked $ '#' `T.cons` ss
-      | otherwise = markdown Secret $ T.init ss
+    secretP' :: Parser Markdown
+    secretP' = do
+      b <- A.takeWhile (== '#')
+      s <- A.takeTill (== '#')
+      a <- A.takeWhile1 (== '#')
+      let content = b <> s <> T.init a
+      if T.null s || T.head s == ' ' || T.last s == ' '
+        then fail "not secret"
+        else pure $ markdown Secret content
+    secretFallback :: Parser Markdown
+    secretFallback = do
+      rest <- A.takeTill (== ' ')
+      pure $ unmarked $ '#' `T.cons` rest
+    simplexNameP :: SimplexNameType -> Parser Markdown
+    simplexNameP nameType = do
+      labels <- nameLabel `A.sepBy1` A.char '.'
+      -- must be followed by space, end of input, or non-formatting punctuation
+      A.peekChar >>= \case
+        Nothing -> pure ()
+        Just c | c == ' ' || (isPunctuation c && c /= '#' && c /= '_' && c /= '*' && c /= '~' && c /= '`') -> pure ()
+        _ -> fail "not terminated"
+      let pfx = case nameType of NTPublicGroup -> "#"; NTContact -> ":"
+          orig = T.intercalate "." labels
+          txt = pfx <> orig
+      case classifyName labels of
+        Just (ns, dom, sub) -> pure $ markdown (SimplexName nameType ns dom sub orig) txt
+        Nothing -> fail "not a simplex name"
+    nameLabel :: Parser Text
+    nameLabel = do
+      c <- A.peekChar'
+      guard $ isAlpha c
+      A.takeWhile1 $ \ch -> isAlpha ch || isDigit ch || ch == '-'
+    classifyName :: [Text] -> Maybe (SimplexNamespace, Text, [Text])
+    classifyName = \case
+      [] -> Nothing
+      [name] -> Just (NSSimplex, name, [])
+      labels -> case last labels of
+        "simplex" -> mkName NSSimplex (init labels)
+        "testing" -> mkName NSTesting (init labels)
+        _ -> Just (NSWeb, T.intercalate "." labels, [])
       where
-        ss = b <> s <> a
+        mkName ns = \case
+          [] -> Nothing
+          [name] -> Just (ns, name, [])
+          parts -> Just (ns, last parts, reverse $ init parts)
     styledP :: Parser Markdown
     styledP = do
       f <- A.char '!' *> ((A.char '-' $> Small) <|> (colored <$> colorP)) <* A.space
@@ -449,6 +494,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Uri -> t
     HyperLink {} -> t
     SimplexLink {} -> t
+    SimplexName {} -> t
     Mention _ -> t
     Command _ -> t
     Email -> t
@@ -493,6 +539,10 @@ commandTextP = do
 -- quotes names that contain spaces or end on punctuation
 viewName :: Text -> Text
 viewName s = if T.any isSpace s || maybe False (isPunctuation . snd) (T.unsnoc s) then "'" <> s <> "'" else s
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "NS") ''SimplexNamespace)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "NT") ''SimplexNameType)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 
