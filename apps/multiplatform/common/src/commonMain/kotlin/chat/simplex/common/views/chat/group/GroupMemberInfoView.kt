@@ -2,12 +2,12 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.InlineTextContent
@@ -423,7 +423,7 @@ fun GroupMemberInfoLayout(
     // TODO [relays] re-enable when relay management ships
     val canRemove = member.canBeRemoved(groupInfo) && member.memberRole != GroupMemberRole.Relay
     if (canBlockForAll || canRemove) {
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
       SectionView {
         if (canBlockForAll) {
           if (member.blockedByAdmin) {
@@ -445,7 +445,7 @@ fun GroupMemberInfoLayout(
 
   @Composable
   fun NonAdminBlockSection() {
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
     SectionView {
       if (member.blockedByAdmin) {
         SettingsActionItem(
@@ -469,7 +469,7 @@ fun GroupMemberInfoLayout(
     ) {
       GroupMemberInfoHeader(member)
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     val contactId = member.memberContactId
 
@@ -533,7 +533,7 @@ fun GroupMemberInfoLayout(
         }
       }
 
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
     val showMemberSupportChat = !openedFromSupportChat &&
@@ -566,7 +566,7 @@ fun GroupMemberInfoLayout(
     }
 
     if (member.contactLink != null) {
-      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title)) {
         SimpleXLinkQRCode(member.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(member.contactLink)) }
@@ -577,8 +577,8 @@ fun GroupMemberInfoLayout(
         } else {
           ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
         }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       }
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       SectionDividerSpaced()
     }
 
@@ -615,6 +615,9 @@ fun GroupMemberInfoLayout(
         InfoRow(stringResource(MR.strings.info_row_relay_address), String.format(generalGetString(MR.strings.via_relay_hostname), hostFromRelayLink(relayAddress)))
         val clipboard = LocalClipboardManager.current
         ShareRelayAddressButton { clipboard.shareText(simplexChatLink(relayAddress)) }
+      }
+      if (groupRelay?.relayStatus == RelayStatus.Rejected) {
+        InfoRow(stringResource(MR.strings.member_info_status), stringResource(MR.strings.member_info_relay_status_rejected_by_operator))
       }
     }
     if (groupInfo.useRelays && member.memberRole == GroupMemberRole.Relay) {

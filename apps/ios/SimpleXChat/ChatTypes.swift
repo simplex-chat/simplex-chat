@@ -2635,11 +2635,12 @@ public struct GroupShortLinkData: Codable, Hashable {
 }
 
 public enum RelayStatus: String, Decodable, Equatable, Hashable {
-    case rsNew = "new"
-    case rsInvited = "invited"
-    case rsAccepted = "accepted"
-    case rsActive = "active"
-    case rsInactive = "inactive"
+    case new
+    case invited
+    case accepted
+    case active
+    case inactive
+    case rejected
 }
 
 public struct RelayProfile: Codable, Equatable, Hashable {
@@ -2708,11 +2709,12 @@ public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
 extension RelayStatus {
     public var text: LocalizedStringKey {
         switch self {
-        case .rsNew: "new"
-        case .rsInvited: "invited"
-        case .rsAccepted: "accepted"
-        case .rsActive: "active"
-        case .rsInactive: "inactive"
+        case .new: "new"
+        case .invited: "invited"
+        case .accepted: "accepted"
+        case .active: "active"
+        case .inactive: "inactive"
+        case .rejected: "rejected"
         }
     }
 }
@@ -4091,6 +4093,7 @@ public enum CIDeleteMode: String, Decodable, Hashable {
     case cidmBroadcast = "broadcast"
     case cidmInternal = "internal"
     case cidmInternalMark = "internalMark"
+    case cidmHistory = "history"
 }
 
 protocol ItemContent {

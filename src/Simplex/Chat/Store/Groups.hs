@@ -95,6 +95,8 @@ module Simplex.Chat.Store.Groups
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
     updateRelayOwnStatus_,
+    isRelayGroupRejected,
+    allowRelayGroup,
     getRelayServedGroups,
     getRelayInactiveGroups,
     createNewContactMemberAsync,
@@ -1363,11 +1365,11 @@ createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {grou
         db
         [sql|
           INSERT INTO group_members
-            ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+            ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
               user_id, local_display_name, contact_profile_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ( (groupId, indexInGroup, MemberId memId, GRRelay, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser, groupMemberId' membership)
+        ( (groupId, indexInGroup, MemberId memId, GRRelay, GCInviteeMember, GSMemInvited, Binary B.empty, fromInvitedBy userContactId IBUser, groupMemberId' membership)
             :. (userId, localDisplayName, memProfileId, currentTs, currentTs)
         )
     liftIO $ insertedRowId db
@@ -1381,7 +1383,12 @@ getCreateRelayForMember db vr gVar user@User {userId, userContactId} GroupInfo {
       maybeFirstRow (toContactMember vr user) $
         DB.query
           db
-          (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ?")
+#if defined(dbPostgres)
+          (groupMemberQuery <> " WHERE m.group_id = ? AND m.relay_link = ? AND is_current_member(m.member_status)")
+#else
+          -- skips GSMemLeft historical rows so re-add allocates a fresh row instead of resurrecting
+          (groupMemberQuery <> " JOIN group_member_status_predicates sp ON m.member_status = sp.member_status WHERE m.group_id = ? AND m.relay_link = ? AND sp.current_member = 1")
+#endif
           (groupId, relayLink)
     createRelayMember = do
       currentTs <- liftIO getCurrentTime
@@ -1395,12 +1402,12 @@ getCreateRelayForMember db vr gVar user@User {userId, userContactId} GroupInfo {
           db
           [sql|
             INSERT INTO group_members
-              ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
                 user_id, local_display_name, contact_profile_id, created_at, updated_at, relay_link
                 )
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, indexInGroup, memberId, GRRelay, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+          ( (groupId, indexInGroup, memberId, GRRelay, GCHostMember, GSMemAccepted, Binary B.empty, fromInvitedBy userContactId IBUnknown)
               :. (userId, localDisplayName, profileId, currentTs, currentTs, relayLink)
           )
         insertedRowId db
@@ -1518,8 +1525,8 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     "UPDATE groups SET creating_in_progress = 0, updated_at = ? WHERE group_id = ?"
     (currentTs, groupId)
 
-createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay = do
+createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> Int64 -> GroupMemberStatus -> RelayStatus -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay memberStatus relayStatus = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile
@@ -1533,13 +1540,13 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           groupPreferences = Nothing,
           memberAdmission = Nothing
         }
-  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) Nothing currentTs
+  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just relayStatus) Nothing currentTs
   -- Store relay request data for recovery
   liftIO $ setRelayRequestData_ groupId currentTs
   ownerMemberId <- insertOwner_ currentTs groupId
   let relayMember = MemberIdRole relayMemberId GRRelay
   -- TODO [member keys] should relays use member keys?
-  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember GSMemAccepted IBUnknown Nothing Nothing currentTs vr
+  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember memberStatus IBUnknown Nothing Nothing currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
@@ -1568,12 +1575,12 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           db
           [sql|
             INSERT INTO group_members
-              ( group_id, index_in_group, member_id, member_role, member_category, member_status,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, GSMemAccepted)
+          ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, memberStatus, Binary B.empty)
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
               :. (minV, maxV)
           )
@@ -1590,6 +1597,41 @@ updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   currentTs <- getCurrentTime
   let inactiveAt_ = if relayStatus == RSInactive then Just currentTs else Nothing
   DB.execute db "UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?" (relayStatus, inactiveAt_, currentTs, groupId)
+
+-- Flip every RSRejected row sharing the targeted group's relay_request_group_link
+-- to RSInactive in one statement; returns the refreshed GroupInfo for the targeted groupId.
+allowRelayGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupInfo
+allowRelayGroup db vr user@User {userId} groupId = do
+  currentTs <- liftIO getCurrentTime
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE groups
+        SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ?
+        WHERE user_id = ?
+          AND relay_request_group_link = (SELECT relay_request_group_link FROM groups WHERE group_id = ?)
+          AND relay_own_status = ?
+      |]
+      (RSInactive, currentTs, currentTs, userId, groupId, RSRejected)
+  getGroupInfo db vr user groupId
+
+isRelayGroupRejected :: DB.Connection -> User -> ShortLinkContact -> IO Bool
+isRelayGroupRejected db User {userId} groupLink =
+  fromMaybe False <$> maybeFirstRow fromOnly (
+    DB.query
+      db
+      [sql|
+        SELECT EXISTS (
+          SELECT 1 FROM groups
+          WHERE user_id = ?
+            AND relay_request_group_link = ?
+            AND relay_own_status = ?
+          LIMIT 1
+        )
+      |]
+      (userId, groupLink, RSRejected)
+  )
 
 getRelayServedGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
 getRelayServedGroups db vr User {userId, userContactId} = do
@@ -1839,12 +1881,12 @@ updatePublicMemberCount db vr user GroupInfo {groupId} = do
     relayCount <- fromMaybe 0 <$> maybeFirstRow fromOnly
       (DB.query
         db
-        [sql|
-          SELECT COUNT(1) FROM group_members
-          WHERE group_id = ? AND member_role = ?
-            AND member_status IN (?,?,?,?,?,?,?)
-        |]
-        (groupId, GRRelay, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, GSMemCreator))
+#if defined(dbPostgres)
+        "SELECT COUNT(1) FROM group_members WHERE group_id = ? AND member_role = ? AND is_current_member(member_status)"
+#else
+        "SELECT COUNT(1) FROM group_members m JOIN group_member_status_predicates sp ON m.member_status = sp.member_status WHERE m.group_id = ? AND m.member_role = ? AND sp.current_member = 1"
+#endif
+        (groupId, GRRelay))
     let publicCount = max 0 (totalCount - relayCount) :: Int64
     currentTs <- getCurrentTime
     DB.execute db "UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id = ?" (publicCount, currentTs, groupId)
@@ -2120,7 +2162,7 @@ updateGroupMemberRole db User {userId} GroupMember {groupMemberId} memRole =
 
 setMemberVectorNewRelations :: DB.Connection -> GroupMember -> [(Int64, (IntroductionDirection, MemberRelation))] -> IO ()
 setMemberVectorNewRelations db GroupMember {groupMemberId} relations = do
-  v_ <- maybeFirstRow fromOnly $
+  v_ <- fmap join . maybeFirstRow fromOnly $
     DB.query
       db
       ( "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
@@ -2184,7 +2226,7 @@ setMemberVectorRelationConnected db GroupMember {groupMemberId} GroupMember {ind
 
 getMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO ByteString
 getMemberRelationsVector db GroupMember {groupMemberId} =
-  ExceptT . firstRow fromOnly (SEGroupMemberNotFound groupMemberId) $
+  ExceptT . firstRow (fromMaybe B.empty . fromOnly) (SEGroupMemberNotFound groupMemberId) $
     DB.query
       db
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"

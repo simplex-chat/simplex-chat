@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
+import chat.simplex.common.acquireSingleInstance
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
@@ -19,6 +20,7 @@ import kotlinx.coroutines.*
 import java.io.File
 
 fun main() {
+  if (!acquireSingleInstance()) return
   // Disable hardware acceleration
   //System.setProperty("skiko.renderApi", "SOFTWARE")
   initHaskell()

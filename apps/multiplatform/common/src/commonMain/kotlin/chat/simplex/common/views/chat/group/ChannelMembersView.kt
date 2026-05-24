@@ -44,7 +44,7 @@ fun ChannelMembersView(
 
     if (groupInfo.isOwner) {
       val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
-      SectionView(title = subscriberCountStr(subscriberCount).uppercase()) {
+      SectionView(title = subscriberCountStr(subscriberCount)) {
         SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           ChannelMemberRow(groupInfo.membership, user = true, showRole = true)
         }

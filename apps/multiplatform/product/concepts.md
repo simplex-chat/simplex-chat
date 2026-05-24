@@ -49,6 +49,7 @@ This document provides a structured mapping between product-level concepts, thei
 | PC28 | Chat Tags | [README.md](README.md) (Navigation Map) | [spec/state.md](../spec/state.md) | `common/.../views/chatlist/TagListView.kt`, `ChatListView.kt` | `Types.hs` (`ChatTag`), `Controller.hs` |
 | PC29 | User Address | [README.md](README.md) (Contacts, User Management) | [spec/api.md](../spec/api.md) | `common/.../views/usersettings/UserAddressView.kt`, `UserAddressLearnMore.kt` | `Controller.hs` (`APICreateMyAddress`) |
 | PC30 | Member Support Chat | [README.md](README.md) (Groups) | [spec/api.md](../spec/api.md) | `common/.../views/chat/group/MemberSupportView.kt`, `MemberSupportChatView.kt`, `MemberAdmission.kt` | `Messages.hs` (`GroupChatScope`), `Controller.hs` |
+| PC31 | Channels (Relays) | [views/group-info.md](views/group-info.md) | [spec/client/chat-view.md](../spec/client/chat-view.md), [spec/state.md](../spec/state.md) | `common/.../model/ChatModel.kt` (`RelayStatus` incl. `RsRejected`, `GroupRelay`, `GroupMemberRole.Relay`, `GroupMemberStatus.MemRejected`), `common/.../views/chat/group/ChannelRelaysView.kt`, `GroupMemberInfoView.kt` (rejected-status row), `common/.../views/newchat/AddChannelView.kt` (`RelayStatusIndicator` rejected branch), `common/.../views/chat/group/AddGroupRelayView.kt` | `Controller.hs` (`APIAddGroupRelays`, `APIAllowRelayGroup`, `XGrpRelayReject` CONF handler) |
 
 **Legend for abbreviated paths:**
 - `common/.../` expands to `common/src/commonMain/kotlin/chat/simplex/common/`

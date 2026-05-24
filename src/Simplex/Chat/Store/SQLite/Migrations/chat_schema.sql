@@ -734,7 +734,6 @@ CREATE TABLE delivery_jobs(
   job_scope_spec_tag TEXT,
   job_scope_include_pending INTEGER,
   job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
@@ -742,6 +741,8 @@ CREATE TABLE delivery_jobs(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  sender_group_member_ids TEXT
 ) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
@@ -1218,9 +1219,6 @@ CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON delivery_jobs(
   job_scope_support_gm_id
 );
-CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(
-  single_sender_group_member_id
-);
 CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
   group_id,
   worker_scope,
@@ -1295,6 +1293,12 @@ CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
   item_viewed,
   item_ts
 );
+CREATE INDEX idx_groups_relay_request_group_link
+ON groups(
+  user_id,
+  relay_request_group_link
+)
+WHERE relay_request_group_link IS NOT NULL;
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

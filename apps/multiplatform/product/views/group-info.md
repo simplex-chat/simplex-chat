@@ -130,6 +130,30 @@ Shown when `developerTools` preference is enabled:
 
 Business chats use alternative labels: "Delete chat" instead of "Delete group".
 
+### Channel Relays View (`ChannelRelaysView`)
+
+Accessible from channel info; shows relay members (role == `Relay`):
+
+| Element | Description |
+|---|---|
+| Relay list | Filtered from `chatModel.groupMembers` by `Relay` role; excludes `MemRemoved` and `MemGroupDeleted` |
+| Relay row | Profile image, relay display name, status text (`RelayStatus.text` or connection status via `relayConnStatus`) |
+| Relay tap | Navigates to `GroupMemberInfoView` with `groupRelay:` parameter |
+| Add relay entry | Owner-only "Add relay" action opens `AddGroupRelayView`; the available-to-add list excludes any `chatRelayId` already present in `groupRelays` (regardless of `relayStatus`), so inactive or rejected relays cannot be re-added without first removing them via the row's long-press menu |
+| Long-press menu | Owner-only "Remove relay" action for relays that can be removed |
+| Empty state | "No chat relays" |
+| Footer | "Chat relays forward messages to channel subscribers." |
+
+Owner sees relay status from `apiGetGroupRelays`; non-owner sees connection status only.
+
+#### Channel Member Info — relay surface (in `GroupMemberInfoView`)
+
+| Element | Description |
+|---|---|
+| Relay link info row | Shown when `member.relayLink` exists, displays `hostFromRelayLink(link)` |
+| Relay address info row | Shown when `groupRelay?.userChatRelay.address` exists, with "Share relay address" button |
+| Status row (rejected) | Shown when `groupRelay?.relayStatus == RelayStatus.RsRejected`: "Status: rejected by relay operator". The relay rejected the invitation to rejoin this channel after a prior `/leave`; the owner-side `GroupMember.memberStatus` is also set to `MemLeft` so the relay renders identically to one that explicitly left. Clearable only by the relay operator running `/group allow #<channel>`. |
+
 ## Source Files
 
 | File | Path |
@@ -143,3 +167,6 @@ Business chats use alternative labels: "Delete chat" instead of "Delete group".
 | `WelcomeMessageView.kt` | `views/chat/group/WelcomeMessageView.kt` |
 | `MemberAdmission.kt` | `views/chat/group/MemberAdmission.kt` |
 | `MemberSupportView.kt` | `views/chat/group/MemberSupportView.kt` |
+| `ChannelRelaysView.kt` | `views/chat/group/ChannelRelaysView.kt` |
+| `AddGroupRelayView.kt` | `views/chat/group/AddGroupRelayView.kt` |
+| `AddChannelView.kt` (`RelayStatusIndicator`) | `views/newchat/AddChannelView.kt` |

@@ -182,7 +182,7 @@ fun CIImageView(
       .then(
         if (!smallView) {
           val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
-          Modifier.width(w).aspectRatio(previewBitmap.width.toFloat() / previewBitmap.height.toFloat())
+          Modifier.width(w).aspectRatio((previewBitmap.width.toFloat() / previewBitmap.height.toFloat()).coerceAtLeast(1f / 2.33f))
         } else Modifier
       )
       .desktopModifyBlurredState(!smallView, blurred, showMenu),
