@@ -972,6 +972,7 @@
   <string name="your_simplex_contact_address">Your SimpleX address</string>
   <string name="your_chat_profiles">Your chat profiles</string>
   <string name="create_chat_profile">Create chat profile</string>
+  <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About SimpleX Chat</string>
   <string name="how_to_use_simplex_chat">How to use it</string>
   <string name="markdown_help">Markdown help</string>
@@ -1456,6 +1457,7 @@
   <string name="alert_text_fragment_please_report_to_developers">Please report it to the developers.</string>
 
   <!-- Privacy settings -->
+  <string name="privacy_and_security">Privacy &amp; security</string>
   <string name="your_privacy">Your privacy</string>
   <string name="protect_app_screen">Protect app screen</string>
   <string name="encrypt_local_files">Encrypt local files</string>
@@ -1537,7 +1539,10 @@
   <!-- Settings sections -->
   <string name="settings_section_title_you">You</string>
   <string name="settings_section_title_settings">Settings</string>
+  <string name="settings_section_title_chat_database">Chat database</string>
   <string name="settings_section_title_help">Help</string>
+  <string name="settings_section_title_support">Support SimpleX Chat</string>
+  <string name="settings_section_title_app">App</string>
   <string name="settings_section_title_device">Device</string>
   <string name="settings_section_title_chats">Chats</string>
   <string name="settings_section_title_files">Files</string>
