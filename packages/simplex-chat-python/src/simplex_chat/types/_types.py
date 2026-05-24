@@ -1687,6 +1687,14 @@ class Format_simplexLink(TypedDict):
     simplexUri: str
     smpHosts: list[str]  # non-empty
 
+class Format_simplexName(TypedDict):
+    type: Literal["simplexName"]
+    nameType: "SimplexNameType"
+    namespace: "SimplexNamespace"
+    domain: str
+    subDomain: list[str]
+    original: str
+
 class Format_command(TypedDict):
     type: Literal["command"]
     commandStr: str
@@ -1712,13 +1720,14 @@ Format = (
     | Format_uri
     | Format_hyperLink
     | Format_simplexLink
+    | Format_simplexName
     | Format_command
     | Format_mention
     | Format_email
     | Format_phone
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "command", "mention", "email", "phone"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
@@ -2681,6 +2690,10 @@ class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
+
+SimplexNameType = Literal["publicGroup", "contact"]
+
+SimplexNamespace = Literal["simplex", "testing", "web"]
 
 SndCIStatusProgress = Literal["partial", "complete"]
 

@@ -165,6 +165,8 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameType](#simplexnametype)
+- [SimplexNamespace](#simplexnamespace)
 - [SndCIStatusProgress](#sndcistatusprogress)
 - [SndConnEvent](#sndconnevent)
 - [SndError](#snderror)
@@ -2091,6 +2093,14 @@ SimplexLink:
 - simplexUri: string
 - smpHosts: [string]
 
+SimplexName:
+- type: "simplexName"
+- nameType: [SimplexNameType](#simplexnametype)
+- namespace: [SimplexNamespace](#simplexnamespace)
+- domain: string
+- subDomain: [string]
+- original: string
+
 Command:
 - type: "command"
 - commandStr: string
@@ -3434,6 +3444,25 @@ A_QUEUE:
 - "group"
 - "channel"
 - "relay"
+
+
+---
+
+## SimplexNameType
+
+**Enum type**:
+- "publicGroup"
+- "contact"
+
+
+---
+
+## SimplexNamespace
+
+**Enum type**:
+- "simplex"
+- "testing"
+- "web"
 
 
 ---

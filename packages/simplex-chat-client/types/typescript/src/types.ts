@@ -2358,6 +2358,7 @@ export type Format =
   | Format.Uri
   | Format.HyperLink
   | Format.SimplexLink
+  | Format.SimplexName
   | Format.Command
   | Format.Mention
   | Format.Email
@@ -2375,6 +2376,7 @@ export namespace Format {
     | "uri"
     | "hyperLink"
     | "simplexLink"
+    | "simplexName"
     | "command"
     | "mention"
     | "email"
@@ -2429,6 +2431,15 @@ export namespace Format {
     linkType: SimplexLinkType
     simplexUri: string
     smpHosts: string[] // non-empty
+  }
+
+  export interface SimplexName extends Interface {
+    type: "simplexName"
+    nameType: SimplexNameType
+    namespace: SimplexNamespace
+    domain: string
+    subDomain: string[]
+    original: string
   }
 
   export interface Command extends Interface {
@@ -3839,6 +3850,17 @@ export enum SimplexLinkType {
   Group = "group",
   Channel = "channel",
   Relay = "relay",
+}
+
+export enum SimplexNameType {
+  PublicGroup = "publicGroup",
+  Contact = "contact",
+}
+
+export enum SimplexNamespace {
+  Simplex = "simplex",
+  Testing = "testing",
+  Web = "web",
 }
 
 export enum SndCIStatusProgress {
