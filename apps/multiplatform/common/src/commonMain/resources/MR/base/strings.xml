@@ -194,6 +194,11 @@
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="unsupported_connection_link">Unsupported connection link</string>
   <string name="link_requires_newer_app_version_please_upgrade">This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</string>
+  <string name="unsupported_channel_name">Unsupported channel name</string>
+  <string name="unsupported_contact_name">Unsupported contact name</string>
+  <string name="channel_name_requires_newer_app_version">Connecting via channel name requires a newer app version.</string>
+  <string name="contact_name_requires_newer_app_version">Connecting via contact name requires a newer app version.</string>
+  <string name="please_upgrade_the_app">Please upgrade the app.</string>
   <string name="channel_temporarily_unavailable">Channel temporarily unavailable</string>
   <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>

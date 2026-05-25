@@ -59,12 +59,20 @@ data Format
   -- showText is Nothing for the usual Uri without text
   | HyperLink {showText :: Maybe Text, linkUri :: Text}
   | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
-  | SimplexName {nameType :: SimplexNameType, namespace :: SimplexNamespace, domain :: Text, subDomain :: [Text], original :: Text}
+  | SimplexName {nameInfo :: SimplexNameInfo}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
   | Unknown {json :: J.Value}
+  deriving (Eq, Show)
+
+data SimplexNameInfo = SimplexNameInfo
+  { nameType :: SimplexNameType,
+    namespace :: SimplexNamespace,
+    domain :: Text,
+    subDomain :: [Text]
+  }
   deriving (Eq, Show)
 
 data SimplexNamespace = NSSimplex | NSTesting | NSWeb
@@ -254,7 +262,7 @@ markdownP = mconcat <$> A.many' fragmentP
           orig = T.intercalate "." labels
           txt = pfx <> orig
       case classifyName labels of
-        Just (ns, dom, sub) -> pure $ markdown (SimplexName nameType ns dom sub orig) txt
+        Just (ns, dom, sub) -> pure $ markdown (SimplexName $ SimplexNameInfo nameType ns dom sub) txt
         Nothing -> fail "not a simplex name"
     nameLabel :: Parser Text
     nameLabel = do
@@ -543,6 +551,8 @@ viewName s = if T.any isSpace s || maybe False (isPunctuation . snd) (T.unsnoc s
 $(JQ.deriveJSON (enumJSON $ dropPrefix "NS") ''SimplexNamespace)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "NT") ''SimplexNameType)
+
+$(JQ.deriveJSON defaultJSON ''SimplexNameInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

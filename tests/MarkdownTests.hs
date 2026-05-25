@@ -380,7 +380,7 @@ command' :: Text -> Text -> FormattedText
 command' = FormattedText . Just . Command
 
 sname :: SimplexNameType -> SimplexNamespace -> Text -> [Text] -> Text -> Markdown
-sname nt ns dom sub orig = markdown (SimplexName nt ns dom sub orig) (pfx <> orig)
+sname nt ns dom sub txt = markdown (SimplexName $ SimplexNameInfo nt ns dom sub) (pfx <> txt)
   where
     pfx = case nt of NTPublicGroup -> "#"; NTContact -> ":"
 
