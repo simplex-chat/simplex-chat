@@ -4136,7 +4136,6 @@ processChatCommand vr nm = \case
                       plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
                       pure (con cReq, plan)
             where
-              -- True when the link is for a relay-mediated group whose type this app version cannot join (forward-compatibility gate).
               unsupportedGroupType = \case
                 Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
                 _ -> False
