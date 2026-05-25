@@ -1225,7 +1225,7 @@ getRemovedMembersToCleanup db vr user@User {userId} cutoffTs =
   map (toContactMember vr user)
     <$> DB.query
       db
-      (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at IS NOT NULL AND m.removed_at < ?")
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at < ?")
       (userId, cutoffTs)
 
 getGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
