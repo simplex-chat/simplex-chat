@@ -360,6 +360,12 @@ data ChannelMsgInfo = ChannelMsgInfo
 -- of a comment message. Channel posts have no member identity, so memberId
 -- is Nothing for both subscriber-received (CIChannelRcv) and owner-sent
 -- (CIGroupSnd with showGroupAsSender = True) cases.
+--
+-- NOTE: only `msgId` is consumed by the comment-parent path
+-- (resolveCommentParent / getChannelMsgInfoBySharedMsgId). `sentAt`, `sent`,
+-- and `memberId` are dead bytes on the wire for this use of MsgRef. The type
+-- is shared with quotes (which DO read all fields) so the structural fix
+-- would be a ParentRef sum type — deferred to a future PR.
 channelMsgRef :: ChannelMsgInfo -> MsgRef
 channelMsgRef ChannelMsgInfo {channelMsgItem = CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs}}, channelMsgSharedId} =
   MsgRef {msgId = Just channelMsgSharedId, sentAt = itemTs, sent = isSnd, memberId = Nothing}
@@ -547,9 +553,13 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     -- Set on a comment row; references the parent channel post.
     parentChatItemId :: Maybe ChatItemId,
     -- Set on a parent channel post; running total of non-deleted comments.
-    commentsTotal :: Int,
+    -- IntDef0 so an older remote host that omits this field doesn't trigger
+    -- CInfoInvalidJSON in a newer remote controller.
+    commentsTotal :: IntDef0,
     -- Set on a parent channel post; True locks the post against new comments.
-    commentsDisabled :: Bool,
+    -- BoolDef so an older remote host that omits this field doesn't trigger
+    -- CInfoInvalidJSON in a newer remote controller.
+    commentsDisabled :: BoolDef,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -558,10 +568,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 type ShowGroupAsSender = Bool
 
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgSigStatus -> Maybe ChatItemId -> Int -> Bool -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgSigned parentChatItemId commentsTotal commentsDisabled createdAt updatedAt =
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgSigned parentChatItemId commentsTotal_ commentsDisabled_ createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
       hasLink = BoolDef hasLink_
+      commentsTotal = IntDef0 commentsTotal_
+      commentsDisabled = BoolDef commentsDisabled_
    in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgSigned, parentChatItemId, commentsTotal, commentsDisabled, createdAt, updatedAt}
 
 deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
@@ -595,8 +607,8 @@ dummyMeta itemId ts itemText =
       showGroupAsSender = False,
       msgSigned = Nothing,
       parentChatItemId = Nothing,
-      commentsTotal = 0,
-      commentsDisabled = False,
+      commentsTotal = IntDef0 0,
+      commentsDisabled = BoolDef False,
       createdAt = ts,
       updatedAt = ts
     }

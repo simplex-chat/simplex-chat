@@ -201,8 +201,8 @@ toggleNtf m ntfOn =
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
 
-prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> Maybe MsgRef -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
-prepareGroupMsg db user g@GroupInfo {membership} msgScope parentRef_ showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
+prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> Maybe MsgRef -> Maybe MsgPrefs -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
+prepareGroupMsg db user g@GroupInfo {membership} msgScope parentRef_ prefs_ showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
   (mc', quotedItem_) <- case (quotedItemId_, itemForwarded) of
     (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
     (Nothing, Just _) -> pure (mcForward mc, Nothing)
@@ -216,7 +216,7 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope parentRef_ showGroupAs
           quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
       pure (mcQuote QuotedMsg {msgRef, content = qmc'} mc, Just quotedItem)
     (Just _, Just _) -> throwError SEInvalidQuote
-  let mc'' = mc' {mentions = MsgMentions mentions, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender, parent = parentRef_}
+  let mc'' = mc' {mentions = MsgMentions mentions, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender, parent = parentRef_, prefs = prefs_}
   pure (XMsgNew mc'', quotedItem_)
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, Maybe GroupMember)
@@ -348,7 +348,7 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
         | not (useRelays' gInfo) -> Just GFComments
         | not (groupFeatureAllowed SGFComments gInfo) -> Just GFComments
         | isJust itemDeleted -> Just GFComments
-        | commentsDisabled -> Just GFComments
+        | isTrue commentsDisabled -> Just GFComments
         | otherwise -> Nothing
       Nothing -> Nothing
   where
@@ -373,6 +373,14 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
 -- True iff the channel post's commenting window has expired.
 -- The group preference `comments.closeAfter` is the duration in seconds
 -- since post creation; `Nothing` means the window never closes.
+--
+-- TODO: itemTs here is the receiver's local broker timestamp. Different
+-- receivers see different itemTs for the same channel post, so the close
+-- window starts at slightly different absolute times per recipient. Drift
+-- is usually small but is unbounded for late joiners. A future fix would
+-- broadcast a canonical createdAt on the wire (e.g. as a field on MsgPrefs
+-- alongside commentsDisabled / commentsTotal) and measure the window
+-- against that single owner-set time.
 commentsClosed :: GroupInfo -> Maybe ChannelMsgInfo -> UTCTime -> Bool
 commentsClosed
   GroupInfo {fullGroupPreferences = FullGroupPreferences {comments = CommentsGroupPreference {closeAfter}}}
@@ -1299,14 +1307,21 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
-              let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
+              let CIMeta {itemTs, itemSharedMsgId, itemTimed, commentsTotal, commentsDisabled} = meta
                   quotedItemId_ = quoteItemId =<< quotedItem
                   fInv_ = fst <$> fInvDescr_
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
                   asGroup = isNothing sender_
+                  -- Channel posts in history replay carry the parent's current
+                  -- comments state so new joiners see the right count and lock
+                  -- status. Comments themselves are filtered out of history by
+                  -- getGroupHistoryItems, so this only fires for parent posts.
+                  prefs_
+                    | asGroup = Just MsgPrefs {commentsDisabled = Just (isTrue commentsDisabled), commentsTotal = Just (unIntDef0 commentsTotal)}
+                    | otherwise = Nothing
               -- TODO [knocking] send history to other scopes too?
-              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing Nothing asGroup mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
+              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing Nothing prefs_ asGroup mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
               -- for channel messages default chat version range to membership range
               let senderVRange = maybe (memberChatVRange' membership) memberChatVRange' sender_
                   xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}

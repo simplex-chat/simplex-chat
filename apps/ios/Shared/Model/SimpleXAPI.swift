@@ -542,22 +542,18 @@ func apiReorderChatTags(tagIds: [Int64]) async throws {
     try await sendCommandOkResp(.apiReorderChatTags(tagIds: tagIds))
 }
 
-func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool = false, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, sendAsGroup: sendAsGroup, live: live, ttl: ttl, composedMessages: composedMessages)
+// Send messages into a chat. For comments on a channel post, pass `parentItemId`
+// (the local ChatItemId of the parent post); scope and parentItemId are mutually
+// exclusive — the Haskell handler rejects messages that set both.
+func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, parentItemId: Int64? = nil, sendAsGroup: Bool = false, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, parentItemId: parentItemId, sendAsGroup: sendAsGroup, live: live, ttl: ttl, composedMessages: composedMessages)
     return await processSendMessageCmd(toChatType: type, cmd: cmd)
 }
 
-// Send a comment on a channel post. The target chat is always a channel (group with useRelays);
-// the recipient is the relay, which forwards the comment to other subscribers.
-// Returns the locally-created ChatItem(s) for the sender's view; typically a singleton.
-func apiSendComment(groupId: Int64, parentItemId: Int64, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiSendComment(groupId: groupId, parentItemId: parentItemId, live: live, ttl: ttl, composedMessages: composedMessages)
-    return await processSendMessageCmd(toChatType: .group, cmd: cmd)
-}
-
 // Toggle commentsDisabled on a channel post via XMsgUpdate.prefs. The Haskell handler
-// returns CRCmdOk; the local parent ChatItem update arrives via the owner's own echo
-// of XMsgUpdate.prefs through the standard receive pipeline. No item returned here.
+// returns CRCmdOk; the owner's UI reconciles via the CEvtChatItemUpdated event emitted
+// by the command handler after the broadcast (the owner does not receive their own
+// broadcast back). No item returned here.
 func apiSetCommentsDisabled(groupId: Int64, parentItemId: Int64, disabled: Bool) async throws {
     try await sendCommandOkResp(.apiSetCommentsDisabled(groupId: groupId, parentItemId: parentItemId, disabled: disabled))
 }

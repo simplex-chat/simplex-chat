@@ -52,6 +52,7 @@ module Simplex.Chat.Store.Messages
     getChannelMsgInfoBySharedMsgId,
     adjustChannelMsgCommentCount,
     setChannelMsgCommentsDisabled,
+    setChannelMsgInitialPrefs,
     quotedItemInCommentSection,
     getGroupChatScopeInfoForItem,
     getLocalChat,
@@ -1461,10 +1462,18 @@ getGroupChat db vr user groupId scope_ parentChatItemId_ contentFilter paginatio
 -- | Resolve a channel post by its local ChatItemId, returning both the post
 -- itself and its SharedMsgId. Used by the send and receive paths to derive
 -- the wire-side MsgRef while keeping the DB-side parent_chat_item_id linkage.
+--
+-- Validates that the loaded item is a valid channel post: it must not itself
+-- be a comment (parentChatItemId IS NULL), and its direction must be either
+-- CIChannelRcv (subscriber side) or CIGroupSnd with showGroupAsSender = True
+-- (owner side). Otherwise the resolved id cannot become a comment parent,
+-- and the request is treated as not-found to avoid leaking more detail to
+-- the caller and to keep the flat-thread invariant structural.
 getChannelMsgInfo :: DB.Connection -> User -> GroupId -> ChatItemId -> ExceptT StoreError IO ChannelMsgInfo
 getChannelMsgInfo db user groupId parentChatItemId = do
-  parent@(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) <-
-    getGroupChatItem db user groupId parentChatItemId
+  parent <- getGroupChatItem db user groupId parentChatItemId
+  assertChannelPost parentChatItemId parent
+  let CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}} = parent
   case itemSharedMsgId of
     Just sId -> pure ChannelMsgInfo {channelMsgItem = parent, channelMsgSharedId = sId}
     Nothing -> throwError $ SEChatItemNotFound parentChatItemId
@@ -1472,10 +1481,25 @@ getChannelMsgInfo db user groupId parentChatItemId = do
 -- | Resolve a channel post by its wire SharedMsgId, returning both the post
 -- itself and its SharedMsgId. Used by the receive path to look up the parent
 -- post referenced by an incoming comment's MsgContainer.parent.
+--
+-- Validates the loaded item is a channel post (see getChannelMsgInfo).
 getChannelMsgInfoBySharedMsgId :: DB.Connection -> User -> GroupInfo -> SharedMsgId -> ExceptT StoreError IO ChannelMsgInfo
 getChannelMsgInfoBySharedMsgId db user g sharedMsgId = do
   parent <- getGroupChatItemBySharedMsgId db user g Nothing sharedMsgId
+  assertChannelPost (cChatItemId parent) parent
   pure ChannelMsgInfo {channelMsgItem = parent, channelMsgSharedId = sharedMsgId}
+
+-- | Verify the loaded item is a valid channel post (top-level, sent as the
+-- channel rather than as a member). Reject with SEChatItemNotFound on any
+-- mismatch so the failure mode at the caller is "not a valid channel post"
+-- without leaking more detail.
+assertChannelPost :: ChatItemId -> CChatItem 'CTGroup -> ExceptT StoreError IO ()
+assertChannelPost itemId (CChatItem _ ChatItem {chatDir, meta = CIMeta {parentChatItemId, showGroupAsSender}}) = do
+  when (isJust parentChatItemId) $ throwError $ SEChatItemNotFound itemId
+  case chatDir of
+    CIChannelRcv -> pure ()
+    CIGroupSnd | showGroupAsSender -> pure ()
+    _ -> throwError $ SEChatItemNotFound itemId
 
 -- | Increment or decrement the live comment count of a channel post.
 -- Clamped at 0 to guard against transient negative counts under concurrent deletes.
@@ -1493,6 +1517,25 @@ setChannelMsgCommentsDisabled db parentChatItemId disabled =
     db
     "UPDATE chat_items SET comments_disabled = ? WHERE chat_item_id = ?"
     (BI disabled, parentChatItemId)
+
+-- | Apply per-post initial prefs received on a channel post's XMsgNew
+-- (the owner's first send, a relay forward, or a history replay to a new
+-- joiner). Only the fields that are present in MsgPrefs are written.
+-- comments_total uses MAX(current, new) so a late or stale broadcast can
+-- never lower an established count built up by local comment arrivals.
+setChannelMsgInitialPrefs :: DB.Connection -> ChatItemId -> Maybe Bool -> Maybe Int -> IO ()
+setChannelMsgInitialPrefs db itemId mDisabled mTotal = do
+  forM_ mDisabled $ \b ->
+    DB.execute db "UPDATE chat_items SET comments_disabled = ? WHERE chat_item_id = ?" (BI b, itemId)
+  forM_ mTotal $ \n ->
+    DB.execute
+      db
+#if defined(dbPostgres)
+      "UPDATE chat_items SET comments_total = GREATEST(comments_total, ?) WHERE chat_item_id = ?"
+#else
+      "UPDATE chat_items SET comments_total = MAX(comments_total, ?) WHERE chat_item_id = ?"
+#endif
+      (n, itemId)
 
 -- | Check that a quoted item either IS the parent post or belongs to the same
 -- comment section. Returns True if the quote is valid for this parent.
@@ -3927,6 +3970,7 @@ getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
   ciIds <- getLastItemIds_
   reverse <$> mapM (runExceptT . getGroupCIWithReactions db user g) ciIds
   where
+    -- TODO option B/C: bounded comment replay (per-post cap M, post-window K) — see scratch/channel-comments-history-replay-strategy.md
     getLastItemIds_ :: IO [ChatItemId]
     getLastItemIds_ =
       map fromOnly
@@ -3940,6 +3984,7 @@ getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
               AND i.user_id = ? AND i.group_id = ?
               AND i.include_in_history = 1
               AND i.item_deleted = 0
+              AND i.parent_chat_item_id IS NULL
             ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]

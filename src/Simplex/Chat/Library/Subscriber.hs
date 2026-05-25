@@ -2075,10 +2075,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     newGroupContentMessage :: GroupInfo -> Maybe GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryTaskContext)
     newGroupContentMessage gInfo m_ mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded = case m_ of
-      Nothing -> do
-        createContentItem gInfo Nothing Nothing Nothing
-        -- no delivery task - message already forwarded by relay
-        pure Nothing
+      Nothing
+        -- Comments must have an author (a member, not the channel-as-sender).
+        -- A relay-forwarded message without member identity but carrying
+        -- mc.parent is a protocol violation — drop it rather than silently
+        -- discarding the parent reference and storing it as a channel post.
+        | isJust parent_ -> messageError "channel comment without author (FwdChannel)" $> Nothing
+        | otherwise -> do
+            createContentItem gInfo Nothing Nothing Nothing
+            -- no delivery task - message already forwarded by relay
+            pure Nothing
       Just m@GroupMember {memberId} -> do
         (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m content msgScope_
         channelMsgInfo_ <- resolveCommentParent gInfo' parent_
@@ -2109,7 +2115,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo Nothing (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
         live' = fromMaybe False live_
-        MsgContainer {content = c, mentions = MsgMentions mentions, file = fInv_, ttl = itemTTL, live = live_, scope = msgScope_, asGroup = asGroup_, parent = parent_} = mc
+        MsgContainer {content = c, mentions = MsgMentions mentions, file = fInv_, ttl = itemTTL, live = live_, scope = msgScope_, asGroup = asGroup_, parent = parent_, prefs = prefs_} = mc
         content = case c of
           MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case publicGroup of
             Just pgp | maybe False (binding ==) (expectedBinding pgp) -> c
@@ -2173,10 +2179,34 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         newChatItem gInfo' m' scopeInfo channelMsgInfo'_ ciContent ciFile_ timed live = do
           let mentions' = if maybe False memberBlocked m' then M.empty else mentions
           (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo channelMsgInfo'_ ciContent ciFile_ timed live mentions'
-          ci' <- maybe (pure ci) (\m -> blockedMemberCI gInfo' m ci) m'
+          -- Channel posts (no parent ref, sent as group) carrying MsgPrefs on
+          -- XMsgNew: apply the per-post initial state to the just-inserted row
+          -- so new joiners see the correct commentsDisabled / commentsTotal
+          -- without needing to wait for an XMsgUpdate or comment-arrival.
+          ci'' <- case prefs_ of
+            Just MsgPrefs {commentsDisabled = mDisabled, commentsTotal = mTotal}
+              | isNothing channelMsgInfo'_ && sentAsGroup -> do
+                  withStore' $ \db -> setChannelMsgInitialPrefs db (chatItemId' ci) mDisabled mTotal
+                  pure $ patchInitialPrefs ci mDisabled mTotal
+            _ -> pure ci
+          ci' <- maybe (pure ci'') (\m -> blockedMemberCI gInfo' m ci'') m'
           let memberId_ = memberId' <$> m'
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo' memberId_ sharedMsgId) sharedMsgId_
           groupMsgToView cInfo ci' {reactions}
+          where
+            -- Mirror the DB writes in-memory so the CEvtChatItemNew event
+            -- delivered to the UI reflects the per-post prefs the receiver
+            -- just persisted. commentsTotal uses max to match the DB clamp.
+            patchInitialPrefs :: forall d'. ChatItem 'CTGroup d' -> Maybe Bool -> Maybe Int -> ChatItem 'CTGroup d'
+            patchInitialPrefs ci@ChatItem {meta = m0} mDisabled mTotal =
+              let CIMeta {commentsTotal = curTotal} = m0
+                  m1 = case mDisabled of
+                    Just b -> (m0 :: CIMeta 'CTGroup d') {commentsDisabled = BoolDef b}
+                    Nothing -> m0
+                  m2 = case mTotal of
+                    Just n -> (m1 :: CIMeta 'CTGroup d') {commentsTotal = IntDef0 (max (unIntDef0 curTotal) n)}
+                    Nothing -> m1
+               in ci {meta = m2}
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> Maybe MsgPrefs -> CM (Maybe DeliveryTaskContext)
     groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_ asGroup_ prefs_
@@ -2236,10 +2266,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
             CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC}
               | maybe True (\m -> memberRole' m == GROwner) m_ -> updateCI True ci scopeInfo oldMC itemLive Nothing
-              | isJust prefs_ && maybe False (\m -> memberRole' m >= GRModerator) m_ -> do
-                  applied <- applyMsgPrefs ci
-                  pure $ if applied then Just (infoToDeliveryContext gInfo scopeInfo True) else Nothing
+              | isJust prefs_ && maybe False (\m -> memberRole' m >= GRModerator) m_ -> applyModeratorPrefs SMDRcv ci scopeInfo
               | otherwise -> messageError "x.msg.update: member attempted to update channel message" $> Nothing
+            -- Owner's local copy of their own channel post is stored as SMDSnd / CIGroupSnd
+            -- with showGroupAsSender = True. A moderator's broadcast of XMsgUpdate {prefs}
+            -- must apply on the owner's side too, so this mirrors the SMDRcv/CIChannelRcv
+            -- moderator branch above.
+            CChatItem SMDSnd ci@ChatItem {chatDir = CIGroupSnd, meta = CIMeta {showGroupAsSender = True}, content = CISndMsgContent _}
+              | isJust prefs_ && maybe False (\m -> memberRole' m >= GRModerator) m_ -> applyModeratorPrefs SMDSnd ci scopeInfo
+              | otherwise -> messageError "x.msg.update: only moderators may update channel-post prefs" $> Nothing
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
@@ -2256,23 +2291,36 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
                 ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
                 updateGroupCIMentions db gInfo ci' ciMentions
-              applyMsgPrefs ci'
-              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
-              startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
+              ci'' <- fromMaybe ci' <$> applyMsgPrefs ci'
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci'')
+              startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci''
               pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
-            else do
-              prefsApplied <- applyMsgPrefs ci
-              if prefsApplied
-                then pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
-                else do
+            else
+              applyMsgPrefs ci >>= \case
+                Just ci' -> do
+                  toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
+                  pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
+                Nothing -> do
                   toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
                   pure Nothing
-        applyMsgPrefs :: ChatItem 'CTGroup 'MDRcv -> CM Bool
-        applyMsgPrefs ci = case prefs_ of
-          Just MsgPrefs {commentsDisabled} -> do
-            withStore' $ \db -> setChannelMsgCommentsDisabled db (chatItemId' ci) commentsDisabled
-            pure True
-          Nothing -> pure False
+        applyModeratorPrefs :: MsgDirectionI d => SMsgDirection d -> ChatItem 'CTGroup d -> Maybe GroupChatScopeInfo -> CM (Maybe DeliveryTaskContext)
+        applyModeratorPrefs md ci scopeInfo =
+          applyMsgPrefs ci >>= \case
+            Just ci' -> do
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup md (GroupChat gInfo scopeInfo) ci')
+              pure $ Just (infoToDeliveryContext gInfo scopeInfo True)
+            Nothing -> pure Nothing
+        -- Applies the per-message prefs carried in XMsgUpdate.prefs to the local
+        -- chat item, returning the in-memory updated CI when a change was made
+        -- (so callers can emit CEvtChatItemUpdated with current state). Only
+        -- `commentsDisabled` is acted on; `commentsTotal` arriving via XMsgUpdate
+        -- is ignored — it is meaningful only at first-receipt on XMsgNew.
+        applyMsgPrefs :: ChatItem 'CTGroup d -> CM (Maybe (ChatItem 'CTGroup d))
+        applyMsgPrefs ci@ChatItem {meta = m} = case prefs_ of
+          Just MsgPrefs {commentsDisabled = Just b} -> do
+            withStore' $ \db -> setChannelMsgCommentsDisabled db (chatItemId' ci) b
+            pure $ Just ci {meta = m {commentsDisabled = BoolDef b}}
+          _ -> pure Nothing
 
     groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =

@@ -258,10 +258,25 @@ data MsgRef = MsgRef
 
 $(JQ.deriveJSON defaultJSON ''MsgRef)
 
--- Per-message preferences carried in XMsgUpdate.
--- `commentsDisabled = True` locks commenting on the addressed channel post.
+-- Per-message preferences carried in MsgContainer (XMsgNew, so new joiners
+-- learn the parent post's state at first delivery) and in XMsgUpdate (so
+-- moderators can toggle commentsDisabled later).
+--
+-- Both fields are Maybe so the wire shape encodes "no change":
+--  - XMsgNew on a channel post: emit Just (MsgPrefs commentsDisabled commentsTotal)
+--    when either differs from defaults; otherwise omit `prefs` entirely.
+--  - XMsgUpdate toggling commentsDisabled: emit Just (MsgPrefs (Just newVal) Nothing).
+--  - XMsgUpdate content-only edit: emit Nothing.
+--  - Comments (i.e. parent is set on the container): always Nothing.
+--
+-- `commentsDisabled` locks commenting on the addressed channel post.
+-- `commentsTotal` is the canonical comment count at the moment of
+-- emission; receivers only ever apply it at the INSERT of a new parent post
+-- (never overwrite a row's existing comments_total), so the count cannot be
+-- silently lowered by a stale broadcast.
 data MsgPrefs = MsgPrefs
-  { commentsDisabled :: Bool
+  { commentsDisabled :: Maybe Bool,
+    commentsTotal :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -671,7 +686,11 @@ data MsgContainer = MsgContainer
     asGroup :: Maybe Bool,
     quote :: Maybe QuotedMsg,
     parent :: Maybe MsgRef,
-    forward :: Maybe Bool
+    forward :: Maybe Bool,
+    -- Per-message preferences for channel posts. Always Nothing on comments
+    -- and on non-channel messages; populated on channel-post XMsgNew so new
+    -- joiners learn the current commentsDisabled / commentsTotal state.
+    prefs :: Maybe MsgPrefs
   }
   deriving (Eq, Show)
 
@@ -690,7 +709,8 @@ mcEmpty =
       asGroup = Nothing,
       quote = Nothing,
       parent = Nothing,
-      forward = Nothing
+      forward = Nothing,
+      prefs = Nothing
     }
 
 mcSimple :: MsgContent -> MsgContainer
@@ -981,7 +1001,8 @@ parseMsgContainer v = do
   quote <- v .:? "quote"
   parent <- v .:? "parent"
   forward <- (v .:? "forward") >>= parseForward
-  pure MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward}
+  prefs <- v .:? "prefs"
+  pure MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward, prefs}
   where
     -- Backward compatibility: legacy clients encode forward either as a Bool or as an
     -- object (the latter is used by public group links). Any present form → Just True.
@@ -996,10 +1017,10 @@ justTrue True = Just True
 justTrue False = Nothing
 
 msgContainerJSON :: MsgContainer -> J.Object
-msgContainerJSON MsgContainer {content, mentions = MsgMentions mentions, file, ttl, live, scope, asGroup, quote, parent, forward} =
+msgContainerJSON MsgContainer {content, mentions = MsgMentions mentions, file, ttl, live, scope, asGroup, quote, parent, forward, prefs} =
   JM.fromList $
     discriminators
-      <> ("file" .=? file) (("ttl" .=? ttl) (("live" .=? live) (("mentions" .=? nonEmptyMap mentions) (("scope" .=? scope) (("asGroup" .=? asGroup) ["content" .= content])))))
+      <> ("file" .=? file) (("ttl" .=? ttl) (("live" .=? live) (("mentions" .=? nonEmptyMap mentions) (("scope" .=? scope) (("asGroup" .=? asGroup) (("prefs" .=? prefs) ["content" .= content]))))))
   where
     discriminators =
       ["quote" .= q | Just q <- [quote]]

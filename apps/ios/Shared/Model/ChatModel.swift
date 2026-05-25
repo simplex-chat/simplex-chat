@@ -80,6 +80,11 @@ enum SecondaryItemsModelFilter {
 class ItemsModel: ObservableObject {
     static let shared = ItemsModel(secondaryIMFilter: nil)
     public var secondaryIMFilter: SecondaryItemsModelFilter?
+    // Comments-thread context: holds the local-only ChannelMsgInfo carrier
+    // (parent item + sharedId) needed by views opening the thread. The wire
+    // shape has no channelMsgInfo, and the carrier is NOT stamped onto the
+    // main chats array — only kept here on the secondary model.
+    public var channelMsgInfo: ChannelMsgInfo?
     public var preloadState = PreloadState()
     private let publisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
@@ -114,13 +119,15 @@ class ItemsModel: ObservableObject {
 
     // Spec: spec/state.md#loadSecondaryChat
     static func loadSecondaryChat(_ chatId: ChatId, chatFilter: SecondaryItemsModelFilter, willNavigate: @escaping () -> Void = {}) {
-        // Comments-thread context: fetch with parentItemId, then inject the local-only
-        // ChannelMsgInfo carrier into the returned ChatInfo (the wire shape has no
-        // channelMsgInfo field; the carrier is set here so views can read it from cInfo).
-        // The owner-side parent may briefly lack itemSharedMsgId during send — guard against that.
+        // Comments-thread context: fetch with parentItemId, then stash the
+        // local-only ChannelMsgInfo carrier on the secondary ItemsModel itself.
+        // The main `chats` array stays unmutated — views that need parent/
+        // sharedId read it from `secondaryIM.channelMsgInfo` instead.
+        // The owner-side parent may briefly lack itemSharedMsgId during send.
         if case let .groupChannelMsgContext(parent) = chatFilter {
             guard let sharedId = parent.meta.itemSharedMsgId else { return }
             let im = ItemsModel(secondaryIMFilter: chatFilter)
+            im.channelMsgInfo = ChannelMsgInfo(channelMsgItem: parent, channelMsgSharedId: sharedId)
             ChatModel.shared.secondaryIM = im
             Task {
                 do {
@@ -130,15 +137,9 @@ class ItemsModel: ObservableObject {
                         pagination: .last(count: loadItemsPerPage),
                         parentItemId: parent.id
                     )
-                    let rewritten = injectChannelMsgInfo(chat.chatInfo, parent: parent, sharedId: sharedId)
                     await MainActor.run {
                         im.reversedChatItems = chat.chatItems.reversed()
                         ChatModel.shared.chatId = chatId
-                        // Replace the chat in the model with the rewritten info so views
-                        // querying secondaryIM.cInfo see the injected ChannelMsgInfo.
-                        if let i = ChatModel.shared.getChatIndex(chatId) {
-                            ChatModel.shared.chats[i].chatInfo = rewritten
-                        }
                         willNavigate()
                     }
                 } catch {
@@ -150,20 +151,6 @@ class ItemsModel: ObservableObject {
         let im = ItemsModel(secondaryIMFilter: chatFilter)
         ChatModel.shared.secondaryIM = im
         im.loadOpenChat(chatId, willNavigate: willNavigate)
-    }
-
-    // Rewrites a ChatInfo.group's third associated value to embed the comments-thread
-    // carrier. Other ChatInfo cases (direct, local, contactRequest, contactConnection)
-    // are not comment contexts and pass through unchanged.
-    private static func injectChannelMsgInfo(_ cInfo: ChatInfo, parent: ChatItem, sharedId: String) -> ChatInfo {
-        if case let .group(groupInfo, groupChatScope, _) = cInfo {
-            return .group(
-                groupInfo: groupInfo,
-                groupChatScope: groupChatScope,
-                channelMsgInfo: ChannelMsgInfo(channelMsgItem: parent, channelMsgSharedId: sharedId)
-            )
-        }
-        return cInfo
     }
 
     // Spec: spec/state.md#loadOpenChat
@@ -708,9 +695,12 @@ final class ChatModel: ObservableObject {
         }
         updateChatInfo(cInfo)
         // update chat list
+        // Comments are routed by ci.parentChatItemId (the wire shape has no
+        // channelMsgInfo). A non-nil parentChatItemId means this item is a
+        // comment, which must NOT update the main chat preview/unread count.
         if let i = getChatIndex(cInfo.id) {
             // update preview
-            if (cInfo.groupChatScope() == nil && cInfo.channelMsgInfo() == nil) || cInfo.groupInfo?.membership.memberPending ?? false {
+            if (cInfo.groupChatScope() == nil && cItem.parentChatItemId == nil) || cInfo.groupInfo?.membership.memberPending ?? false {
                 chats[i].chatItems = switch cInfo {
                 case .group:
                     if let currentPreviewItem = chats[i].chatItems.first {
@@ -732,7 +722,7 @@ final class ChatModel: ObservableObject {
             // pop chat
             popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
         } else {
-            if cInfo.groupChatScope() == nil && cInfo.channelMsgInfo() == nil {
+            if cInfo.groupChatScope() == nil && cItem.parentChatItemId == nil {
                 addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
             } else {
                 addChat(Chat(chatInfo: cInfo, chatItems: []))
@@ -762,9 +752,10 @@ final class ChatModel: ObservableObject {
             default:
                 nil
             }
-        } else if cInfo.channelMsgInfo() != nil {
-            // Comments thread open. Inbound items lack channelMsgInfo on the wire (the
-            // carrier is local-only), so route by ci.parentChatItemId == parent.id.
+        } else if ci.parentChatItemId != nil {
+            // Comment item (parent is set). Route into the comments thread
+            // model if it's open and the parent matches; otherwise drop —
+            // comments must not leak into the main chat preview.
             switch secondaryIM?.secondaryIMFilter {
             case let .some(.groupChannelMsgContext(parent)):
                 (cInfo.id == chatId && ci.parentChatItemId == parent.id) ? secondaryIM : nil
@@ -779,7 +770,7 @@ final class ChatModel: ObservableObject {
     func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         // update chat list
         var itemAdded: Bool = false
-        if cInfo.groupChatScope() == nil && cInfo.channelMsgInfo() == nil {
+        if cInfo.groupChatScope() == nil && cItem.parentChatItemId == nil {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
                     if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
@@ -850,7 +841,7 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update chat list
-        if cInfo.groupChatScope() == nil && cInfo.channelMsgInfo() == nil {
+        if cInfo.groupChatScope() == nil && cItem.parentChatItemId == nil {
             if cItem.isRcvNew {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
             }

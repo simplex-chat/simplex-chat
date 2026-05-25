@@ -249,13 +249,13 @@ enum SecondaryItemsModelFilter {
 
 Opening a comments thread bypasses the standard `loadOpenChat` flow because the comments scope is not represented on the wire as a `GroupChatScope`. Instead:
 
-1. The caller invokes [`ItemsModel.loadSecondaryChat`](../Shared/Model/ChatModel.swift#L116-L153) with `chatFilter: .groupChannelMsgContext(parent:)`.
+1. The caller invokes `ItemsModel.loadSecondaryChat` with `chatFilter: .groupChannelMsgContext(parent:)`.
 2. Items are fetched via `apiGetChat(..., parentItemId: parent.id)` (see `apiGetChat` in [spec/api.md §2.3](api.md#23-chat--message-operations)).
-3. The returned `ChatInfo.group` has its third associated value rewritten by [`injectChannelMsgInfo`](../Shared/Model/ChatModel.swift#L158-L167) to embed a local-only [`ChannelMsgInfo`](../SimpleXChat/ChatTypes.swift#L2028-L2036) carrier so toolbar and routing logic can read the parent without a second lookup.
-4. [`getCIItemsModel`](../Shared/Model/ChatModel.swift#L747-L777) gains a new branch (`cInfo.channelMsgInfo() != nil`) that routes events into the secondary `ItemsModel` when `ci.parentChatItemId == parent.id`.
-5. Gating sites that previously checked `cInfo.groupChatScope() == nil` to decide whether to update the main chat preview now also check `cInfo.channelMsgInfo() == nil`, so comment items do not bubble into the main chat list.
+3. `loadSecondaryChat` stashes a local-only `ChannelMsgInfo` (parent + sharedId) on `ItemsModel.channelMsgInfo` of the secondary model so toolbar and routing logic can read the parent without a second lookup. The main `chats` array is left unmutated — comments-thread context lives entirely on the secondary `ItemsModel`.
+4. `getCIItemsModel` routes inbound items into the secondary `ItemsModel` when `ci.parentChatItemId != nil` matches `parent.id`. The wire shape has no `channelMsgInfo` field, so routing must key on `ci.parentChatItemId`.
+5. Gating sites that previously also checked `cInfo.channelMsgInfo() == nil` to decide whether to update the main chat preview now check `cItem.parentChatItemId == nil`, so comment items do not bubble into the main chat list, the unread counter, or the deletion preview cleanup.
 
-The carrier is **not** serialized: `ChannelMsgInfo` is `Decodable` only so it nests cleanly into `ChatInfo.group`, but the server never sends this field — it is injected exclusively by `loadSecondaryChat`. Inbound `XMsgNew` items with a `parent` come back over the regular event stream; they are routed by `ci.parentChatItemId` alone.
+`ChannelMsgInfo` is a local-only carrier — the server never sends it. Inbound `XMsgNew` items with a `parent` arrive on the regular event stream and are routed entirely by `ci.parentChatItemId`.
 
 ---
 

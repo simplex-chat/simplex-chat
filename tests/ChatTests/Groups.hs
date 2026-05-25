@@ -296,19 +296,6 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
-    describe "channel comments" $ do
-      it "subscriber should comment on channel post" testChannelCommentSubscriberCanComment
-      it "should reject comment in non-channel group" testChannelCommentNotInRegularGroup
-      it "should reject comment when comments disabled on post" testChannelCommentDisabledRejected
-      it "subscriber should edit and delete own comment" testChannelCommentEditDelete
-      it "comments_total should increment on insert and decrement on delete" testChannelCommentCountIncrement
-      it "observer should not be able to comment" testChannelCommentObserverRejected
-      it "comments should not appear in main channel pagination" testChannelCommentMainChatExclusion
-      it "subscriber should quote comment on channel post" testChannelCommentQuote
-      it "subscriber should receive comment from another subscriber via relay" testChannelCommentRcvFromAnotherSubscriber
-      it "owner should moderate-delete subscriber comment and decrement count" testChannelCommentModerationDelete
-      it "content edit should preserve commentsDisabled flag" testChannelCommentDisabledViaPrefs
-      it "subscriber should react to a channel comment" testChannelCommentReact
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -10861,6 +10848,8 @@ testChannelMemberMessageDelete ps =
                 eve <# "#team cath> [marked deleted] hello"
               ]
 
+<<<<<<< Updated upstream
+=======
 testChannelCommentSubscriberCanComment :: HasCallStack => TestParams -> IO ()
 testChannelCommentSubscriberCanComment ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -10877,7 +10866,7 @@ testChannelCommentSubscriberCanComment ps =
 
             -- subscriber comments on the post
             parentId <- lastGroupItemId cath 1
-            cath ##> ("/_comment #1 " <> parentId <> " text reply")
+            cath ##> ("/_send #1 parent=" <> parentId <> " text reply")
             cath <# "#team reply"
             bob <# "#team cath> reply"
             concurrentlyN_
@@ -10898,7 +10887,7 @@ testChannelCommentNotInRegularGroup =
       alice #> "#team hello"
       [bob, cath] *<# "#team alice> hello"
       parentId <- lastGroupItemId bob 1
-      bob ##> ("/_comment #1 " <> parentId <> " text reply")
+      bob ##> ("/_send #1 parent=" <> parentId <> " text reply")
       bob <## "bad chat command: comments are only supported in channel groups"
 
 testChannelCommentDisabledRejected :: HasCallStack => TestParams -> IO ()
@@ -10918,17 +10907,25 @@ testChannelCommentDisabledRejected ps =
             aliceParentId <- lastGroupItemId alice 1
             alice ##> ("/_comments_disabled #1 " <> aliceParentId <> " on")
             alice <## "ok"
+            -- handler emits CEvtChatItemUpdated for alice (re-rendered post)
+            -- via localQ; the response "ok" is printed synchronously, so the
+            -- async event arrives after
+            alice <# "#team hello"
 
             -- owner's own comment attempt is rejected (local state updated)
-            alice ##> ("/_comment #1 " <> aliceParentId <> " text reply")
+            alice ##> ("/_send #1 parent=" <> aliceParentId <> " text reply")
             alice <## "bad chat command: feature not allowed Comments"
 
             -- wait for XMsgUpdate with prefs to propagate through relay to subscribers
             threadDelay 1000000
 
+            -- all subscribers (including the relay bob) apply prefs locally and
+            -- emit CEvtChatItemUpdated (the post re-rendered with updated
+            -- commentsDisabled); drain before next assertion
+            [bob, cath, dan, eve] *<# "#team> hello"
             -- subscriber's comment attempt is also rejected (relay forwarded XMsgUpdate with prefs)
             cathParentId <- lastGroupItemId cath 1
-            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text reply")
             cath <## "bad chat command: feature not allowed Comments"
 
 testChannelCommentEditDelete :: HasCallStack => TestParams -> IO ()
@@ -10946,7 +10943,7 @@ testChannelCommentEditDelete ps =
 
             -- cath comments on the post
             cathParentId <- lastGroupItemId cath 1
-            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text reply")
             cath <# "#team reply"
             bob <# "#team cath> reply"
             concurrentlyN_
@@ -11007,7 +11004,7 @@ testChannelCommentCountIncrement ps =
             checkAllCounts 0
 
             -- cath comments (capture cath's comment id immediately for later delete)
-            cath ##> ("/_comment #1 " <> cathParentId <> " text reply one")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text reply one")
             cath <# "#team reply one"
             cathCommentId <- lastGroupItemId cath 1
             bob <# "#team cath> reply one"
@@ -11023,7 +11020,7 @@ testChannelCommentCountIncrement ps =
             checkAllCounts 1
 
             -- dan comments on the parent (danParentId captured before cath's comment)
-            dan ##> ("/_comment #1 " <> danParentId <> " text reply two")
+            dan ##> ("/_send #1 parent=" <> danParentId <> " text reply two")
             dan <# "#team reply two"
             bob <# "#team dan> reply two"
             concurrentlyN_
@@ -11068,6 +11065,11 @@ testChannelCommentObserverRejected ps =
             bob <# "#team> hello"
             [cath, dan, eve] *<# "#team> hello [>>]"
 
+            -- capture cath's view of the channel post BEFORE any intervening
+            -- items (cath's own message, role-change event) so the parent we
+            -- pass to /_comment is the channel post itself, not a later item
+            cathParentId <- lastGroupItemId cath 1
+
             -- make cath known to other subscribers
             cath #> "#team hi from cath"
             bob <# "#team cath> hi from cath"
@@ -11093,8 +11095,7 @@ testChannelCommentObserverRejected ps =
               ]
 
             -- cath's comment attempt is rejected by local role check
-            cathParentId <- lastGroupItemId cath 1
-            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text reply")
             cath <## "#team: you have insufficient permissions for this action, the required role is commenter"
 
 testChannelCommentMainChatExclusion :: HasCallStack => TestParams -> IO ()
@@ -11112,7 +11113,7 @@ testChannelCommentMainChatExclusion ps =
 
             aliceParentId <- lastGroupItemId alice 1
             cathParentId <- lastGroupItemId cath 1
-            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text reply")
             cath <# "#team reply"
             bob <# "#team cath> reply"
             concurrentlyN_
@@ -11165,7 +11166,7 @@ testChannelCommentQuote ps =
             danParentId <- lastGroupItemId dan 1
 
             -- cath comments on the post
-            cath ##> ("/_comment #1 " <> cathParentId <> " text first comment")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text first comment")
             cath <# "#team first comment"
             cathCommentId <- lastGroupItemId cath 1
             bob <# "#team cath> first comment"
@@ -11182,7 +11183,7 @@ testChannelCommentQuote ps =
             -- dan quotes cath's comment (another comment in the same section)
             danQuotedId <- lastGroupItemId dan 1 -- cath's comment
             let cm1 = "{\"quotedItemId\": " <> danQuotedId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"quoting comment\"}}"
-            dan ##> ("/_comment #1 " <> danParentId <> " json [" <> cm1 <> "]")
+            dan ##> ("/_send #1 parent=" <> danParentId <> " json [" <> cm1 <> "]")
             dan <# "#team > cath first comment"
             dan <## "      quoting comment"
             bob <# "#team dan> > cath first comment"
@@ -11203,7 +11204,7 @@ testChannelCommentQuote ps =
 
             -- cath quotes the parent post itself in a comment
             let cm2 = "{\"quotedItemId\": " <> cathParentId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"quoting parent\"}}"
-            cath ##> ("/_comment #1 " <> cathParentId <> " json [" <> cm2 <> "]")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " json [" <> cm2 <> "]")
             cath <# "#team > hello"
             cath <## "      quoting parent"
             bob <# "#team cath> > hello"
@@ -11230,7 +11231,7 @@ testChannelCommentQuote ps =
             -- try to quote it while commenting on the second post — should fail
             cathSecondParentId <- lastGroupItemId cath 1
             let cm3 = "{\"quotedItemId\": " <> cathCommentId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"cross-section quote\"}}"
-            cath ##> ("/_comment #1 " <> cathSecondParentId <> " json [" <> cm3 <> "]")
+            cath ##> ("/_send #1 parent=" <> cathSecondParentId <> " json [" <> cm3 <> "]")
             cath <## "bad chat command: quoted item does not belong to the same comment section"
 
 testChannelCommentRcvFromAnotherSubscriber :: HasCallStack => TestParams -> IO ()
@@ -11252,7 +11253,7 @@ testChannelCommentRcvFromAnotherSubscriber ps =
             eveParentId <- lastGroupItemId eve 1
 
             -- cath comments via the relay; dan and eve receive via the unknown-member path
-            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text reply")
             cath <# "#team reply"
             bob <# "#team cath> reply"
             concurrentlyN_
@@ -11285,7 +11286,7 @@ testChannelCommentModerationDelete ps =
 
             aliceParentId <- lastGroupItemId alice 1
             cathParentId <- lastGroupItemId cath 1
-            cath ##> ("/_comment #1 " <> cathParentId <> " text moderate-me")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text moderate-me")
             cath <# "#team moderate-me"
             bob <# "#team cath> moderate-me"
             concurrentlyN_
@@ -11341,12 +11342,17 @@ testChannelCommentDisabledViaPrefs ps =
             -- step 1: alice disables comments on the post via XMsgUpdate.prefs
             alice ##> ("/_comments_disabled #1 " <> aliceParentId <> " on")
             alice <## "ok"
+            -- handler emits CEvtChatItemUpdated for alice via localQ; the
+            -- response "ok" is printed synchronously and arrives first
+            alice <# "#team hello"
 
             -- wait for XMsgUpdate with prefs to propagate to subscribers via the relay
             threadDelay 1000000
 
+            -- all subscribers (including the relay bob) apply prefs locally and emit CEvtChatItemUpdated; drain
+            [bob, cath, dan, eve] *<# "#team> hello"
             -- cath's local commentsDisabled is now True; attempted comment is rejected
-            cath ##> ("/_comment #1 " <> cathParentId <> " text after-disable")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text after-disable")
             cath <## "bad chat command: feature not allowed Comments"
 
             -- step 2: alice edits the POST CONTENT (no prefs in the update — prefs defaults to Nothing).
@@ -11360,7 +11366,7 @@ testChannelCommentDisabledViaPrefs ps =
             threadDelay 1000000
 
             -- commentsDisabled is still True after the content edit; cath remains rejected
-            cath ##> ("/_comment #1 " <> cathParentId <> " text after-content-edit")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text after-content-edit")
             cath <## "bad chat command: feature not allowed Comments"
 
 testChannelCommentReact :: HasCallStack => TestParams -> IO ()
@@ -11378,7 +11384,7 @@ testChannelCommentReact ps =
 
             -- cath comments on alice's post
             cathParentId <- lastGroupItemId cath 1
-            cath ##> ("/_comment #1 " <> cathParentId <> " text react-target")
+            cath ##> ("/_send #1 parent=" <> cathParentId <> " text react-target")
             cath <# "#team react-target"
             bob <# "#team cath> react-target"
             concurrentlyN_
@@ -11414,6 +11420,7 @@ testChannelCommentReact ps =
                   eve <## "    + 👍"
               ]
 
+>>>>>>> Stashed changes
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =
   testChat3 aliceProfile bobProfile cathProfile $

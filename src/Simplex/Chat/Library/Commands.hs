@@ -625,7 +625,9 @@ processChatCommand vr nm = \case
       mapM_ assertNoMentions cms
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map composedMessageReq cms)
-    SRGroup chatId gsScope asGroup -> do
+    SRGroup chatId gsScope parentItemId_ asGroup -> do
+      when (isJust gsScope && isJust parentItemId_) $
+        throwCmdError "scope and parent are mutually exclusive"
       case gsScope of
         Just (GCSMemberSupport _) -> when asGroup $ throwCmdError "cannot send as group in support scope"
         Nothing -> pure ()
@@ -633,24 +635,17 @@ processChatCommand vr nm = \case
         (gInfo, cmrs) <- withFastStore $ \db -> do
           g <- getGroupInfo db vr user chatId
           (g,) <$> mapM (composedMessageReqMentions db user g) cms
-        sendGroupContentMessages user gInfo gsScope asGroup live itemTTL cmrs
-  APISendComment groupId parentItemId live itemTTL cms -> withUser $ \user -> do
-    mapM_ assertAllowedContent' cms
-    withGroupLock "sendComment" groupId $ do
-      gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-      unless (useRelays' gInfo) $ throwCmdError "comments are only supported in channel groups"
-      (channelMsgInfo, cmrs) <- withFastStore $ \db -> do
-        cmi <- getChannelMsgInfo db user groupId parentItemId
-        cmrs' <- mapM (composedMessageReqMentions db user gInfo) cms
-        pure (cmi, cmrs')
-      -- Validate that quoted items belong to the same comment section.
-      forM_ cms $ \ComposedMessage {quotedItemId} ->
-        forM_ quotedItemId $ \qId ->
-          unlessM (withFastStore' $ \db -> quotedItemInCommentSection db parentItemId qId) $
-            throwCmdError "quoted item does not belong to the same comment section"
-      assertMultiSendable live cmrs
-      recipients <- getGroupRecipients vr user gInfo Nothing groupKnockingVersion
-      sendGroupContentMessages_ user gInfo Nothing False Nothing (Just channelMsgInfo) recipients live itemTTL cmrs
+        case parentItemId_ of
+          Nothing -> sendGroupContentMessages user gInfo gsScope asGroup Nothing live itemTTL cmrs
+          Just parentItemId -> do
+            unless (useRelays' gInfo) $ throwCmdError "comments are only supported in channel groups"
+            channelMsgInfo <- withFastStore $ \db -> getChannelMsgInfo db user chatId parentItemId
+            -- Validate that quoted items belong to the same comment section.
+            forM_ cms $ \ComposedMessage {quotedItemId} ->
+              forM_ quotedItemId $ \qId ->
+                unlessM (withFastStore' $ \db -> quotedItemInCommentSection db parentItemId qId) $
+                  throwCmdError "quoted item does not belong to the same comment section"
+            sendGroupContentMessages user gInfo Nothing False (Just channelMsgInfo) live itemTTL cmrs
   APISetCommentsDisabled groupId parentItemId disabled -> withUser $ \user ->
     withGroupLock "setCommentsDisabled" groupId $ do
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
@@ -662,10 +657,15 @@ processChatCommand vr nm = \case
       case channelMsgInfo of
         ChannelMsgInfo {channelMsgItem = CChatItem _ ChatItem {content = ciContent}, channelMsgSharedId} ->
           forM_ (ciMsgContent ciContent) $ \mc -> do
-            let prefs = MsgPrefs {commentsDisabled = disabled}
+            let prefs = MsgPrefs {commentsDisabled = Just disabled, commentsTotal = Nothing}
                 chatMsgEvent = XMsgUpdate channelMsgSharedId mc M.empty Nothing Nothing Nothing (Just True) (Just prefs)
             recipients <- getGroupRecipients vr user gInfo Nothing groupKnockingVersion
             void $ sendGroupMessages user gInfo Nothing False recipients (chatMsgEvent :| [])
+      -- Owner's UI reconciles via this event. The owner does not receive their
+      -- own broadcast back, so the standard receive pipeline would not emit
+      -- CEvtChatItemUpdated here. Re-read the parent and emit directly.
+      CChatItem md updatedCi <- withFastStore $ \db -> getGroupChatItem db user groupId parentItemId
+      toView $ CEvtChatItemUpdated user (AChatItem SCTGroup md (GroupChat gInfo Nothing) updatedCi)
       ok user
   APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore' $ \db -> do
     _ <- createChatTag db user emoji text
@@ -695,7 +695,7 @@ processChatCommand vr nm = \case
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
       let mc = MCReport reportText reportReason
           cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty}
-      sendGroupContentMessages user gInfo (Just $ GCSMemberSupport Nothing) False False Nothing [composedMessageReq cm]
+      sendGroupContentMessages user gInfo (Just $ GCSMemberSupport Nothing) False Nothing False Nothing [composedMessageReq cm]
   ReportMessage {groupName, contactName_, reportReason, reportedMessage} -> withUser $ \user -> do
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
     reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
@@ -991,7 +991,7 @@ processChatCommand vr nm = \case
         Just cmrs' ->
           withGroupLock "forwardChatItem, to group" toChatId $ do
             gInfo <- withFastStore $ \db -> getGroupInfo db vr user toChatId
-            sendGroupContentMessages user gInfo toScope sendAsGroup False itemTTL cmrs'
+            sendGroupContentMessages user gInfo toScope sendAsGroup Nothing False itemTTL cmrs'
         Nothing -> pure $ CRNewChatItems user []
     CTLocal -> do
       cmrs <- prepareForward user
@@ -1149,7 +1149,7 @@ processChatCommand vr nm = \case
           ct <- withFastStore $ \db -> getContact db vr u contactId
           forM (contactConn ct) $ \conn ->
             (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
-        SRGroup toGroupId _ asGroup -> do
+        SRGroup toGroupId _ _ asGroup -> do
           GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = m} <- withFastStore $ \db -> getGroupInfo db vr u toGroupId
           pure $ mkBinding m <$> publicGroup
           where
@@ -2378,7 +2378,7 @@ processChatCommand vr nm = \case
       ChatRef CTDirect ctId _ -> pure $ SRDirect ctId
       ChatRef CTGroup gId scope_ -> do
         gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
-        pure $ SRGroup gId scope_ (useRelays' gInfo)
+        pure $ SRGroup gId scope_ Nothing (useRelays' gInfo)
       _ -> throwCmdError "unsupported share target"
     processChatCommand vr nm (APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) sendRef) >>= \case
       CRChatMsgContent _ mc ->
@@ -2410,7 +2410,7 @@ processChatCommand vr nm = \case
             forM scope_ $ \(GSNMemberSupport mName_) ->
               GCSMemberSupport <$> mapM (getGroupMemberIdByName db user gId) mName_
           (gInfo, cScope_,) <$> liftIO (getMessageMentions db user gId msg)
-        let sendRef = SRGroup (groupId' gInfo) cScope_ (sendAsGroup' gInfo cScope_)
+        let sendRef = SRGroup (groupId' gInfo) cScope_ Nothing (sendAsGroup' gInfo cScope_)
         processChatCommand vr nm $ APISendMessages sendRef False Nothing [ComposedMessage Nothing Nothing mc mentions]
       SNLocal -> do
         folderId <- withFastStore (`getUserNoteFolderId` user)
@@ -3210,7 +3210,7 @@ processChatCommand vr nm = \case
         qiId <- getGroupChatItemIdByText db user gId cName quotedMsg
         (gInfo, qiId,) <$> liftIO (getMessageMentions db user gId msg)
     let mc = MCText msg
-    processChatCommand vr nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing (sendAsGroup' gInfo Nothing)) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
+    processChatCommand vr nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing Nothing (sendAsGroup' gInfo Nothing)) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand vr nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
@@ -4389,12 +4389,12 @@ processChatCommand vr nm = \case
                 quoteData ChatItem {content = CISndMsgContent qmc} = pure (qmc, CIQDirectSnd, True)
                 quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
                 quoteData _ = throwError SEInvalidQuote
-    sendGroupContentMessages :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages user gInfo scope showGroupAsSender live itemTTL cmrs = do
+    sendGroupContentMessages :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> Maybe ChannelMsgInfo -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
+    sendGroupContentMessages user gInfo scope showGroupAsSender channelMsgInfo_ live itemTTL cmrs = do
       assertMultiSendable live cmrs
       chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
       recipients <- getGroupRecipients vr user gInfo chatScopeInfo modsCompatVersion
-      sendGroupContentMessages_ user gInfo scope showGroupAsSender chatScopeInfo Nothing recipients live itemTTL cmrs
+      sendGroupContentMessages_ user gInfo scope showGroupAsSender chatScopeInfo channelMsgInfo_ recipients live itemTTL cmrs
         where
           hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
           modsCompatVersion = if hasReport then contentReportsVersion else groupKnockingVersion
@@ -4462,12 +4462,20 @@ processChatCommand vr nm = \case
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
+            -- Channel posts (showGroupAsSender = True, no comment parent) carry
+            -- an initial MsgPrefs so new joiners receiving the original XMsgNew
+            -- learn the starting state (commentsDisabled = False, commentsTotal = 0).
+            -- Comments and regular messages carry no prefs.
+            prefs_ :: Maybe MsgPrefs
+            prefs_ = case (showGroupAsSender, channelMsgInfo_) of
+              (True, Nothing) -> Just MsgPrefs {commentsDisabled = Just False, commentsTotal = Just 0}
+              _ -> Nothing
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup)))
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, ciMentions), fInv_) ->
                 let msgScope = toMsgScope gInfo <$> chatScopeInfo
                     mentions = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                 in prepareGroupMsg db user gInfo msgScope parentRef_ showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live
+                 in prepareGroupMsg db user gInfo msgScope parentRef_ prefs_ showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live
             createMemberSndStatuses ::
               [Either ChatError (ChatItem 'CTGroup 'MDSnd)] ->
               NonEmpty (Either ChatError SndMessage) ->
@@ -4621,7 +4629,7 @@ processChatCommand vr nm = \case
       ChatRef CTDirect cId _ -> a $ SRDirect cId
       ChatRef CTGroup gId scope -> do
         gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
-        a $ SRGroup gId scope (sendAsGroup' gInfo scope)
+        a $ SRGroup gId scope Nothing (sendAsGroup' gInfo scope)
       _ -> throwCmdError "not supported"
     getSharedMsgId :: CM SharedMsgId
     getSharedMsgId = do
@@ -5034,7 +5042,6 @@ chatCommandP =
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> textP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
-      "/_comment #" *> (APISendComment <$> A.decimal <* A.space <*> A.decimal <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_comments_disabled #" *> (APISetCommentsDisabled <$> A.decimal <* A.space <*> A.decimal <* A.space <*> onOffP),
       "/_create tag " *> (APICreateChatTag <$> jsonP),
       "/_tags " *> (APISetChatTags <$> chatRefP <*> optional _strP),
@@ -5496,7 +5503,8 @@ chatCommandP =
         cType -> (\chatId -> ChatRef cType chatId Nothing) <$> A.decimal
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
-        <|> (A.char '#' $> SRGroup <*> A.decimal <*> optional gcScopeP <*> asGroupP)
+        <|> (A.char '#' $> SRGroup <*> A.decimal <*> optional gcScopeP <*> optional parentItemIdP <*> asGroupP)
+    parentItemIdP = " parent=" *> A.decimal
     asGroupP = ("(as_group=" *> onOffP <* A.char ')') <|> pure False
     gcScopeP = "(_support" *> (GCSMemberSupport <$> optional (A.char ':' *> A.decimal)) <* A.char ')'
     sendNameP =

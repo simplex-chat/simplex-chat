@@ -203,12 +203,18 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (mcEmpty {content = MCText "reply", quote = Just quotedMsg, parent = Just parentMsgRef}))
+  it "x.msg.new channel post with prefs" $
+    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"prefs\":{\"commentsDisabled\":true,\"commentsTotal\":42}}}"
+      ##==## ChatMessage
+        chatInitialVRange
+        (Just $ SharedMsgId "\1\2\3\4")
+        (XMsgNew (mcEmpty {content = MCText "hello", prefs = Just MsgPrefs {commentsDisabled = Just True, commentsTotal = Just 42}}))
   it "x.msg.update" $
     "{\"v\":\"1\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing
   it "x.msg.update with prefs (comments disabled)" $
     "{\"v\":\"1\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"prefs\":{\"commentsDisabled\":true}}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just MsgPrefs {commentsDisabled = True})
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing (Just MsgPrefs {commentsDisabled = Just True, commentsTotal = Nothing})
   it "x.msg.del" $
     "{\"v\":\"1\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
       #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing False

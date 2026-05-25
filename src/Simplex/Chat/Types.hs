@@ -2059,6 +2059,17 @@ instance FromJSON BoolDef where
   parseJSON v = BoolDef <$> parseJSON v
   omittedField = Just (BoolDef False)
 
+-- | An Int field that defaults to 0 when absent in JSON. Like BoolDef, this
+-- exists so a newer remote controller can parse CIMeta JSON emitted by an
+-- older remote host that doesn't include the field, avoiding a fallback to
+-- CInfoInvalidJSON. See docs/CONTRIBUTING.md.
+newtype IntDef0 = IntDef0 {unIntDef0 :: Int}
+  deriving newtype (Eq, Show, Num, Ord, ToJSON)
+
+instance FromJSON IntDef0 where
+  parseJSON v = IntDef0 <$> parseJSON v
+  omittedField = Just (IntDef0 0)
+
 $(JQ.deriveJSON defaultJSON ''UserContact)
 
 $(JQ.deriveJSON defaultJSON ''Profile)

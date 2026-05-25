@@ -665,7 +665,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           mc <- getCaptchaContent s
           sendComposedMessages_ cc sendRef [(quotedId, MCText noticeText), (Nothing, mc)]
       where
-        sendRef = SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) False
+        sendRef = SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) Nothing False
         gmId = groupMemberId' m
 
     sendVoiceCaptcha :: SendRef -> String -> IO ()
@@ -715,7 +715,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     dePendingMemberMsg g@GroupInfo {groupId, groupProfile = GroupProfile {displayName = n}} m@GroupMember {memberProfile = LocalProfile {displayName}} ciId msgText
       | memberRequiresCaptcha a m = do
           let gmId = groupMemberId' m
-              sendRef = SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) False
+              sendRef = SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) Nothing False
               -- /audio is matched as text, not as DirectoryCmd, because it is only valid
               -- in group context at captcha stage, while DirectoryCmd is for DM commands.
               isAudioCmd = T.strip msgText == "/audio"
@@ -751,7 +751,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         a = groupMemberAcceptance g
         rejectPendingMember rjctNotice = do
           let gmId = groupMemberId' m
-          sendComposedMessages cc (SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) False) [MCText rjctNotice]
+          sendComposedMessages cc (SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) Nothing False) [MCText rjctNotice]
           sendChatCmd cc (APIRemoveMembers groupId [gmId] False) >>= \case
             Right (CRUserDeletedMembers _ _ (_ : _) _ _) -> do
               atomically $ TM.delete gmId $ pendingCaptchas env

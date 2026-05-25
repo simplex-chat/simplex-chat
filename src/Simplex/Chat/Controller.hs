@@ -329,7 +329,6 @@ data ChatCommand
   | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatItemInfo {chatRef :: ChatRef, chatItemId :: ChatItemId}
   | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
-  | APISendComment {groupId :: GroupId, parentChatItemId :: ChatItemId, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
   | APISetCommentsDisabled {groupId :: GroupId, parentChatItemId :: ChatItemId, disabled :: Bool}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
@@ -992,7 +991,10 @@ logEventToFile = \case
 
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupChatScope) ShowGroupAsSender
+  | -- | Send into a group. `parentChatItemId` (when set) makes this a comment
+    -- on a channel post and is mutually exclusive with `scope`. `asGroup`
+    -- (showGroupAsSender) is for channel-post sends by the owner.
+    SRGroup GroupId (Maybe GroupChatScope) (Maybe ChatItemId) ShowGroupAsSender
   deriving (Eq, Show)
 
 data ChatPagination
