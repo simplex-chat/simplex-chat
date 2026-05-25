@@ -9616,14 +9616,21 @@ testChannelDropForwardedFromRemoved ps =
           bob <# "#team cath> hi again"
           alice <# "#team cath> hi again [>>]"
 
-          -- sync point: alice posts; dan receives it after processing (and dropping) cath's forward
+          -- sync point: alice posts; dan receives it only after processing (and dropping) cath's
+          -- forward, since both ride the same relay->dan connection in order (FIFO)
           alice #> "#team after"
           bob <# "#team> after"
           dan <# "#team> after [>>]"
-          threadDelay 1000000
 
-          -- dan dropped "hi again": chat has only "hi" and "after"; cath stays removed; no GSMemUnknown row created
-          dan #$> ("/_get chat #1 count=2", chat, [(0, "hi"), (0, "after")])
+          -- dan dropped "hi again" (no chat item); "hi" was received; cath stays removed; no GSMemUnknown row
+          danDropped <-
+            withCCTransaction dan $ \db ->
+              DB.query db "SELECT count(1) FROM chat_items WHERE item_text = ?" (Only ("hi again" :: String)) :: IO [[Int]]
+          danDropped `shouldBe` [[0]]
+          danReceived <-
+            withCCTransaction dan $ \db ->
+              DB.query db "SELECT count(1) FROM chat_items WHERE item_text = ?" (Only ("hi" :: String)) :: IO [[Int]]
+          danReceived `shouldBe` [[1]]
           (cathStatus, _) <- groupMemberRemovedState dan "cath"
           cathStatus `shouldBe` "removed"
           unknownCount <-
