@@ -4120,11 +4120,10 @@ processChatCommand vr nm = \case
               Nothing -> do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                if not direct && unsupportedGroupType groupSLinkData_
-                  then pure (con (linkConnReq fd), CPGroupLink (GLPUpdateRequired groupSLinkData_))
-                  else if not direct && null relays
-                    then pure (con (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
-                    else do
+                if
+                  | not direct && unsupportedGroupType groupSLinkData_ -> pure (con (linkConnReq fd), CPGroupLink (GLPUpdateRequired groupSLinkData_))
+                  | not direct && null relays -> pure (con (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
+                  | otherwise -> do
                       let FixedLinkData {linkConnReq = cReq, linkEntityId, rootKey} = fd
                           linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
                       let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
