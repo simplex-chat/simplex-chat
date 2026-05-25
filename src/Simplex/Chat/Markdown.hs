@@ -35,7 +35,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), SimplexNameType (..), SimplexNamespace (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
@@ -67,19 +67,6 @@ data Format
   | Unknown {json :: J.Value}
   deriving (Eq, Show)
 
-data SimplexNameInfo = SimplexNameInfo
-  { nameType :: SimplexNameType,
-    namespace :: SimplexNamespace,
-    domain :: Text,
-    subDomain :: [Text]
-  }
-  deriving (Eq, Show)
-
-data SimplexNamespace = NSSimplex | NSTesting | NSWeb
-  deriving (Eq, Show)
-
-data SimplexNameType = NTPublicGroup | NTContact
-  deriving (Eq, Show)
 
 mentionedNames :: MarkdownList -> [Text]
 mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)

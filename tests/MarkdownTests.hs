@@ -10,6 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
+import Simplex.Messaging.Agent.Protocol (SimplexNameInfo (..), SimplexNameType (..), SimplexNamespace (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$$>))
 import System.Console.ANSI.Types
