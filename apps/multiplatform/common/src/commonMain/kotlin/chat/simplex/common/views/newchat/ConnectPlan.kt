@@ -327,7 +327,7 @@ private suspend fun planAndConnectTask(
                 ProfileImage(
                   size = alertProfileImageSize,
                   image = groupSLinkData.groupProfile.image,
-                  icon = MR.images.ic_bigtop_updates_circle_filled
+                  icon = MR.images.ic_supervised_user_circle_filled
                 )
               },
               subtitle = generalGetString(MR.strings.group_link_requires_newer_version),

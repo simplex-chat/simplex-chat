@@ -1569,7 +1569,7 @@ func planAndConnect(
                                     profileImage:
                                         ProfileImage(
                                             imageStr: groupSLinkData.groupProfile.image,
-                                            iconName: "arrow.down.circle.fill",
+                                            iconName: "person.2.circle.fill",
                                             size: alertProfileImageSize
                                         ),
                                     theme: theme,
