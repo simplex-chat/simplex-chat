@@ -316,9 +316,7 @@ struct SettingsView: View {
 
             Section {
                 NavigationLink {
-                    HelpAndSupportView()
-                        .navigationTitle("Help & support")
-                        .modifier(ThemedBackground(grouped: true))
+                    helpAndSupportView
                 } label: {
                     settingsRow("questionmark", color: theme.colors.secondary) { Text("Help & support") }
                 }
@@ -338,9 +336,7 @@ struct SettingsView: View {
                 }
 
                 NavigationLink {
-                    AdvancedSettingsView()
-                        .navigationTitle("Advanced settings")
-                        .modifier(ThemedBackground(grouped: true))
+                    advancedSettingsView
                 } label: {
                     settingsRow("chevron.left.forwardslash.chevron.right", color: theme.colors.secondary) { Text("Advanced settings") }
                 }
@@ -353,82 +349,9 @@ struct SettingsView: View {
             chatModel.terminalItems = []
         }
     }
-    
-    private func chatDatabaseRow() -> some View {
-        NavigationLink {
-            DatabaseView(dismissSettingsSheet: dismiss, chatItemTTL: chatModel.chatItemTTL)
-                .navigationTitle("Your chat database")
-                .modifier(ThemedBackground(grouped: true))
-        } label: {
-            let color: Color = chatModel.chatDbEncrypted == false ? .orange : theme.colors.secondary
-            settingsRow("internaldrive", color: color) {
-                HStack {
-                    Text("Chat data")
-                    Spacer()
-                    if chatModel.chatRunning == false {
-                        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
-                    }
-                }
-            }
-        }
-    }
 
-    private func progressView() -> some View {
-        VStack {
-            ProgressView().scaleEffect(2)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity )
-    }
-
-    private enum NotificationAlert {
-        case enable
-        case error(LocalizedStringKey, String)
-    }
-}
-
-func notificationsIcon(_ chatModel: ChatModel, _ theme: AppTheme) -> some View {
-    let icon: String
-    let color: Color
-    switch (chatModel.tokenStatus) {
-    case .new:
-        icon = "bolt"
-        color = theme.colors.secondary
-    case .registered:
-        icon = "bolt.fill"
-        color = theme.colors.secondary
-    case .invalid: fallthrough
-    case .invalidBad: fallthrough
-    case .invalidTopic: fallthrough
-    case .invalidExpired: fallthrough
-    case .invalidUnregistered:
-        icon = "bolt.slash"
-        color = theme.colors.secondary
-    case .confirmed:
-        icon = "bolt.fill"
-        color = .yellow
-    case .active:
-        icon = "bolt.fill"
-        color = .green
-    case .expired:
-        icon = "bolt.slash.fill"
-        color = theme.colors.secondary
-    case .none:
-        icon = "bolt"
-        color = theme.colors.secondary
-    }
-    return Image(systemName: icon)
-        .padding(.trailing, 9)
-        .foregroundColor(color)
-}
-
-struct HelpAndSupportView: View {
-    @Environment(\.colorScheme) var colorScheme
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var sceneDelegate: SceneDelegate
-    @EnvironmentObject var theme: AppTheme
-
-    var body: some View {
+    @ViewBuilder
+    private var helpAndSupportView: some View {
         List {
             let user = chatModel.currentUser
             Section(header: Text("Help").foregroundColor(theme.colors.secondary)) {
@@ -506,14 +429,12 @@ struct HelpAndSupportView: View {
                 }
             }
         }
+        .navigationTitle("Help & support")
+        .modifier(ThemedBackground(grouped: true))
     }
-}
 
-struct AdvancedSettingsView: View {
-    @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var theme: AppTheme
-
-    var body: some View {
+    @ViewBuilder
+    private var advancedSettingsView: some View {
         List {
             Section {
                 NavigationLink {
@@ -531,7 +452,7 @@ struct AdvancedSettingsView: View {
                         .modifier(ThemedBackground(grouped: true))
                 } label: {
                     HStack {
-                        notificationsIcon(chatModel, theme)
+                        notificationsIcon()
                         Text("Notifications")
                     }
                 }
@@ -557,6 +478,74 @@ struct AdvancedSettingsView: View {
                 }
             }
         }
+        .navigationTitle("Advanced settings")
+        .modifier(ThemedBackground(grouped: true))
+    }
+    
+    private func chatDatabaseRow() -> some View {
+        NavigationLink {
+            DatabaseView(dismissSettingsSheet: dismiss, chatItemTTL: chatModel.chatItemTTL)
+                .navigationTitle("Your chat database")
+                .modifier(ThemedBackground(grouped: true))
+        } label: {
+            let color: Color = chatModel.chatDbEncrypted == false ? .orange : theme.colors.secondary
+            settingsRow("internaldrive", color: color) {
+                HStack {
+                    Text("Chat data")
+                    Spacer()
+                    if chatModel.chatRunning == false {
+                        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
+                    }
+                }
+            }
+        }
+    }
+
+    private func progressView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity )
+    }
+
+    private enum NotificationAlert {
+        case enable
+        case error(LocalizedStringKey, String)
+    }
+
+    private func notificationsIcon() -> some View {
+        let icon: String
+        let color: Color
+        switch (chatModel.tokenStatus) {
+        case .new:
+            icon = "bolt"
+            color = theme.colors.secondary
+        case .registered:
+            icon = "bolt.fill"
+            color = theme.colors.secondary
+        case .invalid: fallthrough
+        case .invalidBad: fallthrough
+        case .invalidTopic: fallthrough
+        case .invalidExpired: fallthrough
+        case .invalidUnregistered:
+            icon = "bolt.slash"
+            color = theme.colors.secondary
+        case .confirmed:
+            icon = "bolt.fill"
+            color = .yellow
+        case .active:
+            icon = "bolt.fill"
+            color = .green
+        case .expired:
+            icon = "bolt.slash.fill"
+            color = theme.colors.secondary
+        case .none:
+            icon = "bolt"
+            color = theme.colors.secondary
+        }
+        return Image(systemName: icon)
+            .padding(.trailing, 9)
+            .foregroundColor(color)
     }
 }
 

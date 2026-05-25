@@ -15,10 +15,23 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS, store: groupDefaults) private var useLinkPreviews = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
+    @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
+    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) private var privacyMediaBlurRadius: Int = 0
+    @State private var contactReceipts = false
+    @State private var contactReceiptsReset = false
+    @State private var contactReceiptsOverrides = 0
+    @State private var contactReceiptsDialogue = false
+    @State private var groupReceipts = false
+    @State private var groupReceiptsReset = false
+    @State private var groupReceiptsOverrides = 0
+    @State private var groupReceiptsDialogue = false
     @State private var autoAcceptMemberContacts = false
     @State private var autoAcceptMemberContactsReset = false
     @State private var alert: PrivacySettingsViewAlert?
@@ -114,13 +127,25 @@ struct PrivacySettings: View {
 
                 Section {
                     NavigationLink {
-                        MorePrivacy()
-                            .navigationTitle("More privacy")
-                            .modifier(ThemedBackground(grouped: true))
+                        morePrivacyView
                     } label: {
                         settingsRow("ellipsis", color: theme.colors.secondary) { Text("More privacy") }
                     }
                 }
+            }
+        }
+        .onChange(of: contactReceipts) { _ in
+            if contactReceiptsReset {
+                contactReceiptsReset = false
+            } else {
+                setOrAskSendReceiptsContacts(contactReceipts)
+            }
+        }
+        .onChange(of: groupReceipts) { _ in
+            if groupReceiptsReset {
+                groupReceiptsReset = false
+            } else {
+                setOrAskSendReceiptsGroups(groupReceipts)
             }
         }
         .onChange(of: autoAcceptMemberContacts) { _ in
@@ -132,6 +157,14 @@ struct PrivacySettings: View {
         }
         .onAppear {
             if let u = m.currentUser {
+                if contactReceipts != u.sendRcptsContacts {
+                    contactReceiptsReset = true
+                    contactReceipts = u.sendRcptsContacts
+                }
+                if groupReceipts != u.sendRcptsSmallGroups {
+                    groupReceiptsReset = true
+                    groupReceipts = u.sendRcptsSmallGroups
+                }
                 if autoAcceptMemberContacts != u.autoAcceptMemberContacts {
                     autoAcceptMemberContactsReset = true
                     autoAcceptMemberContacts = u.autoAcceptMemberContacts
@@ -146,60 +179,8 @@ struct PrivacySettings: View {
         }
     }
 
-    private func setAutoAcceptGrpDirectInvs(_ enable: Bool) {
-        Task {
-            do {
-                if let currentUser = m.currentUser {
-                    try await apiSetUserAutoAcceptMemberContacts(currentUser.userId, enable: enable)
-                    await MainActor.run {
-                        var updatedUser = currentUser
-                        updatedUser.autoAcceptMemberContacts = enable
-                        m.updateUser(updatedUser)
-                    }
-                }
-            } catch let error {
-                alert = .error(title: "Error setting auto-accept", error: "Error: \(responseError(error))")
-            }
-        }
-    }
-
-    private func simplexLockRow(_ value: LocalizedStringKey) -> some View {
-        HStack {
-            Text("SimpleX Lock")
-            Spacer()
-            Text(value)
-        }
-    }
-}
-
-struct MorePrivacy: View {
-    @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var theme: AppTheme
-    @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
-    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
-    @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
-    @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
-    @State private var contactReceipts = false
-    @State private var contactReceiptsReset = false
-    @State private var contactReceiptsOverrides = 0
-    @State private var contactReceiptsDialogue = false
-    @State private var groupReceipts = false
-    @State private var groupReceiptsReset = false
-    @State private var groupReceiptsOverrides = 0
-    @State private var groupReceiptsDialogue = false
-    @State private var alert: MorePrivacyAlert?
-
-    enum MorePrivacyAlert: Identifiable {
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
-
-        var id: String {
-            switch self {
-            case let .error(title, _): return "error \(title)"
-            }
-        }
-    }
-
-    var body: some View {
+    @ViewBuilder
+    private var morePrivacyView: some View {
         List {
             Section {
                 settingsRow("message", color: theme.colors.secondary) {
@@ -320,38 +301,8 @@ struct MorePrivacy: View {
                 }
             }
         }
-        .onChange(of: contactReceipts) { _ in
-            if contactReceiptsReset {
-                contactReceiptsReset = false
-            } else {
-                setOrAskSendReceiptsContacts(contactReceipts)
-            }
-        }
-        .onChange(of: groupReceipts) { _ in
-            if groupReceiptsReset {
-                groupReceiptsReset = false
-            } else {
-                setOrAskSendReceiptsGroups(groupReceipts)
-            }
-        }
-        .onAppear {
-            if let u = m.currentUser {
-                if contactReceipts != u.sendRcptsContacts {
-                    contactReceiptsReset = true
-                    contactReceipts = u.sendRcptsContacts
-                }
-                if groupReceipts != u.sendRcptsSmallGroups {
-                    groupReceiptsReset = true
-                    groupReceipts = u.sendRcptsSmallGroups
-                }
-            }
-        }
-        .alert(item: $alert) { alert in
-            switch alert {
-            case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
-            }
-        }
+        .navigationTitle("More privacy")
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func setEncryptLocalFiles(_ enable: Bool) {
@@ -457,6 +408,31 @@ struct MorePrivacy: View {
             } catch let error {
                 alert = .error(title: "Error setting delivery receipts!", error: "Error: \(responseError(error))")
             }
+        }
+    }
+
+    private func setAutoAcceptGrpDirectInvs(_ enable: Bool) {
+        Task {
+            do {
+                if let currentUser = m.currentUser {
+                    try await apiSetUserAutoAcceptMemberContacts(currentUser.userId, enable: enable)
+                    await MainActor.run {
+                        var updatedUser = currentUser
+                        updatedUser.autoAcceptMemberContacts = enable
+                        m.updateUser(updatedUser)
+                    }
+                }
+            } catch let error {
+                alert = .error(title: "Error setting auto-accept", error: "Error: \(responseError(error))")
+            }
+        }
+    }
+
+    private func simplexLockRow(_ value: LocalizedStringKey) -> some View {
+        HStack {
+            Text("SimpleX Lock")
+            Spacer()
+            Text(value)
         }
     }
 }
