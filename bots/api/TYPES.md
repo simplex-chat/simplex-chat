@@ -2331,6 +2331,10 @@ NoRelays:
 - type: "noRelays"
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
+UpdateRequired:
+- type: "updateRequired"
+- groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
+
 
 ---
 
