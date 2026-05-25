@@ -20,7 +20,8 @@ import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe, listToMaybe, maybeToList)
+import Data.Maybe (fromMaybe, isJust, listToMaybe, maybeToList)
+import Data.Time (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
@@ -31,7 +32,8 @@ import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
+import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText, supportedChatVRange)
+import Simplex.Chat.Store.Groups (deleteGroupMember, getRemovedMembersToCleanup)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -268,6 +270,9 @@ chatGroupTests = do
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
       it "should remove member (signed)" testChannelRemoveMemberSigned
+      it "drops forwarded content from removed member" testChannelDropForwardedFromRemoved
+      it "relay does not prepend profile of removed sender" testChannelRelaySkipsRemovedSenderPrepend
+      it "cleanup GCs removed_at tombstones past TTL" testChannelRemovedMemberCleanup
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
       it "owner should leave channel (signed)" testChannelOwnerLeave
@@ -9533,6 +9538,11 @@ testChannelRemoveMemberSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
 
+            -- eve had items (posted "hello from eve") -> kept as permanent GSMemRemoved tombstone, removed_at NULL
+            (eveStatus, eveRemovedAt) <- groupMemberRemovedState alice "eve"
+            eveStatus `shouldBe` "removed"
+            eveRemovedAt `shouldBe` Nothing
+
             -- after first removal
             alice ##> "/_info #1"
             alice <## "group ID: 1"
@@ -9559,6 +9569,11 @@ testChannelRemoveMemberSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")]) -- no new chat item
 
+            -- dan had no items -> kept as GSMemRemoved tombstone with removed_at set (TTL cleanup path)
+            (danStatus, danRemovedAt) <- groupMemberRemovedState alice "dan"
+            danStatus `shouldBe` "removed"
+            isJust danRemovedAt `shouldBe` True
+
             -- after second removal
             alice ##> "/_info #1"
             alice <## "group ID: 1"
@@ -9567,6 +9582,140 @@ testChannelRemoveMemberSigned ps =
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 2"
+
+groupMemberRemovedState :: HasCallStack => TestCC -> String -> IO (String, Maybe UTCTime)
+groupMemberRemovedState cc name =
+  head
+    <$> withCCTransaction
+      cc
+      (\db -> DB.query db "SELECT member_status, removed_at FROM group_members WHERE local_display_name = ?" (Only name))
+
+testChannelDropForwardedFromRemoved :: HasCallStack => TestParams -> IO ()
+testChannelDropForwardedFromRemoved ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          -- cath posts: dan learns cath via prepended XGrpMemNew
+          cath #> "#team hi"
+          bob <# "#team cath> hi"
+          alice <# "#team cath> hi [>>]"
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> hi [>>]"
+
+          -- simulate dan having processed cath's removal: mark cath removed in dan's DB
+          void $ withCCTransaction dan $ \db ->
+            DB.execute db "UPDATE group_members SET member_status = 'removed' WHERE local_display_name = ?" (Only ("cath" :: String))
+
+          -- cath's further (in-flight) content is forwarded; dan must drop it, alice still receives it
+          cath #> "#team hi again"
+          bob <# "#team cath> hi again"
+          alice <# "#team cath> hi again [>>]"
+
+          -- sync point: alice posts; dan receives it after processing (and dropping) cath's forward
+          alice #> "#team after"
+          bob <# "#team> after"
+          dan <# "#team> after [>>]"
+          threadDelay 1000000
+
+          -- dan dropped "hi again": chat has only "hi" and "after"; cath stays removed; no GSMemUnknown row created
+          dan #$> ("/_get chat #1 count=2", chat, [(0, "hi"), (0, "after")])
+          (cathStatus, _) <- groupMemberRemovedState dan "cath"
+          cathStatus `shouldBe` "removed"
+          unknownCount <-
+            withCCTransaction dan $ \db ->
+              DB.query_ db "SELECT count(1) FROM group_members WHERE member_status = 'unknown'" :: IO [[Int]]
+          unknownCount `shouldBe` [[0]]
+
+testChannelRelaySkipsRemovedSenderPrepend :: HasCallStack => TestParams -> IO ()
+testChannelRelaySkipsRemovedSenderPrepend ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          -- cath posts before dan joins, so dan won't know cath yet
+          cath #> "#team hi"
+          bob <# "#team cath> hi"
+          alice <# "#team cath> hi [>>]"
+          -- dan joins late: relay's (cath -> dan) relation bit is MRNew
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          -- simulate relay processed cath's removal but kept the tombstone (cath's content still in-flight)
+          void $ withCCTransaction bob $ \db ->
+            DB.execute db "UPDATE group_members SET member_status = 'removed' WHERE local_display_name = ?" (Only ("cath" :: String))
+
+          -- cath posts again: relay forwards the content to dan but must NOT prepend cath's XGrpMemNew
+          cath #> "#team hi again"
+          bob <# "#team cath> hi again"
+          alice <# "#team cath> hi again [>>]"
+          -- dan receives the content with no "introduced cath" event before it
+          dan <# "#team cath> hi again [>>]"
+
+testChannelRemovedMemberCleanup :: HasCallStack => TestParams -> IO ()
+testChannelRemovedMemberCleanup ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- remove two silent (no-items) members -> both become removed_at tombstones
+            alice ##> "/rm #team cath"
+            alice <## "#team: you removed cath from the group (signed)"
+            bob <## "#team: alice removed cath from the group (signed)"
+            concurrentlyN_
+              [ dan <## "error: x.grp.mem.del with unknown member ID",
+                eve <## "error: x.grp.mem.del with unknown member ID",
+                do
+                  cath <## "#team: alice removed you from the group (signed)"
+                  cath <## "use /d #team to delete the group"
+              ]
+            threadDelay 1000000
+            alice ##> "/rm #team dan"
+            alice <## "#team: you removed dan from the group (signed)"
+            bob <## "#team: alice removed dan from the group (signed)"
+            concurrentlyN_
+              [ eve <## "error: x.grp.mem.del with unknown member ID",
+                do
+                  dan <## "#team: alice removed you from the group (signed)"
+                  dan <## "use /d #team to delete the group"
+              ]
+
+            -- both are tombstones with removed_at set
+            (cathStatus, cathRemovedAt) <- groupMemberRemovedState alice "cath"
+            cathStatus `shouldBe` "removed"
+            isJust cathRemovedAt `shouldBe` True
+            (_, danRemovedAt) <- groupMemberRemovedState alice "dan"
+            isJust danRemovedAt `shouldBe` True
+
+            -- age cath's tombstone past TTL; dan's stays within the window
+            oldTs <- addUTCTime (-2 * nominalDay) <$> getCurrentTime
+            void $ withCCTransaction alice $ \db ->
+              DB.execute db "UPDATE group_members SET removed_at = ? WHERE local_display_name = ?" (oldTs, "cath" :: String)
+
+            -- invoke the cleanup sweep exactly as cleanupManager does
+            now <- getCurrentTime
+            withCCUser alice $ \user ->
+              withCCTransaction alice $ \db -> do
+                removed <- getRemovedMembersToCleanup db supportedChatVRange user (addUTCTime (-nominalDay) now)
+                forM_ removed $ deleteGroupMember db user
+
+            -- cath (aged) is GC'd; dan (within window) survives
+            cathRows <-
+              withCCTransaction alice $ \db ->
+                DB.query db "SELECT count(1) FROM group_members WHERE local_display_name = ?" (Only ("cath" :: String)) :: IO [[Int]]
+            cathRows `shouldBe` [[0]]
+            danRows <-
+              withCCTransaction alice $ \db ->
+                DB.query db "SELECT count(1) FROM group_members WHERE local_display_name = ?" (Only ("dan" :: String)) :: IO [[Int]]
+            danRows `shouldBe` [[1]]
 
 testChannelDeleteGroupSigned :: HasCallStack => TestParams -> IO ()
 testChannelDeleteGroupSigned ps =

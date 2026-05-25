@@ -135,6 +135,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260514_relay_request_group_link_index
           Simplex.Chat.Store.Postgres.Migrations.M20260515_delivery_job_senders
           Simplex.Chat.Store.Postgres.Migrations.M20260520_client_services
+          Simplex.Chat.Store.Postgres.Migrations.M20260525_member_removed_at
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -292,6 +293,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260514_relay_request_group_link_index
           Simplex.Chat.Store.SQLite.Migrations.M20260515_delivery_job_senders
           Simplex.Chat.Store.SQLite.Migrations.M20260520_client_services
+          Simplex.Chat.Store.SQLite.Migrations.M20260525_member_removed_at
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

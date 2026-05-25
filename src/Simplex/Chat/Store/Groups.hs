@@ -57,6 +57,7 @@ module Simplex.Chat.Store.Groups
     getMentionedGroupMember,
     getMentionedMemberByMemberId,
     getGroupMemberById,
+    getGroupMemberByIdUnlessRemoved,
     getGroupMemberByIndex,
     getGroupMemberByMemberId,
     getCreateUnknownGMByMemberId,
@@ -68,6 +69,7 @@ module Simplex.Chat.Store.Groups
     getGroupModerators,
     getGroupRelayMembers,
     getGroupMembersForExpiration,
+    getRemovedMembersToCleanup,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
@@ -116,6 +118,7 @@ module Simplex.Chat.Store.Groups
     updateRelayGroupKeys,
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
+    tombstoneGroupMember,
     updateGroupMemberAccepted,
     deleteGroupMemberSupportChat,
     updateGroupMembersRequireAttention,
@@ -1092,6 +1095,16 @@ getGroupMemberById db vr user@User {userId} groupMemberId =
       (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ?")
       (groupMemberId, userId)
 
+-- Resolves a member by id but treats removed members (memberRemoved) as absent,
+-- so relay delivery does not announce (prepend XGrpMemNew for) a removed sender.
+getGroupMemberByIdUnlessRemoved :: DB.Connection -> VersionRangeChat -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
+getGroupMemberByIdUnlessRemoved db vr user@User {userId} groupMemberId =
+  ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFound groupMemberId) $
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ? AND m.member_status NOT IN (?,?,?,?)")
+      (groupMemberId, userId, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+
 getGroupMemberByIndex :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Int64 -> ExceptT StoreError IO GroupMember
 getGroupMemberByIndex db vr user GroupInfo {groupId} indexInGroup =
   ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFoundByIndex indexInGroup) $
@@ -1208,6 +1221,17 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
               |]
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
+
+-- Channel removal tombstones scheduled for GC: removed_at is set only on channel
+-- removal paths whose old behavior was to hard-delete the row, so any row with
+-- removed_at < cutoff is a channel tombstone whose items are already deleted.
+getRemovedMembersToCleanup :: DB.Connection -> VersionRangeChat -> User -> UTCTime -> IO [GroupMember]
+getRemovedMembersToCleanup db vr user@User {userId} cutoffTs =
+  map (toContactMember vr user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at IS NOT NULL AND m.removed_at < ?")
+      (userId, cutoffTs)
 
 getGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db vr user groupId =
@@ -1954,6 +1978,20 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
       WHERE user_id = ? AND group_member_id = ?
     |]
     (memStatus, currentTs, userId, groupMemberId)
+
+-- Sets GSMemRemoved and stamps removed_at in one statement, keeping the member
+-- row as a tombstone that the cleanup manager GCs after TTL (channels only).
+tombstoneGroupMember :: DB.Connection -> UserId -> GroupMember -> IO ()
+tombstoneGroupMember db userId GroupMember {groupMemberId} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET member_status = ?, removed_at = ?, updated_at = ?
+      WHERE user_id = ? AND group_member_id = ?
+    |]
+    (GSMemRemoved, currentTs, currentTs, userId, groupMemberId)
 
 updateGroupMemberAccepted :: DB.Connection -> User -> GroupMember -> GroupMemberStatus -> GroupMemberRole -> IO GroupMember
 updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status role = do
