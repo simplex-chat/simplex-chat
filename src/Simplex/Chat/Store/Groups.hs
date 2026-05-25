@@ -1974,8 +1974,8 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
     |]
     (memStatus, currentTs, userId, groupMemberId)
 
-updateGroupMemberRemovedAt :: DB.Connection -> UserId -> GroupMember -> IO ()
-updateGroupMemberRemovedAt db userId GroupMember {groupMemberId} = do
+updateGroupMemberRemovedAt :: DB.Connection -> User -> GroupMember -> IO ()
+updateGroupMemberRemovedAt db User {userId} GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
