@@ -3416,7 +3416,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let allowCreate = toCMEventTag chatMsgEvent /= XGrpLeave_
           withStore (\db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownRole allowCreate) >>= \case
             Just (author, unknown)
-              -- channels: removal is durable - drop late/replayed forwarded content from a removed member
               | useRelays' gInfo && memberRemoved author ->
                   logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | otherwise -> do
@@ -3736,8 +3735,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     senders <- withStore' $ \db ->
                       fmap catMaybes . forM senderGMIds $ \sId ->
                         fmap eitherToMaybe . runExceptT $ do
-                          -- removed senders resolve as absent, so no XGrpMemNew is prepended for them
-                          sender <- getGroupMemberByIdUnlessRemoved db vr user sId
+                          sender <- getNonRemovedMemberById db vr user sId
                           vec <- getMemberRelationsVector db sender
                           pure (sender, vec)
                     let missingSenders = length senderGMIds - length senders

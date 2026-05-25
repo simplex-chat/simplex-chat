@@ -1848,10 +1848,8 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
     else
       checkGroupMemberHasItems db user m' >>= \case
         Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-        -- In channels keep an item-less removed member as a removed_at tombstone
-        -- (GC'd after TTL) so late/replayed forwarded content can be gated by status.
         Nothing
-          | useRelays' gInfo -> tombstoneGroupMember db userId m'
+          | useRelays' gInfo -> updateGroupMemberRemovedAt db userId m'
           | otherwise -> deleteGroupMember db user m'
   pure gInfo'
 
@@ -1863,10 +1861,8 @@ fullyDeleteMemberRecord user gInfo m =
 fullyDeleteMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
 fullyDeleteMemberRecordIO db user@User {userId} gInfo m = do
   (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
-  -- Items are already deleted by the caller (withMessages path); in channels keep
-  -- a non-relay member as a removed_at tombstone instead of dropping the row.
   if useRelays' gInfo && not (isRelay m')
-    then tombstoneGroupMember db userId m'
+    then updateGroupMemberRemovedAt db userId m'
     else deleteGroupMember db user m'
   pure gInfo'
 

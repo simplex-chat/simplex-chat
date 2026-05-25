@@ -57,7 +57,7 @@ module Simplex.Chat.Store.Groups
     getMentionedGroupMember,
     getMentionedMemberByMemberId,
     getGroupMemberById,
-    getGroupMemberByIdUnlessRemoved,
+    getNonRemovedMemberById,
     getGroupMemberByIndex,
     getGroupMemberByMemberId,
     getCreateUnknownGMByMemberId,
@@ -118,7 +118,7 @@ module Simplex.Chat.Store.Groups
     updateRelayGroupKeys,
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
-    tombstoneGroupMember,
+    updateGroupMemberRemovedAt,
     updateGroupMemberAccepted,
     deleteGroupMemberSupportChat,
     updateGroupMembersRequireAttention,
@@ -1095,10 +1095,8 @@ getGroupMemberById db vr user@User {userId} groupMemberId =
       (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ?")
       (groupMemberId, userId)
 
--- Resolves a member by id but treats removed members (memberRemoved) as absent,
--- so relay delivery does not announce (prepend XGrpMemNew for) a removed sender.
-getGroupMemberByIdUnlessRemoved :: DB.Connection -> VersionRangeChat -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
-getGroupMemberByIdUnlessRemoved db vr user@User {userId} groupMemberId =
+getNonRemovedMemberById :: DB.Connection -> VersionRangeChat -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
+getNonRemovedMemberById db vr user@User {userId} groupMemberId =
   ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFound groupMemberId) $
     DB.query
       db
@@ -1222,9 +1220,6 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
 
--- Channel removal tombstones scheduled for GC: removed_at is set only on channel
--- removal paths whose old behavior was to hard-delete the row, so any row with
--- removed_at < cutoff is a channel tombstone whose items are already deleted.
 getRemovedMembersToCleanup :: DB.Connection -> VersionRangeChat -> User -> UTCTime -> IO [GroupMember]
 getRemovedMembersToCleanup db vr user@User {userId} cutoffTs =
   map (toContactMember vr user)
@@ -1979,10 +1974,8 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
     |]
     (memStatus, currentTs, userId, groupMemberId)
 
--- Sets GSMemRemoved and stamps removed_at in one statement, keeping the member
--- row as a tombstone that the cleanup manager GCs after TTL (channels only).
-tombstoneGroupMember :: DB.Connection -> UserId -> GroupMember -> IO ()
-tombstoneGroupMember db userId GroupMember {groupMemberId} = do
+updateGroupMemberRemovedAt :: DB.Connection -> UserId -> GroupMember -> IO ()
+updateGroupMemberRemovedAt db userId GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
   DB.execute
     db

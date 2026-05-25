@@ -4789,7 +4789,6 @@ cleanupManager = do
       forM_ staleConns $ \acId -> do
         deleteAgentConnectionAsync acId
         withStore' $ \db -> deleteConnectionByAgentConnId db user acId
-    -- GC channel removal tombstones (removed_at) past TTL; their items are already deleted.
     cleanupRemovedMembers user = do
       vr <- chatVersionRange
       ts <- liftIO getCurrentTime
