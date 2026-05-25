@@ -42,6 +42,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
+import System.Directory (copyFile, doesFileExist)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -50,7 +51,6 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
-import System.Directory (copyFile)
 import System.FilePath ((</>))
 #endif
 
@@ -1918,7 +1918,7 @@ testGroupDelayedModerationFullDelete ps = do
 testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
+    \alice bob cath -> withXFTPServer $ do
       createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 750000
       alice ##> "/set delete #team on"
@@ -1936,22 +1936,61 @@ testDeleteMemberWithMessages =
             cath <## "Full deletion: on"
         ]
       threadDelay 750000
-      bob #> "#team hello"
-      concurrently_
-        (alice <# "#team bob> hello")
-        (cath <# "#team bob> hello")
-      alice #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
-      bob #$> ("/_get chat #1 count=1", chat, [(1, "hello")])
-      cath #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+
+      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
+      cath #$> ("/_files_folder ./tests/tmp/cath_app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/bob_app_files/test.jpg"
+
+      bob ##> "/_send #1 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"file from bob\"}}]"
+      bob <# "#team file from bob"
+      bob <# "/f #team test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+
+      alice <# "#team bob> file from bob"
+      alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      cath <# "#team bob> file from bob"
+      cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob <## "completed uploading file 1 (test.jpg) for #team"
+
+      alice ##> "/fr 1"
+      alice
+        <### [ "saving file 1 from bob to test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
+      alice <## "completed receiving file 1 (test.jpg) from bob"
+
+      cath ##> "/fr 1"
+      cath
+        <### [ "saving file 1 from bob to test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
+      cath <## "completed receiving file 1 (test.jpg) from bob"
+
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      B.readFile "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` src
+      B.readFile "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` src
+      B.readFile "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` src
+
       threadDelay 1000000
       alice ##> "/rm #team bob messages=on"
       alice <## "#team: you removed bob from the group with all messages"
       bob <## "#team: alice removed you from the group with all messages"
       bob <## "use /d #team to delete the group"
       cath <## "#team: alice removed bob from the group with all messages"
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by you]"), (1, "removed bob")])
-      bob #$> ("/_get chat #1 count=2", chat, [(1, "moderated [deleted by alice]"), (0, "removed you")])
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by alice]"), (0, "removed bob")])
+
+      doesFileExist "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` False
+      doesFileExist "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` False
+      doesFileExist "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` False
+
+      -- Under fullDelete, bob's items are physically deleted on all sides; only the system event remains.
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "removed bob")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "removed you")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "removed bob")])
 
 testDeleteMemberMarkMessagesDeleted :: HasCallStack => TestParams -> IO ()
 testDeleteMemberMarkMessagesDeleted =

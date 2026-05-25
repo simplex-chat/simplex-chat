@@ -515,22 +515,20 @@ updateACIGroupInfo gInfo' = \case
     AChatItem SCTGroup dir (GroupChat gInfo' chatScopeInfo) ci
   aci -> aci
 
-deleteGroupMemberCIs :: MsgDirectionI d => User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> CM ()
-deleteGroupMemberCIs user gInfo member byGroupMember msgDir = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs
+deleteGroupMemberCIs :: User -> GroupInfo -> GroupMember -> CM ()
+deleteGroupMemberCIs user gInfo member = do
+  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member
   deleteCIFiles user filesInfo
 
-deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ()
-deleteGroupMembersCIs user gInfo members byGroupMember = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> deleteGroupMemberCIs_ db user gInfo m byGroupMember SMDRcv deletedTs
+deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> CM ()
+deleteGroupMembersCIs user gInfo members = do
+  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ deleteGroupMemberCIs_ db user gInfo
   deleteCIFiles user filesInfo
 
-deleteGroupMemberCIs_ :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO [CIFileInfo]
-deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs = do
+deleteGroupMemberCIs_ :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO [CIFileInfo]
+deleteGroupMemberCIs_ db user gInfo member = do
   fs <- getGroupMemberFileInfo db user gInfo member
-  updateMemberCIsModerated db user gInfo member byGroupMember msgDir deletedTs
+  deleteMemberCIs db user gInfo member
   pure fs
 
 deleteLocalCIs :: User -> NoteFolder -> [CChatItem 'CTLocal] -> Bool -> Bool -> CM ChatResponse
@@ -1851,6 +1849,17 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
       checkGroupMemberHasItems db user m' >>= \case
         Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
         Nothing -> deleteGroupMember db user m'
+  pure gInfo'
+
+-- Unlike deleteOrUpdateMemberRecord, skips checkGroupMemberHasItems.
+fullyDeleteMemberRecord :: User -> GroupInfo -> GroupMember -> CM GroupInfo
+fullyDeleteMemberRecord user gInfo m =
+  withStore' $ \db -> fullyDeleteMemberRecordIO db user gInfo m
+
+fullyDeleteMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
+fullyDeleteMemberRecordIO db user gInfo m = do
+  (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
+  deleteGroupMember db user m'
   pure gInfo'
 
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo

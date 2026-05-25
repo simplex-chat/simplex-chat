@@ -2871,7 +2871,6 @@ processChatCommand vr nm = \case
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
-      when withMessages $ deleteMessages user gInfo' deleted
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
@@ -2916,11 +2915,14 @@ processChatCommand vr nm = \case
                 Left e -> Just $ Left e
               itemsData = mapMaybe skipUnwantedItem itemsData_
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) False itemsData Nothing False
+          -- MUST run before delMember so getGroupMemberFileInfo can still resolve file info under fullDelete.
+          when withMessages $ deleteMessages user gInfo memsToDelete
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) $ rights cis_
           pure (errs, deleted, acis, signed)
           where
+            fullDelete = withMessages && groupFeatureUserAllowed SGFFullDelete gInfo
             sndItemData :: GroupMember -> SndMessage -> Maybe (NewSndChatItemData c)
             sndItemData GroupMember {groupMemberId, memberProfile, memberStatus} msg
               | memberStatus == GSMemRemoved || memberStatus == GSMemLeft = Nothing
@@ -2933,10 +2935,12 @@ processChatCommand vr nm = \case
               -- voided result (updated group info) may have incorrect state of membersRequireAttention.
               -- To avoid complicating code by chaining group info updates,
               -- instead we re-read it once after deleting all members before response.
-              void $ deleteOrUpdateMemberRecordIO db user gInfo m
+              if fullDelete
+                then void $ fullyDeleteMemberRecordIO db user gInfo m
+                else void $ deleteOrUpdateMemberRecordIO db user gInfo m
               pure m {memberStatus = GSMemRemoved}
       deleteMessages user gInfo@GroupInfo {membership} ms
-        | groupFeatureUserAllowed SGFFullDelete gInfo = deleteGroupMembersCIs user gInfo ms membership
+        | groupFeatureUserAllowed SGFFullDelete gInfo = deleteGroupMembersCIs user gInfo ms
         | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     gInfo@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db vr user groupId

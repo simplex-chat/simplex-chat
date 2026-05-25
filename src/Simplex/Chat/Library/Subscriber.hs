@@ -3176,7 +3176,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             updateGroupMemberStatus db userId membership GSMemRemoved
             when (maybe False (/= RSRejected) (relayOwnStatus gInfo)) $ updateRelayOwnStatus_ db gInfo RSInactive
           let membership' = membership {memberStatus = GSMemRemoved}
-          when withMessages $ deleteMessages gInfo membership' SMDSnd
+          when withMessages $ deleteMessages gInfo membership'
           deleteMemberItem msg gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
           pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
@@ -3196,15 +3196,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     deleteMemberConnection' deletedMember True
                   else deleteMemberConnection deletedMember
                 let deliveryScope = memberEventDeliveryScope deletedMember
+                    deletedMember' = deletedMember {memberStatus = GSMemRemoved}
+                when withMessages $ deleteMessages gInfo deletedMember'
                 gInfo' <- case deliveryScope of
                   -- Keep member record if it's support scope - it will be required for forwarding inside that scope.
                   Just (DJSMemberSupport _) | shouldForward -> updateMemberRecordDeleted user gInfo deletedMember GSMemRemoved
-                  -- Undeleted "member connected" chat item will prevent deletion of member record.
-                  _ -> deleteOrUpdateMemberRecord user gInfo deletedMember
+                  _
+                    | withMessages && groupFeatureMemberAllowed SGFFullDelete m gInfo ->
+                        fullyDeleteMemberRecord user gInfo deletedMember
+                    -- Undeleted "member connected" chat item will prevent deletion of member record.
+                    | otherwise -> deleteOrUpdateMemberRecord user gInfo deletedMember
                 gInfo'' <- updatePublicGroupData user gInfo'
                 let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
-                    deletedMember' = deletedMember {memberStatus = GSMemRemoved}
-                when withMessages $ deleteMessages gInfo'' deletedMember' SMDRcv
                 -- Clear forwardedByMember if it references the deleted member,
                 -- as the member record was already deleted above.
                 let RcvMessage {forwardedByMember = fwdBy} = msg
@@ -3221,9 +3224,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           (gi', m', scopeInfo) <- mkGroupChatScope gi m
           (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg' brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView cInfo ci
-        deleteMessages :: MsgDirectionI d => GroupInfo -> GroupMember -> SMsgDirection d -> CM ()
-        deleteMessages gInfo' delMem msgDir
-          | groupFeatureMemberAllowed SGFFullDelete m gInfo' = deleteGroupMemberCIs user gInfo' delMem m msgDir
+        deleteMessages :: GroupInfo -> GroupMember -> CM ()
+        deleteMessages gInfo' delMem
+          | groupFeatureMemberAllowed SGFFullDelete m gInfo' = deleteGroupMemberCIs user gInfo' delMem
           | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member =
