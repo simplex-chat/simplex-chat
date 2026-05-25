@@ -17,13 +17,13 @@ DNS-based naming is vulnerable to domain seizure and requires WHOIS entries. Blo
 - **Two address types**: each name stores channel links (set) and contact links (set). Client uses the first; set provides forward-compatible redundancy. Either can be empty.
 - **Optional metadata**: admin SimpleX address, admin email.
 - **Registration**: commit-reveal to prevent frontrunning. Length-based ETH pricing. Annual renewal. Dutch auction on expiry.
-- **Launch gating**: requires SimpleX test NFT. Up to 5 paid + 5 test names per holder. Test names free, auto-removed after 3 months, use `testnet` namespace.
+- **Launch gating**: requires SimpleX test NFT. Up to 5 paid + 5 test names per holder. Test names free, auto-removed after 3 months, use `testing` namespace.
 - **Reserved names**: common verticals (books, games, music, movies, news, etc.) reserved for community-operated channels managed by SimpleX Network Consortium.
 - Only 7+ character names can be registered during "launch phase".
 - **Resolution**: client queries two independent name servers (Ethereum light clients) via two SMP proxies. Agreement = trusted. Disagreement = warning.
 - **Double resolution**: name -> short link (on-chain), short link -> connection data (existing protocol).
 - **Verification**: if on-chain link matches profile address, name is verified. Manual "verify" button + optional auto-verify on profile open.
-- **Markdown**: `#name` (`.simplex` implied), `#name.simplex` (explicit), `#testnet:name` for test namespace. In CLI, `#` is local in group commands, global in `/c` and message bodies.
+- **Markdown**: `#name` (`.simplex` implied), `#name.simplex` (explicit), `#name.testing` for test namespace. In CLI, `#` is local in group commands, global in `/c` and message bodies.
 - **Search**: `#name.simplex` auto-resolves. Disable in "More privacy" settings.
 - **Router role**: `names` added to `ServerRoles`. Not all routers support it.
 - **Contract**: ENS fork on Ethereum mainnet. ETH payment. Upgradeable.
@@ -211,7 +211,7 @@ Default router list updated to include name-capable routers.
 - `#name` or `#name.simplex` - native names (no dot = `.simplex` implied)
 - `#my-name` or `#my-name.simplex` - hyphenated names
 - `#sub.name.simplex` - subdomains (explicit TLD)
-- `#testnet:name` - test namespace
+- `#name.testing` - test namespace
 - Rendered as clickable resolve-and-connect links
 
 CLI: `#` = local in group commands, global in `/c` and messages.
