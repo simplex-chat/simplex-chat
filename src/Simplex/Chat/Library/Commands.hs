@@ -4120,21 +4120,27 @@ processChatCommand vr nm = \case
               Nothing -> do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                if not direct && null relays
-                  then pure (con (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
-                  else do
-                    let FixedLinkData {linkConnReq = cReq, linkEntityId, rootKey} = fd
-                        linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
-                    let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
-                          fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
-                    case (B64UrlByteString <$> linkEntityId, profilePGId) of
-                      (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
-                      (Nothing, Nothing) -> pure ()
-                      _ -> throwChatError CEInvalidConnReq
-                    let ov = verifyLinkOwner rootKey owners l' sig_
-                    plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
-                    pure (con cReq, plan)
+                if not direct && unsupportedGroupType groupSLinkData_
+                  then pure (con (linkConnReq fd), CPGroupLink (GLPUpdateRequired groupSLinkData_))
+                  else if not direct && null relays
+                    then pure (con (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
+                    else do
+                      let FixedLinkData {linkConnReq = cReq, linkEntityId, rootKey} = fd
+                          linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
+                      let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
+                            fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
+                      case (B64UrlByteString <$> linkEntityId, profilePGId) of
+                        (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
+                        (Nothing, Nothing) -> pure ()
+                        _ -> throwChatError CEInvalidConnReq
+                      let ov = verifyLinkOwner rootKey owners l' sig_
+                      plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
+                      pure (con cReq, plan)
             where
+              -- True when the link is for a relay-mediated group whose type this app version cannot join (forward-compatibility gate).
+              unsupportedGroupType = \case
+                Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
+                _ -> False
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))

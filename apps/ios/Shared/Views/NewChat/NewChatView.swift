@@ -1559,6 +1559,33 @@ func planAndConnect(
                                 cleanup?()
                             }
                         }
+                    case let .updateRequired(groupSLinkData_):
+                        logger.debug("planAndConnect, .groupLink, .updateRequired")
+                        await MainActor.run {
+                            if let groupSLinkData = groupSLinkData_ {
+                                showOpenChatAlert(
+                                    profileName: groupSLinkData.groupProfile.displayName,
+                                    profileFullName: groupSLinkData.groupProfile.fullName,
+                                    profileImage:
+                                        ProfileImage(
+                                            imageStr: groupSLinkData.groupProfile.image,
+                                            iconName: "arrow.down.circle.fill",
+                                            size: alertProfileImageSize
+                                        ),
+                                    theme: theme,
+                                    subtitle: NSLocalizedString("This group requires a newer version of the app. Please update the app to join.", comment: "alert subtitle"),
+                                    cancelTitle: NSLocalizedString("OK", comment: "alert button"),
+                                    confirmTitle: nil,
+                                    onCancel: { cleanup?() }
+                                )
+                            } else {
+                                showAlert(
+                                    NSLocalizedString("App update required", comment: "alert title"),
+                                    message: NSLocalizedString("This group requires a newer version of the app. Please update the app to join.", comment: "alert message")
+                                )
+                                cleanup?()
+                            }
+                        }
                     }
                 case let .error(chatError):
                     logger.debug("planAndConnect, .error \(chatErrorString(chatError))")

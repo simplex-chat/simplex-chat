@@ -970,6 +970,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         GLPConnectingProhibit _ -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."
         GLPConnectingConfirmReconnect -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."
         GLPNoRelays _ -> sendMessage cc ct $ T.toTitle gt <> " has no active relays. Please try again later."
+        GLPUpdateRequired _ -> sendMessage cc ct $ T.toTitle gt <> " requires a newer version of the directory service."
         GLPOwnLink _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
       _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
 
