@@ -2435,11 +2435,7 @@ export namespace Format {
 
   export interface SimplexName extends Interface {
     type: "simplexName"
-    nameType: SimplexNameType
-    namespace: SimplexNamespace
-    domain: string
-    subDomain: string[]
-    original: string
+    nameInfo: SimplexNameInfo
   }
 
   export interface Command extends Interface {
@@ -3850,6 +3846,13 @@ export enum SimplexLinkType {
   Group = "group",
   Channel = "channel",
   Relay = "relay",
+}
+
+export interface SimplexNameInfo {
+  nameType: SimplexNameType
+  namespace: SimplexNamespace
+  domain: string
+  subDomain: string[]
 }
 
 export enum SimplexNameType {

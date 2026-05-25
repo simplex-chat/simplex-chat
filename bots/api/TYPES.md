@@ -165,6 +165,7 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexNamespace](#simplexnamespace)
 - [SndCIStatusProgress](#sndcistatusprogress)
@@ -2095,11 +2096,7 @@ SimplexLink:
 
 SimplexName:
 - type: "simplexName"
-- nameType: [SimplexNameType](#simplexnametype)
-- namespace: [SimplexNamespace](#simplexnamespace)
-- domain: string
-- subDomain: [string]
-- original: string
+- nameInfo: [SimplexNameInfo](#simplexnameinfo)
 
 Command:
 - type: "command"
@@ -3444,6 +3441,17 @@ A_QUEUE:
 - "group"
 - "channel"
 - "relay"
+
+
+---
+
+## SimplexNameInfo
+
+**Record type**:
+- nameType: [SimplexNameType](#simplexnametype)
+- namespace: [SimplexNamespace](#simplexnamespace)
+- domain: string
+- subDomain: [string]
 
 
 ---

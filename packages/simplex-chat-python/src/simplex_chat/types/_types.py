@@ -1689,11 +1689,7 @@ class Format_simplexLink(TypedDict):
 
 class Format_simplexName(TypedDict):
     type: Literal["simplexName"]
-    nameType: "SimplexNameType"
-    namespace: "SimplexNamespace"
-    domain: str
-    subDomain: list[str]
-    original: str
+    nameInfo: "SimplexNameInfo"
 
 class Format_command(TypedDict):
     type: Literal["command"]
@@ -2690,6 +2686,12 @@ class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
+
+class SimplexNameInfo(TypedDict):
+    nameType: "SimplexNameType"
+    namespace: "SimplexNamespace"
+    domain: str
+    subDomain: list[str]
 
 SimplexNameType = Literal["publicGroup", "contact"]
 
