@@ -2,13 +2,10 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
-import SectionItemView
 import SectionView
-import TextIconSpaced
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.UriHandler
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.ColumnWithScrollBar
@@ -60,45 +57,5 @@ fun HelpAndSupportView(
       StarOnGithubItem(uriHandler)
     }
     SectionBottomSpacer()
-  }
-}
-
-@Composable private fun ContributeItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat#contribute") }) {
-    Icon(
-      painterResource(MR.images.ic_keyboard),
-      contentDescription = "GitHub",
-      tint = MaterialTheme.colors.secondary,
-    )
-    TextIconSpaced()
-    Text(generalGetString(MR.strings.contribute), color = MaterialTheme.colors.primary)
-  }
-}
-
-@Composable private fun RateAppItem(uriHandler: UriHandler) {
-  SectionItemView({
-    runCatching { uriHandler.openUriCatching("market://details?id=chat.simplex.app") }
-      .onFailure { uriHandler.openUriCatching("https://play.google.com/store/apps/details?id=chat.simplex.app") }
-  }
-  ) {
-    Icon(
-      painterResource(MR.images.ic_star),
-      contentDescription = "Google Play",
-      tint = MaterialTheme.colors.secondary,
-    )
-    TextIconSpaced()
-    Text(generalGetString(MR.strings.rate_the_app), color = MaterialTheme.colors.primary)
-  }
-}
-
-@Composable private fun StarOnGithubItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat") }) {
-    Icon(
-      painter = painterResource(MR.images.ic_github),
-      contentDescription = "GitHub",
-      tint = MaterialTheme.colors.secondary,
-    )
-    TextIconSpaced()
-    Text(generalGetString(MR.strings.star_on_github), color = MaterialTheme.colors.primary)
   }
 }

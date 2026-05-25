@@ -166,6 +166,46 @@ fun ChatLockItem(
   }
 }
 
+@Composable fun ContributeItem(uriHandler: UriHandler) {
+  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat#contribute") }) {
+    Icon(
+      painterResource(MR.images.ic_keyboard),
+      contentDescription = "GitHub",
+      tint = MaterialTheme.colors.secondary,
+    )
+    TextIconSpaced()
+    Text(generalGetString(MR.strings.contribute), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable fun RateAppItem(uriHandler: UriHandler) {
+  SectionItemView({
+    runCatching { uriHandler.openUriCatching("market://details?id=chat.simplex.app") }
+      .onFailure { uriHandler.openUriCatching("https://play.google.com/store/apps/details?id=chat.simplex.app") }
+  }
+  ) {
+    Icon(
+      painterResource(MR.images.ic_star),
+      contentDescription = "Google Play",
+      tint = MaterialTheme.colors.secondary,
+    )
+    TextIconSpaced()
+    Text(generalGetString(MR.strings.rate_the_app), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable fun StarOnGithubItem(uriHandler: UriHandler) {
+  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat") }) {
+    Icon(
+      painter = painterResource(MR.images.ic_github),
+      contentDescription = "GitHub",
+      tint = MaterialTheme.colors.secondary,
+    )
+    TextIconSpaced()
+    Text(generalGetString(MR.strings.star_on_github), color = MaterialTheme.colors.primary)
+  }
+}
+
 @Composable fun ChatConsoleItem(showTerminal: () -> Unit) {
   SectionItemView(showTerminal) {
     Icon(
