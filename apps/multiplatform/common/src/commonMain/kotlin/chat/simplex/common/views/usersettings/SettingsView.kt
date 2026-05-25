@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -29,6 +30,8 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
+import chat.simplex.common.views.onboarding.SimpleXInfo
+import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.res.MR
 
 @Composable
@@ -103,6 +106,50 @@ fun SettingsLayout(
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal, showVersion) })
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.advanced_settings), showSettingsModal { AdvancedSettingsView(it, showModal, showSettingsModal, showCustomModal, withAuth) })
+    }
+    SectionBottomSpacer()
+  }
+}
+
+@Composable
+fun HelpAndSupportView(
+  chatModel: ChatModel,
+  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showVersion: () -> Unit,
+) {
+  val uriHandler = LocalUriHandler.current
+  val stopped = chatModel.chatRunning.value == false
+  val userDisplayName = chatModel.currentUser.value?.displayName ?: ""
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.help_and_support))
+
+    SectionView(stringResource(MR.strings.settings_section_title_help)) {
+      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped)
+    }
+    SectionDividerSpaced()
+
+    SectionView(stringResource(MR.strings.settings_section_title_about)) {
+      SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
+      AppVersionItem(showVersion)
+    }
+    SectionDividerSpaced()
+
+    SectionView(stringResource(MR.strings.settings_section_title_contact)) {
+      if (!chatModel.desktopNoUserNoRemote) {
+        SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
+      }
+      SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
+    }
+    SectionDividerSpaced()
+
+    SectionView(stringResource(MR.strings.settings_section_title_support_project)) {
+      if (!BuildConfigCommon.ANDROID_BUNDLE) {
+        ContributeItem(uriHandler)
+      }
+      RateAppItem(uriHandler)
+      StarOnGithubItem(uriHandler)
     }
     SectionBottomSpacer()
   }
