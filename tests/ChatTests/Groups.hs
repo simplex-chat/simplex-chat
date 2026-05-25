@@ -9534,10 +9534,8 @@ testChannelRemoveMemberSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
 
-            -- eve had items (posted "hello from eve") -> kept as permanent GSMemRemoved tombstone, removed_at NULL
-            (eveStatus, eveRemovedAt) <- groupMemberRemovedState alice "eve"
-            eveStatus `shouldBe` "removed"
-            eveRemovedAt `shouldBe` Nothing
+            -- eve had items (posted "hello from eve") -> kept as permanent GSMemRemoved records, removed_at NULL
+            checkRemovedMember alice "eve" False
 
             -- after first removal
             alice ##> "/_info #1"
@@ -9565,10 +9563,8 @@ testChannelRemoveMemberSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")]) -- no new chat item
 
-            -- dan had no items -> kept as GSMemRemoved tombstone with removed_at set (TTL cleanup path)
-            (danStatus, danRemovedAt) <- groupMemberRemovedState alice "dan"
-            danStatus `shouldBe` "removed"
-            isJust danRemovedAt `shouldBe` True
+            -- dan had no items -> kept as GSMemRemoved record with removed_at set (TTL cleanup path)
+            checkRemovedMember alice "dan" True
 
             -- after second removal
             alice ##> "/_info #1"
@@ -9579,12 +9575,13 @@ testChannelRemoveMemberSigned ps =
             cath <## "group ID: 1"
             cath <## "subscribers: 2"
 
-groupMemberRemovedState :: HasCallStack => TestCC -> String -> IO (String, Maybe UTCTime)
-groupMemberRemovedState cc name =
-  head
-    <$> withCCTransaction
-      cc
-      (\db -> DB.query db "SELECT member_status, removed_at FROM group_members WHERE local_display_name = ?" (Only name))
+-- asserts the member row is GSMemRemoved, with removed_at set (TTL tombstone) or NULL (permanent)
+checkRemovedMember :: HasCallStack => TestCC -> String -> Bool -> Expectation
+checkRemovedMember cc name removedAtSet = do
+  rows <-
+    withCCTransaction cc $ \db ->
+      DB.query db "SELECT member_status, removed_at FROM group_members WHERE local_display_name = ?" (Only name) :: IO [(String, Maybe UTCTime)]
+  map (\(status, removedAt) -> (status, isJust removedAt)) rows `shouldBe` [("removed", removedAtSet)]
 
 testChannelDeleteGroupSigned :: HasCallStack => TestParams -> IO ()
 testChannelDeleteGroupSigned ps =
@@ -9739,9 +9736,8 @@ testChannelSubscriberLeave ps =
             dan <## "use /d #team to delete the group"
             bob <## "#team: dan left the group (signed)"
             alice <## "#team: dan left the group (signed)"
-            -- dan never sent before leaving, so dan's profile is disseminated to eve
-            -- via prepended XGrpMemNew before the forwarded XGrpLeave
-            eve <## "#team: bob introduced dan (Daniel) in the channel"
+            -- dan never sent before leaving and is now left, so the relay does not prepend
+            -- his XGrpMemNew; eve receives the bare XGrpLeave and does not create a record (allowCreate=False)
             alice #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             bob #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(1, "left (signed)")])
@@ -9760,9 +9756,9 @@ testChannelSubscriberLeave ps =
             checkMemberStatus alice "dan" (Just "left")
             checkMemberStatus bob "dan" (Just "left")
             checkMemberStatus dan "dan" (Just "left")
-            -- eve learned dan via prepended XGrpMemNew before the forwarded XGrpLeave,
-            -- so eve now has a record for dan with status "left"
-            checkMemberStatus eve "dan" (Just "left")
+            -- the relay did not announce left dan, and the bare XGrpLeave does not create a
+            -- record (allowCreate=False), so eve never learned dan
+            checkMemberStatus eve "dan" Nothing
             -- cath left earlier and was excluded from the forward; no record on cath
             checkMemberStatus cath "dan" Nothing
   where
