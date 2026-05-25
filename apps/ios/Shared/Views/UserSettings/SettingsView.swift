@@ -290,47 +290,7 @@ struct SettingsView: View {
 
     func settingsView() -> some View {
         List {
-            let user = chatModel.currentUser
-            Section(header: Text("Settings").foregroundColor(theme.colors.secondary)) {
-                NavigationLink {
-                    NotificationsView()
-                        .navigationTitle("Notifications")
-                        .modifier(ThemedBackground(grouped: true))
-                } label: {
-                    HStack {
-                        notificationsIcon()
-                        Text("Notifications")
-                    }
-                }
-                .disabled(chatModel.chatRunning != true)
-
-                NavigationLink {
-                    NetworkAndServers()
-                        .navigationTitle("Network & servers")
-                        .modifier(ThemedBackground(grouped: true))
-                } label: {
-                    settingsRow("externaldrive.connected.to.line.below", color: theme.colors.secondary) { Text("Network & servers") }
-                }
-                .disabled(chatModel.chatRunning != true)
-
-                NavigationLink {
-                    CallSettings()
-                        .navigationTitle("Your calls")
-                        .modifier(ThemedBackground(grouped: true))
-                } label: {
-                    settingsRow("video", color: theme.colors.secondary) { Text("Audio & video calls") }
-                }
-                .disabled(chatModel.chatRunning != true)
-
-                NavigationLink {
-                    PrivacySettings()
-                        .navigationTitle("Your privacy")
-                        .modifier(ThemedBackground(grouped: true))
-                } label: {
-                    settingsRow("lock", color: theme.colors.secondary) { Text("Privacy & security") }
-                }
-                .disabled(chatModel.chatRunning != true)
-
+            Section {
                 if UIApplication.shared.supportsAlternateIcons {
                     NavigationLink {
                         AppearanceSettings()
@@ -341,10 +301,28 @@ struct SettingsView: View {
                     }
                     .disabled(chatModel.chatRunning != true)
                 }
+
+                NavigationLink {
+                    PrivacySettings()
+                        .navigationTitle("Your privacy")
+                        .modifier(ThemedBackground(grouped: true))
+                } label: {
+                    settingsRow("lock", color: theme.colors.secondary) { Text("Your privacy") }
+                }
+                .disabled(chatModel.chatRunning != true)
+
+                chatDatabaseRow()
             }
 
-            Section(header: Text("Chat database").foregroundColor(theme.colors.secondary)) {
-                chatDatabaseRow()
+            Section {
+                NavigationLink {
+                    HelpAndSupportView()
+                        .navigationTitle("Help & support")
+                        .modifier(ThemedBackground(grouped: true))
+                } label: {
+                    settingsRow("questionmark", color: theme.colors.secondary) { Text("Help & support") }
+                }
+
                 NavigationLink {
                     MigrateFromDevice(showProgressOnSettings: $showProgress)
                         .toolbar {
@@ -358,8 +336,101 @@ struct SettingsView: View {
                 } label: {
                     settingsRow("tray.and.arrow.up", color: theme.colors.secondary) { Text("Migrate to another device") }
                 }
-            }
 
+                NavigationLink {
+                    AdvancedSettingsView()
+                        .navigationTitle("Advanced settings")
+                        .modifier(ThemedBackground(grouped: true))
+                } label: {
+                    settingsRow("chevron.left.forwardslash.chevron.right", color: theme.colors.secondary) { Text("Advanced settings") }
+                }
+            }
+        }
+        .navigationTitle("Your settings")
+        .modifier(ThemedBackground(grouped: true))
+        .onDisappear {
+            chatModel.showingTerminal = false
+            chatModel.terminalItems = []
+        }
+    }
+    
+    private func chatDatabaseRow() -> some View {
+        NavigationLink {
+            DatabaseView(dismissSettingsSheet: dismiss, chatItemTTL: chatModel.chatItemTTL)
+                .navigationTitle("Your chat database")
+                .modifier(ThemedBackground(grouped: true))
+        } label: {
+            let color: Color = chatModel.chatDbEncrypted == false ? .orange : theme.colors.secondary
+            settingsRow("internaldrive", color: color) {
+                HStack {
+                    Text("Chat data")
+                    Spacer()
+                    if chatModel.chatRunning == false {
+                        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
+                    }
+                }
+            }
+        }
+    }
+
+    private func progressView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity )
+    }
+
+    private enum NotificationAlert {
+        case enable
+        case error(LocalizedStringKey, String)
+    }
+}
+
+func notificationsIcon(_ chatModel: ChatModel, _ theme: AppTheme) -> some View {
+    let icon: String
+    let color: Color
+    switch (chatModel.tokenStatus) {
+    case .new:
+        icon = "bolt"
+        color = theme.colors.secondary
+    case .registered:
+        icon = "bolt.fill"
+        color = theme.colors.secondary
+    case .invalid: fallthrough
+    case .invalidBad: fallthrough
+    case .invalidTopic: fallthrough
+    case .invalidExpired: fallthrough
+    case .invalidUnregistered:
+        icon = "bolt.slash"
+        color = theme.colors.secondary
+    case .confirmed:
+        icon = "bolt.fill"
+        color = .yellow
+    case .active:
+        icon = "bolt.fill"
+        color = .green
+    case .expired:
+        icon = "bolt.slash.fill"
+        color = theme.colors.secondary
+    case .none:
+        icon = "bolt"
+        color = theme.colors.secondary
+    }
+    return Image(systemName: icon)
+        .padding(.trailing, 9)
+        .foregroundColor(color)
+}
+
+struct HelpAndSupportView: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var sceneDelegate: SceneDelegate
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        List {
+            let user = chatModel.currentUser
             Section(header: Text("Help").foregroundColor(theme.colors.secondary)) {
                 if let user = user {
                     NavigationLink {
@@ -378,6 +449,9 @@ struct SettingsView: View {
                 } label: {
                     settingsRow("plus", color: theme.colors.secondary) { Text("What's new") }
                 }
+            }
+
+            Section(header: Text("About").foregroundColor(theme.colors.secondary)) {
                 NavigationLink {
                     SimpleXInfo(onboarding: false)
                         .navigationBarTitle("", displayMode: .inline)
@@ -386,6 +460,16 @@ struct SettingsView: View {
                 } label: {
                     settingsRow("info", color: theme.colors.secondary) { Text("About SimpleX Chat") }
                 }
+                NavigationLink {
+                    VersionView()
+                        .navigationBarTitle("App version")
+                        .modifier(ThemedBackground())
+                } label: {
+                    Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
+                }
+            }
+
+            Section(header: Text("Contact").foregroundColor(theme.colors.secondary)) {
                 settingsRow("number", color: theme.colors.secondary) {
                     Button("Send questions and ideas") {
                         dismiss()
@@ -398,7 +482,7 @@ struct SettingsView: View {
                 settingsRow("envelope", color: theme.colors.secondary) { Text("[Send us email](mailto:chat@simplex.chat)") }
             }
 
-            Section(header: Text("Support SimpleX Chat").foregroundColor(theme.colors.secondary)) {
+            Section(header: Text("Support the project").foregroundColor(theme.colors.secondary)) {
                 settingsRow("keyboard", color: theme.colors.secondary) {
                     ExternalLink("Contribute", destination: URL(string: "https://github.com/simplex-chat/simplex-chat#contribute")!)
                 }
@@ -421,8 +505,49 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+    }
+}
 
-            Section(header: Text("Develop").foregroundColor(theme.colors.secondary)) {
+struct AdvancedSettingsView: View {
+    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        List {
+            Section {
+                NavigationLink {
+                    NetworkAndServers()
+                        .navigationTitle("Network & servers")
+                        .modifier(ThemedBackground(grouped: true))
+                } label: {
+                    settingsRow("externaldrive.connected.to.line.below", color: theme.colors.secondary) { Text("Network & servers") }
+                }
+                .disabled(chatModel.chatRunning != true)
+
+                NavigationLink {
+                    NotificationsView()
+                        .navigationTitle("Notifications")
+                        .modifier(ThemedBackground(grouped: true))
+                } label: {
+                    HStack {
+                        notificationsIcon(chatModel, theme)
+                        Text("Notifications")
+                    }
+                }
+                .disabled(chatModel.chatRunning != true)
+
+                NavigationLink {
+                    CallSettings()
+                        .navigationTitle("Your calls")
+                        .modifier(ThemedBackground(grouped: true))
+                } label: {
+                    settingsRow("video", color: theme.colors.secondary) { Text("Audio & video calls") }
+                }
+                .disabled(chatModel.chatRunning != true)
+            }
+
+            Section {
                 NavigationLink {
                     DeveloperView()
                         .navigationTitle("Developer tools")
@@ -430,87 +555,8 @@ struct SettingsView: View {
                 } label: {
                     settingsRow("chevron.left.forwardslash.chevron.right", color: theme.colors.secondary) { Text("Developer tools") }
                 }
-                NavigationLink {
-                    VersionView()
-                        .navigationBarTitle("App version")
-                        .modifier(ThemedBackground())
-                } label: {
-                    Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
-                }
             }
         }
-        .navigationTitle("Your settings")
-        .modifier(ThemedBackground(grouped: true))
-        .onDisappear {
-            chatModel.showingTerminal = false
-            chatModel.terminalItems = []
-        }
-    }
-    
-    private func chatDatabaseRow() -> some View {
-        NavigationLink {
-            DatabaseView(dismissSettingsSheet: dismiss, chatItemTTL: chatModel.chatItemTTL)
-                .navigationTitle("Your chat database")
-                .modifier(ThemedBackground(grouped: true))
-        } label: {
-            let color: Color = chatModel.chatDbEncrypted == false ? .orange : theme.colors.secondary
-            settingsRow("internaldrive", color: color) {
-                HStack {
-                    Text("Database passphrase & export")
-                    Spacer()
-                    if chatModel.chatRunning == false {
-                        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
-                    }
-                }
-            }
-        }
-    }
-
-    private func progressView() -> some View {
-        VStack {
-            ProgressView().scaleEffect(2)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity )
-    }
-
-    private enum NotificationAlert {
-        case enable
-        case error(LocalizedStringKey, String)
-    }
-
-    private func notificationsIcon() -> some View {
-        let icon: String
-        let color: Color
-        switch (chatModel.tokenStatus) {
-        case .new:
-            icon = "bolt"
-            color = theme.colors.secondary
-        case .registered:
-            icon = "bolt.fill"
-            color = theme.colors.secondary
-        case .invalid: fallthrough
-        case .invalidBad: fallthrough
-        case .invalidTopic: fallthrough
-        case .invalidExpired: fallthrough
-        case .invalidUnregistered:
-            icon = "bolt.slash"
-            color = theme.colors.secondary
-        case .confirmed:
-            icon = "bolt.fill"
-            color = .yellow
-        case .active:
-            icon = "bolt.fill"
-            color = .green
-        case .expired:
-            icon = "bolt.slash.fill"
-            color = theme.colors.secondary
-        case .none:
-            icon = "bolt"
-            color = theme.colors.secondary
-        }
-        return Image(systemName: icon)
-            .padding(.trailing, 9)
-            .foregroundColor(color)
     }
 }
 
