@@ -3416,7 +3416,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let allowCreate = toCMEventTag chatMsgEvent /= XGrpLeave_
           withStore (\db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownRole allowCreate) >>= \case
             Just (author, unknown)
-              | useRelays' gInfo && memberRemoved author ->
+              | memberRemoved author ->
                   logInfo $ "x.grp.msg.forward: ignoring content from removed member, group " <> tshow (groupId' gInfo) <> ", member " <> safeDecodeUtf8 (strEncode memberId) <> ", event " <> tshow (toCMEventTag chatMsgEvent)
               | otherwise -> do
                   when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
