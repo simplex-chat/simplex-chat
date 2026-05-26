@@ -673,9 +673,9 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
       val str = clipboard.getText()?.text ?: return@SectionItemView
       when (val target = strConnectTarget(str.trim())) {
         is ConnectTarget.Link -> {
-          pastedLink.value = target.link.text
+          pastedLink.value = target.text
           showQRCodeScanner.value = false
-          withBGApi { connect(rhId, target.link.text, close) { pastedLink.value = "" } }
+          withBGApi { connect(rhId, target.text, close) { pastedLink.value = "" } }
         }
         is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
         null -> AlertManager.shared.showAlertMsg(
@@ -821,14 +821,17 @@ fun strIsSimplexLink(str: String): Boolean {
 }
 
 sealed class ConnectTarget {
-  class Link(val link: FormattedText) : ConnectTarget()
+  class Link(val text: String, val linkType: SimplexLinkType, val linkText: String) : ConnectTarget()
   class Name(val nameInfo: SimplexNameInfo) : ConnectTarget()
 }
 
 fun strConnectTarget(str: String): ConnectTarget? {
   val parsedMd = parseToMarkdown(str) ?: return null
   val links = parsedMd.filter { it.format?.isSimplexLink ?: false }
-  if (links.size == 1) return ConnectTarget.Link(links[0])
+  if (links.size == 1) {
+    val fmt = links[0].format as Format.SimplexLink
+    return ConnectTarget.Link(links[0].text, fmt.linkType, fmt.simplexLinkText)
+  }
   if (links.isEmpty()) {
     val nameInfo = parsedMd.firstNotNullOfOrNull { (it.format as? Format.SimplexName)?.nameInfo }
     if (nameInfo != null) return ConnectTarget.Name(nameInfo)

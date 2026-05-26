@@ -794,13 +794,10 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
             when (val target = strConnectTarget(it.trim())) {
               is ConnectTarget.Link -> {
                 hideKeyboard(view)
-                if (target.link.format is Format.SimplexLink) {
-                  val linkText = target.link.format.simplexLinkText
-                  searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
-                }
+                searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
                 searchShowingSimplexLink.value = true
                 searchChatFilteredBySimplexLink.value = null
-                connect(target.link.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
+                connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
               }
               is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
               null -> if (!searchShowingSimplexLink.value || it.isEmpty()) {

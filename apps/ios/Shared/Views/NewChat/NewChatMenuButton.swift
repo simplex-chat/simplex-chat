@@ -382,15 +382,13 @@ struct ContactsListSearchBar: View {
                 ignoreSearchTextChange = false
             } else {
                 switch strConnectTarget(t.trimmingCharacters(in: .whitespaces)) {
-                case let .link(link):
+                case let .link(text, _, linkText):
                     searchFocussed = false
-                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
-                        ignoreSearchTextChange = true
-                        searchText = simplexLinkText(linkType, smpHosts)
-                    }
+                    ignoreSearchTextChange = true
+                    searchText = linkText
                     searchShowingSimplexLink = true
                     searchChatFilteredBySimplexLink = nil
-                    connect(link.text)
+                    connect(text)
                 case let .name(nameInfo):
                     showUnsupportedNameAlert(nameInfo)
                 case .none:

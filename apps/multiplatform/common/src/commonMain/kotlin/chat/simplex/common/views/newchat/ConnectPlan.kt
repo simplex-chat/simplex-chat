@@ -37,8 +37,7 @@ suspend fun planAndConnect(
       return CompletableDeferred(false)
     }
     is ConnectTarget.Link -> {
-      val fmt = target.link.format
-      if (fmt is Format.SimplexLink && fmt.linkType == SimplexLinkType.relay) {
+      if (target.linkType == SimplexLinkType.relay) {
         AlertManager.privacySensitive.showAlertMsg(
           generalGetString(MR.strings.relay_address_alert_title),
           generalGetString(MR.strings.relay_address_alert_message),
@@ -84,10 +83,7 @@ private suspend fun planAndConnectTask(
   if (result != null) {
     val (connectionLink, connectionPlan) = result
     val target = strConnectTarget(shortOrFullLink.trim())
-    val linkText = if (target is ConnectTarget.Link && target.link.format is Format.SimplexLink)
-      "<br><br><u>${target.link.format.simplexLinkText}</u>"
-    else
-      ""
+    val linkText = if (target is ConnectTarget.Link) "<br><br><u>${target.linkText}</u>" else ""
     when (connectionPlan) {
       is ConnectionPlan.InvitationLink -> when (connectionPlan.invitationLinkPlan) {
         is InvitationLinkPlan.Ok ->

@@ -526,14 +526,11 @@ private fun ContactsSearchBar(
           when (val target = strConnectTarget(it.trim())) {
             is ConnectTarget.Link -> {
               hideKeyboard(view)
-              if (target.link.format is Format.SimplexLink) {
-                val linkText = target.link.format.simplexLinkText
-                searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
-              }
+              searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
               searchShowingSimplexLink.value = true
               searchChatFilteredBySimplexLink.value = null
               connect(
-                link = target.link.text,
+                link = target.text,
                 searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
                 close = close,
                 cleanup = { searchText.value = TextFieldValue() }

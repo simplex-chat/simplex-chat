@@ -664,8 +664,8 @@ private struct ConnectView: View {
                 Button {
                     if let str = UIPasteboard.general.string {
                         switch strConnectTarget(str.trimmingCharacters(in: .whitespaces)) {
-                        case let .link(link):
-                            pastedLink = link.text
+                        case let .link(text, _, _):
+                            pastedLink = text
                             connect(pastedLink)
                         case let .name(nameInfo):
                             showUnsupportedNameAlert(nameInfo)
@@ -866,14 +866,16 @@ func strIsSimplexLink(_ str: String) -> Bool {
 }
 
 enum ConnectTarget {
-    case link(FormattedText)
+    case link(text: String, linkType: SimplexLinkType, linkText: String)
     case name(SimplexNameInfo)
 }
 
 func strConnectTarget(_ str: String) -> ConnectTarget? {
     guard let parsedMd = parseSimpleXMarkdown(str) else { return nil }
     let links = parsedMd.filter { $0.format?.isSimplexLink ?? false }
-    if links.count == 1 { return .link(links[0]) }
+    if links.count == 1, case let .simplexLink(_, linkType, _, smpHosts) = links[0].format {
+        return .link(text: links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
+    }
     if links.isEmpty {
         let nameFt = parsedMd.first(where: { if case .simplexName = $0.format { true } else { false } })
         if case let .simplexName(nameInfo) = nameFt?.format {
@@ -1315,8 +1317,8 @@ func planAndConnect(
         showUnsupportedNameAlert(nameInfo)
         cleanup?()
         return
-    case let .link(link):
-        if case .simplexLink(_, .relay, _, _) = link.format {
+    case let .link(_, linkType, _):
+        if linkType == .relay {
             showAlert(
                 NSLocalizedString("Relay address", comment: "alert title"),
                 message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
