@@ -1848,7 +1848,9 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
     else
       checkGroupMemberHasItems db user m' >>= \case
         Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-        Nothing -> deleteGroupMember db user m'
+        Nothing
+          | useRelays' gInfo -> updateGroupMemberRemovedAt db user m'
+          | otherwise -> deleteGroupMember db user m'
   pure gInfo'
 
 -- Unlike deleteOrUpdateMemberRecord, skips checkGroupMemberHasItems.
@@ -1859,7 +1861,9 @@ fullyDeleteMemberRecord user gInfo m =
 fullyDeleteMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
 fullyDeleteMemberRecordIO db user gInfo m = do
   (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
-  deleteGroupMember db user m'
+  if useRelays' gInfo && not (isRelay m')
+    then updateGroupMemberRemovedAt db user m'
+    else deleteGroupMember db user m'
   pure gInfo'
 
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo

@@ -57,6 +57,7 @@ module Simplex.Chat.Store.Groups
     getMentionedGroupMember,
     getMentionedMemberByMemberId,
     getGroupMemberById,
+    getNonRemovedMemberById,
     getGroupMemberByIndex,
     getGroupMemberByMemberId,
     getCreateUnknownGMByMemberId,
@@ -68,6 +69,7 @@ module Simplex.Chat.Store.Groups
     getGroupModerators,
     getGroupRelayMembers,
     getGroupMembersForExpiration,
+    getRemovedMembersToCleanup,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
@@ -116,6 +118,7 @@ module Simplex.Chat.Store.Groups
     updateRelayGroupKeys,
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
+    updateGroupMemberRemovedAt,
     updateGroupMemberAccepted,
     deleteGroupMemberSupportChat,
     updateGroupMembersRequireAttention,
@@ -1092,6 +1095,14 @@ getGroupMemberById db vr user@User {userId} groupMemberId =
       (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ?")
       (groupMemberId, userId)
 
+getNonRemovedMemberById :: DB.Connection -> VersionRangeChat -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
+getNonRemovedMemberById db vr user@User {userId} groupMemberId =
+  ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFound groupMemberId) $
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ? AND m.member_status NOT IN (?,?,?,?)")
+      (groupMemberId, userId, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+
 getGroupMemberByIndex :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Int64 -> ExceptT StoreError IO GroupMember
 getGroupMemberByIndex db vr user GroupInfo {groupId} indexInGroup =
   ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFoundByIndex indexInGroup) $
@@ -1208,6 +1219,14 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
               |]
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
+
+getRemovedMembersToCleanup :: DB.Connection -> VersionRangeChat -> User -> UTCTime -> IO [GroupMember]
+getRemovedMembersToCleanup db vr user@User {userId} cutoffTs =
+  map (toContactMember vr user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.removed_at < ?")
+      (userId, cutoffTs)
 
 getGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db vr user groupId =
@@ -1954,6 +1973,18 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
       WHERE user_id = ? AND group_member_id = ?
     |]
     (memStatus, currentTs, userId, groupMemberId)
+
+updateGroupMemberRemovedAt :: DB.Connection -> User -> GroupMember -> IO ()
+updateGroupMemberRemovedAt db User {userId} GroupMember {groupMemberId} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET member_status = ?, removed_at = ?, updated_at = ?
+      WHERE user_id = ? AND group_member_id = ?
+    |]
+    (GSMemRemoved, currentTs, currentTs, userId, groupMemberId)
 
 updateGroupMemberAccepted :: DB.Connection -> User -> GroupMember -> GroupMemberStatus -> GroupMemberRole -> IO GroupMember
 updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status role = do

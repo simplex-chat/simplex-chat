@@ -4761,6 +4761,8 @@ cleanupManager = do
       liftIO $ threadDelay' stepDelay
       cleanupStaleRelayTestConns user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
+      cleanupRemovedMembers user `catchAllErrors` eToView
+      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
@@ -4787,6 +4789,13 @@ cleanupManager = do
       forM_ staleConns $ \acId -> do
         deleteAgentConnectionAsync acId
         withStore' $ \db -> deleteConnectionByAgentConnId db user acId
+    cleanupRemovedMembers user = do
+      vr <- chatVersionRange
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-nominalDay) ts
+      removedMembers <- withStore' $ \db -> getRemovedMembersToCleanup db vr user cutoffTs
+      forM_ removedMembers $ \m ->
+        withStore' (\db -> deleteGroupMember db user m) `catchAllErrors` eToView
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
