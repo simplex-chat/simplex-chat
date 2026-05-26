@@ -20,6 +20,7 @@ markdownTests :: Spec
 markdownTests = do
   textFormat
   secretText
+  textSmall
   textColor
   textWithUri
   textWithHyperlink
@@ -131,6 +132,35 @@ secretText = describe "secret text" do
     "snippet: `this is #secret_text#`"
       <==> "snippet: " <> markdown Snippet "this is #secret_text#"
 
+small :: Text -> Markdown
+small = markdown Small
+
+textSmall :: Spec
+textSmall = describe "text small" do
+  it "correct markdown" do
+    "this is !- small! text"
+      <==> "this is " <> small "small" <> " text"
+    "!- small! text"
+      <==> small "small" <> " text"
+    "this is !- small!"
+      <==> "this is " <> small "small"
+    " !- small! text"
+      <==> " " <> small "small" <> " text"
+    "this is !- small! "
+      <==> "this is " <> small "small" <> " "
+  it "ignored as markdown" do
+    "this is !- unformatted ! text"
+      <==> "this is !- unformatted ! text"
+    "this is !-  unformatted! text"
+      <==> "this is !-  unformatted! text"
+    "this is!- unformatted! text"
+      <==> "this is!- unformatted! text"
+    "this is !- unformatted text"
+      <==> "this is !- unformatted text"
+  it "ignored internal markdown" do
+    "this is !- long *small* (not bold)! text"
+      <==> "this is " <> small "long *small* (not bold)" <> " text"
+
 red :: Text -> Markdown
 red = markdown (colored Red)
 
@@ -197,6 +227,10 @@ textWithUri = describe "text with Uri" do
     "https://github.com/simplex-chat/ - SimpleX on GitHub" <==> uri "https://github.com/simplex-chat/" <> " - SimpleX on GitHub"
     -- "SimpleX on GitHub (https://github.com/simplex-chat/)" <==> "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
     "https://en.m.wikipedia.org/wiki/Servo_(software)" <==> uri "https://en.m.wikipedia.org/wiki/Servo_(software)"
+    "https://simplex.chat/page_name_" <==> uri "https://simplex.chat/page_name_"
+    "https://simplex.chat/page_name_, hello" <==> uri "https://simplex.chat/page_name_" <> ", hello"
+    "https://simplex.chat/page!" <==> uri "https://simplex.chat/page!"
+    "https://simplex.chat/page!, hello" <==> uri "https://simplex.chat/page!" <> ", hello"
     "example.com" <==> uri "example.com"
     "example.com." <==> uri "example.com" <> "."
     "example.com..." <==> uri "example.com" <> "..."
@@ -386,6 +420,10 @@ testSanitizeUri = describe "sanitizeUri" $ do
     "https://example.com/page/a123?source=abc" `safeSanitized` Nothing -- source is in unsafe blacklist
     "https://example.com/page/a123?name=abc" `eagerSanitized` Just "https://example.com/page/a123"
     "https://example.com/page/a123?name=abc" `safeSanitized` Nothing -- name is not in a whitelist
+  it "should keep whitelisted parameters in safe mode even if they match a blacklist prefix" $ do
+    "https://example.com/playlist?list=abc" `sanitized` Nothing -- "list" is whitelisted, "li" is blacklisted
+    "https://example.com/playlist?list=abc&si=def" `sanitized` Just "https://example.com/playlist?list=abc"
+    "https://github.com/owner/repo?ref=main" `sanitized` Nothing -- "ref" is whitelisted for github.com
   where
     s `eagerSanitized` res = sanitized_ False s res
     s `safeSanitized` res = sanitized_ True s res

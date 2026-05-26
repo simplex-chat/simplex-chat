@@ -5,6 +5,7 @@
 //  Created by Evgeny on 30/03/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/notifications.md
 
 import Foundation
 import UIKit

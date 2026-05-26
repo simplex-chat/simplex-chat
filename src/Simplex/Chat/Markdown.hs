@@ -53,6 +53,7 @@ data Format
   | StrikeThrough
   | Snippet
   | Secret
+  | Small
   | Colored {color :: FormatColor}
   | Uri
   -- showText is Nothing for the usual Uri without text
@@ -178,6 +179,16 @@ isSimplexLink = \case
   SimplexLink {} -> True
   _ -> False
 
+isLink :: Format -> Bool
+isLink = \case
+  Uri -> True
+  HyperLink {} -> True
+  SimplexLink {} -> True
+  _ -> False
+
+hasLinks :: MarkdownList -> Bool
+hasLinks = any $ \(FormattedText f _) -> maybe False isLink f
+
 markdownP :: Parser Markdown
 markdownP = mconcat <$> A.many' fragmentP
   where
@@ -192,7 +203,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '~' -> formattedP '~' StrikeThrough
           '`' -> formattedP '`' Snippet
           '#' -> A.char '#' *> secretP
-          '!' -> coloredP <|> wordP
+          '!' -> styledP <|> wordP
           '@' -> mentionP <|> wordP
           '/' -> commandP <|> wordP
           '[' -> sowLinkP <|> wordP
@@ -218,13 +229,13 @@ markdownP = mconcat <$> A.many' fragmentP
       | otherwise = markdown Secret $ T.init ss
       where
         ss = b <> s <> a
-    coloredP :: Parser Markdown
-    coloredP = do
-      clr <- A.char '!' *> colorP <* A.space
+    styledP :: Parser Markdown
+    styledP = do
+      f <- A.char '!' *> ((A.char '-' $> Small) <|> (colored <$> colorP)) <* A.space
       s <- ((<>) <$> A.takeWhile1 (\c -> c /= ' ' && c /= '!') <*> A.takeTill (== '!')) <* A.char '!'
       if T.null s || T.last s == ' '
-        then fail "not colored"
-        else pure $ markdown (colored clr) s
+        then fail "not styled"
+        else pure $ markdown f s
     mentionP = prefixedStringP '@' displayNameTextP_ Mention
     commandP = prefixedStringP '/' commandTextP Command
     prefixedStringP pfx parser format = do
@@ -291,6 +302,8 @@ markdownP = mconcat <$> A.many' fragmentP
     isPunctuation' = \case
       '/' -> False
       ')' -> False
+      '_' -> False
+      '!' -> False
       c -> isPunctuation c
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     -- matches what is likely to be a domain, not all valid domain names
@@ -349,7 +362,7 @@ parseUri s = case U.parseURI U.laxURIParserOptions s of
 sanitizeUri :: Bool -> U.URI -> Maybe U.URI
 sanitizeUri safe uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
   let sanitizedQS
-        | safe = filter (not . isSafeBlacklisted . fst) originalQS
+        | safe = filter (\(n, _) -> isWhitelisted n || not (isSafeBlacklisted n)) originalQS
         | isNamePath = case originalQS of
             p@(n, _) : ps -> (if isWhitelisted n || not (isBlacklisted n) then (p :) else id) $ filter (isWhitelisted . fst) ps
             [] -> []
@@ -431,6 +444,7 @@ markdownText (FormattedText f_ t) = case f_ of
     StrikeThrough -> around '~'
     Snippet -> around '`'
     Secret -> around '#'
+    Small -> "!- " <> t <> "!"
     Colored (FormatColor c) -> color c
     Uri -> t
     HyperLink {} -> t

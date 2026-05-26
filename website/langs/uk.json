@@ -78,7 +78,7 @@
     "smp-protocol": "Протокол SMP",
     "chat-protocol": "Протокол чату",
     "donate": "Пожертвувати",
-    "copyright-label": "© 2020-2025 SimpleX | Проект з відкритим кодом",
+    "copyright-label": "© 2020-2025 SimpleX Chat | Проект з відкритим кодом",
     "simplex-chat-protocol": "Протокол чату SimpleX",
     "terminal-cli": "Термінал CLI",
     "hero-header": "Приватність переосмислена",
@@ -202,7 +202,7 @@
     "simplex-private-section-header": "Що робить SimpleX <span class='gradient-text'>конфіденційним</span>",
     "tap-to-close": "Торкніться, щоб закрити",
     "simplex-network-section-header": "SimpleX <span class='gradient-text'>Network</span>",
-    "simplex-network-section-desc": "Simplex Chat надає найкращу конфіденційність, поєднуючи переваги P2P та федеративних мереж.",
+    "simplex-network-section-desc": "SimpleX Chat надає найкращу конфіденційність, поєднуючи переваги P2P та федеративних мереж.",
     "simplex-network-1-desc": "Всі повідомлення відправляються через сервери, що забезпечує кращу конфіденційність метаданих та надійну асинхронну доставку повідомлень, уникаючи багатьох",
     "simplex-network-1-header": "На відміну від мереж P2P",
     "simplex-network-1-overlay-linktext": "проблем P2P-мереж",
@@ -255,5 +255,9 @@
     "docs-dropdown-10": "Прозорість",
     "docs-dropdown-12": "Безпека",
     "hero-overlay-card-3-p-3": "Trail of Bits переглянув криптографічний дизайн мережевих протоколів SimpleX в липні 2024 року. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Детальніше</a>.",
-    "docs-dropdown-14": "SimpleX для бізнесу"
+    "docs-dropdown-14": "SimpleX для бізнесу",
+    "directory": "Каталог",
+    "navbar-token": "Токен",
+    "about-and-contact-us": "Про нас & Контакти",
+    "send-file": "Надіслати файл"
 }

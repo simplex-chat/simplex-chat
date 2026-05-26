@@ -54,6 +54,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
   val currUserServers = remember { stateGetOrPut("currUserServers") { emptyList<UserOperatorServers>() } }
   val userServers = remember { stateGetOrPut("userServers") { emptyList<UserOperatorServers>() } }
   val serverErrors = remember { stateGetOrPut("serverErrors") { emptyList<UserServersError>() } }
+  val serverWarnings = remember { stateGetOrPut("serverWarnings") { emptyList<UserServersWarning>() } }
 
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
   fun onClose(close: () -> Unit): Boolean = if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
@@ -91,6 +92,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       currUserServers = currUserServers,
       userServers = userServers,
       serverErrors = serverErrors,
+      serverWarnings = serverWarnings,
       toggleSocksProxy = { enable ->
         val def = NetCfg.defaults
         val proxyDef = NetCfg.proxyDefaults
@@ -158,6 +160,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
   onionHosts: MutableState<OnionHosts>,
   currUserServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   userServers: MutableState<List<UserOperatorServers>>,
   toggleSocksProxy: (Boolean) -> Unit,
 ) {
@@ -209,7 +212,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     if (!chatModel.desktopNoUserNoRemote) {
       SectionView(generalGetString(MR.strings.network_preset_servers_title).uppercase()) {
         userServers.value.forEachIndexed { index, srv ->
-          srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, currentRemoteHost?.remoteHostId) }
+          srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, serverWarnings, currentRemoteHost?.remoteHostId) }
         }
       }
       if (conditionsAction != null && anyOperatorEnabled.value) {
@@ -234,6 +237,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
             YourServersView(
               userServers = userServers,
               serverErrors = serverErrors,
+              serverWarnings = serverWarnings,
               operatorIndex = nullOperatorIndex,
               rhId = currentRemoteHost?.remoteHostId
             )
@@ -282,6 +286,12 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     } else if (serverErrors.value.isNotEmpty()) {
       SectionCustomFooter {
         ServersErrorFooter(generalGetString(MR.strings.errors_in_servers_configuration))
+      }
+    }
+    val serversWarn = globalServersWarning(serverWarnings.value)
+    if (serversWarn != null) {
+      SectionCustomFooter {
+        ServersWarningFooter(serversWarn)
       }
     }
 
@@ -664,6 +674,7 @@ private fun ServerOperatorRow(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   rhId: Long?
 ) {
   SectionItemView(
@@ -673,6 +684,7 @@ private fun ServerOperatorRow(
           currUserServers,
           userServers,
           serverErrors,
+          serverWarnings,
           index,
           rhId
         )
@@ -757,7 +769,7 @@ fun UsageConditionsView(
           .clip(shape = CircleShape)
           .clickable {
             val commitUrl = "https://github.com/simplex-chat/simplex-chat/commit/$commit"
-            uriHandler.openUriCatching(commitUrl)
+            uriHandler.openExternalLink(commitUrl)
           }
           .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -814,12 +826,21 @@ fun UsageConditionsView(
 
 @Composable
 fun SimpleConditionsView(
-  rhId: Long?
+  rhId: Long?,
+  onAccept: () -> Unit
 ) {
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
     Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
       ConditionsTextView(rhId)
+    }
+    Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+      OnboardingActionButton(
+        modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+        labelId = MR.strings.onboarding_conditions_accept,
+        onboarding = null,
+        onclick = onAccept
+      )
     }
   }
 }
@@ -841,6 +862,30 @@ fun ServersErrorFooter(errStr: String) {
     TextIconSpaced()
     Text(
       errStr,
+      color = MaterialTheme.colors.secondary,
+      lineHeight = 18.sp,
+      fontSize = 14.sp
+    )
+  }
+}
+
+@Composable
+fun ServersWarningFooter(warnStr: String) {
+  Row(
+    Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      painterResource(MR.images.ic_warning),
+      contentDescription = stringResource(MR.strings.server_warning),
+      tint = WarningOrange,
+      modifier = Modifier
+        .size(19.sp.toDp())
+        .offset(x = 2.sp.toDp())
+    )
+    TextIconSpaced()
+    Text(
+      warnStr,
       color = MaterialTheme.colors.secondary,
       lineHeight = 18.sp,
       fontSize = 14.sp
@@ -887,11 +932,13 @@ fun updateOperatorsConditionsAcceptance(usvs: MutableState<List<UserOperatorServ
 suspend fun validateServers_(
   rhId: Long?,
   userServersToValidate: List<UserOperatorServers>,
-  serverErrors: MutableState<List<UserServersError>>
+  serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>? = null
 ) {
   try {
-    val errors = chatController.validateServers(rhId, userServersToValidate) ?: return
+    val (errors, warnings) = chatController.validateServers(rhId, userServersToValidate) ?: return
     serverErrors.value = errors
+    serverWarnings?.value = warnings
   } catch (ex: Exception) {
     Log.e(TAG, ex.stackTraceToString())
   }
@@ -909,6 +956,15 @@ fun globalServersError(serverErrors: List<UserServersError>): String? {
   for (err in serverErrors) {
     if (err.globalError != null) {
       return err.globalError
+    }
+  }
+  return null
+}
+
+fun globalServersWarning(serverWarnings: List<UserServersWarning>): String? {
+  for (warn in serverWarnings) {
+    if (warn.globalWarning != null) {
+      return warn.globalWarning
     }
   }
   return null
@@ -942,6 +998,9 @@ fun findDuplicateHosts(serverErrors: List<UserServersError>): Set<String> {
   }
   return duplicateHostsList.toSet()
 }
+
+fun findDuplicateRelayAddresses(serverErrors: List<UserServersError>): Set<String> =
+  serverErrors.mapNotNull { (it as? UserServersError.DuplicateChatRelayAddress)?.duplicateAddress }.toSet()
 
 private suspend fun saveServers(
   rhId: Long?,
@@ -987,7 +1046,8 @@ fun PreviewNetworkAndServersLayout() {
       toggleSocksProxy = {},
       currUserServers =  remember { mutableStateOf(emptyList()) },
       userServers = remember { mutableStateOf(emptyList()) },
-      serverErrors = remember { mutableStateOf(emptyList()) }
+      serverErrors = remember { mutableStateOf(emptyList()) },
+      serverWarnings = remember { mutableStateOf(emptyList()) }
     )
   }
 }

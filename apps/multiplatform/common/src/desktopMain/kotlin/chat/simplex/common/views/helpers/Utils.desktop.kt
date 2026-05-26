@@ -16,6 +16,7 @@ import kotlinx.coroutines.delay
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.net.URI
+import java.util.*
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -128,6 +129,14 @@ actual fun getAppFileUri(fileName: String): URI {
   }
 }
 
+private val loadedImageCache = Collections.synchronizedMap(object : LinkedHashMap<String, Pair<ImageBitmap, ByteArray>>(30, 0.75f, true) {
+  override fun removeEldestEntry(eldest: Map.Entry<String, Pair<ImageBitmap, ByteArray>>): Boolean = size > 30
+})
+
+actual fun clearImageCaches() {
+  loadedImageCache.clear()
+}
+
 actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   var filePath = getLoadedFilePath(file)
   if (chatModel.connectedToRemote() && filePath == null) {
@@ -135,10 +144,10 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
     filePath = getLoadedFilePath(file)
   }
   return if (filePath != null) {
-    try {
+    loadedImageCache[filePath] ?: try {
       val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
       val bitmap = getBitmapFromByteArray(data, false)
-      if (bitmap != null) bitmap to data else null
+      if (bitmap != null) (bitmap to data).also { loadedImageCache[filePath] = it } else null
     } catch (e: Exception) {
       Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
       null

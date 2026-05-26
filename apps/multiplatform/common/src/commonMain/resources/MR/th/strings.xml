@@ -376,7 +376,6 @@
     <string name="how_to_use_markdown">วิธีใช้มาร์กดาวน์</string>
     <string name="callstate_ended">สิ้นสุดลงแล้ว</string>
     <string name="how_it_works">มันทำงานอย่างไร</string>
-    <string name="how_simplex_works">วิธีการ SimpleX ทํางานอย่างไร</string>
     <string name="decentralized">กระจายอำนาจแล้ว</string>
     <string name="encrypted_audio_call">การโทรเสียงแบบ encrypted จากต้นจนจบ</string>
     <string name="encrypted_video_call">การโทรวิดีแบบ encrypted จากต้นจนจบ</string>
@@ -909,7 +908,7 @@
     <string name="show_dev_options">แสดง:</string>
     <string name="show_developer_options">แสดงตัวเลือกสําหรับนักพัฒนาซอฟต์แวร์</string>
     <string name="share_link">แชร์ลิงก์</string>
-    <string name="share_address_with_contacts_question">แชร์ที่อยู่กับผู้ติดต่อ\?</string>
+    <string name="share_address_with_contacts_question">แชร์ที่อยู่กับผู้ติดต่อ?</string>
     <string name="share_with_contacts">แชร์กับผู้ติดต่อ</string>
     <string name="save_preferences_question">บันทึกการตั้งค่า\?</string>
     <string name="show_call_on_lock_screen">แสดง</string>
@@ -1043,7 +1042,7 @@
     <string name="you_are_invited_to_group">คุณได้รับเชิญให้เข้าร่วมกลุ่ม</string>
     <string name="incognito_random_profile">โปรไฟล์แบบสุ่มของคุณ</string>
     <string name="theme">ธีม</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %1$s)</string>
+    <string name="error_connecting_to_server_to_receive_messages">กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %1$s)</string>
     <string name="app_name">SimpleX</string>
     <string name="connected_to_server_to_receive_messages_from_contact">คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
     <string name="profile_will_be_sent_to_contact_sending_link">โปรไฟล์ของคุณจะถูกส่งไปยังผู้ติดต่อที่ส่งลิงก์นี้มาให้คุณ</string>

@@ -7,34 +7,46 @@
 
 module Directory.Options
   ( DirectoryOpts (..),
+    MigrateLog (..),
     getDirectoryOpts,
+    directoryOpts,
     mkChatOpts,
   )
 where
 
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
+import Simplex.Messaging.Parsers (parseAll)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
+    noAddress :: Bool, -- skip creating address
     blockedWordsFile :: Maybe FilePath,
     blockedFragmentsFile :: Maybe FilePath,
     blockedExtensionRules :: Maybe FilePath,
     nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
     captchaGenerator :: Maybe FilePath,
+    voiceCaptchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
+    migrateDirectoryLog :: Maybe MigrateLog,
     serviceName :: T.Text,
     runCLI :: Bool,
     searchResults :: Int,
+    webFolder :: Maybe FilePath,
+    linkCheckInterval :: Int,
     testing :: Bool
   }
+
+data MigrateLog = MLCheck | MLImport | MLExport | MLListing
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
 directoryOpts appDir defaultDbName = do
@@ -62,6 +74,11 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
+  noAddress <-
+    switch
+      ( long "no-address"
+          <> help "skip checking and creating service address"
+      )
   blockedWordsFile <-
     optional $
       strOption
@@ -105,12 +122,27 @@ directoryOpts appDir defaultDbName = do
             <> metavar "CAPTCHA_GENERATOR"
             <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
         )
+  voiceCaptchaGenerator <-
+    optional $
+      strOption
+        ( long "voice-captcha-generator"
+            <> metavar "VOICE_CAPTCHA_GENERATOR"
+            <> help "Executable to generate voice captcha, accepts text as parameter, writes audio file, outputs file_path and duration_seconds to stdout"
+        )
   directoryLog <-
-    Just
-      <$> strOption
+    optional $
+      strOption
         ( long "directory-file"
             <> metavar "DIRECTORY_FILE"
             <> help "Append only log for directory state"
+        )
+  migrateDirectoryLog <-
+    optional $
+      option
+        parseMigrateLog
+        ( long "migrate-directory-file"
+            <> metavar "MIGRATE_COMMAND"
+            <> help "Command to import/export directory log file"
         )
   serviceName <-
     strOption
@@ -124,22 +156,42 @@ directoryOpts appDir defaultDbName = do
       ( long "run-cli"
           <> help "Run directory service as CLI"
       )
+  webFolder <-
+    optional $
+      strOption
+        ( long "web-folder"
+            <> metavar "WEB_FOLDER"
+            <> help "Folder to store static web assets"
+        )
+  linkCheckInterval <-
+    option
+      auto
+      ( long "link-check-interval"
+          <> metavar "SECONDS"
+          <> help "Interval in seconds to check public group link data (default: 1800)"
+          <> value 1800
+      )
   pure
     DirectoryOpts
       { coreOptions,
         adminUsers,
         superUsers,
         ownersGroup,
+        noAddress,
         blockedWordsFile,
         blockedFragmentsFile,
         blockedExtensionRules,
         nameSpellingFile,
         profileNameLimit,
         captchaGenerator,
+        voiceCaptchaGenerator,
         directoryLog,
+        migrateDirectoryLog,
         serviceName = T.pack serviceName,
         runCLI,
         searchResults = 10,
+        webFolder,
+        linkCheckInterval,
         testing = False
       }
 
@@ -169,6 +221,16 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName} =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False},
-      maintenance = False
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False}
     }
+
+parseMigrateLog :: ReadM MigrateLog
+parseMigrateLog = eitherReader $ parseAll mlP . encodeUtf8 . T.pack
+  where
+    mlP =
+      A.takeTill (== ' ') >>= \case
+        "check" -> pure MLCheck
+        "import" -> pure MLImport
+        "export" -> pure MLExport
+        "listing" -> pure MLListing
+        _ -> fail "bad MigrateLog"

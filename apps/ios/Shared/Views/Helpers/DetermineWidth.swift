@@ -21,6 +21,19 @@ struct DetermineWidth: View {
     }
 }
 
+struct DetermineHeight: View {
+    typealias Key = MaximumHeightPreferenceKey
+    var body: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .preference(
+                    key: MaximumHeightPreferenceKey.self,
+                    value: proxy.size.height
+                )
+        }
+    }
+}
+
 struct DetermineWidthImageVideoItem: View {
     typealias Key = MaximumWidthImageVideoPreferenceKey
     var body: some View {
@@ -35,6 +48,13 @@ struct DetermineWidthImageVideoItem: View {
 }
 
 struct MaximumWidthPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+struct MaximumHeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())

@@ -880,7 +880,6 @@
     <string name="v4_6_hidden_chat_profiles">Hồ sơ trò chuyện ẩn</string>
     <string name="how_to_use_simplex_chat">Cách sử dụng</string>
     <string name="how_it_works">Cách thức hoạt động</string>
-    <string name="how_simplex_works">Cách thức SimpleX hoạt động</string>
     <string name="how_to">Cách làm</string>
     <string name="error_initializing_web_view_wrong_arch">Lỗi khởi động WebView. Hãy đảm bảo bạn đã cài đặt WebView và kiến trúc hỗ trợ của nó là arm64.\nLỗi: %s</string>
     <string name="custom_time_unit_hours">giờ</string>
@@ -1983,7 +1982,6 @@
     <string name="message_deleted_or_not_received_error_desc">Tin nhắn này đã bị xóa hoặc vẫn chưa được nhận.</string>
     <string name="this_QR_code_is_not_a_link">Mã QR này không phải là một đường dẫn!</string>
     <string name="this_link_is_not_a_valid_connection_link">Đường dẫn này không phải là một đường dẫn kết nối hợp lệ!</string>
-    <string name="one_hand_ui_card_title">Chuyển đổi danh sách trò chuyện:</string>
     <string name="remote_ctrl_error_timeout">Thời gian chờ đã hết trong khi kết nối tới máy tính</string>
     <string name="open_port_in_firewall_desc">Để cho phép một ứng dụng di động kết nối tới máy tính, mở cổng này trong tường lửa của bạn, nếu bạn có bật nó lên</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Để bảo vệ sự riêng tư của bạn, SimpleX sử dụng các ID riêng biệt cho mỗi liên hệ bạn có.</string>
@@ -2034,7 +2032,7 @@
     <string name="la_notice_turn_on">Bật</string>
     <string name="servers_info_subscriptions_total">Tổng</string>
     <string name="group_member_status_unknown_short">không xác định</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Đang cố gắng kết nối tới máy chủ dùng để nhận tin nhắn từ liên hệ này (lỗi: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Đang cố gắng kết nối tới máy chủ dùng để nhận tin nhắn từ liên hệ này (lỗi: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Đang cố gắng kết nối tới máy chủ dùng để nhận tin nhắn từ liên hệ này.</string>
     <string name="to_verify_compare">Để xác minh mã hóa đầu cuối với liên hệ của bạn, so sánh (hoặc quét) mã trên các thiết bị của các bạn.</string>
     <string name="network_session_mode_transport_isolation">Cách ly truyền tải</string>
@@ -2351,7 +2349,6 @@
     <string name="onboarding_conditions_by_using_you_agree">Bằng việc sử dụng SimpleX Chat, bạn đồng ý:\n- chỉ gửi nội dung hợp pháp trong các nhóm công khai.\n- tôn trọng những người dùng khác - không gửi tin rác.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Các cuộc trò chuyện riêng tư, nhóm và liên hệ của bạn không thể truy cập được đối với các bên vận hành máy chủ.</string>
     <string name="onboarding_conditions_accept">Chấp nhận</string>
-    <string name="onboarding_conditions_configure_server_operators">Định cấu hình các bên vận hành máy chủ</string>
     <string name="link_requires_newer_app_version_please_upgrade">Đường dẫn này yêu cầu một phiên bản ứng dụng mới hơn. Vui lòng nâng cấp ứng dụng hoặc yêu cầu liên hệ của một gửi cho một đường dẫn tương thích.</string>
     <string name="simplex_link_channel">Đường dẫn kênh SimpleX</string>
     <string name="unsupported_connection_link">Đường dẫn kết nối không được hỗ trợ</string>

@@ -424,7 +424,6 @@
     <string name="italic_text">cursief</string>
     <string name="how_it_works">Hoe het werkt</string>
     <string name="callstatus_missed">gemiste oproep</string>
-    <string name="how_simplex_works">Hoe SimpleX werkt</string>
     <string name="incoming_audio_call">Inkomende audio oproep</string>
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>
@@ -811,7 +810,7 @@
     <string name="v4_4_french_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
     <string name="v4_5_transport_isolation">Transport isolation</string>
     <string name="app_name">SimpleX</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">U bent verbonden met de server die wordt gebruikt om berichten van deze verbinding te ontvangen.</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Je profiel wordt verzonden naar het contact van wie je deze link hebt ontvangen.</string>
     <string name="you_will_join_group">Je maakt verbinding met alle groepsleden.</string>
     <string name="notifications_mode_off">Uitvoeren bij geopende app</string>
@@ -912,8 +911,8 @@
     <string name="simplex_link_group">SimpleX groep link</string>
     <string name="simplex_link_mode">SimpleX links</string>
     <string name="simplex_link_invitation">Eenmalige SimpleX uitnodiging</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %1$s).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van deze verbinding te ontvangen.</string>
+    <string name="error_connecting_to_server_to_receive_messages">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %1$s).</string>
     <string name="unknown_message_format">onbekend berichtformaat</string>
     <string name="simplex_link_mode_browser">Via browser</string>
     <string name="description_via_contact_address_link">via contact adres link</string>
@@ -1111,7 +1110,7 @@
     <string name="share_with_contacts">Delen met contacten</string>
     <string name="your_contacts_will_remain_connected">Uw contacten blijven verbonden.</string>
     <string name="profile_update_will_be_sent_to_contacts">Profiel update wordt naar uw contacten verzonden.</string>
-    <string name="share_address_with_contacts_question">Adres delen met contacten\?</string>
+    <string name="share_address_with_contacts_question">Adres delen met contacten?</string>
     <string name="stop_sharing">Stop met delen</string>
     <string name="stop_sharing_address">Stop met het delen van adres\?</string>
     <string name="invite_friends">Nodig vrienden uit</string>
@@ -2039,7 +2038,6 @@
     <string name="v6_0_delete_many_messages_descr">Verwijder maximaal 20 berichten tegelijk.</string>
     <string name="chat_database_exported_not_all_files">Sommige bestanden zijn niet geëxporteerd</string>
     <string name="reset_all_hints">Alle hints resetten</string>
-    <string name="one_hand_ui_card_title">Chat-lijst wisselen:</string>
     <string name="one_hand_ui_change_instruction">U kunt dit wijzigen in de instellingen onder uiterlijk</string>
     <string name="create_address_button">Creëren</string>
     <string name="v6_0_privacy_blur">Vervagen voor betere privacy.</string>
@@ -2380,7 +2378,6 @@
     <string name="full_link_button_text">Volledige link</string>
     <string name="unsupported_connection_link">Niet-ondersteunde verbindingslink</string>
     <string name="short_link_button_text">Korte link</string>
-    <string name="onboarding_conditions_configure_server_operators">Serveroperators configureren</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacybeleid en gebruiksvoorwaarden.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.</string>
     <string name="cant_send_message_contact_deleted">contact verwijderd</string>
@@ -2436,4 +2433,11 @@
     <string name="accept_pending_member_button">Accepteer</string>
     <string name="accept_pending_member_alert_title">Lid accepteren</string>
     <string name="accept_pending_member_alert_question">Lid zal toetreden tot de groep, lid accepteren?</string>
+    <string name="connect_use_incognito_profile">Incognitoprofiel gebruiken</string>
+    <string name="connect_plan_open_chat">Open chat</string>
+    <string name="connect_plan_open_new_chat">Open een nieuwe chat</string>
+    <string name="connect_plan_open_new_group">Nieuwe groep openen</string>
+    <string name="server_no_sub">geen abonnement</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">U bent niet verbonden met de server die u gebruikt om berichten van deze verbinding te ontvangen (geen abonnement).</string>
+    <string name="e2ee_info_e2ee"><![CDATA[Berichten worden beschermd door <b>end-to-end-encryptie</b>.]]></string>
 </resources>

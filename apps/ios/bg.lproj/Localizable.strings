@@ -26,13 +26,7 @@
 "(this device v%@)" = "(това устройство v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Допринеси](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Изпратете ни имейл](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Звезда в GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Добави контакт**: за създаване на нов линк.";
@@ -390,9 +384,6 @@ swipe action */
 "Active connections" = "Активни връзки";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Добавете адрес към вашия профил, така че вашите контакти да могат да го споделят с други хора. Актуализацията на профила ще бъде изпратена до вашите контакти.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Добави приятели";
 
 /* No comment provided by engineer. */
@@ -636,9 +627,6 @@ swipe action */
 "Answer call" = "Отговор на повикване";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Протокол и код с отворен код – всеки може да оперира собствени сървъри.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Компилация на приложението: %@";
 
 /* No comment provided by engineer. */
@@ -873,7 +861,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Български, финландски, тайландски и украински - благодарение на потребителите и [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Бизнес адрес";
 
 /* No comment provided by engineer. */
@@ -887,9 +875,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Чрез чат профил (по подразбиране) или [чрез връзка](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (БЕТА).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "С използването на SimpleX Chat вие се съгласявате със:\n- изпращане само на легално съдържание в публични групи.\n- уважение към другите потребители – без спам.";
 
 /* No comment provided by engineer. */
 "Call already ended!" = "Разговорът вече приключи!";
@@ -1068,7 +1053,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Чатът ще бъде изтрит за вас - това не може да бъде отменено!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Чат с администраторите";
 
 /* No comment provided by engineer. */
@@ -1167,7 +1153,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Условията вече са приети за тези оператори: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Условия за ползване";
 
 /* No comment provided by engineer. */
@@ -1181,9 +1167,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Конфигурирай ICE сървъри";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Конфигуриране на сървърни оператори";
 
 /* No comment provided by engineer. */
 "Confirm" = "Потвърди";
@@ -1218,7 +1201,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Потвърдено";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Свързване";
 
 /* No comment provided by engineer. */
@@ -1317,7 +1301,7 @@ set passcode view */
 /* alert title */
 "Connection error" = "Грешка при свързване";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Грешка при свързване (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1384,16 +1368,16 @@ set passcode view */
 "Continue" = "Продължи";
 
 /* No comment provided by engineer. */
+"Contribute" = "Допринеси";
+
+/* No comment provided by engineer. */
 "Copy" = "Копирай";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Версия на ядрото: v%@";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Поправи име на %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Създаване";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Създаване на еднократна препратка";
@@ -1521,9 +1505,6 @@ set passcode view */
 /* time unit */
 "days" = "дни";
 
-/* No comment provided by engineer. */
-"Decentralized" = "Децентрализиран";
-
 /* message decrypt error item */
 "Decryption error" = "Грешка при декриптиране";
 
@@ -1613,7 +1594,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Изтрий съобщението?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Изтрий съобщенията";
 
 /* No comment provided by engineer. */
@@ -1800,7 +1782,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Edit group profile" = "Редактирай групов профил";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Активирай";
 
 /* No comment provided by engineer. */
@@ -1823,9 +1805,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable lock" = "Активирай заключване";
-
-/* No comment provided by engineer. */
-"Enable notifications" = "Активирай известията";
 
 /* No comment provided by engineer. */
 "Enable periodic notifications?" = "Активирай периодични известия?";
@@ -1962,7 +1941,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "грешка";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Грешка при свързване със сървъра";
 
 /* No comment provided by engineer. */
@@ -2210,7 +2189,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Намирайте чатове по-бързо";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "Въжможно е пръстовият отпечатък на сертификата в адреса на сървъра да е неправилен";
 
 /* No comment provided by engineer. */
@@ -2303,7 +2283,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Груповата покана вече е невалидна, премахната е от подателя.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Групов линк";
 
 /* No comment provided by engineer. */
@@ -2412,9 +2392,6 @@ snd error text */
 "Immediately" = "Веднага";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Защитен от спам и злоупотреби";
-
-/* No comment provided by engineer. */
 "Import" = "Импортиране";
 
 /* No comment provided by engineer. */
@@ -2499,7 +2476,7 @@ snd error text */
 "Initial role" = "Първоначална роля";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Инсталирайте [SimpleX Chat за терминал](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Инсталирайте SimpleX Chat за терминал";
 
 /* No comment provided by engineer. */
 "Instant" = "Мигновено";
@@ -2516,7 +2493,7 @@ snd error text */
 /* No comment provided by engineer. */
 "invalid chat data" = "невалидни данни за чат";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Невалиден линк за връзка";
 
 /* invalid chat item */
@@ -2531,7 +2508,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Невалидно потвърждение за мигриране";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Невалидно име!";
 
 /* No comment provided by engineer. */
@@ -2750,7 +2727,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Членът ще бъде премахнат от групата - това не може да бъде отменено!";
 
 /* No comment provided by engineer. */
@@ -2821,9 +2798,6 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Migrate device" = "Мигрирай устройството";
-
-/* No comment provided by engineer. */
-"Migrate from another device" = "Мигриране от друго устройство";
 
 /* No comment provided by engineer. */
 "Migrate here" = "Мигрирай тук";
@@ -2912,7 +2886,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Мрежови настройки";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Състояние на мрежата";
 
 /* delete after time */
@@ -3000,9 +2974,6 @@ snd error text */
 "no text" = "няма текст";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Първата платформа без никакви потребителски идентификатори – поверителна по дизайн.";
-
-/* No comment provided by engineer. */
 "Not compatible!" = "Несъвместим!";
 
 /* No comment provided by engineer. */
@@ -3037,7 +3008,7 @@ alert button
 new chat action */
 "Ok" = "Ок";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "ОК";
 
 /* No comment provided by engineer. */
@@ -3100,7 +3071,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Само вашият контакт може да изпраща гласови съобщения.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Отвори";
 
 /* new chat action */
@@ -3248,9 +3220,6 @@ new chat action */
 "Privacy & security" = "Поверителност и сигурност";
 
 /* No comment provided by engineer. */
-"Privacy redefined" = "Поверителността преосмислена";
-
-/* No comment provided by engineer. */
 "Private filenames" = "Поверителни имена на файлове";
 
 /* name of notes to self */
@@ -3267,9 +3236,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile password" = "Профилна парола";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Актуализацията на профила ще бъде изпратена до вашите контакти.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Забрани аудио/видео разговорите.";
@@ -3335,16 +3301,10 @@ new chat action */
 "Read more" = "Прочетете още";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Прочетете повече в нашето GitHub хранилище.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Прочетете повече в [Ръководство на потребителя](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Прочетете повече в нашето [GitHub хранилище](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Прочетете повече в Ръководство за потребителя.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Потвърждениeто за доставка е деактивирано";
@@ -3360,9 +3320,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "получено потвърждение…";
-
-/* notification */
-"Received file event" = "Събитие за получен файл";
 
 /* message info title */
 "Received message" = "Получено съобщение";
@@ -3420,13 +3377,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Relay сървърът защитава вашия IP адрес, но може да наблюдава продължителността на разговора.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Премахване";
 
 /* No comment provided by engineer. */
 "Remove member" = "Острани член";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Острани член?";
 
 /* No comment provided by engineer. */
@@ -3712,9 +3669,6 @@ chat item action */
 /* copied message info */
 "Sent at: %@" = "Изпратено на: %@";
 
-/* notification */
-"Sent file event" = "Събитие за изпратен файл";
-
 /* message info title */
 "Sent message" = "Изпратено съобщение";
 
@@ -3785,17 +3739,11 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Сподели адрес";
 
-/* alert title */
-"Share address with contacts?" = "Сподели адреса с контактите?";
-
 /* No comment provided by engineer. */
 "Share link" = "Сподели линк";
 
 /* No comment provided by engineer. */
 "Share this 1-time invite link" = "Сподели този еднократен линк за връзка";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Сподели с контактите";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Показване на обажданията в хронологията на телефона";
@@ -3883,6 +3831,9 @@ chat item action */
 
 /* chat item text */
 "standard end-to-end encryption" = "стандартно криптиране от край до край";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Звезда в GitHub";
 
 /* No comment provided by engineer. */
 "Start chat" = "Започни чат";
@@ -3980,7 +3931,8 @@ chat item action */
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Тестът е неуспешен на стъпка %@.";
 
 /* No comment provided by engineer. */
@@ -4021,9 +3973,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Криптирането работи и новото споразумение за криптиране не е необходимо. Това може да доведе до грешки при свързване!";
-
-/* No comment provided by engineer. */
-"The future of messaging" = "Ново поколение поверителни съобщения";
 
 /* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хешът на предишното съобщение е различен.";
@@ -4129,12 +4078,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Транспортна изолация";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Опит за свързване със сървъра, използван за получаване на съобщения от този контакт (грешка: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Опит за свързване със сървъра, използван за получаване на съобщения от този контакт.";
 
 /* No comment provided by engineer. */
 "Turkish interface" = "Турски интерфейс";
@@ -4258,9 +4201,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Използвай .onion хостове";
-
-/* No comment provided by engineer. */
-"Use chat" = "Използвай чата";
 
 /* new chat action */
 "Use current profile" = "Използвай текущия профил";
@@ -4494,9 +4434,6 @@ chat item action */
 "You are already joining the group!\nRepeat join request?" = "Вече се присъединихте към групата!\nИзпрати отново заявката за присъединяване?";
 
 /* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Вие сте свързани към сървъра, използван за получаване на съобщения от този контакт.";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Поканени сте в групата";
 
 /* No comment provided by engineer. */
@@ -4567,9 +4504,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Не можахте да бъдете потвърдени; Моля, опитайте отново.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Хората могат да се свържат с вас само чрез ликовете, които споделяте.";
 
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Вече сте направили заявката за връзка!\nИзпрати отново заявката за свързване?";

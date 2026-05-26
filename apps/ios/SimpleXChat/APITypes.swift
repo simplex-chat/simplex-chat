@@ -5,6 +5,7 @@
 //  Created by Evgeny on 26/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/api.md
 
 import Foundation
 import SwiftUI
@@ -22,6 +23,7 @@ public func onOff(_ b: Bool) -> String {
     b ? "on" : "off"
 }
 
+// Spec: spec/api.md#APIResult
 public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     case result(R)
     case error(ChatError)
@@ -59,6 +61,7 @@ public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#ChatAPIResult
 public protocol ChatAPIResult: Decodable {
     var responseType: String { get }
     var details: String { get }
@@ -79,6 +82,7 @@ extension ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#decodeAPIResult
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
 //    print("decodeAPIResult \(String(describing: R.self))")
     do {
@@ -545,6 +549,7 @@ public struct ConnectionStats: Decodable, Hashable {
     public var sndQueuesInfo: [SndQueueInfo]
     public var ratchetSyncState: RatchetSyncState
     public var ratchetSyncSupported: Bool
+    public var subStatus: SubscriptionStatus?
 
     public var ratchetSyncAllowed: Bool {
         ratchetSyncSupported && [.allowed, .required].contains(ratchetSyncState)
@@ -559,25 +564,28 @@ public struct ConnectionStats: Decodable, Hashable {
     }
 }
 
-public struct RcvQueueInfo: Codable, Hashable {
+public struct RcvQueueInfo: Decodable, Hashable {
     public var rcvServer: String
+    public var status: QueueStatus
     public var rcvSwitchStatus: RcvSwitchStatus?
     public var canAbortSwitch: Bool
+    public var subStatus: SubscriptionStatus
 }
 
-public enum RcvSwitchStatus: String, Codable, Hashable {
+public enum RcvSwitchStatus: String, Decodable, Hashable {
     case switchStarted = "switch_started"
     case sendingQADD = "sending_qadd"
     case sendingQUSE = "sending_quse"
     case receivedMessage = "received_message"
 }
 
-public struct SndQueueInfo: Codable, Hashable {
+public struct SndQueueInfo: Decodable, Hashable {
     public var sndServer: String
+    public var status: QueueStatus
     public var sndSwitchStatus: SndSwitchStatus?
 }
 
-public enum SndSwitchStatus: String, Codable, Hashable {
+public enum SndSwitchStatus: String, Decodable, Hashable {
     case sendingQKEY = "sending_qkey"
     case sendingQTEST = "sending_qtest"
 }
@@ -604,6 +612,48 @@ public enum RatchetSyncState: String, Decodable {
     case required
     case started
     case agreed
+}
+
+public enum QueueStatus: String, Decodable, Hashable {
+    case new
+    case confirmed
+    case secured
+    case active
+    case disabled
+}
+
+public enum SubscriptionStatus: Decodable, Hashable {
+    case active
+    case pending
+    case removed(subError: String)
+    case noSub
+
+    public var statusString: LocalizedStringKey {
+        switch self {
+        case .active: "connected"
+        case .pending: "connecting"
+        case .removed: "error"
+        case .noSub: "no subscription"
+        }
+    }
+
+    public var statusExplanation: String {
+        switch self {
+        case .active: NSLocalizedString("You are connected to the server used to receive messages from this connection.", comment: "subscription status explanation")
+        case .pending: NSLocalizedString("Trying to connect to the server used to receive messages from this connection.", comment: "subscription status explanation")
+        case let .removed(err): String.localizedStringWithFormat(NSLocalizedString("Error connecting to the server used to receive messages from this connection: %@", comment: "subscription status explanation"), err)
+        case .noSub: NSLocalizedString("You are not connected to the server used to receive messages from this connection (no subscription).", comment: "subscription status explanation")
+        }
+    }
+
+    public var imageName: String {
+        switch self {
+        case .active: "circle.fill"
+        case .pending: "ellipsis.circle.fill"
+        case .removed: "exclamationmark.circle.fill"
+        case .noSub: "circle.dotted"
+        }
+    }
 }
 
 public protocol SelectableItem: Identifiable, Equatable {
@@ -645,6 +695,7 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
+// Spec: spec/api.md#ChatError
 public enum ChatError: Decodable, Hashable, Error {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
@@ -667,6 +718,7 @@ public enum ChatError: Decodable, Hashable, Error {
     }
 }
 
+// Spec: spec/api.md#ChatErrorType
 public enum ChatErrorType: Decodable, Hashable {
     case noActiveUser
     case noConnectionUser(agentConnId: String)
@@ -675,6 +727,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case userUnknown
     case activeUserExists
     case userExists
+    case chatRelayExists
     case invalidDisplayName
     case differentActiveUser(commandUserId: Int64, activeUserId: Int64)
     case cantDeleteActiveUser(userId: Int64)
@@ -714,7 +767,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case fileCancelled(message: String)
     case fileCancel(fileId: Int64, message: String)
     case fileAlreadyExists(filePath: String)
-    case fileRead(filePath: String, message: String)
     case fileWrite(filePath: String, message: String)
     case fileSend(fileId: Int64, agentError: String)
     case fileRcvChunk(message: String)
@@ -743,6 +795,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case connectionIncognitoChangeProhibited
     case connectionUserChangeProhibited
     case peerChatVRangeIncompatible
+    case relayTestError(message: String)
     case internalError(message: String)
     case exception(message: String)
 }
@@ -750,6 +803,7 @@ public enum ChatErrorType: Decodable, Hashable {
 public enum StoreError: Decodable, Hashable {
     case duplicateName
     case userNotFound(userId: Int64)
+    case relayUserNotFound
     case userNotFoundByName(contactName: ContactName)
     case userNotFoundByContactId(contactId: Int64)
     case userNotFoundByGroupId(groupId: Int64)
@@ -774,6 +828,7 @@ public enum StoreError: Decodable, Hashable {
     case memberContactGroupMemberNotFound(contactId: Int64)
     case groupWithoutUser
     case duplicateGroupMember
+    case duplicateMemberId
     case groupAlreadyJoined
     case groupInvitationNotFound
     case sndFileNotFound(fileId: Int64)
@@ -808,6 +863,9 @@ public enum StoreError: Decodable, Hashable {
     case hostMemberIdNotFound(groupId: Int64)
     case contactNotFoundByFileId(fileId: Int64)
     case noGroupSndStatus(itemId: Int64, groupMemberId: Int64)
+    case userChatRelayNotFound(chatRelayId: Int64)
+    case groupRelayNotFound(groupRelayId: Int64)
+    case groupRelayNotFoundByMemberId(groupMemberId: Int64)
     case dBException(message: String)
 }
 
@@ -834,6 +892,7 @@ public enum AgentErrorType: Decodable, Hashable {
     case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
+    case NOTICE(server: String, preset: Bool, expiresAt: Date?)
     case INTERNAL(internalErr: String)
     case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE

@@ -20,6 +20,7 @@ sealed class WriteFileResult {
 }
 * */
 
+// Spec: spec/services/files.md#writeCryptoFile
 fun writeCryptoFile(path: String, data: ByteArray): CryptoFileArgs {
   val ctrl = ChatController.getChatCtrl() ?: throw Exception("Controller is not initialized")
   val buffer = ByteBuffer.allocateDirect(data.size)

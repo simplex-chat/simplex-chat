@@ -5,6 +5,7 @@
 //  Created by Avently on 23.02.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -373,10 +374,12 @@ struct MigrateToDevice: View {
                     "Upgrade and open chat",
                      "",
                      .yesUp)
-                case .downgrade:
+                case let .downgrade(downMigrations):
                     ("Database downgrade",
                     "Downgrade and open chat",
-                     NSLocalizedString("Warning: you may lose some data!", comment: ""),
+                     ([NSLocalizedString("Warning: you may lose some data!", comment: "")]
+                        + downMigrationWarnings(downMigrations).reversed())
+                        .joined(separator: "\n"),
                     .yesUpDown)
                 case let .migrationError(mtrError):
                     ("Incompatible database version",

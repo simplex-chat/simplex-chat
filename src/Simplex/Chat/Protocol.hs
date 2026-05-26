@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
@@ -21,7 +22,7 @@
 module Simplex.Chat.Protocol where
 
 import Control.Applicative ((<|>))
-import Control.Monad ((<=<))
+import Control.Monad (when, (<=<))
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -34,16 +35,17 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (fromRight)
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
@@ -53,8 +55,9 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
-import Simplex.Messaging.Agent.Store.DB (fromTextField_)
-import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
+import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
+import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -78,12 +81,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 14 - support sending and receiving group join rejection (2025-02-24)
 -- 15 - support specifying message scopes for group messages (2025-03-12)
 -- 16 - support short link data (2025-06-10)
+-- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 16
+currentChatVersion = VersionChat 17
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -146,6 +150,10 @@ groupKnockingVersion = VersionChat 15
 shortLinkDataVersion :: VersionChat
 shortLinkDataVersion = VersionChat 16
 
+-- support host voice messages during member approval regardless of group voice setting
+memberSupportVoiceVersion :: VersionChat
+memberSupportVoiceVersion = VersionChat 17
+
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
   | v < pqdrSMPAgentVersion = initialChatVersion
@@ -154,8 +162,6 @@ agentToChatVersion v
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
-  | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
-  | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show)
 
@@ -165,8 +171,6 @@ connEntityInfo :: ConnectionEntity -> String
 connEntityInfo = \case
   RcvDirectMsgConnection c ct_ -> ctInfo ct_ <> ", status: " <> show (connStatus c)
   RcvGroupMsgConnection c g m -> mInfo g m <> ", status: " <> show (connStatus c)
-  SndFileConnection c _ft -> "snd file, status: " <> show (connStatus c)
-  RcvFileConnection c _ft -> "rcv file, status: " <> show (connStatus c)
   UserContactConnection c _uc -> "user address, status: " <> show (connStatus c)
   where
     ctInfo = maybe "connection" $ \Contact {contactId} -> "contact " <> show contactId
@@ -176,8 +180,6 @@ updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
   RcvDirectMsgConnection c ct_ -> RcvDirectMsgConnection (st c) ((\ct -> (ct :: Contact) {activeConn = Just $ st c}) <$> ct_)
   RcvGroupMsgConnection c gInfo m@GroupMember {activeConn = c'} -> RcvGroupMsgConnection (st c) gInfo m {activeConn = st <$> c'}
-  SndFileConnection c ft -> SndFileConnection (st c) ft
-  RcvFileConnection c ft -> RcvFileConnection (st c) ft
   UserContactConnection c uc -> UserContactConnection (st c) uc
   where
     st c = c {connStatus}
@@ -245,7 +247,7 @@ data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     sent :: Bool,
-    memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
+    memberId :: Maybe MemberId -- present in group message references, Nothing for channel messages
   }
   deriving (Eq, Show)
 
@@ -312,11 +314,116 @@ data ChatMessage e = ChatMessage
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
+-- Can be extended to support profile identity keys (e.g., secp256k1 for Nostr)
+data KeyRef = KRMember
+  deriving (Eq, Show)
+
+data ChatBinding = CBGroup | CBDirect | CBChannel
+  deriving (Eq, Show)
+
+data MsgSignature = MsgSignature KeyRef C.ASignature
+  deriving (Show)
+
+data SignedMsg = SignedMsg
+  { chatBinding :: ChatBinding,
+    signatures :: L.NonEmpty MsgSignature,
+    signedBody :: ByteString -- exact bytes that were signed
+  }
+  deriving (Show)
+
+-- | Post-verification message. Encodes the invariant that signature
+-- has been checked (or wasn't required). Store and forward functions
+-- accept only VerifiedMsg, preventing unverified messages from being persisted.
+data VerifiedMsg e
+  = VMUnsigned (ChatMessage e)
+  | VMSigned MsgSigStatus SignedMsg (ChatMessage e)
+
+data ParsedMsg e = ParsedMsg (Maybe GrpMsgForward) (Maybe SignedMsg) (ChatMessage e)
+
+data AParsedMsg = forall e. MsgEncodingI e => APMsg (SMsgEncoding e) (ParsedMsg e)
+
+data FwdSender
+  = FwdMember MemberId ContactName
+  | FwdChannel
+  deriving (Eq, Show)
+
+data GrpMsgForward = GrpMsgForward
+  { fwdSender :: FwdSender,
+    fwdBrokerTs :: UTCTime
+  }
+  deriving (Eq, Show)
+
+
+instance Encoding FwdSender where
+  smpEncode = \case
+    FwdMember memberId memberName -> smpEncode ('M', memberId, memberName)
+    FwdChannel -> "C"
+  smpP =
+    A.anyChar >>= \case
+      'M' -> uncurry FwdMember <$> smpP
+      'C' -> pure FwdChannel
+      c -> fail $ "invalid FwdSender tag: " <> show c
+
+instance Encoding GrpMsgForward where
+  smpEncode GrpMsgForward {fwdSender, fwdBrokerTs} =
+    smpEncode (fwdSender, utcToSystemTime fwdBrokerTs)
+  smpP = do
+    fwdSender <- smpP
+    fwdBrokerTs <- systemToUTCTime <$> smpP
+    pure GrpMsgForward {fwdSender, fwdBrokerTs}
+
+instance Encoding KeyRef where
+  smpEncode = \case
+    KRMember -> "M"
+  smpP =
+    A.anyChar >>= \case
+      'M' -> pure KRMember
+      c -> fail $ "invalid KeyRef tag: " <> show c
+
+instance Encoding ChatBinding where
+  smpEncode = \case
+    CBGroup -> "G"
+    CBDirect -> "D"
+    CBChannel -> "C"
+  smpP =
+    A.anyChar >>= \case
+      'G' -> pure CBGroup
+      'D' -> pure CBDirect
+      'C' -> pure CBChannel
+      c -> fail $ "invalid ChatBinding: " <> show c
+
+instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode
+
+instance FromField ChatBinding where fromField = fromTextField_ $ eitherToMaybe . smpDecode . encodeUtf8
+
+instance Encoding MsgSignature where
+  smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
+  smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
+
+-- Wire format: <binding:1> <sigCount:1> (<keyRef><sig:64>)* <body>
+instance Encoding SignedMsg where
+  smpEncode SignedMsg {chatBinding, signatures, signedBody} = smpEncode (chatBinding, signatures, Tail signedBody)
+  smpP = do
+    (chatBinding, signatures, Tail signedBody) <- smpP
+    pure SignedMsg {chatBinding, signatures, signedBody}
+
+-- | Generic signing context — data, not function.
+-- Callers construct per-event; createSndMessages uses mechanically.
+data MsgSigning = MsgSigning
+  { bindingTag :: ChatBinding,
+    bindingData :: ByteString,
+    keyRef :: KeyRef,
+    privKey :: C.PrivateKeyEd25519
+  }
+
+encodeChatBinding :: ChatBinding -> ByteString -> ByteString
+encodeChatBinding cb bindingData = smpEncode cb <> bindingData
+
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope} -> ChatMsgEvent 'Json
-  XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
@@ -325,6 +432,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
   XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
+  XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
@@ -332,6 +440,11 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
+  XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
+  XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
+  XGrpRelayTest :: ByteString -> Maybe ByteString -> ChatMsgEvent 'Json
+  XGrpRelayNew :: ShortLinkContact -> ChatMsgEvent 'Json
+  XGrpRelayReject :: RelayRejectionReason -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -347,7 +460,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
-  XGrpMsgForward :: MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
+  XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -372,8 +485,8 @@ deriving instance Show AChatMsgEvent
 -- actual filtering on forwarding is done in processEvent
 isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
-  XMsgNew mc -> case mcExtMsgContent mc of
-    ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> False
+  XMsgNew mc -> case mc of
+    MsgContainer {file = Just FileInvitation {fileInline = Just _}} -> False
     _ -> True
   XMsgFileDescr _ _ -> True
   XMsgUpdate {} -> True
@@ -381,6 +494,7 @@ isForwardedGroupMsg ev = case ev of
   XMsgReact {} -> True
   XFileCancel _ -> True
   XInfo _ -> True
+  XGrpRelayNew _ -> True
   XGrpMemNew {} -> True
   XGrpMemRole {} -> True
   XGrpMemRestrict {} -> True
@@ -390,32 +504,6 @@ isForwardedGroupMsg ev = case ev of
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
   _ -> False
-
--- applied after building list of messages to forward and building list of group members to forward to, see Chat;
---
--- this filters out members if any of forwarded events in batch is an XGrpMemRestrict event referring to them,
--- but practically XGrpMemRestrict is not batched with other events so it wouldn't prevent forwarding of other events
--- to these members;
---
--- same for reports (MCReport) - they are not batched with other events, so we can safely filter out
--- members with role less than moderator when forwarding
-msgsForwardedToMember :: NonEmpty (ChatMessage 'Json) -> GroupMember -> Bool
-msgsForwardedToMember fwdMsgs GroupMember {memberId, memberRole} =
-  (memberId `notElem` restrictMemberIds) && (not hasReport || memberRole >= GRModerator)
-  where
-    restrictMemberIds = mapMaybe restrictMemberId $ L.toList fwdMsgs
-    restrictMemberId :: ChatMessage 'Json -> Maybe MemberId
-    restrictMemberId ChatMessage {chatMsgEvent} =
-      case chatMsgEvent of
-        XGrpMemRestrict mId _ -> Just mId
-        _ -> Nothing
-    hasReport = any isReportEvent fwdMsgs
-    isReportEvent ChatMessage {chatMsgEvent} =
-      case chatMsgEvent of
-        XMsgNew mc -> case mcExtMsgContent mc of
-          ExtMsgContent {content = MCReport {}} -> True
-          _ -> False
-        _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -503,7 +591,7 @@ data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
 
 cmToQuotedMsg :: AChatMsgEvent -> Maybe QuotedMsg
 cmToQuotedMsg = \case
-  ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
+  ACME _ (XMsgNew MsgContainer {quote = Just quotedMsg}) -> Just quotedMsg
   _ -> Nothing
 
 data MsgContentTag
@@ -548,26 +636,55 @@ instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+instance FromField MsgContentTag where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
 instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEncode
 
-data MsgContainer
-  = MCSimple ExtMsgContent
-  | MCQuote QuotedMsg ExtMsgContent
-  | MCComment MsgRef ExtMsgContent
-  | MCForward ExtMsgContent
+-- Wire JSON 1:1 with parsed form. The three discriminator fields `quote`, `parent`,
+-- and `forward` are independent and may co-occur (e.g. a comment that quotes another
+-- comment carries both `parent` and `quote`). `forward` is `Maybe Bool` for backwards
+-- compatibility with the previous wire encoding: the serializer omits the field when
+-- `Nothing` and the parser treats absent/false as "not a forward".
+data MsgContainer = MsgContainer
+  { content :: MsgContent,
+    -- the key used in mentions is a locally (per message) unique display name of member.
+    -- Suffixes _1, _2 should be appended to make names locally unique.
+    -- It should be done in the UI, as they will be part of the text, and validated in the API.
+    mentions :: MsgMentions,
+    file :: Maybe FileInvitation,
+    ttl :: Maybe Int,
+    live :: Maybe Bool,
+    scope :: Maybe MsgScope,
+    asGroup :: Maybe Bool,
+    quote :: Maybe QuotedMsg,
+    parent :: Maybe MsgRef,
+    forward :: Maybe Bool
+  }
   deriving (Eq, Show)
 
-mcExtMsgContent :: MsgContainer -> ExtMsgContent
-mcExtMsgContent = \case
-  MCSimple c -> c
-  MCQuote _ c -> c
-  MCComment _ c -> c
-  MCForward c -> c
+mcSimple :: MsgContent -> MsgContainer
+mcSimple content =
+  MsgContainer
+    { content,
+      mentions = MsgMentions M.empty,
+      file = Nothing,
+      ttl = Nothing,
+      live = Nothing,
+      scope = Nothing,
+      asGroup = Nothing,
+      quote = Nothing,
+      parent = Nothing,
+      forward = Nothing
+    }
 
-isMCForward :: MsgContainer -> Bool
-isMCForward = \case
-  MCForward _ -> True
-  _ -> False
+mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
+mcQuote q c = (mcSimple c) {quote = Just q}
+
+mcComment :: MsgRef -> MsgContent -> MsgContainer
+mcComment p c = (mcSimple c) {parent = Just p}
+
+mcForward :: MsgContent -> MsgContainer
+mcForward c = (mcSimple c) {forward = Just True}
 
 data MsgContent
   = MCText {text :: Text}
@@ -577,7 +694,7 @@ data MsgContent
   | MCVoice {text :: Text, duration :: Int}
   | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
-  | MCChat {text :: Text, chatLink :: MsgChatLink}
+  | MCChat {text :: Text, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
@@ -585,6 +702,13 @@ data MsgChatLink
   = MCLContact {connLink :: ShortLinkContact, profile :: Profile, business :: Bool}
   | MCLInvitation {invLink :: ShortLinkInvitation, profile :: Profile}
   | MCLGroup {connLink :: ShortLinkContact, groupProfile :: GroupProfile}
+  deriving (Eq, Show)
+
+data LinkOwnerSig = LinkOwnerSig
+  { ownerId :: Maybe B64UrlByteString,
+    chatBinding :: B64UrlByteString,
+    ownerSig :: C.Signature 'C.Ed25519
+  }
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
@@ -641,27 +765,99 @@ msgContentTag = \case
   MCChat {} -> MCChat_
   MCUnknown {tag} -> MCUnknown_ tag
 
-data ExtMsgContent = ExtMsgContent
-  { content :: MsgContent,
-    -- the key used in mentions is a locally (per message) unique display name of member.
-    -- Suffixes _1, _2 should be appended to make names locally unique.
-    -- It should be done in the UI, as they will be part of the text, and validated in the API.
-    mentions :: Map MemberName MsgMention,
-    file :: Maybe FileInvitation,
-    ttl :: Maybe Int,
-    live :: Maybe Bool,
-    scope :: Maybe MsgScope
-  }
+data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
 
-data MsgMention = MsgMention {memberId :: MemberId}
+newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
   deriving (Eq, Show)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
+$(JQ.deriveJSON defaultJSON ''LinkOwnerSig)
+
 $(JQ.deriveJSON defaultJSON ''MsgMention)
 
+instance FromJSON MsgMentions where
+  parseJSON v = MsgMentions <$> parseJSON v
+  omittedField = Just $ MsgMentions M.empty
+
+instance ToJSON MsgMentions where
+  toJSON (MsgMentions m) = toJSON $ toMaybeMap m
+  toEncoding (MsgMentions m) = toEncoding $ toMaybeMap m
+  omitField (MsgMentions m) = M.null m
+
+toMaybeMap :: Map k v -> Maybe (Map k v)
+toMaybeMap m = if M.null m then Nothing else Just m
+{-# INLINE toMaybeMap #-}
+
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
+
+instance FromJSON MsgContent where
+  parseJSON (J.Object v) =
+    v .: "type" >>= \case
+      MCText_ -> MCText <$> v .: "text"
+      MCLink_ -> do
+        text <- v .: "text"
+        preview <- v .: "preview"
+        pure MCLink {text, preview}
+      MCImage_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        pure MCImage {text, image}
+      MCVideo_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        duration <- v .: "duration"
+        pure MCVideo {text, image, duration}
+      MCVoice_ -> do
+        text <- v .: "text"
+        duration <- v .: "duration"
+        pure MCVoice {text, duration}
+      MCFile_ -> MCFile <$> v .: "text"
+      MCReport_ -> do
+        text <- v .: "text"
+        reason <- v .: "reason"
+        pure MCReport {text, reason}
+      MCChat_ -> do
+        text <- v .: "text"
+        chatLink <- v .: "chatLink"
+        ownerSig <- v .:? "ownerSig"
+        pure MCChat {text, chatLink, ownerSig}
+      MCUnknown_ tag -> do
+        text <- fromMaybe unknownMsgType <$> v .:? "text"
+        pure MCUnknown {tag, text, json = v}
+  parseJSON invalid =
+    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
+
+unknownMsgType :: Text
+unknownMsgType = "unknown message type"
+
+(.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
+key .=? value = maybe id ((:) . (key .=)) value
+
+instance ToJSON MsgContent where
+  toJSON = \case
+    MCUnknown {json} -> J.Object json
+    MCText t -> J.object ["type" .= MCText_, "text" .= t]
+    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
+    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
+    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
+    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
+    MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
+    MCChat {text, chatLink, ownerSig} -> J.object $ ("ownerSig" .=? ownerSig) ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
+  toEncoding = \case
+    MCUnknown {json} -> JE.value $ J.Object json
+    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
+    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
+    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
+    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
+    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
+    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
+    MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
+    MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
+
+$(JQ.deriveJSON defaultJSON ''MsgContainer)
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, - 16 for block encryption ("rounded" to 15602)
@@ -695,26 +891,56 @@ encodeChatMessage maxSize msg = do
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
 
-parseChatMessages :: ByteString -> [Either String AChatMessage]
+parseChatMessages :: ByteString -> [Either String AParsedMsg]
 parseChatMessages "" = [Left "empty string"]
 parseChatMessages msg = case B.head msg of
   'X' -> decodeCompressed (B.tail msg)
   c -> parseUncompressed c msg
   where
     parseUncompressed c s = case c of
-      '{' -> [ACMsg SJson <$> J.eitherDecodeStrict' s]
       '[' -> case J.eitherDecodeStrict' s of
-        Right v -> map parseItem v
+        Right v -> map (fmap plainMsg . parseItem) v
         Left e -> [Left e]
-      _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+      '=' -> decodeBinaryBatch (B.tail s)
+      _ -> [parseAll (elementP Nothing) s]
+    plainMsg = aParsedMsg Nothing Nothing
+    aParsedMsg fwd sm (ACMsg enc cm) = APMsg enc (ParsedMsg fwd sm cm)
+    parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
+    msgP :: A.Parser AChatMessage
+    msgP = parseMsg <$?> A.takeByteString
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
-    decodeCompressed :: ByteString -> [Either String AChatMessage]
-    decodeCompressed s' = case smpDecode s' of
+    decodeCompressed :: ByteString -> [Either String AParsedMsg]
+    decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
-      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (pure . Left) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
+      Right (compressed :: L.NonEmpty Compressed) -> case traverse decompressedSize compressed of
+        Nothing -> [Left "compressed size not specified"]
+        Just sizes
+          | sum sizes > maxDecompressedMsgLength -> [Left "decompressed size exceeds limit"]
+          | otherwise -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1) compressed
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s
+    -- Binary batch format: '=' <count:1> (<len:2> <body>)*
+    decodeBinaryBatch :: ByteString -> [Either String AParsedMsg]
+    decodeBinaryBatch s = case parseAll smpListP s of
+      Left e -> [Left e]
+      Right msgs -> map parseBatchElement msgs
+    parseBatchElement :: Large -> Either String AParsedMsg
+    parseBatchElement (Large s) = parseAll (elementP Nothing) s
+    elementP :: Maybe GrpMsgForward -> A.Parser AParsedMsg
+    elementP fwd = A.peekChar' >>= \case
+      '/' -> A.char '/' *> do
+        tag <- smpP
+        sigs <- smpP
+        (body, acm) <- A.match msgP
+        pure $ aParsedMsg fwd (Just $ SignedMsg tag sigs body) acm
+      '>' -> A.char '>' *> do
+        when (isJust fwd) $ fail "nested forward elements not supported"
+        elementP . Just =<< smpP
+      '{' -> aParsedMsg fwd Nothing <$> msgP
+      -- 'F' must match BFileChunk_ tag encoding
+      'F' -> aParsedMsg fwd Nothing . ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+      c -> fail $ "invalid element prefix: " <> show c
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
@@ -723,107 +949,13 @@ markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
-parseMsgContainer :: J.Object -> JT.Parser MsgContainer
-parseMsgContainer v =
-  MCQuote <$> v .: "quote" <*> mc
-    <|> MCComment <$> v .: "parent" <*> mc
-    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
-    -- The support for arbitrary object in "forward" property is added to allow
-    -- forward compatibility with forwards that include public group links.
-    <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
-    <|> MCSimple <$> mc
-  where
-    mc = do
-      content <- v .: "content"
-      file <- v .:? "file"
-      ttl <- v .:? "ttl"
-      live <- v .:? "live"
-      mentions <- fromMaybe M.empty <$> (v .:? "mentions")
-      scope <- v .:? "scope"
-      pure ExtMsgContent {content, mentions, file, ttl, live, scope}
-
-extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing
-
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
 justTrue False = Nothing
 
-instance FromJSON MsgContent where
-  parseJSON (J.Object v) =
-    v .: "type" >>= \case
-      MCText_ -> MCText <$> v .: "text"
-      MCLink_ -> do
-        text <- v .: "text"
-        preview <- v .: "preview"
-        pure MCLink {text, preview}
-      MCImage_ -> do
-        text <- v .: "text"
-        image <- v .: "image"
-        pure MCImage {text, image}
-      MCVideo_ -> do
-        text <- v .: "text"
-        image <- v .: "image"
-        duration <- v .: "duration"
-        pure MCVideo {text, image, duration}
-      MCVoice_ -> do
-        text <- v .: "text"
-        duration <- v .: "duration"
-        pure MCVoice {text, duration}
-      MCFile_ -> MCFile <$> v .: "text"
-      MCReport_ -> do
-        text <- v .: "text"
-        reason <- v .: "reason"
-        pure MCReport {text, reason}
-      MCChat_ -> do
-        text <- v .: "text"
-        chatLink <- v .: "chatLink"
-        pure MCChat {text, chatLink}
-      MCUnknown_ tag -> do
-        text <- fromMaybe unknownMsgType <$> v .:? "text"
-        pure MCUnknown {tag, text, json = v}
-  parseJSON invalid =
-    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
-
-unknownMsgType :: Text
-unknownMsgType = "unknown message type"
-
-msgContainerJSON :: MsgContainer -> J.Object
-msgContainerJSON = \case
-  MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
-  MCComment ref mc -> o $ ("parent" .= ref) : msgContent mc
-  MCForward mc -> o $ ("forward" .= True) : msgContent mc
-  MCSimple mc -> o $ msgContent mc
-  where
-    o = JM.fromList
-    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope} =
-      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) ["content" .= content]
-
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
 {-# INLINE nonEmptyMap #-}
-
-instance ToJSON MsgContent where
-  toJSON = \case
-    MCUnknown {json} -> J.Object json
-    MCText t -> J.object ["type" .= MCText_, "text" .= t]
-    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
-    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
-    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
-    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
-    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
-    MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
-    MCChat {text, chatLink} -> J.object ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
-  toEncoding = \case
-    MCUnknown {json} -> JE.value $ J.Object json
-    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
-    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
-    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
-    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
-    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
-    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
-    MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
-    MCChat {text, chatLink} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink
 
 instance ToField MsgContent where
   toField = toField . encodeJSON
@@ -846,6 +978,7 @@ data CMEventTag (e :: MsgEncoding) where
   XFileCancel_ :: CMEventTag 'Json
   XInfo_ :: CMEventTag 'Json
   XContact_ :: CMEventTag 'Json
+  XMember_ :: CMEventTag 'Json
   XDirectDel_ :: CMEventTag 'Json
   XGrpInv_ :: CMEventTag 'Json
   XGrpAcpt_ :: CMEventTag 'Json
@@ -853,6 +986,11 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpLinkReject_ :: CMEventTag 'Json
   XGrpLinkMem_ :: CMEventTag 'Json
   XGrpLinkAcpt_ :: CMEventTag 'Json
+  XGrpRelayInv_ :: CMEventTag 'Json
+  XGrpRelayAcpt_ :: CMEventTag 'Json
+  XGrpRelayTest_ :: CMEventTag 'Json
+  XGrpRelayNew_ :: CMEventTag 'Json
+  XGrpRelayReject_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
   XGrpMemIntro_ :: CMEventTag 'Json
   XGrpMemInv_ :: CMEventTag 'Json
@@ -899,6 +1037,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XFileCancel_ -> "x.file.cancel"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
+    XMember_ -> "x.member"
     XDirectDel_ -> "x.direct.del"
     XGrpInv_ -> "x.grp.inv"
     XGrpAcpt_ -> "x.grp.acpt"
@@ -906,6 +1045,11 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpLinkReject_ -> "x.grp.link.reject"
     XGrpLinkMem_ -> "x.grp.link.mem"
     XGrpLinkAcpt_ -> "x.grp.link.acpt"
+    XGrpRelayInv_ -> "x.grp.relay.inv"
+    XGrpRelayAcpt_ -> "x.grp.relay.acpt"
+    XGrpRelayTest_ -> "x.grp.relay.test"
+    XGrpRelayNew_ -> "x.grp.relay.new"
+    XGrpRelayReject_ -> "x.grp.relay.reject"
     XGrpMemNew_ -> "x.grp.mem.new"
     XGrpMemIntro_ -> "x.grp.mem.intro"
     XGrpMemInv_ -> "x.grp.mem.inv"
@@ -953,6 +1097,7 @@ instance StrEncoding ACMEventTag where
         "x.file.cancel" -> XFileCancel_
         "x.info" -> XInfo_
         "x.contact" -> XContact_
+        "x.member" -> XMember_
         "x.direct.del" -> XDirectDel_
         "x.grp.inv" -> XGrpInv_
         "x.grp.acpt" -> XGrpAcpt_
@@ -960,6 +1105,11 @@ instance StrEncoding ACMEventTag where
         "x.grp.link.reject" -> XGrpLinkReject_
         "x.grp.link.mem" -> XGrpLinkMem_
         "x.grp.link.acpt" -> XGrpLinkAcpt_
+        "x.grp.relay.inv" -> XGrpRelayInv_
+        "x.grp.relay.acpt" -> XGrpRelayAcpt_
+        "x.grp.relay.test" -> XGrpRelayTest_
+        "x.grp.relay.new" -> XGrpRelayNew_
+        "x.grp.relay.reject" -> XGrpRelayReject_
         "x.grp.mem.new" -> XGrpMemNew_
         "x.grp.mem.intro" -> XGrpMemIntro_
         "x.grp.mem.inv" -> XGrpMemInv_
@@ -1003,6 +1153,7 @@ toCMEventTag msg = case msg of
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact {} -> XContact_
+  XMember {} -> XMember_
   XDirectDel -> XDirectDel_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
@@ -1010,6 +1161,11 @@ toCMEventTag msg = case msg of
   XGrpLinkReject _ -> XGrpLinkReject_
   XGrpLinkMem _ -> XGrpLinkMem_
   XGrpLinkAcpt {} -> XGrpLinkAcpt_
+  XGrpRelayInv _ -> XGrpRelayInv_
+  XGrpRelayAcpt _ -> XGrpRelayAcpt_
+  XGrpRelayTest {} -> XGrpRelayTest_
+  XGrpRelayNew _ -> XGrpRelayNew_
+  XGrpRelayReject _ -> XGrpRelayReject_
   XGrpMemNew {} -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -1072,6 +1228,38 @@ hasDeliveryReceipt = \case
   XCallInv_ -> True
   _ -> False
 
+-- | Events that must have a valid signature in relay groups.
+requiresSignature :: CMEventTag e -> Bool
+requiresSignature = \case
+  XGrpDel_ -> True
+  XGrpInfo_ -> True
+  XGrpPrefs_ -> True
+  XGrpMemDel_ -> True
+  XGrpMemRole_ -> True
+  XGrpMemRestrict_ -> True
+  XGrpLeave_ -> True
+  XGrpRelayNew_ -> True
+  XInfo_ -> True
+  _ -> False
+
+-- TODO [relays] relay: vectors tracking which members received which other member profiles/keys.
+-- TODO   - don't forward XGrpLeave/XInfo to members who haven't seen sender's profile/key.
+-- TODO   - unverifiedAllowed is a temporary workaround postponing targeted event forwarding.
+
+-- Allow signed but unverified XGrpLeave/XInfo between subscribers when sender's key is unknown.
+-- Owner keys are always known, so subscribers are required to verify from owners.
+-- Likewise, subscriber keys are always known to owners, so owners are required to verify from subscribers.
+unverifiedAllowed :: GroupMember -> GroupMember -> CMEventTag e -> Bool
+unverifiedAllowed membership member = \case
+  XGrpLeave_ -> membersNoKey
+  XInfo_ -> membersNoKey
+  _ -> False
+  where
+    membersNoKey =
+      memberRole' membership < GRModerator
+        && memberRole' member < GRModerator
+        && isNothing (memberPubKey member)
+
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag
@@ -1094,7 +1282,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     opt key = JT.parseEither (.:? key) params
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
-      XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
+      XMsgNew_ -> XMsgNew <$> JT.parseEither parseJSON (J.Object params)
       XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
       XMsgUpdate_ -> do
         msgId' <- p "msgId"
@@ -1103,8 +1291,9 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         ttl <- opt "ttl"
         live <- opt "live"
         scope <- opt "scope"
-        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope}
-      XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope"
+        asGroup <- opt "asGroup"
+        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup}
+      XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> (fromMaybe False <$> opt "onlyHistory")
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
       XFile_ -> XFile <$> p "file"
@@ -1120,6 +1309,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         reqContent <- opt "content"
         let requestMsg = (,) <$> reqMsgId <*> reqContent
         pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
+      XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
@@ -1127,6 +1317,14 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
       XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "acceptance" <*> p "role" <*> p "memberId"
+      XGrpRelayInv_ -> XGrpRelayInv <$> p "groupRelayInvitation"
+      XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink"
+      XGrpRelayTest_ -> do
+        B64UrlByteString challenge <- p "challenge"
+        sig_ <- fmap (\(B64UrlByteString s) -> s) <$> opt "signature"
+        pure $ XGrpRelayTest challenge sig_
+      XGrpRelayNew_ -> XGrpRelayNew <$> p "relayLink"
+      XGrpRelayReject_ -> XGrpRelayReject <$> p "reason"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1142,7 +1340,12 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
-      XGrpMsgForward_ -> XGrpMsgForward <$> p "memberId" <*> opt "memberName" <*> p "msg" <*> p "msgTs"
+      XGrpMsgForward_ -> do
+        fwdSender <- opt "memberId" >>= \case
+          Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
+          Nothing -> pure FwdChannel
+        fwdBrokerTs <- p "msgTs"
+        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> p "msg"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1154,9 +1357,6 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XOk_ -> pure XOk
       XUnknown_ t -> pure $ XUnknown t params
 
-(.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
-key .=? value = maybe id ((:) . (key .=)) value
-
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
 chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
   SBinary -> AMBinary AppMessageBinary {msgId = Nothing, tag = B.head $ strEncode tag, body = chatMsgBinaryToBody chatMsg}
@@ -1167,10 +1367,12 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
     o = JM.fromList
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
-      XMsgNew container -> msgContainerJSON container
+      XMsgNew mc -> case toJSON mc of
+        J.Object obj -> obj
+        _ -> JM.empty
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope} -> o $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
-      XMsgDel msgId' memberId scope -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId']
+      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
+      XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
       XFile fileInv -> o ["file" .= fileInv]
@@ -1179,6 +1381,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
+      XMember {profile, newMemberId, newMemberKey} -> o ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
@@ -1186,6 +1389,13 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile -> o ["profile" .= profile]
       XGrpLinkAcpt acceptance role memberId -> o ["acceptance" .= acceptance, "role" .= role, "memberId" .= memberId]
+      XGrpRelayInv groupRelayInv -> o ["groupRelayInvitation" .= groupRelayInv]
+      XGrpRelayAcpt relayLink -> o ["relayLink" .= relayLink]
+      XGrpRelayTest challenge sig_ -> o $
+        ("signature" .=? (B64UrlByteString <$> sig_))
+        ["challenge" .= B64UrlByteString challenge]
+      XGrpRelayNew relayLink -> o ["relayLink" .= relayLink]
+      XGrpRelayReject reason -> o ["reason" .= reason]
       XGrpMemNew memInfo scope -> o $ ("scope" .=? scope) ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
@@ -1201,7 +1411,11 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpMsgForward memberId memberName msg msgTs -> o $ ("memberName" .=? memberName) ["memberId" .= memberId, "msg" .= msg, "msgTs" .= msgTs]
+      XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
+        where
+          encodeFwdSender = \case
+            FwdMember memberId memberName -> (["memberId" .= memberId, "memberName" .= memberName] ++)
+            FwdChannel -> id
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
@@ -1222,11 +1436,28 @@ chatMsgToBody chatMsg = case encoding @e of
   SBinary -> chatMsgBinaryToBody chatMsg
   SJson -> LB.toStrict $ J.encode chatMsg
 
+verifiedChatMsg :: VerifiedMsg e -> ChatMessage e
+verifiedChatMsg = \case
+  VMUnsigned cm -> cm
+  VMSigned _ _ cm -> cm
+
+-- | Canonical bytes to store/forward, with optional signature.
+-- Signed: original bytes (re-encoding would invalidate signature).
+-- Unsigned: re-encoded from parsed ChatMessage (sanitizes stored content).
+verifiedMsgParts :: MsgEncodingI e => VerifiedMsg e -> (Maybe MsgSigStatus, Maybe SignedMsg, ByteString)
+verifiedMsgParts = \case
+  VMUnsigned chatMsg -> (Nothing, Nothing, chatMsgToBody chatMsg)
+  VMSigned s sm@SignedMsg {signedBody} _ -> (Just s, Just sm, signedBody)
+
+
 instance ToJSON (ChatMessage 'Json) where
   toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage
 
 instance FromJSON (ChatMessage 'Json) where
   parseJSON v = appJsonToCM <$?> parseJSON v
+
+instance FromField (ChatMessage 'Json) where
+  fromField = blobFieldDecoder J.eitherDecodeStrict'
 
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
@@ -1235,11 +1466,48 @@ data ContactShortLinkData = ContactShortLinkData
   }
   deriving (Show)
 
+data PublicGroupData = PublicGroupData
+  { publicMemberCount :: Int64
+  }
+  deriving (Eq, Show)
+
 data GroupShortLinkData = GroupShortLinkData
-  { groupProfile :: GroupProfile
+  { groupProfile :: GroupProfile,
+    publicGroupData :: Maybe PublicGroupData
   }
   deriving (Show)
 
 $(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
 
+$(JQ.deriveJSON defaultJSON ''PublicGroupData)
+
 $(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
+
+data RelayShortLinkData = RelayShortLinkData
+  { relayProfile :: Profile
+  }
+  deriving (Show)
+
+$(JQ.deriveJSON defaultJSON ''RelayShortLinkData)
+
+data RelayProfile = RelayProfile
+  { displayName :: ContactName,
+    fullName :: Text,
+    shortDescr :: Maybe Text,
+    image :: Maybe ImageData
+  }
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''RelayProfile)
+
+toRelayProfile :: (ContactName, Text, Maybe Text, Maybe ImageData) -> RelayProfile
+toRelayProfile (displayName, fullName, shortDescr, image) = RelayProfile {displayName, fullName, shortDescr, image}
+
+mkRelayProfile :: ContactName -> Maybe ImageData -> RelayProfile
+mkRelayProfile displayName image = RelayProfile {displayName, fullName = "", shortDescr = Nothing, image}
+
+data RelayAddressLinkData = RelayAddressLinkData {relayProfile :: RelayProfile}
+  deriving (Show)
+
+$(JQ.deriveJSON defaultJSON ''RelayAddressLinkData)
+

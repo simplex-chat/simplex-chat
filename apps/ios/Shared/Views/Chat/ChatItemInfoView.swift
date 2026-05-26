@@ -9,6 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#ChatItemInfoView
 struct ChatItemInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss

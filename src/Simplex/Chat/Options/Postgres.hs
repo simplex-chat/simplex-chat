@@ -58,8 +58,8 @@ migrationBackupPathP = pure Nothing
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbConnstr} = dbConnstr
 
-toDBOpts :: ChatDbOpts -> String -> Bool -> DBOpts
-toDBOpts ChatDbOpts {dbConnstr, dbSchemaPrefix, dbPoolSize, dbCreateSchema} dbSuffix _keepKey =
+toDBOpts :: ChatDbOpts -> String -> Bool -> [()] -> DBOpts
+toDBOpts ChatDbOpts {dbConnstr, dbSchemaPrefix, dbPoolSize, dbCreateSchema} dbSuffix _keepKey _dbFunctions =
   DBOpts
     { connstr = B.pack dbConnstr,
       schema = B.pack $ if null dbSchemaPrefix then "simplex_v1" <> dbSuffix else dbSchemaPrefix <> dbSuffix,
@@ -72,6 +72,9 @@ chatSuffix = "_chat_schema"
 
 agentSuffix :: String
 agentSuffix = "_agent_schema"
+
+chatDBFunctions :: [()]
+chatDBFunctions = []
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts
 mobileDbOpts schemaPrefix connstr = do

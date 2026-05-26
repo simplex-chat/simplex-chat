@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/services/theme.md#CurrentColors
 var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
 
 var MenuTextColor: Color { if isInDarkTheme() { AppTheme.shared.colors.onBackground.opacity(0.8) } else { Color.black } }
@@ -17,6 +18,7 @@ var NoteFolderIconColor: Color { AppTheme.shared.appColors.primaryVariant2 }
 
 func isInDarkTheme() -> Bool { !CurrentColors.colors.isLight }
 
+// Spec: spec/services/theme.md#AppTheme
 class AppTheme: ObservableObject, Equatable {
     static let shared = AppTheme(name: CurrentColors.name, base: CurrentColors.base, colors: CurrentColors.colors, appColors: CurrentColors.appColors, wallpaper: CurrentColors.wallpaper)
 
@@ -89,6 +91,7 @@ struct ThemedBackground: ViewModifier {
     }
 }
 
+// Spec: spec/services/theme.md#systemInDarkThemeCurrently
 var systemInDarkThemeCurrently: Bool {
     return UITraitCollection.current.userInterfaceStyle == .dark
 }

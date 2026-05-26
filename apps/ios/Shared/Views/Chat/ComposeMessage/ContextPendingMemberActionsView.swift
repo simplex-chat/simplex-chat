@@ -48,7 +48,7 @@ func showRejectMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismis
     showAlert(
         title: NSLocalizedString("Reject member?", comment: "alert title"),
         buttonTitle: "Reject",
-        buttonAction: { removeMember(groupInfo, member, dismiss: dismiss) },
+        buttonAction: { removeMember(groupInfo, member, withMessages: false,  dismiss: dismiss) },
         cancelButton: true
     )
 }
