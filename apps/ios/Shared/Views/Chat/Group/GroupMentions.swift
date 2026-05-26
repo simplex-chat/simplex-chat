@@ -173,7 +173,7 @@ struct GroupMentionsView: View {
         let usedMentions: Set<String> = Set(parsedMsg.compactMap { ft in
             if case let .mention(name) = ft.format { name } else { nil }
         })
-        if usedMentions.count < composeState.mentions.count  {
+        if composeState.mentions.contains(where: { !usedMentions.contains($0.key) }) {
             composeState = composeState.copy(mentions: composeState.mentions.filter({ usedMentions.contains($0.key) }))
         }
     }

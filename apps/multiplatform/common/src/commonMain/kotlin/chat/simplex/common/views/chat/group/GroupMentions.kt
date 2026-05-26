@@ -318,7 +318,7 @@ private fun removeUnusedMentions(composeState: MutableState<ComposeState>, parse
     }
   }.toSet()
 
-  if (usedMentions.size < composeState.value.mentions.size) {
+  if (composeState.value.mentions.keys.any { it !in usedMentions }) {
     composeState.value = composeState.value.copy(
       mentions = composeState.value.mentions.filterKeys { it in usedMentions }
     )
