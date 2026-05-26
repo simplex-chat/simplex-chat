@@ -381,7 +381,8 @@ struct ContactsListSearchBar: View {
             if ignoreSearchTextChange {
                 ignoreSearchTextChange = false
             } else {
-                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
+                switch strConnectTarget(t.trimmingCharacters(in: .whitespaces)) {
+                case let .link(link):
                     searchFocussed = false
                     if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
                         ignoreSearchTextChange = true
@@ -390,8 +391,10 @@ struct ContactsListSearchBar: View {
                     searchShowingSimplexLink = true
                     searchChatFilteredBySimplexLink = nil
                     connect(link.text)
-                } else {
-                    if t != "" { // if some other text is pasted, enter search mode
+                case let .name(nameInfo):
+                    showUnsupportedNameAlert(nameInfo)
+                case .none:
+                    if t != "" {
                         searchFocussed = true
                     } else {
                         connectProgressManager.cancelConnectProgress()

@@ -207,10 +207,9 @@ markdownP = mconcat <$> A.many' fragmentP
           '`' -> formattedP '`' Snippet
           '#' -> A.char '#' *> (secretP' <|> nameRefP '#' <|> secretFallback)
           '!' -> styledP <|> wordP
-          '@' -> mentionP <|> wordP
+          '@' -> (A.char '@' *> nameRefP '@') <|> mentionP <|> wordP
           '/' -> commandP <|> wordP
           '[' -> sowLinkP <|> wordP
-          ':' -> (A.char ':' *> nameRefP ':') <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -242,7 +241,8 @@ markdownP = mconcat <$> A.many' fragmentP
       word <- A.takeTill (== ' ')
       let punct = T.takeWhileEnd isPunctuation word
           name = T.dropWhileEnd isPunctuation word
-          full = pfx `T.cons` name
+      when (pfx == '@' && not (T.any (== '.') name)) $ fail "not a name"
+      let full = pfx `T.cons` name
       case strDecode (encodeUtf8 full) of
         Right (ACTName ni) ->
           let md' = markdown (SimplexName ni) full

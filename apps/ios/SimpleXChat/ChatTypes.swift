@@ -5148,7 +5148,7 @@ public struct SimplexNameInfo: Decodable, Equatable, Hashable {
 
 public enum SimplexNamespace: String, Decodable, Hashable {
     case simplex
-    case testnet
+    case testing
     case web
 }
 

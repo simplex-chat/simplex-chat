@@ -4741,7 +4741,7 @@ data class SimplexNameInfo(
 @Serializable
 enum class SimplexNamespace {
   @SerialName("simplex") simplex,
-  @SerialName("testnet") testnet,
+  @SerialName("testing") testing,
   @SerialName("web") web
 }
 

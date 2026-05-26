@@ -663,14 +663,13 @@ private struct ConnectView: View {
             ZStack(alignment: .trailing) {
                 Button {
                     if let str = UIPasteboard.general.string {
-                        if let link = strHasSingleSimplexLink(str.trimmingCharacters(in: .whitespaces)) {
+                        switch strConnectTarget(str.trimmingCharacters(in: .whitespaces)) {
+                        case let .link(link):
                             pastedLink = link.text
-                            // It would be good to hide it, but right now it is not clear how to release camera in CodeScanner
-                            // https://github.com/twostraws/CodeScanner/issues/121
-                            // No known tricks worked (changing view ID, wrapping it in another view, etc.)
-                            // showQRCodeScanner = false
                             connect(pastedLink)
-                        } else {
+                        case let .name(nameInfo):
+                            showUnsupportedNameAlert(nameInfo)
+                        case .none:
                             alert = .newChatSomeAlert(alert: SomeAlert(
                                 alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
                                 id: "pasteLinkView: code is not a SimpleX link"
@@ -866,17 +865,33 @@ func strIsSimplexLink(_ str: String) -> Bool {
     }
 }
 
-func strHasSingleSimplexLink(_ str: String) -> FormattedText? {
-    if let parsedMd = parseSimpleXMarkdown(str) {
-       let parsedLinks = parsedMd.filter({ $0.format?.isSimplexLink ?? false })
-        if parsedLinks.count == 1 {
-            return parsedLinks[0]
-        } else {
-            return nil
+enum ConnectTarget {
+    case link(FormattedText)
+    case name(SimplexNameInfo)
+}
+
+func strConnectTarget(_ str: String) -> ConnectTarget? {
+    guard let parsedMd = parseSimpleXMarkdown(str) else { return nil }
+    let links = parsedMd.filter { $0.format?.isSimplexLink ?? false }
+    if links.count == 1 { return .link(links[0]) }
+    if links.isEmpty {
+        let nameFt = parsedMd.first(where: { if case .simplexName = $0.format { true } else { false } })
+        if case let .simplexName(nameInfo) = nameFt?.format {
+            return .name(nameInfo)
         }
-    } else {
-        return nil
     }
+    return nil
+}
+
+func showUnsupportedNameAlert(_ nameInfo: SimplexNameInfo) {
+    let (title, msg) = nameInfo.nameType == .contact
+        ? ("Unsupported contact name", "Connecting via contact name requires a newer app version.")
+        : ("Unsupported channel name", "Connecting via channel name requires a newer app version.")
+    showAlert(
+        NSLocalizedString(title, comment: "alert title"),
+        message: NSLocalizedString(msg, comment: "alert message")
+            + " " + NSLocalizedString("Please upgrade the app.", comment: "alert message")
+    )
 }
 
 struct IncognitoToggle: View {
@@ -1295,31 +1310,21 @@ func planAndConnect(
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
-    let parsedMd = parseSimpleXMarkdown(shortOrFullLink)
-    let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
-    let singleLink = links.count == 1 ? links[0] : nil
-    if links.isEmpty {
-        let nameFt = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } })
-        if case let .simplexName(nameInfo) = nameFt?.format {
-            let (title, msg) = nameInfo.nameType == .contact
-                ? ("Unsupported contact name", "Connecting via contact name requires a newer app version.")
-                : ("Unsupported channel name", "Connecting via channel name requires a newer app version.")
+    switch strConnectTarget(shortOrFullLink) {
+    case let .name(nameInfo):
+        showUnsupportedNameAlert(nameInfo)
+        cleanup?()
+        return
+    case let .link(link):
+        if case .simplexLink(_, .relay, _, _) = link.format {
             showAlert(
-                NSLocalizedString(title, comment: "alert title"),
-                message: NSLocalizedString(msg, comment: "alert message")
-                    + " " + NSLocalizedString("Please upgrade the app.", comment: "alert message")
+                NSLocalizedString("Relay address", comment: "alert title"),
+                message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
             )
             cleanup?()
             return
         }
-    }
-    if case .simplexLink(_, .relay, _, _) = singleLink?.format {
-        showAlert(
-            NSLocalizedString("Relay address", comment: "alert title"),
-            message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
-        )
-        cleanup?()
-        return
+    case .none: break
     }
     ConnectProgressManager.shared.cancelConnectProgress()
     let inProgress = BoxedValue(true)

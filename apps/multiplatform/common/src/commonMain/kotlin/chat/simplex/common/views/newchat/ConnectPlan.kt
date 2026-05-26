@@ -30,29 +30,24 @@ suspend fun planAndConnect(
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
-  val parsedMd = parseToMarkdown(shortOrFullLink.trim())
-  val links = parsedMd?.filter { it.format?.isSimplexLink ?: false } ?: emptyList()
-  val singleLink = links.singleOrNull()
-  if (links.isEmpty()) {
-    val nameInfo = parsedMd?.firstNotNullOfOrNull { (it.format as? Format.SimplexName)?.nameInfo }
-    if (nameInfo != null) {
-      val (title, msg) = if (nameInfo.nameType == SimplexNameType.contact) {
-        generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
-      } else {
-        generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
-      }
-      AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
+  when (val target = strConnectTarget(shortOrFullLink.trim())) {
+    is ConnectTarget.Name -> {
+      showUnsupportedNameAlert(target.nameInfo)
       cleanup?.invoke()
       return CompletableDeferred(false)
     }
-  }
-  if (singleLink?.format is Format.SimplexLink && (singleLink.format as Format.SimplexLink).linkType == SimplexLinkType.relay) {
-    AlertManager.privacySensitive.showAlertMsg(
-      generalGetString(MR.strings.relay_address_alert_title),
-      generalGetString(MR.strings.relay_address_alert_message),
-    )
-    cleanup?.invoke()
-    return CompletableDeferred(false)
+    is ConnectTarget.Link -> {
+      val fmt = target.link.format
+      if (fmt is Format.SimplexLink && fmt.linkType == SimplexLinkType.relay) {
+        AlertManager.privacySensitive.showAlertMsg(
+          generalGetString(MR.strings.relay_address_alert_title),
+          generalGetString(MR.strings.relay_address_alert_message),
+        )
+        cleanup?.invoke()
+        return CompletableDeferred(false)
+      }
+    }
+    null -> {}
   }
   connectProgressManager.cancelConnectProgress()
   val inProgress = mutableStateOf(true)
@@ -88,9 +83,9 @@ private suspend fun planAndConnectTask(
   if (!inProgress.value) { return completable }
   if (result != null) {
     val (connectionLink, connectionPlan) = result
-    val link = strHasSingleSimplexLink(shortOrFullLink.trim())
-    val linkText = if (link?.format is Format.SimplexLink)
-      "<br><br><u>${link.format.simplexLinkText}</u>"
+    val target = strConnectTarget(shortOrFullLink.trim())
+    val linkText = if (target is ConnectTarget.Link && target.link.format is Format.SimplexLink)
+      "<br><br><u>${target.link.format.simplexLinkText}</u>"
     else
       ""
     when (connectionPlan) {

@@ -299,8 +299,8 @@ textWithEmail = describe "text with Email" do
     "test chat@simplex.chat." <==> "test " <> email "chat@simplex.chat" <> "."
     "test chat@simplex.chat..." <==> "test " <> email "chat@simplex.chat" <> "..."
   it "ignored as email markdown" do
-    "chat @simplex.chat" <==> "chat " <> mention "simplex.chat" "@simplex.chat"
-    "this is chat @simplex.chat" <==> "this is chat " <> mention "simplex.chat" "@simplex.chat"
+    "chat @simplex.chat" <==> "chat " <> sname NTContact NSWeb "simplex.chat" [] "simplex.chat"
+    "this is chat @simplex.chat" <==> "this is chat " <> sname NTContact NSWeb "simplex.chat" [] "simplex.chat"
     "this is chat@ simplex.chat" <==> "this is chat@ " <> uri "simplex.chat"
     "this is chat @ simplex.chat" <==> "this is chat @ " <> uri "simplex.chat"
     "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ " <> uri "simplex.chat"
@@ -383,7 +383,7 @@ command' = FormattedText . Just . Command
 sname :: SimplexNameType -> SimplexNamespace -> Text -> [Text] -> Text -> Markdown
 sname nt ns dom sub txt = markdown (SimplexName $ SimplexNameInfo nt ns dom sub) (pfx <> txt)
   where
-    pfx = case nt of NTPublicGroup -> "#"; NTContact -> ":"
+    pfx = case nt of NTPublicGroup -> "#"; NTContact -> "@"
 
 textWithSimplexNames :: Spec
 textWithSimplexNames = describe "text with SimpleX names" do
@@ -403,16 +403,13 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "#example.com" <==> sname NTPublicGroup NSWeb "example.com" [] "example.com"
     "#news.bbc.co.uk" <==> sname NTPublicGroup NSWeb "news.bbc.co.uk" [] "news.bbc.co.uk"
   it "contact names" do
-    ":privacy" <==> sname NTContact NSSimplex "privacy" [] "privacy"
-    ":privacy.simplex" <==> sname NTContact NSSimplex "privacy" [] "privacy.simplex"
-    ":my-name.simplex" <==> sname NTContact NSSimplex "my-name" [] "my-name.simplex"
+    "@privacy.simplex" <==> sname NTContact NSSimplex "privacy" [] "privacy.simplex"
+    "@my-name.simplex" <==> sname NTContact NSSimplex "my-name" [] "my-name.simplex"
+    "@alice.example.com" <==> sname NTContact NSWeb "alice.example.com" [] "alice.example.com"
   it "not parsed as names" do
     "#secret#" <==> markdown Secret "secret"
     "##double secret##" <==> markdown Secret "#double secret#"
-    "10:30" <==> "10:30"
-    "note: something" <==> "note: something"
     "#" <==> "#"
-    ":#" <==> ":#"
     "#123" <==> "#123"
 
 multilineMarkdownList :: Spec

@@ -671,13 +671,14 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
     val clipboard = LocalClipboardManager.current
     SectionItemView({
       val str = clipboard.getText()?.text ?: return@SectionItemView
-      val link = strHasSingleSimplexLink(str.trim())
-      if (link != null) {
-        pastedLink.value = link.text
-        showQRCodeScanner.value = false
-        withBGApi { connect(rhId, link.text, close) { pastedLink.value = "" } }
-      } else {
-        AlertManager.shared.showAlertMsg(
+      when (val target = strConnectTarget(str.trim())) {
+        is ConnectTarget.Link -> {
+          pastedLink.value = target.link.text
+          showQRCodeScanner.value = false
+          withBGApi { connect(rhId, target.link.text, close) { pastedLink.value = "" } }
+        }
+        is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
+        null -> AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.invalid_contact_link),
           text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
         )
@@ -819,12 +820,29 @@ fun strIsSimplexLink(str: String): Boolean {
   return parsedMd != null && parsedMd.size == 1 && parsedMd[0].format is Format.SimplexLink
 }
 
-fun strHasSingleSimplexLink(str: String): FormattedText? {
-  val parsedMd = parseToMarkdown(str) ?: return null
-  val parsedLinks = parsedMd.filter { it.format?.isSimplexLink ?: false }
-  if (parsedLinks.size != 1) return null
+sealed class ConnectTarget {
+  class Link(val link: FormattedText) : ConnectTarget()
+  class Name(val nameInfo: SimplexNameInfo) : ConnectTarget()
+}
 
-  return parsedLinks[0]
+fun strConnectTarget(str: String): ConnectTarget? {
+  val parsedMd = parseToMarkdown(str) ?: return null
+  val links = parsedMd.filter { it.format?.isSimplexLink ?: false }
+  if (links.size == 1) return ConnectTarget.Link(links[0])
+  if (links.isEmpty()) {
+    val nameInfo = parsedMd.firstNotNullOfOrNull { (it.format as? Format.SimplexName)?.nameInfo }
+    if (nameInfo != null) return ConnectTarget.Name(nameInfo)
+  }
+  return null
+}
+
+fun showUnsupportedNameAlert(nameInfo: SimplexNameInfo) {
+  val (title, msg) = if (nameInfo.nameType == SimplexNameType.contact) {
+    generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
+  } else {
+    generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
+  }
+  AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
 }
 
 @Composable

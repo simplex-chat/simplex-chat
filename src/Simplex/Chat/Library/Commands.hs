@@ -5546,20 +5546,15 @@ displayNameP_ = quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ',')
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 mkValidName :: String -> String
-mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
+mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst . foldl' addChar ("", '\NUL')
   where
-    fst3 (x, _, _) = x
-    addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
+    addChar (r, prev) c = if validChar then (c' : r, c') else (r, prev)
       where
         c' = if isSpace c then ' ' else c
-        punct'
-          | isPunctuation c = punct + 1
-          | isSpace c = punct
-          | otherwise = 0
         validChar
-          | c == '\'' = False
-          | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
-          | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
-          | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
-          | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
-        validFirstChar = isLetter c || isNumber c || isSymbol c
+          | blockedChar c = False
+          | prev == '\NUL' = c > ' ' && validFirstChar
+          | isSpace prev = validFirstChar || c == '-' || c == '_'
+          | otherwise = validFirstChar || isSpace c || isMark c || c == '-' || c == '_'
+        validFirstChar = isLetter c || isNumber c || isSymbol c && not (blockedChar c)
+    blockedChar c = c `elem` (".,/()!?:#@'~%^*" :: String)
