@@ -12,12 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.unit.*
-import chat.simplex.common.model.BusinessChatType
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatInfo
@@ -57,7 +54,8 @@ fun ProfileImage(
   icon: ImageResource = MR.images.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
-  blurred: Boolean = false
+  blurred: Boolean = false,
+  async: Boolean = false
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
@@ -85,13 +83,22 @@ fun ProfileImage(
         )
       }
     } else {
-      val imageBitmap = base64ToBitmap(image)
-      Image(
-        imageBitmap,
-        stringResource(MR.strings.image_descr_profile_image),
-        contentScale = ContentScale.Crop,
-        modifier = ProfileIconModifier(size, blurred = blurred)
-      )
+      if (async) {
+        Base64AsyncImage(
+          base64ImageString = image,
+          contentDescription = stringResource(MR.strings.image_descr_profile_image),
+          contentScale = ContentScale.Crop,
+          modifier = ProfileIconModifier(size, blurred = blurred)
+        )
+      } else {
+        val imageBitmap = base64ToBitmap(image)
+        Image(
+          bitmap = imageBitmap,
+          contentDescription = stringResource(MR.strings.image_descr_profile_image),
+          contentScale = ContentScale.Crop,
+          modifier = ProfileIconModifier(size, blurred = blurred)
+        )
+      }
     }
   }
 }

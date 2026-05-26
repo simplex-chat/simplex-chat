@@ -13,8 +13,8 @@
             "url": "/docs/directory.html"
         },
         {
-            "title": "docs-dropdown-3",
-            "url": "/docs/sql.html"
+            "title": "docs-dropdown-2",
+            "url": "/docs/android.html"
         },
         {
             "title": "docs-dropdown-4",
@@ -31,6 +31,10 @@
         {
             "title": "docs-dropdown-9",
             "url": "/downloads/"
+        },
+        {
+            "title": "docs-dropdown-15",
+            "url": "/reproduce/"
         },
         {
             "title": "docs-dropdown-10",

@@ -5,6 +5,7 @@
 //  Created by spaced4ndy on 28.10.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/architecture.md
 
 import SwiftUI
 import SimpleXChat
@@ -18,6 +19,7 @@ struct OperatorView: View {
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
+    @Binding var serverWarnings: [UserServersWarning]
     var operatorIndex: Int
     @State var useOperator: Bool
     @State private var useOperatorToggleReset: Bool = false
@@ -40,6 +42,7 @@ struct OperatorView: View {
 
     private func operatorView() -> some View {
         let duplicateHosts = findDuplicateHosts(serverErrors)
+        let duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors)
         return VStack {
             List {
                 Section {
@@ -51,6 +54,8 @@ struct OperatorView: View {
                 } footer: {
                     if let errStr = globalServersError(serverErrors) {
                         ServersErrorView(errStr: errStr)
+                    } else if let warnStr = globalServersWarning(serverWarnings) {
+                        ServersWarningView(warnStr: warnStr)
                     } else {
                         switch (userServers[operatorIndex].operator_.conditionsAcceptance) {
                         case let .accepted(acceptedAt, _):
@@ -68,15 +73,37 @@ struct OperatorView: View {
                 }
 
                 if userServers[operatorIndex].operator_.enabled {
+                    if !userServers[operatorIndex].chatRelays.filter({ !$0.deleted }).isEmpty {
+                        Section {
+                            ForEach(bindingForChatRelays($userServers, operatorIndex)) { relay in
+                                if !relay.wrappedValue.deleted {
+                                    ChatRelayViewLink(
+                                        userServers: $userServers,
+                                        serverErrors: $serverErrors,
+                                        serverWarnings: $serverWarnings,
+                                        relay: relay,
+                                        duplicateRelayAddresses: duplicateRelayAddresses,
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        selectedServer: $selectedServer
+                                    )
+                                } else { EmptyView() }
+                            }
+                        } header: {
+                            Text("Chat relays").foregroundColor(theme.colors.secondary)
+                        } footer: {
+                            Text("Chat relays forward messages in channels you create.").foregroundColor(theme.colors.secondary)
+                        }
+                    }
+
                     if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                         Section {
                             Toggle("To receive", isOn: $userServers[operatorIndex].operator_.smpRoles.storage)
                                 .onChange(of: userServers[operatorIndex].operator_.smpRoles.storage) { _ in
-                                    validateServers_($userServers, $serverErrors)
+                                    validateServers_($userServers, $serverErrors, $serverWarnings)
                                 }
                             Toggle("For private routing", isOn: $userServers[operatorIndex].operator_.smpRoles.proxy)
                                 .onChange(of: userServers[operatorIndex].operator_.smpRoles.proxy) { _ in
-                                    validateServers_($userServers, $serverErrors)
+                                    validateServers_($userServers, $serverErrors, $serverWarnings)
                                 }
                         } header: {
                             Text("Use for messages")
@@ -96,6 +123,7 @@ struct OperatorView: View {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
                                         serverErrors: $serverErrors,
+                                        serverWarnings: $serverWarnings,
                                         duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .smp,
@@ -127,6 +155,7 @@ struct OperatorView: View {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
                                         serverErrors: $serverErrors,
+                                        serverWarnings: $serverWarnings,
                                         duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .smp,
@@ -139,7 +168,7 @@ struct OperatorView: View {
                             }
                             .onDelete { indexSet in
                                 deleteSMPServer($userServers, operatorIndex, indexSet)
-                                validateServers_($userServers, $serverErrors)
+                                validateServers_($userServers, $serverErrors, $serverWarnings)
                             }
                         } header: {
                             Text("Added message servers")
@@ -151,7 +180,7 @@ struct OperatorView: View {
                         Section {
                             Toggle("To send", isOn: $userServers[operatorIndex].operator_.xftpRoles.storage)
                                 .onChange(of: userServers[operatorIndex].operator_.xftpRoles.storage) { _ in
-                                    validateServers_($userServers, $serverErrors)
+                                    validateServers_($userServers, $serverErrors, $serverWarnings)
                                 }
                         } header: {
                             Text("Use for files")
@@ -171,6 +200,7 @@ struct OperatorView: View {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
                                         serverErrors: $serverErrors,
+                                        serverWarnings: $serverWarnings,
                                         duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .xftp,
@@ -202,6 +232,7 @@ struct OperatorView: View {
                                     ProtocolServerViewLink(
                                         userServers: $userServers,
                                         serverErrors: $serverErrors,
+                                        serverWarnings: $serverWarnings,
                                         duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .xftp,
@@ -214,7 +245,7 @@ struct OperatorView: View {
                             }
                             .onDelete { indexSet in
                                 deleteXFTPServer($userServers, operatorIndex, indexSet)
-                                validateServers_($userServers, $serverErrors)
+                                validateServers_($userServers, $serverErrors, $serverWarnings)
                             }
                         } header: {
                             Text("Added media & file servers")
@@ -226,6 +257,7 @@ struct OperatorView: View {
                         TestServersButton(
                             smpServers: $userServers[operatorIndex].smpServers,
                             xftpServers: $userServers[operatorIndex].xftpServers,
+                            chatRelays: $userServers[operatorIndex].chatRelays,
                             testing: $testing
                         )
                     }
@@ -245,6 +277,7 @@ struct OperatorView: View {
                 currUserServers: $currUserServers,
                 userServers: $userServers,
                 serverErrors: $serverErrors,
+                serverWarnings: $serverWarnings,
                 operatorIndex: operatorIndex
             )
             .modifier(ThemedBackground(grouped: true))
@@ -275,18 +308,18 @@ struct OperatorView: View {
                     switch userServers[operatorIndex].operator_.conditionsAcceptance {
                     case .accepted:
                         userServers[operatorIndex].operator_.enabled = true
-                        validateServers_($userServers, $serverErrors)
+                        validateServers_($userServers, $serverErrors, $serverWarnings)
                     case let .required(deadline):
                         if deadline == nil {
                             showConditionsSheet = true
                         } else {
                             userServers[operatorIndex].operator_.enabled = true
-                            validateServers_($userServers, $serverErrors)
+                            validateServers_($userServers, $serverErrors, $serverWarnings)
                         }
                     }
                 } else {
                     userServers[operatorIndex].operator_.enabled = false
-                    validateServers_($userServers, $serverErrors)
+                    validateServers_($userServers, $serverErrors, $serverWarnings)
                 }
             }
     }
@@ -331,11 +364,15 @@ struct OperatorInfoView: View {
                             Text(d)
                         }
                     }
-                    Link(serverOperator.info.website.absoluteString, destination: serverOperator.info.website)
+                    ExternalLink(destination: serverOperator.info.website) {
+                        Text(serverOperator.info.website.absoluteString)
+                    }
                 }
                 if let selfhost = serverOperator.info.selfhost {
                     Section {
-                        Link(selfhost.text, destination: selfhost.link)
+                        ExternalLink(destination: selfhost.link) {
+                            Text(selfhost.text)
+                        }
                     }
                 }
             }
@@ -399,7 +436,7 @@ struct ConditionsTextView: View {
     private func conditionsLinkView(_ conditionsLink: String) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Current conditions text couldn't be loaded, you can review conditions via this link:")
-            Link(destination: URL(string: conditionsLink)!) {
+            ExternalLink(destination: URL(string: conditionsLink)!) {
                 Text(conditionsLink)
                     .multilineTextAlignment(.leading)
             }
@@ -423,6 +460,7 @@ struct SingleOperatorUsageConditionsView: View {
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
+    @Binding var serverWarnings: [UserServersWarning]
     var operatorIndex: Int
 
     var body: some View {
@@ -525,7 +563,7 @@ struct SingleOperatorUsageConditionsView: View {
                     updateOperatorsConditionsAcceptance($currUserServers, r.serverOperators)
                     updateOperatorsConditionsAcceptance($userServers, r.serverOperators)
                     userServers[operatorIndexToEnable].operator?.enabled = true
-                    validateServers_($userServers, $serverErrors)
+                    validateServers_($userServers, $serverErrors, $serverWarnings)
                     dismiss()
                 }
             } catch let error {
@@ -557,11 +595,11 @@ func conditionsLinkButton() -> some View {
     let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
     let mdUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/\(commit)/PRIVACY.md") ?? conditionsURL
     return Menu {
-        Link(destination: mdUrl) {
+        ExternalLink(destination: mdUrl) {
             Label("Open conditions", systemImage: "doc")
         }
         if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
-            Link(destination: commitUrl) {
+            ExternalLink(destination: commitUrl) {
                 Label("Open changes", systemImage: "ellipsis")
             }
         }
@@ -580,6 +618,7 @@ func conditionsLinkButton() -> some View {
         currUserServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
         userServers: Binding.constant([UserOperatorServers.sampleData1, UserOperatorServers.sampleDataNilOperator]),
         serverErrors: Binding.constant([]),
+        serverWarnings: Binding.constant([]),
         operatorIndex: 1,
         useOperator: ServerOperator.sampleData1.enabled
     )

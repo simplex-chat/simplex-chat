@@ -214,7 +214,6 @@
     <string name="delete_link">Ištrinti nuorodą</string>
     <string name="delete_link_question">Ištrinti nuorodą\?</string>
     <string name="error_creating_link_for_group">Klaida kuriant grupės nuorodą</string>
-    <string name="how_simplex_works">Kaip SimpleX veikia</string>
     <string name="database_encrypted">Duomenų bazė šifruota!</string>
     <string name="group_member_status_creator">kūrėjas</string>
     <string name="delete_group_question">Ištrinti grupę\?</string>
@@ -527,8 +526,7 @@
     <string name="abort_switch_receiving_address">Nutraukti adreso keitimą</string>
     <string name="v4_2_auto_accept_contact_requests">Automatiškai priimti kontaktų užklausas</string>
     <string name="v5_1_self_destruct_passcode_descr">Jį įrašius visi duomenys bus pašalinti.</string>
-    <string name="network_session_mode_entity_description"><b>Kiekvienam kontaktui ir grupės nariui</b> bus naudojamas atskiras TCP prisijungimas (ir SOCKS prisijungimo duomenys). 
-\n<b>Turėkite omenyje</b>: jei turite daug prisijungimų, akumuliatoriaus ir interneto duomenų sąnaudos gali būti žymiai didesnės ir, kartais, prisijungimai gali patirti nesėkmę.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[<b>Kiekvienam kontaktui ir grupės nariui</b> bus naudojamas atskiras TCP prisijungimas (ir SOCKS prisijungimo duomenys). \n<b>Turėkite omenyje</b>: jei turite daug prisijungimų, akumuliatoriaus ir interneto duomenų sąnaudos gali būti žymiai didesnės ir, kartais, prisijungimai gali patirti nesėkmę.]]></string>
     <string name="contact_wants_to_connect_via_call">%1$s nori su jumis susisiekti per</string>
     <string name="turning_off_service_and_periodic">Yra įjungtas akumuliatoriaus naudojimo optimizavimas, išjungiantis foninę tarnybą ir periodines užklausas apie naujas žinutes. Nustatymuose galite įjungti ją iš naujo.</string>
     <string name="notifications_mode_service">Visada įjungta</string>
@@ -1404,7 +1402,7 @@
     <string name="profile_will_be_sent_to_contact_sending_link">Jūsų profilis bus išsiųstas kontaktui iš kurio gavote šią nuorodą.</string>
     <string name="you_will_join_group">Prisijungsite prie visų grupės narių.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Esate prisijungę prie serverio skirto gauti žinutes iš šio kontakto.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Bandoma prisijungti prie serverio skirto žinučių gavimui iš šio kontakto (klaida: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Bandoma prisijungti prie serverio skirto žinučių gavimui iš šio kontakto (klaida: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Bandoma prisijungti prie serverio skirto žinučių gavimui iš šio kontakto.</string>
     <string name="no_details">nėra detalių</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Kad išlaikyti jūsų privatumą, vietoj tiesioginių pranešimų, programėlė turi <b>SimpleX fono tarnybą</b> - ji naudoja kelis procentus akumuliatoriaus per dieną.]]></string>

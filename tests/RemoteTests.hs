@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module RemoteTests where
 
@@ -15,7 +16,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
-import Simplex.Chat.Controller (versionNumber)
+import Simplex.Chat.Controller (ChatConfig (..), versionNumber)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote (remoteFilesFolder)
@@ -31,6 +32,13 @@ import UnliftIO.Directory
 
 remoteTests :: SpecWith TestParams
 remoteTests = describe "Remote" $ do
+  xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
+  xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
+  xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
+  describe "With compression" $ aroundWith (. ((True, True),)) runRemoteTests
+
+runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
+runRemoteTests = do
   describe "protocol handshake" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
@@ -48,14 +56,14 @@ remoteTests = describe "Remote" $ do
 
 -- * Chat commands
 
-remoteHandshakeTest :: HasCallStack => Bool -> TestParams -> IO ()
-remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeTest :: HasCallStack => Bool -> ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeTest viaDesktop = testRemote $ \compress mobile desktop -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
 
-  startRemote mobile desktop
+  startRemote compress mobile desktop
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
@@ -77,14 +85,14 @@ remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \m
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
 
-remoteHandshakeStoredTest :: HasCallStack => TestParams -> IO ()
-remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeStoredTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeStoredTest = testRemote $ \compress mobile desktop -> do
   logNote "Starting new session"
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
   logNote "Starting stored session"
-  startRemoteStored mobile desktop
+  startRemoteStored compress mobile desktop
   stopDesktop mobile desktop `catchAny` (logError . tshow)
 
   desktop ##> "/list remote hosts"
@@ -95,23 +103,23 @@ remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile
   mobile <## "1. My desktop"
 
   logNote "Starting stored session again"
-  startRemoteStored mobile desktop
+  startRemoteStored compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
-remoteHandshakeDiscoverTest :: HasCallStack => TestParams -> IO ()
-remoteHandshakeDiscoverTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeDiscoverTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeDiscoverTest = testRemote $ \compress mobile desktop -> do
   logNote "Preparing new session"
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
   logNote "Starting stored session with multicast"
-  startRemoteDiscover mobile desktop
+  startRemoteDiscover compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
-remoteHandshakeRejectTest :: HasCallStack => TestParams -> IO ()
-remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop mobileBob -> do
+remoteHandshakeRejectTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeRejectTest = testRemote3 $ \compress mobile desktop mobileBob -> do
   logNote "Starting new session"
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   stopMobile mobile desktop
 
   mobileBob ##> "/set device name MobileBob"
@@ -135,12 +143,12 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   mobile <## "Compare session code with controller and use:"
   mobile <## ("/verify remote ctrl " <> sessId)
   mobile ##> ("/verify remote ctrl " <> sessId)
-  mobile <## "remote controller 1 session started with My desktop"
-  desktop <## "remote host 1 connected"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
+  desktop <## ("remote host 1 connected" <> compress)
   stopMobile mobile desktop
 
-storedBindingsTest :: HasCallStack => TestParams -> IO ()
-storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+storedBindingsTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+storedBindingsTest = testRemote $ \compress mobile desktop -> do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
   mobile ##> "/set device name Mobile"
@@ -166,9 +174,9 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
   desktop <## "new remote host connecting"
   mobile <## "new remote controller connected"
   verifyRemoteCtrl mobile desktop
-  mobile <## "remote controller 1 session started with My desktop"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
   desktop <## "new remote host 1 added: Mobile"
-  desktop <## "remote host 1 connected"
+  desktop <## ("remote host 1 connected" <> compress)
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
@@ -180,9 +188,9 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
 
 -- TODO: more parser tests
 
-remoteMessageTest :: HasCallStack => TestParams -> IO ()
-remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
-  startRemote mobile desktop
+remoteMessageTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteMessageTest = testRemote3 $ \compress mobile desktop bob -> do  
+  startRemote compress mobile desktop
   contactBob desktop bob
 
   logNote "sending messages"
@@ -206,9 +214,9 @@ remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   threadDelay 1000000
   logNote "done"
 
-remoteStoreFileTest :: HasCallStack => TestParams -> IO ()
+remoteStoreFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteStoreFileTest =
-  testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob ->
+  testRemote3 $ \compress mobile desktop bob ->
     withXFTPServer $ do
       let mobileFiles = "./tests/tmp/mobile_files"
       mobile ##> ("/_files_folder " <> mobileFiles)
@@ -223,7 +231,7 @@ remoteStoreFileTest =
       bob ##> ("/_files_folder " <> bobFiles)
       bob <## "ok"
 
-      startRemote mobile desktop
+      startRemote compress mobile desktop
       contactBob desktop bob
 
       rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
@@ -336,8 +344,8 @@ remoteStoreFileTest =
       r `shouldStartWith` "remote host 1 error"
       r `shouldContain` err
 
-remoteCLIFileTest :: HasCallStack => TestParams -> IO ()
-remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
+remoteCLIFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer $ do
   let mobileFiles = "./tests/tmp/mobile_files"
   mobile ##> ("/_files_folder " <> mobileFiles)
   mobile <## "ok"
@@ -347,7 +355,7 @@ remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
   desktop <## "ok"
 
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   contactBob desktop bob
 
   rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
@@ -405,9 +413,9 @@ remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
 
   stopMobile mobile desktop
 
-switchRemoteHostTest :: TestParams -> IO ()
-switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
-  startRemote mobile desktop
+switchRemoteHostTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+switchRemoteHostTest = testRemote3 $ \compress mobile desktop bob -> do
+  startRemote compress mobile desktop
   contactBob desktop bob
 
   desktop ##> "/contacts"
@@ -431,10 +439,10 @@ switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \
   desktop <## "remote host 1 error: RHEInactive"
   desktop ##> "/contacts"
 
-indicateRemoteHostTest :: TestParams -> IO ()
-indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
+indicateRemoteHostTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+indicateRemoteHostTest = testRemote4 $ \compress mobile desktop bob cath -> do
   connectUsers desktop cath
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   contactBob desktop bob
   -- remote contact -> remote host
   bob #> "@alice hi"
@@ -455,8 +463,8 @@ indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile c
   desktop <##> cath
   cath <##> desktop
 
-multipleProfilesTest :: TestParams -> IO ()
-multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
+multipleProfilesTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+multipleProfilesTest = testRemote4 $ \compress mobile desktop bob cath -> do
   connectUsers desktop cath
 
   desktop ##> "/create user desk_bottom"
@@ -466,7 +474,7 @@ multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cat
   desktop <## "alice_desktop (Alice Desktop)"
   desktop <## "desk_bottom (active)"
 
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   contactBob desktop bob
   desktop ##> "/users"
   desktop <## "alice (Alice) (active)"
@@ -502,8 +510,28 @@ multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cat
 
 -- * Utils
 
-startRemote :: TestCC -> TestCC -> IO ()
-startRemote mobile desktop = do
+testRemote :: HasCallStack => (String -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemote test ((mobileCompression, desktopCompression), ps) =
+  withNewTestChatCfg ps testCfg {remoteCompression = mobileCompression} "mobile" aliceProfile $ \mobile ->
+    withNewTestChatCfg ps testCfg {remoteCompression = desktopCompression} "desktop" aliceDesktopProfile $ \desktop ->
+      let compress = " (" <> (if mobileCompression && desktopCompression then "with" else "no") <> " compression)"
+       in test compress mobile desktop
+  
+
+testRemote3 :: HasCallStack => (String -> TestCC -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemote3 test ps =
+  testRemote
+    (\compress mobile desktop -> withNewTestChat (snd ps) "bob" bobProfile $ test compress mobile desktop)
+    ps
+
+testRemote4 :: HasCallStack => (String -> TestCC -> TestCC -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemote4 test ps =
+  testRemote3
+    (\compress mobile desktop bob -> withNewTestChat (snd ps) "cath" cathProfile $ test compress mobile desktop bob)
+    ps
+
+startRemote :: String -> TestCC -> TestCC -> IO ()
+startRemote compress mobile desktop = do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
   mobile ##> "/set device name Mobile"
@@ -518,12 +546,12 @@ startRemote mobile desktop = do
   desktop <## "new remote host connecting"
   mobile <## "new remote controller connected"
   verifyRemoteCtrl mobile desktop
-  mobile <## "remote controller 1 session started with My desktop"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
   desktop <## "new remote host 1 added: Mobile"
-  desktop <## "remote host 1 connected"
+  desktop <## ("remote host 1 connected" <> compress)
 
-startRemoteStored :: TestCC -> TestCC -> IO ()
-startRemoteStored mobile desktop = do
+startRemoteStored :: String -> TestCC -> TestCC -> IO ()
+startRemoteStored compress mobile desktop = do
   desktop ##> "/start remote host 1"
   desktop <##. "remote host 1 started on "
   desktop <##. "other addresses: "
@@ -534,11 +562,11 @@ startRemoteStored mobile desktop = do
   desktop <## "remote host 1 connecting"
   mobile <## "remote controller 1 connected"
   verifyRemoteCtrl mobile desktop
-  mobile <## "remote controller 1 session started with My desktop"
-  desktop <## "remote host 1 connected"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
+  desktop <## ("remote host 1 connected" <> compress)
 
-startRemoteDiscover :: TestCC -> TestCC -> IO ()
-startRemoteDiscover mobile desktop = do
+startRemoteDiscover :: String -> TestCC -> TestCC -> IO ()
+startRemoteDiscover compress mobile desktop = do
   desktop ##> "/start remote host 1 multicast=on"
   desktop <##. "remote host 1 started on "
   desktop <##. "other addresses: "
@@ -554,8 +582,8 @@ startRemoteDiscover mobile desktop = do
   desktop <## "remote host 1 connecting"
   mobile <## "remote controller 1 connected"
   verifyRemoteCtrl mobile desktop
-  mobile <## "remote controller 1 session started with My desktop"
-  desktop <## "remote host 1 connected"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
+  desktop <## ("remote host 1 connected" <> compress)
 
 verifyRemoteCtrl :: TestCC -> TestCC -> IO ()
 verifyRemoteCtrl mobile desktop = do

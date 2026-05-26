@@ -35,7 +35,7 @@
     <string name="connect_via_link_verb">متصل شدن</string>
     <string name="non_content_uri_alert_title">مسیر نامعتبر فایل</string>
     <string name="app_was_crashed">برنامه از کار افتاد</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">در حال تلاش برای اتصال به سرور مورد استفاده برای دریافت پیام‌ها از این مخاطب (خطا: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">در حال تلاش برای اتصال به سرور مورد استفاده برای دریافت پیام‌ها از این مخاطب (خطا: %1$s).</string>
     <string name="deleted_description">حذف شد</string>
     <string name="marked_deleted_description">علامت گذاشته شده به عنوان حذف شده</string>
     <string name="moderated_item_description">توسط %s حذف شد</string>
@@ -119,8 +119,8 @@
     <string name="error_aborting_address_change">خطا در لغو تغییر نشانی</string>
     <string name="error_synchronizing_connection">خطا در انطباق زمانی اتصال</string>
     <string name="error_smp_test_failed_at_step">آزمایش در گام %s ناموفق بود.</string>
-    <string name="error_xftp_test_server_auth">سرور برای بارگذازی به اجازه نیاز دارد، گذرواژه را بررسی کنید</string>
-    <string name="error_smp_test_certificate">احتمال دارد اثر انگشت گواهینامه در نشانی سرور نادرست باشد</string>
+    <string name="error_xftp_test_server_auth">سرور برای بارگذاری نیاز به مجوز دارد، گذرواژه را بررسی کنید.</string>
+    <string name="error_smp_test_certificate">اثر انگشت در نشانی سرور با گواهی مطابقت ندارد.</string>
     <string name="smp_server_test_create_queue">ایجاد صف</string>
     <string name="smp_server_test_upload_file">بارگذاری فایل</string>
     <string name="smp_server_test_download_file">بارگیری فایل</string>
@@ -140,7 +140,7 @@
     <string name="smp_server_test_secure_queue">صف امن</string>
     <string name="smp_server_test_delete_queue">حذف صف</string>
     <string name="smp_server_test_create_file">ایجاد فایل</string>
-    <string name="error_smp_test_server_auth">سرور برای ایجاد صف داده‌ها به اجازه نیاز دارد، گذرواژه را بررسی کنید</string>
+    <string name="error_smp_test_server_auth">سرور برای ایجاد صف‌ها نیاز به مجوز دارد، گذرواژه را بررسی کنید.</string>
     <string name="connection_error_auth_desc">مگر اینکه مخاطبتان اتصال را حذف کرده یا این لینک قبلا استفاده شده باشد، ممکن است این یک اشکال باشد - لطفا آن را گزارش دهید.
 \nبرای متصل شدن، لطفا از مخاطبتان بخواهید لینک اتصال دیگری ایجاد کند و بررسی کنید که اتصال شبکه باثباتی دارید.</string>
     <string name="possible_slow_function_title">عملکرد کند</string>
@@ -730,7 +730,6 @@
     <string name="callstatus_accepted">تماس پذیرفته</string>
     <string name="decentralized">نامتمرکز</string>
     <string name="create_your_profile">پروفایل خود را ایجاد کنید</string>
-    <string name="how_simplex_works">SimpleX چگونه کار می‌کند</string>
     <string name="read_more_in_github_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">مخزن GitHub</font> ما.]]></string>
     <string name="use_chat">استفاده از چت</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>بهترین گزینه برای باتری</b>. شما اعلان‌ها را فقط وقتی دریافت می‌کنید که برنامه در حال اجراست (بدون سرویس پس‌زمینه).]]></string>
@@ -998,7 +997,7 @@
     <string name="rcv_group_event_user_deleted">شما را حذف کرد</string>
     <string name="conn_event_ratchet_sync_agreed">رمزنگاری مورد توافق قرار گرفت</string>
     <string name="group_member_role_observer">ناظر</string>
-    <string name="past_member_vName">عضو پیشین %1$s</string>
+    <string name="past_member_vName">اعضا %1$s</string>
     <string name="icon_descr_expand_role">بسط دادن انتخاب نقش</string>
     <string name="database_passphrase_will_be_updated">عبارت عبور رمزنگاری پایگاه داده به‌روز خواهد شد.</string>
     <string name="rcv_group_event_member_created_contact">درخواست اتصال کرد</string>
@@ -1938,7 +1937,7 @@
     <string name="error_forwarding_messages">خطا در فوروارد کردن پیام‌ها</string>
     <string name="error_creating_report">خطا در ایجاد گزارش</string>
     <string name="error_accepting_member">خطا در پذیرفتن عضو</string>
-    <string name="error_deleting_member_support_chat">خطا در پاک کردن چت با عضو</string>
+    <string name="error_deleting_member_support_chat">خطا در حذف کردن چت</string>
     <string name="unsupported_connection_link">پیوند اتصال پشتیبانی‌نشده</string>
     <string name="link_requires_newer_app_version_please_upgrade">این پیوند به نسخه جدیدتری از برنامه نیاز دارد. لطفاً برنامه را به‌روزرسانی کنید یا از مخاطب خود بخواهید پیوند سازگاری بفرستد.</string>
     <string name="connection_error_blocked">اتصال مسدود شد</string>
@@ -2183,7 +2182,6 @@
     <string name="operator_conditions_accepted_for_enabled_operators_on">شرایط به‌طور خودکار برای اپراتورهای فعال در: %s پذیرفته خواهد شد.</string>
     <string name="smp_servers_configured">سرورهای SMP پیکربندی‌شده</string>
     <string name="xftp_servers_configured">سرورهای XFTP پیکربندی‌شده</string>
-    <string name="onboarding_conditions_configure_server_operators">پیکربندی اپراتورهای سرور</string>
     <string name="servers_info_connected_servers_section_header">سرورهای متصل شده</string>
     <string name="sync_connection_desc">اتصال نیاز به تجدید مذاکره رمزنگاری دارد.</string>
     <string name="connections">اتصالات</string>
@@ -2426,7 +2424,6 @@
     <string name="message_deleted_or_not_received_error_desc">این پیام حذف شده یا هنوز دریافت نشده است.</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">زمان ناپدید شدن فقط برای مخاطبان جدید تنظیم شده است.</string>
     <string name="app_check_for_updates_notice_desc">برای مطلع شدن از نسخه‌های جدید، بررسی دوره‌ای برای نسخه‌های Stable یا Beta را فعال کنید.</string>
-    <string name="one_hand_ui_card_title">تغییر لیست چت:</string>
     <string name="call_desktop_permission_denied_title">برای برقراری تماس، اجازه دهید از میکروفن شما استفاده شود. تماس را پایان دهید و دوباره تلاش کنید.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">برای جلوگیری از جایگزینی لینک شما، می‌توانید کدهای امنیتی مخاطب را مقایسه کنید.</string>
     <string name="operator_use_for_messages_receiving">برای دریافت</string>
@@ -2528,4 +2525,9 @@
     <string name="only_your_contact_can_send_files">فقط مخاطب شما می‌تواند فایل‌ها و رسانه‌ها را ارسال کند.</string>
     <string name="files_prohibited_in_this_chat">ارسال فایل‌ها و رسانه‌ها در این چت ممنوع است.</string>
     <string name="simplex_link_relay">پل ارتباطی سیمپلکس</string>
+    <string name="error_marking_member_support_chat_read">خطا در علامت گذاری به عنوان خوانده شده</string>
+    <string name="proxy_destination_error_unknown_ca">اثر انگشت در نشانی سرور مقصد با گواهی مطابقت ندارد: ‎%1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">اثر انگشت در نشانی سرور انتقال با گواهی مطابقت ندارد: ‎%1$s.</string>
+    <string name="network_error_unknown_ca">اثر انگشت در نشانی سرور با گواهی مطابقت ندارد: ‎%1$s.</string>
+    <string name="button_delete_member_messages">پاک کردن پیام کاربر</string>
 </resources>

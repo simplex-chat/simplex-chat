@@ -4,6 +4,7 @@
 //
 //  Created by Evgeny Poberezkin on 17/01/2022.
 //
+// Spec: spec/architecture.md
 
 import SwiftUI
 import OSLog
@@ -12,6 +13,7 @@ import SimpleXChat
 let logger = Logger()
 
 @main
+// Spec: spec/architecture.md#SimpleXApp
 struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var chatModel = ChatModel.shared
@@ -60,6 +62,7 @@ struct SimpleXApp: App {
                         }
                     }
                 }
+// Spec: spec/architecture.md#scenePhaseHandling
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                     AppSheetState.shared.scenePhaseActive = phase == .active

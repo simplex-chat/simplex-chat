@@ -32,11 +32,11 @@
 &nbsp;
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
 - 🖲 Protégez vos messages et vos métadonnées - avec qui vous parlez et quand.
 - 🔐 Chiffrement de bout en bout à double ratchet, avec couche de chiffrement supplémentaire.
-- 📱 Apps mobiles pour Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) et [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
+- 📱 Apps mobiles pour Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)) et [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
 - 🚀 [Bêta TestFlight pour iOS](https://testflight.apple.com/join/DWuT2LQu) avec les nouvelles fonctionnalités 1 à 2 semaines plus tôt - **limitée à 10 000 utilisateurs** !
 - 🖥 Disponible en tant que [terminal (console) / CLI](#⚡-installation-rapide-dune-application-pour-terminal) sur Linux, MacOS, Windows.
 
@@ -351,4 +351,4 @@ Veuillez traiter toute découverte d'une éventuelle attaque par corrélation de
 &nbsp;
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)

@@ -3,16 +3,16 @@ package chat.simplex.common.ui.theme
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.*
-import chat.simplex.common.views.helpers.mixWith
-import kotlin.math.min
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
+import kotlin.math.cos
+import kotlin.math.sin
 
-val Purple200 = Color(0xFFBB86FC)
-val Purple500 = Color(0xFF6200EE)
-val Purple700 = Color(0xFF3700B3)
-val Teal200 = Color(0xFF03DAC5)
-val Gray = Color(0x22222222)
+fun oklch(L: Float, C: Float, H: Float, alpha: Float = 1f): Color {
+  val hRad = H * (Math.PI.toFloat() / 180f)
+  return Color(L, C * cos(hRad), C * sin(hRad), alpha, ColorSpaces.Oklab)
+}
+
 val Indigo = Color(0xFF9966FF)
 val SimplexBlue = Color(0, 136, 255, 255)  // If this value changes also need to update #0088ff in string resource files
 val SimplexGreen = Color(77, 218, 103, 255)
@@ -29,8 +29,8 @@ val GroupDark = Color(80, 80, 80, 60)
 val IncomingCallLight = Color(239, 237, 236, 255)
 val WarningOrange = Color(255, 127, 0, 255)
 val WarningYellow = Color(255, 192, 0, 255)
-val FileLight = Color(183, 190, 199, 255)
-val FileDark = Color(101, 101, 106, 255)
+val FileLight = Color(191, 194, 199, 255)
+val FileDark = Color(94, 94, 98, 255)
 
 val MenuTextColor: Color @Composable get () = if (isInDarkTheme()) LocalContentColor.current.copy(alpha = 0.8f) else Color.Black
 val NoteFolderIconColor: Color @Composable get() = MaterialTheme.appColors.primaryVariant2

@@ -474,7 +474,9 @@ private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DB
         Tuple4(
           generalGetString(MR.strings.database_downgrade),
           generalGetString(MR.strings.downgrade_and_open_chat),
-          generalGetString(MR.strings.database_downgrade_warning),
+          (listOf(generalGetString(MR.strings.database_downgrade_warning))
+            + downMigrationWarnings(err.downMigrations).reversed())
+            .joinToString("\n"),
           MigrationConfirmation.YesUpDown
         )
       is MigrationError.Error ->

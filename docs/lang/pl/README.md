@@ -32,11 +32,11 @@
 &nbsp;
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
 - 🖲 Chroni Twoje wiadomości i metadane - z kim rozmawiasz i kiedy.
 - 🔐 Szyfrowanie end-to-end double ratchet, z dodatkową warstwą szyfrowania.
-- 📱 Aplikacje mobilne dla Androida ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) oraz [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
+- 📱 Aplikacje mobilne dla Androida ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)) oraz [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
 - 🚀 [TestFlight dla iOS](https://testflight.apple.com/join/DWuT2LQu) z nowymi funkcjami na tydzień-dwa wcześniej - **limitowane do 10,000 użytkowników**!
 - 🖥 Dostępny jako terminalowa (konsolowa) [aplikacja / CLI](#zap-quick-installation-of-a-terminal-app) na Linuxa, MacOSa, Windowsa.
 
@@ -195,9 +195,9 @@ Twórca SimpleX Chat.
 
 ## Dlaczego prywatność ma znaczenie
 
-Każdy powinien dbać o prywatność i bezpieczeństwo swojej komunikacji - nieszkodliwe rozmowy mogą narazić Cię na niebezpieczeństwo, nawet jeśli nie masz nic do ukrycia. 
+Każdy powinien dbać o prywatność i bezpieczeństwo swojej komunikacji - nieszkodliwe rozmowy mogą narazić Cię na niebezpieczeństwo, nawet jeśli nie masz nic do ukrycia.
 
-Jedną z najbardziej wstrząsających historii jest doświadczenie [Mohamedou Ould Salahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi). opisane w jego pamiętniku i pokazane w filmie Mauretańczyk (2021). Został on umieszczony w obozie Guantanamo, bez procesu, i był tam torturowany przez 15 lat po telefonie do swojego krewnego w Afganistanie, pod zarzutem udziału w atakach 9/11, mimo że przez poprzednie 10 lat mieszkał w Niemczech. 
+Jedną z najbardziej wstrząsających historii jest doświadczenie [Mohamedou Ould Salahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi). opisane w jego pamiętniku i pokazane w filmie Mauretańczyk (2021). Został on umieszczony w obozie Guantanamo, bez procesu, i był tam torturowany przez 15 lat po telefonie do swojego krewnego w Afganistanie, pod zarzutem udziału w atakach 9/11, mimo że przez poprzednie 10 lat mieszkał w Niemczech.
 
 Używanie szyfrowanego komunikatora end-to-end nie jest wystarczające. Powinniśmy używać komunikatorów, które zapewniają prywatność naszym powiązaniom, czyli tym z kim jesteśmy jakkolwiek połączeni.
 
@@ -429,4 +429,4 @@ Prosimy o traktowanie wszelkich ustaleń dotyczących możliwych ataków korelac
 &nbsp;
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)

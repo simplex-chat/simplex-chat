@@ -5,10 +5,12 @@
 //  Created by Evgeny on 28/05/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#IntegrityErrorItemView
 struct IntegrityErrorItemView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
@@ -72,6 +74,25 @@ struct CIMsgError: View {
         .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .textSelection(.disabled)
         .simultaneousGesture(TapGesture().onEnded(onTap))
+    }
+}
+
+struct RcvMsgErrorItemView: View {
+    @ObservedObject var chat: Chat
+    var rcvMsgError: RcvMsgError
+    var chatItem: ChatItem
+
+    var body: some View {
+        CIMsgError(chat: chat, chatItem: chatItem) {
+            let message: LocalizedStringKey = switch rcvMsgError {
+                case let .dropped(attempts): "The app removed this message after \(attempts) attempts to receive it."
+                case let .parseError(parseError): "\(parseError)"
+                }
+            AlertManager.shared.showAlertMsg(
+                title: "Message error",
+                message: message
+            )
+        }
     }
 }
 
