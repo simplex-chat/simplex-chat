@@ -104,17 +104,27 @@ The broadcast reuses the existing owner-admin-event forwarding (`shouldForward =
 
 **On relay add:** the owner sends the current roster to the new relay so it can serve joiners.
 
-**Joiners:** the relay forwards the cached roster at join (1.5). **Offline members** who missed a broadcast catch up on the next roster they receive, or via the on-demand prepend path (the existing dissemination machinery in `member_relations_vector`).
+**Joiners:** the relay forwards the cached roster at join (1.5).
+
+**Short offline gaps** are covered by ordinary queued delivery: the role-change roster broadcast sits in the member's SMP queue (FIFO) ahead of any later moderator events, so it is processed first on reconnect.
+
+**Quota-blocked catch-up.** A member offline long enough to fill its queue causes the relay to be quota-blocked — the broadcast may never have been enqueued, so naive queueing would leave the member without the current roster, rejecting moderator events indefinitely. Fix: when the queue drains, the relay **sends the current cached roster ahead of the resumed backlog**, so the member holds the current privileged set before processing the events it couldn't verify.
+
+The hook is confirmed: QCONT is delivered to the **sender** when the recipient drains (`simplexmq Agent.hs:3402`), and the relay receives it per subscriber in the group-member connection handler (`Subscriber.hs:1215` — `continueSending` + `sendPendingGroupMessages user gInfo m conn`, with `gInfo`/`m`/`conn` in scope; a relay→subscriber connection is a group-member connection). Implementation must ensure **roster-first ordering** relative to both the agent-level `continueSending` flush and the re-driven delivery tasks, and gate the extra send on a per-member "delivered roster version" so it fires only when the member is behind.
+
+The roster is **never** delivered through the profile-dissemination prepend. That path (`member_relations_vector` → `XGrpMemNew`) carries **profiles** only; with the gate removed (1.5), a privileged member's profile disseminates through it like any other member's, but only after the roster has established their key/role. Profile via prepend, key/role via roster — orthogonal, no double-prepend.
 
 ## 1.7 Relay-side cache (the one new storage pattern)
 
 Relays already forward signed bytes verbatim (`encodeFwdElement` `Batch.hs:106`, `verifiedMsgParts` `Protocol.hs:1445`; `messages.msg_chat_binding` + `msg_signatures`; reconstructed in `toTask` `Delivery.hs:154`). What does **not** exist is "store the latest roster and re-emit to joiners" — `sendHistory` (`Internal.hs:1207`) reconstructs content and does *not* preserve signatures, so it is not a template.
 
-Add a small per-group cache holding the latest signed roster message bytes (a column on the relay's group/relay record), overwritten on each new roster. On receiving `XGrpRoster` from an owner the relay: verifies the owner signature, updates its own member-role records, overwrites the cache, and (for a role-change-origin roster) creates a delivery task to all current members. On join, it forwards the cached bytes verbatim.
+Add a small per-group cache holding the latest signed roster message bytes, plus the roster `version` as a **separate column** alongside them (so the relay compares versions without re-parsing the blob). On receiving `XGrpRoster` from an owner the relay: verifies the owner signature; **checks `version` strictly greater than the cached version** (lower → reject as rollback; equal → idempotent no-op); then updates its own member-role records, overwrites the cache + stored version, and (for a role-change-origin roster) creates a delivery task to all current members. On join, it forwards the cached bytes verbatim.
+
+The relay-side version check protects an **honest** relay's cache from being rolled back by a replayed signed roster — which in turn protects every joiner that relay serves. It does not constrain a **malicious** relay (it controls its own cache); that remains the documented new-joiner residual gap (1.3), bounded by the member-side check (1.3) and the link version anchor.
 
 ## 1.8 Races and tests
 
-- **Promotion vs. action ordering.** A newly-promoted mod acts before its roster reaches a recipient ⇒ `RGEMsgBadSignature`. The relay, knowing the mod is privileged from its cache, prepends the roster for recipients not yet at the current version (same prepend as profile dissemination).
+- **Promotion vs. action ordering.** A newly-promoted mod could act before its roster broadcast reaches a recipient ⇒ `RGEMsgBadSignature`. The window is narrow: the owner's role-change roster is broadcast at promotion, causally before the mod (who must first learn of its own promotion) acts, so the relay normally enqueues the roster ahead of the action. MVP relies on that ordering plus recipient tolerance (the rejected action can be re-sent; the next roster repairs trust). If the race proves real, mitigate with a **roster-specific** prepend — the cached signed roster bytes ahead of the action for recipients below the current version — which is a distinct mechanism from the `XGrpMemNew` profile-dissemination prepend, not the same path. Deferred as an optimization.
 - **Multi-owner roster signed by an unknown owner** (owner added after the recipient fetched the link): recipient cannot verify ⇒ buffer/refetch link. Cannot occur for single-owner MVP; flag for v7.
 - **Roster vs. profile-update concurrency:** benign (different fields); verify the roster's relations-vector handling does not clobber the profile `MRIntroduced` semantics they share.
 
