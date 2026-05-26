@@ -1051,6 +1051,7 @@ data GroupLinkPlan
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: BoolDef, ownerVerification :: Maybe OwnerVerification, linkOwners :: ListDef GroupLinkOwner}
   | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
+  | GLPUpdateRequired {groupSLinkData_ :: Maybe GroupShortLinkData}
   deriving (Show)
 
 data GroupLinkOwner = GroupLinkOwner
@@ -1096,6 +1097,7 @@ connectionPlanProceed = \case
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     GLPNoRelays _ -> False
+    GLPUpdateRequired _ -> False
     _ -> False
   CPError _ -> True
 

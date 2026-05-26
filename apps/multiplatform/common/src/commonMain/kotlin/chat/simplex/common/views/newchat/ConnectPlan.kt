@@ -331,6 +331,33 @@ private suspend fun planAndConnectTask(
             cleanup()
           }
         }
+        is GroupLinkPlan.UpdateRequired -> {
+          Log.d(TAG, "planAndConnect, .GroupLink, .UpdateRequired")
+          val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
+          if (groupSLinkData != null) {
+            AlertManager.privacySensitive.showOpenChatAlert(
+              profileName = groupSLinkData.groupProfile.displayName,
+              profileFullName = groupSLinkData.groupProfile.fullName,
+              profileImage = {
+                ProfileImage(
+                  size = alertProfileImageSize,
+                  image = groupSLinkData.groupProfile.image,
+                  icon = MR.images.ic_supervised_user_circle_filled
+                )
+              },
+              subtitle = generalGetString(MR.strings.group_link_requires_newer_version),
+              confirmText = null,
+              dismissText = generalGetString(MR.strings.ok),
+              onDismiss = { cleanup() }
+            )
+          } else {
+            AlertManager.privacySensitive.showAlertMsg(
+              generalGetString(MR.strings.app_update_required),
+              generalGetString(MR.strings.group_link_requires_newer_version)
+            )
+            cleanup()
+          }
+        }
       }
       is ConnectionPlan.Error -> {
         Log.d(TAG, "planAndConnect, error ${connectionPlan.chatError}")

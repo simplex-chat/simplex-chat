@@ -2609,6 +2609,7 @@ export type GroupLinkPlan =
   | GroupLinkPlan.ConnectingProhibit
   | GroupLinkPlan.Known
   | GroupLinkPlan.NoRelays
+  | GroupLinkPlan.UpdateRequired
 
 export namespace GroupLinkPlan {
   export type Tag = 
@@ -2618,6 +2619,7 @@ export namespace GroupLinkPlan {
     | "connectingProhibit"
     | "known"
     | "noRelays"
+    | "updateRequired"
 
   interface Interface {
     type: Tag
@@ -2654,6 +2656,11 @@ export namespace GroupLinkPlan {
 
   export interface NoRelays extends Interface {
     type: "noRelays"
+    groupSLinkData_?: GroupShortLinkData
+  }
+
+  export interface UpdateRequired extends Interface {
+    type: "updateRequired"
     groupSLinkData_?: GroupShortLinkData
   }
 }

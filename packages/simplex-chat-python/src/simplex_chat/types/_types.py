@@ -1859,6 +1859,10 @@ class GroupLinkPlan_noRelays(TypedDict):
     type: Literal["noRelays"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
 
+class GroupLinkPlan_updateRequired(TypedDict):
+    type: Literal["updateRequired"]
+    groupSLinkData_: NotRequired["GroupShortLinkData"]
+
 GroupLinkPlan = (
     GroupLinkPlan_ok
     | GroupLinkPlan_ownLink
@@ -1866,9 +1870,10 @@ GroupLinkPlan = (
     | GroupLinkPlan_connectingProhibit
     | GroupLinkPlan_known
     | GroupLinkPlan_noRelays
+    | GroupLinkPlan_updateRequired
 )
 
-GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays"]
+GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays", "updateRequired"]
 
 class GroupMember(TypedDict):
     groupMemberId: int  # int64
