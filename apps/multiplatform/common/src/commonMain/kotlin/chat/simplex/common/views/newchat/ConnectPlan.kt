@@ -30,8 +30,23 @@ suspend fun planAndConnect(
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
-  val link = strHasSingleSimplexLink(shortOrFullLink.trim())
-  if (link?.format is Format.SimplexLink && (link.format as Format.SimplexLink).linkType == SimplexLinkType.relay) {
+  val parsedMd = parseToMarkdown(shortOrFullLink.trim())
+  val links = parsedMd?.filter { it.format?.isSimplexLink ?: false } ?: emptyList()
+  val singleLink = links.singleOrNull()
+  if (links.isEmpty()) {
+    val nameInfo = parsedMd?.firstNotNullOfOrNull { (it.format as? Format.SimplexName)?.nameInfo }
+    if (nameInfo != null) {
+      val (title, msg) = if (nameInfo.nameType == SimplexNameType.contact) {
+        generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
+      } else {
+        generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
+      }
+      AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
+      cleanup?.invoke()
+      return CompletableDeferred(false)
+    }
+  }
+  if (singleLink?.format is Format.SimplexLink && (singleLink.format as Format.SimplexLink).linkType == SimplexLinkType.relay) {
     AlertManager.privacySensitive.showAlertMsg(
       generalGetString(MR.strings.relay_address_alert_title),
       generalGetString(MR.strings.relay_address_alert_message),

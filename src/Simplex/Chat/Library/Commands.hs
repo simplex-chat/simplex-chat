@@ -1998,7 +1998,7 @@ processChatCommand vr nm = \case
   APIConnectPlan userId (Just target) resolveKnown linkOwnerSig_ -> withUserId userId $ \user ->
     case target of
       ACTLink cLink -> uncurry (CRConnectionPlan user) <$> connectPlan user cLink resolveKnown linkOwnerSig_
-      ACTName _ -> throwCmdError "name resolution is not yet supported"
+      ACTName _ -> throwChatError CEUnsupportedConnReq
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData

@@ -35,7 +35,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), SimplexNameType (..), SimplexNamespace (..), simplexConnReqUri, simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (AConnectTarget (..), AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), SimplexNameType (..), SimplexNamespace (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
@@ -205,12 +205,12 @@ markdownP = mconcat <$> A.many' fragmentP
           '_' -> formattedP '_' Italic
           '~' -> formattedP '~' StrikeThrough
           '`' -> formattedP '`' Snippet
-          '#' -> A.char '#' *> (secretP' <|> simplexNameP NTPublicGroup <|> secretFallback)
+          '#' -> A.char '#' *> (secretP' <|> nameRefP '#' <|> secretFallback)
           '!' -> styledP <|> wordP
           '@' -> mentionP <|> wordP
           '/' -> commandP <|> wordP
           '[' -> sowLinkP <|> wordP
-          ':' -> (A.char ':' *> simplexNameP NTContact) <|> wordP
+          ':' -> (A.char ':' *> nameRefP ':') <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -237,38 +237,17 @@ markdownP = mconcat <$> A.many' fragmentP
     secretFallback = do
       rest <- A.takeTill (== ' ')
       pure $ unmarked $ '#' `T.cons` rest
-    simplexNameP :: SimplexNameType -> Parser Markdown
-    simplexNameP nameType = do
-      labels <- nameLabel `A.sepBy1` A.char '.'
-      -- must be followed by space, end of input, or non-formatting punctuation
-      A.peekChar >>= \case
-        Nothing -> pure ()
-        Just c | c == ' ' || (isPunctuation c && c /= '#' && c /= '_' && c /= '*' && c /= '~' && c /= '`') -> pure ()
-        _ -> fail "not terminated"
-      let pfx = case nameType of NTPublicGroup -> "#"; NTContact -> ":"
-          orig = T.intercalate "." labels
-          txt = pfx <> orig
-      case classifyName labels of
-        Just (ns, dom, sub) -> pure $ markdown (SimplexName $ SimplexNameInfo nameType ns dom sub) txt
-        Nothing -> fail "not a simplex name"
-    nameLabel :: Parser Text
-    nameLabel = do
-      c <- A.peekChar'
-      guard $ isAlpha c
-      A.takeWhile1 $ \ch -> isAlpha ch || isDigit ch || ch == '-'
-    classifyName :: [Text] -> Maybe (SimplexNamespace, Text, [Text])
-    classifyName = \case
-      [] -> Nothing
-      [name] -> Just (NSSimplex, name, [])
-      labels -> case last labels of
-        "simplex" -> mkName NSSimplex (init labels)
-        "testing" -> mkName NSTesting (init labels)
-        _ -> Just (NSWeb, T.intercalate "." labels, [])
-      where
-        mkName ns = \case
-          [] -> Nothing
-          [name] -> Just (ns, name, [])
-          parts -> Just (ns, last parts, reverse $ init parts)
+    nameRefP :: Char -> Parser Markdown
+    nameRefP pfx = do
+      word <- A.takeTill (== ' ')
+      let punct = T.takeWhileEnd isPunctuation word
+          name = T.dropWhileEnd isPunctuation word
+          full = pfx `T.cons` name
+      case strDecode (encodeUtf8 full) of
+        Right (ACTName ni) ->
+          let md' = markdown (SimplexName ni) full
+          in pure $ if T.null punct then md' else md' :|: unmarked punct
+        _ -> fail "not a name"
     styledP :: Parser Markdown
     styledP = do
       f <- A.char '!' *> ((A.char '-' $> Small) <|> (colored <$> colorP)) <* A.space

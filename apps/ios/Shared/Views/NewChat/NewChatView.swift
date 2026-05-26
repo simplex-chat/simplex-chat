@@ -1295,7 +1295,25 @@ func planAndConnect(
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
-    if case .simplexLink(_, .relay, _, _) = strHasSingleSimplexLink(shortOrFullLink)?.format {
+    let parsedMd = parseSimpleXMarkdown(shortOrFullLink)
+    let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
+    let singleLink = links.count == 1 ? links[0] : nil
+    if links.isEmpty {
+        let nameFt = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } })
+        if case let .simplexName(nameInfo) = nameFt?.format {
+            let (title, msg) = nameInfo.nameType == .contact
+                ? ("Unsupported contact name", "Connecting via contact name requires a newer app version.")
+                : ("Unsupported channel name", "Connecting via channel name requires a newer app version.")
+            showAlert(
+                NSLocalizedString(title, comment: "alert title"),
+                message: NSLocalizedString(msg, comment: "alert message")
+                    + " " + NSLocalizedString("Please upgrade the app.", comment: "alert message")
+            )
+            cleanup?()
+            return
+        }
+    }
+    if case .simplexLink(_, .relay, _, _) = singleLink?.format {
         showAlert(
             NSLocalizedString("Relay address", comment: "alert title"),
             message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
