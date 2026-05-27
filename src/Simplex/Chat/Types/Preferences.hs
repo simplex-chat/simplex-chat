@@ -236,13 +236,16 @@ groupFeatureMemberAllowed' feature role prefs =
   let pref = getGroupPreference feature prefs
    in getField @"enable" pref == FEOn && maybe True (role >=) (getField @"role" pref)
 
--- TODO: some preferences are channel-only (e.g., comments) and should not generate
--- UI items or be configurable in regular groups. Currently they are simply excluded
--- from this list. When more channel-only or group-only preferences are added,
--- consider adding a scope property to GroupFeatureI (e.g., GFScopeAll | GFScopeChannel | GFScopeGroup)
--- and filtering at the call sites in createGroupFeatureItems_ / createGroupFeatureChangedItems.
+-- | All group features, used by serialization and full enumeration paths.
+-- UI / feature-item paths must use 'groupFeaturesForChannel' so channel-only
+-- features (currently just SGFComments) are not surfaced as preferences in
+-- regular groups — see the failing test cases that depended on this filter.
 allGroupFeatures :: [AGroupFeature]
-allGroupFeatures =
+allGroupFeatures = commonGroupFeatures ++ channelOnlyGroupFeatures
+
+-- | Features that exist for every group type.
+commonGroupFeatures :: [AGroupFeature]
+commonGroupFeatures =
   [ AGF SGFTimedMessages,
     AGF SGFDirectMessages,
     AGF SGFFullDelete,
@@ -252,9 +255,23 @@ allGroupFeatures =
     AGF SGFSimplexLinks,
     AGF SGFReports,
     AGF SGFHistory,
-    AGF SGFSupport,
-    AGF SGFComments
+    AGF SGFSupport
   ]
+
+-- | Features that only exist in channel-style groups (useRelays' == True).
+-- In regular groups these would render as meaningless "<feature>: off" items;
+-- the per-group filter in 'groupFeaturesForChannel' drops them.
+channelOnlyGroupFeatures :: [AGroupFeature]
+channelOnlyGroupFeatures =
+  [ AGF SGFComments
+  ]
+
+-- | Features that apply to a given group. Pass True for channel groups
+-- (i.e. @useRelays' gInfo@), False for regular groups.
+groupFeaturesForChannel :: Bool -> [AGroupFeature]
+groupFeaturesForChannel isChannel
+  | isChannel = allGroupFeatures
+  | otherwise = commonGroupFeatures
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
 groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments} = case f of

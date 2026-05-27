@@ -645,7 +645,10 @@ processChatCommand vr nm = \case
               forM_ quotedItemId $ \qId ->
                 unlessM (withFastStore' $ \db -> quotedItemInCommentSection db parentItemId qId) $
                   throwCmdError "quoted item does not belong to the same comment section"
-            sendGroupContentMessages user gInfo Nothing False (Just channelMsgInfo) live itemTTL cmrs
+            -- Pass asGroup through so a channel owner can comment as the
+            -- channel rather than as themselves — that path renders for
+            -- subscribers as CIChannelRcv (no owner-member attribution).
+            sendGroupContentMessages user gInfo Nothing asGroup (Just channelMsgInfo) live itemTTL cmrs
   APISetCommentsDisabled groupId parentItemId disabled -> withUser $ \user ->
     withGroupLock "setCommentsDisabled" groupId $ do
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId

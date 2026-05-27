@@ -1974,7 +1974,9 @@ viewGroupUpdated
         | null prefs = []
         | otherwise = bold' "updated group preferences:" : prefs
         where
-          prefs = mapMaybe viewPref allGroupFeatures
+          -- Filter to features applicable to this group type so channel-only
+          -- preferences (e.g. Comments) don't surface in regular-group updates.
+          prefs = mapMaybe viewPref (groupFeaturesForChannel (useRelays' g'))
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
             | otherwise = Just . plain $ groupPreferenceText (pref gps')
@@ -1990,7 +1992,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, descripti
     <> maybe [] (\sd -> ["description: " <> plain sd]) shortDescr
     <> maybe [] (const ["has profile image"]) image
     <> maybe [] ((bold' "welcome message:" :) . map plain . T.lines) description
-    <> (bold' "group preferences:" : map viewPref allGroupFeatures)
+    <> (bold' "group preferences:" : map viewPref (groupFeaturesForChannel (useRelays' g)))
   where
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
       where

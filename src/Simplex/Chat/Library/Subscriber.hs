@@ -2076,11 +2076,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     newGroupContentMessage :: GroupInfo -> Maybe GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryTaskContext)
     newGroupContentMessage gInfo m_ mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded = case m_ of
       Nothing
-        -- Comments must have an author (a member, not the channel-as-sender).
-        -- A relay-forwarded message without member identity but carrying
-        -- mc.parent is a protocol violation — drop it rather than silently
-        -- discarding the parent reference and storing it as a channel post.
-        | isJust parent_ -> messageError "channel comment without author (FwdChannel)" $> Nothing
+        -- A relay-forwarded message arrives without member identity in two
+        -- legitimate cases: (1) the channel post itself (parent = Nothing,
+        -- asGroup = Just True) and (2) a comment posted by the channel
+        -- owner as the channel (parent = Just _, asGroup = Just True), which
+        -- stores at the receiver as CIChannelRcv with no member attribution.
+        -- A message that has parent set but is NOT asGroup is a protocol
+        -- violation — a member comment should arrive with FwdMember, not
+        -- FwdChannel — and is dropped.
+        | isJust parent_ && asGroup_ /= Just True ->
+            messageError "channel comment without author (FwdChannel)" $> Nothing
+        | isJust parent_ -> do
+            channelMsgInfo_ <- resolveCommentParent gInfo parent_
+            case channelMsgInfo_ of
+              Just _ -> do
+                createContentItem gInfo Nothing Nothing channelMsgInfo_
+                pure Nothing
+              Nothing -> pure Nothing
         | otherwise -> do
             createContentItem gInfo Nothing Nothing Nothing
             -- no delivery task - message already forwarded by relay

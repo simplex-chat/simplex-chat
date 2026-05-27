@@ -1507,7 +1507,11 @@ adjustChannelMsgCommentCount :: DB.Connection -> ChatItemId -> Int -> IO ()
 adjustChannelMsgCommentCount db parentChatItemId delta =
   DB.execute
     db
+#if defined(dbPostgres)
+    "UPDATE chat_items SET comments_total = GREATEST(0, comments_total + ?) WHERE chat_item_id = ?"
+#else
     "UPDATE chat_items SET comments_total = MAX(0, comments_total + ?) WHERE chat_item_id = ?"
+#endif
     (delta, parentChatItemId)
 
 -- | Persist the per-post comments-disabled flag.

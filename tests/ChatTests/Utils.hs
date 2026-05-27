@@ -479,6 +479,9 @@ cc <# line = (dropTime <$> getTermLine' (Just line) cc) `shouldReturn` line
 (*<#) :: HasCallStack => [TestCC] -> String -> Expectation
 ccs *<# line = mapConcurrently_ (<# line) ccs
 
+(*<##) :: HasCallStack => [TestCC] -> String -> Expectation
+ccs *<## line = mapConcurrently_ (<## line) ccs
+
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
 cc ?<# line = do
   let expected = "i " <> line
