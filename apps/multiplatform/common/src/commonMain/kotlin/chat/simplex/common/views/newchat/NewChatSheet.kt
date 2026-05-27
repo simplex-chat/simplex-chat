@@ -544,10 +544,11 @@ private fun ContactsSearchBar(
                 connectProgressManager.cancelConnectProgress()
                 if (listState.layoutInfo.totalItemsCount > 0) {
                   listState.scrollToItem(0)
+                }
               }
+              searchShowingSimplexLink.value = false
+              searchChatFilteredBySimplexLink.value = null
             }
-            searchShowingSimplexLink.value = false
-            searchChatFilteredBySimplexLink.value = null
           }
         }
     }
