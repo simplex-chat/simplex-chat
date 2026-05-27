@@ -393,6 +393,7 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "#my-channel.simplex" <==> sname NTPublicGroup TLDSimplex "my-channel" [] "my-channel.simplex"
     "hello #privacy!" <==> "hello " <> sname NTPublicGroup TLDSimplex "privacy" [] "privacy" <> "!"
     "see #privacy.simplex now" <==> "see " <> sname NTPublicGroup TLDSimplex "privacy" [] "privacy.simplex" <> " now"
+    "#123" <==> sname NTPublicGroup TLDSimplex "123" [] "123"
   it "channel names - subdomains" do
     "#support.acme.simplex" <==> sname NTPublicGroup TLDSimplex "acme" ["support"] "support.acme.simplex"
     "#a.b.acme.simplex" <==> sname NTPublicGroup TLDSimplex "acme" ["b", "a"] "a.b.acme.simplex"
@@ -402,6 +403,7 @@ textWithSimplexNames = describe "text with SimpleX names" do
   it "channel names - web domains" do
     "#example.com" <==> sname NTPublicGroup TLDWeb "example.com" [] "example.com"
     "#news.bbc.co.uk" <==> sname NTPublicGroup TLDWeb "news.bbc.co.uk" [] "news.bbc.co.uk"
+    "#123.com" <==> sname NTPublicGroup TLDWeb "123.com" [] "123.com"
   it "contact names" do
     "@privacy.simplex" <==> sname NTContact TLDSimplex "privacy" [] "privacy.simplex"
     "@my-name.simplex" <==> sname NTContact TLDSimplex "my-name" [] "my-name.simplex"
@@ -410,7 +412,6 @@ textWithSimplexNames = describe "text with SimpleX names" do
     "#secret#" <==> markdown Secret "secret"
     "##double secret##" <==> markdown Secret "#double secret#"
     "#" <==> "#"
-    "#123" <==> "#123"
 
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do
