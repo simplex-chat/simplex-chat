@@ -268,6 +268,7 @@ chatGroupTests = do
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
+      it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
@@ -9484,6 +9485,56 @@ testChannelBlockMemberSigned ps =
             [(0, r2)] <- chat <$> getTermLine eve
             r2 `shouldStartWith` "blocked"
             r2 `shouldEndWith` "(signed)"
+
+-- End-to-end validation of the owner-signed roster: a member promoted to
+-- moderator performs a SIGNED administrative action (block), and another member
+-- who learned that moderator's key, name, and role ONLY from the roster (never
+-- from a relay-asserted introduction) verifies and honors it. Without the
+-- roster, eve would have no trusted key for cath and would reject the block.
+testChannelModeratorActionViaRoster :: HasCallStack => TestParams -> IO ()
+testChannelModeratorActionViaRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- dan posts, so cath (the future moderator) and eve both discover dan
+            threadDelay 1000000
+            dan #> "#team hello from dan"
+            bob <# "#team dan> hello from dan"
+            concurrentlyN_
+              [ alice <# "#team dan> hello from dan [>>]",
+                do
+                  cath <## "#team: bob introduced dan (Daniel) in the channel"
+                  cath <# "#team dan> hello from dan [>>]",
+                do
+                  eve <## "#team: bob introduced dan (Daniel) in the channel"
+                  eve <# "#team dan> hello from dan [>>]"
+              ]
+
+            -- alice promotes cath to moderator. dan and eve don't know cath, so the
+            -- XGrpMemRole errors on them, but the owner-signed roster (broadcast on
+            -- the set change) silently gives them cath's key + name + moderator role.
+            threadDelay 1000000
+            alice ##> "/mr #team cath moderator"
+            alice <## "#team: you changed the role of cath to moderator (signed)"
+            bob <## "#team: alice changed the role of cath from member to moderator (signed)"
+            concurrentlyN_
+              [ cath <## "#team: alice changed your role from member to moderator (signed)",
+                dan <## "error: x.grp.mem.role with unknown member ID",
+                eve <## "error: x.grp.mem.role with unknown member ID"
+              ]
+
+            -- cath (moderator) blocks dan. cath's signed XGrpMemRestrict is forwarded
+            -- by the relay; eve verifies it against cath's roster-established key.
+            threadDelay 1000000
+            cath ##> "/block for all #team dan"
+            cath <## "#team: you blocked dan (signed)"
+            bob <## "#team: cath blocked dan (signed)"
+            eve <## "#team: cath blocked dan (signed)"
+            eve #$> ("/_get chat #1 count=1", chat, [(0, "blocked dan (signed)")])
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
