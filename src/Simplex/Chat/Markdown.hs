@@ -39,7 +39,7 @@ import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (.
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
-import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8, tshow, (<$?>))
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
 import qualified URI.ByteString as U
@@ -242,10 +242,10 @@ markdownP = mconcat <$> A.many' fragmentP
             (name, punct) = splitPunctuation word
             full = pfx `T.cons` name
             mkMd ni
-              | T.null punct = md
-              | otherwise = md :|: unmarked punct
+              | T.null punct = md'
+              | otherwise = md' :|: unmarked punct
               where
-                md = markdown (SimplexName ni) full
+                md' = markdown (SimplexName ni) full
     styledP :: Parser Markdown
     styledP = do
       f <- A.char '!' *> ((A.char '-' $> Small) <|> (colored <$> colorP)) <* A.space
