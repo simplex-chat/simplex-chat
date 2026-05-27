@@ -248,6 +248,7 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
 private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
+    text = contact.displayName,
     buttons = {
       Column {
         // Only delete conversation
@@ -306,7 +307,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
 
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${contact.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
     buttons = {
       Column {
         // Keep conversation toggle
@@ -361,7 +362,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
 private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.confirm_delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
     buttons = {
       Column {
         // Delete and notify contact
@@ -417,7 +418,7 @@ private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, c
 private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.confirm_delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.delete_contact_cannot_undo_warning)}",
     buttons = {
       // Confirm
       SectionItemView({
@@ -492,7 +493,7 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
 fun clearChatDialog(chat: Chat, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.clear_chat_question),
-    text = generalGetString(MR.strings.clear_chat_warning),
+    text = "${chat.chatInfo.displayName}\n\n${generalGetString(MR.strings.clear_chat_warning)}",
     confirmText = generalGetString(MR.strings.clear_verb),
     onConfirm = { controller.clearChat(chat, close) },
     destructive = true,
