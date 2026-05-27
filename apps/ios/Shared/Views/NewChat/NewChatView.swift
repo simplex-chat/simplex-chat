@@ -886,14 +886,18 @@ func strConnectTarget(_ str: String) -> ConnectTarget? {
 }
 
 func showUnsupportedNameAlert(_ nameInfo: SimplexNameInfo) {
-    let (title, msg) = nameInfo.nameType == .contact
-        ? ("Unsupported contact name", "Connecting via contact name requires a newer app version.")
-        : ("Unsupported channel name", "Connecting via channel name requires a newer app version.")
-    showAlert(
-        NSLocalizedString(title, comment: "alert title"),
-        message: NSLocalizedString(msg, comment: "alert message")
-            + " " + NSLocalizedString("Please upgrade the app.", comment: "alert message")
-    )
+    let upgrade = " " + NSLocalizedString("Please upgrade the app.", comment: "alert message")
+    if nameInfo.nameType == .contact {
+        showAlert(
+            NSLocalizedString("Unsupported contact name", comment: "alert title"),
+            message: NSLocalizedString("Connecting via contact name requires a newer app version.", comment: "alert message") + upgrade
+        )
+    } else {
+        showAlert(
+            NSLocalizedString("Unsupported channel name", comment: "alert title"),
+            message: NSLocalizedString("Connecting via channel name requires a newer app version.", comment: "alert message") + upgrade
+        )
+    }
 }
 
 struct IncognitoToggle: View {

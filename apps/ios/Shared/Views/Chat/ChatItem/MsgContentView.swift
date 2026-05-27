@@ -209,14 +209,7 @@ private func handleTextTaps(
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
                 if let nameInfo = attrs[nameAttrKey] as? SimplexNameInfo {
-                    let (title, msg) = nameInfo.nameType == .contact
-                        ? ("Unsupported contact name", "Connecting via contact name requires a newer app version.")
-                        : ("Unsupported channel name", "Connecting via channel name requires a newer app version.")
-                    showAlert(
-                        NSLocalizedString(title, comment: "alert title"),
-                        message: NSLocalizedString(msg, comment: "alert message")
-                            + " " + NSLocalizedString("Please upgrade the app.", comment: "alert message")
-                    )
+                    showUnsupportedNameAlert(nameInfo)
                 } else if let url = attrs[linkAttrKey] as? String {
                     linkURL = url
                     browser = attrs[webLinkAttrKey] != nil
