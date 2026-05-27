@@ -871,18 +871,16 @@ enum ConnectTarget {
 }
 
 func strConnectTarget(_ str: String) -> ConnectTarget? {
-    guard let parsedMd = parseSimpleXMarkdown(str) else { return nil }
-    let links = parsedMd.filter { $0.format?.isSimplexLink ?? false }
-    if links.count == 1, case let .simplexLink(_, linkType, _, smpHosts) = links[0].format {
-        return .link(text: links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
+    let parsedMd = parseSimpleXMarkdown(str)
+    let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
+    return if links.count == 1, case let .simplexLink(_, linkType, _, smpHosts) = links[0].format {
+        .link(text: links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
+    } else if links.isEmpty,
+              case let .simplexName(nameInfo) = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } })?.format {
+        .name(nameInfo)
+    } else {
+        nil
     }
-    if links.isEmpty {
-        let nameFt = parsedMd.first(where: { if case .simplexName = $0.format { true } else { false } })
-        if case let .simplexName(nameInfo) = nameFt?.format {
-            return .name(nameInfo)
-        }
-    }
-    return nil
 }
 
 func showUnsupportedNameAlert(_ nameInfo: SimplexNameInfo) {
