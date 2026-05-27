@@ -90,17 +90,23 @@ Legend — **Complexity**: rough build cost (Low / Med / High).
 
 ### Integrity locks — prevent the child from bypassing the controls
 
-Without these, the child could simply disable the protective switches, defeating
-their purpose. These stay reachable to the parent but are **gated behind the
-parent PIN** (the parent can still use them).
+Without these, the child could disable the protective switches or reconfigure
+the app to get around them. These are a **fixed set of settings gated behind
+the parent PIN** whenever parental mode is active — not individual parent
+toggles, since their purpose is to prevent bypass. (They could be surfaced as a
+single "lock important settings" switch if parent visibility is wanted.) The
+parent still reaches them by entering the PIN.
 
-| Function | Why it's locked | Complexity |
+| Protected setting / action | Why it's locked | Complexity |
 |---|---|---|
-| The parental-controls screen + parent PIN | The control itself. | Low (it's the gate) |
-| Create / hide additional profiles | A hidden profile bypasses everything. | Low–Med |
-| Database export / import | Bypasses the controls; data exfiltration. | Low |
-| Network / server settings, custom servers, developer tools | Ways to bypass restrictions; debug access. | Low |
-| App lock / passcode settings | So the child can't lock the parent out. | Low |
+| Parental-controls screen + parent PIN | The control itself. | Low (it's the gate) |
+| Privacy & security settings (incl. app lock, developer tools) | Changing the app lock could lock the parent out; dev tools expose internals. | Low |
+| Network & servers (custom servers) | Re-routing around restrictions. | Low |
+| Database export / import / transfer to another device | Copies data into an unrestricted install (bypass + exfiltration). | Low |
+| Create / hide additional profiles | A hidden profile bypasses every restriction. | Low–Med |
+| Audio & video call settings | Reconfiguring call routing and servers. | Low |
+
+Deliberately left open (no need to lock): **Appearance**, **Notifications**.
 
 ### For decision — high intrusiveness, off by default
 
@@ -134,9 +140,16 @@ preferred.)*
 Obstacles that raise the bar further. Still defeatable; build after the basic
 version works.
 
-- Persist a "parental mode was on" marker that **survives reinstall**, so a
-  fresh install re-prompts for the parent PIN before allowing unrestricted use.
-- Block database export while restrictions are on.
+- **Survive reinstall (iOS).** App settings (`UserDefaults`) are wiped when the
+  app is deleted, which resets every restriction — the main bypass. The iOS
+  **keychain**, however, persists across uninstall/reinstall on the same device
+  (it already holds the app passcode). So store the parental configuration
+  (parent PIN + chosen restrictions) in the keychain rather than in settings. On
+  launch, if that configuration is present, the app restores the restrictions
+  and requires the parent PIN before they can be changed or removed. Still
+  defeatable — "Erase All Content and Settings" or a device wipe clears the
+  keychain — and the Android/Desktop port needs a different approach, since
+  Android usually clears app data on uninstall.
 - (Future, out of scope) A real boundary would need authority held on a
   **separate parent device** via SimpleX's remote-control/linking — a new
   subsystem, worth its own RFC if ever wanted.
@@ -156,6 +169,8 @@ version works.
 
 - The contents of the **default restriction set** pre-checked for "for a child."
 - Which **for-decision** rows (if any) are in scope.
+- Protected settings: locked automatically as a fixed set *(assumed)* vs a
+  single visible "lock important settings" switch.
 - Onboarding behaviour: **(a)** route into setup *(assumed)* vs **(b)** light
   nudge.
 - Confirm connect exception = **PIN-to-allow-once, connect only** *(assumed)*.
