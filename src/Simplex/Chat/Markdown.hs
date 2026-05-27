@@ -233,17 +233,19 @@ markdownP = mconcat <$> A.many' fragmentP
     secretFallback :: Parser Markdown
     secretFallback = unmarked . ('#' `T.cons`) <$> A.takeTill (== ' ')
     nameRefP :: Char -> Parser Markdown
-    nameRefP pfx = do
-      word <- A.takeTill (== ' ')
-      let punct = T.takeWhileEnd isPunctuation word
-          name = T.dropWhileEnd isPunctuation word
-      when (pfx == '@' && not (T.any (== '.') name)) $ fail "not a name"
-      let full = pfx `T.cons` name
-      case strDecode (encodeUtf8 full) of
-        Right ni ->
-          let md' = markdown (SimplexName ni) full
-          in pure $ if T.null punct then md' else md' :|: unmarked punct
-        _ -> fail "not a name"
+    nameRefP pfx = nameRef <$?> A.takeTill (== ' ')
+      where
+        nameRef word
+          | pfx == '@' && T.all (/= '.') name = Left "not a name"
+          | otherwise = mkMd <$> strDecode (encodeUtf8 full)
+          where
+            (name, punct) = splitPunctuation word
+            full = pfx `T.cons` name
+            mkMd ni
+              | T.null punct = md
+              | otherwise = md :|: unmarked punct
+              where
+                md = markdown (SimplexName ni) full
     styledP :: Parser Markdown
     styledP = do
       f <- A.char '!' *> ((A.char '-' $> Small) <|> (colored <$> colorP)) <* A.space
@@ -495,7 +497,6 @@ displayNameTextP_ = (,"") <$> quoted '\'' <|> splitPunctuation <$> takeNameTill 
     takeNameTill p =
       A.peekChar' >>= \c ->
         if refChar c then A.takeTill p else fail "invalid first character in display name"
-    splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
@@ -505,6 +506,9 @@ commandTextP = do
   case T.words cmd of
     (keyword : _) | T.all (\c -> isAlpha c || isDigit c || c == '_') keyword -> pure (cmd, punct)
     _ -> fail "invalid command keyword"
+
+splitPunctuation :: Text -> (Text, Text)
+splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)
 
 -- quotes names that contain spaces or end on punctuation
 viewName :: Text -> Text
