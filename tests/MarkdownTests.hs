@@ -10,7 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
-import Simplex.Messaging.Agent.Protocol (SimplexNameInfo (..), SimplexNameType (..), SimplexNamespace (..))
+import Simplex.Messaging.Agent.Protocol (SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$$>))
 import System.Console.ANSI.Types
@@ -119,7 +119,7 @@ secretText = describe "secret text" do
     "this is # unformatted # text"
       <==> "this is # unformatted # text"
     "this is #unformatted # text"
-      <==> "this is " <> sname NTPublicGroup NSSimplex "unformatted" [] "unformatted" <> " # text"
+      <==> "this is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " # text"
     "this is # unformatted# text"
       <==> "this is # unformatted# text"
     "this is ## unformatted ## text"
@@ -127,9 +127,9 @@ secretText = describe "secret text" do
     "this is#unformatted# text"
       <==> "this is#unformatted# text"
     "this is #unformatted text"
-      <==> "this is " <> sname NTPublicGroup NSSimplex "unformatted" [] "unformatted" <> " text"
+      <==> "this is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " text"
     "*this* is #unformatted text"
-      <==> bold "this" <> " is " <> sname NTPublicGroup NSSimplex "unformatted" [] "unformatted" <> " text"
+      <==> bold "this" <> " is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " text"
   it "ignored internal markdown" do
     "snippet: `this is #secret_text#`"
       <==> "snippet: " <> markdown Snippet "this is #secret_text#"
@@ -299,8 +299,8 @@ textWithEmail = describe "text with Email" do
     "test chat@simplex.chat." <==> "test " <> email "chat@simplex.chat" <> "."
     "test chat@simplex.chat..." <==> "test " <> email "chat@simplex.chat" <> "..."
   it "ignored as email markdown" do
-    "chat @simplex.chat" <==> "chat " <> sname NTContact NSWeb "simplex.chat" [] "simplex.chat"
-    "this is chat @simplex.chat" <==> "this is chat " <> sname NTContact NSWeb "simplex.chat" [] "simplex.chat"
+    "chat @simplex.chat" <==> "chat " <> sname NTContact TLDWeb "simplex.chat" [] "simplex.chat"
+    "this is chat @simplex.chat" <==> "this is chat " <> sname NTContact TLDWeb "simplex.chat" [] "simplex.chat"
     "this is chat@ simplex.chat" <==> "this is chat@ " <> uri "simplex.chat"
     "this is chat @ simplex.chat" <==> "this is chat @ " <> uri "simplex.chat"
     "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ " <> uri "simplex.chat"
@@ -380,7 +380,7 @@ uri' = FormattedText $ Just Uri
 command' :: Text -> Text -> FormattedText
 command' = FormattedText . Just . Command
 
-sname :: SimplexNameType -> SimplexNamespace -> Text -> [Text] -> Text -> Markdown
+sname :: SimplexNameType -> SimplexTLD -> Text -> [Text] -> Text -> Markdown
 sname nt ns dom sub txt = markdown (SimplexName $ SimplexNameInfo nt ns dom sub) (pfx <> txt)
   where
     pfx = case nt of NTPublicGroup -> "#"; NTContact -> "@"
@@ -388,24 +388,24 @@ sname nt ns dom sub txt = markdown (SimplexName $ SimplexNameInfo nt ns dom sub)
 textWithSimplexNames :: Spec
 textWithSimplexNames = describe "text with SimpleX names" do
   it "channel names - simplex namespace" do
-    "#privacy" <==> sname NTPublicGroup NSSimplex "privacy" [] "privacy"
-    "#privacy.simplex" <==> sname NTPublicGroup NSSimplex "privacy" [] "privacy.simplex"
-    "#my-channel.simplex" <==> sname NTPublicGroup NSSimplex "my-channel" [] "my-channel.simplex"
-    "hello #privacy!" <==> "hello " <> sname NTPublicGroup NSSimplex "privacy" [] "privacy" <> "!"
-    "see #privacy.simplex now" <==> "see " <> sname NTPublicGroup NSSimplex "privacy" [] "privacy.simplex" <> " now"
+    "#privacy" <==> sname NTPublicGroup TLDSimplex "privacy" [] "privacy"
+    "#privacy.simplex" <==> sname NTPublicGroup TLDSimplex "privacy" [] "privacy.simplex"
+    "#my-channel.simplex" <==> sname NTPublicGroup TLDSimplex "my-channel" [] "my-channel.simplex"
+    "hello #privacy!" <==> "hello " <> sname NTPublicGroup TLDSimplex "privacy" [] "privacy" <> "!"
+    "see #privacy.simplex now" <==> "see " <> sname NTPublicGroup TLDSimplex "privacy" [] "privacy.simplex" <> " now"
   it "channel names - subdomains" do
-    "#support.acme.simplex" <==> sname NTPublicGroup NSSimplex "acme" ["support"] "support.acme.simplex"
-    "#a.b.acme.simplex" <==> sname NTPublicGroup NSSimplex "acme" ["b", "a"] "a.b.acme.simplex"
+    "#support.acme.simplex" <==> sname NTPublicGroup TLDSimplex "acme" ["support"] "support.acme.simplex"
+    "#a.b.acme.simplex" <==> sname NTPublicGroup TLDSimplex "acme" ["b", "a"] "a.b.acme.simplex"
   it "channel names - testing namespace" do
-    "#test.testing" <==> sname NTPublicGroup NSTesting "test" [] "test.testing"
-    "#sub.test.testing" <==> sname NTPublicGroup NSTesting "test" ["sub"] "sub.test.testing"
+    "#test.testing" <==> sname NTPublicGroup TLDTesting "test" [] "test.testing"
+    "#sub.test.testing" <==> sname NTPublicGroup TLDTesting "test" ["sub"] "sub.test.testing"
   it "channel names - web domains" do
-    "#example.com" <==> sname NTPublicGroup NSWeb "example.com" [] "example.com"
-    "#news.bbc.co.uk" <==> sname NTPublicGroup NSWeb "news.bbc.co.uk" [] "news.bbc.co.uk"
+    "#example.com" <==> sname NTPublicGroup TLDWeb "example.com" [] "example.com"
+    "#news.bbc.co.uk" <==> sname NTPublicGroup TLDWeb "news.bbc.co.uk" [] "news.bbc.co.uk"
   it "contact names" do
-    "@privacy.simplex" <==> sname NTContact NSSimplex "privacy" [] "privacy.simplex"
-    "@my-name.simplex" <==> sname NTContact NSSimplex "my-name" [] "my-name.simplex"
-    "@alice.example.com" <==> sname NTContact NSWeb "alice.example.com" [] "alice.example.com"
+    "@privacy.simplex" <==> sname NTContact TLDSimplex "privacy" [] "privacy.simplex"
+    "@my-name.simplex" <==> sname NTContact TLDSimplex "my-name" [] "my-name.simplex"
+    "@alice.example.com" <==> sname NTContact TLDWeb "alice.example.com" [] "alice.example.com"
   it "not parsed as names" do
     "#secret#" <==> markdown Secret "secret"
     "##double secret##" <==> markdown Secret "#double secret#"

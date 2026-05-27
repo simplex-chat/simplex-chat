@@ -5575,12 +5575,11 @@ mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar (
           | c == ' ' = punct
           | otherwise = 0
         validChar
-          | r == "" = validFirstNameChat
           | c `elem` prohibited = False
-          | prev == '\NUL' = c > ' ' && validFirstChar
+          | prev == '\NUL' = c > ' ' && validFirstNameChar
           | prev == ' ' = validFirstChar || (punct == 0 && isPunct)
           | punct > 0 = validFirstChar || c == ' '
           | otherwise = validFirstChar || c == ' ' || isMark c || isPunct
-        validFirstNameChat = isLetter c || cat == DecimalNumber
-        validFirstChar = validFirstNameChat || cat == CurrencySymbol || cat == MathSymbol
+        validFirstNameChar = isLetter c || cat == DecimalNumber || cat == OtherSymbol
+        validFirstChar = validFirstNameChar || cat == CurrencySymbol || cat == MathSymbol
         prohibited = ".,;/\\#@'\"`~" :: String

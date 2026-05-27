@@ -347,7 +347,7 @@ chatTypesDocsData =
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
-    (sti @SimplexNamespace, STEnum, "NS", [], "", ""),
+    (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
     (sti @SMPAgentError, STUnion, "", [], "", ""),
     (sti @SndCIStatusProgress, STEnum, "SSP", [], "", ""),
     (sti @SndConnEvent, STUnion, "SCE", [], "", ""),
@@ -563,7 +563,7 @@ deriving instance Generic SecurityCode
 deriving instance Generic SimplexLinkType
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
-deriving instance Generic SimplexNamespace
+deriving instance Generic SimplexTLD
 deriving instance Generic SMPAgentError
 deriving instance Generic SndCIStatusProgress
 deriving instance Generic SndConnEvent

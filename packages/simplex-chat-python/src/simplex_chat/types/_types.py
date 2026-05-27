@@ -2694,13 +2694,13 @@ SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
 
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"
-    namespace: "SimplexNamespace"
+    nameTLD: "SimplexTLD"
     domain: str
     subDomain: list[str]
 
 SimplexNameType = Literal["publicGroup", "contact"]
 
-SimplexNamespace = Literal["simplex", "testing", "web"]
+SimplexTLD = Literal["simplex", "testing", "web"]
 
 SndCIStatusProgress = Literal["partial", "complete"]
 

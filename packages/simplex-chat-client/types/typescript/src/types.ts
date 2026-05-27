@@ -3857,7 +3857,7 @@ export enum SimplexLinkType {
 
 export interface SimplexNameInfo {
   nameType: SimplexNameType
-  namespace: SimplexNamespace
+  nameTLD: SimplexTLD
   domain: string
   subDomain: string[]
 }
@@ -3867,7 +3867,7 @@ export enum SimplexNameType {
   Contact = "contact",
 }
 
-export enum SimplexNamespace {
+export enum SimplexTLD {
   Simplex = "simplex",
   Testing = "testing",
   Web = "web",

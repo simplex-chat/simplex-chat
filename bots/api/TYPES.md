@@ -167,7 +167,7 @@ This file is generated automatically.
 - [SimplexLinkType](#simplexlinktype)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
-- [SimplexNamespace](#simplexnamespace)
+- [SimplexTLD](#simplextld)
 - [SndCIStatusProgress](#sndcistatusprogress)
 - [SndConnEvent](#sndconnevent)
 - [SndError](#snderror)
@@ -3453,7 +3453,7 @@ A_QUEUE:
 
 **Record type**:
 - nameType: [SimplexNameType](#simplexnametype)
-- namespace: [SimplexNamespace](#simplexnamespace)
+- nameTLD: [SimplexTLD](#simplextld)
 - domain: string
 - subDomain: [string]
 
@@ -3469,7 +3469,7 @@ A_QUEUE:
 
 ---
 
-## SimplexNamespace
+## SimplexTLD
 
 **Enum type**:
 - "simplex"
