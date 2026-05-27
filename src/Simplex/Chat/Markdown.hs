@@ -35,7 +35,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectTarget (..), AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), SimplexNameType (..), SimplexNamespace (..), simplexConnReqUri, simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
@@ -244,7 +244,7 @@ markdownP = mconcat <$> A.many' fragmentP
       when (pfx == '@' && not (T.any (== '.') name)) $ fail "not a name"
       let full = pfx `T.cons` name
       case strDecode (encodeUtf8 full) of
-        Right (ACTName ni) ->
+        Right ni ->
           let md' = markdown (SimplexName ni) full
           in pure $ if T.null punct then md' else md' :|: unmarked punct
         _ -> fail "not a name"
@@ -513,12 +513,6 @@ commandTextP = do
 -- quotes names that contain spaces or end on punctuation
 viewName :: Text -> Text
 viewName s = if T.any isSpace s || maybe False (isPunctuation . snd) (T.unsnoc s) then "'" <> s <> "'" else s
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "NS") ''SimplexNamespace)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "NT") ''SimplexNameType)
-
-$(JQ.deriveJSON defaultJSON ''SimplexNameInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

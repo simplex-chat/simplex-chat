@@ -1995,10 +1995,8 @@ processChatCommand vr nm = \case
           createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
-  APIConnectPlan userId (Just target) resolveKnown linkOwnerSig_ -> withUserId userId $ \user ->
-    case target of
-      ACTLink cLink -> uncurry (CRConnectionPlan user) <$> connectPlan user cLink resolveKnown linkOwnerSig_
-      ACTName _ -> throwChatError CEUnsupportedConnReq
+  APIConnectPlan userId (Just cLink) resolveKnown linkOwnerSig_ -> withUserId userId $ \user ->
+    uncurry (CRConnectionPlan user) <$> connectPlan user cLink resolveKnown linkOwnerSig_
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
@@ -5546,15 +5544,43 @@ displayNameP_ = quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ',')
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 mkValidName :: String -> String
-mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst . foldl' addChar ("", '\NUL')
+-- mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst . foldl' addChar ("", '\NUL')
+--   where
+--     addChar (r, prev) c = if validChar then (c' : r, c') else (r, prev)
+--       where
+--         c' = if isSpace c then ' ' else c
+--         validChar
+--           | c `elem` prohibited = False
+--           | prev == '\NUL' = c' > ' ' && validFirstChar
+--           | isSpace prev = validFirstChar || c' == '-' || c' == '_'
+--           | otherwise = validFirstChar || isSymbol c' || c' == ' ' || isMark c' || c' == '-' || c' == '_' || c == '&'
+--         validFirstChar = isLetter c' || isNumber c'
+--         prohibited = ".,/\\(){}!?:;#@'\"`~%^*" :: String
+
+
+mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
-    addChar (r, prev) c = if validChar then (c' : r, c') else (r, prev)
+    fst3 (x, _, _) = x
+    addChar (r, prev, punct) c' = if validChar then (c : r, c, punct') else (r, prev, punct)
       where
-        c' = if isSpace c then ' ' else c
+        c = if isSpace c' then ' ' else c'
+        cat = generalCategory c
+        isPunct = case cat of
+          ConnectorPunctuation -> True
+          DashPunctuation -> True
+          OtherPunctuation -> True
+          _ -> False
+        punct'
+          | isPunct = punct + 1
+          | c == ' ' = punct
+          | otherwise = 0
         validChar
-          | blockedChar c = False
+          | r == "" = validFirstNameChat
+          | c `elem` prohibited = False
           | prev == '\NUL' = c > ' ' && validFirstChar
-          | isSpace prev = validFirstChar || c == '-' || c == '_'
-          | otherwise = validFirstChar || isSpace c || isMark c || c == '-' || c == '_'
-        validFirstChar = isLetter c || isNumber c || isSymbol c && not (blockedChar c)
-    blockedChar c = c `elem` (".,/()!?:#@'~%^*" :: String)
+          | prev == ' ' = validFirstChar || (punct == 0 && isPunct)
+          | punct > 0 = validFirstChar || c == ' '
+          | otherwise = validFirstChar || c == ' ' || isMark c || isPunct
+        validFirstNameChat = isLetter c || cat == DecimalNumber
+        validFirstChar = validFirstNameChat || cat == CurrencySymbol || cat == MathSymbol
+        prohibited = ".,;/\\#@'\"`~" :: String
