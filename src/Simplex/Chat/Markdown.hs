@@ -204,7 +204,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '_' -> formattedP '_' Italic
           '~' -> formattedP '~' StrikeThrough
           '`' -> formattedP '`' Snippet
-          '#' -> A.char '#' *> (secretP' <|> nameRefP '#' <|> secretFallback)
+          '#' -> A.char '#' *> (secretP <|> nameRefP '#' <|> secretFallback)
           '!' -> styledP <|> wordP
           '@' -> (A.char '@' *> nameRefP '@') <|> mentionP <|> wordP
           '/' -> commandP <|> wordP
@@ -222,19 +222,16 @@ markdownP = mconcat <$> A.many' fragmentP
       | T.null s || T.head s == ' ' || T.last s == ' ' =
           unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
-    secretP' :: Parser Markdown
-    secretP' = do
-      b <- A.takeWhile (== '#')
-      s <- A.takeTill (== '#')
-      a <- A.takeWhile1 (== '#')
-      let content = b <> s <> T.init a
-      if T.null s || T.head s == ' ' || T.last s == ' '
-        then fail "not secret"
-        else pure $ markdown Secret content
+    secretP :: Parser Markdown
+    secretP = secret <$?> ((,,) <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile1 (== '#'))
+    secret :: (Text, Text, Text) -> Either String Markdown
+    secret (b, s, a)
+      | T.null s || T.head s == ' ' || T.last s == ' ' = Left "not secret"
+      | otherwise = Right $ markdown Secret $ T.init ss
+      where
+        ss = b <> s <> a
     secretFallback :: Parser Markdown
-    secretFallback = do
-      rest <- A.takeTill (== ' ')
-      pure $ unmarked $ '#' `T.cons` rest
+    secretFallback = unmarked . ('#' `T.cons`) <$> A.takeTill (== ' ')
     nameRefP :: Char -> Parser Markdown
     nameRefP pfx = do
       word <- A.takeTill (== ' ')
