@@ -47,6 +47,8 @@ New event `XGrpRoster` (add to `ChatMsgEvent`, `Protocol.hs:422`), JSON-encoded,
 
 Add `XGrpRoster_` to `requiresSignature` (`Protocol.hs:1231`) ⇒ `True`. This makes the owner sign it via the existing `groupMsgSigning` (`Internal.hs:1962`, binding `CBGroup <> (publicGroupId, ownerMemberId)`, key `groups.member_priv_key`) and makes recipients require a valid owner signature via `withVerifiedMsg` (`Subscriber.hs:3461`). No new crypto.
 
+**The handler MUST assert the resolved author is an owner** (`memberRole' author == GROwner`). `withVerifiedMsg` verifies the signature against the *author's* key, and the relay chooses `fwdSender` — so without this assertion a relay could route a roster as a member whose key it controls and the signature would verify. Owners exist on recipients only via the link `OwnerAuth` chain, so a relay can neither fabricate an owner nor sign as one. This assertion is the crux of the roster's integrity.
+
 ## 1.3 Authoritative model — versioned snapshot, latest-wins, TOFU keys
 
 Each `XGrpRoster` is the complete current privileged set. Recipients treat the highest-version valid roster as authoritative for *who is privileged and their keys*; absence from the newest accepted roster means *not privileged* (reverts to the joiner default unless an accompanying `XGrpMemRole` sets a specific role — see 1.6). This is self-healing: a member who missed one change gets the full current state on the next roster.
@@ -100,7 +102,9 @@ Dispatch by whether an operation touches the {moderator, admin} set (the *roster
 
 The broadcast reuses the existing owner-admin-event forwarding (`shouldForward = isUserGrpFwdRelay gInfo && not forwarded`, `Subscriber.hs:3191`). Privileged-set changes are rare administrative events, so this is on the order of an `XGrpInfo`/`XGrpPrefs` broadcast — not per-message. The broadcast roster is the **self-healing** mechanism: a member who missed a prior `XGrpMemRole` is corrected by the snapshot.
 
-**`XGrpMemDel` (removal):** broadcast `XGrpMemDel` as today (it neutralizes the member for existing members). If the removed member was privileged, the owner sends an updated roster that the relay **caches only** (for future joiners) — **not** broadcast, since `XGrpMemDel` already covers existing members.
+**`XGrpMemDel` (removal):** broadcast `XGrpMemDel` as today (it neutralizes the member for existing members). If the removed member was privileged, the owner sends a refreshed roster (version++), which the relay broadcasts like any other version bump (see below).
+
+**Relay broadcast rule — always broadcast on a strict version bump.** A newer-version roster is applied, cached, and broadcast to current members, uniformly — promotion, key/role change, demotion, or privileged removal. We do **not** try to make removal cache-only: a demotion (member stays in the group) is indistinguishable from a deletion at the roster-diff level, so suppressing the broadcast would silently drop the self-healing the spec requires for role changes. The only cost is one redundant roster broadcast alongside `XGrpMemDel` on the rare deletion of a privileged member — and even there the broadcast is not waste, since it self-heals the privileged-set side if the `XGrpMemDel` was lost. (This supersedes an earlier "cache-only on deletion" idea, which could not be implemented without either a wire flag or a fragile demotion-vs-deletion diff.)
 
 **On relay add:** the owner sends the current roster to the new relay so it can serve joiners.
 
@@ -124,7 +128,7 @@ The relay-side version check protects an **honest** relay's cache from being rol
 
 ## 1.8 Races and tests
 
-- **Promotion vs. action ordering.** A newly-promoted mod could act before its roster broadcast reaches a recipient ⇒ `RGEMsgBadSignature`. The window is narrow: the owner's role-change roster is broadcast at promotion, causally before the mod (who must first learn of its own promotion) acts, so the relay normally enqueues the roster ahead of the action. MVP relies on that ordering plus recipient tolerance (the rejected action can be re-sent; the next roster repairs trust). If the race proves real, mitigate with a **roster-specific** prepend — the cached signed roster bytes ahead of the action for recipients below the current version — which is a distinct mechanism from the `XGrpMemNew` profile-dissemination prepend, not the same path. Deferred as an optimization.
+- **Promotion vs. action ordering.** A newly-promoted mod could act before its roster reaches a recipient ⇒ `RGEMsgBadSignature`. Covered for MVP by causal ordering (the roster is broadcast at promotion, before the mod learns of and acts on it), QCONT catch-up (item 7), and recipient tolerance (a rejected first action is re-sent; the next roster repairs trust). The fuller fix — the **roster-specific prepend** (prepend the cached signed roster ahead of a privileged member's forwarded action for recipients below the current version, reusing the item-7 delivered-version tracker, distinct from the `XGrpMemNew` profile prepend) — touches the hot per-recipient delivery loop that carries every forwarded message, so it is **deferred to a focused, separately-tested pass** rather than shipped untested.
 - **Multi-owner roster signed by an unknown owner** (owner added after the recipient fetched the link): recipient cannot verify ⇒ buffer/refetch link. Cannot occur for single-owner MVP; flag for v7.
 - **Roster vs. profile-update concurrency:** benign (different fields); verify the roster's relations-vector handling does not clobber the profile `MRIntroduced` semantics they share.
 
@@ -132,7 +136,7 @@ Tests: relay-fabricated moderator key is rejected (forgery); promotion delivers 
 
 ## 1.9 Key anchors for Section 1
 
-`ChatMsgEvent` `Protocol.hs:422`; `requiresSignature` `Protocol.hs:1231`; `groupMsgSigning` `Internal.hs:1962`; `withVerifiedMsg` `Subscriber.hs:3461`; `xGrpMemNew` `Subscriber.hs:2957`; `xGrpMemIntro` `Subscriber.hs:3015`; `introduceInChannel` `Internal.hs:1165`; `getGroupModerators` `Store/Groups.hs:1190`; `memberInfo` `Internal.hs:1187`; `createLinkOwnerMember` `Store/Groups.hs:3072`; `GroupKeys` `Types.hs:462`; `member_relations_vector` machinery in `Types/MemberRelations.hs` (`MemberRelation`, `MRIntroduced`, `IDSubjectIntroduced`, `setNewRelations`); forwarding `Batch.hs:106` / `Protocol.hs:1445` / `Delivery.hs:154`; relay schema `M20260222_chat_relays`.
+`ChatMsgEvent` `Protocol.hs:422`; `requiresSignature` `Protocol.hs:1231`; `groupMsgSigning` `Internal.hs:1962`; `withVerifiedMsg` `Subscriber.hs:3461`; `xGrpMemNew` `Subscriber.hs:2957`; `xGrpMemIntro` `Subscriber.hs:3015`; `introduceInChannel` `Internal.hs:1165`; `getGroupModerators` `Store/Groups.hs:1190`; `memberInfo` `Internal.hs:1187`; `createLinkOwnerMember` `Store/Groups.hs:3072`; `GroupKeys` `Types.hs:462`; `member_relations_vector` machinery in `Types/MemberRelations.hs` (`MemberRelation`, `MRIntroduced`, `IDSubjectIntroduced`, `setNewRelations`); forwarding `Batch.hs:106` / `Protocol.hs:1445` / `Delivery.hs:154`. New columns go in a **new tail migration** (`M20260222_chat_relays` is the *pattern* for relay group columns but is not the tail — never edit an applied migration; `M20260525_member_removed_at` is the current tail).
 
 ---
 

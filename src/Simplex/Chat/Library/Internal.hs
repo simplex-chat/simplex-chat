@@ -48,6 +48,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
 import qualified Data.Set as S
 import Data.Text (Text)
+import Data.Word (Word32)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
@@ -95,7 +96,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Encoding (smpEncode)
+import Simplex.Messaging.Encoding (smpDecode, smpEncode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (MsgBody, MsgFlags (..), ProtoServerWithAuth (..), ProtocolServer, ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer)
 import qualified Simplex.Messaging.Protocol as SMP
@@ -1161,10 +1162,40 @@ memberIntroEvt gInfo reMember =
 
 -- Used in groups with relays to introduce moderators and above to a new member,
 -- and to announce the new member to moderators and above.
+-- | Forward the relay's cached owner-signed roster to a member verbatim (so the
+-- owner signature verifies on the recipient). Sent first on join, so a joiner
+-- learns the privileged set and keys before any relay-asserted introduction.
+-- The forward attributes the roster to the group owner (single-owner MVP;
+-- multi-owner roster signing is deferred) so the recipient verifies it against
+-- the link-anchored owner key.
+forwardCachedRosterToMember :: User -> GroupInfo -> GroupMember -> CM ()
+forwardCachedRosterToMember user gInfo subscriber = do
+  vr <- chatVersionRange
+  cached <- withStore' $ \db -> getCachedGroupRoster db (groupId' gInfo)
+  forM_ cached $ \(_ver, bytes) -> case reconstructSignedRoster bytes of
+    Nothing -> logError "forwardCachedRosterToMember: could not decode cached roster"
+    Just (signedMsg, chatMsg) -> do
+      owners <- withStore' $ \db -> filter ((== GROwner) . memberRole') <$> getGroupModerators db vr user gInfo
+      case owners of
+        owner : _ -> do
+          fwdBrokerTs <- liftIO getCurrentTime
+          let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs}
+          sendFwdMemberMessage subscriber fwd (VMSigned MSSVerified signedMsg chatMsg)
+        [] -> logError "forwardCachedRosterToMember: no owner to attribute the roster to"
+  where
+    reconstructSignedRoster bytes = case smpDecode bytes of
+      Right sm@SignedMsg {signedBody} -> case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
+        Right chatMsg -> Just (sm, chatMsg)
+        Left _ -> Nothing
+      Left _ -> Nothing
+
 -- This doesn't create introduction records in db, compared to above methods.
 introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
+  -- Forward the cached roster first, so the joiner trusts mod/admin keys before
+  -- any relay-asserted introduction (the per-mod intro is no longer the trust path).
+  forwardCachedRosterToMember user gInfo subscriber
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
   withStore' $ \db ->
@@ -1203,6 +1234,42 @@ redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDes
     removeSimplexLink s
       | allowSimplexLinks = Just s
       | otherwise = maybe (Just s) (\fts -> if any ftIsSimplexLink fts then Nothing else Just s) $ parseMaybeMarkdownList s
+
+-- | Build the owner-signed privileged roster (moderators + admins) at the given
+-- version. Owners are excluded (their keys come from the link, not the roster).
+-- A privileged member without a known public key cannot be verified by
+-- recipients, so it cannot be rostered — skipped rather than emitting a keyless
+-- entry (it will be included once its key is known).
+-- | Roles carried by the owner-signed roster: moderators and admins. Owners are
+-- on the link (not the roster); members/observers are not privileged.
+isRosterRole :: GroupMemberRole -> Bool
+isRosterRole r = r == GRModerator || r == GRAdmin
+
+-- | Sanitize a received roster: drop entries whose role is not privileged and
+-- de-duplicate by memberId (keep first). The roster is owner-signed, so a
+-- malformed entry signals an owner bug rather than an attack — dropping the bad
+-- entry keeps the legitimate entries effective (vs. rejecting the whole roster).
+validateGroupRoster :: GroupRoster -> GroupRoster
+validateGroupRoster GroupRoster {version = v, roster = entries} =
+  GroupRoster {version = v, roster = dedup [] $ filter (isRosterRole . rmRole) entries}
+  where
+    rmRole RosterMember {role} = role
+    dedup _ [] = []
+    dedup seen (rm@RosterMember {memberId} : rms)
+      | memberId `elem` seen = dedup seen rms
+      | otherwise = rm : dedup (memberId : seen) rms
+
+buildGroupRoster :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Word32 -> IO GroupRoster
+buildGroupRoster db vr user gInfo rosterVer = do
+  mods <- getGroupModerators db vr user gInfo
+  pure GroupRoster {version = rosterVer, roster = mapMaybe rosterMember mods}
+  where
+    rosterMember m@GroupMember {memberId, memberPubKey}
+      | isRosterRole role =
+          (\k -> RosterMember {memberId, name = memberShortenedName m, key = MemberKey k, role}) <$> memberPubKey
+      | otherwise = Nothing
+      where
+        role = memberRole' m
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
 sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
@@ -1329,9 +1396,9 @@ setGroupLinkData' nm user gInfo =
 setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM GroupLink
 setGroupLinkData nm user gInfo gLink = do
   vr <- chatVersionRange
-  (conn, groupRelays) <- withFastStore $ \db ->
-    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
-  let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
+  (conn, groupRelays, rosterVersion) <- withFastStore $ \db ->
+    (,,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo) <*> liftIO (getGroupRosterVersion db (groupId' gInfo))
+  let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays rosterVersion
       linkType = if useRelays' gInfo then CCTChannel else CCTGroup
   sLnk <- shortenShortLink' . setShortLinkType_ linkType =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
@@ -1339,9 +1406,9 @@ setGroupLinkData nm user gInfo gLink = do
 setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
 setGroupLinkDataAsync user gInfo gLink = do
   vr <- chatVersionRange
-  (conn, groupRelays) <- withStore $ \db ->
-    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
-  let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
+  (conn, groupRelays, rosterVersion) <- withStore $ \db ->
+    (,,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo) <*> liftIO (getGroupRosterVersion db (groupId' gInfo))
+  let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays rosterVersion
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
 connectToRelayAsync :: User -> GroupInfo -> ShortLinkContact -> CM ()
@@ -1387,11 +1454,11 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
       _ -> False
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
-groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
-groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}, membership = GroupMember {memberId}, groupKeys} GroupLink {groupLinkId} groupRelays =
+groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> Maybe Word32 -> (UserConnLinkData 'CMContact, CRClientData)
+groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}, membership = GroupMember {memberId}, groupKeys} GroupLink {groupLinkId} groupRelays rosterVersion =
   let direct = not $ useRelays' gInfo
       relays = mapMaybe (\GroupRelay {relayLink} -> relayLink) groupRelays
-      publicGroupData_ = PublicGroupData <$> publicMemberCount
+      publicGroupData_ = (\count -> PublicGroupData {publicMemberCount = count, rosterVersion}) <$> publicMemberCount
       userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_}
       owners = case groupKeys of
         Just GroupKeys {groupRootKey = GRKPrivate rootPrivKey, memberPrivKey} ->
@@ -2095,6 +2162,42 @@ sendGroupMessage' user gInfo members chatMsgEvent =
   sendGroupMessages_ user gInfo members (chatMsgEvent :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
+
+-- | Owner: bump the roster version, build the current privileged roster, sign
+-- and broadcast it to all relay members (which cache it and forward to current
+-- members and future joiners), and persist the new version. Called when
+-- APIMembersRole changes the {moderator, admin} set. The owner signature is
+-- applied automatically by groupMsgSigning (XGrpRoster requiresSignature).
+bumpAndBroadcastRoster :: User -> GroupInfo -> CM ()
+bumpAndBroadcastRoster user gInfo
+  -- Only the owner holds the roster-signing key (single-owner MVP); a non-owner
+  -- role change still propagates via XGrpMemRole but cannot re-sign the roster.
+  | memberRole' (membership gInfo) /= GROwner = pure ()
+  | otherwise = do
+      vr <- chatVersionRange
+      let groupId = groupId' gInfo
+      (relays, rosterVer) <- withStore' $ \db -> do
+        rs <- getGroupRelayMembers db vr user gInfo
+        cur <- getGroupRosterVersion db groupId
+        pure (rs, maybe 0 (+ 1) cur)
+      roster <- withStore' $ \db -> buildGroupRoster db vr user gInfo rosterVer
+      forM_ (L.nonEmpty relays) $ \relays' ->
+        void $ sendGroupMessage' user gInfo (L.toList relays') (XGrpRoster roster)
+      withStore' $ \db -> setGroupRosterVersion db groupId rosterVer
+      -- update the owner-controlled link version anchor (item 8)
+      gLink_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupLink db user gInfo)
+      forM_ gLink_ $ setGroupLinkDataAsync user gInfo
+
+-- | Owner: send the current roster (no version bump) to a newly added relay so
+-- it can serve joiners. No-op if no roster has been published yet.
+sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
+sendGroupRosterToRelay user gInfo relayMember = do
+  vr <- chatVersionRange
+  withStore' (\db -> getGroupRosterVersion db (groupId' gInfo)) >>= \case
+    Nothing -> pure ()
+    Just rosterVer -> do
+      roster <- withStore' $ \db -> buildGroupRoster db vr user gInfo rosterVer
+      void $ sendGroupMessage' user gInfo [relayMember] (XGrpRoster roster)
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo scope asGroup members events = do

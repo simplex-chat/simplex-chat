@@ -33,6 +33,7 @@ data RcvGroupEvent
   | RGEMemberProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRGroupMemberUpdated
   | RGENewMemberPendingReview
   | RGEMsgBadSignature
+  | RGESuspiciousRosterKey -- owner roster gave a different key for a known member; kept the pinned key (TOFU)
   deriving (Show)
 
 data SndGroupEvent

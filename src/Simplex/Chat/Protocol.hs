@@ -353,6 +353,27 @@ data GrpMsgForward = GrpMsgForward
   }
   deriving (Eq, Show)
 
+-- | Owner-signed snapshot of the privileged (moderator/admin) set for a
+-- relay-mediated group. Owners are never included (their keys come from the
+-- link). 'version' is monotonic from 0; recipients treat the highest valid
+-- version as authoritative (latest-wins, see Subscriber.xGrpRoster).
+data GroupRoster = GroupRoster
+  { version :: Word32,
+    roster :: [RosterMember]
+  }
+  deriving (Eq, Show)
+
+-- | One privileged member in a roster. 'name' is display-only (avoids "unknown
+-- member" rows). 'role' is validated to {GRModerator, GRAdmin} on receipt
+-- (validateGroupRoster); the key is trust-on-first-use pinned per memberId.
+data RosterMember = RosterMember
+  { memberId :: MemberId,
+    name :: Text,
+    key :: MemberKey,
+    role :: GroupMemberRole
+  }
+  deriving (Eq, Show)
+
 
 instance Encoding FwdSender where
   smpEncode = \case
@@ -460,6 +481,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
+  XGrpRoster :: GroupRoster -> ChatMsgEvent 'Json
   XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
@@ -503,6 +525,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpDel -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
+  XGrpRoster _ -> True
   _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
@@ -771,6 +794,10 @@ data MsgMention = MsgMention {memberId :: MemberId}
 newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
   deriving (Eq, Show)
 
+$(JQ.deriveJSON defaultJSON ''RosterMember)
+
+$(JQ.deriveJSON defaultJSON ''GroupRoster)
+
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
 $(JQ.deriveJSON defaultJSON ''LinkOwnerSig)
@@ -870,6 +897,15 @@ maxCompressedMsgLength = 13380
 
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
+
+-- | Cap on the privileged set (moderators + admins) so the owner-signed roster
+-- (XGrpRoster) always fits one message and never paginates (Section 1.4).
+-- A worst-case compact {memberId, name, key, role} entry is ~215 B JSON;
+-- (maxEncodedMsgLength minus signature + wrapper overhead) / 215 leaves ample
+-- margin at 64. Enforced at promotion time in APIMembersRole. Owners are not
+-- counted (their keys come from the link, not the roster).
+maxGroupRosterSize :: Int
+maxGroupRosterSize = 64
 
 -- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
 -- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
@@ -1006,6 +1042,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpInfo_ :: CMEventTag 'Json
   XGrpPrefs_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
+  XGrpRoster_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
@@ -1065,6 +1102,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpInfo_ -> "x.grp.info"
     XGrpPrefs_ -> "x.grp.prefs"
     XGrpDirectInv_ -> "x.grp.direct.inv"
+    XGrpRoster_ -> "x.grp.roster"
     XGrpMsgForward_ -> "x.grp.msg.forward"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
@@ -1125,6 +1163,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.info" -> XGrpInfo_
         "x.grp.prefs" -> XGrpPrefs_
         "x.grp.direct.inv" -> XGrpDirectInv_
+        "x.grp.roster" -> XGrpRoster_
         "x.grp.msg.forward" -> XGrpMsgForward_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
@@ -1181,6 +1220,7 @@ toCMEventTag msg = case msg of
   XGrpInfo _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
   XGrpDirectInv {} -> XGrpDirectInv_
+  XGrpRoster _ -> XGrpRoster_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
@@ -1239,6 +1279,7 @@ requiresSignature = \case
   XGrpMemRestrict_ -> True
   XGrpLeave_ -> True
   XGrpRelayNew_ -> True
+  XGrpRoster_ -> True
   XInfo_ -> True
   _ -> False
 
@@ -1338,6 +1379,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
+      XGrpRoster_ -> XGrpRoster <$> JT.parseEither parseJSON (J.Object params)
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
@@ -1409,6 +1451,9 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
+      XGrpRoster gr -> case toJSON gr of
+        J.Object obj -> obj
+        _ -> JM.empty
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where
           encodeFwdSender = \case
@@ -1465,7 +1510,11 @@ data ContactShortLinkData = ContactShortLinkData
   deriving (Show)
 
 data PublicGroupData = PublicGroupData
-  { publicMemberCount :: Int64
+  { publicMemberCount :: Int64,
+    -- | Current privileged-roster version, anchored in owner-controlled link
+    -- data so a joiner can detect a relay serving a stale roster. Optional for
+    -- backward compatibility (omitNothingFields); detection only, not a gate.
+    rosterVersion :: Maybe Word32
   }
   deriving (Eq, Show)
 

@@ -2536,7 +2536,7 @@ processChatCommand vr nm = \case
         memberId <- MemberId <$> liftIO (encodedRandomBytes gVar 12)
         (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
         let groupProfile' = (groupProfile :: GroupProfile) {publicGroup = Just PublicGroupProfile {groupType = GTChannel, groupLink = sLnk, publicGroupId = B64UrlByteString entityId}}
-            userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Just (PublicGroupData 1)}
+            userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Just PublicGroupData {publicMemberCount = 1, rosterVersion = Nothing}}
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData IKPQOff subMode
@@ -2733,11 +2733,22 @@ processChatCommand vr nm = \case
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
+      let finalRole m = if groupMemberId' m `elem` memberIds then newRole else memberRole' m
+          finalPrivilegedCount = length $ filter (isRosterRole . finalRole) members
+      when (useRelays' gInfo && isRosterRole newRole && finalPrivilegedCount > maxGroupRosterSize) $
+        throwCmdError $ "the number of moderators and admins would exceed the limit of " <> show maxGroupRosterSize
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
       (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g currentMems
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
+      -- Broadcast the owner-signed roster when the {moderator, admin} set changed
+      -- (entered/moved within → newRole privileged; left → a changed target was privileged).
+      let rosterSetChanged
+            | not (useRelays' gInfo) = False
+            | isRosterRole newRole = not $ null $ changed1 <> changed2
+            | otherwise = any (isRosterRole . memberRole') (invitedMems <> currentMems)
+      when rosterSetChanged $ bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole, msgSigned} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
@@ -2871,6 +2882,12 @@ processChatCommand vr nm = \case
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
+      -- Refresh the roster when a privileged member was removed, so the relay's
+      -- cached roster (served to joiners) drops them. XGrpMemDel already
+      -- neutralizes them for existing members; the roster broadcast self-heals
+      -- the privileged-set side and is accepted as one redundant admin message.
+      let removedPrivileged = useRelays' gInfo && any (isRosterRole . memberRole') (invitedMems <> currentMems <> pendingApprvMems <> pendingRvwMems)
+      when removedPrivileged $ bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)

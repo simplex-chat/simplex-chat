@@ -84,6 +84,13 @@ module Simplex.Chat.Store.Groups
     getGroupRelayByGMId,
     getGroupRelays,
     getConnectedGroupRelays,
+    getGroupRosterVersion,
+    setGroupRosterVersion,
+    setCachedGroupRoster,
+    getCachedGroupRoster,
+    getDeliveredRosterVersion,
+    setDeliveredRosterVersion,
+    setGroupMemberPubKey,
     createRelayForOwner,
     getCreateRelayForMember,
     createRelayConnection,
@@ -168,6 +175,7 @@ module Simplex.Chat.Store.Groups
     createLinkOwnerMember,
     updatePreparedChannelMember,
     updateUnknownMemberAnnounced,
+    updateRosterMemberProfileAnnounced,
     updateUserMemberProfileSentAt,
     setGroupCustomData,
     setGroupUIThemes,
@@ -191,6 +199,7 @@ import Data.Char (toLower)
 import Data.Either (rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
+import Data.Word (Word32)
 import Data.List (partition, sortOn)
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
@@ -1371,6 +1380,65 @@ toGroupRelay :: (Int64, GroupMemberId, DBEntityId, ShortLinkContact, Text, Text,
 toGroupRelay ((groupRelayId, groupMemberId, chatRelayId, address, displayName, fullName, shortDescr, image, domains, BI preset) :. (tested, BI enabled, BI deleted, relayStatus, relayLink)) =
   let userChatRelay = UserChatRelay {chatRelayId, address, relayProfile = toRelayProfile (displayName, fullName, shortDescr, image), domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
    in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink}
+
+-- | Privileged-roster cache (M20260526). 'roster_version' is this client's
+-- current version: owner's current / relay's cached / member's highest-accepted
+-- (one role per client per group). 'roster_msg' (relay only) is the verbatim
+-- owner-signed roster message (smpEncode'd SignedMsg), re-emitted to joiners.
+
+getGroupRosterVersion :: DB.Connection -> GroupId -> IO (Maybe Word32)
+getGroupRosterVersion db groupId =
+  toRosterVersion <$> maybeFirstRow fromOnly (DB.query db "SELECT roster_version FROM groups WHERE group_id = ?" (Only groupId))
+
+toRosterVersion :: Maybe (Maybe Int64) -> Maybe Word32
+toRosterVersion = fmap fromIntegral . join
+
+-- Member side: record highest-accepted version without caching bytes (members do not re-forward).
+setGroupRosterVersion :: DB.Connection -> GroupId -> Word32 -> IO ()
+setGroupRosterVersion db groupId v = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?"
+    (fromIntegral v :: Int64, currentTs, groupId)
+
+-- Relay/owner side: cache the verbatim signed roster bytes alongside the version.
+setCachedGroupRoster :: DB.Connection -> GroupId -> Word32 -> B.ByteString -> IO ()
+setCachedGroupRoster db groupId v signedMsgBytes = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET roster_version = ?, roster_msg = ?, updated_at = ? WHERE group_id = ?"
+    (fromIntegral v :: Int64, Binary signedMsgBytes, currentTs, groupId)
+
+getCachedGroupRoster :: DB.Connection -> GroupId -> IO (Maybe (Word32, B.ByteString))
+getCachedGroupRoster db groupId =
+  (>>= toRoster)
+    <$> maybeFirstRow id (DB.query db "SELECT roster_version, roster_msg FROM groups WHERE group_id = ?" (Only groupId))
+  where
+    toRoster :: (Maybe Int64, Maybe (Binary B.ByteString)) -> Maybe (Word32, B.ByteString)
+    toRoster (Just v, Just (Binary bs)) = Just (fromIntegral v, bs)
+    toRoster _ = Nothing
+
+getDeliveredRosterVersion :: DB.Connection -> GroupMemberId -> IO (Maybe Word32)
+getDeliveredRosterVersion db gmId =
+  toRosterVersion <$> maybeFirstRow fromOnly (DB.query db "SELECT delivered_roster_version FROM group_members WHERE group_member_id = ?" (Only gmId))
+
+setDeliveredRosterVersion :: DB.Connection -> GroupMemberId -> Word32 -> IO ()
+setDeliveredRosterVersion db gmId v =
+  DB.execute
+    db
+    "UPDATE group_members SET delivered_roster_version = ? WHERE group_member_id = ?"
+    (fromIntegral v :: Int64, gmId)
+
+-- | Pin a member's public key (roster TOFU first-sight / relay-authoritative).
+setGroupMemberPubKey :: DB.Connection -> GroupMemberId -> C.PublicKeyEd25519 -> IO ()
+setGroupMemberPubKey db gmId pubKey = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
+    (pubKey, currentTs, gmId)
 
 createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupMember
 createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {relayProfile = RelayProfile {displayName}} = do
@@ -3144,6 +3212,32 @@ updateUnknownMemberAnnounced db vr user@User {userId} invitingMember unknownMemb
   where
     VersionRange minV maxV = maybe memberChatVRange fromChatVRange v
     memberPubKey_ = (\(MemberKey k) -> k) <$> memberKey
+
+-- | Like updateUnknownMemberAnnounced, but preserves member_role and
+-- member_pub_key. Used for roster-established moderators/admins: their role and
+-- key are owner-authoritative (from the signed roster) and must never be
+-- overwritten by a relay-disseminated XGrpMemNew, which only carries the profile.
+updateRosterMemberProfileAnnounced :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMember -> MemberInfo -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
+updateRosterMemberProfileAnnounced db vr user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} status = do
+  _ <- updateMemberProfile db user unknownMember profile
+  currentTs <- liftIO getCurrentTime
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE group_members
+        SET member_category = ?,
+            member_status = ?,
+            invited_by_group_member_id = ?,
+            peer_chat_min_version = ?,
+            peer_chat_max_version = ?,
+            updated_at = ?
+        WHERE user_id = ? AND group_member_id = ?
+      |]
+      ((GCPostMember, status, groupMemberId' invitingMember) :. (minV, maxV, currentTs, userId, groupMemberId))
+  getGroupMemberById db vr user groupMemberId
+  where
+    VersionRange minV maxV = maybe memberChatVRange fromChatVRange v
 
 updateUserMemberProfileSentAt :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
 updateUserMemberProfileSentAt db User {userId} GroupInfo {groupId} sentTs =
