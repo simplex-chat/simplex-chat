@@ -296,6 +296,19 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
+    describe "channel comments" $ do
+      it "subscriber should comment on channel post" testChannelCommentSubscriberCanComment
+      it "should reject comment in non-channel group" testChannelCommentNotInRegularGroup
+      it "should reject comment when comments disabled on post" testChannelCommentDisabledRejected
+      it "subscriber should edit and delete own comment" testChannelCommentEditDelete
+      it "comments_total should increment on insert and decrement on delete" testChannelCommentCountIncrement
+      it "observer should not be able to comment" testChannelCommentObserverRejected
+      it "comments should not appear in main channel pagination" testChannelCommentMainChatExclusion
+      it "subscriber should quote comment on channel post" testChannelCommentQuote
+      it "subscriber should receive comment from another subscriber via relay" testChannelCommentRcvFromAnotherSubscriber
+      it "owner should moderate-delete subscriber comment and decrement count" testChannelCommentModerationDelete
+      it "content edit should preserve commentsDisabled flag" testChannelCommentDisabledViaPrefs
+      it "subscriber should react to a channel comment" testChannelCommentReact
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -10848,8 +10861,6 @@ testChannelMemberMessageDelete ps =
                 eve <# "#team cath> [marked deleted] hello"
               ]
 
-<<<<<<< Updated upstream
-=======
 testChannelCommentSubscriberCanComment :: HasCallStack => TestParams -> IO ()
 testChannelCommentSubscriberCanComment ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -11420,7 +11431,6 @@ testChannelCommentReact ps =
                   eve <## "    + 👍"
               ]
 
->>>>>>> Stashed changes
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =
   testChat3 aliceProfile bobProfile cathProfile $
