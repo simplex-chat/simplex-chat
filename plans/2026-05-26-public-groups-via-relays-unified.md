@@ -64,7 +64,7 @@ There is **no in-place key rotation**: a genuine re-key is modeled as a *new mem
 
 **Anti-replay / rollback.** The relay cannot forge a signed roster but can replay an older one.
 
-- The current roster `version` is anchored in the owner-controlled link mutable data (which already holds `OwnerAuth`, profile, subscriber count). The relay cannot forge it. A roster change that bumps the version also updates link data.
+- The current roster `version` is anchored in the owner-controlled link mutable data (which already holds `OwnerAuth`, profile, subscriber count). The relay cannot forge it. A roster change that bumps the version also updates link data. **Status:** the write side is implemented; the join-time **read/detect** is deferred — comparing the anchor against the relay-served roster at join is racy (the forwarded roster may not have arrived yet → false positives), so correct staleness detection must be triggered by roster arrival, not at join. The residual new-joiner rollback gap below stands; the hard anti-replay (member + relay) is in place.
 - **Existing members** reject any roster with `version` below the highest already accepted — full anti-replay for them.
 - **New joiners** process the latest version the relay actually serves, even if it lags the link anchor, so honest relay propagation lag never blocks a join. The anchor is used for staleness *detection*, not a hard gate, in v1.
 - **Documented residual gap:** a stale/malicious relay can serve an old-but-valid roster to a brand-new joiner. Documented in `channels-overview.md` with future mitigations: escalate verification to an owner, or have the client compare the relay's version to the link anchor and refuse/retry above a staleness threshold.
