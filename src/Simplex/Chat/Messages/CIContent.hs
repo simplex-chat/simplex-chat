@@ -245,7 +245,6 @@ ciRequiresAttention content = case msgDirection @d of
       RGEMemberProfileUpdated {} -> False
       RGENewMemberPendingReview -> True
       RGEMsgBadSignature -> False
-      RGESuspiciousRosterKey -> False
     CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
@@ -375,7 +374,6 @@ rcvGroupEventToText = \case
   RGEMemberProfileUpdated {} -> "updated profile"
   RGENewMemberPendingReview -> "new member wants to join the group"
   RGEMsgBadSignature -> "message rejected: bad signature"
-  RGESuspiciousRosterKey -> "roster gave a different key for a member: kept the previously trusted key"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case

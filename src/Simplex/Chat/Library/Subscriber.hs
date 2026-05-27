@@ -1344,13 +1344,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CFSetShortLink ->
               case (ucGroupId_, auData) of
                 (Just groupId, UserContactLinkData UserContactData {relays = relayLinks}) -> do
-                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks) <- withStore $ \db -> do
+                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks, newlyActiveGMIds) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db vr user groupId
                     gLink <- getGroupLink db user gInfo
                     relays <- liftIO $ getGroupRelays db gInfo
-                    (relays', changed, newlyActive) <- liftIO $ foldrM (updateRelay db) ([], False, []) relays
+                    (relays', changed, newlyActiveLinks, newlyActiveGMIds) <- liftIO $ foldrM (updateRelay db) ([], False, [], []) relays
                     liftIO $ setGroupInProgressDone db gInfo
-                    pure (gInfo, gLink, relays', changed, newlyActive)
+                    pure (gInfo, gLink, relays', changed, newlyActiveLinks, newlyActiveGMIds)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
                   let GroupSummary {publicMemberCount} = groupSummary gInfo
                   -- Owner is counted in publicMemberCount; > 1 means at least one subscriber.
@@ -1367,21 +1367,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           events = XGrpRelayNew <$> newlyActive
                       unless (null recipients) $
                         void $ sendGroupMessages user gInfo Nothing False recipients events
-                  -- A relay that just became active must get the current roster so
-                  -- it can serve joiners (item 2b: relay-add). No-op if no roster yet.
-                  forM_ (L.nonEmpty newlyActiveLinks) $ \_ -> do
-                    relayMembers <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
-                    let newRelays = filter (\GroupMember {relayLink} -> maybe False (`elem` newlyActiveLinks) relayLink) relayMembers
-                    forM_ newRelays $ \relayMember -> sendGroupRosterToRelay user gInfo relayMember `catchAllErrors` eToView
+                  -- send the current roster to relays that just became active so they can serve joiners
+                  forM_ newlyActiveGMIds $ \gmId ->
+                    (withStore (\db -> getGroupMemberById db vr user gmId) >>= sendGroupRosterToRelay user gInfo) `catchAllErrors` eToView
                   where
-                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
-                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed, newlyActive) =
+                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId]) -> IO ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId])
+                    updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks, newlyActiveGMIds) =
                       case relayLink of
                         Just rLink
                           | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
                               relay' <- updateRelayStatus db relay RSActive
-                              pure (relay' : acc, True, rLink : newlyActive)
-                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActive)
+                              pure (relay' : acc, True, rLink : newlyActiveLinks, groupMemberId : newlyActiveGMIds)
+                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActiveLinks, newlyActiveGMIds)
                           | relayStatus == RSActive -> do
                               -- Relay link absent from link data — deactivate.
                               -- RSAccepted relays are not deactivated: their own link data update
@@ -1390,8 +1387,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               -- TODO   the SMP server, but this owner won't receive a LINK callback for it
                               -- TODO   (LINK only fires in response to own setConnShortLink calls).
                               relay' <- updateRelayStatus db relay RSInactive
-                              pure (relay' : acc, True, newlyActive)
-                        _ -> pure (relay : acc, changed, newlyActive)
+                              pure (relay' : acc, True, newlyActiveLinks, newlyActiveGMIds)
+                        _ -> pure (relay : acc, changed, newlyActiveLinks, newlyActiveGMIds)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do
@@ -1659,21 +1656,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           pure True
         else pure False
 
-    -- Relay: when a subscriber's queue drains and delivery resumes, forward the
-    -- current cached roster ahead of the resumed backlog if the subscriber is
-    -- behind, so it holds the privileged set before processing moderator events
-    -- it would otherwise reject (RGEMsgBadSignature). Gated on the per-subscriber
-    -- delivered_roster_version so it fires only when behind. A roster delivered
-    -- by the ordinary broadcast does not advance the tracker, so at most one
-    -- redundant (idempotent) roster send can occur per resume.
+    -- Relay: on a subscriber's queue draining, forward the cached roster ahead of
+    -- the resumed backlog, so it holds the privileged set before the events it verifies.
     sendRosterCatchUp :: GroupInfo -> GroupMember -> CM ()
-    sendRosterCatchUp gInfo m = when (isUserGrpFwdRelay gInfo) $ do
-      cur <- withStore' $ \db -> getGroupRosterVersion db (groupId' gInfo)
-      forM_ cur $ \c -> do
-        delivered <- withStore' $ \db -> getDeliveredRosterVersion db (groupMemberId' m)
-        when (maybe True (< c) delivered) $ do
-          forwardCachedRosterToMember user gInfo m
-          withStore' $ \db -> setDeliveredRosterVersion db (groupMemberId' m) c
+    sendRosterCatchUp gInfo m = when (isUserGrpFwdRelay gInfo) $ forwardCachedRoster user gInfo m
 
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
     -- we could save command records only for agent APIs we process continuations for (INV)
@@ -2982,29 +2968,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _ _) msgScope_ msg brokerTs = do
       let fromRelay = useRelays' gInfo && isRelay m
-      -- The relay no longer gates privileged dissemination; for a privileged
-      -- role we instead require a roster-established record (see below). For
-      -- non-relay groups the sender must still be an admin to introduce.
       unless fromRelay $ checkHostRole m memRole
       if sameMemberId memId (membership gInfo)
         then pure Nothing
         else
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
+            -- privileged members are roster-established; the relay only disseminates
+            -- their profile, never their key/role (those come from the owner roster)
             Right unknownMember@GroupMember {memberStatus = GSMemUnknown}
-              -- Privileged role: key/role are owner-established by the roster.
-              -- Accept this dissemination only as a PROFILE update for a member the
-              -- roster already established with that role; never set key/role here.
               | fromRelay && isRosterRole memRole ->
                   if memberRole' unknownMember == memRole
-                    then announceUpdate unknownMember $ \db -> updateRosterMemberProfileAnnounced db vr user m unknownMember memInfo initialStatus
+                    then do
+                      updatedMember <- withStore $ \db -> updateRosterMemberProfileAnnounced db vr user m unknownMember memInfo initialStatus
+                      announceUnknownMember unknownMember updatedMember
                     else messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
-              | otherwise -> announceUpdate unknownMember $ \db -> updateUnknownMemberAnnounced db vr user m unknownMember memInfo initialStatus
+            Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
+              (updatedMember, gInfo') <- withStore $ \db -> do
+                updatedMember <- updateUnknownMemberAnnounced db vr user m unknownMember memInfo initialStatus
+                gInfo' <-
+                  if memberPending updatedMember
+                    then liftIO $ increaseGroupMembersRequireAttention db user gInfo
+                    else pure gInfo
+                pure (updatedMember, gInfo')
+              gInfo'' <- updatePublicGroupData user gInfo'
+              toView $ CEvtUnknownMemberAnnounced user gInfo'' m unknownMember updatedMember
+              memberAnnouncedToView updatedMember gInfo''
+              pure $ deliveryJobScope updatedMember
             Right _
               | useRelays' gInfo -> logInfo "x.grp.mem.new: member already created via another relay" $> Nothing
               | otherwise -> messageError "x.grp.mem.new error: member already exists" $> Nothing
             Left _
-              -- No record: a privileged member absent from the roster is a relay
-              -- conjuring a moderator — reject. Non-privileged members create as usual.
+              -- a privileged member absent from the roster is a relay conjuring a moderator
               | fromRelay && isRosterRole memRole -> messageError "x.grp.mem.new: privileged member not established by roster" $> Nothing
               | otherwise -> do
                   (newMember, gInfo') <- withStore $ \db -> do
@@ -3018,15 +3012,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   memberAnnouncedToView newMember gInfo''
                   pure $ deliveryJobScope newMember
       where
-        announceUpdate unknownMember updateFn = do
-          (updatedMember, gInfo') <- withStore $ \db -> do
-            updatedMember <- updateFn db
-            gInfo' <-
-              if memberPending updatedMember
-                then liftIO $ increaseGroupMembersRequireAttention db user gInfo
-                else pure gInfo
-            pure (updatedMember, gInfo')
-          gInfo'' <- updatePublicGroupData user gInfo'
+        -- roster members can't be pending, so no members-require-attention update
+        announceUnknownMember unknownMember updatedMember = do
+          gInfo'' <- updatePublicGroupData user gInfo
           toView $ CEvtUnknownMemberAnnounced user gInfo'' m unknownMember updatedMember
           memberAnnouncedToView updatedMember gInfo''
           pure $ deliveryJobScope updatedMember
@@ -3067,10 +3055,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   messageError "x.grp.mem.intro ignored: member already exists"
             Left _
               | useRelays' gInfo -> do
-                  -- Privileged keys (owner from the link, moderator/admin from the
-                  -- owner-signed roster) must never come from a relay intro. Drop the
-                  -- relay-asserted key for any role above member; the roster (forwarded
-                  -- on join before intros) is the trust path for moderators/admins.
+                  -- drop the relay-asserted key for privileged roles; their keys come from the roster, not intros
                   let memInfo' = case memInfo of
                         MemberInfo mId mRole v p _
                           | mRole > GRMember -> MemberInfo mId mRole v p Nothing
@@ -3165,16 +3150,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView CEvtMemberRole {user, groupInfo = gInfo'', byMember = m', member = member {memberRole = memRole}, fromRole, toRole = memRole, msgSigned}
               pure $ memberEventDeliveryScope member
 
-    -- Owner-signed privileged roster. Returns the broadcast scope for the relay
-    -- (which forwards the verbatim signed roster to current members); the member
-    -- path discards it. The relay also reaches this via the main dispatch; the
-    -- member reaches it via the forwarded dispatch (xGrpMsgForward).
     xGrpRoster :: MsgEncodingI e => GroupInfo -> GroupMember -> GroupRoster -> VerifiedMsg e -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpRoster gInfo author roster verifiedMsg brokerTs
-      -- CRUX: only an owner (whose key comes from the link, never the relay) may
-      -- sign a roster. The relay chooses fwdSender / the connection sender, so
-      -- without this assertion a relay could route a roster as a member whose key
-      -- it controls and the signature would verify against that fabricated member.
+      -- only an owner may sign a roster; otherwise a relay could route it as a member whose key it controls
       | memberRole' author /= GROwner = messageError "x.grp.roster: not signed by an owner" $> Nothing
       | isUserGrpFwdRelay gInfo = relayApplyRoster
       | otherwise = Nothing <$ memberApplyRoster
@@ -3183,58 +3161,42 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         validRoster = validateGroupRoster roster
         groupId = groupId' gInfo
         relayApplyRoster :: CM (Maybe DeliveryJobScope)
-        relayApplyRoster = do
-          cached <- withStore' $ \db -> getGroupRosterVersion db groupId
-          case cached of
-            Just c | newVer <= c -> pure Nothing -- rollback (lower) or duplicate (equal): no-op
-            _ -> case signedMsgBytes of
-              Nothing -> messageError "x.grp.roster: relay received unsigned roster" $> Nothing
-              Just bytes -> do
-                withStore' $ \db -> setCachedGroupRoster db groupId newVer bytes
-                applyRosterRecords False -- relay: key apply is authoritative, no UI surface
-                -- Always broadcast on a strict version bump: self-healing, and
-                -- demotions (drop from roster) must reach members. Driven here
-                -- because this is the only moment the relay holds the new roster.
+        relayApplyRoster
+          | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than cached version"
+          | otherwise = case verifiedMsg of
+              VMSigned _ sm _ -> do
+                withStore' $ \db -> setCachedGroupRoster db groupId newVer (groupMemberId' author) brokerTs sm
+                applyRosterRecords
+                -- always broadcast on a bump: self-healing, and demotions must reach members
                 pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+              VMUnsigned _ -> Nothing <$ messageWarning "x.grp.roster: unsigned roster"
         memberApplyRoster :: CM ()
-        memberApplyRoster = do
-          highest <- withStore' $ \db -> getGroupRosterVersion db groupId
-          case highest of
-            Just h | newVer < h -> messageError "x.grp.roster: version older than accepted (replay)"
-            _ -> do
-              applyRosterRecords True -- member: trust-on-first-use, surface key conflicts
+        memberApplyRoster
+          | maybe False (newVer <) (rosterVersion gInfo) = messageWarning "x.grp.roster: older than accepted version"
+          | otherwise = do
+              applyRosterRecords
               withStore' $ \db -> setGroupRosterVersion db groupId newVer
-        applyRosterRecords :: Bool -> CM ()
-        applyRosterRecords tofu = do
+        applyRosterRecords :: CM ()
+        applyRosterRecords = do
           let GroupRoster {roster = entries} = validRoster
               rosterIds = map (\RosterMember {memberId} -> memberId) entries
-          mapM_ (applyRosterEntry tofu) entries
-          -- latest-wins: members formerly privileged but absent from the new
-          -- roster revert to the joiner default.
-          -- TODO [section 2] replace unknownMemberRole with joinerRoleFor when added.
+          mapM_ applyRosterEntry entries
+          -- absent privileged members revert to the joiner default
           defaultRole <- unknownMemberRole gInfo
           currentPriv <- withStore' $ \db -> getGroupModerators db vr user gInfo
           forM_ currentPriv $ \m ->
             when (isRosterRole (memberRole' m) && memberId' m `notElem` rosterIds) $
               withStore' $ \db -> updateGroupMemberRole db user m defaultRole
-        applyRosterEntry :: Bool -> RosterMember -> CM ()
-        applyRosterEntry tofu RosterMember {memberId, name, key = MemberKey pubKey, role} =
+        applyRosterEntry :: RosterMember -> CM ()
+        applyRosterEntry RosterMember {memberId, name, key = MemberKey pubKey, role} =
           withStore' (\db -> runExceptT $ getCreateUnknownGMByMemberId db vr user gInfo memberId name role True) >>= \case
             Right (Just (m@GroupMember {groupMemberId}, _created)) ->
               case memberPubKey m of
                 Just k
-                  | k == pubKey -> setRole m
-                  | tofu -> surfaceSuspiciousRosterKey m -- reject entry, keep the pinned key
-                  | otherwise -> setKey groupMemberId >> setRole m -- relay: authoritative overwrite
-                Nothing -> setKey groupMemberId >> setRole m -- first sight (TOFU pin)
-              where
-                setKey gmId = withStore' $ \db -> setGroupMemberPubKey db gmId pubKey
-                setRole m' = unless (memberRole' m' == role) $ withStore' $ \db -> updateGroupMemberRole db user m' role
+                  | k == pubKey -> unless (memberRole' m == role) $ withStore' $ \db -> updateGroupMemberRole db user m role
+                  | otherwise -> messageWarning "x.grp.roster: member key conflict, keeping trusted key"
+                Nothing -> withStore' $ \db -> setGroupMemberKeyRole db groupMemberId pubKey role
             _ -> messageError "x.grp.roster: could not get or create member record"
-        surfaceSuspiciousRosterKey :: GroupMember -> CM ()
-        surfaceSuspiciousRosterKey m = do
-          (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-          void $ createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGESuspiciousRosterKey) (Just brokerTs)
         signedMsgBytes :: Maybe ByteString
         signedMsgBytes = case verifiedMsg of
           VMSigned _ sm _ -> Just $ smpEncode sm
@@ -3868,10 +3830,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       if null senders
                         then pure (body, [], [], [])
                         else do
-                          -- All members' profiles disseminate, including moderators/admins:
-                          -- their key/role is owner-established via the roster (xGrpMemNew
-                          -- accepts a privileged XGrpMemNew only as a profile update for a
-                          -- roster-established member), so the profile sidecar is safe.
+                          -- all members' profiles disseminate; privileged key/role come from the roster, not here
                           let (encoderErrs, validLabeled) =
                                 partitionEithers
                                   [ (\bs -> (s, bs)) <$> encodeMemberNew vr gInfo s

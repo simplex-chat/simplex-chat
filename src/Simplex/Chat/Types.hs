@@ -487,6 +487,7 @@ data GroupInfo = GroupInfo
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
+    rosterVersion :: Maybe Int,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupKeys :: Maybe GroupKeys

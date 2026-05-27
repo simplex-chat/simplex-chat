@@ -353,27 +353,21 @@ data GrpMsgForward = GrpMsgForward
   }
   deriving (Eq, Show)
 
--- | Owner-signed snapshot of the privileged (moderator/admin) set for a
--- relay-mediated group. Owners are never included (their keys come from the
--- link). 'version' is monotonic from 0; recipients treat the highest valid
--- version as authoritative (latest-wins, see Subscriber.xGrpRoster).
+-- | Owner-signed snapshot of the privileged (moderator/admin) set; owners are
+-- not included, their keys come from the link.
 data GroupRoster = GroupRoster
-  { version :: Word32,
+  { version :: Int,
     roster :: [RosterMember]
   }
   deriving (Eq, Show)
 
--- | One privileged member in a roster. 'name' is display-only (avoids "unknown
--- member" rows). 'role' is validated to {GRModerator, GRAdmin} on receipt
--- (validateGroupRoster); the key is trust-on-first-use pinned per memberId.
 data RosterMember = RosterMember
   { memberId :: MemberId,
     name :: Text,
-    key :: MemberKey,
+    key :: MemberKey, -- trust-on-first-use pinned per memberId
     role :: GroupMemberRole
   }
   deriving (Eq, Show)
-
 
 instance Encoding FwdSender where
   smpEncode = \case
@@ -796,8 +790,6 @@ newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
 
 $(JQ.deriveJSON defaultJSON ''RosterMember)
 
-$(JQ.deriveJSON defaultJSON ''GroupRoster)
-
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
 $(JQ.deriveJSON defaultJSON ''LinkOwnerSig)
@@ -898,12 +890,7 @@ maxCompressedMsgLength = 13380
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
 
--- | Cap on the privileged set (moderators + admins) so the owner-signed roster
--- (XGrpRoster) always fits one message and never paginates (Section 1.4).
--- A worst-case compact {memberId, name, key, role} entry is ~215 B JSON;
--- (maxEncodedMsgLength minus signature + wrapper overhead) / 215 leaves ample
--- margin at 64. Enforced at promotion time in APIMembersRole. Owners are not
--- counted (their keys come from the link, not the roster).
+-- Bound on moderators + admins so the signed roster always fits one message.
 maxGroupRosterSize :: Int
 maxGroupRosterSize = 64
 
@@ -1379,7 +1366,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
-      XGrpRoster_ -> XGrpRoster <$> JT.parseEither parseJSON (J.Object params)
+      XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "roster")
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
@@ -1451,9 +1438,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpRoster gr -> case toJSON gr of
-        J.Object obj -> obj
-        _ -> JM.empty
+      XGrpRoster GroupRoster {version, roster} -> o ["version" .= version, "roster" .= roster]
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where
           encodeFwdSender = \case
@@ -1510,11 +1495,7 @@ data ContactShortLinkData = ContactShortLinkData
   deriving (Show)
 
 data PublicGroupData = PublicGroupData
-  { publicMemberCount :: Int64,
-    -- | Current privileged-roster version, anchored in owner-controlled link
-    -- data so a joiner can detect a relay serving a stale roster. Optional for
-    -- backward compatibility (omitNothingFields); detection only, not a gate.
-    rosterVersion :: Maybe Word32
+  { publicMemberCount :: Int64
   }
   deriving (Eq, Show)
 

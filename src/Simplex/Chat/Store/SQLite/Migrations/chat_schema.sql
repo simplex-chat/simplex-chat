@@ -180,7 +180,11 @@ CREATE TABLE groups(
   relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
   relay_inactive_at TEXT,
   roster_version INTEGER,
-  roster_msg BLOB, -- received
+  roster_msg_body BLOB,
+  roster_msg_chat_binding TEXT,
+  roster_msg_signatures BLOB,
+  roster_sending_owner_gm_id INTEGER,
+  roster_broker_ts TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -225,7 +229,6 @@ CREATE TABLE group_members(
   relay_link BLOB,
   member_pub_key BLOB,
   removed_at TEXT,
-  delivered_roster_version INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

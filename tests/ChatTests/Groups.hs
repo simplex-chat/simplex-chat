@@ -9533,8 +9533,12 @@ testChannelModeratorActionViaRoster ps =
             cath ##> "/block for all #team dan"
             cath <## "#team: you blocked dan (signed)"
             bob <## "#team: cath blocked dan (signed)"
+            -- eve learned cath (name, key, moderator role) only from the roster;
+            -- cath's profile arrives with the forwarded block, then the block
+            -- verifies against cath's roster key. "(signed)" => eve verified it.
+            eve <## "#team: unknown member cath updated to cath"
+            eve <## "#team: bob introduced cath (Catherine) in the channel"
             eve <## "#team: cath blocked dan (signed)"
-            eve #$> ("/_get chat #1 count=1", chat, [(0, "blocked dan (signed)")])
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
