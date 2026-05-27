@@ -67,7 +67,6 @@ data Format
   | Unknown {json :: J.Value}
   deriving (Eq, Show)
 
-
 mentionedNames :: MarkdownList -> [Text]
 mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
   where

@@ -5141,12 +5141,12 @@ public enum SimplexLinkType: String, Decodable, Hashable {
 
 public struct SimplexNameInfo: Decodable, Equatable, Hashable {
     public var nameType: SimplexNameType
-    public var namespace: SimplexNamespace
+    public var nameTLD: SimplexTLD
     public var domain: String
     public var subDomain: [String]
 }
 
-public enum SimplexNamespace: String, Decodable, Hashable {
+public enum SimplexTLD: String, Decodable, Hashable {
     case simplex
     case testing
     case web

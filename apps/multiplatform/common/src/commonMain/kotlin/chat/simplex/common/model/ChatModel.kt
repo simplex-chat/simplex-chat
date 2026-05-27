@@ -4733,13 +4733,13 @@ enum class SimplexLinkType(val linkType: String) {
 @Serializable
 data class SimplexNameInfo(
   val nameType: SimplexNameType,
-  val namespace: SimplexNamespace,
+  val nameTLD: SimplexTLD,
   val domain: String,
   val subDomain: List<String>
 )
 
 @Serializable
-enum class SimplexNamespace {
+enum class SimplexTLD {
   @SerialName("simplex") simplex,
   @SerialName("testing") testing,
   @SerialName("web") web

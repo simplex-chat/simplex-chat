@@ -5544,20 +5544,6 @@ displayNameP_ = quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ',')
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 mkValidName :: String -> String
--- mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst . foldl' addChar ("", '\NUL')
---   where
---     addChar (r, prev) c = if validChar then (c' : r, c') else (r, prev)
---       where
---         c' = if isSpace c then ' ' else c
---         validChar
---           | c `elem` prohibited = False
---           | prev == '\NUL' = c' > ' ' && validFirstChar
---           | isSpace prev = validFirstChar || c' == '-' || c' == '_'
---           | otherwise = validFirstChar || isSymbol c' || c' == ' ' || isMark c' || c' == '-' || c' == '_' || c == '&'
---         validFirstChar = isLetter c' || isNumber c'
---         prohibited = ".,/\\(){}!?:;#@'\"`~%^*" :: String
-
-
 mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
     fst3 (x, _, _) = x
