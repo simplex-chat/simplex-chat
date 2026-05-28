@@ -431,7 +431,7 @@ profileContactLink :: UserContactLink -> ConnLinkContact
 profileContactLink UserContactLink {connLinkContact = CCLink cReq sLink} = maybe (CLFull cReq) CLShort sLink
 
 data GroupLinkInfo = GroupLinkInfo
-  { groupId :: GroupId,
+  { glGroupId :: GroupId,
     memberRole :: GroupMemberRole
   }
   deriving (Show)
@@ -479,7 +479,7 @@ getUserContactLinkById db userId userContactLinkId =
 
 toGroupLinkInfo :: (Maybe GroupId, Maybe GroupMemberRole) -> Maybe GroupLinkInfo
 toGroupLinkInfo (groupId_, mRole_) =
-  (\groupId -> GroupLinkInfo {groupId, memberRole = fromMaybe GRMember mRole_})
+  (\groupId -> GroupLinkInfo {glGroupId = groupId, memberRole = fromMaybe GRMember mRole_})
     <$> groupId_
 
 getGroupLinkInfo :: DB.Connection -> UserId -> GroupId -> IO (Maybe GroupLinkInfo)
