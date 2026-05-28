@@ -134,12 +134,15 @@ struct ComposeState {
     }
 
     var memberMentions: [String: Int64] {
-        let usedMentions: Set<String> = Set(parsedMessage.compactMap { ft in
-            if case let .mention(n) = ft.format { n } else { nil }
-        })
-        return self.mentions
-            .filter { usedMentions.contains($0.key) }
-            .compactMapValues { $0.memberRef?.groupMemberId }
+        var result: [String: Int64] = [:]
+        for ft in parsedMessage {
+            if result.count >= MAX_NUMBER_OF_MENTIONS { break }
+            guard case let .mention(name) = ft.format else { continue }
+            if result[name] != nil { continue }
+            guard let id = self.mentions[name]?.memberRef?.groupMemberId else { continue }
+            result[name] = id
+        }
+        return result
     }
 
     var editing: Bool {

@@ -132,16 +132,15 @@ data class ComposeState(
 
   val memberMentions: Map<String, Long>
     get() {
-      val usedMentions = this.parsedMessage.mapNotNull { (it.format as? Format.Mention)?.memberName }.toSet()
-      return this.mentions.mapNotNull {
-        val memberRef = it.value.memberRef
-
-        if (memberRef != null && it.key in usedMentions) {
-          it.key to memberRef.groupMemberId
-        } else {
-          null
-        }
-      }.toMap()
+      val result = mutableMapOf<String, Long>()
+      for (ft in parsedMessage) {
+        if (result.size >= MAX_NUMBER_OF_MENTIONS) break
+        val name = (ft.format as? Format.Mention)?.memberName ?: continue
+        if (name in result) continue
+        val id = mentions[name]?.memberRef?.groupMemberId ?: continue
+        result[name] = id
+      }
+      return result
     }
 
   val editing: Boolean
