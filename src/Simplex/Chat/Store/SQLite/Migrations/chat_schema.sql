@@ -222,6 +222,7 @@ CREATE TABLE group_members(
   member_relations_vector BLOB,
   relay_link BLOB,
   member_pub_key BLOB,
+  removed_at TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

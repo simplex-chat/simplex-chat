@@ -818,7 +818,8 @@ CREATE TABLE test_chat_schema.group_members (
     index_in_group bigint DEFAULT 0 NOT NULL,
     member_relations_vector bytea,
     relay_link bytea,
-    member_pub_key bytea
+    member_pub_key bytea,
+    removed_at timestamp with time zone
 );
 
 

@@ -30,14 +30,23 @@ suspend fun planAndConnect(
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
-  val link = strHasSingleSimplexLink(shortOrFullLink.trim())
-  if (link?.format is Format.SimplexLink && (link.format as Format.SimplexLink).linkType == SimplexLinkType.relay) {
-    AlertManager.privacySensitive.showAlertMsg(
-      generalGetString(MR.strings.relay_address_alert_title),
-      generalGetString(MR.strings.relay_address_alert_message),
-    )
-    cleanup?.invoke()
-    return CompletableDeferred(false)
+  when (val target = strConnectTarget(shortOrFullLink.trim())) {
+    is ConnectTarget.Name -> {
+      showUnsupportedNameAlert(target.nameInfo)
+      cleanup?.invoke()
+      return CompletableDeferred(false)
+    }
+    is ConnectTarget.Link -> {
+      if (target.linkType == SimplexLinkType.relay) {
+        AlertManager.privacySensitive.showAlertMsg(
+          generalGetString(MR.strings.relay_address_alert_title),
+          generalGetString(MR.strings.relay_address_alert_message),
+        )
+        cleanup?.invoke()
+        return CompletableDeferred(false)
+      }
+    }
+    null -> {}
   }
   connectProgressManager.cancelConnectProgress()
   val inProgress = mutableStateOf(true)
@@ -73,11 +82,8 @@ private suspend fun planAndConnectTask(
   if (!inProgress.value) { return completable }
   if (result != null) {
     val (connectionLink, connectionPlan) = result
-    val link = strHasSingleSimplexLink(shortOrFullLink.trim())
-    val linkText = if (link?.format is Format.SimplexLink)
-      "<br><br><u>${link.format.simplexLinkText}</u>"
-    else
-      ""
+    val target = strConnectTarget(shortOrFullLink.trim())
+    val linkText = if (target is ConnectTarget.Link) "<br><br><u>${target.linkText}</u>" else ""
     when (connectionPlan) {
       is ConnectionPlan.InvitationLink -> when (connectionPlan.invitationLinkPlan) {
         is InvitationLinkPlan.Ok ->
@@ -312,6 +318,33 @@ private suspend fun planAndConnectTask(
             AlertManager.privacySensitive.showAlertMsg(
               generalGetString(MR.strings.channel_temporarily_unavailable),
               generalGetString(MR.strings.channel_no_active_relays_try_later)
+            )
+            cleanup()
+          }
+        }
+        is GroupLinkPlan.UpdateRequired -> {
+          Log.d(TAG, "planAndConnect, .GroupLink, .UpdateRequired")
+          val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
+          if (groupSLinkData != null) {
+            AlertManager.privacySensitive.showOpenChatAlert(
+              profileName = groupSLinkData.groupProfile.displayName,
+              profileFullName = groupSLinkData.groupProfile.fullName,
+              profileImage = {
+                ProfileImage(
+                  size = alertProfileImageSize,
+                  image = groupSLinkData.groupProfile.image,
+                  icon = MR.images.ic_supervised_user_circle_filled
+                )
+              },
+              subtitle = generalGetString(MR.strings.group_link_requires_newer_version),
+              confirmText = null,
+              dismissText = generalGetString(MR.strings.ok),
+              onDismiss = { cleanup() }
+            )
+          } else {
+            AlertManager.privacySensitive.showAlertMsg(
+              generalGetString(MR.strings.app_update_required),
+              generalGetString(MR.strings.group_link_requires_newer_version)
             )
             cleanup()
           }
