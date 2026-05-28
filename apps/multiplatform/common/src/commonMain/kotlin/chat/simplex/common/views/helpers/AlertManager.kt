@@ -75,9 +75,7 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     belowTextContent: @Composable (() -> Unit) = {},
-    // When false, [text] is rendered as a literal AnnotatedString instead of being parsed
-    // through escapedHtmlToAnnotatedString — use this to keep user-controlled content (e.g. a
-    // chat display name) from being interpreted as HTML.
+    // When false, [text] is rendered as literal text — use for user-controlled content.
     parseHtml: Boolean = true,
     buttons: @Composable () -> Unit,
   ) {
@@ -132,8 +130,7 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false,
     hostDevice: Pair<Long?, String>? = null,
-    // See showAlertDialogButtonsColumn — pass false when [text] embeds user-controlled
-    // content that must not be parsed as HTML.
+    // When false, [text] is rendered as literal text — use for user-controlled content.
     parseHtml: Boolean = true,
   ) {
     showAlert {
