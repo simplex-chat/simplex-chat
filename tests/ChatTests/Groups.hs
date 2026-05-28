@@ -270,6 +270,8 @@ chatGroupTests = do
       it "should block member for all (signed)" testChannelBlockMemberSigned
       it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
       it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
+      it "leaving moderator drops from the roster cache" testChannelLeftModeratorDropsFromRoster
+      it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
@@ -9484,6 +9486,12 @@ testChannelBlockMemberSigned ps =
             r2 `shouldStartWith` "blocked"
             r2 `shouldEndWith` "(signed)"
 
+checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
+checkMemberRow cc name expectedRole = do
+  roles <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
+  map (\(Only r) -> r) roles `shouldBe` maybeToList expectedRole
+
 testChannelModeratorActionViaRoster :: HasCallStack => TestParams -> IO ()
 testChannelModeratorActionViaRoster ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -9575,12 +9583,87 @@ testChannelRemovedModeratorRefreshesRoster ps =
               memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
               threadDelay 100000
               checkMemberRow frank "cath" Nothing
-  where
-    checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
-    checkMemberRow cc name expectedRole = do
-      roles <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
-      map (\(Only r) -> r) roles `shouldBe` maybeToList expectedRole
+
+testChannelLeftModeratorDropsFromRoster :: HasCallStack => TestParams -> IO ()
+testChannelLeftModeratorDropsFromRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+              forM_ [cath, dan, eve] $ \member ->
+                memberJoinChannel "team" [bob] [alice] shortLink fullLink member
+              -- promote cath; dan/eve unknown branch silently no-ops, they pick up cath from the roster
+              threadDelay 1000000
+              alice ##> "/mr #team cath moderator"
+              alice <## "#team: you changed the role of cath to moderator (signed)"
+              bob <## "#team: alice changed the role of cath from member to moderator (signed)"
+              cath <## "#team: alice changed your role from member to moderator (signed)"
+              -- cath (moderator) leaves; owner xGrpLeave refreshes the cached roster
+              threadDelay 1000000
+              cath ##> "/leave #team"
+              cath <## "#team: you left the group"
+              cath <## "use /d #team to delete the group"
+              concurrentlyN_
+                [ alice <## "#team: cath left the group (signed)",
+                  bob <## "#team: cath left the group (signed)",
+                  dan <## "#team: cath left the group (signed)",
+                  eve <## "#team: cath left the group (signed)"
+                ]
+              -- frank joins; cached roster (refreshed) has dropped cath
+              threadDelay 1000000
+              memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
+              threadDelay 100000
+              checkMemberRow frank "cath" Nothing
+
+-- Roster updates correctly across role transitions: within roster (mod <-> admin)
+-- and crossing out of roster (admin -> non-roster role).
+testChannelRoleTransitionsUpdateRoster :: HasCallStack => TestParams -> IO ()
+testChannelRoleTransitionsUpdateRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+              forM_ [cath, dan, eve] $ \member ->
+                memberJoinChannel "team" [bob] [alice] shortLink fullLink member
+              -- member -> moderator: dan/eve don't know cath, role event silently skipped;
+              -- the subsequent roster broadcast gives them cath as moderator
+              threadDelay 1000000
+              alice ##> "/mr #team cath moderator"
+              alice <## "#team: you changed the role of cath to moderator (signed)"
+              bob <## "#team: alice changed the role of cath from member to moderator (signed)"
+              cath <## "#team: alice changed your role from member to moderator (signed)"
+              -- moderator -> admin (within roster): dan/eve now know cath, so role event lands cleanly
+              threadDelay 1000000
+              alice ##> "/mr #team cath admin"
+              alice <## "#team: you changed the role of cath to admin (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from moderator to admin (signed)",
+                  cath <## "#team: alice changed your role from moderator to admin (signed)",
+                  dan <## "#team: alice changed the role of cath from moderator to admin (signed)",
+                  eve <## "#team: alice changed the role of cath from moderator to admin (signed)"
+                ]
+              -- admin -> member (crossing out of roster): roster drops cath
+              threadDelay 1000000
+              alice ##> "/mr #team cath member"
+              alice <## "#team: you changed the role of cath to member (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from admin to member (signed)",
+                  cath <## "#team: alice changed your role from admin to member (signed)",
+                  dan <## "#team: alice changed the role of cath from admin to member (signed)",
+                  eve <## "#team: alice changed the role of cath from admin to member (signed)"
+                ]
+              -- frank joins; cath never posted, and isn't in the roster, so frank has no record of her
+              threadDelay 1000000
+              memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
+              threadDelay 100000
+              checkMemberRow frank "cath" Nothing
+
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
