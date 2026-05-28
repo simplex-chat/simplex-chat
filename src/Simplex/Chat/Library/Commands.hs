@@ -2861,6 +2861,8 @@ processChatCommand vr nm = \case
       when (count /= memCount) $ throwChatError CEGroupMemberNotFound
       when (memCount > 1 && anyAdmin) $ throwCmdError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
+      when (useRelays' gInfo && anyPrivilegedRemoved && memberRole' (membership gInfo) /= GROwner) $
+        throwCmdError "only the group owner can remove moderators and admins"
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
       (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing recipients currentMems
@@ -2885,7 +2887,6 @@ processChatCommand vr nm = \case
       when (useRelays' gInfo && anyPrivilegedRemoved) $ bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
-      
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
       selectMembers gmIds = foldl' addMember (0, [], [], [], [], GRObserver, False, False)
         where
