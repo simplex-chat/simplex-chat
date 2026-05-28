@@ -701,10 +701,10 @@ func rejectContactRequestAlert(_ contactRequestId: Int64) -> Alert {
 func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
     Alert(
         title: Text("Delete pending connection?"),
-        message:
-            contactConnection.initiated
-            ? Text("The contact you shared this link with will NOT be able to connect!")
-            : Text("The connection you accepted will be cancelled!"),
+        message: Text(contactConnection.displayName) + Text(verbatim: "\n\n")
+            + (contactConnection.initiated
+                ? Text("The contact you shared this link with will NOT be able to connect!")
+                : Text("The connection you accepted will be cancelled!")),
         primaryButton: .destructive(Text("Delete")) {
             Task {
                 do {
