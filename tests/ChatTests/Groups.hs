@@ -20,7 +20,7 @@ import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe, isJust, listToMaybe, maybeToList)
+import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime)
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)

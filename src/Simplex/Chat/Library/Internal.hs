@@ -1238,7 +1238,7 @@ validateGroupRoster GroupRoster {version, roster = entries} =
 
 -- Privileged members without a known key are skipped (recipients can't verify them).
 buildGroupRoster :: Int -> [GroupMember] -> GroupRoster
-buildGroupRoster version mods = GroupRoster {version, roster = mapMaybe rosterMember mods}
+buildGroupRoster ver mods = GroupRoster {version = ver, roster = mapMaybe rosterMember mods}
   where
     rosterMember m@GroupMember {memberId, memberPubKey, memberRole}
       | isRosterRole memberRole = (\k -> RosterMember {memberId, name = memberShortenedName m, key = MemberKey k, role = memberRole}) <$> memberPubKey
