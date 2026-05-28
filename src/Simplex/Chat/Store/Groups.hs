@@ -172,7 +172,7 @@ module Simplex.Chat.Store.Groups
     createLinkOwnerMember,
     updatePreparedChannelMember,
     updateUnknownMemberAnnounced,
-    updateRosterMemberProfileAnnounced,
+    updateRosterMemberAnnounced,
     updateUserMemberProfileSentAt,
     setGroupCustomData,
     setGroupUIThemes,
@@ -3195,8 +3195,8 @@ updateUnknownMemberAnnounced db vr user@User {userId} invitingMember unknownMemb
 
 -- Like updateUnknownMemberAnnounced but preserves member_role and member_pub_key
 -- (roster-established for moderators/admins; the dissemination carries only the profile).
-updateRosterMemberProfileAnnounced :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMember -> MemberInfo -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-updateRosterMemberProfileAnnounced db vr user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} status = do
+updateRosterMemberAnnounced :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMember -> MemberInfo -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
+updateRosterMemberAnnounced db vr user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} status = do
   _ <- updateMemberProfile db user unknownMember profile
   currentTs <- liftIO getCurrentTime
   liftIO $

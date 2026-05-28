@@ -1120,7 +1120,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         checkSndInlineFTComplete conn msgId
         updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ do
-          sendRosterCatchUp gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ forwardCachedRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       SWITCH qd phase cStats -> do
         toView $ CEvtGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -1218,7 +1218,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ do
-          sendRosterCatchUp gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ forwardCachedRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
@@ -1655,11 +1655,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           toView $ CEvtConnectionInactive connEntity False
           pure True
         else pure False
-
-    -- Relay: on a subscriber's queue draining, forward the cached roster ahead of
-    -- the resumed backlog, so it holds the privileged set before the events it verifies.
-    sendRosterCatchUp :: GroupInfo -> GroupMember -> CM ()
-    sendRosterCatchUp gInfo m = when (isUserGrpFwdRelay gInfo) $ forwardCachedRoster user gInfo m
 
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
     -- we could save command records only for agent APIs we process continuations for (INV)
@@ -2979,7 +2974,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               | fromRelay && isRosterRole memRole ->
                   if memberRole' unknownMember == memRole
                     then do
-                      updatedMember <- withStore $ \db -> updateRosterMemberProfileAnnounced db vr user m unknownMember memInfo initialStatus
+                      updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db vr user m unknownMember memInfo initialStatus
                       announceUnknownMember unknownMember updatedMember
                     else messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
             Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
