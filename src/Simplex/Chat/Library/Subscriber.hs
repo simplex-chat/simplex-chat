@@ -3177,29 +3177,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let GroupRoster {roster = entries} = validRoster
               rosterIds = map (\RosterMember {memberId} -> memberId) entries
           defaultRole <- unknownMemberRole gInfo
-          warnings <- withStore' $ \db -> do
-            warnings <- forM entries (applyRosterEntryDB db)
+          conflicts <- withStore $ \db -> do
+            conflicts <- catMaybes <$> mapM (applyRosterEntryDB db) entries
             -- absent privileged members revert to the joiner default
-            currentPriv <- getGroupRosterMembers db vr user gInfo
-            forM_ currentPriv $ \m ->
+            currentPriv <- liftIO $ getGroupRosterMembers db vr user gInfo
+            liftIO $ forM_ currentPriv $ \m ->
               when (memberId' m `notElem` rosterIds) $
                 updateGroupMemberRole db user m defaultRole
-            pure warnings
-          sequence_ warnings
-        applyRosterEntryDB :: DB.Connection -> RosterMember -> IO (CM ())
+            pure conflicts
+          forM_ conflicts $ \mid' ->
+            messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode mid')
+        applyRosterEntryDB :: DB.Connection -> RosterMember -> ExceptT StoreError IO (Maybe MemberId)
         applyRosterEntryDB db RosterMember {memberId, name, key = MemberKey pubKey, role} =
-          runExceptT (getCreateUnknownGMByMemberId db vr user gInfo memberId name role True) >>= \case
-            Right (Just (m, _created)) ->
-              case memberPubKey m of
-                Just k
-                  | k == pubKey -> do
-                      unless (memberRole' m == role) $ updateGroupMemberRole db user m role
-                      pure (pure ())
-                  | otherwise -> pure (messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode memberId))
-                Nothing -> do
-                  setGroupMemberKeyRole db m pubKey role
-                  pure (pure ())
-            _ -> pure (messageError $ "x.grp.roster: could not get or create member record, memberId=" <> safeDecodeUtf8 (strEncode memberId))
+          getCreateUnknownGMByMemberId db vr user gInfo memberId name role True >>= \case
+            Just (m, _created) -> case memberPubKey m of
+              Just k
+                | k == pubKey -> Nothing <$ liftIO (unless (memberRole' m == role) $ updateGroupMemberRole db user m role)
+                | otherwise -> pure (Just memberId)
+              Nothing -> Nothing <$ liftIO (setGroupMemberKeyRole db m pubKey role)
+            Nothing -> pure Nothing
         signedMsgBytes :: Maybe ByteString
         signedMsgBytes = case verifiedMsg of
           VMSigned _ sm _ -> Just $ smpEncode sm
