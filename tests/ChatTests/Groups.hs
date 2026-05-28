@@ -9525,11 +9525,11 @@ testChannelModeratorActionViaRoster ps =
               cath <## "#team: you blocked dan (signed)"
               bob <## "#team: cath blocked dan (signed)"
               alice <## "#team: cath blocked dan (signed)"
-              eve <##. "#team: unknown member cath"
-              eve <##. "#team: bob introduced cath"
+              eve <## "#team: unknown member cath updated to cath"
+              eve <## "#team: bob introduced cath (Catherine) in the channel"
               eve <## "#team: cath blocked dan (signed)"
-              dan <##. "#team: unknown member cath"
-              dan <##. "#team: bob introduced cath"
+              dan <## "#team: unknown member cath updated to cath"
+              dan <## "#team: bob introduced cath (Catherine) in the channel"
 
               -- frank joins after the roster update; cached roster gives him cath as moderator.
               -- both alice (owner) and cath (mod) receive XGrpMemNew(frank) via introduceInChannel
@@ -9567,13 +9567,13 @@ testChannelRemovedModeratorRefreshesRoster ps =
               bob <## "#team: alice removed cath from the group (signed)"
               cath <## "#team: alice removed you from the group (signed)"
               cath <## "use /d #team to delete the group"
-              dan .<##. ("#team: alice removed cath", "(signed)")
-              eve .<##. ("#team: alice removed cath", "(signed)")
+              dan <## "#team: alice removed cath from the group (signed)"
+              eve <## "#team: alice removed cath from the group (signed)"
 
               -- frank joins after the removal; cached roster has dropped cath
               threadDelay 1000000
               memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
-              threadDelay 500000
+              threadDelay 100000
               checkMemberRow frank "cath" Nothing
   where
     checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()

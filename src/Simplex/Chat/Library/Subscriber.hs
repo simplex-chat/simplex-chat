@@ -2981,18 +2981,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       memberAnnouncedToView updatedMember gInfo'
                       pure $ deliveryJobScope updatedMember
                     else messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
-            Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
-              (updatedMember, gInfo') <- withStore $ \db -> do
-                updatedMember <- updateUnknownMemberAnnounced db vr user m unknownMember memInfo initialStatus
-                gInfo' <-
-                  if memberPending updatedMember
-                    then liftIO $ increaseGroupMembersRequireAttention db user gInfo
-                    else pure gInfo
-                pure (updatedMember, gInfo')
-              gInfo'' <- updatePublicGroupData user gInfo'
-              toView $ CEvtUnknownMemberAnnounced user gInfo'' m unknownMember updatedMember
-              memberAnnouncedToView updatedMember gInfo''
-              pure $ deliveryJobScope updatedMember
+              | otherwise -> do
+                  (updatedMember, gInfo') <- withStore $ \db -> do
+                    updatedMember <- updateUnknownMemberAnnounced db vr user m unknownMember memInfo initialStatus
+                    gInfo' <-
+                      if memberPending updatedMember
+                        then liftIO $ increaseGroupMembersRequireAttention db user gInfo
+                        else pure gInfo
+                    pure (updatedMember, gInfo')
+                  gInfo'' <- updatePublicGroupData user gInfo'
+                  toView $ CEvtUnknownMemberAnnounced user gInfo'' m unknownMember updatedMember
+                  memberAnnouncedToView updatedMember gInfo''
+                  pure $ deliveryJobScope updatedMember
             Right _
               | useRelays' gInfo -> logInfo "x.grp.mem.new: member already created via another relay" $> Nothing
               | otherwise -> messageError "x.grp.mem.new error: member already exists" $> Nothing
