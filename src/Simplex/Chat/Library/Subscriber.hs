@@ -3176,9 +3176,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           warnings <- withStore' $ \db -> do
             warnings <- forM entries (applyRosterEntryDB db)
             -- absent privileged members revert to the joiner default
-            currentPriv <- getGroupModerators db vr user gInfo
+            currentPriv <- getGroupModsNoOwners db vr user gInfo
             forM_ currentPriv $ \m ->
-              when (isRosterRole (memberRole' m) && memberId' m `notElem` rosterIds) $
+              when (memberId' m `notElem` rosterIds) $
                 updateGroupMemberRole db user m defaultRole
             pure warnings
           sequence_ warnings

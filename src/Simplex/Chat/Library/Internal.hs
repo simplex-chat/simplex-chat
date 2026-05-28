@@ -2143,7 +2143,7 @@ bumpAndBroadcastRoster user gInfo
       let rosterVer = maybe 0 (+ 1) (rosterVersion gInfo)
       (relays, roster) <- withStore' $ \db -> do
         relays <- getGroupRelayMembers db vr user gInfo
-        mods <- getGroupModerators db vr user gInfo
+        mods <- getGroupModsNoOwners db vr user gInfo
         setGroupRosterVersion db gInfo rosterVer
         pure (relays, buildGroupRoster rosterVer mods)
       forM_ (L.nonEmpty relays) $ \relays' ->
@@ -2154,7 +2154,7 @@ sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
 sendGroupRosterToRelay user gInfo relayMember =
   forM_ (rosterVersion gInfo) $ \rosterVer -> do
     vr <- chatVersionRange
-    mods <- withStore' $ \db -> getGroupModerators db vr user gInfo
+    mods <- withStore' $ \db -> getGroupModsNoOwners db vr user gInfo
     void $ sendGroupMessage' user gInfo [relayMember] (XGrpRoster (buildGroupRoster rosterVer mods))
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)

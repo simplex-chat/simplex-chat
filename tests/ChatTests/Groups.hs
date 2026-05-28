@@ -9487,11 +9487,6 @@ testChannelBlockMemberSigned ps =
             r2 `shouldStartWith` "blocked"
             r2 `shouldEndWith` "(signed)"
 
--- End-to-end validation of the owner-signed roster: a member promoted to
--- moderator performs a SIGNED administrative action (block), and another member
--- who learned that moderator's key, name, and role ONLY from the roster (never
--- from a relay-asserted introduction) verifies and honors it. Without the
--- roster, eve would have no trusted key for cath and would reject the block.
 testChannelModeratorActionViaRoster :: HasCallStack => TestParams -> IO ()
 testChannelModeratorActionViaRoster ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -9539,8 +9534,6 @@ testChannelModeratorActionViaRoster ps =
             dan <##. "#team: unknown member cath"
             dan <##. "#team: bob introduced cath"
 
--- Removing a moderator triggers anyPrivilegedRemoved → bumpAndBroadcastRoster on the
--- owner, which refreshes the relay's cached roster (the broadcast is silent on members).
 testChannelRemovedModeratorRefreshesRoster :: HasCallStack => TestParams -> IO ()
 testChannelRemovedModeratorRefreshesRoster ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
