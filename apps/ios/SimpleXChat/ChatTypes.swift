@@ -5104,6 +5104,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case uri
     case hyperLink(showText: String?, linkUri: String)
     case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case simplexName(nameInfo: SimplexNameInfo)
     case command(commandStr: String)
     case mention(memberName: String)
     case email
@@ -5136,6 +5137,24 @@ public enum SimplexLinkType: String, Decodable, Hashable {
         case .relay: return NSLocalizedString("SimpleX relay address", comment: "simplex link type")
         }
     }
+}
+
+public struct SimplexNameInfo: Decodable, Equatable, Hashable {
+    public var nameType: SimplexNameType
+    public var nameTLD: SimplexTLD
+    public var domain: String
+    public var subDomain: [String]
+}
+
+public enum SimplexTLD: String, Decodable, Hashable {
+    case simplex
+    case testing
+    case web
+}
+
+public enum SimplexNameType: String, Decodable, Hashable {
+    case publicGroup
+    case contact
 }
 
 public enum FormatColor: String, Decodable, Hashable {

@@ -5547,17 +5547,25 @@ mkValidName :: String -> String
 mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
     fst3 (x, _, _) = x
-    addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
+    addChar (r, prev, punct) c' = if validChar then (c : r, c, punct') else (r, prev, punct)
       where
-        c' = if isSpace c then ' ' else c
+        c = if isSpace c' then ' ' else c'
+        cat = generalCategory c
+        isPunct = case cat of
+          ConnectorPunctuation -> True
+          DashPunctuation -> True
+          OtherPunctuation -> True
+          _ -> False
         punct'
-          | isPunctuation c = punct + 1
-          | isSpace c = punct
+          | isPunct = punct + 1
+          | c == ' ' = punct
           | otherwise = 0
         validChar
-          | c == '\'' = False
-          | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
-          | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
-          | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
-          | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
-        validFirstChar = isLetter c || isNumber c || isSymbol c
+          | c `elem` prohibited = False
+          | prev == '\NUL' = c > ' ' && validFirstNameChar
+          | prev == ' ' = validFirstChar || (punct == 0 && isPunct)
+          | punct > 0 = validFirstChar || c == ' '
+          | otherwise = validFirstChar || c == ' ' || isMark c || isPunct
+        validFirstNameChar = isLetter c || cat == DecimalNumber || cat == OtherSymbol
+        validFirstChar = validFirstNameChar || cat == CurrencySymbol || cat == MathSymbol
+        prohibited = ".,;/\\#@'\"`~" :: String
