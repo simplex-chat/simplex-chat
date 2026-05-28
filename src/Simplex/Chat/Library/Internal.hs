@@ -2135,13 +2135,6 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
--- | Owner: bump the roster version, build the current privileged roster, sign
--- and broadcast it to all relay members (which cache it and forward to current
--- members and future joiners), and persist the new version. Called when
--- APIMembersRole changes the {moderator, admin} set. The owner signature is
--- applied automatically by groupMsgSigning (XGrpRoster requiresSignature).
--- Only the owner can re-sign the roster; sendGroupMessage' is used (not per-member
--- senders) as it applies groupMsgSigning and the roster must be owner-signed.
 bumpAndBroadcastRoster :: User -> GroupInfo -> CM ()
 bumpAndBroadcastRoster user gInfo
   | memberRole' (membership gInfo) /= GROwner = pure ()
