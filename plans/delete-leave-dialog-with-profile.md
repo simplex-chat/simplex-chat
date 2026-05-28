@@ -58,6 +58,9 @@ All eight dialogs go through `AlertManager.shared.showAlertDialog` or
 - `deleteActiveContactDialog` — `views/chat/ChatInfoView.kt:304`
 - `deleteContactWithoutConversation` — `views/chat/ChatInfoView.kt:361`
 - `deleteNotReadyContact` — `views/chat/ChatInfoView.kt:417`
+- `deleteContactConnectionAlert` — `views/chatlist/ChatListNavLinkView.kt:772`
+  (deletes a pending contact connection; takes a `PendingContactConnection`
+  whose `displayName` reflects any custom name the user set)
 
 Call sites (chat-info screens, chat-list swipe / overflow, contact
 list) funnel through these dispatcher functions.
@@ -138,14 +141,21 @@ pure redundancy. Skipped.
 
 ### Multiplatform (Kotlin)
 
-Each of the eight dispatcher functions changes one argument: the
-`text =` parameter passed to `AlertManager.shared.showAlertDialog` /
-`showAlertDialogButtonsColumn`. The new value is the chat name +
-two newlines + the existing message text:
+Each dispatcher function changes one argument: the `text =` parameter
+passed to `AlertManager.shared.showAlertDialog` /
+`showAlertDialogButtonsColumn`. The new value is the chat name + two
+newlines + the existing message text:
 
 ```kotlin
 text = "${chatInfo.displayName}\n\n${generalGetString(messageId)}",
+parseHtml = false,
 ```
+
+`parseHtml = false` is a new boolean parameter added to both alert
+helpers. It bypasses `escapedHtmlToAnnotatedString` so the
+user-controlled `displayName` is rendered as literal text, never
+interpreted as HTML markup (`<b>`, `<font>`, `&`, etc.). The default
+remains `true`; only our delete-confirmation dispatchers opt out.
 
 For `leaveGroupDialog` the source is `groupInfo.displayName` (the
 function already takes `groupInfo` — no signature change needed,

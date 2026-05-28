@@ -14,8 +14,21 @@ One commit per platform.
 ## Commit 1 — Kotlin
 
 **Files touched:**
+- `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/helpers/AlertManager.kt`
+  — adds `parseHtml: Boolean = true` to `showAlertDialog` and
+  `showAlertDialogButtonsColumn`. When `false`, the body text is wrapped
+  as `AnnotatedString` and routed through the existing AnnotatedString
+  `AlertContent` overload, which does NOT call
+  `escapedHtmlToAnnotatedString`. Default stays `true` so existing
+  callers are unaffected.
 - `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/GroupChatInfoView.kt`
 - `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt`
+- `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt`
+  — adds the previously-missed `deleteContactConnectionAlert`
+  dispatcher to the coverage (pending contact connections).
+
+Every Kotlin call site that prepends the chat name sets
+`parseHtml = false`, so `displayName` is never HTML-interpreted.
 
 ### 1.1 — `deleteGroupDialog` (`GroupChatInfoView.kt:182`)
 
