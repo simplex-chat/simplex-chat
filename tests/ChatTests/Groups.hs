@@ -269,6 +269,7 @@ chatGroupTests = do
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
       it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
+      it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
@@ -9514,31 +9515,55 @@ testChannelModeratorActionViaRoster ps =
                   eve <# "#team dan> hello from dan [>>]"
               ]
 
-            -- alice promotes cath to moderator. dan and eve don't know cath, so the
-            -- XGrpMemRole errors on them, but the owner-signed roster (broadcast on
-            -- the set change) silently gives them cath's key + name + moderator role.
+            -- alice promotes cath to moderator. dan and eve don't know cath yet, so
+            -- XGrpMemRole errors for them; the owner-signed roster (broadcast on the
+            -- set change) silently gives them cath's key, name and moderator role.
             threadDelay 1000000
             alice ##> "/mr #team cath moderator"
             alice <## "#team: you changed the role of cath to moderator (signed)"
             bob <## "#team: alice changed the role of cath from member to moderator (signed)"
-            concurrentlyN_
-              [ cath <## "#team: alice changed your role from member to moderator (signed)",
-                dan <## "error: x.grp.mem.role with unknown member ID",
-                eve <## "error: x.grp.mem.role with unknown member ID"
-              ]
-
-            -- cath (moderator) blocks dan. cath's signed XGrpMemRestrict is forwarded
-            -- by the relay; eve verifies it against cath's roster-established key.
+            cath <## "#team: alice changed your role from member to moderator (signed)"
+            dan <##. "error: x.grp.mem.role"
+            eve <##. "error: x.grp.mem.role"
+            -- cath (moderator) blocks dan; eve verifies the signed block against the
+            -- roster-established key ("(signed)" => verified). cath's profile arrives
+            -- prepended to the forwarded block.
             threadDelay 1000000
             cath ##> "/block for all #team dan"
             cath <## "#team: you blocked dan (signed)"
             bob <## "#team: cath blocked dan (signed)"
-            -- eve learned cath (name, key, moderator role) only from the roster;
-            -- cath's profile arrives with the forwarded block, then the block
-            -- verifies against cath's roster key. "(signed)" => eve verified it.
-            eve <## "#team: unknown member cath updated to cath"
-            eve <## "#team: bob introduced cath (Catherine) in the channel"
+            alice <## "#team: cath blocked dan (signed)"
+            eve <##. "#team: unknown member cath"
+            eve <##. "#team: bob introduced cath"
             eve <## "#team: cath blocked dan (signed)"
+            dan <##. "#team: unknown member cath"
+            dan <##. "#team: bob introduced cath"
+
+-- Removing a moderator triggers anyPrivilegedRemoved → bumpAndBroadcastRoster on the
+-- owner, which refreshes the relay's cached roster (the broadcast is silent on members).
+testChannelRemovedModeratorRefreshesRoster :: HasCallStack => TestParams -> IO ()
+testChannelRemovedModeratorRefreshesRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            threadDelay 1000000
+            alice ##> "/mr #team cath moderator"
+            alice <## "#team: you changed the role of cath to moderator (signed)"
+            bob <## "#team: alice changed the role of cath from member to moderator (signed)"
+            cath <## "#team: alice changed your role from member to moderator (signed)"
+            dan <##. "error: x.grp.mem.role"
+            eve <##. "error: x.grp.mem.role"
+            threadDelay 1000000
+            alice ##> "/rm #team cath"
+            alice <## "#team: you removed cath from the group (signed)"
+            bob <## "#team: alice removed cath from the group (signed)"
+            cath <## "#team: alice removed you from the group (signed)"
+            cath <## "use /d #team to delete the group"
+            dan .<##. ("#team: alice removed cath", "(signed)")
+            eve .<##. ("#team: alice removed cath", "(signed)")
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =

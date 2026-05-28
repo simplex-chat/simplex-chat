@@ -9,7 +9,7 @@ import Text.RawString.QQ (r)
 m20260526_group_roster :: Text
 m20260526_group_roster =
   [r|
-ALTER TABLE groups ADD COLUMN roster_version SMALLINT;
+ALTER TABLE groups ADD COLUMN roster_version INTEGER;
 ALTER TABLE groups ADD COLUMN roster_msg_body BYTEA;
 ALTER TABLE groups ADD COLUMN roster_msg_chat_binding TEXT;
 ALTER TABLE groups ADD COLUMN roster_msg_signatures BYTEA;
