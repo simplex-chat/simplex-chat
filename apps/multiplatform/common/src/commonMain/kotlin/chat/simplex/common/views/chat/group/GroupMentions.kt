@@ -102,7 +102,6 @@ fun GroupMentions(
   }
 
   fun messageChanged(msg: ComposeMessage, parsedMsg: List<FormattedText>) {
-    removeUnusedMentions(composeState, parsedMsg)
     val selected = selectedMarkdown(parsedMsg, msg.selection)
 
     if (selected != null) {
@@ -211,7 +210,8 @@ fun GroupMentions(
       },
     contentAlignment = Alignment.BottomStart
   ) {
-    val showMaxReachedBox = composeState.value.mentions.size >= MAX_NUMBER_OF_MENTIONS && isVisible.value && composeState.value.mentions[mentionName.value] == null
+    val activeMentions = composeState.value.parsedMessage.count { it.format is Format.Mention }
+    val showMaxReachedBox = activeMentions >= MAX_NUMBER_OF_MENTIONS && isVisible.value && composeState.value.mentions[mentionName.value] == null
     LazyColumnWithScrollBarNoAppBar(
       Modifier
         .heightIn(max = MAX_PICKER_HEIGHT)
@@ -229,7 +229,7 @@ fun GroupMentions(
           Divider()
         }
         val mentioned = mentionMemberId.value == member.memberId
-        val disabled = composeState.value.mentions.size >= MAX_NUMBER_OF_MENTIONS && !mentioned
+        val disabled = activeMentions >= MAX_NUMBER_OF_MENTIONS && !mentioned
         Row(
           Modifier
             .fillMaxWidth()
@@ -307,20 +307,5 @@ private fun selectedMarkdown(
     null
   } else {
     parsedMsg[i] to TextRange(pos, pos + parsedMsg[i].text.length)
-  }
-}
-
-private fun removeUnusedMentions(composeState: MutableState<ComposeState>, parsedMsg: List<FormattedText>) {
-  val usedMentions = parsedMsg.mapNotNull { ft ->
-    when (ft.format) {
-      is Format.Mention -> ft.format.memberName
-      else -> null
-    }
-  }.toSet()
-
-  if (composeState.value.mentions.keys.any { it !in usedMentions }) {
-    composeState.value = composeState.value.copy(
-      mentions = composeState.value.mentions.filterKeys { it in usedMentions }
-    )
   }
 }

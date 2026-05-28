@@ -131,15 +131,18 @@ data class ComposeState(
   )
 
   val memberMentions: Map<String, Long>
-    get() = this.mentions.mapNotNull {
-      val memberRef = it.value.memberRef
+    get() {
+      val usedMentions = this.parsedMessage.mapNotNull { (it.format as? Format.Mention)?.memberName }.toSet()
+      return this.mentions.mapNotNull {
+        val memberRef = it.value.memberRef
 
-      if (memberRef != null) {
-        it.key to memberRef.groupMemberId
-      } else {
-        null
-      }
-    }.toMap()
+        if (memberRef != null && it.key in usedMentions) {
+          it.key to memberRef.groupMemberId
+        } else {
+          null
+        }
+      }.toMap()
+    }
 
   val editing: Boolean
     get() =
@@ -239,10 +242,11 @@ data class ComposeState(
   }
 
   fun mentionMemberName(name: String): String {
+    val usedMentions = parsedMessage.mapNotNull { (it.format as? Format.Mention)?.memberName }.toSet()
     var n = 0
     var tryName = name
 
-    while (mentions.containsKey(tryName)) {
+    while (tryName in usedMentions) {
       n++
       tryName = "${name}_$n"
     }

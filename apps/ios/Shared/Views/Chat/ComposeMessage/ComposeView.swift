@@ -121,9 +121,12 @@ struct ComposeState {
     }
 
     func mentionMemberName(_ name: String) -> String {
+        let usedMentions: Set<String> = Set(parsedMessage.compactMap { ft in
+            if case let .mention(n) = ft.format { n } else { nil }
+        })
         var n = 0
         var tryName = name
-        while mentions[tryName] != nil {
+        while usedMentions.contains(tryName) {
             n += 1
             tryName = "\(name)_\(n)"
         }
@@ -131,7 +134,12 @@ struct ComposeState {
     }
 
     var memberMentions: [String: Int64] {
-        self.mentions.compactMapValues { $0.memberRef?.groupMemberId }
+        let usedMentions: Set<String> = Set(parsedMessage.compactMap { ft in
+            if case let .mention(n) = ft.format { n } else { nil }
+        })
+        return self.mentions
+            .filter { usedMentions.contains($0.key) }
+            .compactMapValues { $0.memberRef?.groupMemberId }
     }
 
     var editing: Bool {

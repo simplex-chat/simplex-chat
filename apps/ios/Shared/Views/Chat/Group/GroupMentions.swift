@@ -47,7 +47,8 @@ struct GroupMentionsView: View {
                             LazyVStack(spacing: 0) {
                                 ForEach(Array(filtered.enumerated()), id: \.element.wrapped.groupMemberId) { index, member in
                                     let mentioned = mentionMemberId == member.wrapped.memberId
-                                    let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
+                                    let activeMentions = composeState.parsedMessage.reduce(0) { n, ft in if case .mention = ft.format { n + 1 } else { n } }
+                                    let disabled = activeMentions >= MAX_NUMBER_OF_MENTIONS && !mentioned
                                     ZStack(alignment: .bottom) {
                                         memberRowView(member.wrapped, mentioned)
                                             .contentShape(Rectangle())
@@ -124,7 +125,6 @@ struct GroupMentionsView: View {
     }
 
     private func messageChanged(_ msg: String, _ parsedMsg: [FormattedText], _ range: NSRange) {
-        removeUnusedMentions(parsedMsg)
         if let (ft, r) = selectedMarkdown(parsedMsg, range) {
             switch ft.format {
             case let .mention(name):
@@ -167,15 +167,6 @@ struct GroupMentionsView: View {
             return status != .memLeft && status != .memRemoved && status != .memInvited
         })
         .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
-    }
-
-    private func removeUnusedMentions(_ parsedMsg: [FormattedText]) {
-        let usedMentions: Set<String> = Set(parsedMsg.compactMap { ft in
-            if case let .mention(name) = ft.format { name } else { nil }
-        })
-        if composeState.mentions.contains(where: { !usedMentions.contains($0.key) }) {
-            composeState = composeState.copy(mentions: composeState.mentions.filter({ usedMentions.contains($0.key) }))
-        }
     }
 
     private func getCharacter(_ s: String, _ pos: Int) -> (char: String.SubSequence, range: NSRange)? {
