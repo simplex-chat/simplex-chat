@@ -1381,14 +1381,14 @@ toGroupRelay ((groupRelayId, groupMemberId, chatRelayId, address, displayName, f
   let userChatRelay = UserChatRelay {chatRelayId, address, relayProfile = toRelayProfile (displayName, fullName, shortDescr, image), domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
    in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink}
 
-setGroupRosterVersion :: DB.Connection -> GroupId -> Int -> IO ()
-setGroupRosterVersion db groupId v = do
+setGroupRosterVersion :: DB.Connection -> GroupInfo -> Int -> IO ()
+setGroupRosterVersion db GroupInfo {groupId} v = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?" (v, currentTs, groupId)
 
 -- Relay caches the verbatim signed roster (parts + sending owner + broker ts) to re-forward to joiners.
-setCachedGroupRoster :: DB.Connection -> GroupId -> Int -> GroupMemberId -> UTCTime -> SignedMsg -> IO ()
-setCachedGroupRoster db groupId v ownerGMId brokerTs SignedMsg {chatBinding, signatures, signedBody} = do
+setCachedGroupRoster :: DB.Connection -> GroupInfo -> Int -> GroupMemberId -> UTCTime -> SignedMsg -> IO ()
+setCachedGroupRoster db GroupInfo {groupId} v ownerGMId brokerTs SignedMsg {chatBinding, signatures, signedBody} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1400,8 +1400,8 @@ setCachedGroupRoster db groupId v ownerGMId brokerTs SignedMsg {chatBinding, sig
     |]
     ((v, ownerGMId, brokerTs, chatBinding) :. (Binary (smpEncode signatures), Binary signedBody, currentTs, groupId))
 
-getCachedGroupRoster :: DB.Connection -> GroupId -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg))
-getCachedGroupRoster db groupId =
+getCachedGroupRoster :: DB.Connection -> GroupInfo -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg))
+getCachedGroupRoster db GroupInfo {groupId} =
   (>>= toRoster)
     <$> maybeFirstRow
       id
@@ -1415,10 +1415,10 @@ getCachedGroupRoster db groupId =
       (\sigs -> (ownerGMId, brokerTs, SignedMsg cb sigs body)) <$> eitherToMaybe (smpDecode sigsBs)
     toRoster _ = Nothing
 
-setGroupMemberKeyRole :: DB.Connection -> GroupMemberId -> C.PublicKeyEd25519 -> GroupMemberRole -> IO ()
-setGroupMemberKeyRole db gmId pubKey role = do
+setGroupMemberKeyRole :: DB.Connection -> GroupMember -> C.PublicKeyEd25519 -> GroupMemberRole -> IO ()
+setGroupMemberKeyRole db GroupMember {groupMemberId} pubKey role = do
   currentTs <- getCurrentTime
-  DB.execute db "UPDATE group_members SET member_pub_key = ?, member_role = ?, updated_at = ? WHERE group_member_id = ?" (pubKey, role, currentTs, gmId)
+  DB.execute db "UPDATE group_members SET member_pub_key = ?, member_role = ?, updated_at = ? WHERE group_member_id = ?" (pubKey, role, currentTs, groupMemberId)
 
 createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupMember
 createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {relayProfile = RelayProfile {displayName}} = do

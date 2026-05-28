@@ -3152,13 +3152,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         GroupRoster {version = newVer} = validRoster
         validRoster = validateGroupRoster roster
-        groupId = groupId' gInfo
         relayApplyRoster :: CM (Maybe DeliveryJobScope)
         relayApplyRoster
           | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than cached version"
           | otherwise = case verifiedMsg of
               VMSigned _ sm _ -> do
-                withStore' $ \db -> setCachedGroupRoster db groupId newVer (groupMemberId' author) brokerTs sm
+                withStore' $ \db -> setCachedGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
                 applyRosterRecords
                 -- always broadcast on a bump: self-healing, and demotions must reach members
                 pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
@@ -3168,28 +3167,35 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | maybe False (newVer <=) (rosterVersion gInfo) = pure ()
           | otherwise = do
               applyRosterRecords
-              withStore' $ \db -> setGroupRosterVersion db groupId newVer
+              withStore' $ \db -> setGroupRosterVersion db gInfo newVer
         applyRosterRecords :: CM ()
         applyRosterRecords = do
           let GroupRoster {roster = entries} = validRoster
               rosterIds = map (\RosterMember {memberId} -> memberId) entries
-          mapM_ applyRosterEntry entries
-          -- absent privileged members revert to the joiner default
           defaultRole <- unknownMemberRole gInfo
-          currentPriv <- withStore' $ \db -> getGroupModerators db vr user gInfo
-          forM_ currentPriv $ \m ->
-            when (isRosterRole (memberRole' m) && memberId' m `notElem` rosterIds) $
-              withStore' $ \db -> updateGroupMemberRole db user m defaultRole
-        applyRosterEntry :: RosterMember -> CM ()
-        applyRosterEntry RosterMember {memberId, name, key = MemberKey pubKey, role} =
-          withStore' (\db -> runExceptT $ getCreateUnknownGMByMemberId db vr user gInfo memberId name role True) >>= \case
-            Right (Just (m@GroupMember {groupMemberId}, _created)) ->
+          warnings <- withStore' $ \db -> do
+            warnings <- forM entries (applyRosterEntryDB db)
+            -- absent privileged members revert to the joiner default
+            currentPriv <- getGroupModerators db vr user gInfo
+            forM_ currentPriv $ \m ->
+              when (isRosterRole (memberRole' m) && memberId' m `notElem` rosterIds) $
+                updateGroupMemberRole db user m defaultRole
+            pure warnings
+          sequence_ warnings
+        applyRosterEntryDB :: DB.Connection -> RosterMember -> IO (CM ())
+        applyRosterEntryDB db RosterMember {memberId, name, key = MemberKey pubKey, role} =
+          runExceptT (getCreateUnknownGMByMemberId db vr user gInfo memberId name role True) >>= \case
+            Right (Just (m, _created)) ->
               case memberPubKey m of
                 Just k
-                  | k == pubKey -> unless (memberRole' m == role) $ withStore' $ \db -> updateGroupMemberRole db user m role
-                  | otherwise -> messageWarning "x.grp.roster: member key conflict, keeping trusted key"
-                Nothing -> withStore' $ \db -> setGroupMemberKeyRole db groupMemberId pubKey role
-            _ -> messageError "x.grp.roster: could not get or create member record"
+                  | k == pubKey -> do
+                      unless (memberRole' m == role) $ updateGroupMemberRole db user m role
+                      pure (pure ())
+                  | otherwise -> pure (messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode memberId))
+                Nothing -> do
+                  setGroupMemberKeyRole db m pubKey role
+                  pure (pure ())
+            _ -> pure (messageError $ "x.grp.roster: could not get or create member record, memberId=" <> safeDecodeUtf8 (strEncode memberId))
         signedMsgBytes :: Maybe ByteString
         signedMsgBytes = case verifiedMsg of
           VMSigned _ sm _ -> Just $ smpEncode sm

@@ -1164,7 +1164,7 @@ memberIntroEvt gInfo reMember =
 forwardCachedRoster :: User -> GroupInfo -> GroupMember -> CM ()
 forwardCachedRoster user gInfo subscriber = do
   vr <- chatVersionRange
-  withStore' (\db -> getCachedGroupRoster db (groupId' gInfo)) >>= \case
+  withStore' (\db -> getCachedGroupRoster db gInfo) >>= \case
     Nothing -> pure ()
     Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}) ->
       forM_ (eitherToMaybe (J.eitherDecodeStrict' signedBody) :: Maybe (ChatMessage 'Json)) $ \chatMsg ->
@@ -2144,7 +2144,7 @@ bumpAndBroadcastRoster user gInfo
       (relays, roster) <- withStore' $ \db -> do
         relays <- getGroupRelayMembers db vr user gInfo
         mods <- getGroupModerators db vr user gInfo
-        setGroupRosterVersion db (groupId' gInfo) rosterVer
+        setGroupRosterVersion db gInfo rosterVer
         pure (relays, buildGroupRoster rosterVer mods)
       forM_ (L.nonEmpty relays) $ \relays' ->
         void $ sendGroupMessage' user gInfo (L.toList relays') (XGrpRoster roster)
