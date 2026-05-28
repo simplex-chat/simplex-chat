@@ -3129,7 +3129,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-            Left _ -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
+            -- in relay groups the roster delivers the (privileged) member separately; no-op until then
+            Left _
+              | useRelays' gInfo -> pure Nothing
+              | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
       where
         GroupMember {memberId = membershipMemId} = membership
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
@@ -3176,7 +3179,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           warnings <- withStore' $ \db -> do
             warnings <- forM entries (applyRosterEntryDB db)
             -- absent privileged members revert to the joiner default
-            currentPriv <- getGroupModsNoOwners db vr user gInfo
+            currentPriv <- getGroupRosterMembers db vr user gInfo
             forM_ currentPriv $ \m ->
               when (memberId' m `notElem` rosterIds) $
                 updateGroupMemberRole db user m defaultRole
@@ -3340,6 +3343,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo''' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
         groupMsgToView cInfo ci
         toView $ CEvtLeftMember user gInfo''' m' {memberStatus = GSMemLeft} msgSigned
+      -- a privileged leaver drops out of the roster; bumpAndBroadcastRoster is owner-guarded
+      when (useRelays' gInfo'' && isRosterRole (memberRole' m)) $
+        bumpAndBroadcastRoster user gInfo'' `catchAllErrors` eToView
       pure $ memberEventDeliveryScope m
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()

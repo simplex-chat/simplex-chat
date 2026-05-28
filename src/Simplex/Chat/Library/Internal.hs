@@ -1182,7 +1182,8 @@ introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ C
 introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   -- roster first, so the joiner trusts mod/admin keys before relay intros
   forwardCachedRoster user gInfo subscriber
-  modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
+  -- filter to current members so left/removed mods/admins aren't re-introduced to the joiner
+  modMs <- filter memberCurrent <$> withStore' (\db -> getGroupModerators db vr user gInfo)
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
   withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
@@ -2143,7 +2144,7 @@ bumpAndBroadcastRoster user gInfo
       let rosterVer = maybe 0 (+ 1) (rosterVersion gInfo)
       (relays, roster) <- withStore' $ \db -> do
         relays <- getGroupRelayMembers db vr user gInfo
-        mods <- getGroupModsNoOwners db vr user gInfo
+        mods <- getGroupRosterMembers db vr user gInfo
         setGroupRosterVersion db gInfo rosterVer
         pure (relays, buildGroupRoster rosterVer mods)
       forM_ (L.nonEmpty relays) $ \relays' ->
@@ -2154,7 +2155,7 @@ sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
 sendGroupRosterToRelay user gInfo relayMember =
   forM_ (rosterVersion gInfo) $ \rosterVer -> do
     vr <- chatVersionRange
-    mods <- withStore' $ \db -> getGroupModsNoOwners db vr user gInfo
+    mods <- withStore' $ \db -> getGroupRosterMembers db vr user gInfo
     void $ sendGroupMessage' user gInfo [relayMember] (XGrpRoster (buildGroupRoster rosterVer mods))
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
