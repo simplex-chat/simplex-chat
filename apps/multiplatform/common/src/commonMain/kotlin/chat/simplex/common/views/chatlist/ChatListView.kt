@@ -792,31 +792,29 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         snapshotFlow { searchText.value.text }
           .distinctUntilChanged()
           .collect {
-            val link = strHasSingleSimplexLink(it.trim())
-            if (link != null) {
-              // if SimpleX link is pasted, show connection dialogue
-              hideKeyboard(view)
-              if (link.format is Format.SimplexLink) {
-                val linkText = link.format.simplexLinkText
-                searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
+            when (val target = strConnectTarget(it.trim())) {
+              is ConnectTarget.Link -> {
+                hideKeyboard(view)
+                searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
+                searchShowingSimplexLink.value = true
+                searchChatFilteredBySimplexLink.value = null
+                connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
               }
-              searchShowingSimplexLink.value = true
-              searchChatFilteredBySimplexLink.value = null
-              connect(link.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
-            } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
-              if (it.isNotEmpty()) {
-                // if some other text is pasted, enter search mode
-                focusRequester.requestFocus()
-              } else {
-                if (!chatModel.appOpenUrlConnecting.value) {
-                  connectProgressManager.cancelConnectProgress()
+              is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
+              null -> if (!searchShowingSimplexLink.value || it.isEmpty()) {
+                if (it.isNotEmpty()) {
+                  focusRequester.requestFocus()
+                } else {
+                  if (!chatModel.appOpenUrlConnecting.value) {
+                    connectProgressManager.cancelConnectProgress()
+                  }
+                  if (listState.layoutInfo.totalItemsCount > 0) {
+                    listState.scrollToItem(0)
+                  }
                 }
-                if (listState.layoutInfo.totalItemsCount > 0) {
-                  listState.scrollToItem(0)
-                }
+                searchShowingSimplexLink.value = false
+                searchChatFilteredBySimplexLink.value = null
               }
-              searchShowingSimplexLink.value = false
-              searchChatFilteredBySimplexLink.value = null
             }
           }
       }

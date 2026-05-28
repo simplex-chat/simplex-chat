@@ -165,6 +165,9 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameInfo](#simplexnameinfo)
+- [SimplexNameType](#simplexnametype)
+- [SimplexTLD](#simplextld)
 - [SndCIStatusProgress](#sndcistatusprogress)
 - [SndConnEvent](#sndconnevent)
 - [SndError](#snderror)
@@ -2088,6 +2091,10 @@ SimplexLink:
 - simplexUri: string
 - smpHosts: [string]
 
+SimplexName:
+- type: "simplexName"
+- nameInfo: [SimplexNameInfo](#simplexnameinfo)
+
 Command:
 - type: "command"
 - commandStr: string
@@ -2326,6 +2333,10 @@ Known:
 
 NoRelays:
 - type: "noRelays"
+- groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
+
+UpdateRequired:
+- type: "updateRequired"
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 
@@ -3432,6 +3443,36 @@ A_QUEUE:
 - "group"
 - "channel"
 - "relay"
+
+
+---
+
+## SimplexNameInfo
+
+**Record type**:
+- nameType: [SimplexNameType](#simplexnametype)
+- nameTLD: [SimplexTLD](#simplextld)
+- domain: string
+- subDomain: [string]
+
+
+---
+
+## SimplexNameType
+
+**Enum type**:
+- "publicGroup"
+- "contact"
+
+
+---
+
+## SimplexTLD
+
+**Enum type**:
+- "simplex"
+- "testing"
+- "web"
 
 
 ---
