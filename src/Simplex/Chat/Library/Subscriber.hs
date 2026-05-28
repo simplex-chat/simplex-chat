@@ -2975,7 +2975,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   if memberRole' unknownMember == memRole
                     then do
                       updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db vr user m unknownMember memInfo initialStatus
-                      announceUnknownMember unknownMember updatedMember
+                      -- roster members can't be pending, so no members-require-attention update
+                      gInfo' <- updatePublicGroupData user gInfo
+                      toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
+                      memberAnnouncedToView updatedMember gInfo'
+                      pure $ deliveryJobScope updatedMember
                     else messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
             Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
               (updatedMember, gInfo') <- withStore $ \db -> do
@@ -3007,12 +3011,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   memberAnnouncedToView newMember gInfo''
                   pure $ deliveryJobScope newMember
       where
-        -- roster members can't be pending, so no members-require-attention update
-        announceUnknownMember unknownMember updatedMember = do
-          gInfo'' <- updatePublicGroupData user gInfo
-          toView $ CEvtUnknownMemberAnnounced user gInfo'' m unknownMember updatedMember
-          memberAnnouncedToView updatedMember gInfo''
-          pure $ deliveryJobScope updatedMember
         initialStatus = case msgScope_ of
           Just (MSMember _) -> GSMemPendingReview
           _ -> GSMemAnnounced
