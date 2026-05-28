@@ -3167,7 +3167,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               VMUnsigned _ -> Nothing <$ messageWarning "x.grp.roster: unsigned roster"
         memberApplyRoster :: CM ()
         memberApplyRoster
-          | maybe False (newVer <=) (rosterVersion gInfo) = pure ()
+          | maybe False (newVer <) (rosterVersion gInfo) = messageWarning "x.grp.roster: older than accepted version"
+          | maybe False (newVer ==) (rosterVersion gInfo) = pure ()
           | otherwise = do
               applyRosterRecords
               withStore' $ \db -> setGroupRosterVersion db gInfo newVer
