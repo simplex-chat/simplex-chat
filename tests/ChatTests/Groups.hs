@@ -272,6 +272,7 @@ chatGroupTests = do
       it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
       it "leaving moderator drops from the roster cache" testChannelLeftModeratorDropsFromRoster
       it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
+      it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
@@ -9691,6 +9692,58 @@ testChannelRoleTransitionsUpdateRoster ps =
               memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
               threadDelay 100000
               checkMemberRow frank "cath" Nothing
+
+testChannelRelayCannotDowngradeRosterMember :: HasCallStack => TestParams -> IO ()
+testChannelRelayCannotDowngradeRosterMember ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "frank" frankProfile $ \frank -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
+          -- promote cath; roster TOFU-creates cath on frank as moderator with the real key
+          threadDelay 1000000
+          alice ##> "/mr #team cath moderator"
+          alice <## "#team: you changed the role of cath to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+              cath <## "#team: alice changed your role from member to moderator (signed)",
+              frank <## "#team: alice changed the role of cath from member to moderator (signed)"
+            ]
+          threadDelay 100000
+          realKey <- getMemberPubKey bob "cath"
+          -- malicious relay: corrupt bob's local record of cath so its XGrpMemNew dissemination
+          -- carries a downgraded role + no key
+          withCCTransaction bob $ \db ->
+            DB.execute
+              db
+              "UPDATE group_members SET member_role = ?, member_pub_key = NULL WHERE local_display_name = ?"
+              ("member" :: T.Text, "cath" :: T.Text)
+          -- cath posts; bob prepends XGrpMemNew(cath, member, NULL) to the delivery (frank not yet introduced)
+          threadDelay 100000
+          cath #> "#team hello from cath"
+          bob <# "#team cath> hello from cath"
+          concurrentlyN_
+            [ alice <# "#team cath> hello from cath [>>]",
+              do
+                frank <## "#team: unknown member cath updated to cath"
+                frank <## "#team: bob introduced cath (Catherine) in the channel"
+                frank <# "#team cath> hello from cath [>>]"
+            ]
+          threadDelay 100000
+          -- with the fix, frank's row for cath retains the roster-established role and key
+          checkMemberRow frank "cath" (Just "moderator")
+          frankKey <- getMemberPubKey frank "cath"
+          frankKey `shouldBe` realKey
+  where
+    getMemberPubKey :: HasCallStack => TestCC -> T.Text -> IO (Maybe ByteString)
+    getMemberPubKey cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_pub_key FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only (Maybe ByteString)]
+      case rows of
+        [Only k] -> pure k
+        _ -> fail $ "expected one row for " <> T.unpack name
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
