@@ -890,7 +890,9 @@ maxCompressedMsgLength = 13380
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
 
--- Bound on moderators + admins so the signed roster always fits one message.
+-- Bound so the signed roster fits maxEncodedMsgLength (15602 B): ~140 B per
+-- RosterMember (memberId + Ed25519 key both base64, role, name capped at 16
+-- chars by memberShortenedName). Fits 64 entries even with 4-byte-UTF-8 names.
 maxGroupRosterSize :: Int
 maxGroupRosterSize = 64
 
