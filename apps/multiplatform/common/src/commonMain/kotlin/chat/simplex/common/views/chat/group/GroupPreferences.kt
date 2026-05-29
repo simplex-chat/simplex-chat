@@ -6,9 +6,11 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.saveable.rememberSaveable
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -64,6 +66,7 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
       if (preferences == currentPreferences) close()
       else showUnsavedChangesAlert({ savePrefs(close) }, close, saveTextId)
     },
+    cardScreen = true,
   ) {
     GroupPreferencesLayout(
       preferences,
@@ -182,37 +185,39 @@ private fun GroupPreferencesLayout(
     AppBarTitle(stringResource(titleId))
     if (!groupInfo.useRelays) {
       if (groupInfo.businessChat == null) {
-        MemberAdmissionButton(openMemberAdmission)
-        SectionDividerSpaced(maxBottomPadding = false)
+        SectionView {
+          MemberAdmissionButton(openMemberAdmission)
+        }
+        SectionDividerSpaced()
       }
       TimedMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       DirectMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       FullDeletePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       ReactionsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       VoicePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       FilesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       SimplexLinksPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       ReportsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       HistoryPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       SupportPreference(disabled = true)
     } else {
       TimedMessagesPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       FullDeletePreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       ReactionsPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       HistoryPreference()
-      SectionDividerSpaced(true, maxBottomPadding = false)
+      SectionDividerSpaced()
       SupportPreference(notice = generalGetString(MR.strings.chat_with_admins_relay_note), onEnable = { revert ->
         AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.enable_chats_with_admins_question),
@@ -225,7 +230,7 @@ private fun GroupPreferencesLayout(
       })
     }
     if (groupInfo.isOwner) {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionDividerSpaced()
       val saveTextId = if (groupInfo.useRelays) MR.strings.save_and_notify_channel_subscribers
         else MR.strings.save_and_notify_group_members
       ResetSaveButtons(

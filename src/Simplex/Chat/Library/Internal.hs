@@ -515,22 +515,20 @@ updateACIGroupInfo gInfo' = \case
     AChatItem SCTGroup dir (GroupChat gInfo' chatScopeInfo) ci
   aci -> aci
 
-deleteGroupMemberCIs :: MsgDirectionI d => User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> CM ()
-deleteGroupMemberCIs user gInfo member byGroupMember msgDir = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs
+deleteGroupMemberCIs :: User -> GroupInfo -> GroupMember -> CM ()
+deleteGroupMemberCIs user gInfo member = do
+  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member
   deleteCIFiles user filesInfo
 
-deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ()
-deleteGroupMembersCIs user gInfo members byGroupMember = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> deleteGroupMemberCIs_ db user gInfo m byGroupMember SMDRcv deletedTs
+deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> CM ()
+deleteGroupMembersCIs user gInfo members = do
+  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ deleteGroupMemberCIs_ db user gInfo
   deleteCIFiles user filesInfo
 
-deleteGroupMemberCIs_ :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO [CIFileInfo]
-deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs = do
+deleteGroupMemberCIs_ :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO [CIFileInfo]
+deleteGroupMemberCIs_ db user gInfo member = do
   fs <- getGroupMemberFileInfo db user gInfo member
-  updateMemberCIsModerated db user gInfo member byGroupMember msgDir deletedTs
+  deleteMemberCIs db user gInfo member
   pure fs
 
 deleteLocalCIs :: User -> NoteFolder -> [CChatItem 'CTLocal] -> Bool -> Bool -> CM ChatResponse
@@ -908,8 +906,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
   let profileToSend = userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  -- TODO [certs rcv]
-  (ct,conn,) . fst <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
+  (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
 acceptContactRequestAsync
@@ -1167,12 +1164,16 @@ memberIntroEvt gInfo reMember =
 -- This doesn't create introduction records in db, compared to above methods.
 introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn} = do
+introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  withStore' $ \db ->
+    setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   let introEvts = map (memberIntroEvt gInfo) modMs
   forM_ (L.nonEmpty introEvts) $ \introEvts' ->
     sendGroupMemberMessages user gInfo conn introEvts'
+  withStore' $ \db ->
+    setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1847,7 +1848,22 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
     else
       checkGroupMemberHasItems db user m' >>= \case
         Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-        Nothing -> deleteGroupMember db user m'
+        Nothing
+          | useRelays' gInfo -> updateGroupMemberRemovedAt db user m'
+          | otherwise -> deleteGroupMember db user m'
+  pure gInfo'
+
+-- Unlike deleteOrUpdateMemberRecord, skips checkGroupMemberHasItems.
+fullyDeleteMemberRecord :: User -> GroupInfo -> GroupMember -> CM GroupInfo
+fullyDeleteMemberRecord user gInfo m =
+  withStore' $ \db -> fullyDeleteMemberRecordIO db user gInfo m
+
+fullyDeleteMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
+fullyDeleteMemberRecordIO db user gInfo m = do
+  (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
+  if useRelays' gInfo && not (isRelay m')
+    then updateGroupMemberRemovedAt db user m'
+    else deleteGroupMember db user m'
   pure gInfo'
 
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo
@@ -2055,7 +2071,7 @@ deliverMessagesB msgReqs = do
       Left _ce -> (prev, Left (AP.INTERNAL "ChatError, skip")) -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
-    prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae (AgentConnId "") Nothing
+    prepareBatch _ (Left ae) = Left $ chatErrorAgent ae
     createDelivery :: DB.Connection -> (ChatMsgReq, (AgentMsgId, PQEncryption)) -> IO (Either ChatError ([Int64], PQEncryption))
     createDelivery db ((Connection {connId}, _, (_, msgIds)), (agentMsgId, pqEnc')) = do
       Right . (,pqEnc') <$> mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId})) msgIds

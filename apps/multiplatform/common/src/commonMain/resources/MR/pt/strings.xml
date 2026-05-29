@@ -28,9 +28,9 @@
     <string name="full_backup">Backup de dados da aplicação</string>
     <string name="auto_accept_images">Aceitar imagens automaticamente</string>
     <string name="passcode_set">Código de acesso definido!</string>
-    <string name="settings_section_title_you">VOCÊ</string>
-    <string name="settings_section_title_messages">MENSAGENS E FICHEIROS</string>
-    <string name="settings_section_title_icon">ÍCONE DA APLICAÇÃO</string>
+    <string name="settings_section_title_you">Você</string>
+    <string name="settings_section_title_messages">Mensagens e ficheiros</string>
+    <string name="settings_section_title_icon">Ícone da aplicação</string>
     <string name="chat_item_ttl_month">1 mês</string>
     <string name="messages_section_title">Mensagens</string>
     <string name="button_add_welcome_message">Adicionar mensagem de boas-vindas</string>
@@ -137,7 +137,7 @@
     <string name="delete_group_menu_action">Eliminar</string>
     <string name="delete_files_and_media_all">Eliminar todos os ficheiros</string>
     <string name="delete_database">Eliminar base de dados</string>
-    <string name="chat_database_section">BASE DE DADOS DE CONVERSA</string>
+    <string name="chat_database_section">Base de dados de conversa</string>
     <string name="chat_database_deleted">Base de dados de conversa eliminada</string>
     <string name="display_name">Nome para Exibição</string>
     <string name="show_dev_options">Mostrar:</string>
@@ -184,7 +184,7 @@
     <string name="paste_the_link_you_received">Colar ligação recebida</string>
     <string name="restore_passphrase_not_found_desc">Senha não encontrada na Keystore, por favor insira-a manualmente. Isto pode ter acontecido se você restaurou os dados da aplicação usando uma ferramenta de backup. Se não for o caso, entre em contato com os desenvolvedores.</string>
     <string name="error_smp_test_server_auth">O servidor requer autorização para criar filas, verifique a senha</string>
-    <string name="conn_stats_section_title_servers">SERVIDORES</string>
+    <string name="conn_stats_section_title_servers">Servidores</string>
     <string name="error_xftp_test_server_auth">O servidor requer autorização para fazer upload, verifique a senha</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Defina <i>Usar hosts .onion</i> como Não se o proxy SOCKS não o suportar.]]></string>
     <string name="network_use_onion_hosts">Usar hosts .onion</string>
@@ -226,7 +226,7 @@
     <string name="call_already_ended">Chamada já finalizada!</string>
     <string name="icon_descr_call_progress">Chamada em curso</string>
     <string name="icon_descr_call_ended">Chamada finalizada</string>
-    <string name="settings_section_title_calls">CHAMADAS</string>
+    <string name="settings_section_title_calls">Chamadas</string>
     <string name="v4_5_transport_isolation_descr">Por perfil de conversa (padrão) ou por ligação (BETA).</string>
     <string name="cannot_access_keychain">Não é possível aceder à Keystore para salvar a senha da base de dados</string>
     <string name="invite_prohibited">Não é possível convidar o contato!</string>
@@ -251,7 +251,7 @@
     <string name="error_deleting_link_for_group">Erro ao eliminar ligação de grupo</string>
     <string name="network_session_mode_user">Perfil de conversa</string>
     <string name="change_lock_mode">Alterar o modo de bloqueio</string>
-    <string name="settings_section_title_chats">CONVERSAS</string>
+    <string name="settings_section_title_chats">Conversas</string>
     <string name="chat_is_running">Conversa em execução</string>
     <string name="error_changing_message_deletion">Erro ao alterar configuração</string>
     <string name="change_database_passphrase_question">Alterar a senha da base de dados\?</string>
@@ -471,7 +471,7 @@
     <string name="info_row_database_id">ID da base de dados</string>
     <string name="smp_server_test_delete_file">Eliminar ficheiro</string>
     <string name="delete_contact_question">Eliminar contacto?</string>
-    <string name="settings_section_title_device">DISPOSITIVO</string>
+    <string name="settings_section_title_device">Dispositivo</string>
     <string name="direct_messages">Mensagens diretas</string>
     <string name="decentralized">Descentralizado</string>
     <string name="integrity_msg_duplicate">mensagem duplicada</string>
@@ -540,7 +540,7 @@
     <string name="alert_text_decryption_error_too_many_skipped">%1$d mensagens ignoradas.</string>
     <string name="import_database">Importar base de dados</string>
     <string name="your_settings">As suas definições</string>
-    <string name="settings_section_title_settings">DEFINIÇÕES</string>
+    <string name="settings_section_title_settings">Definições</string>
     <string name="share_verb">Partilhar</string>
     <string name="share_address">Partilhar endereço</string>
     <string name="icon_descr_settings">Definições</string>
@@ -554,12 +554,12 @@
 \nEsta ação é irreversível - o seu perfil, contactos, mensagens e ficheiros serão irreversivelmente perdidos.</string>
     <string name="mark_unread">Marcar como não lido</string>
     <string name="group_member_role_member">membro</string>
-    <string name="member_info_section_title_member">MEMBRO</string>
+    <string name="member_info_section_title_member">Membro</string>
     <string name="v4_3_voice_messages_desc">Máximo de 40 segundos, recebido instantaneamente.</string>
     <string name="icon_descr_more_button">Mais</string>
     <string name="network_and_servers">Rede e servidores</string>
     <string name="network_settings_title">Configurações avançadas</string>
-    <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
+    <string name="settings_section_title_experimenta">Experimental</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Você pode iniciar a conversa através das Definições da aplicação / Base de Dados ou reiniciando a aplicação.</string>
     <string name="update_network_settings_confirmation">Atualizar</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">A atualização das definições reconectará o cliente a todos os servidores.</string>
@@ -572,10 +572,10 @@
     <string name="message_delivery_error_desc">Muito provavelmente este contato eliminou a conexão consigo.</string>
     <string name="this_text_is_available_in_settings">Este texto está disponível nas definições</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser alterado mais tarde através das definições.</string>
-    <string name="settings_section_title_help">AJUDA</string>
-    <string name="settings_section_title_support">SUPORTE SIMPLEX CHAT</string>
+    <string name="settings_section_title_help">Ajuda</string>
+    <string name="settings_section_title_support">Suporte SimpleX Chat</string>
     <string name="settings_experimental_features">Funcionalidades experimentais</string>
-    <string name="settings_section_title_themes">TEMAS</string>
+    <string name="settings_section_title_themes">Temas</string>
     <string name="theme_dark">Escuro</string>
     <string name="dark_theme">Tema escuro</string>
     <string name="chat_item_ttl_none">nunca</string>

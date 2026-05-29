@@ -996,7 +996,7 @@
     <string name="alert_title_skipped_messages">ข้อความที่ข้ามไป</string>
     <string name="submit_passcode">ส่ง</string>
     <string name="la_mode_system">ระบบ</string>
-    <string name="settings_section_title_support">สนับสนุน SIMPLEX แชท</string>
+    <string name="settings_section_title_support">สนับสนุน SimpleX Chat</string>
     <string name="settings_section_title_socks">พร็อกซี SOCKS</string>
     <string name="stop_chat_confirmation">หยุด</string>
     <string name="stop_chat_question">หยุดแชท\?</string>

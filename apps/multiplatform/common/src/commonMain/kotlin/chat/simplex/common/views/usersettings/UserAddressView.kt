@@ -8,6 +8,7 @@ import SectionView
 import SectionViewWithButton
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -171,7 +172,7 @@ fun UserAddressView(
     )
   }
 
-  ModalView(close = close) {
+  ModalView(close = close, cardScreen = true) {
     showLayout()
   }
 
@@ -301,16 +302,16 @@ private fun UserAddressLayout(
     ) {
       if (userAddress == null) {
         if (!onboarding) {
-          SectionView(generalGetString(MR.strings.for_social_media).uppercase()) {
+          SectionView(generalGetString(MR.strings.for_social_media)) {
             CreateAddressButton(createAddress)
           }
 
           SectionDividerSpaced()
-          SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
+          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
             CreateOneTimeLinkButton()
           }
 
-          SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+          SectionDividerSpaced()
           SectionView {
             LearnMoreButton(learnMore)
           }
@@ -336,7 +337,7 @@ private fun UserAddressLayout(
           val savedAddressSettingsState = remember { mutableStateOf(addressSettingsState.value) }
 
           SectionViewWithButton(
-            stringResource(MR.strings.for_social_media).uppercase(),
+            stringResource(MR.strings.for_social_media),
             titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
           ) {
             SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
@@ -353,26 +354,25 @@ private fun UserAddressLayout(
             // ShareViaEmailButton { sendEmail(userAddress) }
             BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
             AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
-
-            if (addressSettingsState.value.businessAddress) {
-              SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
-            }
+          }
+          if (addressSettingsState.value.businessAddress) {
+            SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
           }
 
-          SectionDividerSpaced(maxTopPadding = addressSettingsState.value.businessAddress)
-          SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
+          SectionDividerSpaced()
+          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
             CreateOneTimeLinkButton()
           }
-          SectionDividerSpaced(maxBottomPadding = false)
+          SectionDividerSpaced()
           SectionView {
             LearnMoreButton(learnMore)
           }
 
-          SectionDividerSpaced(maxBottomPadding = false)
+          SectionDividerSpaced()
           SectionView {
             DeleteAddressButton(deleteAddress)
-            SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
           }
+          SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
         }
       }
     }
@@ -495,7 +495,7 @@ private fun ModalData.UserAddressSettings(
     }
   }
 
-  ModalView(close = { onClose(close) }) {
+  ModalView(close = { onClose(close) }, cardScreen = true) {
     ColumnWithScrollBar {
       AppBarTitle(stringResource(MR.strings.address_settings), hostDevice(user?.remoteHostId))
       Column(
@@ -512,10 +512,10 @@ private fun ModalData.UserAddressSettings(
         }
         SectionDividerSpaced()
 
-        SectionView(stringResource(MR.strings.address_welcome_message).uppercase()) {
+        SectionView(stringResource(MR.strings.address_welcome_message)) {
           AutoReplyEditor(addressSettingsState)
         }
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        SectionDividerSpaced()
 
         saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
           saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
