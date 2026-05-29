@@ -76,7 +76,7 @@ import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Client (getAgentWorker, temporaryOrHostError, waitForUserNetwork, waitForWork, waitWhileSuspended, withWorkItems, withWork_)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), Worker (..))
+import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
@@ -3129,7 +3129,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-            -- in relay groups the roster delivers the (privileged) member separately; no-op until then
+            -- in channels the roster delivers the chat item for previously-unknown privileged members
             Left _
               | useRelays' gInfo -> pure Nothing
               | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
@@ -3177,29 +3177,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let GroupRoster {roster = entries} = validRoster
               rosterIds = map (\RosterMember {memberId} -> memberId) entries
           defaultRole <- unknownMemberRole gInfo
-          conflicts <- withStore $ \db -> do
-            conflicts <- catMaybes <$> mapM (applyRosterEntryDB db) entries
+          (conflicts, applied) <- withStore $ \db -> do
+            acc <- foldrM (applyRosterEntry db defaultRole) ([], []) entries
             -- absent privileged members revert to the joiner default
             currentPriv <- liftIO $ getGroupRosterMembers db vr user gInfo
             liftIO $ forM_ currentPriv $ \m ->
               when (memberId' m `notElem` rosterIds) $
                 updateGroupMemberRole db user m defaultRole
-            pure conflicts
+            pure acc
           forM_ conflicts $ \mid' ->
             messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode mid')
-        applyRosterEntryDB :: DB.Connection -> RosterMember -> ExceptT StoreError IO (Maybe MemberId)
-        applyRosterEntryDB db RosterMember {memberId, name, key = MemberKey pubKey, role} =
-          getCreateUnknownGMByMemberId db vr user gInfo memberId name role True >>= \case
-            Just (m, _created) -> case memberPubKey m of
-              Just k
-                | k == pubKey -> Nothing <$ liftIO (unless (memberRole' m == role) $ updateGroupMemberRole db user m role)
-                | otherwise -> pure (Just memberId)
-              Nothing -> Nothing <$ liftIO (setGroupMemberKeyRole db m pubKey role)
-            Nothing -> pure Nothing
-        signedMsgBytes :: Maybe ByteString
-        signedMsgBytes = case verifiedMsg of
-          VMSigned _ sm _ -> Just $ smpEncode sm
-          VMUnsigned _ -> Nothing
+          forM_ applied $ \(member, fromRole) -> createItems member fromRole
+        applyRosterEntry :: DB.Connection -> GroupMemberRole -> RosterMember -> ([MemberId], [(GroupMember, GroupMemberRole)]) -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole)])
+        applyRosterEntry db defaultRole RosterMember {memberId, name, key = MemberKey pubKey, role} (cs, as) =
+          applyEntry `catchAllErrors` \_ -> pure (cs, as)
+          where
+            applied m = (cs, ((m :: GroupMember) {memberRole = role}, memberRole' m) : as)
+            applyEntry = getCreateUnknownGMByMemberId db vr user gInfo memberId name defaultRole True >>= \case
+              Nothing -> pure (cs, as)
+              Just (m, _) -> case memberPubKey m of
+                Just k
+                  | k /= pubKey -> pure (memberId : cs, as)
+                  | memberRole' m == role -> pure (cs, as)
+                  | otherwise -> liftIO (updateGroupMemberRole db user m role) $> applied m
+                Nothing -> liftIO (setGroupMemberKeyRole db m pubKey role) $> applied m
+        createItems :: GroupMember -> GroupMemberRole -> CM ()
+        createItems member fromRole = do
+          let toRole = memberRole' member
+              gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) toRole
+          (gInfo', author', scopeInfo) <- mkGroupChatScope gInfo author
+          createInternalChatItem user (CDGroupRcv gInfo' scopeInfo author') (CIRcvGroupEvent gEvent) (Just brokerTs)
+          toView CEvtMemberRole {user, groupInfo = gInfo', byMember = author', member, fromRole, toRole, msgSigned = Just MSSVerified}
 
     checkHostRole :: GroupMember -> GroupMemberRole -> CM ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =

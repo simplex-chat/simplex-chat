@@ -9409,18 +9409,23 @@ testChannelChangeRoleSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "changed role of cath to admin (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "changed role of cath to admin (signed)")])
 
-            -- change role of silent member; cath/eve don't know dan, so the relay-group branch
-            -- in xGrpMemRole silently no-ops (the roster will deliver the privileged set separately)
+            -- change role of silent member; cath/eve don't know dan via xGrpMemRole, but the
+            -- subsequent roster apply emits the chat item with dan TOFU-created at the new role
             threadDelay 1000000
             alice ##> "/mr #team dan admin"
             alice <## "#team: you changed the role of dan to admin (signed)"
-            bob <## "#team: alice changed the role of dan from member to admin (signed)"
-            dan <## "#team: alice changed your role from member to admin (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice changed the role of dan from member to admin (signed)",
+                dan <## "#team: alice changed your role from member to admin (signed)",
+                cath <## "#team: alice changed the role of dan from member to admin (signed)",
+                eve <## "#team: alice changed the role of dan from member to admin (signed)"
+              ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of dan to admin (signed)")])
             bob #$> ("/_get chat #1 count=1", chat, [(0, "changed role of dan to admin (signed)")])
-            cath #$> ("/_get chat #1 count=1", chat, [(0, "changed your role to admin (signed)")]) -- now new chat item
+            -- roster-emitted items don't carry the signed marker in chat content text (live event does)
+            cath #$> ("/_get chat #1 count=1", chat, [(0, "changed role of dan to admin")])
             dan #$> ("/_get chat #1 count=1", chat, [(0, "changed your role to admin (signed)")])
-            eve #$> ("/_get chat #1 count=1", chat, [(0, "changed role of cath to admin (signed)")]) -- now new chat item
+            eve #$> ("/_get chat #1 count=1", chat, [(0, "changed role of dan to admin")])
 
 testChannelBlockMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelBlockMemberSigned ps =
@@ -9518,14 +9523,17 @@ testChannelModeratorActionViaRoster ps =
                     eve <# "#team dan> hello from dan [>>]"
                 ]
 
-              -- alice promotes cath. dan/eve don't know cath yet, so their XGrpMemRole is silently
-              -- skipped (channel branch in xGrpMemRole returns Nothing) until the roster arrives
-              -- and creates cath's record with the new role.
+              -- dan/eve XGrpMemRole is skipped (target unknown); roster apply creates cath
+              -- and emits the role-change chat item
               threadDelay 1000000
               alice ##> "/mr #team cath moderator"
               alice <## "#team: you changed the role of cath to moderator (signed)"
-              bob <## "#team: alice changed the role of cath from member to moderator (signed)"
-              cath <## "#team: alice changed your role from member to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+                  cath <## "#team: alice changed your role from member to moderator (signed)",
+                  dan <## "#team: alice changed the role of cath from member to moderator (signed)",
+                  eve <## "#team: alice changed the role of cath from member to moderator (signed)"
+                ]
 
               -- cath (moderator) blocks dan; profile prepend carries cath's full profile to dan/eve
               threadDelay 1000000
@@ -9540,9 +9548,12 @@ testChannelModeratorActionViaRoster ps =
               dan <## "#team: bob introduced cath (Catherine) in the channel"
 
               -- frank joins after the roster update; cached roster gives him cath as moderator.
-              -- both alice (owner) and cath (mod) receive XGrpMemNew(frank) via introduceInChannel
+              -- both alice (owner) and cath (mod) receive XGrpMemNew(frank) via introduceInChannel.
+              -- the roster apply also emits the role-change chat item on frank's side (owner
+              -- profile may not be loaded yet, so the actor renders by memberId hash)
               threadDelay 1000000
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
+              frank <### [EndsWith "changed the role of cath from member to moderator (signed)"]
               threadDelay 500000
               checkMemberRole frank "cath" "moderator"
   where
@@ -9563,12 +9574,16 @@ testChannelRemovedModeratorRefreshesRoster ps =
               (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
               forM_ [cath, dan, eve] $ \member ->
                 memberJoinChannel "team" [bob] [alice] shortLink fullLink member
-              -- dan/eve don't know cath; XGrpMemRole is silently skipped (relay-group branch)
+              -- dan/eve XGrpMemRole is skipped; roster apply creates cath and emits the chat item
               threadDelay 1000000
               alice ##> "/mr #team cath moderator"
               alice <## "#team: you changed the role of cath to moderator (signed)"
-              bob <## "#team: alice changed the role of cath from member to moderator (signed)"
-              cath <## "#team: alice changed your role from member to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+                  cath <## "#team: alice changed your role from member to moderator (signed)",
+                  dan <## "#team: alice changed the role of cath from member to moderator (signed)",
+                  eve <## "#team: alice changed the role of cath from member to moderator (signed)"
+                ]
               threadDelay 1000000
               alice ##> "/rm #team cath"
               alice <## "#team: you removed cath from the group (signed)"
@@ -9595,12 +9610,16 @@ testChannelLeftModeratorDropsFromRoster ps =
               (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
               forM_ [cath, dan, eve] $ \member ->
                 memberJoinChannel "team" [bob] [alice] shortLink fullLink member
-              -- promote cath; dan/eve unknown branch silently no-ops, they pick up cath from the roster
+              -- promote cath; dan/eve XGrpMemRole skipped, roster apply emits the chat item
               threadDelay 1000000
               alice ##> "/mr #team cath moderator"
               alice <## "#team: you changed the role of cath to moderator (signed)"
-              bob <## "#team: alice changed the role of cath from member to moderator (signed)"
-              cath <## "#team: alice changed your role from member to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+                  cath <## "#team: alice changed your role from member to moderator (signed)",
+                  dan <## "#team: alice changed the role of cath from member to moderator (signed)",
+                  eve <## "#team: alice changed the role of cath from member to moderator (signed)"
+                ]
               -- cath (moderator) leaves; owner xGrpLeave refreshes the cached roster
               threadDelay 1000000
               cath ##> "/leave #team"
@@ -9631,13 +9650,16 @@ testChannelRoleTransitionsUpdateRoster ps =
               (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
               forM_ [cath, dan, eve] $ \member ->
                 memberJoinChannel "team" [bob] [alice] shortLink fullLink member
-              -- member -> moderator: dan/eve don't know cath, role event silently skipped;
-              -- the subsequent roster broadcast gives them cath as moderator
+              -- member -> moderator: dan/eve XGrpMemRole skipped; roster apply creates cath and emits chat item
               threadDelay 1000000
               alice ##> "/mr #team cath moderator"
               alice <## "#team: you changed the role of cath to moderator (signed)"
-              bob <## "#team: alice changed the role of cath from member to moderator (signed)"
-              cath <## "#team: alice changed your role from member to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+                  cath <## "#team: alice changed your role from member to moderator (signed)",
+                  dan <## "#team: alice changed the role of cath from member to moderator (signed)",
+                  eve <## "#team: alice changed the role of cath from member to moderator (signed)"
+                ]
               -- moderator -> admin (within roster): dan/eve now know cath, so role event lands cleanly
               threadDelay 1000000
               alice ##> "/mr #team cath admin"
