@@ -9637,8 +9637,6 @@ testChannelLeftModeratorDropsFromRoster ps =
               threadDelay 100000
               checkMemberRow frank "cath" Nothing
 
--- Roster updates correctly across role transitions: within roster (mod <-> admin)
--- and crossing out of roster (admin -> non-roster role).
 testChannelRoleTransitionsUpdateRoster :: HasCallStack => TestParams -> IO ()
 testChannelRoleTransitionsUpdateRoster ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -9685,7 +9683,6 @@ testChannelRoleTransitionsUpdateRoster ps =
               memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
               threadDelay 100000
               checkMemberRow frank "cath" Nothing
-
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
