@@ -3129,7 +3129,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-            -- in channels the roster delivers the chat item for previously-unknown privileged members
+            -- in relay groups the roster delivers the chat item for previously-unknown privileged members
             Left _
               | useRelays' gInfo -> pure Nothing
               | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
