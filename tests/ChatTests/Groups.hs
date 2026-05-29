@@ -26,7 +26,7 @@ import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
+import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
@@ -9698,7 +9698,7 @@ testChannelRelayCannotDowngradeRosterMember ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
-        withNewTestChat ps "frank" frankProfile $ \frank -> do
+        withNewTestChatOpts ps (testOpts {coreOptions = testCoreOpts {logLevel = CLLWarning}}) "frank" frankProfile $ \frank -> do
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
           memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
@@ -9727,17 +9727,17 @@ testChannelRelayCannotDowngradeRosterMember ps =
           concurrentlyN_
             [ alice <# "#team cath> hello from cath [>>]",
               do
+                frank <##. "warning: x.grp.mem.new: relay asserted key differs from roster-established key, keeping roster key, memberId="
                 frank <## "#team: unknown member cath updated to cath"
                 frank <## "#team: bob introduced cath (Catherine) in the channel"
                 frank <# "#team cath> hello from cath [>>]"
             ]
           threadDelay 100000
-          -- with the fix, frank's row for cath retains the roster-established role and key
           checkMemberRow frank "cath" (Just "moderator")
           frankKey <- getMemberPubKey frank "cath"
           frankKey `shouldBe` realKey
   where
-    getMemberPubKey :: HasCallStack => TestCC -> T.Text -> IO (Maybe ByteString)
+    getMemberPubKey :: TestCC -> T.Text -> IO (Maybe ByteString)
     getMemberPubKey cc name = do
       rows <- withCCTransaction cc $ \db ->
         DB.query db "SELECT member_pub_key FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only (Maybe ByteString)]

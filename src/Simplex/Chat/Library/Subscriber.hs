@@ -2961,7 +2961,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure (conn', Nothing)
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _ _) msgScope_ msg brokerTs = do
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ msg brokerTs = do
       let fromRelay = useRelays' gInfo && isRelay m
       unless fromRelay $ checkHostRole m memRole
       if sameMemberId memId (membership gInfo)
@@ -2973,6 +2973,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- never the role or key (those are owner-authoritative via the roster, and
               -- XGrpMemNew is unsigned)
               | fromRelay && isRosterRole (memberRole' unknownMember) -> do
+                  -- a member's key is immutable per memberId and identical across relays; mismatch
+                  -- is unambiguous relay misbehavior (role can legitimately differ across relays
+                  -- under multi-relay skew, so we deliberately don't warn on role)
+                  let assertedKey = (\(MemberKey k) -> k) <$> assertedKey_
+                  -- TODO [relays] member: surface relay-key-mismatch as a dedicated event / chat item / relay state
+                  when (assertedKey /= memberPubKey unknownMember) $
+                    messageWarning $ "x.grp.mem.new: relay asserted key differs from roster-established key, keeping roster key, memberId=" <> safeDecodeUtf8 (strEncode memId)
                   updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db vr user m unknownMember memInfo initialStatus
                   -- roster members can't be pending, so no members-require-attention update
                   gInfo' <- updatePublicGroupData user gInfo
