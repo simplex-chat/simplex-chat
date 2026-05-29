@@ -3146,6 +3146,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
           | senderRole < GRAdmin || senderRole < fromRole =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
+          | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
+              messageError "x.grp.mem.role: only the owner can change moderator/admin roles in relay groups" $> Nothing
           | otherwise = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
               (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
