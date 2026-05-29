@@ -1180,18 +1180,21 @@ forwardCachedRoster user gInfo subscriber = do
 introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
-  -- roster first, so the joiner trusts mod/admin keys before relay intros
-  forwardCachedRoster user gInfo subscriber
-  -- filter to current members so left/removed mods/admins aren't re-introduced to the joiner
-  modMs <- filter memberCurrent <$> withStore' (\db -> getGroupModerators db vr user gInfo)
+  (owners, rosterMems) <- withStore' $ \db ->
+    (,) <$> getGroupOwners db vr user gInfo <*> getGroupRosterMembers db vr user gInfo
+  let modMs = owners <> rosterMems
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
   withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
-  let introEvts = map (memberIntroEvt gInfo) modMs
-  forM_ (L.nonEmpty introEvts) $ \introEvts' ->
-    sendGroupMemberMessages user gInfo conn introEvts'
+  -- owner intros first so the joiner has the owner profile loaded before applying the cached roster (signed by the owner)
+  sendIntros owners
+  forwardCachedRoster user gInfo subscriber
+  sendIntros rosterMems
   withStore' $ \db ->
     setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
+  where
+    sendIntros ms = forM_ (L.nonEmpty $ map (memberIntroEvt gInfo) ms) $ \evts ->
+      sendGroupMemberMessages user gInfo conn evts
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1228,8 +1231,8 @@ isRosterRole r = r == GRModerator || r == GRAdmin
 
 -- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
 validateGroupRoster :: GroupRoster -> GroupRoster
-validateGroupRoster GroupRoster {version, roster = entries} =
-  GroupRoster {version, roster = dedup [] $ filter (\RosterMember {role} -> isRosterRole role) entries}
+validateGroupRoster GroupRoster {version = ver, roster = entries} =
+  GroupRoster {version = ver, roster = dedup [] $ filter (\RosterMember {role} -> isRosterRole role) entries}
   where
     dedup _ [] = []
     dedup seen (rm@RosterMember {memberId} : rms)

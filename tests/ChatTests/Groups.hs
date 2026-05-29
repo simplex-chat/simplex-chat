@@ -9646,30 +9646,38 @@ testChannelRoleTransitionsUpdateRoster ps =
           withNewTestChat ps "eve" eveProfile $ \eve ->
             withNewTestChat ps "frank" frankProfile $ \frank -> do
               (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
-              forM_ [cath, dan, eve] $ \member ->
-                memberJoinChannel "team" [bob] [alice] shortLink fullLink member
-              -- member -> moderator: dan/eve XGrpMemRole skipped; roster apply creates cath and emits chat item
-              threadDelay 1000000
+              memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+              -- member -> moderator
+              threadDelay 100000
               alice ##> "/mr #team cath moderator"
               alice <## "#team: you changed the role of cath to moderator (signed)"
               concurrentlyN_
                 [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
-                  cath <## "#team: alice changed your role from member to moderator (signed)",
-                  dan <## "#team: alice changed the role of cath from member to moderator (signed)",
-                  eve <## "#team: alice changed the role of cath from member to moderator (signed)"
+                  cath <## "#team: alice changed your role from member to moderator (signed)"
                 ]
-              -- moderator -> admin (within roster): dan/eve now know cath, so role event lands cleanly
-              threadDelay 1000000
+              -- dan joins; cached roster has cath as moderator
+              threadDelay 100000
+              memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
+              dan <## "#team: alice changed the role of cath from member to moderator (signed)"
+              threadDelay 100000
+              checkMemberRow dan "cath" (Just "moderator")
+              -- moderator -> admin: dan now knows cath, role event lands cleanly
+              threadDelay 100000
               alice ##> "/mr #team cath admin"
               alice <## "#team: you changed the role of cath to admin (signed)"
               concurrentlyN_
                 [ bob <## "#team: alice changed the role of cath from moderator to admin (signed)",
                   cath <## "#team: alice changed your role from moderator to admin (signed)",
-                  dan <## "#team: alice changed the role of cath from moderator to admin (signed)",
-                  eve <## "#team: alice changed the role of cath from moderator to admin (signed)"
+                  dan <## "#team: alice changed the role of cath from moderator to admin (signed)"
                 ]
+              -- eve joins; cached roster has cath as admin
+              threadDelay 100000
+              memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink eve
+              eve <## "#team: alice changed the role of cath from member to admin (signed)"
+              threadDelay 100000
+              checkMemberRow eve "cath" (Just "admin")
               -- admin -> member (crossing out of roster): roster drops cath
-              threadDelay 1000000
+              threadDelay 100000
               alice ##> "/mr #team cath member"
               alice <## "#team: you changed the role of cath to member (signed)"
               concurrentlyN_
@@ -9678,8 +9686,8 @@ testChannelRoleTransitionsUpdateRoster ps =
                   dan <## "#team: alice changed the role of cath from admin to member (signed)",
                   eve <## "#team: alice changed the role of cath from admin to member (signed)"
                 ]
-              -- frank joins; cath never posted, and isn't in the roster, so frank has no record of her
-              threadDelay 1000000
+              -- frank joins; cath isn't in the roster, so frank has no record of her
+              threadDelay 100000
               memberJoinChannel "team" [bob] [alice] shortLink fullLink frank
               threadDelay 100000
               checkMemberRow frank "cath" Nothing
