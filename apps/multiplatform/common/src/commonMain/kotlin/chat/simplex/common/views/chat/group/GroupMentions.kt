@@ -210,8 +210,7 @@ fun GroupMentions(
       },
     contentAlignment = Alignment.BottomStart
   ) {
-    val activeMentions = composeState.value.parsedMessage.count { it.format is Format.Mention }
-    val showMaxReachedBox = activeMentions >= MAX_NUMBER_OF_MENTIONS && isVisible.value && composeState.value.mentions[mentionName.value] == null
+    val showMaxReachedBox = composeState.value.memberMentions.size >= MAX_NUMBER_OF_MENTIONS && isVisible.value && composeState.value.mentions[mentionName.value] == null
     LazyColumnWithScrollBarNoAppBar(
       Modifier
         .heightIn(max = MAX_PICKER_HEIGHT)
@@ -229,7 +228,7 @@ fun GroupMentions(
           Divider()
         }
         val mentioned = mentionMemberId.value == member.memberId
-        val disabled = activeMentions >= MAX_NUMBER_OF_MENTIONS && !mentioned
+        val disabled = composeState.value.memberMentions.size >= MAX_NUMBER_OF_MENTIONS && !mentioned
         Row(
           Modifier
             .fillMaxWidth()

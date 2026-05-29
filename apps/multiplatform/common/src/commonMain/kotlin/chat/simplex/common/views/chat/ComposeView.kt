@@ -131,17 +131,12 @@ data class ComposeState(
   )
 
   val memberMentions: Map<String, Long>
-    get() {
-      val result = mutableMapOf<String, Long>()
-      for (ft in parsedMessage) {
-        if (result.size >= MAX_NUMBER_OF_MENTIONS) break
-        val name = (ft.format as? Format.Mention)?.memberName ?: continue
-        if (name in result) continue
-        val id = mentions[name]?.memberRef?.groupMemberId ?: continue
-        result[name] = id
-      }
-      return result
-    }
+    get() = parsedMessage
+      .mapNotNull { (it.format as? Format.Mention)?.memberName }
+      .distinct()
+      .mapNotNull { name -> mentions[name]?.memberRef?.groupMemberId?.let { name to it } }
+      .take(MAX_NUMBER_OF_MENTIONS)
+      .toMap()
 
   val editing: Boolean
     get() =
@@ -241,11 +236,10 @@ data class ComposeState(
   }
 
   fun mentionMemberName(name: String): String {
-    val usedMentions = parsedMessage.mapNotNull { (it.format as? Format.Mention)?.memberName }.toSet()
     var n = 0
     var tryName = name
 
-    while (tryName in usedMentions) {
+    while (mentions.containsKey(tryName)) {
       n++
       tryName = "${name}_$n"
     }

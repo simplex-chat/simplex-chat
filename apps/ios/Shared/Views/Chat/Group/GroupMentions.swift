@@ -43,12 +43,11 @@ struct GroupMentionsView: View {
                     VStack(spacing: 0) {
                         Spacer()
                         Divider()
-                        let activeMentions = composeState.parsedMessage.reduce(0) { n, ft in if case .mention = ft.format { n + 1 } else { n } }
                         let scroll = ScrollView {
                             LazyVStack(spacing: 0) {
                                 ForEach(Array(filtered.enumerated()), id: \.element.wrapped.groupMemberId) { index, member in
                                     let mentioned = mentionMemberId == member.wrapped.memberId
-                                    let disabled = activeMentions >= MAX_NUMBER_OF_MENTIONS && !mentioned
+                                    let disabled = composeState.memberMentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
                                     ZStack(alignment: .bottom) {
                                         memberRowView(member.wrapped, mentioned)
                                             .contentShape(Rectangle())

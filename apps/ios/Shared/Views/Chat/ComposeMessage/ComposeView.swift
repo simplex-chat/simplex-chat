@@ -121,12 +121,9 @@ struct ComposeState {
     }
 
     func mentionMemberName(_ name: String) -> String {
-        let usedMentions: Set<String> = Set(parsedMessage.compactMap { ft in
-            if case let .mention(n) = ft.format { n } else { nil }
-        })
         var n = 0
         var tryName = name
-        while usedMentions.contains(tryName) {
+        while mentions[tryName] != nil {
             n += 1
             tryName = "\(name)_\(n)"
         }
@@ -137,10 +134,7 @@ struct ComposeState {
         var result: [String: Int64] = [:]
         for ft in parsedMessage {
             if result.count >= MAX_NUMBER_OF_MENTIONS { break }
-            guard case let .mention(name) = ft.format else { continue }
-            if result[name] != nil { continue }
-            guard let id = self.mentions[name]?.memberRef?.groupMemberId else { continue }
-            result[name] = id
+            if case let .mention(name) = ft.format, let id = mentions[name]?.memberRef?.groupMemberId { result[name] = id }
         }
         return result
     }
