@@ -2968,19 +2968,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         then pure Nothing
         else
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-            -- privileged members are roster-established; the relay only disseminates
-            -- their profile, never their key/role (those come from the owner roster)
             Right unknownMember@GroupMember {memberStatus = GSMemUnknown}
+              -- roster-established privileged member: the relay may update the profile only,
+              -- never the role or key (those are owner-authoritative via the roster, and
+              -- XGrpMemNew is unsigned)
+              | fromRelay && isRosterRole (memberRole' unknownMember) -> do
+                  updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db vr user m unknownMember memInfo initialStatus
+                  -- roster members can't be pending, so no members-require-attention update
+                  gInfo' <- updatePublicGroupData user gInfo
+                  toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
+                  memberAnnouncedToView updatedMember gInfo'
+                  pure $ deliveryJobScope updatedMember
+              -- asserted privileged but NOT roster-established: relay conjuring a moderator
               | fromRelay && isRosterRole memRole ->
-                  if memberRole' unknownMember == memRole
-                    then do
-                      updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db vr user m unknownMember memInfo initialStatus
-                      -- roster members can't be pending, so no members-require-attention update
-                      gInfo' <- updatePublicGroupData user gInfo
-                      toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
-                      memberAnnouncedToView updatedMember gInfo'
-                      pure $ deliveryJobScope updatedMember
-                    else messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
+                  messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
               | otherwise -> do
                   (updatedMember, gInfo') <- withStore $ \db -> do
                     updatedMember <- updateUnknownMemberAnnounced db vr user m unknownMember memInfo initialStatus
