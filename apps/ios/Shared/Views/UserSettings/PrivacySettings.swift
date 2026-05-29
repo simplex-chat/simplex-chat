@@ -126,9 +126,7 @@ struct PrivacySettings: View {
                 }
 
                 Section {
-                    NavigationLink {
-                        morePrivacyView
-                    } label: {
+                    NavigationLink(destination: morePrivacyView) {
                         settingsRow("ellipsis", color: theme.colors.secondary) { Text("More privacy") }
                     }
                 }
@@ -180,7 +178,7 @@ struct PrivacySettings: View {
     }
 
     @ViewBuilder
-    private var morePrivacyView: some View {
+    private func morePrivacyView() -> some View {
         List {
             Section {
                 settingsRow("message", color: theme.colors.secondary) {
