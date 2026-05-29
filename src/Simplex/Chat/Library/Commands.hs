@@ -2743,8 +2743,9 @@ processChatCommand vr nm = \case
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
-      let rosterSetChanged = useRelays' gInfo && not (null (changed1 <> changed2)) && (isRosterRole newRole || anyPrivilegedTarget)
-      when rosterSetChanged $ bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
+      let rosterSetChanged = not (null (changed1 <> changed2)) && (isRosterRole newRole || anyPrivilegedTarget)
+      when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && rosterSetChanged) $
+        bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole, msgSigned} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
@@ -2884,7 +2885,8 @@ processChatCommand vr nm = \case
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
       -- refresh the roster so the relay drops a removed privileged member for future joiners
-      when (useRelays' gInfo && anyPrivilegedRemoved) $ bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
+      when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved) $
+        bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)

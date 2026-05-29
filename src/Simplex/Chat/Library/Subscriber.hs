@@ -3150,18 +3150,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpRoster gInfo author roster verifiedMsg brokerTs
       -- only an owner may sign a roster; otherwise a relay could route it as a member whose key it controls
       | memberRole' author /= GROwner = messageError "x.grp.roster: not signed by an owner" $> Nothing
+      | length entries > maxGroupRosterSize = messageError ("x.grp.roster: too many entries, max " <> tshow maxGroupRosterSize) $> Nothing
       | isUserGrpFwdRelay gInfo = relayApplyRoster
       | otherwise = Nothing <$ memberApplyRoster
       where
-        GroupRoster {version = newVer} = validRoster
+        GroupRoster {version = newVer, roster = entries} = validRoster
         validRoster = validateGroupRoster roster
         relayApplyRoster :: CM (Maybe DeliveryJobScope)
         relayApplyRoster
           | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than cached version"
           | otherwise = case verifiedMsg of
               VMSigned _ sm _ -> do
-                withStore' $ \db -> setCachedGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
-                applyRosterRecords
+                defaultRole <- unknownMemberRole gInfo
+                results <- withStore $ \db -> do
+                  res <- processRoster db defaultRole
+                  liftIO $ setCachedGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
+                  pure res
+                emitRosterResults results
                 -- always broadcast on a bump: self-healing, and demotions must reach members
                 pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
               VMUnsigned _ -> Nothing <$ messageWarning "x.grp.roster: unsigned roster"
@@ -3170,37 +3175,41 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | maybe False (newVer <) (rosterVersion gInfo) = messageWarning "x.grp.roster: older than accepted version"
           | maybe False (newVer ==) (rosterVersion gInfo) = pure ()
           | otherwise = do
-              applyRosterRecords
-              withStore' $ \db -> setGroupRosterVersion db gInfo newVer
-        applyRosterRecords :: CM ()
-        applyRosterRecords = do
-          let GroupRoster {roster = entries} = validRoster
-              rosterIds = map (\RosterMember {memberId} -> memberId) entries
-          defaultRole <- unknownMemberRole gInfo
-          (conflicts, applied) <- withStore $ \db -> do
-            acc <- foldrM (applyRosterEntry db defaultRole) ([], []) entries
-            -- absent privileged members revert to the joiner default
-            currentPriv <- liftIO $ getGroupRosterMembers db vr user gInfo
-            liftIO $ forM_ currentPriv $ \m ->
-              when (memberId' m `notElem` rosterIds) $
-                updateGroupMemberRole db user m defaultRole
-            pure acc
+              defaultRole <- unknownMemberRole gInfo
+              results <- withStore $ \db -> do
+                res <- processRoster db defaultRole
+                liftIO $ setGroupRosterVersion db gInfo newVer
+                pure res
+              emitRosterResults results
+        processRoster :: DB.Connection -> GroupMemberRole -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole)])
+        processRoster db defaultRole = do
+          let rosterIds = map (\RosterMember {memberId} -> memberId) entries
+          acc <- foldrM applyRosterEntry ([], []) entries
+          -- absent privileged members revert to the joiner default
+          currentPriv <- liftIO $ getGroupRosterMembers db vr user gInfo
+          liftIO $ forM_ currentPriv $ \m ->
+            when (memberId' m `notElem` rosterIds) $
+              updateGroupMemberRole db user m defaultRole
+          pure acc
+          where
+            -- entry-level failure (StoreError or IO exception) is muted; the entry is dropped
+            applyRosterEntry RosterMember {memberId, name, key = MemberKey pubKey, role} (cs, as) =
+              apply `catchAllErrors` \_ -> pure (cs, as)
+              where
+                applied m = (cs, ((m :: GroupMember) {memberRole = role}, memberRole' m) : as)
+                apply = getCreateUnknownGMByMemberId db vr user gInfo memberId name defaultRole True >>= \case
+                  Nothing -> pure (cs, as)
+                  Just (m, _) -> case memberPubKey m of
+                    Just k
+                      | k /= pubKey -> pure (memberId : cs, as)
+                      | memberRole' m == role -> pure (cs, as)
+                      | otherwise -> liftIO (updateGroupMemberRole db user m role) $> applied m
+                    Nothing -> liftIO (setGroupMemberKeyRole db m pubKey role) $> applied m
+        emitRosterResults :: ([MemberId], [(GroupMember, GroupMemberRole)]) -> CM ()
+        emitRosterResults (conflicts, applied) = do
           forM_ conflicts $ \mid' ->
             messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode mid')
           forM_ applied $ \(member, fromRole) -> createItems member fromRole
-        applyRosterEntry :: DB.Connection -> GroupMemberRole -> RosterMember -> ([MemberId], [(GroupMember, GroupMemberRole)]) -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole)])
-        applyRosterEntry db defaultRole RosterMember {memberId, name, key = MemberKey pubKey, role} (cs, as) =
-          applyEntry `catchAllErrors` \_ -> pure (cs, as)
-          where
-            applied m = (cs, ((m :: GroupMember) {memberRole = role}, memberRole' m) : as)
-            applyEntry = getCreateUnknownGMByMemberId db vr user gInfo memberId name defaultRole True >>= \case
-              Nothing -> pure (cs, as)
-              Just (m, _) -> case memberPubKey m of
-                Just k
-                  | k /= pubKey -> pure (memberId : cs, as)
-                  | memberRole' m == role -> pure (cs, as)
-                  | otherwise -> liftIO (updateGroupMemberRole db user m role) $> applied m
-                Nothing -> liftIO (setGroupMemberKeyRole db m pubKey role) $> applied m
         createItems :: GroupMember -> GroupMemberRole -> CM ()
         createItems member fromRole = do
           let toRole = memberRole' member
@@ -3348,8 +3357,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo''' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
         groupMsgToView cInfo ci
         toView $ CEvtLeftMember user gInfo''' m' {memberStatus = GSMemLeft} msgSigned
-      -- a privileged leaver drops out of the roster; bumpAndBroadcastRoster is owner-guarded
-      when (useRelays' gInfo'' && isRosterRole (memberRole' m)) $
+      -- a privileged leaver drops out of the roster
+      when (useRelays' gInfo'' && memberRole' (membership gInfo'') == GROwner && isRosterRole (memberRole' m)) $
         bumpAndBroadcastRoster user gInfo'' `catchAllErrors` eToView
       pure $ memberEventDeliveryScope m
 

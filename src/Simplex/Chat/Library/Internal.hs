@@ -2136,19 +2136,19 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
+-- TODO [relays] improvement: publish roster_version in link data so the owner can recover the latest version
+-- TODO   after restoring from a stale backup (relays accept only strictly-greater versions)
 bumpAndBroadcastRoster :: User -> GroupInfo -> CM ()
-bumpAndBroadcastRoster user gInfo
-  | memberRole' (membership gInfo) /= GROwner = pure ()
-  | otherwise = do
-      vr <- chatVersionRange
-      let rosterVer = maybe 0 (+ 1) (rosterVersion gInfo)
-      (relays, roster) <- withStore' $ \db -> do
-        relays <- getGroupRelayMembers db vr user gInfo
-        mods <- getGroupRosterMembers db vr user gInfo
-        setGroupRosterVersion db gInfo rosterVer
-        pure (relays, buildGroupRoster rosterVer mods)
-      forM_ (L.nonEmpty relays) $ \relays' ->
-        void $ sendGroupMessage' user gInfo (L.toList relays') (XGrpRoster roster)
+bumpAndBroadcastRoster user gInfo = do
+  vr <- chatVersionRange
+  let rosterVer = maybe 0 (+ 1) (rosterVersion gInfo)
+  (relays, roster) <- withStore' $ \db -> do
+    relays <- getGroupRelayMembers db vr user gInfo
+    mods <- getGroupRosterMembers db vr user gInfo
+    setGroupRosterVersion db gInfo rosterVer
+    pure (relays, buildGroupRoster rosterVer mods)
+  forM_ (L.nonEmpty relays) $ \relays' ->
+    void $ sendGroupMessage' user gInfo (L.toList relays') (XGrpRoster roster)
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
