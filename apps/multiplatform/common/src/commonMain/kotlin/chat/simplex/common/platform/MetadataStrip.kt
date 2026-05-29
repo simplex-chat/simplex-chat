@@ -170,6 +170,7 @@ fun stripGifMetadata(data: ByteArray): ByteArray {
   val hasGCT = (packed and 0x80) != 0
   val gctSize = if (hasGCT) 3 * (1 shl ((packed and 0x07) + 1)) else 0
   if (hasGCT) {
+    if (13 + gctSize > data.size) throw IllegalArgumentException("Invalid GIF: GCT (size $gctSize) extends past file (size ${data.size})")
     out.write(data, 13, gctSize)
   }
 
@@ -256,6 +257,7 @@ private fun skipExtensionBlock(data: ByteArray, start: Int): Int =
 /** Copy an Image Descriptor block + optional Local Color Table + image data. Returns new position. */
 private fun copyImageDescriptor(data: ByteArray, start: Int, out: java.io.ByteArrayOutputStream): Int {
   // Image Descriptor is 10 bytes (0x2C + 9 bytes)
+  if (start + 10 > data.size) throw IllegalArgumentException("Invalid GIF: truncated Image Descriptor at offset $start")
   out.write(data, start, 10)
   var pos = start + 10
 
@@ -264,11 +266,13 @@ private fun copyImageDescriptor(data: ByteArray, start: Int, out: java.io.ByteAr
   val hasLCT = (packed and 0x80) != 0
   if (hasLCT) {
     val lctSize = 3 * (1 shl ((packed and 0x07) + 1))
+    if (pos + lctSize > data.size) throw IllegalArgumentException("Invalid GIF: LCT (size $lctSize) extends past file at offset $pos")
     out.write(data, pos, lctSize)
     pos += lctSize
   }
 
   // LZW Minimum Code Size
+  if (pos >= data.size) throw IllegalArgumentException("Invalid GIF: truncated before LZW min code size at offset $pos")
   out.write(data[pos].toInt() and 0xFF)
   pos++
 
@@ -315,6 +319,9 @@ fun stripWebPMetadata(data: ByteArray): ByteArray {
     }
 
     if (fourCC == "VP8X") {
+      // Per spec VP8X payload is fixed at 10 bytes. If it's smaller, our flags-byte write
+      // at the post-loop fixup would land on the next chunk's FourCC and corrupt structure.
+      if (chunkSize < 10) throw IllegalArgumentException("Invalid WebP: VP8X chunk too small ($chunkSize bytes, need 10)")
       // +8 to skip the chunk header (fourCC + size), points to the flags byte in the output
       vp8xOffset = out.size() + 8
     }
@@ -606,6 +613,9 @@ fun stripVideoMetadata(inputPath: String, outputPath: String) {
       }
       pos += boxSize
     }
+    // Fail closed if any bytes remain — silently dropping them would shrink the container,
+    // shifting absolute file offsets that stco/co64 in moov reference into mdat.
+    if (pos != end) throw IllegalArgumentException("MP4 container has ${end - pos} trailing byte(s) at end of range $offset..$end")
     return containerOut.toByteArray()
   }
 
@@ -803,10 +813,14 @@ fun stripAviMetadata(inputPath: String, outputPath: String) {
     while (p + 8 <= end) {
       val fourCC = String(d, p, 4, Charsets.US_ASCII)
       val chunkSize = readLE32(d, p + 4)
-      if (chunkSize < 0) break
+      // Fail closed: silent break would shorten the rewritten LIST and could skip past real
+      // metadata chunks that follow a malformed one. Match the MKV-side fail-closed posture.
+      if (chunkSize < 0) throw IllegalArgumentException("AVI header chunk '$fourCC' has negative size at offset $p: $chunkSize")
       val paddedSize = if (chunkSize % 2 == 0) chunkSize.toLong() else chunkSize.toLong() + 1L
       val totalSizeLong = 8L + paddedSize
-      if (totalSizeLong > Int.MAX_VALUE || p + totalSizeLong > end) break
+      if (totalSizeLong > Int.MAX_VALUE || p + totalSizeLong > end) {
+        throw IllegalArgumentException("AVI header chunk '$fourCC' at offset $p overruns container: totalSize=$totalSizeLong, remaining=${end - p}")
+      }
       val totalSize = totalSizeLong.toInt()
 
       if (fourCC == "LIST" && p + 12 <= end) {
@@ -853,7 +867,9 @@ fun stripAviMetadata(inputPath: String, outputPath: String) {
         raf.readFully(chunkHeader)
         val fourCC = String(chunkHeader, 0, 4, Charsets.US_ASCII)
         val chunkSize = readLE32(chunkHeader, 4)
-        if (chunkSize < 0) break
+        // Fail closed: a silent break would truncate the output (RIFF size is rewritten at the end
+        // to match), letting a crafted file pass through with arbitrary tail data silently dropped.
+        if (chunkSize < 0) throw IllegalArgumentException("AVI top-level chunk '$fourCC' has negative size: $chunkSize")
         // Use Long to avoid overflow for odd chunkSize near Int.MAX_VALUE
         val paddedSize = if (chunkSize % 2 == 0) chunkSize.toLong() else chunkSize.toLong() + 1L
 

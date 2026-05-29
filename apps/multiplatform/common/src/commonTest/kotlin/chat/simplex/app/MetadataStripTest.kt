@@ -2259,3 +2259,125 @@ class AnimImageFileDispatchTest {
     }
   }
 }
+
+/** Regression tests for fail-closed gaps flagged in PR #6999 review. */
+class ReviewFailClosedTest {
+
+  // --- GIF bounds checks (review #4, #5) ---
+
+  @Test fun testGifTruncatedGctThrowsIllegalArgument() {
+    // GIF89a header + LSD where the packed byte advertises a GCT (0x80) of 3*2^(0+1) = 6 bytes,
+    // but the file ends right after the LSD. Without the bounds check this throws IOB from
+    // ByteArrayOutputStream.write; with it the stripper throws IllegalArgumentException.
+    val truncated = byteArrayOf(
+      0x47, 0x49, 0x46, 0x38, 0x39, 0x61,           // "GIF89a"
+      0x01, 0x00, 0x01, 0x00,                       // 1x1
+      0x80.toByte(),                                // packed: GCT bit set, size code 0 → 6 bytes
+      0x00, 0x00                                    // bg, aspect
+    )
+    assertFailsWith<IllegalArgumentException> { stripGifMetadata(truncated) }
+  }
+
+  @Test fun testGifTruncatedImageDescriptorThrowsIllegalArgument() {
+    // Header + LSD (no GCT) + image-descriptor sentinel only — descriptor needs 10 bytes total.
+    val truncated = byteArrayOf(
+      0x47, 0x49, 0x46, 0x38, 0x39, 0x61,           // "GIF89a"
+      0x01, 0x00, 0x01, 0x00,                       // 1x1
+      0x00, 0x00, 0x00,                             // no GCT, bg, aspect
+      0x2C, 0x00                                    // image-descriptor sentinel + 1 stray byte
+    )
+    assertFailsWith<IllegalArgumentException> { stripGifMetadata(truncated) }
+  }
+
+  // --- WebP VP8X size check (review #6) ---
+
+  @Test fun testWebpVp8xTooSmallThrowsIllegalArgument() {
+    // VP8X with chunkSize = 0 (spec mandates 10). Without the check, vp8xOffset would land on
+    // the next chunk's FourCC and the post-loop flag-clear would corrupt that byte.
+    val malformed = byteArrayOf(
+      0x52, 0x49, 0x46, 0x46,                       // "RIFF"
+      0x14, 0x00, 0x00, 0x00,                       // file size - 8 = 20
+      0x57, 0x45, 0x42, 0x50,                       // "WEBP"
+      0x56, 0x50, 0x38, 0x58,                       // "VP8X"
+      0x00, 0x00, 0x00, 0x00,                       // chunkSize = 0 (truncated, malformed)
+      0x45, 0x58, 0x49, 0x46,                       // "EXIF" — would be flag-corrupted by bug
+      0x00, 0x00, 0x00, 0x00                        // EXIF chunkSize = 0
+    )
+    assertFailsWith<IllegalArgumentException> { stripWebPMetadata(malformed) }
+  }
+
+  // --- MP4 processContainer trailing bytes (review #1) ---
+
+  @Test fun testMp4ContainerWithTrailingBytesThrowsIllegalArgument() {
+    // moov containing a single trak that DOES NOT TILE — i.e., trak's declared size leaves
+    // a few bytes inside moov unaccounted for. Without the trailing-byte throw, processContainer
+    // silently drops those bytes, shrinking moov and shifting mdat → broken stco/co64.
+    val mvhd = box("mvhd", ByteArray(100))
+    val trak = box("trak", ByteArray(100))
+    val moov = box("moov", mvhd + trak + ByteArray(3))  // 3 trailing bytes inside moov
+    val ftyp = box("ftyp", "isom".toByteArray() + ByteArray(8))
+    val mdat = box("mdat", ByteArray(8))
+
+    val inputFile = File.createTempFile("test_mp4_trailing_", ".mp4")
+    inputFile.writeBytes(ftyp + moov + mdat)
+    val outputFile = File.createTempFile("test_mp4_trailing_out_", ".mp4")
+    try {
+      assertFailsWith<IllegalArgumentException> {
+        stripVideoMetadata(inputFile.absolutePath, outputFile.absolutePath)
+      }
+    } finally {
+      inputFile.delete(); outputFile.delete()
+    }
+  }
+
+  // --- AVI silent break → throw (review #2, #3) ---
+
+  @Test fun testAviTopLevelNegativeChunkSizeThrows() {
+    // Top-level chunk with the high bit set in chunkSize. Previously silent-break, now throws.
+    val data = byteArrayOf(
+      0x52, 0x49, 0x46, 0x46,                                 // "RIFF"
+      0x14, 0x00, 0x00, 0x00,                                 // file size - 8 = 20
+      0x41, 0x56, 0x49, 0x20,                                 // "AVI "
+      0x4A, 0x55, 0x4E, 0x4B,                                 // "JUNK" chunk
+      0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()  // chunkSize = -1 (top bit set)
+    )
+    val inputFile = File.createTempFile("test_avi_neg_", ".avi")
+    inputFile.writeBytes(data)
+    val outputFile = File.createTempFile("test_avi_neg_out_", ".avi")
+    try {
+      assertFailsWith<IllegalArgumentException> {
+        stripAviMetadata(inputFile.absolutePath, outputFile.absolutePath)
+      }
+    } finally {
+      inputFile.delete(); outputFile.delete()
+    }
+  }
+
+  @Test fun testAviHdrlNegativeChunkSizeThrows() {
+    // hdrl LIST containing an inner chunk with negative size. Previously silent-break,
+    // now throws so subsequent _PMX/strd/IDIT metadata can't be silently dropped.
+    val innerChunk = byteArrayOf(
+      0x61, 0x76, 0x69, 0x68,                                 // "avih"
+      0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()  // chunkSize = -1
+    )
+    val hdrlListBody = "hdrl".toByteArray() + innerChunk
+    val hdrlList = byteArrayOf(0x4C, 0x49, 0x53, 0x54) +      // "LIST"
+      byteArrayOf(hdrlListBody.size.toByte(), 0, 0, 0) +      // size
+      hdrlListBody
+    val data = byteArrayOf(
+      0x52, 0x49, 0x46, 0x46,                                 // "RIFF"
+      (12 + hdrlList.size).toByte(), 0, 0, 0,                 // file size - 8
+      0x41, 0x56, 0x49, 0x20                                  // "AVI "
+    ) + hdrlList
+    val inputFile = File.createTempFile("test_avi_hdrl_neg_", ".avi")
+    inputFile.writeBytes(data)
+    val outputFile = File.createTempFile("test_avi_hdrl_neg_out_", ".avi")
+    try {
+      assertFailsWith<IllegalArgumentException> {
+        stripAviMetadata(inputFile.absolutePath, outputFile.absolutePath)
+      }
+    } finally {
+      inputFile.delete(); outputFile.delete()
+    }
+  }
+}
