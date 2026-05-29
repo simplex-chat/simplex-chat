@@ -1240,7 +1240,7 @@ validateGroupRoster GroupRoster {version = ver, roster = entries} =
       | otherwise = rm : dedup (memberId : seen) rms
 
 -- Privileged members without a known key are skipped (recipients can't verify them).
-buildGroupRoster :: Int -> [GroupMember] -> GroupRoster
+buildGroupRoster :: VersionRoster -> [GroupMember] -> GroupRoster
 buildGroupRoster ver mods = GroupRoster {version = ver, roster = mapMaybe rosterMember mods}
   where
     rosterMember m@GroupMember {memberId, memberPubKey, memberRole}
@@ -2144,7 +2144,7 @@ sendGroupMessage' user gInfo members chatMsgEvent =
 bumpAndBroadcastRoster :: User -> GroupInfo -> CM ()
 bumpAndBroadcastRoster user gInfo = do
   vr <- chatVersionRange
-  let rosterVer = maybe 0 (+ 1) (rosterVersion gInfo)
+  let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
   (relays, roster) <- withStore' $ \db -> do
     relays <- getGroupRelayMembers db vr user gInfo
     mods <- getGroupRosterMembers db vr user gInfo

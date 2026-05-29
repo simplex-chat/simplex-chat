@@ -356,7 +356,7 @@ data GrpMsgForward = GrpMsgForward
 -- | Owner-signed snapshot of the privileged (moderator/admin) set; owners are
 -- not included, their keys come from the link.
 data GroupRoster = GroupRoster
-  { version :: Int,
+  { version :: VersionRoster,
     roster :: [RosterMember]
   }
   deriving (Eq, Show)

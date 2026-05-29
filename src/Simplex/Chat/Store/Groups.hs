@@ -1401,13 +1401,13 @@ toGroupRelay ((groupRelayId, groupMemberId, chatRelayId, address, displayName, f
   let userChatRelay = UserChatRelay {chatRelayId, address, relayProfile = toRelayProfile (displayName, fullName, shortDescr, image), domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
    in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink}
 
-setGroupRosterVersion :: DB.Connection -> GroupInfo -> Int -> IO ()
+setGroupRosterVersion :: DB.Connection -> GroupInfo -> VersionRoster -> IO ()
 setGroupRosterVersion db GroupInfo {groupId} v = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?" (v, currentTs, groupId)
 
 -- Relay caches the verbatim signed roster (parts + sending owner + broker ts) to re-forward to joiners.
-setCachedGroupRoster :: DB.Connection -> GroupInfo -> Int -> GroupMemberId -> UTCTime -> SignedMsg -> IO ()
+setCachedGroupRoster :: DB.Connection -> GroupInfo -> VersionRoster -> GroupMemberId -> UTCTime -> SignedMsg -> IO ()
 setCachedGroupRoster db GroupInfo {groupId} v ownerGMId brokerTs SignedMsg {chatBinding, signatures, signedBody} = do
   currentTs <- getCurrentTime
   DB.execute
