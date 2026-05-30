@@ -55,6 +55,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
+import Simplex.Chat.Web (renderWebPreviews)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -200,6 +201,7 @@ startChatController mainApp enableSndFiles = do
           startCleanupManager
           void $ forkIO $ mapM_ startExpireCIs users
           startRelayChecks users
+          startWebPreview users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
@@ -231,6 +233,22 @@ startChatController mainApp enableSndFiles = do
             a <- Just <$> async (void $ runExceptT $ runRelayGroupLinkChecks relayUser)
             atomically $ writeTVar relayAsync a
           _ -> pure ()
+    startWebPreview users = do
+      let relayUsers = filter (\User {userChatRelay} -> isTrue userChatRelay) users
+      ChatConfig {webPreviewConfig = cfg_} <- asks config
+      case (relayUsers, cfg_) of
+        (_ : _, Just cfg) -> do
+          wpAsync <- asks webPreviewAsync
+          readTVarIO wpAsync >>= \case
+            Nothing -> do
+              cc <- ask
+              a <- Just <$> async (liftIO $ forever $ do
+                forM_ relayUsers $ \relayUser ->
+                  renderWebPreviews cfg cc relayUser
+                threadDelay (webUpdateInterval cfg * 1000000))
+              atomically $ writeTVar wpAsync a
+            _ -> pure ()
+        _ -> pure ()
     startExpireCIs user = whenM shouldExpireChats $ do
       startExpireCIThread user
       setExpireCIFlag user True

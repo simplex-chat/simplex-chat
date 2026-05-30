@@ -29,7 +29,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), WebPreviewConfig (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options
@@ -154,7 +154,7 @@ testCoreOpts =
       tbqSize = 16,
       deviceName = Nothing,
       chatRelay = False,
-      baseWebUrl = Nothing,
+      webPreviewConfig = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
@@ -164,8 +164,8 @@ testCoreOpts =
 relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
 
-relayWebTestOpts :: Text -> ChatOpts
-relayWebTestOpts webUrl = testOpts {coreOptions = testCoreOpts {chatRelay = True, baseWebUrl = Just webUrl}}
+relayWebTestOpts :: Text -> FilePath -> ChatOpts
+relayWebTestOpts webUrl webDir = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {baseWebUrl = webUrl, webJsonDir = webDir, webCorsFile = Nothing, webUpdateInterval = 300}}}
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts

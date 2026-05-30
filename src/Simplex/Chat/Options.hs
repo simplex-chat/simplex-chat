@@ -22,13 +22,14 @@ where
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
+import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), WebPreviewConfig (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (HostMode (..), SMPWebPortServers (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
@@ -66,7 +67,7 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
-    baseWebUrl :: Maybe Text,
+    webPreviewConfig :: Maybe WebPreviewConfig,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
@@ -241,13 +242,30 @@ coreChatOptsP appDir defaultDbName = do
       ( long "relay"
           <> help "Run as a chat relay client"
       )
-  baseWebUrl <-
-    optional $
-      strOption
-        ( long "web-url"
-            <> metavar "URL"
-            <> help "Base URL for channel web previews (relay only)"
-        )
+  webPreviewConfig <- do
+    baseWebUrl_ <-
+      optional $
+        strOption
+          ( long "web-url"
+              <> metavar "URL"
+              <> help "Base URL for channel web previews (relay only)"
+          )
+    webJsonDir_ <-
+      optional $
+        strOption
+          ( long "web-dir"
+              <> metavar "DIR"
+              <> help "Directory for channel web preview JSON files (relay only)"
+          )
+    webCorsFile <-
+      optional $
+        strOption
+          ( long "web-cors"
+              <> metavar "FILE"
+              <> help "Path to generated Caddy CORS config file (relay only)"
+          )
+    pure $ baseWebUrl_ <&> \baseWebUrl ->
+      WebPreviewConfig {baseWebUrl, webJsonDir = fromMaybe "web_preview" webJsonDir_, webCorsFile, webUpdateInterval = 300}
   highlyAvailable <-
     switch
       ( long "ha"
@@ -291,7 +309,7 @@ coreChatOptsP appDir defaultDbName = do
         tbqSize,
         deviceName,
         chatRelay,
-        baseWebUrl,
+        webPreviewConfig,
         highlyAvailable,
         yesToUpMigrations,
         migrationBackupPath,

@@ -158,7 +158,7 @@ data ChatConfig = ChatConfig
     ciExpirationInterval :: Int64, -- microseconds
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
-    baseWebUrl :: Maybe Text,
+    webPreviewConfig :: Maybe WebPreviewConfig,
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
     relayChecksInterval :: NominalDiffTime,
     relayInactiveTTL :: NominalDiffTime,
@@ -168,6 +168,13 @@ data ChatConfig = ChatConfig
     deviceNameForRemote :: Text,
     remoteCompression :: Bool,
     chatHooks :: ChatHooks
+  }
+
+data WebPreviewConfig = WebPreviewConfig
+  { baseWebUrl :: Text,
+    webJsonDir :: FilePath,
+    webCorsFile :: Maybe FilePath,
+    webUpdateInterval :: Int -- seconds
   }
 
 data RandomAgentServers = RandomAgentServers
@@ -257,6 +264,7 @@ data ChatController = ChatController
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
+    webPreviewAsync :: TVar (Maybe (Async ())),
     chatRelayTests :: TMap ConnId RelayTest,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,

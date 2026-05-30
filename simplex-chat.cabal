@@ -90,6 +90,7 @@ library
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
       Simplex.Chat.Util
+      Simplex.Chat.Web
   if !flag(client_library)
       exposed-modules:
           Simplex.Chat.Bot

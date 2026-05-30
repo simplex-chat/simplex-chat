@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests.ChatRelays where
 
@@ -14,11 +15,16 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import ProtocolTests (testGroupProfile)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
 import Simplex.Chat.Types (GroupProfile (..))
+import Simplex.Chat.Web (CorsOrigin (..), WebChannelPreview (..), WebMessage (..), renderWebPreviews, writeCorsConfig)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Util (decodeJSON)
+import System.Directory (listDirectory)
+import System.FilePath ((</>))
 import Test.Hspec hiding (it)
+import UnliftIO.STM (readTVarIO)
 
 chatRelayTests :: SpecWith TestParams
 chatRelayTests = do
@@ -30,6 +36,9 @@ chatRelayTests = do
     it "relay profile updated in address" testRelayProfileUpdateInAddress
   describe "relay capabilities" $ do
     it "relay sends baseWebUrl in capabilities" testRelayWebCapabilities
+  describe "web preview" $ do
+    it "render web preview JSON for channel" testWebPreviewRender
+    it "generate CORS config" testWebPreviewCors
   describe "share channel card" $ do
     it "share channel card in direct chat" testShareChannelDirect
     it "share channel card in group" testShareChannelGroup
@@ -330,7 +339,7 @@ getTermLine2 c = (,) <$> getTermLine c <*> getTermLine c
 testRelayWebCapabilities :: HasCallStack => TestParams -> IO ()
 testRelayWebCapabilities ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps (relayWebTestOpts "https://relay.example.com/preview") "bob" bobProfile $ \relay -> do
+    withNewTestChatOpts ps (relayWebTestOpts "https://relay.example.com/preview" (tmpPath ps </> "web_cap")) "bob" bobProfile $ \relay -> do
       rName <- userName relay
       relay ##> "/ad"
       (relaySLink, _cLink) <- getContactLinks relay True
@@ -348,6 +357,64 @@ testRelayWebCapabilities ps =
             pure (),
           relay <## "#news: you joined the group as relay"
         ]
+
+testWebPreviewRender :: HasCallStack => TestParams -> IO ()
+testWebPreviewRender ps = do
+  let webDir = tmpPath ps </> "web_preview"
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps (relayWebTestOpts "https://relay.example.com/preview" webDir) "bob" bobProfile $ \relay -> do
+      _ <- setupRelay alice relay
+      alice ##> "/public group relays=1 #news"
+      alice <## "group #news is created"
+      alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+      concurrentlyN_
+        [ do
+            alice <## "#news: group link relays updated, current relays:"
+            alice <## "  - relay id 1: active, web: https://relay.example.com/preview"
+            alice <## "group link:"
+            _ <- getTermLine alice
+            pure (),
+          relay <## "#news: you joined the group as relay"
+        ]
+      alice #> "#news hello from the channel"
+      relay <# "#news> hello from the channel"
+      alice #> "#news second message"
+      relay <# "#news> second message"
+      threadDelay 500000
+      let cc = chatController relay
+          ChatConfig {webPreviewConfig = cfg_} = config cc
+      Just user <- readTVarIO (currentUser cc)
+      case cfg_ of
+        Nothing -> error "no web preview config"
+        Just cfg -> do
+          renderWebPreviews cfg cc user
+          files <- listDirectory webDir
+          length files `shouldBe` 1
+          let jsonFile = webDir </> head files
+          jsonBytes <- LB.readFile jsonFile
+          case J.eitherDecode jsonBytes of
+            Left err -> error $ "JSON decode error: " <> err
+            Right (wPreview :: WebChannelPreview) -> do
+              length (messages wPreview) `shouldBe` 2
+              let WebMessage {content = mc1} = messages wPreview !! 0
+                  WebMessage {content = mc2} = messages wPreview !! 1
+              mc1 `shouldBe` MCText "hello from the channel"
+              mc2 `shouldBe` MCText "second message"
+
+testWebPreviewCors :: HasCallStack => TestParams -> IO ()
+testWebPreviewCors ps = do
+  let corsFile = tmpPath ps </> "simplex-cors.conf"
+      entries =
+        [ ("abc123.json", CorsAny),
+          ("def456.json", CorsOrigins ["https://owner-site.com"]),
+          ("ghi789.json", CorsOrigins [])
+        ]
+  writeCorsConfig entries corsFile
+  corsContent <- readFile corsFile
+  corsContent `shouldContain` "/preview/abc123.json \"*\""
+  corsContent `shouldContain` "/preview/def456.json \"https://owner-site.com\""
+  corsContent `shouldContain` "# ghi789.json (no origin configured)"
+  corsContent `shouldContain` "Access-Control-Allow-Origin"
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()
