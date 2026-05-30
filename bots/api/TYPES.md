@@ -146,6 +146,7 @@ This file is generated automatically.
 - [Profile](#profile)
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
+- [PublicGroupAccess](#publicgroupaccess)
 - [PublicGroupData](#publicgroupdata)
 - [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
@@ -157,6 +158,7 @@ This file is generated automatically.
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
 - [RcvMsgError](#rcvmsgerror)
+- [RelayCapabilities](#relaycapabilities)
 - [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
@@ -2498,6 +2500,7 @@ UpdateRequired:
 - userChatRelay: [UserChatRelay](#userchatrelay)
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
+- relayCap: [RelayCapabilities](#relaycapabilities)
 
 
 ---
@@ -3069,6 +3072,17 @@ NO_SESSION:
 
 ---
 
+## PublicGroupAccess
+
+**Record type**:
+- groupWebPage: string?
+- groupDomain: string?
+- domainWebPage: bool
+- allowEmbedding: bool
+
+
+---
+
 ## PublicGroupData
 
 **Record type**:
@@ -3083,6 +3097,7 @@ NO_SESSION:
 - groupType: [GroupType](#grouptype)
 - groupLink: string
 - publicGroupId: string
+- publicGroupAccess: [PublicGroupAccess](#publicgroupaccess)?
 
 
 ---
@@ -3338,6 +3353,14 @@ Dropped:
 ParseError:
 - type: "parseError"
 - parseError: string
+
+
+---
+
+## RelayCapabilities
+
+**Record type**:
+- baseWebUrl: string?
 
 
 ---

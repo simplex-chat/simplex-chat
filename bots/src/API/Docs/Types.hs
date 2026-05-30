@@ -327,6 +327,7 @@ chatTypesDocsData =
     (sti @Profile, STRecord, "", [], "", ""),
     (sti @ProxyClientError, STUnion, "Proxy", [], "", ""),
     (sti @ProxyError, STUnion, "", [], "", ""),
+    (sti @PublicGroupAccess, STRecord, "", [], "", ""),
     (sti @PublicGroupData, STRecord, "", [], "", ""),
     (sti @PublicGroupProfile, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
@@ -338,6 +339,7 @@ chatTypesDocsData =
     (sti @RcvFileTransfer, STRecord, "", [], "", ""),
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
     (sti @RcvMsgError, STUnion, "RME", [], "", ""),
+    (sti @RelayCapabilities, STRecord, "", [], "", ""),
     (sti @RelayProfile, STRecord, "", [], "", ""),
     (sti @RelayStatus, STEnum, "RS", [], "", ""),
     (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
@@ -545,6 +547,7 @@ deriving instance Generic PreparedGroup
 deriving instance Generic Profile
 deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
+deriving instance Generic PublicGroupAccess
 deriving instance Generic PublicGroupData
 deriving instance Generic PublicGroupProfile
 deriving instance Generic RatchetSyncState
@@ -556,6 +559,7 @@ deriving instance Generic RcvFileStatus
 deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent
 deriving instance Generic RcvMsgError
+deriving instance Generic RelayCapabilities
 deriving instance Generic RelayProfile
 deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
