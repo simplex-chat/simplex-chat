@@ -38,13 +38,14 @@ import chat.simplex.res.MR
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: () -> Unit) {
   val stopped = chatModel.chatRunning.value == false
+  val showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit) = { modalView -> { ModalManager.start.showModal(settings = true, cardScreen = true) { modalView(chatModel) } } }
   SettingsLayout(
     stopped,
     chatModel.chatDbEncrypted.value == true,
     remember { chatModel.controller.appPrefs.storeDBPassphrase.state }.value,
     setPerformLA = setPerformLA,
     showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
-    showSettingsModal = { modalView -> { ModalManager.start.showModal(settings = true, cardScreen = true) { modalView(chatModel) } } },
+    showSettingsModal = showSettingsModal,
     showSettingsModalWithSearch = { modalView ->
       ModalManager.start.showCustomModal { close ->
         val search = rememberSaveable { mutableStateOf("") }
@@ -59,12 +60,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
     },
     showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
     showVersion = {
-      withBGApi {
-        val info = chatModel.controller.apiGetVersion()
-        if (info != null) {
-          ModalManager.start.showModal { VersionInfoView(info) }
-        }
-      }
+      ModalManager.start.showModal { VersionInfoView(showSettingsModal, ::doWithAuth) }
     },
     withAuth = ::doWithAuth,
   )
@@ -93,20 +89,26 @@ fun SettingsLayout(
   LaunchedEffect(Unit) {
     hideKeyboard(view)
   }
+  val notificationsMode = remember { chatModel.controller.appPrefs.notificationsMode.state }
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_settings))
 
     SectionView {
       SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it) })
       SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.your_privacy), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal) })
       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
+      SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
     }
     SectionDividerSpaced()
 
-    SectionView {
-      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal, showVersion) })
-      SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
-      SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.advanced_settings), showSettingsModal { AdvancedSettingsView(it, showModal, showSettingsModal, showCustomModal, withAuth) })
+    SectionView(stringResource(MR.strings.advanced_settings)) {
+      SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped)
+      if (appPlatform == AppPlatform.ANDROID) {
+        SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
+      }
+      SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
+      AppVersionItem(showVersion)
     }
     SectionBottomSpacer()
   }
@@ -117,7 +119,6 @@ fun HelpAndSupportView(
   chatModel: ChatModel,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-  showVersion: () -> Unit,
 ) {
   val uriHandler = LocalUriHandler.current
   val stopped = chatModel.chatRunning.value == false
@@ -128,12 +129,7 @@ fun HelpAndSupportView(
     SectionView(stringResource(MR.strings.settings_section_title_help)) {
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped)
-    }
-    SectionDividerSpaced()
-
-    SectionView(stringResource(MR.strings.settings_section_title_about)) {
       SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
-      AppVersionItem(showVersion)
     }
     SectionDividerSpaced()
 
@@ -152,33 +148,6 @@ fun HelpAndSupportView(
       RateAppItem(uriHandler)
       StarOnGithubItem(uriHandler)
     }
-    SectionBottomSpacer()
-  }
-}
-
-@Composable
-fun AdvancedSettingsView(
-  chatModel: ChatModel,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
-) {
-  val stopped = chatModel.chatRunning.value == false
-  val notificationsMode = remember { chatModel.controller.appPrefs.notificationsMode.state }
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.advanced_settings))
-
-    SectionView {
-      SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped)
-      if (appPlatform == AppPlatform.ANDROID) {
-        SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
-      }
-      SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
-    }
-    SectionDividerSpaced()
-
-    AdvancedSettingsAppSection(showSettingsModal, withAuth)
     SectionBottomSpacer()
   }
 }
