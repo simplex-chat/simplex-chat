@@ -774,9 +774,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
-              XGrpRelayAcpt relayLink
+              XGrpRelayAcpt relayLink relayCap
                 | memberRole' membership == GROwner && isRelay m -> do
-                    withStore' $ \db -> setRelayLinkConfId db m confId relayLink
+                    withStore' $ \db -> do
+                      setRelayLinkConfId db m confId relayLink
+                      updateRelayCapabilities db m relayCap
                     void $ getAgentConnShortLinkAsync user CFGetRelayDataAccept (Just conn') relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               XGrpRelayReject reason
@@ -1045,6 +1047,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpLinkMem p -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
               XGrpRelayNew rl -> fmap ctx <$> xGrpRelayNew gInfo' m'' rl
+              XGrpRelayCap relayCap
+                | memberRole' membership == GROwner && isRelay m'' ->
+                    Nothing <$ withStore' (\db -> updateRelayCapabilities db m'' relayCap)
+                | otherwise -> Nothing <$ messageWarning "x.grp.relay.cap: only owner should receive relay capabilities"
               XGrpMemNew memInfo msgScope -> fmap ctx <$> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> Nothing <$ xGrpMemInv gInfo' m'' memId introInv

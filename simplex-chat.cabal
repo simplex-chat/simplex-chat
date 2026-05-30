@@ -133,6 +133,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260429_relay_request_retries
           Simplex.Chat.Store.Postgres.Migrations.M20260507_relay_inactive_at
           Simplex.Chat.Store.Postgres.Migrations.M20260514_relay_request_group_link_index
+          Simplex.Chat.Store.Postgres.Migrations.M20260515_public_group_access
           Simplex.Chat.Store.Postgres.Migrations.M20260529_delivery_job_senders
           Simplex.Chat.Store.Postgres.Migrations.M20260530_client_services
           Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
@@ -291,6 +292,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260429_relay_request_retries
           Simplex.Chat.Store.SQLite.Migrations.M20260507_relay_inactive_at
           Simplex.Chat.Store.SQLite.Migrations.M20260514_relay_request_group_link_index
+          Simplex.Chat.Store.SQLite.Migrations.M20260515_public_group_access
           Simplex.Chat.Store.SQLite.Migrations.M20260529_delivery_job_senders
           Simplex.Chat.Store.SQLite.Migrations.M20260530_client_services
           Simplex.Chat.Store.SQLite.Migrations.M20260531_member_removed_at

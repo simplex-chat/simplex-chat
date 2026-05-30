@@ -850,7 +850,11 @@ CREATE TABLE test_chat_schema.group_profiles (
     short_descr text,
     group_type text,
     group_link bytea,
-    public_group_id bytea
+    public_group_id bytea,
+    group_web_page text,
+    group_domain text,
+    domain_web_page bigint,
+    allow_embedding bigint
 );
 
 
@@ -875,7 +879,8 @@ CREATE TABLE test_chat_schema.group_relays (
     relay_link bytea,
     conf_id bytea,
     created_at text DEFAULT now() NOT NULL,
-    updated_at text DEFAULT now() NOT NULL
+    updated_at text DEFAULT now() NOT NULL,
+    base_web_url text
 );
 
 
