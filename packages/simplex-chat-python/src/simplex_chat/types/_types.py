@@ -2692,11 +2692,14 @@ class SimplePreference(TypedDict):
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
 
-class SimplexNameInfo(TypedDict):
-    nameType: "SimplexNameType"
+class SimplexNameDomain(TypedDict):
     nameTLD: "SimplexTLD"
     domain: str
     subDomain: list[str]
+
+class SimplexNameInfo(TypedDict):
+    nameType: "SimplexNameType"
+    nameDomain: "SimplexNameDomain"
 
 SimplexNameType = Literal["publicGroup", "contact"]
 

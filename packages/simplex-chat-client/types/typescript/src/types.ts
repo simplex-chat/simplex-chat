@@ -3855,11 +3855,15 @@ export enum SimplexLinkType {
   Relay = "relay",
 }
 
-export interface SimplexNameInfo {
-  nameType: SimplexNameType
+export interface SimplexNameDomain {
   nameTLD: SimplexTLD
   domain: string
   subDomain: string[]
+}
+
+export interface SimplexNameInfo {
+  nameType: SimplexNameType
+  nameDomain: SimplexNameDomain
 }
 
 export enum SimplexNameType {
