@@ -145,7 +145,9 @@ fun HelpAndSupportView(
       if (!BuildConfigCommon.ANDROID_BUNDLE) {
         ContributeItem(uriHandler)
       }
-      RateAppItem(uriHandler)
+      if (appPlatform.isAndroid) {
+        RateAppItem(uriHandler)
+      }
       StarOnGithubItem(uriHandler)
     }
     SectionBottomSpacer()
