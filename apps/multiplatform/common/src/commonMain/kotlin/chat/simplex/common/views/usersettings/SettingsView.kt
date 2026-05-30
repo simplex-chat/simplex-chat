@@ -60,7 +60,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
     },
     showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
     showVersion = {
-      ModalManager.start.showModal { VersionInfoView(showSettingsModal, ::doWithAuth) }
+      ModalManager.start.showModal(cardScreen = true) { VersionInfoView(showSettingsModal, ::doWithAuth) }
     },
     withAuth = ::doWithAuth,
   )
