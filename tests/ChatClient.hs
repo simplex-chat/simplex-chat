@@ -24,6 +24,7 @@ import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Network.Socket
@@ -153,6 +154,7 @@ testCoreOpts =
       tbqSize = 16,
       deviceName = Nothing,
       chatRelay = False,
+      baseWebUrl = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
@@ -161,6 +163,9 @@ testCoreOpts =
 
 relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
+
+relayWebTestOpts :: Text -> ChatOpts
+relayWebTestOpts webUrl = testOpts {coreOptions = testCoreOpts {chatRelay = True, baseWebUrl = Just webUrl}}
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts

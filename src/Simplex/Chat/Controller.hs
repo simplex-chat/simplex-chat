@@ -158,6 +158,7 @@ data ChatConfig = ChatConfig
     ciExpirationInterval :: Int64, -- microseconds
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
+    baseWebUrl :: Maybe Text,
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
     relayChecksInterval :: NominalDiffTime,
     relayInactiveTTL :: NominalDiffTime,

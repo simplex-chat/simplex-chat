@@ -116,6 +116,7 @@ defaultChatConfig =
       highlyAvailable = False,
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
+      baseWebUrl = Nothing,
       channelSubscriberRole = GRObserver,
       relayChecksInterval = 15 * 60, -- 15 minutes
       relayInactiveTTL = nominalDay,
@@ -140,11 +141,11 @@ newChatController
   ChatDatabase {chatStore, agentStore}
   user
   cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations}
-  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, deviceName, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
+  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, deviceName, baseWebUrl, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
         confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
-        config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, presetServers = presetServers', inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable, confirmMigrations = confirmMigrations'}
+        config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, presetServers = presetServers', inlineFiles = inlineFiles', autoAcceptFileSize, baseWebUrl, highlyAvailable, confirmMigrations = confirmMigrations'}
     randomPresetServers <- chooseRandomServers presetServers'
     let rndSrvs = L.toList randomPresetServers
         operatorWithId (i, op) = (\o -> o {operatorId = DBEntityId i}) <$> pOperator op

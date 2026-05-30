@@ -66,6 +66,7 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
+    baseWebUrl :: Maybe Text,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
@@ -240,6 +241,13 @@ coreChatOptsP appDir defaultDbName = do
       ( long "relay"
           <> help "Run as a chat relay client"
       )
+  baseWebUrl <-
+    optional $
+      strOption
+        ( long "web-url"
+            <> metavar "URL"
+            <> help "Base URL for channel web previews (relay only)"
+        )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -283,6 +291,7 @@ coreChatOptsP appDir defaultDbName = do
         tbqSize,
         deviceName,
         chatRelay,
+        baseWebUrl,
         highlyAvailable,
         yesToUpMigrations,
         migrationBackupPath,

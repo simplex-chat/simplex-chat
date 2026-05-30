@@ -28,6 +28,8 @@ chatRelayTests = do
     it "re-add soft-deleted relay by same name" testReAddRelaySameName
     it "test chat relay" testChatRelayTest
     it "relay profile updated in address" testRelayProfileUpdateInAddress
+  describe "relay capabilities" $ do
+    it "relay sends baseWebUrl in capabilities" testRelayWebCapabilities
   describe "share channel card" $ do
     it "share channel card in direct chat" testShareChannelDirect
     it "share channel card in group" testShareChannelGroup
@@ -324,6 +326,28 @@ testShareChannelChannel ps =
 
 getTermLine2 :: TestCC -> IO (String, String)
 getTermLine2 c = (,) <$> getTermLine c <*> getTermLine c
+
+testRelayWebCapabilities :: HasCallStack => TestParams -> IO ()
+testRelayWebCapabilities ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps (relayWebTestOpts "https://relay.example.com/preview") "bob" bobProfile $ \relay -> do
+      rName <- userName relay
+      relay ##> "/ad"
+      (relaySLink, _cLink) <- getContactLinks relay True
+      alice ##> ("/relays name=" <> rName <> " " <> relaySLink)
+      alice <## "ok"
+      alice ##> "/public group relays=1 #news"
+      alice <## "group #news is created"
+      alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+      concurrentlyN_
+        [ do
+            alice <## "#news: group link relays updated, current relays:"
+            alice <## "  - relay id 1: active, web: https://relay.example.com/preview"
+            alice <## "group link:"
+            _ <- getTermLine alice
+            pure (),
+          relay <## "#news: you joined the group as relay"
+        ]
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()
