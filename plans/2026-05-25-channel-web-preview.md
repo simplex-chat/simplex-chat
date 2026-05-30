@@ -98,24 +98,39 @@ Extend `toPublicGroupProfile` to accept and pass through `Maybe PublicGroupAcces
 - SELECT (line 2375): add `gp.group_web_page`, `gp.group_domain`, `gp.domain_web_page`, `gp.allow_embedding`, `gp.group_domain_verified_at`
 - UPDATE (line 1922): include new columns in `updateGroupProfile_`
 
-### 2. Extend `XGrpRelayAcpt` with `baseWebUrl`
+### 2. `RelayCapabilities` record, extend `XGrpRelayAcpt`, new `XGrpRelayCap`
 
 **File:** `src/Simplex/Chat/Protocol.hs`
 
+New record for relay capabilities (extensible for future fields):
+```haskell
+data RelayCapabilities = RelayCapabilities
+  { baseWebUrl :: Maybe Text
+  }
+```
+
+TH-derived JSON. All fields optional so old relays produce `{}` and new fields are backward compatible.
+
+**`XGrpRelayAcpt`** - carries capabilities at acceptance time:
+
 Current (line 444): `XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json`
-New: `XGrpRelayAcpt :: ShortLinkContact -> Maybe Text -> ChatMsgEvent 'Json`
+New: `XGrpRelayAcpt :: ShortLinkContact -> RelayCapabilities -> ChatMsgEvent 'Json`
 
-Parsing (line 1319):
+Parsing: `XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink" <*> (p "relayCap" <|> pure defaultRelayCap)`
+Encoding: `XGrpRelayAcpt relayLink cap -> o ["relayLink" .= relayLink, "relayCap" .= cap]`
+Backward compatible: old relays omit `relayCap`, parsed as default (all `Nothing`).
+
+**`XGrpRelayCap`** - new message for ongoing capability updates:
+
 ```haskell
-XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink" <*> opt "baseWebUrl"
+XGrpRelayCap :: RelayCapabilities -> ChatMsgEvent 'Json
 ```
 
-Encoding (line 1391):
-```haskell
-XGrpRelayAcpt relayLink baseWebUrl_ -> o $ ("baseWebUrl" .=? baseWebUrl_) ["relayLink" .= relayLink]
-```
+Tag: `"x.grp.relay.cap"`
+Parsing: `XGrpRelayCap_ -> XGrpRelayCap <$> p "relayCap"`
+Encoding: `XGrpRelayCap cap -> o ["relayCap" .= cap]`
 
-Backward compatible: old relays omit `baseWebUrl`, parsed as `Nothing`.
+Sent by relay to owner only when capabilities change (not periodic). Relay detects change by comparing current config against persisted state on startup.
 
 ### 3. Store `baseWebUrl` per relay
 
@@ -132,11 +147,18 @@ data GroupRelay = GroupRelay
   }
 ```
 
-Add: `baseWebUrl :: Maybe Text`
+Add: `relayCap :: Maybe RelayCapabilities`
 
+Stored as separate columns (same pattern as `PublicGroupAccess`):
 **Migration:** `ALTER TABLE group_relays ADD COLUMN base_web_url TEXT`
 
-**Handler:** `src/Simplex/Chat/Library/Subscriber.hs` line 770-774 - when processing `XGrpRelayAcpt`, store `baseWebUrl` in the relay record.
+`relayCap` constructed from columns: `Just RelayCapabilities {baseWebUrl}` when any capability column is non-NULL, `Nothing` otherwise.
+
+**Handlers in `src/Simplex/Chat/Library/Subscriber.hs`:**
+- `XGrpRelayAcpt` (line 770): store `RelayCapabilities` in relay record on acceptance
+- `XGrpRelayCap` (new handler): update `RelayCapabilities` in relay record; only accepted from relay members (`isRelay m`), owner receives
+
+**Relay-side persistence:** relay persists its current `RelayCapabilities` (derived from `RelayWebOptions`) so it can detect config changes on restart. On startup, if persisted capabilities differ from config, relay sends `XGrpRelayCap` to all group owners it serves.
 
 ### 4. CLI options for web preview
 
@@ -419,11 +441,16 @@ data class PublicGroupProfile(
     val publicGroupAccess: PublicGroupAccess? = null  // NEW
 )
 
+@Serializable
+data class RelayCapabilities(
+    val baseWebUrl: String? = null
+)
+
 // Extend existing GroupRelay:
 @Serializable
 data class GroupRelay(
     ...existing fields...,
-    val baseWebUrl: String? = null  // NEW
+    val relayCap: RelayCapabilities? = null  // NEW
 )
 ```
 
@@ -535,21 +562,21 @@ Separate repo or folder. `channel-preview.js` + minimal CSS:
 
 ### Modified files
 - `src/Simplex/Chat/Types.hs` - `PublicGroupAccess` type, extend `PublicGroupProfile` with `publicGroupAccess`
-- `src/Simplex/Chat/Protocol.hs` - extend `XGrpRelayAcpt` with `baseWebUrl`
+- `src/Simplex/Chat/Protocol.hs` - `RelayCapabilities` record, extend `XGrpRelayAcpt`, add `XGrpRelayCap`
 - `src/Simplex/Chat/Options.hs` - `RelayWebOptions` record, `relayWebOptions :: Maybe RelayWebOptions` in `CoreChatOpts`
 - `src/Simplex/Chat/Core.hs` - start web preview thread in `runSimplexChat`
 - `src/Simplex/Chat/Operators.hs` - `baseWebUrl` in `GroupRelay`
 - `src/Simplex/Chat/Store/Groups.hs` - read/write `PublicGroupAccess` columns; `getWebPublishGroups`
 - `src/Simplex/Chat/Store/Shared.hs` - `toPublicGroupAccess`, extend `toPublicGroupProfile` and `GroupInfoRow`
-- `src/Simplex/Chat/Library/Subscriber.hs` - handle `baseWebUrl` in `XGrpRelayAcpt` processing
-- `apps/multiplatform/.../model/ChatModel.kt` - `PublicGroupAccess`, `PublicGroupProfile.publicGroupAccess`, `GroupRelay.baseWebUrl`
+- `src/Simplex/Chat/Library/Subscriber.hs` - handle `RelayCapabilities` in `XGrpRelayAcpt` and `XGrpRelayCap`
+- `apps/multiplatform/.../model/ChatModel.kt` - `PublicGroupAccess`, `RelayCapabilities`, `PublicGroupProfile.publicGroupAccess`, `GroupRelay.relayCap`
 - `apps/multiplatform/.../views/chat/group/GroupChatInfoView.kt` - nav link for web page
 - `simplex-chat.cabal` - add `Simplex.Chat.Web.Preview`, `Simplex.Chat.Web` to exposed-modules
 
 ## Implementation Order
 
 1. **Data model** - `PublicGroupAccess` in `PublicGroupProfile`, migrations (separate columns), store functions
-2. **Protocol** - extend `XGrpRelayAcpt`, update handler in Subscriber.hs
+2. **Protocol** - `RelayCapabilities`, extend `XGrpRelayAcpt`, add `XGrpRelayCap`, handlers in Subscriber.hs
 3. **CLI options** - `RelayWebOptions` record, `relayWebOptions` field in `CoreChatOpts`
 4. **Web types** - `WebChannelPreview`, `WebMessage`, etc. in new module
 5. **Render loop** - thread startup in Core.hs, periodic JSON generation, Caddy config
