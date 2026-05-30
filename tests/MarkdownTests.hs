@@ -10,7 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
-import Simplex.Messaging.Agent.Protocol (SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
+import Simplex.Messaging.Agent.Protocol (SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$$>))
 import System.Console.ANSI.Types
@@ -381,7 +381,7 @@ command' :: Text -> Text -> FormattedText
 command' = FormattedText . Just . Command
 
 sname :: SimplexNameType -> SimplexTLD -> Text -> [Text] -> Text -> Markdown
-sname nt ns dom sub txt = markdown (SimplexName $ SimplexNameInfo nt ns dom sub) (pfx <> txt)
+sname nt ns dom sub txt = markdown (SimplexName $ SimplexNameInfo nt (SimplexNameDomain ns dom sub)) (pfx <> txt)
   where
     pfx = case nt of NTPublicGroup -> "#"; NTContact -> "@"
 
