@@ -1,12 +1,32 @@
 # SimpleX Web Widget: Master Plan
 
-Revision 1, 2026-03-15
+Revision 2, 2026-05-11
 
-**Status**: Planning complete. Spike next.
+**Status**: Spike 1 complete. Implementation planning.
 
 **Related documents**:
 - [Product Plan](./2026-03-15-simplex-web-widget-product.md) -- Users, UX, scope
-- [Spike Plan](./2026-03-15-simplex-web-widget/2026-03-15-simplex-web-widget-spike.md) -- LGET proof of concept
+- [Implementation Plan v2](./2026-03-15-simplex-web-widget/2026-05-11-implementation-v2.md) -- Three-phase plan based on spike findings
+- [Spike 1 Plan](../../simplexmq-2/rfcs/2026-03-20-smp-agent-web/2026-03-20-smp-agent-web-spike.md) -- Transport layer proof (complete)
+- [Spec](../../simplexmq-2/spec/) -- Agent architecture, connections, message envelopes
+
+## What changed since revision 1
+
+**Spike 1 completed** (2026-03-15 to 2026-04-20): proved transport layer end-to-end. 24 tests against Haskell. WebSocket + SMP handshake + block encryption + server identity verification + short link fetch/decrypt/parse. Code lives in `simplexmq-2/smp-web/`, not throwaway.
+
+**Key decisions made during spike**:
+- SMP protocol version bumped to v19 (`webClientSMPVersion`) for server identity challenge-response
+- Server challenge sent via URL query parameter (browser WebSocket API doesn't allow custom headers)
+- xftp-web reused extensively (encoding, secretbox, identity verification, keys)
+- Bottom-up approach validated: each function tested byte-for-byte against Haskell via `callNode`
+
+**Architecture revised**:
+- **One event loop, one database** -- the Haskell two-database/two-loop separation was an evolutionary artifact, not a design decision. Browser widget fuses agent + chat into one runtime.
+- **Two packages**: smp-web (simplexmq-2) for protocol + agent runtime, chat-web (simplex-chat-2) for chat message types + widget UI. Agent takes a single `onEvent` callback + database handle from chat-web.
+- **Persistence from day one** (IndexedDB) -- required for correct integrity chains. Encrypt at enqueue, not at send. Delivery worker is a dumb pump.
+- **Real agent, no throwaway intermediate** -- no "simple agent that works under ideal conditions." Phase 1 produces tested pure functions. Phase 2 builds the shippable agent directly.
+
+See [Implementation Plan v2](./2026-03-15-simplex-web-widget/2026-05-11-implementation-v2.md) for the full three-phase plan.
 
 ## Overview
 
