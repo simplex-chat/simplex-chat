@@ -45,7 +45,7 @@ struct MemberSupportView: View {
         : membersWithChats.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
 
         if membersWithChats.isEmpty {
-            Text("No chats with members")
+            Text(groupInfo.fullGroupPreferences.support.on ? "No chats with members" : "Chats with members are disabled")
                 .foregroundColor(.secondary)
         } else {
             List {
@@ -196,7 +196,9 @@ struct MemberSupportView: View {
         }
 
         private func memberStatus(_ member: GroupMember) -> LocalizedStringKey {
-            if member.activeConn?.connDisabled ?? false {
+            if case .failed = member.activeConn?.connStatus {
+                return "failed"
+            } else if member.activeConn?.connDisabled ?? false {
                 return "disabled"
             } else if member.activeConn?.connInactive ?? false {
                 return "inactive"

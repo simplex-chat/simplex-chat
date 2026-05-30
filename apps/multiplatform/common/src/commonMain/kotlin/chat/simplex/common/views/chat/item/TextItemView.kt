@@ -10,6 +10,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.views.chat.SelectionHighlightColor
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import kotlinx.coroutines.*
@@ -55,6 +57,42 @@ private fun typingIndicator(recent: Boolean, typingIdx: Int): AnnotatedString = 
 private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
   AnnotatedString(".", SpanStyle(fontWeight = w))
 
+// Display text for a single formatted segment — must be coordinated with MarkdownText.
+fun itemSegmentDisplayText(ft: FormattedText, ci: ChatItem, linkMode: SimplexLinkMode): String =
+  when (ft.format) {
+    is Format.Mention -> {
+      val mention = ci.mentions?.get(ft.format.memberName)
+      if (mention?.memberRef != null) {
+        val name = if (mention.memberRef.localAlias.isNullOrEmpty()) mention.memberRef.displayName
+          else "${mention.memberRef.localAlias} (${mention.memberRef.displayName})"
+        mentionText(name)
+      } else if (mention != null) mentionText(ft.format.memberName)
+      else ft.text
+    }
+    is Format.HyperLink -> ft.format.showText ?: ft.text
+    is Format.SimplexLink -> {
+      val t = ft.format.showText
+        ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
+      if (t != null) "$t ${ft.format.viaHosts}" else ft.text
+    }
+    is Format.Command -> ft.text
+    else -> ft.text
+  }
+
+// Full display text for a chat item — joins segment display texts.
+fun itemDisplayText(ci: ChatItem, linkMode: SimplexLinkMode): String {
+  val formattedText = ci.formattedText ?: return ci.text
+  return formattedText.joinToString("") { itemSegmentDisplayText(it, ci, linkMode) }
+}
+
+// Display-only prefix rendered before ci.text (e.g. "Spam: " for reports).
+// Renderers and selection code MUST share this string — otherwise selection offsets drift from screen.
+fun itemPrefixText(ci: ChatItem): String = when (val mc = ci.content.msgContent) {
+  is MsgContent.MCReport -> if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: "
+  else -> ""
+}
+
+// Text transformations in MarkdownText must match itemSegmentDisplayText above
 @Composable
 fun MarkdownText (
   text: CharSequence,
@@ -77,8 +115,13 @@ fun MarkdownText (
   onLinkLongClick: (link: String) -> Unit = {},
   showViaProxy: Boolean = false,
   showTimestamp: Boolean = true,
-  prefix: AnnotatedString? = null
+  prefix: AnnotatedString? = null,
+  stripLink: String? = null,
+  selectionRange: IntRange? = null,
+  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
+  val text = if (stripLink != null) stripTextLink(text.toString(), stripLink) else text
+  val formattedText = if (stripLink != null) stripFormattedTextLink(formattedText, stripLink) else formattedText
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
@@ -126,19 +169,27 @@ fun MarkdownText (
       )
     }
     if (formattedText == null) {
+      var selectableEnd = 0
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
         if (prefix != null) append(prefix)
         if (text is String) append(text)
         else if (text is AnnotatedString) append(text)
+        selectableEnd = this.length
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      if (onTextLayoutResult != null) {
+        SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
+      } else {
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+      }
     } else {
+      var selectableEnd = 0
       var hasLinks = false
       var hasSecrets = false
       var hasCommands = false
@@ -153,6 +204,7 @@ fun MarkdownText (
             is Format.Italic -> withStyle(ft.format.style) { append(ft.text) }
             is Format.StrikeThrough -> withStyle(ft.format.style) { append(ft.text) }
             is Format.Snippet -> withStyle(ft.format.style) { append(ft.text) }
+            is Format.Small -> withStyle(ft.format.style) { append(ft.text) }
             is Format.Colored -> withStyle(ft.format.style) { append(ft.text) }
             is Format.Secret -> {
               val ftStyle = ft.format.style
@@ -229,6 +281,13 @@ fun MarkdownText (
                 }
               }
             }
+            is Format.SimplexName -> {
+              hasLinks = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "SIMPLEX_NAME", annotation = i.toString()) {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            }
             is Format.Email -> {
               hasLinks = true
               val ftStyle = Format.linkStyle
@@ -246,6 +305,7 @@ fun MarkdownText (
             is Format.Unknown -> append(ft.text)
           }
         }
+        selectableEnd = this.length
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
@@ -254,9 +314,10 @@ fun MarkdownText (
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
+      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
-        val icon = remember { mutableStateOf(PointerIcon.Default) }
-        ClickableText(annotatedText, style = style, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
+        val icon = remember { mutableStateOf(PointerIcon.Text) }
+        ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             if (hasLinks) {
               val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
@@ -275,6 +336,16 @@ fun MarkdownText (
               withAnnotation("WEB_URL") { a -> openBrowserAlert(a.item, uriHandler) }
               withAnnotation("OTHER_URL") { a -> safeOpenUri(a.item, uriHandler) }
               withAnnotation("SIMPLEX_URL") { a -> uriHandler.openVerifiedSimplexUri(a.item) }
+              withAnnotation("SIMPLEX_NAME") { a ->
+                val idx = a.item.toIntOrNull()
+                val nameInfo = (idx?.let { formattedText.getOrNull(it) }?.format as? Format.SimplexName)?.nameInfo
+                val (title, msg) = if (nameInfo?.nameType == SimplexNameType.contact) {
+                  generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
+                } else {
+                  generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
+                }
+                AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
+              }
             }
             if (hasSecrets) {
               withAnnotation("SECRET") { a ->
@@ -289,20 +360,25 @@ fun MarkdownText (
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
             icon.value =
-              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
+              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
                 PointerIcon.Hand
               } else {
-                PointerIcon.Default
+                PointerIcon.Text
               }
           },
           shouldConsumeEvent = { offset ->
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
-          }
+          },
+          onTextLayout = { onTextLayoutResult?.invoke(it) }
         )
       } else {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+        if (onTextLayoutResult != null) {
+          SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
+        } else {
+          Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+        }
       }
     }
   }
@@ -313,6 +389,7 @@ fun ClickableText(
   text: AnnotatedString,
   modifier: Modifier = Modifier,
   style: TextStyle = TextStyle.Default,
+  selectionRange: IntRange? = null,
   softWrap: Boolean = true,
   overflow: TextOverflow = TextOverflow.Clip,
   maxLines: Int = Int.MAX_VALUE,
@@ -355,7 +432,7 @@ fun ClickableText(
 
   BasicText(
     text = text,
-    modifier = modifier.then(pressIndicator),
+    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator),
     style = style,
     softWrap = softWrap,
     overflow = overflow,
@@ -366,6 +443,42 @@ fun ClickableText(
     }
   )
 }
+
+@Composable
+private fun SelectableText(
+  text: AnnotatedString,
+  style: TextStyle,
+  modifier: Modifier = Modifier,
+  maxLines: Int = Int.MAX_VALUE,
+  overflow: TextOverflow = TextOverflow.Clip,
+  selectionRange: IntRange? = null,
+  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
+) {
+  val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+
+  BasicText(
+    text = text,
+    modifier = modifier.pointerHoverIcon(PointerIcon.Text).then(selectionHighlight(selectionRange, text.length, layoutResult)),
+    style = style,
+    maxLines = maxLines,
+    overflow = overflow,
+    onTextLayout = {
+      layoutResult.value = it
+      onTextLayoutResult?.invoke(it)
+    }
+  )
+}
+
+private fun selectionHighlight(selectionRange: IntRange?, textLength: Int, layoutResult: State<TextLayoutResult?>): Modifier =
+  if (selectionRange != null) {
+    Modifier.drawBehind {
+      layoutResult.value?.let { result ->
+        if (selectionRange.first <= selectionRange.last && selectionRange.last + 1 <= textLength) {
+          drawPath(result.getPathForRange(selectionRange.first, selectionRange.last + 1), SelectionHighlightColor)
+        }
+      }
+    }
+  } else Modifier
 
 fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
   val (res, err) = sanitizeUri(uri)
@@ -445,4 +558,21 @@ private fun isRtl(s: CharSequence): Boolean {
   return false
 }
 
-private fun mentionText(name: String): String = if (name.contains(" @"))  "@'$name'" else "@$name"
+fun mentionText(name: String): String = if (name.contains(" @"))  "@'$name'" else "@$name"
+
+fun stripTextLink(text: String, link: String): String =
+  if (text == link) ""
+  else if (text.endsWith("\n$link")) text.dropLast(link.length + 1)
+  else text
+
+fun stripFormattedTextLink(ft: List<FormattedText>?, link: String): List<FormattedText>? {
+  if (ft == null || ft.isEmpty() || ft.last().text != link) return ft
+  val result = ft.toMutableList()
+  result.removeAt(result.lastIndex)
+  val i = result.lastIndex
+  if (i >= 0 && result[i].format == null && result[i].text.endsWith("\n")) {
+    result[i] = FormattedText(result[i].text.dropLast(1), null)
+    if (result[i].text.isEmpty()) result.removeLast()
+  }
+  return result.ifEmpty { null }
+}

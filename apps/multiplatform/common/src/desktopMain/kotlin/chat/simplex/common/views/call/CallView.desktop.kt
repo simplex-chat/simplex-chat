@@ -17,12 +17,14 @@ import org.nanohttpd.protocols.http.response.Response.newFixedLengthResponse
 import org.nanohttpd.protocols.http.response.Status
 import org.nanohttpd.protocols.websockets.*
 import java.io.IOException
+import java.net.BindException
 import java.net.URI
 
 private const val SERVER_HOST = "localhost"
 private const val SERVER_PORT = 50395
 val connections = ArrayList<WebSocket>()
 
+// Spec: spec/services/calls.md#ActiveCallView
 @Composable
 actual fun ActiveCallView() {
   val scope = rememberCoroutineScope()
@@ -156,17 +158,18 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
     if (call != null) withBGApi { chatModel.callManager.endCall(call) }
   }
   val server = remember {
-    try {
-      uriHandler.openUri("http://${SERVER_HOST}:$SERVER_PORT/simplex/call/")
-    } catch (e: Exception) {
-      Log.e(TAG, "Unable to open browser: ${e.stackTraceToString()}")
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.unable_to_open_browser_title),
-        text = generalGetString(MR.strings.unable_to_open_browser_desc)
-      )
-      endCall()
+    startServer(onResponse).apply {
+      try {
+        uriHandler.openUri("http://${SERVER_HOST}:${listeningPort}/simplex/call/")
+      } catch (e: Exception) {
+        Log.e(TAG, "Unable to open browser: ${e.stackTraceToString()}")
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.unable_to_open_browser_title),
+          text = generalGetString(MR.strings.unable_to_open_browser_desc)
+        )
+        endCall()
+      }
     }
-    startServer(onResponse)
   }
   fun processCommand(cmd: WCallCommand) {
     val apiCall = WVAPICall(command = cmd)
@@ -205,8 +208,8 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
   }
 }
 
-fun startServer(onResponse: (WVAPIMessage) -> Unit): NanoWSD {
-  val server = object: NanoWSD(SERVER_HOST, SERVER_PORT) {
+fun startServer(onResponse: (WVAPIMessage) -> Unit, port: Int = SERVER_PORT): NanoWSD {
+  val server = object: NanoWSD(SERVER_HOST, port) {
     override fun openWebSocket(session: IHTTPSession): WebSocket = MyWebSocket(onResponse, session)
 
     fun resourcesToResponse(path: String): Response {
@@ -230,7 +233,14 @@ fun startServer(onResponse: (WVAPIMessage) -> Unit): NanoWSD {
       }
     }
   }
-  server.start(60_000_000)
+  try {
+    server.start(60_000_000)
+  } catch (e: BindException) {
+    if (port == 0) throw e
+    Log.w(TAG, "Call server port $port is busy, using a random port: ${e.message}")
+    server.stop()
+    return startServer(onResponse, port = 0)
+  }
   return server
 }
 

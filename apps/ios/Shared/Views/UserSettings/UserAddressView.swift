@@ -11,11 +11,13 @@ import MessageUI
 @preconcurrency import SimpleXChat
 
 struct UserAddressView: View {
+    @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State var shareViaProfile = false
     @State var autoCreate = false
+    var onboarding: Bool = false
     @State private var showShortLink = true
     @State private var settings = AddressSettingsState()
     @State private var savedSettings = AddressSettingsState()
@@ -54,6 +56,14 @@ struct UserAddressView: View {
                 }
             }
         }
+        .if(onboarding) { v in
+            v.toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Image(systemName: "info.circle").opacity(0)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+        }
         .onAppear {
             if chatModel.userAddress == nil, autoCreate {
                 createAddress()
@@ -64,12 +74,16 @@ struct UserAddressView: View {
     private func userAddressView() -> some View {
         List {
             if let userAddress = chatModel.userAddress {
-                existingAddressView(userAddress)
-                    .onAppear {
-                        settings = AddressSettingsState(settings: userAddress.addressSettings)
-                        savedSettings = AddressSettingsState(settings: userAddress.addressSettings)
-                    }
-            } else {
+                if onboarding {
+                    onboardingAddressView(userAddress)
+                } else {
+                    existingAddressView(userAddress)
+                        .onAppear {
+                            settings = AddressSettingsState(settings: userAddress.addressSettings)
+                            savedSettings = AddressSettingsState(settings: userAddress.addressSettings)
+                        }
+                }
+            } else if !onboarding {
                 Section {
                     createAddressButton()
                 } header: {
@@ -121,8 +135,8 @@ struct UserAddressView: View {
                 )
             case .shareOnCreate:
                 return Alert(
-                    title: Text("Share address with contacts?"),
-                    message: Text("Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts."),
+                    title: Text("Share address with SimpleX contacts?"),
+                    message: Text("Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts."),
                     primaryButton: .default(Text("Share")) {
                         setProfileAddress($progressIndicator, true)
                         shareViaProfile = true
@@ -157,7 +171,19 @@ struct UserAddressView: View {
             }
             addressSettingsButton(userAddress)
         } header: {
+            #if SIMPLEX_ASSETS
+            VStack(alignment: .leading, spacing: 0) {
+                Image(colorScheme == .light ? "simplex-address-small" : "simplex-address-small-light")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, -20)
+                ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
+            }
+            .padding(.bottom, 4)
+            #else
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
+            #endif
         } footer: {
             if settings.businessAddress {
                 Text("Add your team members to the conversations.")
@@ -184,6 +210,54 @@ struct UserAddressView: View {
         }
     }
 
+    @ViewBuilder private func onboardingAddressView(_ userAddress: UserContactLink) -> some View {
+        Section {
+            HStack(spacing: 8) {
+                let link = userAddress.connLinkContact.simplexChatUri(short: showShortLink)
+                linkTextView(link)
+                Button { showShareSheet(items: [link]) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .padding(.top, -7)
+                        .padding(.horizontal, 8)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        } header: {
+            #if SIMPLEX_ASSETS
+            VStack(alignment: .leading) {
+                Image(colorScheme == .light ? "simplex-address" : "simplex-address-light")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                Text("Use this address in your social media profile, website, or email signature.")
+                    .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+            }
+            .padding(.bottom, 4)
+            #else
+            Text("Use this address in your social media profile, website, or email signature.")
+                .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+                .padding(.bottom, 6)
+            #endif
+        }
+        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
+
+        Section {
+            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
+                .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                )
+                .padding(.horizontal)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+        } header: {
+            Text("Or use this QR - print or show online.").font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+        }
+    }
+
     private func createAddressButton() -> some View {
         Button {
             createAddress()
@@ -196,10 +270,24 @@ struct UserAddressView: View {
         progressIndicator = true
         Task {
             do {
-                if let connLinkContact = try await apiCreateUserAddress() {
-                    DispatchQueue.main.async {
+                let connLinkContact = try await apiCreateUserAddress()
+                DispatchQueue.main.async {
+                    if let connLinkContact {
                         chatModel.userAddress = UserContactLink(connLinkContact)
-                        alert = .shareOnCreate
+                        let hasRelevantContacts = chatModel.chats.contains { chat in
+                            if case let .direct(contact) = chat.chatInfo {
+                                return contact.active && !contact.isContactCard && !contact.contactConnIncognito
+                            }
+                            return false
+                        }
+                        if hasRelevantContacts {
+                            alert = .shareOnCreate
+                            progressIndicator = false
+                        } else {
+                            setProfileAddress($progressIndicator, true)
+                            shareViaProfile = true
+                        }
+                    } else {
                         progressIndicator = false
                     }
                 }
@@ -485,15 +573,15 @@ struct UserAddressSettingsView: View {
 
     private func shareWithContactsButton() -> some View {
         settingsRow("person", color: theme.colors.secondary) {
-            Toggle("Share with contacts", isOn: $shareViaProfile)
+            Toggle("Share with SimpleX contacts", isOn: $shareViaProfile)
                 .onChange(of: shareViaProfile) { on in
                     if ignoreShareViaProfileChange {
                         ignoreShareViaProfileChange = false
                     } else {
                         if on {
                             showAlert(
-                                NSLocalizedString("Share address with contacts?", comment: "alert title"),
-                                message: NSLocalizedString("Profile update will be sent to your contacts.", comment: "alert message"),
+                                NSLocalizedString("Share address with SimpleX contacts?", comment: "alert title"),
+                                message: NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert message"),
                                 actions: {[
                                     UIAlertAction(
                                         title: NSLocalizedString("Cancel", comment: "alert action"),
@@ -515,7 +603,7 @@ struct UserAddressSettingsView: View {
                         } else {
                             showAlert(
                                 NSLocalizedString("Stop sharing address?", comment: "alert title"),
-                                message: NSLocalizedString("Profile update will be sent to your contacts.", comment: "alert message"),
+                                message: NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert message"),
                                 actions: {[
                                     UIAlertAction(
                                         title: NSLocalizedString("Cancel", comment: "alert action"),

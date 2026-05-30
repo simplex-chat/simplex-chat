@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.*
 
 private val USER_PICKER_SECTION_SPACING = 32.dp
 
+// Spec: spec/client/chat-list.md#UserPicker
 @Composable
 fun UserPicker(
   chatModel: ChatModel,
@@ -131,7 +132,7 @@ fun UserPicker(
   }
   LaunchedEffect(Unit) {
     // Controller.ctrl can be null when self-destructing activates
-    if (controller.ctrl != null && controller.ctrl != -1L) {
+    if (controller.hasChatCtrl()) {
       withBGApi {
         controller.reloadRemoteHosts()
       }
@@ -379,7 +380,7 @@ private fun GlobalSettingsSection(
 
   SectionItemView(
     click = {
-      ModalManager.start.showModalCloseable { close ->
+      ModalManager.start.showModalCloseable(cardScreen = true) { close ->
         SettingsView(chatModel, setPerformLA, close)
       }
     },

@@ -1,8 +1,9 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
+import itemHPadding
 import SectionItemView
+import SectionDividerSpaced
 import SectionView
 import TextIconSpaced
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -46,12 +47,13 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
     user?.displayName,
     setPerformLA = setPerformLA,
     showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
-    showSettingsModal = { modalView -> { ModalManager.start.showModal(true) { modalView(chatModel) } } },
+    showSettingsModal = { modalView -> { ModalManager.start.showModal(settings = true, cardScreen = true) { modalView(chatModel) } } },
     showSettingsModalWithSearch = { modalView ->
       ModalManager.start.showCustomModal { close ->
         val search = rememberSaveable { mutableStateOf("") }
         ModalView(
           { close() },
+          cardScreen = true,
           showSearch = true,
           searchAlwaysVisible = true,
           onSearchValueChanged = { search.value = it },
@@ -75,7 +77,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
 }
 
 val simplexTeamUri =
-  "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+  "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
 
 @Composable
 fun SettingsLayout(
@@ -207,7 +209,7 @@ fun ChatLockItem(
 }
 
 @Composable private fun ContributeItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat#contribute") }) {
+  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat#contribute") }) {
     Icon(
       painterResource(MR.images.ic_keyboard),
       contentDescription = "GitHub",
@@ -235,7 +237,7 @@ fun ChatLockItem(
 }
 
 @Composable private fun StarOnGithubItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
+  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
       painter = painterResource(MR.images.ic_github),
       contentDescription = "GitHub",
@@ -268,7 +270,7 @@ fun ChatLockItem(
 }
 
 @Composable fun InstallTerminalAppItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
+  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
       painter = painterResource(MR.images.ic_github),
       contentDescription = "GitHub",
@@ -295,14 +297,10 @@ fun ChatLockItem(
 }
 
 private fun resetHintPreferences() {
-  for ((pref, def) in appPreferences.hintPreferences) {
-    pref.set(def)
-  }
+  appPreferences.hintPreferences.forEach { it.reset() }
 }
 
-fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { (pref, def) ->
-  pref.state.value == def
-}
+fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { it.isUnchanged() }
 
 @Composable
 fun AppVersionItem(showVersion: () -> Unit) {
@@ -352,9 +350,9 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
     click,
     extraPadding = extraPadding,
     padding = if (extraPadding && icon != null)
-      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+      PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding)
     else
-      PaddingValues(horizontal = DEFAULT_PADDING),
+      PaddingValues(horizontal = itemHPadding),
     disabled = disabled
   ) {
     if (icon != null) {

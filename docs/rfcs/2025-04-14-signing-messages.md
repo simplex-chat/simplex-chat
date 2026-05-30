@@ -81,3 +81,13 @@ Cons:
 - two-stage decoding may be seen as a downside, but it is offset by the fact that re-encodings are avoided, and under the hood JSON is decoded in stages anyway.
 
 While deterministic JSON is [quite simple](https://github.com/simplex-chat/aeson/pull/4/files) for aeson implementation, the Option 2 seems more attractive overall, as it avoids questionable design of including signatures into JSON and the need to re-encode JSON to sign and to verify signatures.
+
+## Signing scope: roster changes only, not content messages
+
+Only roster-modifying and group management messages are signed (e.g. `XGrpMemNew`, `XGrpMemRole`, `XGrpMemDel`, `XGrpInfo`, `XGrpPrefs`, `XGrpDel`). Regular content messages (`XMsgNew`, etc.) are not signed.
+
+Two reasons:
+
+1. **Deniability.** Signing content messages would create non-repudiable proof of authorship — any party with access to the message bytes could prove who wrote a specific message. This is antithetical to SimpleX's privacy model, where messages should be deniable. Administrative actions (adding/removing members, changing roles) don't need deniability — they are organizational actions, not personal communications.
+
+2. **Different threat model.** Content message manipulation by relays is detectable post-hoc: with multiple independent relays, members can cross-check message consistency and detect forgery after the fact. This is sufficient for content because content delivery is not irreversible — a forged message can be flagged and corrected. Roster and profile changes, on the other hand, are disruptive and irreversible (a member removed, a role changed, a group deleted). By the time forgery is detected, the damage is done. These actions must be authenticated at processing time, before they take effect.

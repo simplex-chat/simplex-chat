@@ -6,10 +6,12 @@ import androidx.compose.ui.graphics.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
+import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
 import uk.co.caprica.vlcj.media.VideoOrientation
 import uk.co.caprica.vlcj.player.base.*
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
+import uk.co.caprica.vlcj.player.component.MediaPlayerSpecs
 import java.awt.Component
 import java.awt.image.BufferedImage
 import java.io.File
@@ -32,7 +34,7 @@ actual class VideoPlayer actual constructor(
   override val duration: MutableState<Long> = mutableStateOf(defaultDuration)
   override val preview: MutableState<ImageBitmap> = mutableStateOf(defaultPreview)
 
-  val mediaPlayerComponent by lazy { runBlocking(playerThread.asCoroutineDispatcher()) { getOrCreatePlayer() } }
+  val mediaPlayerComponent by lazy { getOrCreatePlayer() }
   val player by lazy { mediaPlayerComponent.mediaPlayer() }
 
   init {
@@ -207,13 +209,13 @@ actual class VideoPlayer actual constructor(
 
     private fun initializeMediaPlayerComponent(): Component {
       return if (desktopPlatform.isMac()) {
-        CallbackMediaPlayerComponent()
+        CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcFactory) })
       } else {
-        EmbeddedMediaPlayerComponent()
+        EmbeddedMediaPlayerComponent(MediaPlayerSpecs.embeddedMediaPlayerSpec().apply { withFactory(vlcFactory) })
       }
     }
 
-    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(playerThread.asCoroutineDispatcher()) {
+    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(previewThread.asCoroutineDispatcher()) {
       val mediaComponent = getOrCreateHelperPlayer()
       val player = mediaComponent.mediaPlayer()
       if (uri == null || !uri.toFile().exists()) {
@@ -221,12 +223,12 @@ actual class VideoPlayer actual constructor(
 
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
       }
+      val surface = SkiaBitmapVideoSurface()
+      player.videoSurface().set(surface)
       player.media().startPaused(uri.toFile().absolutePath)
-      val start = System.currentTimeMillis()
-      var snap: BufferedImage? = null
-      while (snap == null && start + 5000 > System.currentTimeMillis()) {
-        snap = player.snapshots()?.get()
-        delay(10)
+      val snap = withTimeoutOrNull(1500L) {
+        while (surface.bitmap.value == null) delay(50)
+        surface.bitmap.value!!.toAwtImage()
       }
       val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()
       if (orientation == null) {
@@ -254,6 +256,7 @@ actual class VideoPlayer actual constructor(
     }
 
     val playerThread = Executors.newSingleThreadExecutor()
+    private val previewThread = Executors.newSingleThreadExecutor()
     private val playersPool: ArrayList<Component> = ArrayList()
     private val helperPlayersPool: ArrayList<CallbackMediaPlayerComponent> = ArrayList()
 
@@ -264,7 +267,9 @@ actual class VideoPlayer actual constructor(
         mediaPlayer().events().addMediaPlayerEventListener(object: MediaPlayerEventAdapter() {
           override fun mediaPlayerReady(mediaPlayer: MediaPlayer?) {
             playerThread.execute {
-              mediaPlayer?.audio()?.setVolume(100)
+              // Do not call setVolume here: on Windows VLCJ routes it through WASAPI ISimpleAudioVolume,
+              // which resets SimpleX Chat's per-app volume in the Windows Volume Mixer on every playback
+              // (VLCJ issue #985). A fresh VLCJ MediaPlayer already defaults to volume 100, so this was redundant.
               mediaPlayer?.audio()?.isMute = false
             }
           }
@@ -277,7 +282,7 @@ actual class VideoPlayer actual constructor(
 
     private fun putPlayer(player: Component) = playersPool.add(player)
 
-    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent()
+    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcPreviewFactory) })
     private fun putHelperPlayer(player: CallbackMediaPlayerComponent) = helperPlayersPool.add(player)
   }
 }

@@ -45,7 +45,7 @@ fun ComposeContextPendingMemberActionsView(
           .fillMaxHeight()
           .weight(1F)
           .clickable {
-            rejectMemberDialog(rhId, member, chatModel, close = { ModalManager.end.closeModal() })
+            rejectMemberDialog(rhId, groupInfo, member, chatModel, close = { ModalManager.end.closeModal() })
           },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -70,12 +70,12 @@ fun ComposeContextPendingMemberActionsView(
   }
 }
 
-fun rejectMemberDialog(rhId: Long?, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun rejectMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.reject_pending_member_alert_title),
     confirmText = generalGetString(MR.strings.reject_pending_member_button),
     onConfirm = {
-      removeMember(rhId, member, chatModel, close)
+      removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
     },
     destructive = true,
   )

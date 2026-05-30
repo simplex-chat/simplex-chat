@@ -5,6 +5,7 @@
 //  Created by Evgeny on 04/09/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -33,6 +34,7 @@ enum DatabaseEncryptionAlert: Identifiable {
     }
 }
 
+// Spec: spec/database.md#DatabaseEncryptionView
 struct DatabaseEncryptionView: View {
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject private var theme: AppTheme

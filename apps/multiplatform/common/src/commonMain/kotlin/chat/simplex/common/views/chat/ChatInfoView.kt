@@ -3,10 +3,9 @@ package chat.simplex.common.views.chat
 import InfoRow
 import InfoRowEllipsis
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -72,9 +71,6 @@ fun ChatInfoView(
   val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && currentUser != null) {
-    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
-      mutableStateOf(chatModel.contactNetworkStatus(contact))
-    }
     val chatRh = chat.remoteHostId
     val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     val chatItemTTL = remember(contact.id) { mutableStateOf(if (contact.chatItemTTL != null) ChatItemTTL.fromSeconds(contact.chatItemTTL) else null) }
@@ -101,7 +97,6 @@ fun ChatInfoView(
         setChatTTLAlert(chatsCtx, chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       connStats = connStats,
-      contactNetworkStatus.value,
       customUserProfile,
       localAlias,
       connectionCode,
@@ -524,7 +519,6 @@ fun ChatInfoLayout(
   chatItemTTL: MutableState<ChatItemTTL?>,
   setChatItemTTL: (ChatItemTTL?) -> Unit,
   connStats: MutableState<ConnectionStats?>,
-  contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,
   connectionCode: String?,
@@ -558,7 +552,7 @@ fun ChatInfoLayout(
 
     LocalAliasEditor(chat.id, localAlias, updateValue = onLocalAliasChanged)
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     Box(
       Modifier.fillMaxWidth(),
@@ -578,10 +572,10 @@ fun ChatInfoLayout(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (customUserProfile != null) {
-      SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+      SectionView(generalGetString(MR.strings.incognito)) {
         SectionItemViewSpaceBetween {
           Text(generalGetString(MR.strings.incognito_random_profile))
           Text(customUserProfile.chatViewName, color = Indigo)
@@ -606,7 +600,7 @@ fun ChatInfoLayout(
       }
 
       WallpaperButton {
-        ModalManager.end.showModal {
+        ModalManager.end.showModal(cardScreen = true) {
           val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
           val c = chat.value
           if (c != null) {
@@ -615,41 +609,44 @@ fun ChatInfoLayout(
         }
       }
     }
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
 
     SectionView {
       ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
-      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
     }
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+    SectionDividerSpaced()
 
     val conn = contact.activeConn
     if (conn != null) {
       SectionView {
         InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
-        SectionDividerSpaced()
       }
+      SectionDividerSpaced()
     }
 
     if (contact.contactLink != null) {
-      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title)) {
         SimpleXLinkQRCode(contact.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
+      SectionDividerSpaced()
     }
 
     if (contact.ready && contact.active) {
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
-        SectionItemView({
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.network_status),
-            contactNetworkStatus.statusExplanation
-          )
-        }) {
-          NetworkStatusRow(contactNetworkStatus)
+        val chatSubStatus = chatModel.chatSubStatus.value
+        if (chatSubStatus != null) {
+          SectionItemView({
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.network_status),
+              chatSubStatus.statusExplanation
+            )
+          }) {
+            SubStatusRow(chatSubStatus)
+          }
         }
         if (cStats != null) {
           SwitchAddressButton(
@@ -672,7 +669,7 @@ fun ChatInfoLayout(
           }
         }
       }
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
     }
 
     SectionView {
@@ -1063,7 +1060,7 @@ fun InfoViewActionButton(
 }
 
 @Composable
-private fun NetworkStatusRow(networkStatus: NetworkStatus) {
+fun SubStatusRow(subStatus: SubscriptionStatus) {
   Row(
     Modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1086,25 +1083,24 @@ private fun NetworkStatusRow(networkStatus: NetworkStatus) {
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       Text(
-        networkStatus.statusString,
+        subStatus.statusString,
         color = MaterialTheme.colors.secondary
       )
-      ServerImage(networkStatus)
+      ServerImage(subStatus)
     }
   }
 }
 
 @Composable
-private fun ServerImage(networkStatus: NetworkStatus) {
+private fun ServerImage(subStatus: SubscriptionStatus) {
   Box(Modifier.size(18.dp)) {
-    when (networkStatus) {
-      is NetworkStatus.Connected ->
+    when (subStatus) {
+      is SubscriptionStatus.Active ->
         Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = Color.Green)
-      is NetworkStatus.Disconnected ->
+      is SubscriptionStatus.Pending ->
         Icon(painterResource(MR.images.ic_pending_filled), stringResource(MR.strings.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
-      is NetworkStatus.Error ->
+      is SubscriptionStatus.Removed, SubscriptionStatus.NoSub ->
         Icon(painterResource(MR.images.ic_error_filled), stringResource(MR.strings.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
-      else -> Icon(painterResource(MR.images.ic_circle), stringResource(MR.strings.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -1455,7 +1451,6 @@ fun PreviewChatInfoLayout() {
       connectionCode = "123",
       developerTools = false,
       connStats = remember { mutableStateOf(null) },
-      contactNetworkStatus = NetworkStatus.Connected(),
       onLocalAliasChanged = {},
       customUserProfile = null,
       openPreferences = {},

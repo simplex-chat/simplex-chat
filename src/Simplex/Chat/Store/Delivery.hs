@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Delivery
@@ -28,27 +29,33 @@ module Simplex.Chat.Store.Delivery
   )
 where
 
-import Control.Monad.Except
+import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
-import Data.Either (rights)
 import Data.Int (Int64)
+import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Delivery
 import Simplex.Chat.Protocol hiding (Binary)
-import Simplex.Chat.Store.Groups (getGroupMemberById)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared (MsgSigStatus (..))
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Util (firstRow')
+import Simplex.Messaging.Encoding (smpDecode)
+import Simplex.Messaging.Util (eitherToMaybe, firstRow')
+import Text.Read (readMaybe)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
+import Control.Monad.Except
+import Data.Either (rights)
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Store.Groups (getGroupMemberById)
 #endif
 
 type DeliveryJobScopeRow = (DeliveryWorkerScope, Maybe DeliveryJobSpecTag, Maybe BoolInt, Maybe GroupMemberId)
@@ -80,10 +87,10 @@ createMsgDeliveryTask db gInfo sender newTask = do
         created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI messageFromChannel, DTSNew, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI sentAsGroup, DTSNew, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
-    NewMessageDeliveryTask {messageId, jobScope, messageFromChannel} = newTask
+    NewMessageDeliveryTask {messageId, taskContext = DeliveryTaskContext {jobScope, sentAsGroup}} = newTask
 
 deleteGroupDeliveryTasks :: DB.Connection -> GroupInfo -> IO ()
 deleteGroupDeliveryTasks db GroupInfo {groupId} =
@@ -124,7 +131,7 @@ getNextDeliveryTask db deliveryKey = do
           |]
           (groupId, workerScope, DTSNew)
 
-type MessageDeliveryTaskRow = (Only Int64) :. DeliveryJobScopeRow :. (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt)
+type MessageDeliveryTaskRow = (Only Int64) :. DeliveryJobScopeRow :. (GroupMemberId, MemberId, ContactName, UTCTime, Binary ByteString, Maybe ChatBinding, Maybe (Binary ByteString), BoolInt)
 
 getMsgDeliveryTask_ :: DB.Connection -> Int64 -> IO (Either StoreError MessageDeliveryTask)
 getMsgDeliveryTask_ db taskId =
@@ -135,7 +142,7 @@ getMsgDeliveryTask_ db taskId =
         SELECT
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
-          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, t.message_from_channel
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -145,26 +152,37 @@ getMsgDeliveryTask_ db taskId =
       (Only taskId)
   where
     toTask :: MessageDeliveryTaskRow -> Either StoreError MessageDeliveryTask
-    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel)) =
-      case toJobScope_ jobScopeRow of
-        Just jobScope -> Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
-        Nothing -> Left $ SEInvalidDeliveryTask taskId'
+    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, chatBinding_, sigs_, BI showGroupAsSender)) =
+      case (toJobScope_ jobScopeRow, J.eitherDecodeStrict' msgBody) of
+        (Just jobScope, Right chatMsg) ->
+          let fwdSender = if showGroupAsSender then FwdChannel else FwdMember senderMemberId senderMemberName
+              -- Re-parsed from msg_body: validates stored content against current code.
+              -- Signed: original bytes preserved (re-encoding would invalidate signature).
+              -- Unsigned: re-encoded from parsed ChatMessage on forward (sanitizes content).
+              verifiedMsg = case (chatBinding_, decodeSigs sigs_) of
+                (Just cb, Just sigs) -> VMSigned MSSVerified (SignedMsg cb sigs msgBody) chatMsg
+                _ -> VMUnsigned chatMsg
+           in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, verifiedMsg}
+        (Nothing, _) -> Left $ SEInvalidDeliveryTask taskId'
+        (_, Left _) -> Left $ SEInvalidDeliveryTask taskId'
+    decodeSigs :: Maybe (Binary ByteString) -> Maybe (L.NonEmpty MsgSignature)
+    decodeSigs = (>>= eitherToMaybe . smpDecode . (\(Binary bs) -> bs))
 
 markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
 markDeliveryTaskFailed_ db taskId =
   DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
 
--- TODO [channels fwd] possible optimization is to read and add tasks to batch iteratively to avoid reading too many tasks
+-- TODO [relays] possible optimization is to read and add tasks to batch iteratively to avoid reading too many tasks
 -- passed MessageDeliveryTask defines the jobScope to search for
 getNextDeliveryTasks :: DB.Connection -> GroupInfo -> MessageDeliveryTask -> IO (Either StoreError [Either StoreError MessageDeliveryTask])
 getNextDeliveryTasks db gInfo task =
   getWorkItems "message delivery task" getTaskIds (getMsgDeliveryTask_ db) (markDeliveryTaskFailed_ db)
   where
-    GroupInfo {groupId, useRelays} = gInfo
+    GroupInfo {groupId} = gInfo
     MessageDeliveryTask {jobScope, senderGMId} = task
     getTaskIds :: IO [Int64]
     getTaskIds
-      | useRelays =
+      | useRelays' gInfo =
           map fromOnly
             <$> DB.query
               db
@@ -180,11 +198,11 @@ getNextDeliveryTasks db gInfo task =
                   AND task_status = ?
                 ORDER BY delivery_task_id ASC
               |]
-              ((Only groupId) :. jobScopeRow_ jobScope :.  (Only DTSNew))
+              ((Only groupId) :. jobScopeRow_ jobScope :. (Only DTSNew))
       | otherwise =
           -- For fully connected groups we guarantee a singleSenderGMId for a delivery job by additionally filtering
           -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
-          -- optimizing for this single sender (see processDeliveryJob -> getForwardIntroducedMembers, etc.).
+          -- optimizing for this single sender (see processDeliveryJob -> fully connected group branch).
           -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
           map fromOnly
             <$> DB.query
@@ -202,7 +220,7 @@ getNextDeliveryTasks db gInfo task =
                   AND task_status = ?
                 ORDER BY delivery_task_id ASC
               |]
-              ((Only groupId) :. jobScopeRow_ jobScope :.  (senderGMId, DTSNew))
+              ((Only groupId) :. jobScopeRow_ jobScope :. (senderGMId, DTSNew))
 
 updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
 updateDeliveryTaskStatus db taskId status = updateDeliveryTaskStatus_ db taskId status Nothing
@@ -229,8 +247,8 @@ deleteDoneDeliveryTasks db createdAtCutoff = do
     |]
     (createdAtCutoff, DTSProcessed, DTSError)
 
-createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> Maybe GroupMemberId -> ByteString -> IO ()
-createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body = do
+createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> [GroupMemberId] -> ByteString -> IO ()
+createMsgDeliveryJob db gInfo jobScope senderGMIds body = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -238,12 +256,17 @@ createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body = do
       INSERT INTO delivery_jobs (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-        single_sender_group_member_id, body, job_status, created_at, updated_at
+        sender_group_member_ids, body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, Binary body, DJSPending, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (senderColumn, Binary body, DJSPending, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
+    -- NULL ↔ []; non-empty list ↔ comma-separated decimal Int64s.
+    senderColumn :: Maybe Text
+    senderColumn
+      | null senderGMIds = Nothing
+      | otherwise = Just $ T.intercalate "," $ map (T.pack . show) senderGMIds
 
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerKey]
 getPendingDeliveryJobScopes db =
@@ -256,7 +279,7 @@ getPendingDeliveryJobScopes db =
     |]
     (Only DJSPending)
 
-type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe GroupMemberId, Binary ByteString, Maybe GroupMemberId)
+type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe Text, Binary ByteString, Maybe GroupMemberId)
 
 getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryJob))
 getNextDeliveryJob db deliveryKey = do
@@ -286,17 +309,26 @@ getNextDeliveryJob db deliveryKey = do
             SELECT
               delivery_job_id,
               worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
-              single_sender_group_member_id, body, cursor_group_member_id
+              sender_group_member_ids, body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           |]
           (Only jobId)
       where
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
-        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleSenderGMId_, Binary body, cursorGMId_)) =
-          case toJobScope_ jobScopeRow of
-            Just jobScope -> Right $ MessageDeliveryJob {jobId = jobId', jobScope, singleSenderGMId_, body, cursorGMId_}
-            Nothing -> Left $ SEInvalidDeliveryJob jobId'
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsText_, Binary body, cursorGMId_)) = do
+          jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
+          -- NULL or empty string means []; otherwise the value must parse
+          -- as a comma-separated decimal Int64 list. An unparseable
+          -- segment surfaces as job error rather than silent degradation.
+          senderGMIds <- case senderGMIdsText_ of
+            Nothing -> Right []
+            Just t -> maybe (Left $ SEInvalidDeliveryJob jobId') Right $ parseSenderGMIds t
+          Right $ MessageDeliveryJob {jobId = jobId', jobScope, senderGMIds, body, cursorGMId_}
+        parseSenderGMIds :: Text -> Maybe [GroupMemberId]
+        parseSenderGMIds t
+          | T.null t = Just []
+          | otherwise = traverse (readMaybe . T.unpack) (T.splitOn "," t)
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
@@ -315,28 +347,41 @@ updateDeliveryJobStatus_ db jobId status errReason_ = do
     "UPDATE delivery_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE delivery_job_id = ?"
     (status, errReason_, currentTs, jobId)
 
--- TODO [channels fwd] possible improvement is to prioritize owners and "active" members
+-- TODO [relays] possible improvement is to prioritize owners and "active" members
 getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
-getGroupMembersByCursor db vr user GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
-  memberIds <-
+getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
+  gmIds :: [Int64] <-
     map fromOnly <$> case cursorGMId_ of
       Nothing ->
         DB.query
           db
           (query <> orderLimit)
-          (groupId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, count)
+          ( (groupId, userContactId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete)
+              :. (Only count)
+          )
       Just cursorGMId ->
         DB.query
           db
           (query <> " AND group_member_id > ?" <> orderLimit)
-          (groupId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, cursorGMId, count)
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+          ( (groupId, userContactId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete)
+              :. (cursorGMId, count)
+          )
+#if defined(dbPostgres)
+  map (toContactMember vr user) <$>
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_member_id IN ?")
+      (Only (In gmIds))
+#else
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) gmIds
+#endif
   where
     query =
       [sql|
         SELECT group_member_id
         FROM group_members
         WHERE group_id = ?
+          AND contact_id IS DISTINCT FROM ?
           AND group_member_id IS DISTINCT FROM ?
           AND member_status IN (?,?,?,?,?,?)
       |]

@@ -67,6 +67,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
     Right r' -> processResp cmd rh r'
     Left _ -> when (isMessage cmd) $ echo s
   printRespToTerminal ct cc False rh r
+  chatResponseNotification ct r
   mapM_ (startLiveMessage cmd) r
   where
     echo s = printToTerminal ct [plain s]
@@ -79,7 +80,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
       CRChatItemsDeleted u ((ChatItemDeletion (AChatItem _ _ cInfo _) _) : _) _ _ -> whenCurrUser cc u $ setActiveChat ct cInfo
       CRContactDeleted u c -> whenCurrUser cc u $ unsetActiveContact ct c
-      CRGroupDeletedUser u g -> whenCurrUser cc u $ unsetActiveGroup ct g
+      CRGroupDeletedUser u g _ -> whenCurrUser cc u $ unsetActiveGroup ct g
       CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g
       CRCmdOk _ -> case cmd of
         Right APIDeleteUser {} -> setActive ct ""
@@ -151,14 +152,14 @@ sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
   let cmd = UpdateLiveMessage chatName chatItemId live $ T.pack sentMsg
   execChatCommand' cmd 0 `runReaderT` cc
 
-runTerminalInput :: ChatTerminal -> ChatController -> IO ()
-runTerminalInput ct cc = withChatTerm ct $ do
-  updateInput ct
-  receiveFromTTY cc ct
+runTerminalInput :: ChatTerminal -> ChatController -> TQueue (Key, Modifiers) -> IO ()
+runTerminalInput ct cc keyQ = do
+  updateInputView ct
+  receiveFromTTY keyQ cc ct
 
-receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, currentUser, currentRemoteHost, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
-  forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
+receiveFromTTY :: TQueue (Key, Modifiers) -> ChatController -> ChatTerminal -> IO ()
+receiveFromTTY keyQ cc@ChatController {inputQ, currentUser, currentRemoteHost, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
+  forever $ atomically (readTQueue keyQ) >>= processKey >> updateInputView ct
   where
     processKey :: (Key, Modifiers) -> IO ()
     processKey key = case key of

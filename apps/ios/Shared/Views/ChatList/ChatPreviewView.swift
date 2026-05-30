@@ -9,6 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-list.md#ChatPreviewView
 struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -295,10 +296,22 @@ struct ChatPreviewView: View {
     }
 
     func chatItemPreview(_ cItem: ChatItem) -> (Text, Bool) {
-        let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
-        let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
+        let (itemText, itemFormattedText) = chatItemPreviewText(cItem)
         let r = messageText(itemText, itemFormattedText, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
         return (Text(AttributedString(r.string)), r.hasSecrets)
+
+        func chatItemPreviewText(_ ci: ChatItem) -> (String, [FormattedText]?) {
+            if ci.meta.itemDeleted != nil {
+                return (markedDeletedText(), nil)
+            }
+            if case let .chat(_, chatLink, _) = ci.content.msgContent {
+                let descr = if let descr = chatLink.shortDescription?.trimmingCharacters(in: .whitespacesAndNewlines),
+                               descr != "" { "\n" + descr } else { "" }
+                let text = chatLink.displayName + descr
+                return (text, nil)
+            }
+            return (ci.text(isChannel: chat.chatInfo.isChannel), ci.formattedText)
+        }
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
@@ -425,6 +438,18 @@ struct ChatPreviewView: View {
             smallContentPreviewFile(size: dynamicMediaSize) {
                 CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallViewSize: dynamicMediaSize)
             }
+        case let .chat(_, chatLink, ownerSig):
+            smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {
+                ProfileImage(
+                    imageStr: chatLink.image,
+                    iconName: chatLink.iconName,
+                    size: dynamicMediaSize,
+                    color: Color(uiColor: .tertiaryLabel)
+                )
+                .onTapGesture {
+                    planAndConnect(chatLink.connLinkStr, linkOwnerSig: ownerSig, theme: theme, dismiss: false)
+                }
+            }
         default: EmptyView()
         }
     }
@@ -460,12 +485,6 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatStatusImage() -> some View {
         let size = dynamicSize(userFont).incognitoSize
         switch chat.chatInfo {
-        case let .direct(contact):
-            if contact.active, let status = contact.activeConn?.connStatus, status == .ready || status == .sndReady {
-                NetworkStatusView(contact: contact, size: size)
-            } else {
-                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-            }
         case .group:
             if progressByTimeout {
                 ProgressView()
@@ -480,30 +499,6 @@ struct ChatPreviewView: View {
             }
         default:
             incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-        }
-    }
-
-    struct NetworkStatusView: View {
-        @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
-        @EnvironmentObject var theme: AppTheme
-        @ObservedObject var networkModel = NetworkModel.shared
-
-        let contact: Contact
-        let size: CGFloat
-
-        var body: some View {
-            let dynamicChatInfoSize = dynamicSize(userFont).chatInfoSize
-            switch (networkModel.contactNetworkStatus(contact)) {
-            case .connected: incognitoIcon(contact.contactConnIncognito, theme.colors.secondary, size: size)
-            case .error:
-                Image(systemName: "exclamationmark.circle")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
-                    .foregroundColor(theme.colors.secondary)
-            default:
-                ProgressView()
-            }
         }
     }
 }
@@ -528,12 +523,12 @@ func flagIcon(size: CGFloat, color: Color) -> some View {
         .foregroundColor(color)
 }
 
-func smallContentPreview(size: CGFloat, _ view: @escaping () -> some View) -> some View {
+func smallContentPreview(size: CGFloat, borderColor: Color = .secondary, _ view: @escaping () -> some View) -> some View {
     view()
     .frame(width: size, height: size)
     .cornerRadius(8)
     .overlay(RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
-        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true))
+        .strokeBorder(borderColor, lineWidth: 0.3, antialiased: true))
     .padding(.vertical, size / 6)
     .padding(.leading, 3)
     .offset(x: 6)

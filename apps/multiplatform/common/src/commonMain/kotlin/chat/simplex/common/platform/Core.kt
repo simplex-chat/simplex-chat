@@ -14,12 +14,14 @@ import java.io.File
 import java.nio.ByteBuffer
 
 // ghc's rts
+// Spec: spec/architecture.md#initHS
 external fun initHS()
 // android-support
 external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
+// Spec: spec/architecture.md#chatMigrateInit
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatCloseStore(ctrl: ChatCtrl): String
 external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
@@ -45,6 +47,7 @@ val appPreferences: AppPreferences
 
 val chatController: ChatController = ChatController
 
+// Spec: spec/architecture.md#initChatControllerOnStart
 fun initChatControllerOnStart() {
   withLongRunningApi {
     if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
@@ -55,7 +58,9 @@ fun initChatControllerOnStart() {
   }
 }
 
+// Spec: spec/architecture.md#initChatController
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
+  Log.d(TAG, "initChatController")
   try {
     if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
@@ -92,7 +97,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     val ctrl = if (res is DBMigrationResult.OK) {
       migrated[1] as Long
     } else null
-    chatController.ctrl = ctrl
+    chatController.setChatCtrl(ctrl)
     chatModel.chatDbEncrypted.value = dbKey != ""
     chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
@@ -157,11 +162,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     } else if (startChat().await()) {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
       val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
-        if (appPlatform.isAndroid) {
-          OnboardingStage.Step4_SetNotificationsMode
-        } else {
-          OnboardingStage.OnboardingComplete
-        }
+        OnboardingStage.Step4_NetworkCommitments
       } else {
         savedOnboardingStage
       }
@@ -181,6 +182,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   }
 }
 
+// Spec: spec/architecture.md#chatInitTemporaryDatabase
 fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation: MigrationConfirmation = MigrationConfirmation.Error): Pair<DBMigrationResult, ChatCtrl?> {
   val dbKey = key ?: randomDatabasePassword()
   Log.d(TAG, "chatInitTemporaryDatabase path: $dbPath")
@@ -192,6 +194,7 @@ fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation:
   return res to migrated[1] as ChatCtrl
 }
 
+// Spec: spec/architecture.md#chatInitControllerRemovingDatabases
 fun chatInitControllerRemovingDatabases() {
   val dbPath = dbAbsolutePrefixPath
   // Remove previous databases, otherwise, can be .errorNotADatabase with null controller
@@ -206,7 +209,7 @@ fun chatInitControllerRemovingDatabases() {
   }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
 
   val ctrl = migrated[1] as Long
-  chatController.ctrl = ctrl
+  chatController.setChatCtrl(ctrl)
   // We need only controller, not databases
   File(dbPath + "_chat.db").delete()
   File(dbPath + "_agent.db").delete()

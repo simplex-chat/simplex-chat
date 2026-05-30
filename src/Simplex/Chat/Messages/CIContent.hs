@@ -22,7 +22,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Type.Equality
 import Data.Word (Word32)
 import Simplex.Chat.Messages.CIContent.Events
@@ -105,7 +105,7 @@ msgDirectionIntP = \case
   1 -> Just MDSnd
   _ -> Nothing
 
-data CIDeleteMode = CIDMBroadcast | CIDMInternal | CIDMInternalMark
+data CIDeleteMode = CIDMBroadcast | CIDMInternal | CIDMInternalMark | CIDMHistory
   deriving (Show)
 
 instance StrEncoding CIDeleteMode where
@@ -113,11 +113,13 @@ instance StrEncoding CIDeleteMode where
     CIDMBroadcast -> "broadcast"
     CIDMInternal -> "internal"
     CIDMInternalMark -> "internalMark"
+    CIDMHistory -> "history"
   strP =
     A.takeTill (== ' ') >>= \case
       "broadcast" -> pure CIDMBroadcast
       "internal" -> pure CIDMInternal
       "internalMark" -> pure CIDMInternalMark
+      "history" -> pure CIDMHistory
       _ -> fail "bad CIDeleteMode"
 
 instance ToJSON CIDeleteMode where
@@ -132,6 +134,7 @@ ciDeleteModeToText = \case
   CIDMBroadcast -> "this item is deleted (broadcast)"
   CIDMInternal -> "this item is deleted (locally)"
   CIDMInternalMark -> "this item is deleted (locally)"
+  CIDMHistory -> "this item is deleted (from history)"
 
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! Nested sum types also have to use different encodings for database and API
@@ -145,6 +148,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
   CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
   CIRcvDecryptionError :: MsgDecryptError -> Word32 -> CIContent 'MDRcv
+  CIRcvMsgError :: RcvMsgError -> CIContent 'MDRcv
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvDirectEvent :: RcvDirectEvent -> CIContent 'MDRcv
@@ -176,8 +180,15 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-data E2EInfo = E2EInfo {pqEnabled :: Maybe PQEncryption}
+-- stored in database, all changed must be backward compatible
+data E2EInfo = E2EInfo {public :: Maybe Bool, pqEnabled :: Maybe PQEncryption}
   deriving (Eq, Show)
+
+e2eInfoEncrypted :: Maybe PQEncryption -> E2EInfo
+e2eInfoEncrypted pqEnabled = E2EInfo {public = Nothing, pqEnabled}
+
+e2eInfoGroup :: GroupInfo -> E2EInfo
+e2eInfoGroup g = E2EInfo {public = if useRelays' g then Just True else Nothing, pqEnabled = Just PQEncOff}
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
 ciMsgContent = \case
@@ -196,6 +207,11 @@ data MsgDecryptError
   | MDERatchetSync
   deriving (Eq, Show)
 
+data RcvMsgError
+  = RMEDropped {attempts :: Int}
+  | RMEParseError {parseError :: Text}
+  deriving (Eq, Show)
+
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
   SMDSnd -> True
@@ -205,6 +221,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvCall {} -> True
     CIRcvIntegrityError _ -> True
     CIRcvDecryptionError {} -> True
+    CIRcvMsgError _ -> False
     CIRcvGroupInvitation {} -> True
     CIRcvDirectEvent rde -> case rde of
       RDEContactDeleted -> False
@@ -227,6 +244,7 @@ ciRequiresAttention content = case msgDirection @d of
       RGEMemberCreatedContact -> False
       RGEMemberProfileUpdated {} -> False
       RGENewMemberPendingReview -> True
+      RGEMsgBadSignature -> False
     CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
@@ -274,6 +292,7 @@ ciContentToText = \case
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
   CIRcvIntegrityError err -> msgIntegrityError err
   CIRcvDecryptionError err n -> msgDecryptErrorText err n
+  CIRcvMsgError err -> rcvMsgErrorText err
   CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
   CIRcvDirectEvent event -> rcvDirectEventToText event
@@ -306,9 +325,14 @@ directE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
   Nothing -> simpleE2EText
 
 groupE2EInfoToText :: E2EInfo -> Text
-groupE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
-  Just _ -> e2eInfoNoPQText
-  Nothing -> simpleE2EText
+groupE2EInfoToText E2EInfo {pqEnabled, public} = case public of
+  Just True -> publicGroupNoE2EText
+  _ -> case pqEnabled of
+    Just _ -> e2eInfoNoPQText
+    Nothing -> simpleE2EText
+
+publicGroupNoE2EText :: Text
+publicGroupNoE2EText = "This channel or group is NOT end-to-end encrypted."
 
 simpleE2EText :: Text
 simpleE2EText = "This conversation is protected by end-to-end encryption"
@@ -323,7 +347,7 @@ e2eInfoPQText =
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
-  "invitation to join group " <> displayName <> optionalFullName displayName fullName Nothing <> " as " <> (decodeLatin1 . strEncode $ role)
+  "invitation to join group " <> displayName <> optionalFullName displayName fullName Nothing <> " as " <> textEncode role
 
 rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
@@ -338,9 +362,9 @@ rcvGroupEventToText = \case
   RGEMemberAccepted _ p -> "accepted " <> profileToText p
   RGEUserAccepted -> "accepted you"
   RGEMemberLeft -> "left"
-  RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> textEncode r
   RGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
-  RGEUserRole r -> "changed your role to " <> safeDecodeUtf8 (strEncode r)
+  RGEUserRole r -> "changed your role to " <> textEncode r
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
@@ -349,12 +373,13 @@ rcvGroupEventToText = \case
   RGEMemberCreatedContact -> "started direct connection with you"
   RGEMemberProfileUpdated {} -> "updated profile"
   RGENewMemberPendingReview -> "new member wants to join the group"
+  RGEMsgBadSignature -> "message rejected: bad signature"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
-  SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> textEncode r
   SGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
-  SGEUserRole r -> "changed role for yourself to " <> safeDecodeUtf8 (strEncode r)
+  SGEUserRole r -> "changed role for yourself to " <> textEncode r
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
@@ -419,6 +444,11 @@ msgIntegrityError = \case
   MsgBadHash -> "incorrect message hash"
   MsgDuplicate -> "duplicate message ID"
 
+rcvMsgErrorText :: RcvMsgError -> Text
+rcvMsgErrorText = \case
+  RMEDropped {attempts} -> "message removed after " <> tshow attempts <> " attempts"
+  RMEParseError {parseError} -> "message error: " <> parseError
+
 msgDecryptErrorText :: MsgDecryptError -> Word32 -> Text
 msgDecryptErrorText err n =
   "decryption error, possibly due to the device change"
@@ -455,6 +485,7 @@ data JSONCIContent
   | JCIRcvCall {status :: CICallStatus, duration :: Int}
   | JCIRcvIntegrityError {msgError :: MsgErrorType}
   | JCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
+  | JCIRcvMsgError {rcvMsgError :: RcvMsgError}
   | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCIRcvDirectEvent {rcvDirectEvent :: RcvDirectEvent}
@@ -490,6 +521,7 @@ jsonCIContent = \case
   CIRcvCall status duration -> JCIRcvCall {status, duration}
   CIRcvIntegrityError err -> JCIRcvIntegrityError err
   CIRcvDecryptionError err n -> JCIRcvDecryptionError err n
+  CIRcvMsgError err -> JCIRcvMsgError err
   CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvDirectEvent rcvDirectEvent -> JCIRcvDirectEvent {rcvDirectEvent}
@@ -525,6 +557,7 @@ aciContentJSON = \case
   JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   JCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
   JCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
+  JCIRcvMsgError err -> ACIContent SMDRcv $ CIRcvMsgError err
   JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   JCIRcvDirectEvent {rcvDirectEvent} -> ACIContent SMDRcv $ CIRcvDirectEvent rcvDirectEvent
@@ -561,6 +594,7 @@ data DBJSONCIContent
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
   | DBJCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
+  | DBJCIRcvMsgError {rcvMsgError :: RcvMsgError}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvDirectEvent {rcvDirectEvent :: DBRcvDirectEvent}
@@ -596,6 +630,7 @@ dbJsonCIContent = \case
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
   CIRcvIntegrityError err -> DBJCIRcvIntegrityError $ DBME err
   CIRcvDecryptionError err n -> DBJCIRcvDecryptionError err n
+  CIRcvMsgError err -> DBJCIRcvMsgError err
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvDirectEvent rde -> DBJCIRcvDirectEvent $ RDE rde
@@ -631,6 +666,7 @@ aciContentDBJSON = \case
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   DBJCIRcvIntegrityError (DBME err) -> ACIContent SMDRcv $ CIRcvIntegrityError err
   DBJCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
+  DBJCIRcvMsgError err -> ACIContent SMDRcv $ CIRcvMsgError err
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   DBJCIRcvDirectEvent (RDE rde) -> ACIContent SMDRcv $ CIRcvDirectEvent rde
@@ -691,6 +727,8 @@ $(JQ.deriveJSON defaultJSON ''E2EInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MDE") ''MsgDecryptError)
 
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RME") ''RcvMsgError)
+
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CIGIS") ''CIGroupInvitationStatus)
 
 $(JQ.deriveJSON defaultJSON ''CIGroupInvitation)
@@ -749,6 +787,7 @@ toCIContentTag ciContent = case ciContent of
   CIRcvCall {} -> "rcvCall"
   CIRcvIntegrityError _ -> "rcvIntegrityError"
   CIRcvDecryptionError {} -> "rcvDecryptionError"
+  CIRcvMsgError _ -> "rcvMsgError"
   CIRcvGroupInvitation {} -> "rcvGroupInvitation"
   CISndGroupInvitation {} -> "sndGroupInvitation"
   CIRcvDirectEvent _ -> "rcvDirectEvent"

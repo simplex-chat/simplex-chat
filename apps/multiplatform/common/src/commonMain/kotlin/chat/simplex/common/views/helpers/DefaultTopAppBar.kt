@@ -29,7 +29,9 @@ fun DefaultAppBar(
   onTop: Boolean,
   showSearch: Boolean = false,
   searchAlwaysVisible: Boolean = false,
+  searchPlaceholder: String? = null,
   onSearchValueChanged: (String) -> Unit = {},
+  searchTrailingContent: @Composable (() -> Unit)? = null,
   buttons: @Composable RowScope.() -> Unit = {},
 ) {
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
@@ -78,7 +80,8 @@ fun DefaultAppBar(
       AppBar(
         title = {
           if (showSearch) {
-            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
+            val placeholder = searchPlaceholder ?: stringResource(MR.strings.search_verb)
+            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, placeholder = placeholder, trailingContent = searchTrailingContent, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
           } else if (title != null) {
             title()
           } else if (titleText.value.isNotEmpty() && connection != null) {

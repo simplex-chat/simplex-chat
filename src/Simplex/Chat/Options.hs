@@ -54,8 +54,7 @@ data ChatOpts = ChatOpts
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     markRead :: Bool,
-    createBot :: Maybe CreateBotOpts,
-    maintenance :: Bool
+    createBot :: Maybe CreateBotOpts
   }
 
 data CoreChatOpts = CoreChatOpts
@@ -70,14 +69,17 @@ data CoreChatOpts = CoreChatOpts
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
     deviceName :: Maybe Text,
+    chatRelay :: Bool,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
-    migrationBackupPath :: Maybe FilePath
+    migrationBackupPath :: Maybe FilePath,
+    maintenance :: Bool    
   }
 
 data CreateBotOpts = CreateBotOpts
   { botDisplayName :: Text,
-    allowFiles :: Bool
+    allowFiles :: Bool,
+    clientService :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -203,7 +205,7 @@ coreChatOptsP appDir defaultDbName = do
     switch
       ( long "connections"
           <> short 'c'
-          <> help "Log every contact and group connection on start (also with `-l info`)"
+          <> help "Log connections subscription errors on start (also with `-l info`)"
       )
   logServerHosts <-
     switch
@@ -238,6 +240,11 @@ coreChatOptsP appDir defaultDbName = do
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
         )
+  chatRelay <-
+    switch
+      ( long "relay"
+          <> help "Run as a chat relay client"
+      )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -250,6 +257,12 @@ coreChatOptsP appDir defaultDbName = do
           <> help "Automatically confirm \"up\" database migrations"
       )
   migrationBackupPath <- migrationBackupPathP
+  maintenance <-
+    switch
+      ( long "maintenance"
+          <> short 'm'
+          <> help "Run in maintenance mode (/_start to start chat)"
+      )
   pure
     CoreChatOpts
       { dbOptions,
@@ -274,9 +287,11 @@ coreChatOptsP appDir defaultDbName = do
         logFile,
         tbqSize,
         deviceName,
+        chatRelay,
         highlyAvailable,
         yesToUpMigrations,
-        migrationBackupPath
+        migrationBackupPath,
+        maintenance
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
@@ -389,11 +404,10 @@ chatOptsP appDir defaultDbName = do
       ( long "create-bot-allow-files"
           <> help "Flag for created bot to allow files (only allowed together with --create-bot option)"
       )
-  maintenance <-
+  createBotClientService <-
     switch
-      ( long "maintenance"
-          <> short 'm'
-          <> help "Run in maintenance mode (/_start to start chat)"
+      ( long "create-bot-client-service"
+          <> help "Flag for created bot to use client service certificate"
       )
   pure
     ChatOpts
@@ -413,11 +427,11 @@ chatOptsP appDir defaultDbName = do
         muteNotifications,
         markRead,
         createBot = case createBotDisplayName of
-          Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles}
+          Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles, clientService = createBotClientService}
           Nothing
             | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
-            | otherwise -> Nothing,
-        maintenance
+            | createBotClientService -> error "--create-bot-client-service option requires --create-bot-name option"
+            | otherwise -> Nothing
       }
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]

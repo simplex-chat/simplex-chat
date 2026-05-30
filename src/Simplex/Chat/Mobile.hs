@@ -49,6 +49,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
+import Simplex.Messaging.Agent.Protocol (AgentErrorType)
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
@@ -72,6 +73,7 @@ data DBMigrationResult
   | DBMErrorNotADatabase {dbFile :: String}
   | DBMErrorMigration {dbFile :: String, migrationError :: MigrationError}
   | DBMErrorSQL {dbFile :: String, migrationSQLError :: String}
+  | DBMAgentError {agentError :: AgentErrorType}
   deriving (Show)
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "DBM") ''DBMigrationResult)
@@ -253,9 +255,11 @@ mobileChatOpts dbOptions =
             logFile = Nothing,
             tbqSize = 4096,
             deviceName = Nothing,
+            chatRelay = False,
             highlyAvailable = False,
             yesToUpMigrations = False,
-            migrationBackupPath = Just ""
+            migrationBackupPath = Just "",
+            maintenance = True
           },
       chatCmd = "",
       chatCmdDelay = 3,
@@ -271,8 +275,7 @@ mobileChatOpts dbOptions =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Nothing,
-      maintenance = True
+      createBot = Nothing
     }
 
 defaultMobileConfig :: ChatConfig
@@ -280,7 +283,6 @@ defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
       logLevel = CLLError,
-      coreApi = True,
       deviceNameForRemote = "Mobile"
     }
 
@@ -299,14 +301,14 @@ chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigra
 chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
   let migrationConfig = MigrationConfig confirmMigrations (Just "")
-  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey) migrationConfig
-  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey) migrationConfig
-  liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
+  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey chatDBFunctions) migrationConfig
+  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey []) migrationConfig
+  ExceptT $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
     opts = mobileChatOpts $ removeDbKey chatDbOpts
     initialize st db = do
-      user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig opts backgroundMode
+      user_ <- liftIO $ getActiveUser_ st
+      first DBMAgentError <$> newChatController db user_ defaultMobileConfig opts backgroundMode
     migrate createStore dbOpts confirmMigrations =
       ExceptT $
         (first (DBMErrorMigration errDbStr) <$> createStore dbOpts confirmMigrations)

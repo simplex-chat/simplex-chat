@@ -2,6 +2,7 @@ package chat.simplex.common.views.helpers
 
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.res.MR
 import kotlinx.serialization.*
 import java.io.File
 import java.security.SecureRandom
@@ -74,6 +75,7 @@ object DatabaseUtils {
   }
 }
 
+// Spec: spec/database.md#DBMigrationResult
 @Serializable
 sealed class DBMigrationResult {
   @Serializable @SerialName("ok") object OK: DBMigrationResult()
@@ -106,6 +108,15 @@ data class UpMigration(
   val upName: String,
   // val withDown: Boolean
 )
+
+fun downMigrationWarnings(downMigrations: List<String>): List<String> {
+  val warnings = listOf(
+    "20260222_chat_relays" to MR.strings.down_migration_warning_chat_relays
+  )
+  return warnings.mapNotNull { (key, res) ->
+    if (downMigrations.contains(key)) generalGetString(res) else null
+  }
+}
 
 @Serializable
 sealed class MTRError {

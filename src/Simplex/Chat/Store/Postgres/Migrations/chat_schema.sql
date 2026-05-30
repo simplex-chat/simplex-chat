@@ -15,6 +15,150 @@ SET row_security = off;
 CREATE SCHEMA test_chat_schema;
 
 
+
+CREATE FUNCTION test_chat_schema.is_current_member(p_status text) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN p_status IN (
+    'introduced',
+    'intro-inv',
+    'accepted',
+    'announced',
+    'connected',
+    'complete',
+    'creator'
+  );
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.migrate_relations_vector_step(state bytea, idx bigint, direction integer, intro_status text) RETURNS bytea
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+DECLARE
+  new_len INT;
+  result BYTEA;
+  status INT;
+  byte_val INT;
+BEGIN
+  IF idx < 0 THEN
+    RETURN state;
+  END IF;
+  IF intro_status = 're-con' THEN
+    IF direction = 0 THEN status := 2; ELSE status := 3; END IF;
+  ELSIF intro_status = 'to-con' THEN
+    IF direction = 0 THEN status := 3; ELSE status := 2; END IF;
+  ELSIF intro_status = 'con' THEN
+    status := 4;
+  ELSE
+    status := 1;
+  END IF;
+  byte_val := (direction * 8) + status;
+  new_len := GREATEST(length(state), idx + 1);
+  IF new_len > length(state) THEN
+    result := state || (SELECT string_agg('\x00'::BYTEA, ''::BYTEA) FROM generate_series(1, new_len - length(state)));
+  ELSE
+    result := state;
+  END IF;
+  result := set_byte(result, idx::INT, byte_val);
+  RETURN result;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_delete_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF is_current_member(OLD.member_status) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count - 1
+    WHERE group_id = OLD.group_id;
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_insert_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF is_current_member(NEW.member_status) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count + 1
+    WHERE group_id = NEW.group_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_update_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  was_active BOOLEAN;
+  is_active BOOLEAN;
+BEGIN
+  was_active := is_current_member(OLD.member_status);
+  is_active := is_current_member(NEW.member_status);
+
+  IF was_active != is_active THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count +
+        (CASE WHEN is_active THEN 1 ELSE -1 END)
+    WHERE group_id = NEW.group_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.set_member_vector_new_relation(v bytea, idx bigint, direction integer, status integer) RETURNS bytea
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+DECLARE
+  new_len INT;
+  result BYTEA;
+  byte_val INT;
+  old_byte INT;
+BEGIN
+  IF idx < 0 THEN
+    RETURN v;
+  END IF;
+  IF idx < length(v) THEN
+    old_byte := get_byte(v, idx::INT);
+  ELSE
+    old_byte := 0;
+  END IF;
+  byte_val := (old_byte & x'F0'::INT) | (direction * 8) | status;
+  new_len := GREATEST(length(v), idx + 1);
+  IF new_len > length(v) THEN
+    result := v || (SELECT string_agg('\x00'::BYTEA, ''::BYTEA) FROM generate_series(1, new_len - length(v)));
+  ELSE
+    result := v;
+  END IF;
+  result := set_byte(result, idx::INT, byte_val);
+  RETURN result;
+END;
+$$;
+
+
+
+CREATE AGGREGATE test_chat_schema.migrate_relations_vector(bigint, integer, text) (
+    SFUNC = test_chat_schema.migrate_relations_vector_step,
+    STYPE = bytea,
+    INITCOND = ''
+);
+
+
 SET default_table_access_method = heap;
 
 
@@ -29,7 +173,7 @@ CREATE TABLE test_chat_schema.calls (
     contact_id bigint NOT NULL,
     shared_call_id bytea NOT NULL,
     chat_item_id bigint NOT NULL,
-    call_state bytea NOT NULL,
+    call_state text NOT NULL,
     call_ts timestamp with time zone NOT NULL,
     user_id bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -198,13 +342,46 @@ CREATE TABLE test_chat_schema.chat_items (
     user_mention smallint DEFAULT 0 NOT NULL,
     group_scope_tag text,
     group_scope_group_member_id bigint,
-    show_group_as_sender smallint DEFAULT 0 NOT NULL
+    show_group_as_sender smallint DEFAULT 0 NOT NULL,
+    has_link smallint DEFAULT 0 NOT NULL,
+    msg_signed text,
+    item_viewed smallint DEFAULT 0 NOT NULL
 );
 
 
 
 ALTER TABLE test_chat_schema.chat_items ALTER COLUMN chat_item_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME test_chat_schema.chat_items_chat_item_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.chat_relays (
+    chat_relay_id bigint NOT NULL,
+    address bytea NOT NULL,
+    display_name text NOT NULL,
+    full_name text DEFAULT ''::text NOT NULL,
+    short_descr text,
+    image text,
+    domains text NOT NULL,
+    preset smallint DEFAULT 0 NOT NULL,
+    tested smallint,
+    enabled smallint DEFAULT 1 NOT NULL,
+    user_id bigint NOT NULL,
+    deleted smallint DEFAULT 0 NOT NULL,
+    created_at text DEFAULT now() NOT NULL,
+    updated_at text DEFAULT now() NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.chat_relays ALTER COLUMN chat_relay_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.chat_relays_chat_relay_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -304,13 +481,33 @@ CREATE TABLE test_chat_schema.connections (
     quota_err_counter bigint DEFAULT 0 NOT NULL,
     short_link_inv bytea,
     via_short_link_contact bytea,
-    via_contact_uri bytea
+    via_contact_uri bytea,
+    relay_test smallint DEFAULT 0 NOT NULL
 );
 
 
 
 ALTER TABLE test_chat_schema.connections ALTER COLUMN connection_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME test_chat_schema.connections_connection_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.connections_sync (
+    connections_sync_id bigint NOT NULL,
+    should_sync smallint DEFAULT 0 NOT NULL,
+    last_sync_ts timestamp with time zone
+);
+
+
+
+ALTER TABLE test_chat_schema.connections_sync ALTER COLUMN connections_sync_id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.connections_sync_connections_sync_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -388,7 +585,6 @@ CREATE TABLE test_chat_schema.contacts (
     user_id bigint NOT NULL,
     local_display_name text NOT NULL,
     is_user smallint DEFAULT 0 NOT NULL,
-    via_group bigint,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     xcontact_id bytea,
@@ -439,14 +635,14 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     job_scope_spec_tag text,
     job_scope_include_pending smallint,
     job_scope_support_gm_id bigint,
-    single_sender_group_member_id bigint,
     body bytea,
     cursor_group_member_id bigint,
     job_status text NOT NULL,
     job_err_reason text,
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    sender_group_member_ids text
 );
 
 
@@ -618,7 +814,12 @@ CREATE TABLE test_chat_schema.group_members (
     support_chat_items_mentions bigint DEFAULT 0 NOT NULL,
     support_chat_last_msg_from_member_ts timestamp with time zone,
     member_xcontact_id bytea,
-    member_welcome_shared_msg_id bytea
+    member_welcome_shared_msg_id bytea,
+    index_in_group bigint DEFAULT 0 NOT NULL,
+    member_relations_vector bytea,
+    relay_link bytea,
+    member_pub_key bytea,
+    removed_at timestamp with time zone
 );
 
 
@@ -646,13 +847,41 @@ CREATE TABLE test_chat_schema.group_profiles (
     preferences text,
     description text,
     member_admission text,
-    short_descr text
+    short_descr text,
+    group_type text,
+    group_link bytea,
+    public_group_id bytea
 );
 
 
 
 ALTER TABLE test_chat_schema.group_profiles ALTER COLUMN group_profile_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME test_chat_schema.group_profiles_group_profile_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.group_relays (
+    group_relay_id bigint NOT NULL,
+    group_id bigint NOT NULL,
+    group_member_id bigint NOT NULL,
+    chat_relay_id bigint NOT NULL,
+    relay_status text NOT NULL,
+    relay_link bytea,
+    conf_id bytea,
+    created_at text DEFAULT now() NOT NULL,
+    updated_at text DEFAULT now() NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.group_relays ALTER COLUMN group_relay_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.group_relays_group_relay_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -716,7 +945,26 @@ CREATE TABLE test_chat_schema.groups (
     welcome_shared_msg_id bytea,
     request_shared_msg_id bytea,
     conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
-    via_group_link_uri bytea
+    via_group_link_uri bytea,
+    summary_current_members_count bigint DEFAULT 0 NOT NULL,
+    member_index bigint DEFAULT 0 NOT NULL,
+    use_relays smallint DEFAULT 0 NOT NULL,
+    creating_in_progress smallint DEFAULT 0 NOT NULL,
+    relay_own_status text,
+    relay_request_inv_id bytea,
+    relay_request_group_link bytea,
+    relay_request_peer_chat_min_version integer,
+    relay_request_peer_chat_max_version integer,
+    relay_request_failed smallint DEFAULT 0,
+    relay_request_err_reason text,
+    root_priv_key bytea,
+    root_pub_key bytea,
+    member_priv_key bytea,
+    public_member_count bigint,
+    relay_request_retries bigint DEFAULT 0 NOT NULL,
+    relay_request_delay bigint DEFAULT 0 NOT NULL,
+    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 01:00:00+01'::timestamp with time zone NOT NULL,
+    relay_inactive_at timestamp with time zone
 );
 
 
@@ -768,7 +1016,9 @@ CREATE TABLE test_chat_schema.messages (
     shared_msg_id_user smallint,
     author_group_member_id bigint,
     forwarded_by_group_member_id bigint,
-    broker_ts timestamp with time zone
+    broker_ts timestamp with time zone,
+    msg_chat_binding text,
+    msg_signatures bytea
 );
 
 
@@ -867,7 +1117,6 @@ CREATE TABLE test_chat_schema.pending_group_messages (
     pending_group_message_id bigint NOT NULL,
     group_member_id bigint NOT NULL,
     message_id bigint NOT NULL,
-    group_member_intro_id bigint,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -1112,18 +1361,6 @@ ALTER TABLE test_chat_schema.settings ALTER COLUMN settings_id ADD GENERATED ALW
 
 
 
-CREATE TABLE test_chat_schema.snd_file_chunks (
-    file_id bigint NOT NULL,
-    connection_id bigint NOT NULL,
-    chunk_number bigint NOT NULL,
-    chunk_agent_msg_id bigint,
-    chunk_sent smallint DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL
-);
-
-
-
 CREATE TABLE test_chat_schema.snd_files (
     file_id bigint NOT NULL,
     connection_id bigint NOT NULL,
@@ -1196,7 +1433,9 @@ CREATE TABLE test_chat_schema.users (
     user_member_profile_updated_at timestamp with time zone,
     ui_themes text,
     active_order bigint DEFAULT 0 NOT NULL,
-    auto_accept_member_contacts smallint DEFAULT 0 NOT NULL
+    auto_accept_member_contacts smallint DEFAULT 0 NOT NULL,
+    is_user_chat_relay smallint DEFAULT 0 NOT NULL,
+    client_service smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1280,6 +1519,11 @@ ALTER TABLE ONLY test_chat_schema.chat_items
 
 
 
+ALTER TABLE ONLY test_chat_schema.chat_relays
+    ADD CONSTRAINT chat_relays_pkey PRIMARY KEY (chat_relay_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.chat_tags
     ADD CONSTRAINT chat_tags_pkey PRIMARY KEY (chat_tag_id);
 
@@ -1297,6 +1541,11 @@ ALTER TABLE ONLY test_chat_schema.connections
 
 ALTER TABLE ONLY test_chat_schema.connections
     ADD CONSTRAINT connections_pkey PRIMARY KEY (connection_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.connections_sync
+    ADD CONSTRAINT connections_sync_pkey PRIMARY KEY (connections_sync_id);
 
 
 
@@ -1387,6 +1636,11 @@ ALTER TABLE ONLY test_chat_schema.group_members
 
 ALTER TABLE ONLY test_chat_schema.group_profiles
     ADD CONSTRAINT group_profiles_pkey PRIMARY KEY (group_profile_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_relays
+    ADD CONSTRAINT group_relays_pkey PRIMARY KEY (group_relay_id);
 
 
 
@@ -1507,11 +1761,6 @@ ALTER TABLE ONLY test_chat_schema.server_operators
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_pkey PRIMARY KEY (settings_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.snd_file_chunks
-    ADD CONSTRAINT snd_file_chunks_pkey PRIMARY KEY (file_id, connection_id, chunk_number);
 
 
 
@@ -1660,6 +1909,18 @@ CREATE INDEX idx_chat_items_contacts_created_at ON test_chat_schema.chat_items U
 
 
 
+CREATE INDEX idx_chat_items_contacts_has_link_created_at ON test_chat_schema.chat_items USING btree (user_id, contact_id, has_link, created_at);
+
+
+
+CREATE INDEX idx_chat_items_contacts_item_viewed ON test_chat_schema.chat_items USING btree (user_id, contact_id, item_viewed, created_at);
+
+
+
+CREATE INDEX idx_chat_items_contacts_msg_content_tag_created_at ON test_chat_schema.chat_items USING btree (user_id, contact_id, msg_content_tag, created_at);
+
+
+
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON test_chat_schema.chat_items USING btree (user_id, contact_id, shared_msg_id);
 
 
@@ -1716,11 +1977,19 @@ CREATE INDEX idx_chat_items_groups ON test_chat_schema.chat_items USING btree (u
 
 
 
+CREATE INDEX idx_chat_items_groups_has_link_item_ts ON test_chat_schema.chat_items USING btree (user_id, group_id, has_link, item_ts);
+
+
+
 CREATE INDEX idx_chat_items_groups_history ON test_chat_schema.chat_items USING btree (user_id, group_id, include_in_history, item_deleted, item_ts, chat_item_id);
 
 
 
 CREATE INDEX idx_chat_items_groups_item_ts ON test_chat_schema.chat_items USING btree (user_id, group_id, item_ts);
+
+
+
+CREATE INDEX idx_chat_items_groups_item_viewed ON test_chat_schema.chat_items USING btree (user_id, group_id, item_viewed, item_ts);
 
 
 
@@ -1744,6 +2013,14 @@ CREATE INDEX idx_chat_items_item_status ON test_chat_schema.chat_items USING btr
 
 
 
+CREATE INDEX idx_chat_items_note_folder_has_link_created_at ON test_chat_schema.chat_items USING btree (user_id, note_folder_id, has_link, created_at);
+
+
+
+CREATE INDEX idx_chat_items_note_folder_msg_content_tag_created_at ON test_chat_schema.chat_items USING btree (user_id, note_folder_id, msg_content_tag, created_at);
+
+
+
 CREATE INDEX idx_chat_items_notes ON test_chat_schema.chat_items USING btree (user_id, note_folder_id, item_status, created_at);
 
 
@@ -1757,6 +2034,14 @@ CREATE INDEX idx_chat_items_timed_delete_at ON test_chat_schema.chat_items USING
 
 
 CREATE INDEX idx_chat_items_user_id_item_status ON test_chat_schema.chat_items USING btree (user_id, item_status);
+
+
+
+CREATE INDEX idx_chat_relays_user_id ON test_chat_schema.chat_relays USING btree (user_id);
+
+
+
+CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON test_chat_schema.chat_relays USING btree (user_id, address);
 
 
 
@@ -1796,7 +2081,7 @@ CREATE INDEX idx_connections_conn_req_inv ON test_chat_schema.connections USING 
 
 
 
-CREATE INDEX idx_connections_contact_id ON test_chat_schema.connections USING btree (contact_id);
+CREATE UNIQUE INDEX idx_connections_contact_id ON test_chat_schema.connections USING btree (contact_id);
 
 
 
@@ -1808,7 +2093,7 @@ CREATE INDEX idx_connections_group_member ON test_chat_schema.connections USING 
 
 
 
-CREATE INDEX idx_connections_group_member_id ON test_chat_schema.connections USING btree (group_member_id);
+CREATE UNIQUE INDEX idx_connections_group_member_id ON test_chat_schema.connections USING btree (group_member_id);
 
 
 
@@ -1816,7 +2101,7 @@ CREATE INDEX idx_connections_rcv_file_id ON test_chat_schema.connections USING b
 
 
 
-CREATE INDEX idx_connections_to_subscribe ON test_chat_schema.connections USING btree (to_subscribe);
+CREATE INDEX idx_connections_to_subscribe ON test_chat_schema.connections USING btree (user_id, to_subscribe);
 
 
 
@@ -1900,10 +2185,6 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON test_chat_schema
 
 
 
-CREATE INDEX idx_contacts_via_group ON test_chat_schema.contacts USING btree (via_group);
-
-
-
 CREATE INDEX idx_contacts_xcontact_id ON test_chat_schema.contacts USING btree (xcontact_id);
 
 
@@ -1921,10 +2202,6 @@ CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON test_chat_schema.deliv
 
 
 CREATE INDEX idx_delivery_jobs_next ON test_chat_schema.delivery_jobs USING btree (group_id, worker_scope, failed, job_status);
-
-
-
-CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON test_chat_schema.delivery_jobs USING btree (single_sender_group_member_id);
 
 
 
@@ -2008,6 +2285,10 @@ CREATE INDEX idx_group_members_group_id ON test_chat_schema.group_members USING 
 
 
 
+CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON test_chat_schema.group_members USING btree (group_id, index_in_group);
+
+
+
 CREATE INDEX idx_group_members_invited_by ON test_chat_schema.group_members USING btree (invited_by);
 
 
@@ -2029,6 +2310,18 @@ CREATE INDEX idx_group_members_user_id_local_display_name ON test_chat_schema.gr
 
 
 CREATE INDEX idx_group_profiles_user_id ON test_chat_schema.group_profiles USING btree (user_id);
+
+
+
+CREATE INDEX idx_group_relays_chat_relay_id ON test_chat_schema.group_relays USING btree (chat_relay_id);
+
+
+
+CREATE INDEX idx_group_relays_group_id ON test_chat_schema.group_relays USING btree (group_id);
+
+
+
+CREATE UNIQUE INDEX idx_group_relays_group_member_id ON test_chat_schema.group_relays USING btree (group_member_id);
 
 
 
@@ -2061,6 +2354,14 @@ CREATE INDEX idx_groups_group_profile_id ON test_chat_schema.groups USING btree 
 
 
 CREATE INDEX idx_groups_inv_queue_info ON test_chat_schema.groups USING btree (inv_queue_info);
+
+
+
+CREATE INDEX idx_groups_relay_request_group_link ON test_chat_schema.groups USING btree (user_id, relay_request_group_link) WHERE (relay_request_group_link IS NOT NULL);
+
+
+
+CREATE INDEX idx_groups_summary_current_members_count ON test_chat_schema.groups USING btree (summary_current_members_count);
 
 
 
@@ -2113,10 +2414,6 @@ CREATE INDEX idx_operator_usage_conditions_server_operator_id ON test_chat_schem
 
 
 CREATE INDEX idx_pending_group_messages_group_member_id ON test_chat_schema.pending_group_messages USING btree (group_member_id);
-
-
-
-CREATE INDEX idx_pending_group_messages_group_member_intro_id ON test_chat_schema.pending_group_messages USING btree (group_member_intro_id);
 
 
 
@@ -2212,10 +2509,6 @@ CREATE INDEX idx_smp_servers_user_id ON test_chat_schema.protocol_servers USING 
 
 
 
-CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON test_chat_schema.snd_file_chunks USING btree (file_id, connection_id);
-
-
-
 CREATE INDEX idx_snd_files_connection_id ON test_chat_schema.snd_files USING btree (connection_id);
 
 
@@ -2245,6 +2538,18 @@ CREATE INDEX idx_xftp_file_descriptions_user_id ON test_chat_schema.xftp_file_de
 
 
 CREATE INDEX note_folders_user_id ON test_chat_schema.note_folders USING btree (user_id);
+
+
+
+CREATE TRIGGER tr_group_members_delete_update_summary AFTER DELETE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_delete_update_summary();
+
+
+
+CREATE TRIGGER tr_group_members_insert_update_summary AFTER INSERT ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_insert_update_summary();
+
+
+
+CREATE TRIGGER tr_group_members_update_update_summary AFTER UPDATE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_update_update_summary();
 
 
 
@@ -2378,6 +2683,11 @@ ALTER TABLE ONLY test_chat_schema.chat_items
 
 
 
+ALTER TABLE ONLY test_chat_schema.chat_relays
+    ADD CONSTRAINT chat_relays_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY test_chat_schema.chat_tags_chats
     ADD CONSTRAINT chat_tags_chats_chat_tag_id_fkey FOREIGN KEY (chat_tag_id) REFERENCES test_chat_schema.chat_tags(chat_tag_id) ON DELETE CASCADE;
 
@@ -2394,7 +2704,7 @@ ALTER TABLE ONLY test_chat_schema.chat_tags_chats
 
 
 ALTER TABLE ONLY test_chat_schema.chat_tags
-    ADD CONSTRAINT chat_tags_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id);
+    ADD CONSTRAINT chat_tags_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
 
 
 
@@ -2523,11 +2833,6 @@ ALTER TABLE ONLY test_chat_schema.delivery_jobs
 
 
 
-ALTER TABLE ONLY test_chat_schema.delivery_jobs
-    ADD CONSTRAINT delivery_jobs_single_sender_group_member_id_fkey FOREIGN KEY (single_sender_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY test_chat_schema.delivery_tasks
     ADD CONSTRAINT delivery_tasks_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
 
@@ -2600,11 +2905,6 @@ ALTER TABLE ONLY test_chat_schema.connections
 
 ALTER TABLE ONLY test_chat_schema.contacts
     ADD CONSTRAINT fk_contacts_group_members FOREIGN KEY (contact_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY test_chat_schema.contacts
-    ADD CONSTRAINT fk_contacts_groups FOREIGN KEY (via_group) REFERENCES test_chat_schema.groups(group_id) ON DELETE SET NULL;
 
 
 
@@ -2703,6 +3003,21 @@ ALTER TABLE ONLY test_chat_schema.group_profiles
 
 
 
+ALTER TABLE ONLY test_chat_schema.group_relays
+    ADD CONSTRAINT group_relays_chat_relay_id_fkey FOREIGN KEY (chat_relay_id) REFERENCES test_chat_schema.chat_relays(chat_relay_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_relays
+    ADD CONSTRAINT group_relays_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_relays
+    ADD CONSTRAINT group_relays_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY test_chat_schema.group_snd_item_statuses
     ADD CONSTRAINT group_snd_item_statuses_chat_item_id_fkey FOREIGN KEY (chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE CASCADE;
 
@@ -2775,11 +3090,6 @@ ALTER TABLE ONLY test_chat_schema.operator_usage_conditions
 
 ALTER TABLE ONLY test_chat_schema.pending_group_messages
     ADD CONSTRAINT pending_group_messages_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.pending_group_messages
-    ADD CONSTRAINT pending_group_messages_group_member_intro_id_fkey FOREIGN KEY (group_member_intro_id) REFERENCES test_chat_schema.group_member_intros(group_member_intro_id) ON DELETE CASCADE;
 
 
 
@@ -2860,11 +3170,6 @@ ALTER TABLE ONLY test_chat_schema.sent_probes
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.snd_file_chunks
-    ADD CONSTRAINT snd_file_chunks_file_id_connection_id_fkey FOREIGN KEY (file_id, connection_id) REFERENCES test_chat_schema.snd_files(file_id, connection_id) ON DELETE CASCADE;
 
 
 

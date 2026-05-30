@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -170,7 +171,7 @@ fun DatabaseLayout(
     AppBarTitle(stringResource(MR.strings.your_chat_database))
 
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(stringResource(MR.strings.messages_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.messages_section_title)) {
         TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
       }
       SectionTextFooter(
@@ -184,7 +185,7 @@ fun DatabaseLayout(
           }
         }
       )
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
     }
     val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
     if (chatModel.localUserCreated.value == true) {
@@ -200,7 +201,7 @@ fun DatabaseLayout(
         RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
       if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
     }
 
     SectionView(stringResource(MR.strings.chat_database_section)) {
@@ -214,7 +215,7 @@ fun DatabaseLayout(
         if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
         else painterResource(MR.images.ic_lock),
         stringResource(MR.strings.database_passphrase),
-        click = { ModalManager.start.showModal { DatabaseEncryptionView(chatModel, false) } },
+        click = { ModalManager.start.showModal(cardScreen = true) { DatabaseEncryptionView(chatModel, false) } },
         iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
@@ -262,7 +263,7 @@ fun DatabaseLayout(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
+    SectionView(stringResource(MR.strings.files_and_media_section)) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,
@@ -366,6 +367,7 @@ fun startChat(
   chatDbChanged: MutableState<Boolean>,
   progressIndicator: MutableState<Boolean>? = null
 ) {
+  Log.d(TAG, "startChat")
   withLongRunningApi {
     try {
       progressIndicator?.value = true
@@ -532,7 +534,7 @@ fun deleteChatDatabaseFilesAndState() {
   appPrefs.newDatabaseInitialized.set(false)
   chatModel.desktopOnboardingRandomPassword.value = false
   controller.appPrefs.storeDBPassphrase.set(true)
-  controller.ctrl = null
+  controller.setChatCtrl(null)
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null

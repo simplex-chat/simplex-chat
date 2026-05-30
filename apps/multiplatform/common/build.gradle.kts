@@ -11,6 +11,31 @@ plugins {
 group = "chat.simplex"
 version = extra["android.version_name"] as String
 
+val simplexAssetsDir = rootProject.findProperty("simplex.assets.dir") as String?
+val simplexAssetsLocal = file("src/commonMain/resources/assets/simplex")
+val hasSimplexAssets = simplexAssetsDir != null
+
+if (simplexAssetsDir != null) {
+  val resolvedAssetsDir = rootProject.rootDir.resolve(simplexAssetsDir)
+  val srcImagesDir = resolvedAssetsDir.resolve("multiplatform/resources/MR/images")
+  val verifySimplexAssets = tasks.register("verifySimplexAssets") {
+    doLast {
+      if (!srcImagesDir.isDirectory) {
+        throw GradleException("Source assets not found: $srcImagesDir (run resize.sh first)")
+      }
+    }
+  }
+  tasks.register<Sync>("copySimplexAssets") {
+    dependsOn(verifySimplexAssets)
+    from(srcImagesDir)
+    into(simplexAssetsLocal.resolve("MR/images"))
+  }
+} else {
+  tasks.register<Delete>("cleanSimplexAssets") {
+    delete(simplexAssetsLocal)
+  }
+}
+
 kotlin {
   androidTarget()
   jvm("desktop")
@@ -31,6 +56,11 @@ kotlin {
     }
 
     val commonMain by getting {
+      if (hasSimplexAssets) {
+        resources.srcDir(simplexAssetsLocal)
+      } else {
+        resources.srcDir("src/commonMain/resources/assets/default")
+      }
       dependencies {
         api(compose.runtime)
         api(compose.foundation)
@@ -95,7 +125,8 @@ kotlin {
 
         implementation("com.jakewharton:process-phoenix:3.0.0")
 
-        val cameraXVersion = "1.3.4"
+        // https://issuetracker.google.com/issues/351313880
+        val cameraXVersion = "1.5.1"
         implementation("androidx.camera:camera-core:${cameraXVersion}")
         implementation("androidx.camera:camera-camera2:${cameraXVersion}")
         implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
@@ -113,12 +144,12 @@ kotlin {
         }
         // For jSystemThemeDetector only
         implementation("net.java.dev.jna:jna-platform:5.14.0")
-        implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
+        implementation("com.sshtools:two-slices:0.9.1")
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("net.java.dev.jna:jna:5.14.0")
-        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
-        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
+        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf")
+        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf")
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
       }
     }
@@ -159,12 +190,18 @@ buildConfig {
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
     buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
     buildConfigField("Boolean", "ANDROID_BUNDLE", "${extra["android.bundle"]}")
+    buildConfigField("Boolean", "SIMPLEX_ASSETS", "$hasSimplexAssets")
   }
 }
 
 afterEvaluate {
   tasks.named("generateMRcommonMain") {
     dependsOn("adjustFormatting")
+    if (hasSimplexAssets) {
+      dependsOn("copySimplexAssets")
+    } else {
+      dependsOn("cleanSimplexAssets")
+    }
   }
   tasks.create("adjustFormatting") {
     doLast {
@@ -254,8 +291,11 @@ afterEvaluate {
       val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
       val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
       val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
+      val lvStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("lv/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val treeList = ArrayList(tree.toList())
       treeList.remove(baseStringsFile)
+      // removed lv/strings.xml file with 100+ errors
+      treeList.remove(lvStringsFile)
       treeList.add(0, baseStringsFile)
       val baseFormatting = mutableMapOf<String, List<String>>()
       treeList.forEachIndexed { index, file ->

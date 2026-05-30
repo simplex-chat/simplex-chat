@@ -5,10 +5,6 @@ module Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
--- TODO [channels fwd] add later in new migration for MemberProfileUpdate delivery jobs:
--- TODO   - ALTER TABLE group_members ADD COLUMN last_profile_delivery_ts TEXT;
--- TODO   - ALTER TABLE group_members ADD COLUMN join_ts TEXT;
-
 -- How columns correspond to types:
 
 -- both tables:
@@ -21,7 +17,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- delivery_tasks table:
 -- - sender_group_member_id <-> GroupMemberId (sender of the original message that created task),
 -- - message_id <-> MessageId (reference to the original message that created task),
--- - message_from_channel <-> Maybe MessageFromChannel (for MessageDeliveryTask),
+-- - message_from_channel <-> ShowGroupAsSender (for MessageDeliveryTask),
 -- - task_status <-> DeliveryTaskStatus,
 -- - task_err_reason <-> Maybe Text (set when task status is DTSError, not encoded in status to allow filtering by DTSError in queries).
 
@@ -56,7 +52,7 @@ m20250813_delivery_tasks :: Query
 m20250813_delivery_tasks =
   [sql|
 CREATE TABLE delivery_tasks (
-  delivery_task_id INTEGER PRIMARY KEY,
+  delivery_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
@@ -104,10 +100,8 @@ CREATE INDEX idx_delivery_tasks_next_for_job_scope_sender ON delivery_tasks(
 );
 CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
 
-
-
 CREATE TABLE delivery_jobs (
-  delivery_job_id INTEGER PRIMARY KEY,
+  delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
@@ -135,8 +129,6 @@ CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
 );
 CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
 
-
-
 ALTER TABLE messages ADD COLUMN broker_ts TEXT;
 |]
 
@@ -144,8 +136,6 @@ down_m20250813_delivery_tasks :: Query
 down_m20250813_delivery_tasks =
   [sql|
 ALTER TABLE messages DROP COLUMN broker_ts;
-
-
 
 DROP INDEX idx_delivery_jobs_group_id;
 DROP INDEX idx_delivery_jobs_job_scope_support_gm_id;
@@ -155,8 +145,6 @@ DROP INDEX idx_delivery_jobs_next;
 DROP INDEX idx_delivery_jobs_created_at;
 
 DROP TABLE delivery_jobs;
-
-
 
 DROP INDEX idx_delivery_tasks_group_id;
 DROP INDEX idx_delivery_tasks_job_scope_support_gm_id;

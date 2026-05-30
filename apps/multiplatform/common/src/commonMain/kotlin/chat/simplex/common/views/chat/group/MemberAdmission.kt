@@ -6,7 +6,10 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.material.MaterialTheme
+import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.theme.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,7 +37,7 @@ fun MemberAdmissionView(m: ChatModel, rhId: Long?, chatId: String, close: () -> 
   fun saveAdmission(afterSave: () -> Unit = {}) {
     withBGApi {
       val gp = gInfo.groupProfile.copy(memberAdmission = admission)
-      val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
+      val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp, gInfo.useRelays)
       if (g != null) {
         withContext(Dispatchers.Main) {
           chatModel.chatsContext.updateGroup(rhId, g)
@@ -49,6 +52,7 @@ fun MemberAdmissionView(m: ChatModel, rhId: Long?, chatId: String, close: () -> 
       if (admission == currentAdmission) close()
       else showUnsavedChangesAlert({ saveAdmission(close) }, close)
     },
+    cardScreen = true,
   ) {
     MemberAdmissionLayout(
       admission,
@@ -85,7 +89,7 @@ private fun MemberAdmissionLayout(
       }
     }
     if (groupInfo.isOwner) {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionDividerSpaced()
       ResetSaveButtons(
         reset = reset,
         save = saveAdmission,

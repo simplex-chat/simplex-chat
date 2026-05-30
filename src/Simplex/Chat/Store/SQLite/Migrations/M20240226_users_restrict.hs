@@ -14,7 +14,7 @@ UPDATE sqlite_master
 SET sql = replace(sql, 'ON DELETE CASCADE', 'ON DELETE RESTRICT')
 WHERE name = 'users' AND type = 'table';
 
-PRAGMA writable_schema=0;
+PRAGMA writable_schema=RESET;
 |]
 
 down_m20240226_users_restrict :: Query
@@ -26,5 +26,5 @@ UPDATE sqlite_master
 SET sql = replace(sql, 'ON DELETE RESTRICT', 'ON DELETE CASCADE')
 WHERE name = 'users' AND type = 'table';
 
-PRAGMA writable_schema=0;
+PRAGMA writable_schema=RESET;
 |]

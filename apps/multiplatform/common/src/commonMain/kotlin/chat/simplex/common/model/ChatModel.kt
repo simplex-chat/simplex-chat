@@ -78,9 +78,34 @@ object ConnectProgressManager {
 
 val connectProgressManager = ConnectProgressManager
 
+object ChannelRelaysModel {
+  val groupId = mutableStateOf<Long?>(null)
+  val groupRelays = mutableStateListOf<GroupRelay>()
+
+  fun set(groupId: Long, groupRelays: List<GroupRelay>) {
+    this.groupId.value = groupId
+    this.groupRelays.clear()
+    this.groupRelays.addAll(groupRelays)
+  }
+
+  fun updateRelay(groupInfo: GroupInfo, relay: GroupRelay) {
+    if (groupId.value == groupInfo.groupId) {
+      val i = groupRelays.indexOfFirst { it.groupRelayId == relay.groupRelayId }
+      if (i >= 0) groupRelays[i] = relay
+      else groupRelays.add(relay)
+    }
+  }
+
+  fun reset() {
+    groupId.value = null
+    groupRelays.clear()
+  }
+}
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
+// Spec: spec/state.md#ChatModel
 @Stable
 object ChatModel {
   val controller: ChatController = ChatController
@@ -96,11 +121,12 @@ object ChatModel {
   val dbMigrationInProgress = mutableStateOf(false)
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   // map of connections network statuses, key is agent connection id
-  val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
+  val chatAgentConnId = mutableStateOf<String?>(null)
+  val chatSubStatus = mutableStateOf<SubscriptionStatus?>(null)
   val openAroundItemId: MutableState<Long?> = mutableStateOf(null)
   val chatsContext = ChatsContext(null)
   val secondaryChatsContext = mutableStateOf<ChatsContext?>(null)
@@ -108,9 +134,13 @@ object ChatModel {
   val chats: State<List<Chat>> = chatsContext.chats
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
+  val creatingChannelId = mutableStateOf<String?>(null)
   val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
   val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
   val membersLoaded = mutableStateOf(false)
+  // Runtime-only relay hostnames for pre-join channel display, not persisted — lost on app restart.
+  // APIConnectPreparedGroup re-fetches fresh relays at connect time, so stale data doesn't affect join.
+  val channelRelayHostnames = mutableStateMapOf<Long, List<String>>()
 
   // Chat Tags
   val userTags = mutableStateOf(emptyList<ChatTag>())
@@ -133,6 +163,7 @@ object ChatModel {
 
   // set when app is opened via contact or invitation URI (rhId, uri)
   val appOpenUrl = mutableStateOf<Pair<Long?, String>?>(null)
+  val appOpenUrlConnecting = mutableStateOf<Boolean>(false)
 
   // Needed to check for bottom nav bar and to apply or not navigation bar color on Android
   val newChatSheetVisible = mutableStateOf(false)
@@ -332,6 +363,7 @@ object ChatModel {
     }
   }
 
+  // Spec: spec/state.md#ChatsContext
   class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
     /** if you modify the items by adding/removing them, use helpers methods like [addToChatItems], [removeLastChatItems], [removeAllAndNotify], [clearAndNotify] and so on.
@@ -665,15 +697,15 @@ object ChatModel {
     }
 
     suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
-      fun removedUpdatedItem(item: ChatItem): ChatItem? {
-        val newContent = when {
-          item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId -> CIContent.SndModerated
-          item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId -> CIContent.RcvModerated
-          else -> return null
-        }
+      fun isRemovedMemberItem(item: ChatItem): Boolean = when {
+        item.chatDir is CIDirection.GroupSnd -> removedMember.groupMemberId == groupInfo.membership.groupMemberId
+        item.chatDir is CIDirection.GroupRcv -> item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId
+        else -> false
+      }
+      fun markedUpdatedItem(item: ChatItem): ChatItem? {
+        if (!isRemovedMemberItem(item)) return null
         val updatedItem = item.copy(
-          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember)),
-          content = if (groupInfo.fullGroupPreferences.fullDelete.on) newContent else item.content
+          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember))
         )
         if (item.isActiveReport) {
           decreaseGroupReportsCounter(rhId, groupInfo.id)
@@ -681,26 +713,52 @@ object ChatModel {
         return updatedItem
       }
 
-      // this should not happen, only another member can "remove" user, user can only "leave" (another event).
-      if (byMember.groupMemberId == groupInfo.membership.groupMemberId) {
-        Log.d(TAG, "exiting removeMemberItems")
-        return
-      }
+      // Mirrors backend groupFeatureMemberAllowed: fullDelete may be role-gated in business groups.
+      val fullDeletePref = groupInfo.fullGroupPreferences.fullDelete
+      val fullDelete = fullDeletePref.on &&
+        byMember.memberRole >= (fullDeletePref.role ?: GroupMemberRole.Observer)
       val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
-        for (i in 0 until chatItems.value.size) {
-          val updatedItem = removedUpdatedItem(chatItems.value[i])
-          if (updatedItem != null) {
-            updateChatItem(cInfo, updatedItem, atIndex = i)
+        if (fullDelete) {
+          for (item in chatItems.value) {
+            if (isRemovedMemberItem(item)) {
+              if (item.isRcvNew) {
+                decreaseCounterInPrimaryContext(rhId, groupInfo.id)
+              }
+              if (item.isActiveReport) {
+                decreaseGroupReportsCounter(rhId, groupInfo.id)
+              }
+            }
+          }
+          chatItems.removeAllAndNotify { item ->
+            val remove = isRemovedMemberItem(item)
+            if (remove) AudioPlayer.stop(item)
+            remove
+          }
+        } else {
+          for (i in 0 until chatItems.value.size) {
+            val updatedItem = markedUpdatedItem(chatItems.value[i])
+            if (updatedItem != null) {
+              updateChatItem(cInfo, updatedItem, atIndex = i)
+            }
           }
         }
       } else {
         val i = getChatIndex(rhId, groupInfo.id)
-        val chat = chats[i]
-        if (chat.chatItems.isNotEmpty()) {
-          val updatedItem = removedUpdatedItem(chat.chatItems[0])
-          if (updatedItem != null) {
-            chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
+        if (i >= 0) {
+          val chat = chats[i]
+          if (chat.chatItems.isNotEmpty()) {
+            val preview = chat.chatItems[0]
+            if (isRemovedMemberItem(preview)) {
+              if (fullDelete) {
+                chats.value[i] = chat.copy(chatItems = listOf(ChatItem.deletedItemDummy))
+              } else {
+                val updatedItem = markedUpdatedItem(preview)
+                if (updatedItem != null) {
+                  chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
+                }
+              }
+            }
           }
         }
       }
@@ -848,11 +906,21 @@ object ChatModel {
     }
 
     fun removeChat(rhId: Long?, id: String) {
+      var groupId: Long? = null
       val i = getChatIndex(rhId, id)
       if (i != -1) {
         val chat = chats.removeAt(i)
+        groupId = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.groupId
         removePresetChatTags(chat.chatInfo, chat.chatStats)
         removeWallpaperFilesFromChat(chat)
+      }
+      if (chatId.value == id) {
+        groupMembers.value = emptyList()
+        groupMembersIndexes.value = emptyMap()
+        if (groupId != null) {
+          channelRelayHostnames.remove(groupId)
+        }
+        membersLoaded.value = false
       }
     }
 
@@ -862,8 +930,8 @@ object ChatModel {
         updateGroup(rhId, groupInfo)
         return false
       }
-      // update current chat
-      return if (chatId.value == groupInfo.id) {
+      // update current chat or channel being created
+      return if (chatId.value == groupInfo.id || creatingChannelId.value == groupInfo.id) {
         if (groupMembers.value.isNotEmpty() && groupMembers.value.firstOrNull()?.groupId != groupInfo.groupId) {
           // stale data, should be cleared at that point, otherwise, duplicated items will be here which will produce crashes in LazyColumn
           groupMembers.value = emptyList()
@@ -1121,10 +1189,10 @@ object ChatModel {
           showingInvitation.value = null
           chatsContext.chatItems.clearAndNotify()
           chatModel.chatId.value = withId
+          ModalManager.start.closeModals()
+          ModalManager.end.closeModals()
         }
       }
-      ModalManager.start.closeModals()
-      ModalManager.end.closeModals()
     }
   }
 
@@ -1144,21 +1212,6 @@ object ChatModel {
 
   fun markShowingInvitationUsed() {
     showingInvitation.value = showingInvitation.value?.copy(connChatUsed = true)
-  }
-
-  fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
-    val conn = contact.activeConn
-    if (conn != null) {
-      networkStatuses[conn.agentConnId] = status
-    }
-  }
-
-  fun contactNetworkStatus(contact: Contact): NetworkStatus {
-    val conn = contact.activeConn
-    return if (conn != null)
-      networkStatuses[conn.agentConnId] ?: NetworkStatus.Unknown()
-    else
-      NetworkStatus.Unknown()
   }
 
   fun addTerminalItem(item: TerminalItem) {
@@ -1236,6 +1289,7 @@ data class User(
   val autoAcceptMemberContacts: Boolean,
   val viewPwdHash: UserPwdHash?,
   val uiThemes: ThemeModeOverrides? = null,
+  val userChatRelay: Boolean,
 ): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
@@ -1266,6 +1320,7 @@ data class User(
       autoAcceptMemberContacts = false,
       viewPwdHash = null,
       uiThemes = null,
+      userChatRelay = false,
     )
   }
 }
@@ -1339,6 +1394,7 @@ interface SomeChat {
   val updatedAt: Instant
 }
 
+// Spec: spec/state.md#Chat
 @Serializable @Stable
 data class Chat(
   val remoteHostId: Long?,
@@ -1380,6 +1436,7 @@ data class Chat(
       true
     }
 
+  // Spec: spec/state.md#ChatStats
   @Serializable
   data class ChatStats(
     val unreadCount: Int = 0,
@@ -1400,6 +1457,7 @@ data class Chat(
   }
 }
 
+// Spec: spec/state.md#ChatInfo
 @Serializable
 sealed class ChatInfo: SomeChat, NamedChat {
 
@@ -1570,8 +1628,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     }
   }
 
-  val userCantSendReason: Pair<String, String?>?
-    get() {
+  fun userCantSendReason(allRelaysBroken: Boolean = false): Pair<String, String?>? {
       when (this) {
         is Direct -> {
           if (contact.sendMsgToConnect) return null
@@ -1592,11 +1649,18 @@ sealed class ChatInfo: SomeChat, NamedChat {
           if (groupInfo.membership.memberActive) {
             when (groupChatScope) {
               null -> {
+                if (allRelaysBroken && groupInfo.useRelays) {
+                  return generalGetString(MR.strings.cant_broadcast_message) to null
+                }
                 if (groupInfo.membership.memberPending) {
                   return generalGetString(MR.strings.reviewed_by_admins) to generalGetString(MR.strings.observer_cant_send_message_desc)
                 }
                 if (groupInfo.membership.memberRole == GroupMemberRole.Observer) {
-                  return generalGetString(MR.strings.observer_cant_send_message_title) to generalGetString(MR.strings.observer_cant_send_message_desc)
+                  return if (groupInfo.useRelays) {
+                    generalGetString(MR.strings.you_are_subscriber) to null
+                  } else {
+                    generalGetString(MR.strings.observer_cant_send_message_title) to generalGetString(MR.strings.observer_cant_send_message_desc)
+                  }
                 }
                 return null
               }
@@ -1636,7 +1700,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
       }
     }
 
-  val sendMsgEnabled get() = userCantSendReason == null
+  val sendMsgEnabled get() = userCantSendReason() == null
 
   val sndReady: Boolean get() =
       when(this) {
@@ -1653,6 +1717,18 @@ sealed class ChatInfo: SomeChat, NamedChat {
   fun groupChatScope(): GroupChatScope? = when (this) {
     is Group -> groupChatScope?.toChatScope()
     else -> null
+  }
+
+  val sendAsGroup: Boolean get() {
+    val g = (this as? Group)?.groupInfo
+    return if (g != null && g.useRelays && g.membership.memberRole >= GroupMemberRole.Owner) {
+      when (groupChatScope()) {
+        null -> true
+        is GroupChatScope.MemberSupport -> false
+      }
+    } else {
+      false
+    }
   }
 
   fun ntfsEnabled(ci: ChatItem): Boolean =
@@ -1718,31 +1794,10 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Group -> groupInfo
       else -> null
     }
+
+  val isChannel: Boolean
+    get() = groupInfo_?.useRelays == true
 }
-
-@Serializable
-sealed class NetworkStatus {
-  val statusString: String get() =
-    when (this) {
-      is Connected -> generalGetString(MR.strings.server_connected)
-      is Error -> generalGetString(MR.strings.server_error)
-      else -> generalGetString(MR.strings.server_connecting)
-    }
-  val statusExplanation: String get() =
-    when (this) {
-      is Connected -> generalGetString(MR.strings.connected_to_server_to_receive_messages_from_contact)
-      is Error -> String.format(generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_with_error), connectionError)
-      else -> generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages)
-    }
-
-  @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
-  @Serializable @SerialName("connected") class Connected: NetworkStatus()
-  @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
-  @Serializable @SerialName("error") class Error(val connectionError: String): NetworkStatus()
-}
-
-@Serializable
-data class ConnNetworkStatus(val agentConnId: String, val networkStatus: NetworkStatus)
 
 @Serializable
 data class Contact(
@@ -1916,12 +1971,6 @@ class ContactRef(
 }
 
 @Serializable
-class ContactSubStatus(
-  val contact: Contact,
-  val contactError: ChatError? = null
-)
-
-@Serializable
 data class Connection(
   val connId: Long,
   val agentConnId: String,
@@ -1946,6 +1995,12 @@ data class Connection(
 
   val connInactive: Boolean
     get() = quotaErrCounter >= 5 // quotaErrInactiveCount in core
+
+  val connFailedErr: String?
+    get() = when (connStatus) {
+      is ConnStatus.Failed -> connStatus.connError
+      else -> null
+    }
 
   val connPQEnabled: Boolean
     get() = pqSndEnabled == true && pqRcvEnabled == true
@@ -2046,6 +2101,8 @@ sealed class ForwardConfirmation {
 @Serializable
 data class GroupInfo (
   val groupId: Long,
+  val useRelays: Boolean,
+  val relayOwnStatus: RelayStatus? = null,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
   val businessChat: BusinessChatInfo? = null,
@@ -2057,6 +2114,7 @@ data class GroupInfo (
   val chatTs: Instant?,
   val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
+  val groupSummary: GroupSummary,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
@@ -2080,6 +2138,7 @@ data class GroupInfo (
     ChatFeature.Calls -> false
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
+  val isChannel: Boolean get() = groupProfile.isChannel
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
   override val shortDescr get() = groupProfile.shortDescr
@@ -2098,7 +2157,9 @@ data class GroupInfo (
     get() = membership.memberRole >= GroupMemberRole.Moderator && membership.memberActive
 
   val chatIconName: ImageResource
-    get() = when (businessChat?.chatType) {
+    get() = if (useRelays) {
+      MR.images.ic_bigtop_updates_circle_filled
+    } else when (businessChat?.chatType) {
       null -> MR.images.ic_supervised_user_circle_filled
       BusinessChatType.Business -> MR.images.ic_work_filled_padded
       BusinessChatType.Customer -> MR.images.ic_account_circle_filled
@@ -2116,12 +2177,14 @@ data class GroupInfo (
       GroupFeature.SimplexLinks -> p.simplexLinks.on(membership)
       GroupFeature.Reports -> p.reports.on
       GroupFeature.History -> p.history.on
+      GroupFeature.Support -> p.support.on
     }
   }
 
   companion object {
     val sampleData = GroupInfo(
       groupId = 1,
+      useRelays = false,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
       fullGroupPreferences = FullGroupPreferences.sampleData,
@@ -2132,6 +2195,7 @@ data class GroupInfo (
       chatTs = Clock.System.now(),
       preparedGroup = null,
       uiThemes = null,
+      groupSummary = GroupSummary(currentMembers = 0),
       membersRequireAttention = 0,
       chatTags = emptyList(),
       localAlias = "",
@@ -2150,6 +2214,39 @@ data class PreparedGroup (
 @Serializable
 data class GroupRef(val groupId: Long, val localDisplayName: String)
 
+@Serializable(with = GroupTypeSerializer::class)
+sealed class GroupType {
+  @Serializable @SerialName("channel") object Channel: GroupType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): GroupType()
+}
+
+object GroupTypeSerializer : KSerializer<GroupType> {
+  override val descriptor: SerialDescriptor =
+    PrimitiveSerialDescriptor("GroupType", PrimitiveKind.STRING)
+
+  override fun deserialize(decoder: Decoder): GroupType {
+    return when (val value = decoder.decodeString()) {
+      "channel" -> GroupType.Channel
+      else -> GroupType.Unknown(value)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: GroupType) {
+    val stringValue = when (value) {
+      is GroupType.Channel -> "channel"
+      is GroupType.Unknown -> value.type
+    }
+    encoder.encodeString(stringValue)
+  }
+}
+
+@Serializable
+data class PublicGroupProfile(
+  val groupType: GroupType,
+  val groupLink: String,
+  val publicGroupId: String
+)
+
 @Serializable
 data class GroupProfile (
   override val displayName: String,
@@ -2157,10 +2254,13 @@ data class GroupProfile (
   override val shortDescr: String?,
   val description: String? = null,
   override val image: String? = null,
+  val publicGroup: PublicGroupProfile? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
   val memberAdmission: GroupMemberAdmission? = null
 ): NamedChat {
+  val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
+
   companion object {
     val sampleData = GroupProfile(
       displayName = "team",
@@ -2199,9 +2299,79 @@ data class ContactShortLinkData (
 )
 
 @Serializable
-data class GroupShortLinkData (
-  val groupProfile: GroupProfile
+data class GroupSummary (
+  val currentMembers: Long,
+  val publicMemberCount: Long? = null
 )
+
+@Serializable
+data class PublicGroupData (
+  val publicMemberCount: Long
+)
+
+@Serializable
+data class GroupShortLinkData (
+  val groupProfile: GroupProfile,
+  val publicGroupData: PublicGroupData? = null
+)
+
+@Serializable
+enum class RelayStatus {
+  @SerialName("new") New,
+  @SerialName("invited") Invited,
+  @SerialName("accepted") Accepted,
+  @SerialName("active") Active,
+  @SerialName("inactive") Inactive,
+  @SerialName("rejected") Rejected;
+
+  val text: String get() = when (this) {
+    New -> generalGetString(MR.strings.relay_status_new)
+    Invited -> generalGetString(MR.strings.relay_status_invited)
+    Accepted -> generalGetString(MR.strings.relay_status_accepted)
+    Active -> generalGetString(MR.strings.relay_status_active)
+    Inactive -> generalGetString(MR.strings.relay_status_inactive)
+    Rejected -> generalGetString(MR.strings.relay_status_rejected)
+  }
+}
+
+@Serializable
+data class RelayProfile(
+  val displayName: String,
+  val fullName: String,
+  val shortDescr: String? = null,
+  val image: String? = null
+)
+
+@Serializable
+data class UserChatRelay(
+  val chatRelayId: Long?,
+  val address: String,
+  val relayProfile: RelayProfile,
+  val domains: List<String>,
+  val preset: Boolean,
+  val tested: Boolean? = null,
+  val enabled: Boolean,
+  val deleted: Boolean,
+) {
+  @Transient
+  private val createdAt: Date = Date()
+  val id: String get() = "$address $createdAt"
+
+  val displayName: String get() = relayProfile.displayName
+
+  fun copyWithName(name: String): UserChatRelay = copy(relayProfile = relayProfile.copy(displayName = name))
+}
+
+@Serializable
+data class GroupRelay(
+  val groupRelayId: Long,
+  val groupMemberId: Long,
+  val userChatRelay: UserChatRelay,
+  val relayStatus: RelayStatus,
+  val relayLink: String? = null
+) {
+  val id: Long get() = groupRelayId
+}
 
 @Serializable
 data class BusinessChatInfo (
@@ -2233,7 +2403,8 @@ data class GroupMember (
   val memberContactProfileId: Long,
   var activeConn: Connection? = null,
   val supportChat: GroupSupportChat? = null,
-  val memberChatVRange: VersionRange
+  val memberChatVRange: VersionRange,
+  val relayLink: String? = null
 ): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
   val ready get() = activeConn?.connStatus == ConnStatus.Ready
@@ -2338,19 +2509,18 @@ data class GroupMember (
 
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
+    return userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
-    if (!canBeRemoved(groupInfo) || memberPending) null
+    if (memberRole == GroupMemberRole.Relay || !canBeRemoved(groupInfo) || memberStatus == GroupMemberStatus.MemRemoved || memberStatus == GroupMemberStatus.MemLeft || memberPending) null
     else groupInfo.membership.memberRole.let { userRole ->
       GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Moderator
+    return memberRole != GroupMemberRole.Relay && memberRole < GroupMemberRole.Moderator
         && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
         && !memberPending
   }
@@ -2411,7 +2581,8 @@ data class GroupMemberIds(
 
 @Serializable
 enum class GroupMemberRole(val memberRole: String) {
-  @SerialName("observer") Observer("observer"), // order matters in comparisons
+  @SerialName("relay") Relay("relay"), // order matters in comparisons
+  @SerialName("observer") Observer("observer"),
   @SerialName("author") Author("author"),
   @SerialName("member") Member("member"),
   @SerialName("moderator") Moderator("moderator"),
@@ -2423,6 +2594,7 @@ enum class GroupMemberRole(val memberRole: String) {
   }
 
   val text: String get() = when (this) {
+    Relay -> generalGetString(MR.strings.group_member_role_relay)
     Observer -> generalGetString(MR.strings.group_member_role_observer)
     Author -> generalGetString(MR.strings.group_member_role_author)
     Member -> generalGetString(MR.strings.group_member_role_member)
@@ -2519,12 +2691,6 @@ class LinkPreview (
     )
   }
 }
-
-@Serializable
-class MemberSubError (
-  val member: GroupMemberIds,
-  val memberError: ChatError
-)
 
 @Serializable
 class NoteFolder(
@@ -2688,25 +2854,27 @@ class PendingContactConnection(
 }
 
 @Serializable
-enum class ConnStatus {
-  @SerialName("new") New,
-  @SerialName("prepared") Prepared,
-  @SerialName("joined") Joined,
-  @SerialName("requested") Requested,
-  @SerialName("accepted") Accepted,
-  @SerialName("snd-ready") SndReady,
-  @SerialName("ready") Ready,
-  @SerialName("deleted") Deleted;
+sealed class ConnStatus {
+  @Serializable @SerialName("new") object New: ConnStatus()
+  @Serializable @SerialName("prepared") object Prepared: ConnStatus()
+  @Serializable @SerialName("joined") object Joined: ConnStatus()
+  @Serializable @SerialName("requested") object Requested: ConnStatus()
+  @Serializable @SerialName("accepted") object Accepted: ConnStatus()
+  @Serializable @SerialName("sndReady") object SndReady: ConnStatus()
+  @Serializable @SerialName("ready") object Ready: ConnStatus()
+  @Serializable @SerialName("deleted") object Deleted: ConnStatus()
+  @Serializable @SerialName("failed") class Failed(val connError: String): ConnStatus()
 
   val initiated: Boolean? get() = when (this) {
-    New -> true
-    Prepared -> false
-    Joined -> false
-    Requested -> true
-    Accepted -> true
-    SndReady -> null
-    Ready -> null
-    Deleted -> null
+    is New -> true
+    is Prepared -> false
+    is Joined -> false
+    is Requested -> true
+    is Accepted -> true
+    is SndReady -> null
+    is Ready -> null
+    is Deleted -> null
+    is Failed -> null
   }
 }
 
@@ -2780,12 +2948,14 @@ data class ChatItem (
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
 
-  val text: String get() {
+  val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String {
     val mc = content.msgContent
     return when {
-      content.text == "" && file != null && mc is MsgContent.MCVoice -> String.format(generalGetString(MR.strings.voice_message_with_duration), durationText(mc.duration))
-      content.text == "" && file != null -> file.fileName
-      else -> content.text
+      content.text(isChannel) == "" && file != null && mc is MsgContent.MCVoice -> String.format(generalGetString(MR.strings.voice_message_with_duration), durationText(mc.duration))
+      content.text(isChannel) == "" && file != null -> file.fileName
+      else -> content.text(isChannel)
     }
   }
 
@@ -2845,30 +3015,29 @@ data class ChatItem (
     }
 
   val mergeCategory: CIMergeCategory?
-    get() = when (content) {
-      is CIContent.RcvChatFeature,
-      is CIContent.SndChatFeature,
-      is CIContent.RcvGroupFeature,
-      is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
-      is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
-        is RcvGroupEvent.UserRole,
-        is RcvGroupEvent.UserDeleted,
-        is RcvGroupEvent.GroupDeleted,
-        is RcvGroupEvent.MemberCreatedContact,
-        is RcvGroupEvent.NewMemberPendingReview ->
-          null
-        else -> CIMergeCategory.RcvGroupEvent
-      }
-      is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
-        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
-        else -> CIMergeCategory.SndGroupEvent
-      }
-      else -> {
-        if (meta.itemDeleted == null) {
-          null
-        } else {
-          if (chatDir.sent) CIMergeCategory.SndItemDeleted else CIMergeCategory.RcvItemDeleted
+    get() = if (meta.itemDeleted != null) {
+      if (chatDir.sent) CIMergeCategory.SndItemDeleted else CIMergeCategory.RcvItemDeleted
+    } else {
+      when (content) {
+        is CIContent.RcvChatFeature,
+        is CIContent.SndChatFeature,
+        is CIContent.RcvGroupFeature,
+        is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
+        is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+          is RcvGroupEvent.UserRole,
+          is RcvGroupEvent.UserDeleted,
+          is RcvGroupEvent.GroupDeleted,
+          is RcvGroupEvent.MemberCreatedContact,
+          is RcvGroupEvent.NewMemberPendingReview ->
+            null
+          else -> CIMergeCategory.RcvGroupEvent
         }
+        is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
+          is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
+          else -> CIMergeCategory.SndGroupEvent
+        }
+        else ->
+          null
       }
     }
 
@@ -2887,6 +3056,8 @@ data class ChatItem (
       } else {
         null
       }
+    } else if (chatInfo is ChatInfo.Group && chatDir is CIDirection.ChannelRcv) {
+      null
     } else {
       null
     }
@@ -2923,6 +3094,7 @@ data class ChatItem (
       is CIContent.RcvCall -> false // notification is shown on CallInvitation instead
       is CIContent.RcvIntegrityError -> false
       is CIContent.RcvDecryptionError -> false
+      is CIContent.RcvMsgErrorContent -> false
       is CIContent.RcvGroupInvitation -> true
       is CIContent.SndGroupInvitation -> false
       is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
@@ -3228,6 +3400,7 @@ sealed class CIDirection {
   @Serializable @SerialName("directRcv") class DirectRcv: CIDirection()
   @Serializable @SerialName("groupSnd") class GroupSnd: CIDirection()
   @Serializable @SerialName("groupRcv") class GroupRcv(val groupMember: GroupMember): CIDirection()
+  @Serializable @SerialName("channelRcv") class ChannelRcv: CIDirection()
   @Serializable @SerialName("localSnd") class LocalSnd: CIDirection()
   @Serializable @SerialName("localRcv") class LocalRcv: CIDirection()
 
@@ -3236,6 +3409,7 @@ sealed class CIDirection {
     is DirectRcv -> false
     is GroupSnd -> true
     is GroupRcv -> false
+    is ChannelRcv -> false
     is LocalSnd -> true
     is LocalRcv -> false
   }
@@ -3594,7 +3768,8 @@ sealed class CIForwardedFrom {
 enum class CIDeleteMode(val deleteMode: String) {
   @SerialName("internal") cidmInternal("internal"),
   @SerialName("internalMark") cidmInternalMark("internalMark"),
-  @SerialName("broadcast") cidmBroadcast("broadcast");
+  @SerialName("broadcast") cidmBroadcast("broadcast"),
+  @SerialName("history") cidmHistory("history");
 }
 
 interface ItemContent {
@@ -3615,6 +3790,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvDecryptionError") class RcvDecryptionError(val msgDecryptError: MsgDecryptError, val msgCount: UInt): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvMsgError") class RcvMsgErrorContent(val rcvMsgError: RcvMsgError): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvDirectEvent") class RcvDirectEventContent(val rcvDirectEvent: RcvDirectEvent): CIContent() { override val msgContent: MsgContent? get() = null }
@@ -3640,7 +3816,9 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("chatBanner") object ChatBanner: CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("invalidJSON") data class InvalidJSON(val json: String): CIContent() { override val msgContent: MsgContent? get() = null }
 
-  override val text: String get() = when (this) {
+  override val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when (this) {
       is SndMsgContent -> msgContent.text
       is RcvMsgContent -> msgContent.text
       is SndDeleted -> generalGetString(MR.strings.deleted_description)
@@ -3649,11 +3827,12 @@ sealed class CIContent: ItemContent {
       is RcvCall -> status.text(duration)
       is RcvIntegrityError -> msgError.text
       is RcvDecryptionError -> msgDecryptError.text
+      is RcvMsgErrorContent -> rcvMsgError.text
       is RcvGroupInvitation -> groupInvitation.text
       is SndGroupInvitation -> groupInvitation.text
       is RcvDirectEventContent -> rcvDirectEvent.text
-      is RcvGroupEventContent -> rcvGroupEvent.text
-      is SndGroupEventContent -> sndGroupEvent.text
+      is RcvGroupEventContent -> rcvGroupEvent.text(isChannel)
+      is SndGroupEventContent -> sndGroupEvent.text(isChannel)
       is RcvConnEventContent -> rcvConnEvent.text
       is SndConnEventContent -> sndConnEvent.text
       is RcvChatFeature -> featureText(feature, enabled.text, param)
@@ -3669,8 +3848,8 @@ sealed class CIContent: ItemContent {
       is RcvBlocked -> generalGetString(MR.strings.blocked_by_admin_item_description)
       is SndDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
       is RcvDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
-      is SndGroupE2EEInfo -> e2eeInfoNoPQStr
-      is RcvGroupE2EEInfo -> e2eeInfoNoPQStr
+      is SndGroupE2EEInfo -> groupE2EEInfoStr(e2eeInfo)
+      is RcvGroupE2EEInfo -> groupE2EEInfoStr(e2eeInfo)
       is ChatBanner -> ""
       is InvalidJSON -> "invalid data"
     }
@@ -3689,6 +3868,7 @@ sealed class CIContent: ItemContent {
       is RcvCall -> true
       is RcvIntegrityError -> true
       is RcvDecryptionError -> true
+      is RcvMsgErrorContent -> true
       is RcvGroupInvitation -> true
       is RcvModerated -> true
       is RcvBlocked -> true
@@ -3705,6 +3885,9 @@ sealed class CIContent: ItemContent {
       }
 
     private val e2eeInfoNoPQStr: String = generalGetString(MR.strings.e2ee_info_no_pq_short)
+
+    fun groupE2EEInfoStr(e2EEInfo: E2EEInfo): String =
+      if (e2EEInfo.public == true) generalGetString(MR.strings.e2ee_info_no_e2ee) else e2eeInfoNoPQStr
 
     fun featureText(feature: Feature, enabled: String, param: Int?, role: GroupMemberRole? = null): String =
       (if (feature.hasParam) {
@@ -3776,6 +3959,7 @@ class CIQuote (
     is CIDirection.DirectRcv -> null
     is CIDirection.GroupSnd -> membership?.displayName ?: generalGetString(MR.strings.sender_you_pronoun)
     is CIDirection.GroupRcv -> chatDir.groupMember.displayName
+    is CIDirection.ChannelRcv -> null
     is CIDirection.LocalSnd -> generalGetString(MR.strings.sender_you_pronoun)
     is CIDirection.LocalRcv -> null
     null -> null
@@ -3833,7 +4017,7 @@ object MsgReactionSerializer : KSerializer<MsgReaction> {
       when(val t = json["type"]?.jsonPrimitive?.content ?: "") {
         "emoji" -> {
           val msgReaction = try {
-            val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
+            val emoji = decoder.json.decodeFromString<MREmojiChar>(json["emoji"].toString())
             MsgReaction.Emoji(emoji)
           } catch (e: Throwable) {
             MsgReaction.Unknown(t, json)
@@ -4177,7 +4361,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
-  @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -4231,7 +4415,7 @@ enum class CIGroupInvitationStatus {
 }
 
 @Serializable
-class E2EEInfo (val pqEnabled: Boolean?) {}
+class E2EEInfo (val pqEnabled: Boolean?, val public: Boolean? = null) {}
 
 object MsgContentSerializer : KSerializer<MsgContent> {
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
@@ -4275,7 +4459,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         when (t) {
           "text" -> MsgContent.MCText(text)
           "link" -> {
-            val preview = Json.decodeFromString<LinkPreview>(json["preview"].toString())
+            val preview = decoder.json.decodeFromString<LinkPreview>(json["preview"].toString())
             MsgContent.MCLink(text, preview)
           }
           "image" -> {
@@ -4293,12 +4477,13 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           }
           "file" -> MsgContent.MCFile(text)
           "report" -> {
-            val reason = Json.decodeFromString<ReportReason>(json["reason"].toString())
+            val reason = decoder.json.decodeFromString<ReportReason>(json["reason"].toString())
             MsgContent.MCReport(text, reason)
           }
           "chat" -> {
-            val chatLink = Json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
-            MsgContent.MCChat(text, chatLink)
+            val chatLink = decoder.json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
+            val ownerSig = json["ownerSig"]?.let { decoder.json.decodeFromJsonElement<LinkOwnerSig>(it) }
+            MsgContent.MCChat(text, chatLink, ownerSig)
           }
           else -> MsgContent.MCUnknown(t, text, json)
         }
@@ -4359,6 +4544,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "chat")
           put("text", value.text)
           put("chatLink", json.encodeToJsonElement(value.chatLink))
+          value.ownerSig?.let { put("ownerSig", json.encodeToJsonElement(it)) }
         }
       is MsgContent.MCUnknown -> value.json
     }
@@ -4366,16 +4552,51 @@ object MsgContentSerializer : KSerializer<MsgContent> {
   }
 }
 
-@Serializable
-enum class MsgContentTag {
-  @SerialName("text") Text,
-  @SerialName("link") Link,
-  @SerialName("image") Image,
-  @SerialName("video") Video,
-  @SerialName("voice") Voice,
-  @SerialName("file") File,
-  @SerialName("report") Report,
-  @SerialName("chat") Chat,
+@Serializable(with = MsgContentTagSerializer::class)
+sealed class MsgContentTag {
+  @Serializable @SerialName("text") object Text: MsgContentTag()
+  @Serializable @SerialName("link") object Link: MsgContentTag()
+  @Serializable @SerialName("image") object Image: MsgContentTag()
+  @Serializable @SerialName("video") object Video: MsgContentTag()
+  @Serializable @SerialName("voice") object Voice: MsgContentTag()
+  @Serializable @SerialName("file") object File: MsgContentTag()
+  @Serializable @SerialName("report") object Report: MsgContentTag()
+  @Serializable @SerialName("chat") object Chat: MsgContentTag()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): MsgContentTag()
+
+  val cmdString: String get() = when (this) {
+    is Text -> "text"
+    is Link -> "link"
+    is Image -> "image"
+    is Video -> "video"
+    is Voice -> "voice"
+    is File -> "file"
+    is Report -> "report"
+    is Chat -> "chat"
+    is Unknown -> type
+  }
+}
+
+object MsgContentTagSerializer : KSerializer<MsgContentTag> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("MsgContentTag", PrimitiveKind.STRING)
+
+  override fun deserialize(decoder: Decoder): MsgContentTag =
+    when (val s = decoder.decodeString()) {
+      "text" -> MsgContentTag.Text
+      "link" -> MsgContentTag.Link
+      "image" -> MsgContentTag.Image
+      "video" -> MsgContentTag.Video
+      "voice" -> MsgContentTag.Voice
+      "file" -> MsgContentTag.File
+      "report" -> MsgContentTag.Report
+      "chat" -> MsgContentTag.Chat
+      "liveText" -> MsgContentTag.Text
+      else -> MsgContentTag.Unknown(s)
+    }
+
+  override fun serialize(encoder: Encoder, value: MsgContentTag) {
+    encoder.encodeString(value.cmdString)
+  }
 }
 
 @Serializable
@@ -4383,7 +4604,81 @@ sealed class MsgChatLink {
   @Serializable @SerialName("contact") data class Contact(val connLink: String, val profile: Profile, val business: Boolean) : MsgChatLink()
   @Serializable @SerialName("invitation") data class Invitation(val invLink: String, val profile: Profile) : MsgChatLink()
   @Serializable @SerialName("group") data class Group(val connLink: String, val groupProfile: GroupProfile) : MsgChatLink()
+
+  val isPublicGroup: Boolean
+    get() = (this as? Group)?.groupProfile?.publicGroup != null
+
+  val connLinkStr: String
+    get() = when (this) {
+      is Group -> connLink
+      is Contact -> connLink
+      is Invitation -> invLink
+    }
+
+  val image: String?
+    get() = when (this) {
+      is Group -> groupProfile.image
+      is Contact -> profile.image
+      is Invitation -> profile.image
+    }
+
+  val displayName: String
+    get() = when (this) {
+      is Group -> groupProfile.displayName
+      is Contact -> profile.displayName
+      is Invitation -> profile.displayName
+    }
+
+  val fullName: String
+    get() = when (this) {
+      is Group -> groupProfile.fullName
+      is Contact -> profile.fullName
+      is Invitation -> profile.fullName
+    }
+
+  val shortDescription: String?
+    get() {
+      val s = when (this) {
+        is Group -> groupProfile.shortDescr
+        is Contact -> profile.shortDescr
+        is Invitation -> profile.shortDescr
+      }
+      return s?.trim()?.ifEmpty { null }
+    }
+
+  val iconRes: ImageResource
+    get() = when (this) {
+      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
+      is Contact -> if (business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
+      is Invitation -> MR.images.ic_account_circle_filled
+    }
+
+  val smallIconRes: ImageResource
+    get() = when (this) {
+      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group
+      is Contact -> if (business) MR.images.ic_work else MR.images.ic_person
+      is Invitation -> MR.images.ic_person
+    }
+
+  fun infoLine(signed: Boolean): String {
+    var s = when (this) {
+      is Group -> if (groupProfile.isChannel) generalGetString(MR.strings.chat_link_channel) else generalGetString(MR.strings.chat_link_group)
+      is Contact -> if (business) generalGetString(MR.strings.chat_link_business_address) else generalGetString(MR.strings.chat_link_contact_address)
+      is Invitation -> generalGetString(MR.strings.chat_link_one_time)
+    }
+    if (signed) {
+      s += " " + if (isPublicGroup) generalGetString(MR.strings.chat_link_from_owner) else generalGetString(MR.strings.chat_link_signed)
+    }
+    return s
+  }
 }
+
+@Serializable
+data class LinkOwnerSig(
+  val ownerId: String? = null,
+  val chatBinding: String,
+  val ownerSig: String
+)
 
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {
@@ -4406,6 +4701,7 @@ sealed class Format {
   @Serializable @SerialName("strikeThrough") class StrikeThrough: Format()
   @Serializable @SerialName("snippet") class Snippet: Format()
   @Serializable @SerialName("secret") class Secret: Format()
+  @Serializable @SerialName("small") class Small: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("hyperLink") class HyperLink(val showText: String?, val linkUri: String): Format()
@@ -4415,6 +4711,7 @@ sealed class Format {
     val viaHosts: String get() =
       "(${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
   }
+  @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
@@ -4427,10 +4724,12 @@ sealed class Format {
     is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
     is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
+    is Small -> SpanStyle(fontSize = MaterialTheme.typography.body2.fontSize, color = MaterialTheme.colors.secondary)
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is HyperLink -> linkStyle
     is SimplexLink -> linkStyle
+    is SimplexName -> linkStyle
     is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
@@ -4460,6 +4759,32 @@ enum class SimplexLinkType(val linkType: String) {
       channel -> MR.strings.simplex_link_channel
       relay -> MR.strings.simplex_link_relay
   })
+}
+
+@Serializable
+data class SimplexNameInfo(
+  val nameType: SimplexNameType,
+  val nameDomain: SimplexNameDomain
+)
+
+@Serializable
+data class SimplexNameDomain(
+  val nameTLD: SimplexTLD,
+  val domain: String,
+  val subDomain: List<String>
+)
+
+@Serializable
+enum class SimplexTLD {
+  @SerialName("simplex") simplex,
+  @SerialName("testing") testing,
+  @SerialName("web") web
+}
+
+@Serializable
+enum class SimplexNameType {
+  @SerialName("publicGroup") publicGroup,
+  @SerialName("contact") contact
 }
 
 @Serializable
@@ -4598,6 +4923,17 @@ sealed class MsgErrorType() {
 }
 
 @Serializable
+sealed class RcvMsgError() {
+  @Serializable @SerialName("dropped") class Dropped(val attempts: Int): RcvMsgError()
+  @Serializable @SerialName("parseError") class ParseError(val parseError: String): RcvMsgError()
+
+  val text: String get() = when (this) {
+    is Dropped -> String.format(generalGetString(MR.strings.rcv_msg_error_dropped), attempts)
+    is ParseError -> String.format(generalGetString(MR.strings.rcv_msg_error_parse), parseError)
+  }
+}
+
+@Serializable
 sealed class RcvDirectEvent() {
   @Serializable @SerialName("contactDeleted") class ContactDeleted(): RcvDirectEvent()
   @Serializable @SerialName("profileUpdated") class ProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvDirectEvent()
@@ -4647,7 +4983,9 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberProfileUpdated") class MemberProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvGroupEvent()
   @Serializable @SerialName("newMemberPendingReview") class NewMemberPendingReview(): RcvGroupEvent()
 
-  val text: String get() = when (this) {
+  val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when (this) {
     is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
     is MemberConnected -> generalGetString(MR.strings.rcv_group_event_member_connected)
     is MemberAccepted -> String.format(generalGetString(MR.strings.rcv_group_event_member_accepted), profile.profileViewName)
@@ -4662,8 +5000,8 @@ sealed class RcvGroupEvent() {
     is UserRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_your_role), role.text)
     is MemberDeleted -> String.format(generalGetString(MR.strings.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(MR.strings.rcv_group_event_user_deleted)
-    is GroupDeleted -> generalGetString(MR.strings.rcv_group_event_group_deleted)
-    is GroupUpdated -> generalGetString(MR.strings.rcv_group_event_updated_group_profile)
+    is GroupDeleted -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_channel_deleted else MR.strings.rcv_group_event_group_deleted)
+    is GroupUpdated -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_updated_channel_profile else MR.strings.rcv_group_event_updated_group_profile)
     is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
@@ -4695,7 +5033,9 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("memberAccepted") class MemberAccepted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userPendingReview") class UserPendingReview(): SndGroupEvent()
 
-  val text: String get() = when (this) {
+  val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when (this) {
     is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
     is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text)
     is MemberBlocked -> if (blocked) {
@@ -4705,7 +5045,7 @@ sealed class SndGroupEvent() {
     }
     is MemberDeleted -> String.format(generalGetString(MR.strings.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
-    is GroupUpdated -> generalGetString(MR.strings.snd_group_event_group_profile_updated)
+    is GroupUpdated -> generalGetString(if (isChannel) MR.strings.snd_channel_event_channel_profile_updated else MR.strings.snd_group_event_group_profile_updated)
     is MemberAccepted -> generalGetString(MR.strings.snd_group_event_member_accepted)
     is UserPendingReview -> generalGetString(MR.strings.snd_group_event_user_pending_review)
   }

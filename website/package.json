@@ -20,6 +20,7 @@
     "@11ty/eleventy-plugin-rss": "^1.2.0",
     "@simplex-chat/webrtc": "^0.1.1",
     "common-tags": "^1.8.2",
+    "ethers": "^6.15.0",
     "fast-uri": "^2.1.0",
     "markdown-it-anchor": "^8.6.4",
     "markdown-it-replace-link": "^1.1.0",
@@ -28,11 +29,13 @@
     "tailwindcss": "3.3.1"
   },
   "dependencies": {
+    "@simplex-chat/xftp-web": "^0.3.0",
     "eleventy-plugin-i18n": "^0.1.3",
     "fs": "^0.0.1-security",
     "gray-matter": "^4.0.3",
     "jsdom": "^22.1.0",
     "lottie-web": "5.12.2",
-    "markdown-it": "^13.0.1"
+    "markdown-it": "^13.0.1",
+    "markdown-it-footnote": "^4.0.0"
   }
 }

@@ -5,6 +5,7 @@
 //  Created by Evgeny on 20/06/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -109,8 +110,8 @@ struct MigrateToAppGroupView: View {
                         do {
                             resetChatCtrl()
                             try initializeChat(start: true)
-                            onboardingStageDefault.set(.step4_SetNotificationsMode)
-                            chatModel.onboardingStage = .step4_SetNotificationsMode
+                            onboardingStageDefault.set(.step4_NetworkCommitments)
+                            chatModel.onboardingStage = .step4_NetworkCommitments
                             setV3DBMigration(.ready)
                         } catch let error {
                             dbContainerGroupDefault.set(.documents)

@@ -3,7 +3,7 @@
 set -e
 
 OS=mac
-ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
+ARCH="${1:-$(uname -m)}"
 COMPOSE_ARCH=$ARCH
 GHC_VERSION=9.6.3
 DATABASE_BACKEND="${2:-sqlite}"
@@ -15,7 +15,7 @@ else
 fi
 
 LIB_EXT=dylib
-LIB=libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT
+LIB=libsimplex.$LIB_EXT
 GHC_LIBS_DIR=$(ghc --print-libdir)
 
 BUILD_DIR=dist-newstyle/build/$ARCH-*/ghc-*/simplex-chat-*
@@ -28,13 +28,14 @@ rm -rf $BUILD_DIR
 
 if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
     echo "Building with postgres backend..."
-    cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres'
+    cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-install_name,@rpath/$LIB -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres'
 else
     echo "Building with sqlite backend..."
-    cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
+    cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-install_name,@rpath/$LIB -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
 fi
 
 cd $BUILD_DIR/build
+mv libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT libsimplex.dylib 2> /dev/null || true
 mkdir deps 2> /dev/null || true
 
 # It's not included by default for some reason. Compiled lib tries to find system one but it's not always available
@@ -103,7 +104,7 @@ rm -rf apps/multiplatform/desktop/build/cmake
 
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp -r $BUILD_DIR/build/deps/* apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+cp $BUILD_DIR/build/$LIB apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
 cd apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
