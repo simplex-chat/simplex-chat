@@ -52,12 +52,6 @@ fun DatabaseView() {
   ) {
     val user = m.currentUser.value
     val rhId = user?.remoteHostId
-    val disconnectAllHosts = {
-      val connected = chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }
-      connected.forEachIndexed { index, h ->
-        controller.stopRemoteHostAndReloadHosts(h, index == connected.lastIndex && chatModel.connectedToRemote())
-      }
-    }
     DatabaseLayout(
       progressIndicator.value,
       stopped,
@@ -89,16 +83,7 @@ fun DatabaseView() {
         }
       },
       showDatabaseManagement = {
-        ModalManager.start.showModal(cardScreen = true) {
-          DatabaseManagementLayout(
-            progressIndicator = progressIndicator,
-            chatLastStart = chatLastStart,
-            appFilesCountAndSize = appFilesCountAndSize,
-            useKeyChain = useKeychain.value,
-            initialRandomDBPassphrase = m.controller.appPrefs.initialRandomDBPassphrase,
-            disconnectAllHosts = disconnectAllHosts,
-          )
-        }
+        ModalManager.start.showModal(cardScreen = true) { DatabaseManagementView() }
       },
     )
     if (progressIndicator.value) {
@@ -194,20 +179,14 @@ fun DatabaseLayout(
 }
 
 @Composable
-fun DatabaseManagementLayout(
-  progressIndicator: MutableState<Boolean>,
-  chatLastStart: MutableState<Instant?>,
-  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
-  useKeyChain: Boolean,
-  initialRandomDBPassphrase: SharedPreference<Boolean>,
-  disconnectAllHosts: () -> Unit,
-) {
+fun DatabaseManagementView() {
   val m = chatModel
-  val stopped = remember { m.chatRunning }.value == false
-  val operationsDisabled = progressIndicator.value && !m.desktopNoUserNoRemote
-  // The file chooser launchers must be remembered in this composition (the one shown on screen),
-  // otherwise they get unregistered when this screen covers DatabaseView and launching them crashes.
+  val progressIndicator = remember { mutableStateOf(false) }
+  val prefs = m.controller.appPrefs
+  val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
+  val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
+  val stopped = remember { m.chatRunning }.value == false
   val saveArchiveLauncher = rememberFileChooserLauncher(false) { to: URI? ->
     val archive = chatArchiveFile.value
     if (archive != null && to != null) {
@@ -219,6 +198,7 @@ fun DatabaseManagementLayout(
       chatArchiveFile.value = null
     }
   }
+  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
   val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
     if (to != null) {
       importArchiveAlert {
@@ -228,12 +208,19 @@ fun DatabaseManagementLayout(
       }
     }
   }
+  val operationsDisabled = progressIndicator.value && !m.desktopNoUserNoRemote
 
   Box(Modifier.fillMaxSize()) {
     ColumnWithScrollBar {
       AppBarTitle(stringResource(MR.strings.database_passphrase_and_export))
 
       val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
+      val disconnectAllHosts = {
+        val connected = chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }
+        connected.forEachIndexed { index, h ->
+          controller.stopRemoteHostAndReloadHosts(h, index == connected.lastIndex && chatModel.connectedToRemote())
+        }
+      }
       SectionView(stringResource(MR.strings.chat_database_section)) {
         if (chatModel.localUserCreated.value != true && !toggleEnabled) {
           SectionItemView(disconnectAllHosts) {
@@ -242,11 +229,11 @@ fun DatabaseManagementLayout(
         }
         val unencrypted = m.chatDbEncrypted.value == false
         SettingsActionItem(
-          if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
+          if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeychain.value) painterResource(MR.images.ic_vpn_key_filled)
           else painterResource(MR.images.ic_lock),
           stringResource(MR.strings.database_passphrase),
           click = { ModalManager.start.showModal(cardScreen = true) { DatabaseEncryptionView(chatModel, false) } },
-          iconColor = if (unencrypted || (appPlatform.isDesktop && m.controller.appPrefs.storeDBPassphrase.state.value)) WarningOrange else MaterialTheme.colors.secondary,
+          iconColor = if (unencrypted || (appPlatform.isDesktop && prefs.storeDBPassphrase.state.value)) WarningOrange else MaterialTheme.colors.secondary,
           disabled = operationsDisabled
         )
         if (appPlatform.isDesktop) {
@@ -261,7 +248,7 @@ fun DatabaseManagementLayout(
           painterResource(MR.images.ic_ios_share),
           stringResource(MR.strings.export_database),
           click = {
-            if (initialRandomDBPassphrase.get()) {
+            if (prefs.initialRandomDBPassphrase.get()) {
               exportProhibitedAlert()
               ModalManager.start.showModal {
                 DatabaseEncryptionView(chatModel, false)
