@@ -185,7 +185,7 @@ startChatController mainApp enableSndFiles = do
         withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
     start s users = do
-      a1 <- async agentSubscriber
+      a1 <- async $ forever (liftIO $ threadDelay maxBound)
       a2 <-
         if mainApp
           then Just <$> async (subscribeUsers False users)
@@ -4709,22 +4709,15 @@ setAllExpireCIFlags b = do
     keys <- M.keys <$> readTVar expireFlags
     forM_ keys $ \k -> TM.insert k b expireFlags
 
-agentSubscriber :: CM' ()
-agentSubscriber = do
-  q <- asks $ subQ . smpAgent
-  forever (atomically (readTBQueue q) >>= process)
-    `catchOwn` \e -> do
-      eToView' $ chatErrorAgent $ CRITICAL True $ "Message reception stopped: " <> show e
-      E.throwIO e
+processAgentEvent :: ATransmission -> CM' ()
+processAgentEvent (corrId, entId, AEvt e msg) = run $ case e of
+  SAENone -> processAgentMessageNoConn msg
+  SAEConn -> processAgentMessage corrId entId msg
+  SAERcvFile -> processAgentMsgRcvFile corrId entId msg
+  SAESndFile -> processAgentMsgSndFile corrId entId msg
   where
-    process :: (ACorrId, AEntityId, AEvt) -> CM' ()
-    process (corrId, entId, AEvt e msg) = run $ case e of
-      SAENone -> processAgentMessageNoConn msg
-      SAEConn -> processAgentMessage corrId entId msg
-      SAERcvFile -> processAgentMsgRcvFile corrId entId msg
-      SAESndFile -> processAgentMsgSndFile corrId entId msg
-      where
-        run action = action `catchAllOwnErrors'` eToView'
+    run action = action `catchAllOwnErrors'` eToView'
+
 
 type AgentSubResult = Map ConnId (Either AgentErrorType ())
 
