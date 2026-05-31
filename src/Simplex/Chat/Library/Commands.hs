@@ -5201,7 +5201,7 @@ chatCommandP =
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayNameP <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayNameP),
-      "/public group access " *> char_ '#' *> (SetPublicGroupAccess <$> displayNameP <* A.space <*> publicGroupAccessP),
+      "/public group access " *> char_ '#' *> (SetPublicGroupAccess <$> displayNameP <*> publicGroupAccessP),
       "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> optional (A.space *> msgTextP)),
       "/set welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <* A.space <*> (Just <$> msgTextP)),
       "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> pure Nothing),
