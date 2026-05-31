@@ -130,7 +130,7 @@ const STYLE = `
 }
 
 .simplex-preview-msg-row.has-gap {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .simplex-preview-msg-avatar {
@@ -196,7 +196,7 @@ const STYLE = `
 
 .simplex-preview-forwarded-header {
   background: #ececee;
-  padding: 6px 8px 6px 12px;
+  padding: 6px 12px 6px 8px;
   font-size: 12px;
   font-style: italic;
   color: #8b8786;
@@ -274,6 +274,7 @@ const STYLE = `
 
 .simplex-preview-link-card {
   display: block;
+  max-width: 400px;
 }
 
 .simplex-preview-link-card-image {
@@ -362,7 +363,7 @@ const STYLE = `
 .simplex-preview-reactions {
   display: flex;
   flex-wrap: wrap;
-  padding: 2px 7px 4px;
+  padding: 2px 5px 2px;
 }
 
 .simplex-preview-reaction {
@@ -578,8 +579,8 @@ function renderMessages(container, messages, membersMap, channel) {
 
     const separation = getItemSeparation(msg, prevMsg);
     const nextSeparation = getItemSeparation(nextMsg, msg);
-    const showName = separation.largeGap;
-    const showAvatar = separation.largeGap;
+    const showAvatar = !prevMsg || msg.sender !== prevMsg.sender;
+    const showName = showAvatar;
     const showTail = nextSeparation.largeGap;
 
     const member = msg.sender ? membersMap[msg.sender] : null;
