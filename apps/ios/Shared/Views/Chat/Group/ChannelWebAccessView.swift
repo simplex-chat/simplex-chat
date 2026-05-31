@@ -26,18 +26,14 @@ struct ChannelWebAccessView: View {
     }
 
     var body: some View {
+        let isChannel = groupInfo.useRelays
         List {
             Section {
-                TextField("Web page URL", text: $webPage)
-                    .keyboardType(.URL)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                Toggle("Allow embedding", isOn: $allowEmbedding)
-            } header: {
-                Text("Web page")
-            } footer: {
-                Text("Set a web page URL where your channel preview is hosted. Allow embedding to let any website embed the preview.")
+                Text("Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting.")
+                    .foregroundColor(theme.colors.secondary)
             }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
 
             if let code = embedCode {
                 Section {
@@ -47,11 +43,30 @@ struct ChannelWebAccessView: View {
                     Button {
                         UIPasteboard.general.string = code
                     } label: {
-                        Label("Copy embed code", systemImage: "doc.on.doc")
+                        Label("Copy page code", systemImage: "doc.on.doc")
                     }
                 } header: {
-                    Text("Embed code")
+                    Text("Page code")
+                } footer: {
+                    Text("Add this code to your HTML page. It will load and display the last messages from your channel.")
                 }
+            }
+
+            Section {
+                TextField("https://", text: $webPage)
+                    .keyboardType(.URL)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+            } header: {
+                Text("Page URL")
+            } footer: {
+                Text("Enter the URL where you host this page. It will be shown to subscribers and used to allow loading the preview.")
+            }
+
+            Section {
+                Toggle("Allow any website to embed", isOn: $allowEmbedding)
+            } footer: {
+                Text("When off, only your page URL above can load the preview.")
             }
 
             Section {
@@ -59,7 +74,7 @@ struct ChannelWebAccessView: View {
                     saveAccess()
                 } label: {
                     HStack {
-                        Text("Save")
+                        Text(isChannel ? "Save and notify subscribers" : "Save and notify members")
                         if saving { Spacer(); ProgressView() }
                     }
                 }
@@ -76,8 +91,8 @@ struct ChannelWebAccessView: View {
         .onDisappear {
             if hasChanges {
                 showAlert(
-                    title: NSLocalizedString("Save web access settings?", comment: "alert title"),
-                    message: NSLocalizedString("Web access settings were changed. If you save, the updated settings will be sent to channel subscribers.", comment: "alert message"),
+                    title: NSLocalizedString("Save webpage settings?", comment: "alert title"),
+                    message: NSLocalizedString("Webpage settings were changed. If you save, the updated settings will be sent to subscribers.", comment: "alert message"),
                     buttonTitle: NSLocalizedString("Save", comment: "alert button"),
                     buttonAction: saveAccess,
                     cancelButton: true
