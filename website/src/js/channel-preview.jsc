@@ -362,21 +362,23 @@ const STYLE = `
 .simplex-preview-reactions {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px 12px 6px;
+  padding: 2px 7px 4px;
 }
 
 .simplex-preview-reaction {
-  font-size: 13px;
-  background: #ececee;
-  border-radius: 12px;
-  padding: 2px 8px;
+  font-size: 12px;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  border-radius: 8px;
+  padding: 2px 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .simplex-preview-reaction-count {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #8b8786;
-  margin-left: 2px;
-  font-size: 12px;
+  font-size: 11.5px;
 }
 
 .simplex-preview-empty {
@@ -937,6 +939,6 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-document.querySelectorAll('[data-simplex-channel-preview]').forEach(initChannelPreview);
+document.querySelectorAll('[data-simplex-group-preview]').forEach(initChannelPreview);
 
 })();
