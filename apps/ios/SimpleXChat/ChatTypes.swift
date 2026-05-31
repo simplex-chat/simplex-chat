@@ -5154,6 +5154,10 @@ public enum SimplexLinkType: String, Decodable, Hashable {
 
 public struct SimplexNameInfo: Decodable, Equatable, Hashable {
     public var nameType: SimplexNameType
+    public var nameDomain: SimplexNameDomain
+}
+
+public struct SimplexNameDomain: Decodable, Equatable, Hashable {
     public var nameTLD: SimplexTLD
     public var domain: String
     public var subDomain: [String]

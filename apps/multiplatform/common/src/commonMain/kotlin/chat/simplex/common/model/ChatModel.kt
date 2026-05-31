@@ -4748,6 +4748,11 @@ enum class SimplexLinkType(val linkType: String) {
 @Serializable
 data class SimplexNameInfo(
   val nameType: SimplexNameType,
+  val nameDomain: SimplexNameDomain
+)
+
+@Serializable
+data class SimplexNameDomain(
   val nameTLD: SimplexTLD,
   val domain: String,
   val subDomain: List<String>

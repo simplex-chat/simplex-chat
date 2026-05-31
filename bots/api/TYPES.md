@@ -167,6 +167,7 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameDomain](#simplexnamedomain)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -3472,13 +3473,21 @@ A_QUEUE:
 
 ---
 
+## SimplexNameDomain
+
+**Record type**:
+- nameTLD: [SimplexTLD](#simplextld)
+- domain: string
+- subDomain: [string]
+
+
+---
+
 ## SimplexNameInfo
 
 **Record type**:
 - nameType: [SimplexNameType](#simplexnametype)
-- nameTLD: [SimplexTLD](#simplextld)
-- domain: string
-- subDomain: [string]
+- nameDomain: [SimplexNameDomain](#simplexnamedomain)
 
 
 ---
