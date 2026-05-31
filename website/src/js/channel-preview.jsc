@@ -112,7 +112,7 @@ const STYLE = `
   font-size: 13.5px;
   color: #8b8786;
   padding: 0 0 2px 0;
-  margin-left: 34px;
+  margin-left: 39px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -126,7 +126,6 @@ const STYLE = `
 .simplex-preview-msg-row {
   display: flex;
   align-items: flex-start;
-  gap: 4px;
   margin-bottom: 1px;
 }
 
@@ -153,6 +152,7 @@ const STYLE = `
   border-radius: 18px;
   min-width: 80px;
   overflow: visible;
+  margin-left: 9px;
 }
 
 .simplex-preview-bubble-inner {
@@ -161,7 +161,7 @@ const STYLE = `
 }
 
 .simplex-preview-bubble.has-tail {
-  margin-left: 9px;
+  border-bottom-left-radius: 0;
 }
 
 .simplex-preview-bubble.has-tail .simplex-preview-bubble-inner {
