@@ -34,7 +34,7 @@ struct ChannelWebAccessView: View {
                     .disableAutocorrection(true)
                 Toggle("Allow embedding", isOn: $allowEmbedding)
             } header: {
-                Text("Web access")
+                Text("Web page")
             } footer: {
                 Text("Set a web page URL where your channel preview is hosted. Allow embedding to let any website embed the preview.")
             }
@@ -71,6 +71,17 @@ struct ChannelWebAccessView: View {
             Task {
                 let relays = await apiGetGroupRelays(groupInfo.groupId)
                 await MainActor.run { groupRelays = relays }
+            }
+        }
+        .onDisappear {
+            if hasChanges {
+                showAlert(
+                    title: NSLocalizedString("Save web access settings?", comment: "alert title"),
+                    message: NSLocalizedString("Web access settings were changed. If you save, the updated settings will be sent to channel subscribers.", comment: "alert message"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: saveAccess,
+                    cancelButton: true
+                )
             }
         }
     }

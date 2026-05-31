@@ -659,12 +659,13 @@ struct GroupChatInfoView: View {
     }
 
     private func channelWebAccessButton() -> some View {
-        NavigationLink {
+        let title: LocalizedStringKey = groupInfo.useRelays ? "Channel page & name" : "Group page & name"
+        return NavigationLink {
             ChannelWebAccessView(groupInfo: $groupInfo)
-                .navigationBarTitle("Web access")
+                .navigationBarTitle(title)
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Label("Web page", systemImage: "globe")
+            Label(title, systemImage: "globe")
         }
     }
 
