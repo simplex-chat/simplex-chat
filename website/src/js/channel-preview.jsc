@@ -429,7 +429,7 @@ const FILE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24
 
 const VOICE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>`;
 
-const FORWARD_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,17 20,12 15,7"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>`;
+const FORWARD_ICON_SVG = `<svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path transform="scale(-1,1) translate(-960,0)" d="m236.5-495.5 142.5 143q8.5 8.5 8.25 20.25T378.5-312q-9 8.5-21 8.5t-20.5-9L145.5-504q-9-8.5-9-20t9-20.5L338-737q9-9 20.75-8.75T379.5-737q8.5 8.5 8.5 20.5t-8.5 20.5l-143 143h403q84 0 139.75 56T835-357.5V-234q0 12.5-8.25 20.75T806.5-205q-12.5 0-20.75-8.25T777.5-234v-123.5q0-60-39-99t-99-39h-403Z"/></svg>`;
 
 function initChannelPreview(container) {
   const relayUrls = (container.dataset.relayUrls || '').split(',').map(u => u.trim()).filter(Boolean);
