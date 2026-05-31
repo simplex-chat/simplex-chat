@@ -67,6 +67,7 @@ module Simplex.Chat.Store.Groups
     getGroupMembersByIndexes,
     getSupportScopeMembersByIndexes,
     getGroupModerators,
+    getGroupOwners,
     getGroupRelayMembers,
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
@@ -98,6 +99,8 @@ module Simplex.Chat.Store.Groups
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
     updateRelayOwnStatus_,
+    getRelaySentWebUrl,
+    updateRelaySentWebUrl,
     isRelayGroupRejected,
     allowRelayGroup,
     getRelayServedGroups,
@@ -1198,6 +1201,14 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
       (userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
 
+getGroupOwners :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
+getGroupOwners db vr user@User {userId, userContactId} GroupInfo {groupId} =
+  map (toContactMember vr user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role = ?")
+      (userId, groupId, userContactId, GROwner)
+
 getGroupRelayMembers :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupRelayMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
   map (toContactMember vr user)
@@ -1632,6 +1643,14 @@ updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   currentTs <- getCurrentTime
   let inactiveAt_ = if relayStatus == RSInactive then Just currentTs else Nothing
   DB.execute db "UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?" (relayStatus, inactiveAt_, currentTs, groupId)
+
+getRelaySentWebUrl :: DB.Connection -> GroupInfo -> IO (Maybe Text)
+getRelaySentWebUrl db GroupInfo {groupId} =
+  join <$> maybeFirstRow fromOnly (DB.query db "SELECT relay_sent_web_url FROM groups WHERE group_id = ?" (Only groupId))
+
+updateRelaySentWebUrl :: DB.Connection -> GroupInfo -> Maybe Text -> IO ()
+updateRelaySentWebUrl db GroupInfo {groupId} webUrl =
+  DB.execute db "UPDATE groups SET relay_sent_web_url = ? WHERE group_id = ?" (webUrl, groupId)
 
 -- Flip every RSRejected row sharing the targeted group's relay_request_group_link
 -- to RSInactive in one statement; returns the refreshed GroupInfo for the targeted groupId.
