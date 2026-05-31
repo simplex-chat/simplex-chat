@@ -614,7 +614,6 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
-            ChannelWebPageButton(groupInfo, manageWebPage)
           } else if (channelLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
@@ -796,6 +795,13 @@ fun ModalData.GroupChatInfoLayout(
               else MR.strings.button_leave_chat
             LeaveGroupButton(titleId, leaveGroup)
           }
+        }
+      }
+
+      if (groupInfo.useRelays && groupInfo.isOwner) {
+        SectionDividerSpaced()
+        SectionView(title = stringResource(MR.strings.advanced_options)) {
+          ChannelWebPageButton(groupInfo, manageWebPage)
         }
       }
 
@@ -1214,7 +1220,7 @@ private fun ChannelLinkButton(onClick: () -> Unit) {
 private fun ChannelWebPageButton(groupInfo: GroupInfo, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_travel_explore),
-    stringResource(if (groupInfo.useRelays) MR.strings.channel_webpage else MR.strings.group_webpage),
+    stringResource(if (groupInfo.isChannel) MR.strings.channel_webpage else MR.strings.group_webpage),
     onClick,
     iconColor = MaterialTheme.colors.secondary
   )
