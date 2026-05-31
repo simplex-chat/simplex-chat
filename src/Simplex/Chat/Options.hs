@@ -22,7 +22,6 @@ where
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -246,26 +245,35 @@ coreChatOptsP appDir defaultDbName = do
     baseWebUrl_ <-
       optional $
         strOption
-          ( long "web-url"
+          ( long "relay-web-url"
               <> metavar "URL"
               <> help "Base URL for channel web previews (relay only)"
           )
     webJsonDir_ <-
       optional $
         strOption
-          ( long "web-dir"
+          ( long "relay-web-dir"
               <> metavar "DIR"
               <> help "Directory for channel web preview JSON files (relay only)"
           )
     webCorsFile <-
       optional $
         strOption
-          ( long "web-cors"
+          ( long "relay-web-cors-file"
               <> metavar "FILE"
               <> help "Path to generated Caddy CORS config file (relay only)"
           )
-    pure $ baseWebUrl_ <&> \baseWebUrl ->
-      WebPreviewConfig {baseWebUrl, webJsonDir = fromMaybe "web_preview" webJsonDir_, webCorsFile, webUpdateInterval = 300}
+    webUpdateInterval <-
+      option auto
+        ( long "relay-web-interval"
+            <> metavar "SECONDS"
+            <> help "Interval between web preview regeneration in seconds (relay only)"
+            <> value 300
+        )
+    pure $ case (baseWebUrl_, webJsonDir_) of
+      (Just baseWebUrl, Just webJsonDir) -> Just WebPreviewConfig {baseWebUrl, webJsonDir, webCorsFile, webUpdateInterval}
+      (Nothing, Nothing) -> Nothing
+      _ -> error "--relay-web-url and --relay-web-dir must both be provided"
   highlyAvailable <-
     switch
       ( long "ha"
