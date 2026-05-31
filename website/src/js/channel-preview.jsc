@@ -9,7 +9,7 @@ const STYLE = `
   line-height: 1.4;
   color: #000;
   background: #fff;
-  max-width: 720px;
+  max-width: 640px;
   margin: 0 auto;
   padding: 0;
   -webkit-font-smoothing: antialiased;
@@ -265,11 +265,11 @@ const STYLE = `
 }
 
 .simplex-preview-image.landscape {
-  width: 500px;
+  width: 400px;
 }
 
 .simplex-preview-image.portrait {
-  width: 375px;
+  width: 300px;
 }
 
 .simplex-preview-link-card {
@@ -401,6 +401,7 @@ const STYLE = `
 
 .simplex-preview-text .small-text {
   font-size: 13px;
+  color: #888;
 }
 
 .simplex-preview-text .red { color: #DD0000; }
