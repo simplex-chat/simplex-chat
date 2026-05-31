@@ -1,0 +1,872 @@
+#include "simplex-lib.jsc"
+
+(function() {
+
+const STYLE = `
+.simplex-preview-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #000;
+  background: #fff;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.simplex-preview-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: padding 0.2s;
+}
+
+.simplex-preview-header.collapsed {
+  padding: 8px 16px;
+}
+
+.simplex-preview-header-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: width 0.2s, height 0.2s;
+}
+
+.simplex-preview-header.collapsed .simplex-preview-header-avatar {
+  width: 36px;
+  height: 36px;
+}
+
+.simplex-preview-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.simplex-preview-header-name {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simplex-preview-header-description {
+  font-size: 13px;
+  color: #8b8786;
+  margin: 2px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simplex-preview-header.collapsed .simplex-preview-header-description {
+  display: none;
+}
+
+.simplex-preview-join-btn {
+  flex-shrink: 0;
+  background: #0088ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.simplex-preview-join-btn:hover {
+  background: #0077e0;
+}
+
+.simplex-preview-messages {
+  padding: 8px 0;
+}
+
+.simplex-preview-date-separator {
+  text-align: center;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #8b8786;
+  font-weight: 500;
+}
+
+.simplex-preview-msg-group {
+  padding: 0 8px;
+}
+
+.simplex-preview-msg-name {
+  font-size: 13.5px;
+  color: #8b8786;
+  padding: 0 0 2px 45px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simplex-preview-msg-name-role {
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.simplex-preview-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 1px;
+}
+
+.simplex-preview-msg-row.has-gap {
+  margin-bottom: 8px;
+}
+
+.simplex-preview-msg-avatar {
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.simplex-preview-msg-avatar-placeholder {
+  width: 37px;
+  flex-shrink: 0;
+}
+
+.simplex-preview-bubble {
+  position: relative;
+  background: #f5f5f6;
+  border-radius: 18px;
+  max-width: 75%;
+  min-width: 80px;
+  overflow: hidden;
+}
+
+.simplex-preview-bubble.has-tail {
+  border-bottom-left-radius: 4px;
+}
+
+.simplex-preview-bubble-tail {
+  position: absolute;
+  bottom: 0;
+  left: -7px;
+  width: 11px;
+  height: 17px;
+  overflow: hidden;
+}
+
+.simplex-preview-bubble-tail svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+.simplex-preview-forwarded-header {
+  background: #ececee;
+  padding: 6px 8px 6px 12px;
+  font-size: 12px;
+  font-style: italic;
+  color: #8b8786;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.simplex-preview-quote {
+  background: #ececee;
+  display: flex;
+  width: 100%;
+}
+
+.simplex-preview-quote-content {
+  flex: 1;
+  padding: 6px 12px;
+  min-width: 0;
+}
+
+.simplex-preview-quote-sender {
+  font-size: 13.5px;
+  color: #8b8786;
+  margin-bottom: 2px;
+}
+
+.simplex-preview-quote-text {
+  font-size: 15px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.simplex-preview-quote-thumb {
+  width: 68px;
+  height: 68px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.simplex-preview-quote-file-icon {
+  padding: 6px 4px 0 0;
+  flex-shrink: 0;
+  color: #8b8786;
+}
+
+.simplex-preview-text {
+  padding: 7px 12px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.simplex-preview-text a {
+  color: #0088ff;
+  text-decoration: none;
+}
+
+.simplex-preview-text a:hover {
+  text-decoration: underline;
+}
+
+.simplex-preview-image {
+  display: block;
+  max-width: 100%;
+  border-radius: 0;
+}
+
+.simplex-preview-link-card {
+  display: block;
+}
+
+.simplex-preview-link-card-image {
+  display: block;
+  width: 100%;
+}
+
+.simplex-preview-link-card-body {
+  padding: 6px 12px;
+}
+
+.simplex-preview-link-card-title {
+  font-size: 15px;
+  line-height: 22px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.simplex-preview-link-card-description {
+  font-size: 14px;
+  line-height: 20px;
+  color: #333;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 12;
+  -webkit-box-orient: vertical;
+}
+
+.simplex-preview-link-card-uri {
+  font-size: 12px;
+  color: #8b8786;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simplex-preview-file-indicator {
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8b8786;
+}
+
+.simplex-preview-file-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.simplex-preview-file-name {
+  font-size: 14px;
+  color: #000;
+}
+
+.simplex-preview-file-size {
+  font-size: 12px;
+  color: #8b8786;
+}
+
+.simplex-preview-voice {
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8b8786;
+  font-size: 14px;
+}
+
+.simplex-preview-meta {
+  float: right;
+  font-size: 12px;
+  color: #8b8786;
+  padding: 0 2px 0 12px;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.simplex-preview-meta-edited {
+  font-style: italic;
+}
+
+.simplex-preview-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 12px 6px;
+}
+
+.simplex-preview-reaction {
+  font-size: 13px;
+  background: #ececee;
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+.simplex-preview-reaction-count {
+  color: #8b8786;
+  margin-left: 2px;
+  font-size: 12px;
+}
+
+.simplex-preview-empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: #8b8786;
+}
+
+.simplex-preview-text .secret {
+  background: #8b8786;
+  color: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.simplex-preview-text .secret.visible {
+  background: transparent;
+  color: inherit;
+}
+
+.simplex-preview-text .small-text {
+  font-size: 13px;
+}
+`;
+
+const TAIL_SVG = `<svg width="11" height="17" viewBox="0 0 11 17" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 0 L11 17 L0 17 Q9 14.5 9 5.7 L9 0 Z" fill="#f5f5f6"/></svg>`;
+
+const FILE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>`;
+
+const VOICE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>`;
+
+const FORWARD_ICON_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,17 20,12 15,7"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>`;
+
+function initChannelPreview(container) {
+  const relayUrls = (container.dataset.relayUrls || '').split(',').map(u => u.trim()).filter(Boolean);
+  const groupId = container.dataset.publicGroupId || '';
+  const groupLink = container.dataset.groupLink || '';
+
+  if (!relayUrls.length || !groupId) {
+    container.innerHTML = '<p class="simplex-preview-empty">Missing configuration: data-relay-urls and data-public-group-id required.</p>';
+    return;
+  }
+
+  injectStyles();
+  container.classList.add('simplex-preview-container');
+  container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
+
+  fetchPreview(relayUrls, groupId).then(data => {
+    if (!data) {
+      container.innerHTML = '<p class="simplex-preview-empty">Failed to load channel preview.</p>';
+      return;
+    }
+    render(container, data, groupLink);
+  });
+}
+
+let stylesInjected = false;
+function injectStyles() {
+  if (stylesInjected) return;
+  stylesInjected = true;
+  const style = document.createElement('style');
+  style.textContent = STYLE;
+  document.head.appendChild(style);
+}
+
+async function fetchPreview(relayUrls, groupId) {
+  for (const baseUrl of relayUrls) {
+    try {
+      const url = baseUrl.replace(/\/$/, '') + '/' + groupId + '.json';
+      const resp = await fetch(url);
+      if (!resp.ok) continue;
+      return await resp.json();
+    } catch(e) {
+      continue;
+    }
+  }
+  return null;
+}
+
+function render(container, data, groupLink) {
+  const { channel, members, messages } = data;
+  const membersMap = {};
+  for (const m of members) {
+    membersMap[m.memberId] = m;
+  }
+
+  container.innerHTML = '';
+  const header = renderHeader(channel, groupLink, members.length);
+  container.appendChild(header);
+
+  const messagesDiv = document.createElement('div');
+  messagesDiv.className = 'simplex-preview-messages';
+  renderMessages(messagesDiv, messages, membersMap);
+  container.appendChild(messagesDiv);
+
+  setupStickyHeader(header);
+  setupSecretToggles(container);
+}
+
+function renderHeader(channel, groupLink, subscriberCount) {
+  const header = document.createElement('div');
+  header.className = 'simplex-preview-header';
+
+  const avatar = document.createElement('img');
+  avatar.className = 'simplex-preview-header-avatar';
+  avatar.src = channel.image ? channel.image : '/img/group.svg';
+  avatar.alt = channel.displayName;
+  avatar.addEventListener('error', () => avatar.src = '/img/group.svg');
+  header.appendChild(avatar);
+
+  const info = document.createElement('div');
+  info.className = 'simplex-preview-header-info';
+
+  const name = document.createElement('h1');
+  name.className = 'simplex-preview-header-name';
+  name.textContent = channel.displayName;
+  info.appendChild(name);
+
+  const desc = document.createElement('p');
+  desc.className = 'simplex-preview-header-description';
+  const parts = [];
+  if (subscriberCount > 0) parts.push(subscriberCount + ' subscribers');
+  if (channel.description) parts.push(channel.description);
+  desc.textContent = parts.join(' • ');
+  info.appendChild(desc);
+
+  header.appendChild(info);
+
+  if (groupLink) {
+    const btn = document.createElement('a');
+    btn.className = 'simplex-preview-join-btn';
+    btn.textContent = 'Join';
+    try {
+      btn.href = platformSimplexUri(groupLink);
+    } catch(e) {
+      btn.href = groupLink;
+    }
+    btn.target = '_blank';
+    header.appendChild(btn);
+  }
+
+  return header;
+}
+
+function setupStickyHeader(header) {
+  let lastScroll = 0;
+  const observer = new IntersectionObserver(([entry]) => {
+    header.classList.toggle('collapsed', !entry.isIntersecting);
+  }, { threshold: 0, rootMargin: '-1px 0px 0px 0px' });
+
+  const sentinel = document.createElement('div');
+  sentinel.style.height = '1px';
+  header.parentNode.insertBefore(sentinel, header);
+  observer.observe(sentinel);
+}
+
+function setupSecretToggles(container) {
+  container.addEventListener('click', (e) => {
+    const secret = e.target.closest('.secret');
+    if (secret) secret.classList.toggle('visible');
+  });
+}
+
+function renderMessages(container, messages, membersMap) {
+  let prevMsg = null;
+  let prevDate = null;
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    const nextMsg = i < messages.length - 1 ? messages[i + 1] : null;
+
+    const msgDate = formatDateLabel(msg.ts);
+    if (msgDate !== prevDate) {
+      const dateSep = document.createElement('div');
+      dateSep.className = 'simplex-preview-date-separator';
+      dateSep.textContent = msgDate;
+      container.appendChild(dateSep);
+      prevDate = msgDate;
+    }
+
+    const separation = getItemSeparation(msg, prevMsg);
+    const nextSeparation = getItemSeparation(nextMsg, msg);
+    const showName = separation.largeGap && msg.sender != null;
+    const showAvatar = separation.largeGap && msg.sender != null;
+    const showTail = nextSeparation.largeGap;
+
+    const member = msg.sender ? membersMap[msg.sender] : null;
+
+    const row = document.createElement('div');
+    row.className = 'simplex-preview-msg-row' + (nextSeparation.largeGap ? ' has-gap' : '');
+
+    if (showName && member) {
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'simplex-preview-msg-name';
+      nameDiv.textContent = member.displayName;
+      container.appendChild(nameDiv);
+    }
+
+    if (showAvatar && member) {
+      const avatarImg = document.createElement('img');
+      avatarImg.className = 'simplex-preview-msg-avatar';
+      avatarImg.src = member.image || '/img/group.svg';
+      avatarImg.alt = member.displayName;
+      avatarImg.addEventListener('error', () => avatarImg.src = '/img/group.svg');
+      row.appendChild(avatarImg);
+    } else {
+      const spacer = document.createElement('div');
+      spacer.className = 'simplex-preview-msg-avatar-placeholder';
+      row.appendChild(spacer);
+    }
+
+    const bubble = renderBubble(msg, member, showTail);
+    row.appendChild(bubble);
+
+    container.appendChild(row);
+    prevMsg = msg;
+  }
+}
+
+function renderBubble(msg, member, showTail) {
+  const bubble = document.createElement('div');
+  bubble.className = 'simplex-preview-bubble' + (showTail ? ' has-tail' : '');
+
+  if (showTail) {
+    const tail = document.createElement('div');
+    tail.className = 'simplex-preview-bubble-tail';
+    tail.innerHTML = TAIL_SVG;
+    bubble.appendChild(tail);
+  }
+
+  if (msg.forward) {
+    const fwd = document.createElement('div');
+    fwd.className = 'simplex-preview-forwarded-header';
+    fwd.innerHTML = FORWARD_ICON_SVG + ' <span>Forwarded</span>';
+    bubble.appendChild(fwd);
+  }
+
+  if (msg.quote) {
+    bubble.appendChild(renderQuote(msg.quote));
+  }
+
+  const mc = msg.content;
+  switch (mc.type) {
+    case 'image':
+      renderImageContent(bubble, mc, msg);
+      break;
+    case 'video':
+      renderVideoContent(bubble, mc, msg);
+      break;
+    case 'link':
+      renderLinkContent(bubble, mc, msg);
+      break;
+    case 'voice':
+      renderVoiceContent(bubble, mc, msg);
+      break;
+    case 'file':
+      renderFileContent(bubble, mc, msg);
+      break;
+    default:
+      renderTextContent(bubble, msg);
+      break;
+  }
+
+  if (msg.reactions && msg.reactions.length > 0) {
+    bubble.appendChild(renderReactions(msg.reactions));
+  }
+
+  return bubble;
+}
+
+function renderQuote(quote) {
+  const quoteDiv = document.createElement('div');
+  quoteDiv.className = 'simplex-preview-quote';
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'simplex-preview-quote-content';
+
+  if (quote.msgRef && quote.msgRef.memberId) {
+    const sender = document.createElement('div');
+    sender.className = 'simplex-preview-quote-sender';
+    sender.textContent = quote.msgRef.sent ? 'You' : (quote.msgRef.memberId || '');
+    contentDiv.appendChild(sender);
+  }
+
+  const textDiv = document.createElement('div');
+  textDiv.className = 'simplex-preview-quote-text';
+  textDiv.textContent = quote.content ? (quote.content.text || '') : '';
+  contentDiv.appendChild(textDiv);
+
+  quoteDiv.appendChild(contentDiv);
+
+  if (quote.content) {
+    if (quote.content.type === 'image' || quote.content.type === 'video') {
+      const thumb = document.createElement('img');
+      thumb.className = 'simplex-preview-quote-thumb';
+      thumb.src = quote.content.image;
+      quoteDiv.appendChild(thumb);
+    } else if (quote.content.type === 'file') {
+      const icon = document.createElement('div');
+      icon.className = 'simplex-preview-quote-file-icon';
+      icon.innerHTML = FILE_ICON_SVG;
+      quoteDiv.appendChild(icon);
+    } else if (quote.content.type === 'voice') {
+      const icon = document.createElement('div');
+      icon.className = 'simplex-preview-quote-file-icon';
+      icon.innerHTML = VOICE_ICON_SVG;
+      quoteDiv.appendChild(icon);
+    }
+  }
+
+  return quoteDiv;
+}
+
+function renderImageContent(bubble, mc, msg) {
+  if (mc.image) {
+    const img = document.createElement('img');
+    img.className = 'simplex-preview-image';
+    img.src = mc.image;
+    img.alt = 'Image';
+    bubble.appendChild(img);
+  }
+  if (mc.text) {
+    appendTextBlock(bubble, msg);
+  } else {
+    appendMetaOnly(bubble, msg);
+  }
+}
+
+function renderVideoContent(bubble, mc, msg) {
+  if (mc.image) {
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    const img = document.createElement('img');
+    img.className = 'simplex-preview-image';
+    img.src = mc.image;
+    img.alt = 'Video';
+    wrapper.appendChild(img);
+    const dur = document.createElement('span');
+    dur.style.cssText = 'position:absolute;bottom:4px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:12px;padding:1px 6px;border-radius:4px;';
+    dur.textContent = formatDuration(mc.duration || 0);
+    wrapper.appendChild(dur);
+    bubble.appendChild(wrapper);
+  }
+  if (mc.text) {
+    appendTextBlock(bubble, msg);
+  } else {
+    appendMetaOnly(bubble, msg);
+  }
+}
+
+function renderLinkContent(bubble, mc, msg) {
+  if (mc.preview) {
+    const card = document.createElement('div');
+    card.className = 'simplex-preview-link-card';
+    if (mc.preview.image) {
+      const img = document.createElement('img');
+      img.className = 'simplex-preview-link-card-image';
+      img.src = mc.preview.image;
+      img.alt = mc.preview.title || '';
+      card.appendChild(img);
+    }
+    const body = document.createElement('div');
+    body.className = 'simplex-preview-link-card-body';
+    if (mc.preview.title) {
+      const title = document.createElement('div');
+      title.className = 'simplex-preview-link-card-title';
+      title.textContent = mc.preview.title;
+      body.appendChild(title);
+    }
+    if (mc.preview.description) {
+      const desc = document.createElement('div');
+      desc.className = 'simplex-preview-link-card-description';
+      desc.textContent = mc.preview.description;
+      body.appendChild(desc);
+    }
+    if (mc.preview.uri) {
+      const uri = document.createElement('div');
+      uri.className = 'simplex-preview-link-card-uri';
+      uri.textContent = mc.preview.uri;
+      body.appendChild(uri);
+    }
+    card.appendChild(body);
+    bubble.appendChild(card);
+  }
+  appendTextBlock(bubble, msg);
+}
+
+function renderVoiceContent(bubble, mc, msg) {
+  const voiceDiv = document.createElement('div');
+  voiceDiv.className = 'simplex-preview-voice';
+  voiceDiv.innerHTML = VOICE_ICON_SVG + ' <span>' + formatDuration(mc.duration || 0) + '</span>';
+  bubble.appendChild(voiceDiv);
+  if (mc.text) {
+    appendTextBlock(bubble, msg);
+  } else {
+    appendMetaOnly(bubble, msg);
+  }
+}
+
+function renderFileContent(bubble, mc, msg) {
+  const fileDiv = document.createElement('div');
+  fileDiv.className = 'simplex-preview-file-indicator';
+  fileDiv.innerHTML = FILE_ICON_SVG;
+  const info = document.createElement('div');
+  if (msg.file) {
+    const nameSpan = document.createElement('div');
+    nameSpan.className = 'simplex-preview-file-name';
+    nameSpan.textContent = msg.file.fileName;
+    info.appendChild(nameSpan);
+    const sizeSpan = document.createElement('div');
+    sizeSpan.className = 'simplex-preview-file-size';
+    sizeSpan.textContent = formatFileSize(msg.file.fileSize);
+    info.appendChild(sizeSpan);
+  }
+  fileDiv.appendChild(info);
+  bubble.appendChild(fileDiv);
+  if (mc.text) {
+    appendTextBlock(bubble, msg);
+  } else {
+    appendMetaOnly(bubble, msg);
+  }
+}
+
+function renderTextContent(bubble, msg) {
+  appendTextBlock(bubble, msg);
+}
+
+function appendTextBlock(bubble, msg) {
+  const textDiv = document.createElement('div');
+  textDiv.className = 'simplex-preview-text';
+  const meta = renderMetaHTML(msg);
+  if (msg.formattedText && msg.formattedText.length > 0) {
+    textDiv.innerHTML = renderMarkdown(msg.formattedText) + meta;
+  } else {
+    textDiv.innerHTML = escapeHtml(msg.content.text || '') + meta;
+  }
+  bubble.appendChild(textDiv);
+}
+
+function appendMetaOnly(bubble, msg) {
+  const metaDiv = document.createElement('div');
+  metaDiv.style.cssText = 'padding: 0 8px 4px; text-align: right;';
+  metaDiv.innerHTML = renderMetaHTML(msg);
+  bubble.appendChild(metaDiv);
+}
+
+function renderMetaHTML(msg) {
+  let html = '<span class="simplex-preview-meta">';
+  if (msg.edited) html += '<span class="simplex-preview-meta-edited">edited </span>';
+  html += formatTime(msg.ts);
+  html += '</span>';
+  return html;
+}
+
+function renderReactions(reactions) {
+  const div = document.createElement('div');
+  div.className = 'simplex-preview-reactions';
+  for (const r of reactions) {
+    if (r.totalReacted < 1) continue;
+    const badge = document.createElement('span');
+    badge.className = 'simplex-preview-reaction';
+    const emoji = r.reaction && r.reaction.emoji ? r.reaction.emoji : '?';
+    badge.innerHTML = emoji + (r.totalReacted > 1 ? '<span class="simplex-preview-reaction-count">' + r.totalReacted + '</span>' : '');
+    div.appendChild(badge);
+  }
+  return div;
+}
+
+function getItemSeparation(msg, prevMsg) {
+  if (!prevMsg || !msg) return { largeGap: true };
+  const sameSender = msg.sender != null && prevMsg.sender != null && msg.sender === prevMsg.sender;
+  if (!sameSender) return { largeGap: true };
+  const t1 = new Date(prevMsg.ts).valueOf();
+  const t2 = new Date(msg.ts).valueOf();
+  if (Math.abs(t2 - t1) >= 60000) return { largeGap: true };
+  return { largeGap: false };
+}
+
+function formatTime(ts) {
+  try {
+    const d = new Date(ts);
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    return h + ':' + m;
+  } catch(e) {
+    return '';
+  }
+}
+
+function formatDateLabel(ts) {
+  try {
+    const d = new Date(ts);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) return 'Today';
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+  } catch(e) {
+    return '';
+  }
+}
+
+function formatDuration(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0');
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+document.querySelectorAll('[data-simplex-channel-preview]').forEach(initChannelPreview);
+
+})();
