@@ -35,7 +35,7 @@ const STYLE = `
 .simplex-preview-header-avatar {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: 11px;
   object-fit: cover;
   flex-shrink: 0;
   transition: width 0.2s, height 0.2s;
@@ -44,6 +44,7 @@ const STYLE = `
 .simplex-preview-header.collapsed .simplex-preview-header-avatar {
   width: 36px;
   height: 36px;
+  border-radius: 8px;
 }
 
 .simplex-preview-header-info {
@@ -110,7 +111,8 @@ const STYLE = `
 .simplex-preview-msg-name {
   font-size: 13.5px;
   color: #8b8786;
-  padding: 0 0 2px 34px;
+  padding: 0 0 2px 0;
+  margin-left: 34px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -123,7 +125,7 @@ const STYLE = `
 
 .simplex-preview-msg-row {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 4px;
   margin-bottom: 1px;
 }
@@ -163,7 +165,7 @@ const STYLE = `
 }
 
 .simplex-preview-bubble.has-tail .simplex-preview-bubble-inner {
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 0;
 }
 
 .simplex-preview-bubble-tail {
@@ -407,7 +409,7 @@ const DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="h
 const TAIL_SVG_COLOR = '#f5f5f6';
 
 function tailSvg(color) {
-  return `<svg width="9" height="16" viewBox="0 0 9 16" xmlns="http://www.w3.org/2000/svg"><path d="M9 0 L9 16 L0 16 Q9 10.94 9 0 Z" fill="${color}"/></svg>`;
+  return `<svg width="9" height="16" viewBox="0 0 9 16" xmlns="http://www.w3.org/2000/svg"><path d="M9 0 L9 16 L0 16 Q9 11 9 0 Z" fill="${color}"/></svg>`;
 }
 
 const FILE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>`;
@@ -605,14 +607,16 @@ function renderMessages(container, messages, membersMap, channel) {
 function renderBubble(msg, member, showTail) {
   const mc = msg.content;
   const mediaOnly = (mc.type === 'image' || mc.type === 'video') && !mc.text && !msg.quote && !msg.forward;
+  const noTailContent = (mc.type === 'image' || mc.type === 'video' || mc.type === 'voice') && !mc.text;
+  const hasTail = showTail && !noTailContent;
 
   const bubble = document.createElement('div');
-  bubble.className = 'simplex-preview-bubble' + (showTail ? ' has-tail' : '') + (mediaOnly ? ' media-only' : '');
+  bubble.className = 'simplex-preview-bubble' + (hasTail ? ' has-tail' : '') + (mediaOnly ? ' media-only' : '');
 
-  if (showTail) {
+  if (hasTail) {
     const tail = document.createElement('div');
     tail.className = 'simplex-preview-bubble-tail';
-    tail.innerHTML = tailSvg(mediaOnly ? 'transparent' : TAIL_SVG_COLOR);
+    tail.innerHTML = tailSvg(TAIL_SVG_COLOR);
     bubble.appendChild(tail);
   }
 
@@ -744,7 +748,7 @@ function renderVideoContent(inner, mc, msg, mediaOnly) {
     img.addEventListener('load', () => classifyImage(img));
     wrapper.appendChild(img);
     const dur = document.createElement('span');
-    dur.style.cssText = 'position:absolute;bottom:4px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:12px;padding:1px 6px;border-radius:4px;';
+    dur.style.cssText = 'position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,0.35);color:#fff;font-size:13px;padding:2px 8px;border-radius:999px;';
     dur.textContent = formatDuration(mc.duration || 0);
     wrapper.appendChild(dur);
     inner.appendChild(wrapper);
@@ -899,11 +903,13 @@ function formatDateLabel(ts) {
   try {
     const d = new Date(ts);
     const now = new Date();
-    if (d.toDateString() === now.toDateString()) return 'Today';
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+    const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
+    const dayMonth = d.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
+    return weekday + ', ' + dayMonth;
   } catch(e) {
     return '';
   }
