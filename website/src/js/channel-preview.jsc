@@ -608,9 +608,15 @@ function renderMessages(container, messages, membersMap, channel) {
       row.appendChild(spacer);
     }
 
+    const col = document.createElement('div');
     const bubble = renderBubble(msg, member, showTail);
-    row.appendChild(bubble);
+    col.appendChild(bubble);
 
+    if (msg.reactions && msg.reactions.length > 0) {
+      col.appendChild(renderReactions(msg.reactions));
+    }
+
+    row.appendChild(col);
     container.appendChild(row);
     prevMsg = msg;
   }
@@ -665,10 +671,6 @@ function renderBubble(msg, member, showTail) {
     default:
       renderTextContent(inner, msg);
       break;
-  }
-
-  if (msg.reactions && msg.reactions.length > 0) {
-    inner.appendChild(renderReactions(msg.reactions));
   }
 
   bubble.appendChild(inner);
