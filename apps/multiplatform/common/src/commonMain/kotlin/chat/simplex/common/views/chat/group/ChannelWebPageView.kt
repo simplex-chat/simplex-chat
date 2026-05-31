@@ -86,7 +86,7 @@ fun ChannelWebPageView(
   }
 
   BackHandler(onBack = closeWithAlert)
-  ModalView(close = closeWithAlert) {
+  ModalView(close = closeWithAlert, cardScreen = true) {
     ChannelWebPageLayout(
       isChannel = isChannel,
       webPage = webPage,
