@@ -2776,6 +2776,7 @@ export interface GroupRelay {
   userChatRelay: UserChatRelay
   relayStatus: RelayStatus
   relayLink?: string
+  relayCap: RelayCapabilities
 }
 
 export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
@@ -3356,6 +3357,13 @@ export namespace ProxyError {
   }
 }
 
+export interface PublicGroupAccess {
+  groupWebPage?: string
+  groupDomain?: string
+  domainWebPage: boolean
+  allowEmbedding: boolean
+}
+
 export interface PublicGroupData {
   publicMemberCount: number // int64
 }
@@ -3364,6 +3372,7 @@ export interface PublicGroupProfile {
   groupType: GroupType
   groupLink: string
   publicGroupId: string
+  publicGroupAccess?: PublicGroupAccess
 }
 
 export type RCErrorType = 
@@ -3750,6 +3759,10 @@ export namespace RcvMsgError {
     type: "parseError"
     parseError: string
   }
+}
+
+export interface RelayCapabilities {
+  baseWebUrl?: string
 }
 
 export interface RelayProfile {

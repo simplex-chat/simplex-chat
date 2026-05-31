@@ -2210,10 +2210,24 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 }
 
 @Serializable
+data class PublicGroupAccess(
+  val groupWebPage: String? = null,
+  val groupDomain: String? = null,
+  val domainWebPage: Boolean = false,
+  val allowEmbedding: Boolean = false
+)
+
+@Serializable
+data class RelayCapabilities(
+  val baseWebUrl: String? = null
+)
+
+@Serializable
 data class PublicGroupProfile(
   val groupType: GroupType,
   val groupLink: String,
-  val publicGroupId: String
+  val publicGroupId: String,
+  val publicGroupAccess: PublicGroupAccess? = null
 )
 
 @Serializable
@@ -2337,7 +2351,8 @@ data class GroupRelay(
   val groupMemberId: Long,
   val userChatRelay: UserChatRelay,
   val relayStatus: RelayStatus,
-  val relayLink: String? = null
+  val relayLink: String? = null,
+  val relayCap: RelayCapabilities
 ) {
   val id: Long get() = groupRelayId
 }
