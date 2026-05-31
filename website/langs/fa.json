@@ -257,5 +257,9 @@
     "simplex-network-overlay-card-1-li-3": "P2P مشکل <a href='https://en.wikipedia.org/wiki/Man-in-the-middle_attack'>حملات MITM</a> را حل نمی‌کند و بیشتر پیاده‌سازی‌های موجود از پیام‌های خارج از باند برای تبادل کلید اولیه استفاده نمی‌کنند. SimpleX از پیام‌های خارج از باند یا در برخی موارد، از اتصالات امن و مورد اعتماد پیشین برای تبادل کلید اولیه استفاده می‌کند.",
     "simplex-network-overlay-card-1-li-4": "پیاده‌سازی‌های P2P می‌توانند توسط برخی از ارائه‌دهندگان اینترنت (مانند <a href='https://en.wikipedia.org/wiki/BitTorrent'>BitTorrent</a>) مسدود شوند. SimpleX مستقل از نوع حمل و نقل است — این امکان را دارد که بر روی پروتکل‌های وب استاندارد، مانند WebSockets، کار کند.",
     "directory": "دایرکتوری",
-    "about-and-contact-us": "درباره ما و تماس با ما"
+    "about-and-contact-us": "درباره ما و تماس با ما",
+    "navbar-token": "توکن",
+    "docs-dropdown-15": "بررسی و بازتولید ساخت‌ها",
+    "index-hero-h1": "آزاد<br>باش",
+    "index-hero-h2": "در شبکه شما"
 }
