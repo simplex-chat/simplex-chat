@@ -186,7 +186,7 @@ const STYLE = `
   right: 12px;
   font-size: 12px;
   color: #fff;
-  mix-blend-mode: difference;
+  text-shadow: 0 0 4px rgba(0,0,0,0.7), 0 0 2px rgba(0,0,0,0.9);
   white-space: nowrap;
 }
 
@@ -763,7 +763,7 @@ function renderVideoContent(inner, mc, msg, mediaOnly) {
     img.addEventListener('load', () => classifyImage(img));
     wrapper.appendChild(img);
     const dur = document.createElement('span');
-    dur.style.cssText = 'position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,0.35);color:#fff;font-size:13px;padding:2px 8px;border-radius:999px;';
+    dur.style.cssText = 'position:absolute;bottom:6px;left:12px;color:#fff;font-size:12px;text-shadow:0 0 4px rgba(0,0,0,0.7),0 0 2px rgba(0,0,0,0.9);';
     dur.textContent = formatDuration(mc.duration || 0);
     wrapper.appendChild(dur);
     inner.appendChild(wrapper);
