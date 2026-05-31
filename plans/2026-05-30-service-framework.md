@@ -33,7 +33,7 @@ Send errors: `sendDirectContactMessage` can throw synchronous errors (contact no
 
 ### Badge service: custom APIs with persistence
 
-Badge does NOT use `APICallService`. It has its own commands (`APIIssueBadge`, `APIRenewBadge`, `APIRedeemBadge`, `APIBadgeStripeLink`) that use the same underlying plumbing (send message to service contact, receive reply via Subscriber) but add persistence:
+Badge does NOT use `APICallService`. It has its own commands (`APIIssueBadge`, `APIRedeemBadge`, `APIBadgeStripeLink`) that use the same underlying plumbing (send message to service contact, receive reply via Subscriber) but add persistence:
 
 - Before sending, persist `(ms, receipt, status=pending)` in DB
 - If response arrives after timeout or restart, Subscriber matches it to pending request, stores credential, notifies UI via event
@@ -45,36 +45,32 @@ Badge does NOT use `APICallService`. It has its own commands (`APIIssueBadge`, `
 
 ### Haskell
 
-Per-service types are plain ADTs in their own modules:
+Per-service command and response types are plain ADTs:
 
 ```haskell
--- Simplex.Chat.Service.Badge
 data BadgeCommand
-  = BCIssue ByteString ByteString       -- ms receipt (Apple/Google)
-  | BCRenew ByteString ByteString       -- ms receipt
-  | BCRedeem Text                        -- redemption code
-  | BCStripeLink ByteString              -- ms -> returns checkout URL
+  = BCIssue Text Text    -- ms receipt (Apple/Google/Stripe)
+  | BCRedeem Text         -- redemption code
+  | BCStripeLink Text     -- ms, returns checkout URL
 
 data BadgeResponse
-  = BRCredential ByteString UTCTime Int  -- signature expiry level
-  | BRStripeLink Text                    -- checkout URL
+  = BRCredential Text UTCTime Int  -- signature expiry level
+  | BRStripeLink Text              -- checkout URL
   | BRError Text
 
--- Simplex.Chat.Service.Directory
 data DirectoryCommand = DCSearch Text
 
-data DirectoryResponse = DRResult [GroupInfo]
+data DirectoryResponse = DRResult [Text]
 
--- Simplex.Chat.Service.Names
-data NamesCommand = NCResolve SimplexNameInfo
+data NamesCommand = NCResolve Text
 
 data NamesResponse
-  = NRResolved AConnectionLink
+  = NRResolved Text
   | NRNotFound
   | NRError Text
 ```
 
-Top-level GADT wraps per-service types with the type tag:
+GADT wraps per-service types with the type tag:
 
 ```haskell
 data ServiceCommand (s :: ServiceType) where
@@ -89,62 +85,42 @@ data ServiceResponse (s :: ServiceType) where
 
 data AServiceCommand = forall s. ServiceTypeI s => ASC (SServiceType s) (ServiceCommand s)
 data AServiceResponse = forall s. ServiceTypeI s => ASR (SServiceType s) (ServiceResponse s)
+```
 
--- ChatCommand (Controller.hs ~line 480)
+Chat API:
+
+```haskell
+-- ChatCommand
 | APICallService UserId AServiceCommand
 
--- ChatResponse (Controller.hs ~line 764)
+-- ChatResponse
 | CRServiceResponse User AServiceResponse
 ```
 
-### Kotlin
+### Serialization
 
-```kotlin
-// sealed class CC (SimpleXAPI.kt:3643)
-class APICallService(val userId: Long, val serviceType: ServiceType, val command: ServiceCmd): CC()
+Two JSON representations for per-service response types:
 
-// ServiceType enum
-enum class ServiceType { BADGE, DIRECTORY, NAMES }
-
-// ServiceCmd sealed per service type
-sealed class ServiceCmd {
-  sealed class Badge : ServiceCmd() {
-    class Issue(val ms: String, val receipt: String) : Badge()
-    class Renew(val ms: String, val receipt: String) : Badge()
-    class Redeem(val code: String) : Badge()
-    class StripeLink(val ms: String) : Badge()
-  }
-  sealed class Names : ServiceCmd() {
-    class Resolve(val nameInfo: SimplexNameInfo) : Names()
-  }
-}
-
-// sealed class CR (SimpleXAPI.kt:6347)
-@Serializable @SerialName("serviceResponse")
-class CRServiceResponse(val user: UserLike, val serviceType: ServiceType, val response: ServiceResp): CR()
-```
-
-### Command string format
-
-`/_service badge /issue <base64_ms> <base64_receipt>`
-
-Parser in Commands.hs extracts service type, dispatches to per-service parser:
+**Platform-specific** (chat API, `CRServiceResponse` → Kotlin/Swift): uses `sumTypeJSON` which is `TaggedObject` on Kotlin (`{"type": "credential", ...}`) and `ObjectWithSingleField` + `_owsf` tag on iOS. Derived via TH:
 
 ```haskell
-"/_service " *> do
-  serviceType_ <* A.space >>= \case
-    SSTBadge -> ASC SSTBadge <$> badgeCommandP
-    SSTDirectory -> ASC SSTDirectory <$> directoryCommandP
-    SSTNames -> ASC SSTNames <$> namesCommandP
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BR") ''BadgeResponse)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DR") ''DirectoryResponse)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NR") ''NamesResponse)
 ```
 
-where `serviceType_` parses `"badge"` / `"directory"` / `"names"` into the singleton.
+**Platform-independent** (wire YAML, messages between app and service bot): uses `singleFieldJSON` (`ObjectWithSingleField`, no `_owsf` tag). Single-key discriminated union. Via `ServiceJSON` newtype:
 
-### Wire format (messages between app and service bot)
+```haskell
+newtype ServiceJSON a = ServiceJSON {serviceJSON :: a}
 
-Commands sent as text: `/<command> [args...]`
+-- TH helper generates ToJSON/FromJSON for ServiceJSON a using singleFieldJSON
+$(deriveServiceJSON (dropPrefix "BR") ''BadgeResponse)
+$(deriveServiceJSON (dropPrefix "DR") ''DirectoryResponse)
+$(deriveServiceJSON (dropPrefix "NR") ''NamesResponse)
+```
 
-Responses as YAML discriminated union (top-level key is the tag):
+Wire YAML examples:
 
 ```yaml
 credential:
@@ -164,7 +140,19 @@ error:
   message: This receipt has already been redeemed
 ```
 
-Correlation: service responds with reply-to referencing the command message.
+`AServiceResponse` has manual `ToJSON`/`FromJSON` instances for the chat API (wrapping the service type tag + platform-specific response JSON).
+
+Commands are parsed from strings (attoparsec), not JSON. No JSON instances for command types.
+
+### Command string format
+
+`/_service badge /issue <base64_ms> <base64_receipt>`
+
+Parser dispatches on service type, then to per-service command parser.
+
+### Correlation
+
+Service responds with reply-to referencing the command message (`quotedSharedMsgId`).
 
 ## Service contacts
 
