@@ -377,6 +377,8 @@ const STYLE = `
 }
 `;
 
+const DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25.8 25.46"><circle cx="12.9" cy="12.73" r="12.72" fill="#eee"/><path d="M25.44 12.73c0 7.01-5.71 12.73-12.73 12.73C5.71 25.46 0 19.75 0 12.73 0 5.73 5.71.02 12.71.02c7.01 0 12.73 5.71 12.73 12.72zM4.22 17.11c0 .58.31.87 1.05.87h4.88c-.14-.26-.19-.55-.19-.82 0-1.03.59-2.19 1.63-3.1-.79-.5-1.75-.79-2.74-.79-2.37 0-4.63 1.68-4.63 3.84zm6.6.05c0 .56.36.82 1.27.82h8.1c.93 0 1.26-.26 1.26-.82 0-1.62-2.02-3.87-5.28-3.87-3.29 0-5.34 2.25-5.34 3.87zM6.66 9.87c0 1.37 1.01 2.42 2.19 2.42 1.2 0 2.2-1.05 2.2-2.43 0-1.33-1.02-2.36-2.2-2.36-1.16 0-2.19 1.05-2.19 2.37zm6.98-.5c0 1.56 1.13 2.78 2.52 2.78 1.36 0 2.5-1.22 2.5-2.79 0-1.53-1.15-2.71-2.5-2.71-1.38 0-2.52 1.21-2.52 2.73z" fill="#ccc" fill-opacity=".85"/></svg>');
+
 const TAIL_SVG = `<svg width="11" height="17" viewBox="0 0 11 17" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 0 L11 17 L0 17 Q9 14.5 9 5.7 L9 0 Z" fill="#f5f5f6"/></svg>`;
 
 const FILE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>`;
@@ -457,9 +459,8 @@ function renderHeader(channel, groupLink, subscriberCount) {
 
   const avatar = document.createElement('img');
   avatar.className = 'simplex-preview-header-avatar';
-  avatar.src = channel.image ? channel.image : '/img/group.svg';
+  avatar.src = channel.image || DEFAULT_AVATAR;
   avatar.alt = channel.displayName;
-  avatar.addEventListener('error', () => avatar.src = '/img/group.svg');
   header.appendChild(avatar);
 
   const info = document.createElement('div');
@@ -553,9 +554,8 @@ function renderMessages(container, messages, membersMap) {
     if (showAvatar && member) {
       const avatarImg = document.createElement('img');
       avatarImg.className = 'simplex-preview-msg-avatar';
-      avatarImg.src = member.image || '/img/group.svg';
+      avatarImg.src = member.image || DEFAULT_AVATAR;
       avatarImg.alt = member.displayName;
-      avatarImg.addEventListener('error', () => avatarImg.src = '/img/group.svg');
       row.appendChild(avatarImg);
     } else {
       const spacer = document.createElement('div');
