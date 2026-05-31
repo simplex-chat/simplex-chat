@@ -165,7 +165,7 @@ videoFilePrefix :: String
 videoFilePrefix = "video_"
 
 -- enableSndFiles has no effect when mainApp is True
-startChatController :: Bool -> Bool -> CM' (Async ())
+startChatController :: Bool -> Bool -> CM' ()
 startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
@@ -174,8 +174,7 @@ startChatController mainApp enableSndFiles = do
     Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
     Right _ -> pure ()
   restoreCalls
-  s <- asks agentAsync
-  readTVarIO s >>= maybe (start s users) (pure . fst)
+  unlessM (chatReadVar' chatRunning) $ start users
   where
     syncConnections' users =
       whenM (withFastStore' shouldSyncConnections) $ do
@@ -184,13 +183,13 @@ startChatController mainApp enableSndFiles = do
         (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
         withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
-    start s users = do
-      a1 <- async $ forever (liftIO $ threadDelay maxBound)
-      a2 <-
+    start users = do
+      a <-
         if mainApp
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
-      atomically . writeTVar s $ Just (a1, a2)
+      chatWriteVar' chatRunning True
+      chatWriteVar' subscribeAsync a
       if mainApp
         then do
           startXFTP xftpStartWorkers
@@ -201,7 +200,6 @@ startChatController mainApp enableSndFiles = do
           void $ forkIO $ mapM_ startExpireCIs users
           startRelayChecks users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
-      pure a1
     startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
       runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
@@ -279,17 +277,18 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+stopChatController ChatController {smpAgent, chatRunning, subscribeAsync, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
-  readTVarIO s >>= mapM_ (\(a1, a2) -> forkIO $ uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  readTVarIO subscribeAsync >>= mapM_ (void . forkIO . uninterruptibleCancel)
   closeFiles sndFiles
   closeFiles rcvFiles
   atomically $ do
     keys <- M.keys <$> readTVar expireCIFlags
     forM_ keys $ \k -> TM.insert k False expireCIFlags
-    writeTVar s Nothing
+    writeTVar chatRunning False
+    writeTVar subscribeAsync Nothing
   where
     closeFiles :: TVar (Map Int64 Handle) -> IO ()
     closeFiles files = do
@@ -481,10 +480,9 @@ processChatCommand vr nm = \case
     withChatLock "deleteUser" $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
   StartChat {mainApp, enableSndFiles} -> withUser' $ \_ ->
-    asks agentAsync >>= readTVarIO >>= \case
-      Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
-  CheckChatRunning -> maybe CRChatStopped (const CRChatRunning) <$> chatReadVar agentAsync
+    ifM (chatReadVar chatRunning) (pure CRChatRunning) $
+      checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
+  CheckChatRunning -> ifM (chatReadVar chatRunning) (pure CRChatRunning) (pure CRChatStopped)
   APIStopChat -> do
     ask >>= liftIO . stopChatController
     pure CRChatStopped
@@ -3465,7 +3463,7 @@ processChatCommand vr nm = \case
         CTGroup -> withFastStore' $ \db -> getMessageMentions db user chatId msg
         _ -> pure []
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
-    checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
+    checkChatStopped a = ifM (chatReadVar chatRunning) (throwChatError CEChatNotStopped) a
     setStoreChanged :: CM ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
 #if !defined(dbPostgres)

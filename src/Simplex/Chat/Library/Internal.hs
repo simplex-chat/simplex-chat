@@ -2804,16 +2804,16 @@ checkSameUser :: UserId -> User -> CM ()
 checkSameUser userId User {userId = activeUserId} = when (userId /= activeUserId) $ throwChatError (CEDifferentActiveUser userId activeUserId)
 
 chatStarted :: CM' Bool
-chatStarted = fmap isJust . readTVarIO =<< asks agentAsync
+chatStarted = readTVarIO =<< asks chatRunning
 
 waitChatStartedAndActivated :: CM' ()
 waitChatStartedAndActivated = do
-  agentStarted <- asks agentAsync
+  chatRunning' <- asks chatRunning
   chatActivated <- asks chatActivated
   atomically $ do
-    started <- readTVar agentStarted
+    started <- readTVar chatRunning'
     activated <- readTVar chatActivated
-    unless (isJust started && activated) retry
+    unless (started && activated) retry
 
 chatVersionRange :: CM VersionRangeChat
 chatVersionRange = lift chatVersionRange'

@@ -164,7 +164,8 @@ newChatController
       mkChatController config randomPresetServers randomAgentServers ccVar smpAgent = do
         currentUser <- newTVarIO user
         currentRemoteHost <- newTVarIO Nothing
-        agentAsync <- newTVarIO Nothing
+        chatRunning <- newTVarIO False
+        subscribeAsync <- newTVarIO Nothing
         random <- liftIO C.newRandom
         eventSeq <- newTVarIO 0
         inputQ <- newTBQueueIO tbqSize
@@ -206,7 +207,8 @@ newChatController
                   randomAgentServers,
                   currentRemoteHost,
                   smpAgent,
-                  agentAsync,
+                  chatRunning,
+                  subscribeAsync,
                   chatStore,
                   chatStoreChanged,
                   random,

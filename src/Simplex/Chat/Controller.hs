@@ -231,7 +231,8 @@ data ChatController = ChatController
     currentRemoteHost :: TVar (Maybe RemoteHostId),
     firstTime :: Bool,
     smpAgent :: AgentClient,
-    agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
+    chatRunning :: TVar Bool,
+    subscribeAsync :: TVar (Maybe (Async ())),
     chatStore :: DBStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     random :: TVar ChaChaDRG,
