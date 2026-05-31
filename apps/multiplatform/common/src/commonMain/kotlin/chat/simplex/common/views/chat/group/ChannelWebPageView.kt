@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
@@ -115,11 +116,10 @@ private fun ChannelWebPageLayout(
 
     val embedCode = embedCode(groupRelays, groupInfo)
     if (embedCode != null) {
-      SectionItemView {
-        Text(stringResource(MR.strings.webpage_info), color = MaterialTheme.colors.secondary)
-      }
+      SectionTextFooter(stringResource(MR.strings.webpage_info))
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.webpage_code).uppercase()) {
+      SectionView(stringResource(MR.strings.webpage_code)) {
         SectionItemView {
           Text(
             embedCode,
@@ -139,17 +139,15 @@ private fun ChannelWebPageLayout(
       }
       SectionTextFooter(stringResource(MR.strings.webpage_code_footer))
     } else {
-      SectionItemView {
-        Text(stringResource(MR.strings.relays_no_web_support), color = MaterialTheme.colors.secondary)
-      }
+      SectionTextFooter(stringResource(MR.strings.relays_no_web_support))
     }
+    SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.enter_webpage_url).uppercase()) {
-      SectionItemView {
-        ProfileNameField(webPage, stringResource(MR.strings.web_page_url_placeholder))
-      }
+    SectionView(stringResource(MR.strings.enter_webpage_url)) {
+      PlainTextEditor(webPage, placeholder = stringResource(MR.strings.web_page_url_placeholder))
     }
     SectionTextFooter(stringResource(MR.strings.webpage_url_footer))
+    SectionDividerSpaced()
 
     SectionView {
       PreferenceToggle(stringResource(MR.strings.allow_anyone_to_embed), checked = allowEmbedding.value) {
@@ -157,6 +155,7 @@ private fun ChannelWebPageLayout(
       }
     }
     SectionTextFooter(stringResource(if (allowEmbedding.value) MR.strings.embed_any_webpage_can_show else MR.strings.embed_only_your_page))
+    SectionDividerSpaced()
 
     SectionView {
       SectionItemView(save, disabled = dataUnchanged) {
