@@ -150,10 +150,10 @@ const STYLE = `
   position: relative;
   background: #f5f5f6;
   border-radius: 18px;
-  max-width: 75%;
   min-width: 80px;
   overflow: hidden;
 }
+
 
 .simplex-preview-bubble.has-tail {
   border-bottom-left-radius: 4px;
@@ -241,7 +241,7 @@ const STYLE = `
 
 .simplex-preview-image {
   display: block;
-  max-width: 100%;
+  max-width: 500px;
   border-radius: 0;
 }
 
@@ -446,7 +446,7 @@ function render(container, data, groupLink) {
 
   const messagesDiv = document.createElement('div');
   messagesDiv.className = 'simplex-preview-messages';
-  renderMessages(messagesDiv, messages, membersMap);
+  renderMessages(messagesDiv, messages, membersMap, channel);
   container.appendChild(messagesDiv);
 
   setupStickyHeader(header);
@@ -516,7 +516,7 @@ function setupSecretToggles(container) {
   });
 }
 
-function renderMessages(container, messages, membersMap) {
+function renderMessages(container, messages, membersMap, channel) {
   let prevMsg = null;
   let prevDate = null;
 
@@ -535,27 +535,29 @@ function renderMessages(container, messages, membersMap) {
 
     const separation = getItemSeparation(msg, prevMsg);
     const nextSeparation = getItemSeparation(nextMsg, msg);
-    const showName = separation.largeGap && msg.sender != null;
-    const showAvatar = separation.largeGap && msg.sender != null;
+    const showName = separation.largeGap;
+    const showAvatar = separation.largeGap;
     const showTail = nextSeparation.largeGap;
 
     const member = msg.sender ? membersMap[msg.sender] : null;
+    const senderName = member ? member.displayName : channel.displayName;
+    const senderImage = member ? member.image : channel.image;
 
     const row = document.createElement('div');
     row.className = 'simplex-preview-msg-row' + (nextSeparation.largeGap ? ' has-gap' : '');
 
-    if (showName && member) {
+    if (showName) {
       const nameDiv = document.createElement('div');
       nameDiv.className = 'simplex-preview-msg-name';
-      nameDiv.textContent = member.displayName;
+      nameDiv.textContent = senderName;
       container.appendChild(nameDiv);
     }
 
-    if (showAvatar && member) {
+    if (showAvatar) {
       const avatarImg = document.createElement('img');
       avatarImg.className = 'simplex-preview-msg-avatar';
-      avatarImg.src = member.image || DEFAULT_AVATAR;
-      avatarImg.alt = member.displayName;
+      avatarImg.src = senderImage || DEFAULT_AVATAR;
+      avatarImg.alt = senderName;
       row.appendChild(avatarImg);
     } else {
       const spacer = document.createElement('div');
@@ -822,7 +824,7 @@ function renderReactions(reactions) {
 
 function getItemSeparation(msg, prevMsg) {
   if (!prevMsg || !msg) return { largeGap: true };
-  const sameSender = msg.sender != null && prevMsg.sender != null && msg.sender === prevMsg.sender;
+  const sameSender = msg.sender === prevMsg.sender;
   if (!sameSender) return { largeGap: true };
   const t1 = new Date(prevMsg.ts).valueOf();
   const t2 = new Date(msg.ts).valueOf();
