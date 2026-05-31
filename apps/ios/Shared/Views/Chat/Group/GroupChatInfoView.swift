@@ -112,6 +112,7 @@ struct GroupChatInfoView: View {
                             // TODO [relays] allow other owners to manage channel link (requires protocol changes to share link ownership)
                             if groupInfo.isOwner && groupLink != nil {
                                 channelLinkButton()
+                                channelWebAccessButton()
                             } else if let link = groupInfo.groupProfile.publicGroup?.groupLink {
                                 SimpleXLinkQRCode(uri: link)
                                 Button {
@@ -324,6 +325,15 @@ struct GroupChatInfoView: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage,
+               let url = URL(string: webPage) {
+                Link(destination: url) {
+                    Text(webPage)
+                        .font(.subheadline)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
             }
             if groupInfo.useRelays,
                let count = groupInfo.groupSummary.publicMemberCount,
@@ -645,6 +655,16 @@ struct GroupChatInfoView: View {
             groupLinkDestinationView()
         } label: {
             Label("Channel link", systemImage: "link")
+        }
+    }
+
+    private func channelWebAccessButton() -> some View {
+        NavigationLink {
+            ChannelWebAccessView(groupInfo: $groupInfo)
+                .navigationBarTitle("Web access")
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Web page", systemImage: "globe")
         }
     }
 
