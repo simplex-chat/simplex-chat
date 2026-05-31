@@ -310,7 +310,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/img")
   ty.addPassthroughCopy("src/video")
   ty.addPassthroughCopy("src/css")
-  ty.addPassthroughCopy("src/js")
+  ty.addPassthroughCopy("src/js/**/*.js")
   ty.addPassthroughCopy("src/lottie_file")
   ty.addPassthroughCopy("src/contact/*.js")
   ty.addPassthroughCopy("src/call")
