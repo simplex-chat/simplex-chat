@@ -1918,6 +1918,14 @@
   <string name="button_welcome_message">Welcome message</string>
   <string name="group_link">Group link</string>
   <string name="channel_link">Channel link</string>
+  <string name="channel_webpage">Channel webpage</string>
+  <string name="group_webpage">Group webpage</string>
+  <string name="web_page">Web page</string>
+  <string name="web_page_url_placeholder">Web page URL</string>
+  <string name="allow_embedding">Allow embedding</string>
+  <string name="web_page_footer">Set a web page URL where your channel preview is hosted. Allow embedding to let any website embed the preview.</string>
+  <string name="embed_code">Embed code</string>
+  <string name="copy_embed_code">Copy embed code</string>
   <string name="create_group_link">Create group link</string>
   <string name="button_create_group_link">Create link</string>
   <string name="delete_link_question">Delete link?</string>
