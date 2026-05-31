@@ -26,30 +26,29 @@ struct ChannelWebAccessView: View {
     }
 
     var body: some View {
-        let isChannel = groupInfo.useRelays
         List {
-            Section {
-                Text("Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting.")
-                    .foregroundColor(theme.colors.secondary)
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-
             if let code = embedCode {
+                webpageInfo("Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting.")
+
                 Section {
-                    Text(code)
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
+                    ScrollView {
+                        Text(code)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                    }
+                    .frame(maxHeight: 88)
                     Button {
                         UIPasteboard.general.string = code
                     } label: {
-                        Label("Copy page code", systemImage: "doc.on.doc")
+                        Label("Copy code", systemImage: "doc.on.doc")
                     }
                 } header: {
-                    Text("Page code")
+                    Text("Webpage code")
                 } footer: {
-                    Text("Add this code to your HTML page. It will load and display the last messages from your channel.")
+                    Text("Add this code to your webpage. It will display the preview of your channel / group.")
                 }
+            } else {
+                webpageInfo("Used chat relays do not support webpages.")
             }
 
             Section {
@@ -58,15 +57,15 @@ struct ChannelWebAccessView: View {
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
             } header: {
-                Text("Page URL")
+                Text("Enter webpage URL")
             } footer: {
-                Text("Enter the URL where you host this page. It will be shown to subscribers and used to allow loading the preview.")
+                Text("It will be shown to subscribers and used to allow loading the preview.")
             }
 
             Section {
-                Toggle("Allow any website to embed", isOn: $allowEmbedding)
+                Toggle("Allow anyone to embed", isOn: $allowEmbedding)
             } footer: {
-                Text("When off, only your page URL above can load the preview.")
+                Text(allowEmbedding ? "Any webpage can show the preview." : "Only your page above can show the preview.")
             }
 
             Section {
@@ -74,7 +73,7 @@ struct ChannelWebAccessView: View {
                     saveAccess()
                 } label: {
                     HStack {
-                        Text(isChannel ? "Save and notify subscribers" : "Save and notify members")
+                        Text(groupInfo.isChannel ? "Save and notify subscribers" : "Save and notify members")
                         if saving { Spacer(); ProgressView() }
                     }
                 }
@@ -101,6 +100,15 @@ struct ChannelWebAccessView: View {
         }
     }
 
+    private func webpageInfo(_ text: LocalizedStringKey) -> some View {
+        Section {
+            Text(text).foregroundColor(theme.colors.secondary)
+        }
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 0, trailing: 16))
+    }
+
     private var hasChanges: Bool {
         let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
         let currentWebPage = access?.groupWebPage ?? ""
@@ -113,18 +121,18 @@ struct ChannelWebAccessView: View {
     }
 
     private var embedCode: String? {
-        guard let pg = groupInfo.groupProfile.publicGroup else { return nil }
-        guard !relayUrls.isEmpty else { return nil }
-        let publicGroupId = pg.publicGroupId
-        let groupLink = pg.groupLink
-        let urls = relayUrls.joined(separator: ",")
-        return """
+        if let pg = groupInfo.groupProfile.publicGroup,
+           !relayUrls.isEmpty {
+            """
             <div data-simplex-group-preview
-                 data-relay-urls="\(urls)"
-                 data-public-group-id="\(publicGroupId)"
-                 data-group-link="\(groupLink)"></div>
+                 data-relay-urls="\(relayUrls.joined(separator: ","))"
+                 data-public-group-id="\(pg.publicGroupId)"
+                 data-group-link="\(pg.groupLink)"></div>
             <script src="https://simplex.chat/js/channel-preview.js"></script>
             """
+        } else {
+            nil
+        }
     }
 
     private func saveAccess() {

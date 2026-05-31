@@ -4881,7 +4881,7 @@ runRelayGroupLinkChecks user = do
     sendRelayCapIfNeeded vr gInfo = do
       ChatConfig {webPreviewConfig} <- asks config
       let currentWebUrl = (\WebPreviewConfig {baseWebUrl} -> baseWebUrl) <$> webPreviewConfig
-      sentWebUrl <- withStore' $ \db -> getRelaySentWebUrl db gInfo
+      sentWebUrl <- withStore' (`getRelaySentWebUrl` gInfo)
       when (currentWebUrl /= sentWebUrl) $ do
         owners <- withStore' $ \db -> getGroupOwners db vr user gInfo
         let capableOwners = filter (\m -> memberCurrent m && m `supportsVersion` relayWebCapVersion) owners
