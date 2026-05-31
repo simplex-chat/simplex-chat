@@ -4716,7 +4716,6 @@ processAgentEvent (corrId, entId, AEvt e msg) = run $ case e of
   where
     run action = action `catchAllOwnErrors'` eToView'
 
-
 type AgentSubResult = Map ConnId (Either AgentErrorType ())
 
 cleanupManager :: CM ()
