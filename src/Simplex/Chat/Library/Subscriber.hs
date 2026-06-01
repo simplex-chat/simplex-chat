@@ -627,9 +627,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
               subMode <- chatReadVar subscriptionMode
-              groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
+              groupConnIds <- prepareAgentCreation user CFCreateConnGrpInv True SCMInvitation
               gVar <- asks random
               withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
+              uncurry (createAgentConnectionAsync user) groupConnIds True SCMInvitation subMode
         -- TODO REMOVE LEGACY ^^^
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
@@ -1199,7 +1200,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
                       dm <- encodeConnInfo $ XMember profileToSend membershipMemId (MemberKey memberPubKey)
                       subMode <- chatReadVar subscriptionMode
-                      void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
+                      (cmdId, connId) <- prepareAgentJoin user (Just conn) True cReq
+                      joinAgentConnectionAsync user cmdId True connId True cReq dm subMode
             CFGetRelayDataAccept -> do
               let GroupMember {memberId = MemberId expectedMemberId} = m
               if linkEntityId == Just expectedMemberId
@@ -1583,10 +1585,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               subMode <- chatReadVar subscriptionMode
               chatVR <- chatVersionRange
               let chatV = chatVR `peerConnChatVersion` chatVRange
-              (cmdId, acId) <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+              (cmdId, acId) <- prepareAgentAccept user True invId PQSupportOff
               withStore $ \db -> do
                 Connection {connId = testCId} <- createRelayTestConnection db vr user acId ConnAccepted chatV subMode
                 liftIO $ setCommandConnId db user cmdId testCId
+              agentAcceptContactAsync user cmdId acId True invId msg PQSupportOff chatV subMode
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
         memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> MemberKey -> CM ()
@@ -2507,12 +2510,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               then do
                 subMode <- chatReadVar subscriptionMode
                 dm <- encodeConnInfo $ XGrpAcpt membershipMemId
-                connIds <- joinAgentConnectionAsync user Nothing True connRequest dm subMode
+                connIds@(cmdId, acId) <- prepareAgentJoin user Nothing True connRequest
                 withStore' $ \db -> do
                   setViaGroupLinkUri db groupId connId
                   createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
                   updateGroupMemberStatusById db userId hostId GSMemAccepted
                   updateGroupMemberStatus db userId membership GSMemAccepted
+                joinAgentConnectionAsync user cmdId False acId True connRequest dm subMode
                 toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
               else do
                 let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
@@ -3047,15 +3051,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       | maxVersion mcvr >= groupDirectInvVersion -> do
                           subMode <- chatReadVar subscriptionMode
                           -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-                          groupConnIds <- createConn subMode
+                          groupConnIds <- prepareConn
                           let chatV = maybe (minVersion vr) (\peerVR -> vr `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
                           void $ withStore $ \db -> do
                             reMember <- createIntroReMember db user gInfo memInfo memRestrictions
                             createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
+                          uncurry (createAgentConnectionAsync user) groupConnIds (chatHasNtfs chatSettings) SCMInvitation subMode
                       | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
-        createConn subMode = createAgentConnectionAsync user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation subMode
+        prepareConn = prepareAgentCreation user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation
 
     sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> CM ()
     sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
@@ -3099,12 +3104,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
-      groupConnIds <- joinAgentConnectionAsync user Nothing (chatHasNtfs chatSettings) groupConnReq dm subMode
-      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user Nothing True dcr dm subMode
+      let enableNtfsGrp = chatHasNtfs chatSettings
+      groupConnIds@(gCmdId, gAcId) <- prepareAgentJoin user Nothing enableNtfsGrp groupConnReq
+      directConnIds <- forM directConnReq $ \dcr -> prepareAgentJoin user Nothing True dcr
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr `peerConnChatVersion` mcvr
       withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
+      joinAgentConnectionAsync user gCmdId False gAcId enableNtfsGrp groupConnReq dm subMode
+      forM_ ((,) <$> directConnIds <*> directConnReq) $ \((dCmdId, dAcId), dcr) ->
+        joinAgentConnectionAsync user dCmdId False dAcId True dcr dm subMode
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg@RcvMessage {msgSigned} brokerTs
@@ -3359,11 +3368,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             }
         joinExistingContact subMode mCt@Contact {contactId = mContactId}
           | autoAcceptMemberContacts user = do
-              (cmdId, acId) <- joinConn subMode
+              (cmdId, acId) <- prepareJoinMemberContact
               mCt' <- withStore $ \db -> do
                 updateMemberContactInvited db user mCt groupDirectInv
                 void $ liftIO $ createMemberContactConn db user acId (Just cmdId) g mConn ConnJoined mContactId subMode
                 getContact db vr user mContactId
+              joinMemberContactAsync cmdId acId subMode
               securityCodeChanged mCt'
               createItems mCt' m
           | otherwise = do
@@ -3377,13 +3387,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               createItems mCt' m
         createNewContact subMode
           | autoAcceptMemberContacts user = do
-              (cmdId, acId) <- joinConn subMode
+              (cmdId, acId) <- prepareJoinMemberContact
               -- [incognito] reuse membership incognito profile
               (mCt, m') <- withStore $ \db -> do
                 (mContactId, m') <- liftIO $ createMemberContactInvited db user g m groupDirectInv
                 void $ liftIO $ createMemberContactConn db user acId (Just cmdId) g mConn ConnJoined mContactId subMode
                 mCt <- getContact db vr user mContactId
                 pure (mCt, m')
+              joinMemberContactAsync cmdId acId subMode
               createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
               createItems mCt m'
           | otherwise = do
@@ -3396,12 +3407,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
               createInternalChatItem user (CDDirectRcv mCt) (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
               createItems mCt m'
-        joinConn subMode = do
+        prepareJoinMemberContact = prepareAgentJoin user Nothing True connReq
+        joinMemberContactAsync cmdId acId subMode = do
           -- [incognito] send membership incognito profile
           let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True
           -- TODO PQ should negotitate contact connection with PQSupportOn? (use encodeConnInfoPQ)
           dm <- encodeConnInfo $ XInfo p
-          joinAgentConnectionAsync user Nothing True connReq dm subMode
+          joinAgentConnectionAsync user cmdId False acId True connReq dm subMode
         createItems mCt' m' = do
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
           createInternalChatItem user (CDGroupRcv g' scopeInfo m'') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
