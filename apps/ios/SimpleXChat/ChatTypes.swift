@@ -2533,10 +2533,22 @@ public enum GroupType: Codable, Hashable {
     }
 }
 
+public struct PublicGroupAccess: Codable, Hashable {
+    public var groupWebPage: String?
+    public var groupDomain: String?
+    public var domainWebPage: Bool = false
+    public var allowEmbedding: Bool = false
+}
+
+public struct RelayCapabilities: Codable, Hashable {
+    public var baseWebUrl: String?
+}
+
 public struct PublicGroupProfile: Codable, Hashable {
     public var groupType: GroupType
     public var groupLink: String
     public var publicGroupId: String
+    public var publicGroupAccess: PublicGroupAccess?
 }
 
 public struct GroupProfile: Codable, NamedChat, Hashable {
@@ -2705,6 +2717,7 @@ public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
     public var userChatRelay: UserChatRelay
     public var relayStatus: RelayStatus
     public var relayLink: String?
+    public var relayCap: RelayCapabilities
     public var id: Int64 { groupRelayId }
 }
 
