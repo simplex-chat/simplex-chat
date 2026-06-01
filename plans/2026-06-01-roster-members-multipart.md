@@ -8,11 +8,11 @@ Channels pin every subscriber to observer, so they can't post. We want owners to
 
 ## The change in one sentence
 
-The roster becomes the owner-signed list of **all promoted members** (member, moderator, admin), delivered as a small **signed JSON header** plus a **packed binary blob split into parts** — so it can hold hundreds and scale to thousands.
+The roster becomes the owner-signed list of **all promoted members** — member, moderator, admin (owners stay on the link, never in the roster) — delivered as a small **signed JSON header** plus a **packed binary blob split into parts**, so it can hold hundreds and scale to thousands.
 
 ## Why a roster, and why members belong in it
 
-The relay defaults every joiner to observer, and it forwards a member's posts only if its own record says that member's role is above observer (`memberCanSend`). Role is owner-asserted only — a relay must never be able to invent a poster. So a member who can post must be established in the owner-signed roster, exactly like a moderator. The roster is how the relay authorizes posting and how members learn each other's keys.
+The relay defaults every joiner to observer, and it forwards a member's posts only if its own record says that member's role is above observer (`memberCanSend`). Role is owner-asserted only — a relay must never be able to invent a poster. So a member who can post must be established in the owner-signed roster, exactly like a moderator. The roster is how the relay authorizes posting and how members learn the keys and roles of the promoted set. The owner already learns each subscriber's key when they join, so promoting one needs no new key exchange.
 
 ## Roster entry
 
@@ -41,12 +41,12 @@ Why this shape: only the small header needs a signature, and signing already wor
 ## Storage and recovery
 
 - The relay caches the signed header + the parts **verbatim** — the same "store the signed bytes and replay" approach used for today's single-message roster — and replays them to joiners unchanged. It reassembles only transiently, to verify the hash and update its own member records.
-- Both relay and members **persist incoming parts in the database** and apply only when complete — so a restart mid-transfer resumes rather than losing progress. On the relay the stored parts double as the cache it replays.
-- Apply + version bump + buffer cleanup happen in **one transaction**.
+- Both relay and members **persist incoming parts in the database** and apply only when complete — so a restart mid-transfer resumes rather than losing progress, and a newer version supersedes any half-received older one. On the relay the stored parts double as the cache it replays.
+- Applying, bumping the version, and updating the parts buffer happen in **one transaction** — a member clears the buffer; a relay keeps the new version's parts as its cache and drops the old.
 
 ## One correctness point to keep in mind
 
-"All promoted members" (the blob) and "the moderation set" are different things. The join-time introduction flow (`introduceInChannel`) must keep using **moderators/admins only**. If it used the full member list, every new subscriber would be announced to every member and every member introduced to every joiner — large traffic, and it breaks subscriber anonymity. Members learn about each other through the forwarded roster blob, not through individual introductions.
+"All promoted members" (the blob) and "the moderation set" are different things. The join-time introduction flow (`introduceInChannel`) must keep using **moderators/admins only**. If it used the full member list, every new subscriber would be announced to every member and every member introduced to every joiner — large traffic, and it breaks subscriber anonymity. Members learn the promoted set — ids, roles, keys — from the forwarded roster blob, and each other's profiles when they post, not through individual introductions.
 
 ## Size cap
 
@@ -58,7 +58,7 @@ Because the roster is owner-signed, **only the owner can promote or demote membe
 
 ## Known limitations (inherited, not introduced here)
 
-- A malicious relay can withhold or corrupt a part, leaving a member on an older roster (it can drop any message regardless). Bounded by the documented new-joiner rollback gap.
+- A malicious relay can withhold or corrupt a part, leaving a member on its last-applied roster — the same staleness a relay can impose by dropping any message. Existing members are still protected from *rollback* by the version check; the separate new-joiner rollback gap is documented in the channels overview.
 - A just-promoted member's first posts may render as "unknown member" until the roster finishes arriving — self-healing on the next post.
 
 ## Out of scope
