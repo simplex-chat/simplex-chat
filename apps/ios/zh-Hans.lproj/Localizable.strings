@@ -1433,7 +1433,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "内容违反使用条款";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "继续";
 
 /* No comment provided by engineer. */
