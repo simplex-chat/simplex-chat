@@ -161,7 +161,7 @@ instance TextEncoding DeliveryTaskStatus where
 data MessageDeliveryJob = MessageDeliveryJob
   { jobId :: Int64,
     jobScope :: DeliveryJobScope,
-    singleSenderGMId_ :: Maybe GroupMemberId, -- Just for single-sender deliveries, Nothing for multi-sender deliveries
+    senderGMIds :: [GroupMemberId],
     body :: ByteString,
     cursorGMId_ :: Maybe GroupMemberId
   }

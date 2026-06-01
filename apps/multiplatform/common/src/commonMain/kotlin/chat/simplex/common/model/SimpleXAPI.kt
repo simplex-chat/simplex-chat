@@ -6067,7 +6067,8 @@ data class GroupPreferences(
 
 @Serializable
 data class GroupPreference(
-  val enable: GroupFeatureEnabled
+  val enable: GroupFeatureEnabled,
+  val role: GroupMemberRole? = null,
 ) {
   val on: Boolean get() = enable == GroupFeatureEnabled.ON
 

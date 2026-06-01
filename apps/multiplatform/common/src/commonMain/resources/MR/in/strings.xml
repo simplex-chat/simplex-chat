@@ -44,7 +44,7 @@
     <string name="smp_servers_add_to_another_device">Tambahkan ke perangkat lain</string>
     <string name="turn_off_battery_optimization_button">Boleh</string>
     <string name="network_smp_proxy_mode_always">Selalu</string>
-    <string name="settings_section_title_app">APLIKASI</string>
+    <string name="settings_section_title_app">Aplikasi</string>
     <string name="appearance_settings">Tampilan</string>
     <string name="about_simplex_chat">Tentang SimpleX Chat</string>
     <string name="accept">Terima</string>
@@ -293,7 +293,7 @@
     <string name="images_limit_title">Terlalu banyak gambar!</string>
     <string name="info_view_search_button">cari</string>
     <string name="info_view_call_button">panggilan</string>
-    <string name="settings_section_title_settings">PENGATURAN</string>
+    <string name="settings_section_title_settings">Pengaturan</string>
     <string name="for_everybody">Untuk semua orang</string>
     <string name="stop_file__action">Hentikan berkas</string>
     <string name="revoke_file__action">Cabut berkas</string>
@@ -643,9 +643,9 @@
     <string name="self_destruct_passcode">Kode sandi hapus otomatis</string>
     <string name="enable_self_destruct">Aktifkan hapus otomatis</string>
     <string name="set_passcode">Pasang kode sandi</string>
-    <string name="settings_section_title_help">BANTUAN</string>
-    <string name="settings_section_title_support">DUKUNG SIMPLEX CHAT</string>
-    <string name="settings_section_title_calls">PANGGILAN</string>
+    <string name="settings_section_title_help">Bantuan</string>
+    <string name="settings_section_title_support">Dukung SimpleX Chat</string>
+    <string name="settings_section_title_calls">Panggilan</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Mulai ulang aplikasi untuk buat profil obrolan baru.</string>
     <string name="delete_messages">Hapus pesan</string>
     <string name="rcv_group_event_member_left">keluar</string>
@@ -729,9 +729,9 @@
     <string name="privacy_media_blur_radius_medium">Sedang</string>
     <string name="privacy_media_blur_radius">Buram media</string>
     <string name="privacy_media_blur_radius_strong">Kuat</string>
-    <string name="settings_section_title_you">ANDA</string>
+    <string name="settings_section_title_you">Anda</string>
     <string name="privacy_media_blur_radius_soft">Lunak</string>
-    <string name="settings_section_title_chat_database">BASIS DATA OBROLAN</string>
+    <string name="settings_section_title_chat_database">Basis data obrolan</string>
     <string name="set_password_to_export">Setel frasa sandi untuk diekspor</string>
     <string name="open_database_folder">Buka folder basis data</string>
     <string name="rcv_group_event_user_deleted">menghapus anda</string>
@@ -968,7 +968,7 @@
     <string name="app_version_code">Build aplikasi: %s</string>
     <string name="core_version">Versi inti: v%s</string>
     <string name="network_smp_proxy_fallback_allow_protected">Ketika IP disembunyikan</string>
-    <string name="theme_colors_section_title">WARNA ANTARMUKA</string>
+    <string name="theme_colors_section_title">Warna antarmuka</string>
     <string name="update_network_smp_proxy_fallback_question">Fallback perutean pesan</string>
     <string name="update_network_smp_proxy_mode_question">Mode routing pesan</string>
     <string name="network_smp_proxy_mode_private_routing">Routing pribadi</string>
@@ -1003,7 +1003,7 @@
     <string name="your_ice_servers">Server ICE Anda</string>
     <string name="webrtc_ice_servers">Server ICE WebRTC</string>
     <string name="if_you_enter_self_destruct_code">Jika Anda memasukkan kode sandi hapus otomatis saat membuka aplikasi:</string>
-    <string name="settings_section_title_icon">IKON APLIKASI</string>
+    <string name="settings_section_title_icon">Ikon aplikasi</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Aplikasi akan meminta untuk mengonfirmasi unduhan dari server berkas yang tidak dikenal (kecuali .onion atau saat proxy SOCKS diaktifkan).</string>
     <string name="message_reactions_prohibited_in_this_chat">Reaksi pesan dilarang dalam obrolan ini.</string>
     <string name="migrate_from_device_to_another_device">Pindah ke perangkat lain</string>
@@ -1020,8 +1020,8 @@
     <string name="icon_descr_call_missed">Panggilan tak terjawab</string>
     <string name="icon_descr_call_rejected">Panggilan ditolak</string>
     <string name="alert_text_msg_bad_id">ID pesan berikutnya salah (kurang atau sama dengan yang sebelumnya).\nHal ini dapat terjadi karena beberapa bug atau ketika koneksi terganggu.</string>
-    <string name="settings_section_title_themes">TEMA</string>
-    <string name="settings_section_title_delivery_receipts">KIRIM TANDA TERIMA KIRIMAN KE</string>
+    <string name="settings_section_title_themes">Tema</string>
+    <string name="settings_section_title_delivery_receipts">Kirim tanda terima kiriman ke</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Hal ini dapat terjadi ketika Anda atau koneksi Anda menggunakan cadangan basis data lama.</string>
     <string name="keychain_is_storing_securely">Android Keystore digunakan untuk menyimpan frasa sandi dengan aman - memungkinkan layanan notifikasi berfungsi.</string>
     <string name="remove_passphrase">Hapus</string>
@@ -1134,9 +1134,9 @@
     <string name="acknowledged">Dikenal</string>
     <string name="waiting_for_image">Menunggu gambar</string>
     <string name="waiting_for_video">Menunggu video</string>
-    <string name="settings_section_title_device">PERANGKAT</string>
-    <string name="settings_section_title_chats">OBROLAN</string>
-    <string name="settings_section_title_files">BERKAS</string>
+    <string name="settings_section_title_device">Perangkat</string>
+    <string name="settings_section_title_chats">Obrolan</string>
+    <string name="settings_section_title_files">Berkas</string>
     <string name="reset_all_hints">Reset semua petunjuk</string>
     <string name="error_adding_members">Gagal menambah anggota</string>
     <string name="error_joining_group">Gagal gabung ke grup</string>
@@ -1281,7 +1281,7 @@
     <string name="unblock_for_all_question">Buka blokir anggota untuk semua?</string>
     <string name="unblock_for_all">Buka untuk semua</string>
     <string name="member_blocked_by_admin">Diblokir oleh admin</string>
-    <string name="member_info_section_title_member">ANGGOTA</string>
+    <string name="member_info_section_title_member">Anggota</string>
     <string name="remove_member_button">Hapus anggota</string>
     <string name="share_text_message_status">Status pesan: %s</string>
     <string name="share_text_file_status">Status berkas: %s</string>
@@ -1326,7 +1326,7 @@
     <string name="fix_connection_not_supported_by_contact">Perbaikan tidak didukung oleh kontak</string>
     <string name="info_row_chat">Obrolan</string>
     <string name="accept_conditions">Terima kondisi</string>
-    <string name="conn_stats_section_title_servers">SERVER</string>
+    <string name="conn_stats_section_title_servers">Server</string>
     <string name="create_group_button">Buat grup</string>
     <string name="group_full_name_field">Nama lengkap grup:</string>
     <string name="save_group_profile">Simpan profil grup</string>
@@ -1466,7 +1466,7 @@
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Terbaik untuk baterai</b>. Anda akan menerima notifikasi saat aplikasi sedang berjalan (TANPA layanan latar belakang).]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Baik untuk baterai</b>. Aplikasi memeriksa pesan setiap 10 menit. Anda mungkin melewatkan panggilan atau pesan penting.]]></string>
     <string name="settings_section_title_chat_theme">Tema obrolan</string>
-    <string name="chat_database_section">BASIS DATA OBROLAN</string>
+    <string name="chat_database_section">Basis data obrolan</string>
     <string name="set_password_to_export_desc">Basis data dienkripsi menggunakan frasa sandi acak. Harap ubah frasa sandi sebelum mengekspor.</string>
     <string name="chat_database_exported_title">Basis data obrolan diekspor</string>
     <string name="current_passphrase">Frasa sandi saat ini…</string>
@@ -1685,7 +1685,7 @@
     <string name="files_and_media_section">Berkas dan media</string>
     <string name="encrypt_database_question">Enkripsi basis data?</string>
     <string name="incompatible_database_version">Versi basis data tidak kompatibel</string>
-    <string name="section_title_for_console">UNTUK KONSOL</string>
+    <string name="section_title_for_console">Untuk konsol</string>
     <string name="connect_plan_group_already_exists">Grup sudah ada!</string>
     <string name="migrate_to_device_enter_passphrase">Masukkan frasa sandi</string>
     <string name="enable_automatic_deletion_question">Aktifkan hapus pesan otomatis?</string>
@@ -1703,7 +1703,7 @@
     <string name="migrate_from_device_error_verifying_passphrase">Gagal verifikasi frasa sandi:</string>
     <string name="servers_info_reconnect_server_error">Gagal hubungkan ulang server</string>
     <string name="servers_info_reconnect_servers_error">Gagal hubungkan ulang server</string>
-    <string name="settings_section_title_experimenta">EKSPERIMENTAL</string>
+    <string name="settings_section_title_experimenta">Eksperimental</string>
     <string name="export_database">Ekspor basis data</string>
     <string name="import_database">Impor basis data</string>
     <string name="error_stopping_chat">Gagal hentikan obrolan</string>
@@ -1830,7 +1830,7 @@
     <string name="migrate_to_device_bytes_downloaded">%s diunduh</string>
     <string name="servers_info_messages_received">Pesan diterima</string>
     <string name="info_row_updated_at">Catatan diperbarui pada</string>
-    <string name="settings_section_title_messages">PESAN DAN BERKAS</string>
+    <string name="settings_section_title_messages">Pesan dan berkas</string>
     <string name="settings_section_title_user_theme">Tema profil</string>
     <string name="settings_section_title_profile_images">Gambar profil</string>
     <string name="enter_correct_current_passphrase">Harap masukkan frasa sandi saat ini yang benar.</string>
@@ -1908,7 +1908,7 @@
     <string name="network_options_save">Simpan</string>
     <string name="make_profile_private">Jadikan profil pribadi!</string>
     <string name="remote_hosts_section">Ponsel jarak jauh</string>
-    <string name="run_chat_section">JALANKAN OBROLAN</string>
+    <string name="run_chat_section">Jalankan obrolan</string>
     <string name="store_passphrase_securely_without_recover">Harap simpan frasa sandi dengan aman, Anda TIDAK akan dapat mengakses obrolan jika hilang.</string>
     <string name="rcv_group_event_member_deleted">dihapus %1$s</string>
     <string name="share_text_sent_at">Dikirim pada: %s</string>
@@ -1979,7 +1979,7 @@
     <string name="smp_servers_new_server">Server baru</string>
     <string name="message_queue_info">Info antrian pesan</string>
     <string name="settings_section_title_message_shape">Bentuk pesan</string>
-    <string name="settings_section_title_private_message_routing">ROUTING PESAN PRIBADI</string>
+    <string name="settings_section_title_private_message_routing">Routing pesan pribadi</string>
     <string name="message_queue_info_server_info">info antrean server: %1$s\n\npesan terakhir diterima: %2$s</string>
     <string name="users_delete_data_only">Hanya data profil lokal</string>
     <string name="operator_open_changes">Buka perubahan</string>
@@ -2024,7 +2024,7 @@
     <string name="your_profile_is_stored_on_your_device">Profil, kontak, dan pesan terkirim Anda disimpan di perangkat Anda.</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Platform perpesanan dan aplikasi yang melindungi privasi dan keamanan Anda.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Untuk melindungi privasi Anda, SimpleX gunakan ID terpisah untuk setiap kontak.</string>
-    <string name="settings_section_title_socks">PROXY SOCKS</string>
+    <string name="settings_section_title_socks">Proxy SOCKS</string>
     <string name="upgrade_and_open_chat">Tingkatkan dan buka obrolan</string>
     <string name="group_invitation_tap_to_join_incognito">Ketuk untuk gabung ke samaran</string>
     <string name="snd_group_event_member_blocked">Anda memblokir %s</string>
@@ -2423,7 +2423,7 @@
     <string name="v6_4_review_members_descr">Chat dengan anggota sebelum mereka bergabung.</string>
     <string name="compose_view_connect">Hubungkan</string>
     <string name="v6_4_connect_faster">Terhubung lebih cepat! 🚀</string>
-    <string name="settings_section_title_contact_requests_from_groups">PERMINTAAN KONTAK DARI GRUP</string>
+    <string name="settings_section_title_contact_requests_from_groups">Permintaan kontak dari grup</string>
     <string name="contact_should_accept">kontak harus menerima…</string>
     <string name="v6_4_1_short_address_create">Buat alamat Anda</string>
     <string name="deprecated_options_section">Opsi tidak berlaku</string>

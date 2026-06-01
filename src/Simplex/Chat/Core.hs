@@ -59,11 +59,15 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       users <- withTransaction chatStore getUsers
       u_ <- selectActiveUser coreOptions chatStore users
       let backgroundMode = maintenance
-      cc <- newChatController db u_ cfg opts backgroundMode
-      forM_ (preStartHook chatHooks) ($ cc)
-      u <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot) pure u_
-      unless testView $ putStrLn $ "Current user: " <> userStr u
-      runSimplexChat cfg opts u cc chat
+      newChatController db u_ cfg opts backgroundMode >>= \case
+        Left e -> do
+          putStrLn $ "Error starting chat: " <> show e
+          exitFailure
+        Right cc -> do
+          forM_ (preStartHook chatHooks) ($ cc)
+          u <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot) pure u_
+          unless testView $ putStrLn $ "Current user: " <> userStr u
+          runSimplexChat cfg opts u cc chat
     noMaintenance = when maintenance $ do
       putStrLn "exiting: no active user in maintenance mode"
       exitFailure
@@ -118,29 +122,27 @@ selectActiveUser CoreChatOpts {chatRelay} st users
 
 createActiveUser :: ChatController -> CoreChatOpts -> Maybe CreateBotOpts -> IO User
 createActiveUser cc CoreChatOpts {chatRelay} = \case
-  Just CreateBotOpts {botDisplayName, allowFiles} -> do
+  Just CreateBotOpts {botDisplayName, allowFiles, clientService} -> do
     let preferences = if allowFiles then Nothing else Just emptyChatPrefs {files = Just FilesPreference {allow = FANo}}
-    createUser exitFailure $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
-  Nothing
-    | chatRelay -> do
-        putStrLn
-          "No chat relay user profile found, it will be created now.\n\
-          \Please choose chat relay display name."
-        loop
-    | otherwise -> do
-        putStrLn
-          "No user profiles found, it will be created now.\n\
-          \Please choose your display name.\n\
-          \It will be sent to your contacts when you connect.\n\
-          \It is only stored on your device and you can change it later."
-        loop
+    createUser exitFailure clientService $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
+  Nothing -> putStrLn noProfile >> loop
+    where
+      noProfile
+        | chatRelay =
+            "No chat relay user profile found, it will be created now.\n\
+            \Please choose chat relay display name."
+        | otherwise =
+            "No user profiles found, it will be created now.\n\
+            \Please choose your display name.\n\
+            \It will be sent to your contacts when you connect.\n\
+            \It is only stored on your device and you can change it later."
+      loop = do
+        displayName <- T.pack <$> withPrompt "display name" getLine
+        createUser loop False $ mkProfile displayName
   where
-    loop = do
-      displayName <- T.pack <$> withPrompt "display name: " getLine
-      createUser loop $ mkProfile displayName
     mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
-    createUser onError p =
-      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, userChatRelay = chatRelay}) 0 `runReaderT` cc >>= \case
+    createUser onError clientService p =
+      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, userChatRelay = BoolDef chatRelay, clientService = BoolDef clientService}) 0 `runReaderT` cc >>= \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 
