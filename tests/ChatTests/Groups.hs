@@ -284,6 +284,7 @@ chatGroupTests = do
       it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
       it "should deliver support scope messages via relay" testChannelSupportScope
       it "should add relay to existing channel" testChannelAddRelay
+      it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
@@ -10329,6 +10330,73 @@ testChannelAddRelay ps =
             alice #> "#team hello"
             [bob, cath] *<# "#team> hello"
             [dan, eve] *<# "#team> hello [>>]"
+
+testChannelAddRelayWithRoster :: HasCallStack => TestParams -> IO ()
+testChannelAddRelayWithRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "dan" danProfile $ \dan ->
+        withNewTestChat ps "cath" cathProfile $ \cath ->
+          withNewTestChat ps "eve" eveProfile $ \_eve -> do
+            (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+            memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+
+            -- promote cath to moderator: the roster is created (bob caches it)
+            threadDelay 100000
+            alice ##> "/mr #team cath moderator"
+            alice <## "#team: you changed the role of cath to moderator (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+                cath <## "#team: alice changed your role from member to moderator (signed)"
+              ]
+            threadDelay 100000
+
+            -- add dan as a 2nd relay; with a roster present it must cache the roster and ack
+            -- (XGrpRosterAck) before alice publishes it as joinable
+            dan ##> "/ad"
+            (danSLink, _cLink) <- getContactLinks dan True
+            alice ##> ("/relays name=dan " <> danSLink)
+            alice <## "ok"
+            alice ##> "/_add relays #1 2"
+            alice <## "#team: group relays:"
+            alice <## "  - relay id 1: active"
+            alice <## "  - relay id 2: invited"
+            -- "relay id 2: active" only appears after dan acks the roster (XGrpRosterAck),
+            -- which the owner requires before publishing the relay as joinable
+            concurrentlyN_
+              [ do
+                  alice <## "#team: group link relays updated, current relays:"
+                  alice
+                    <### [ "  - relay id 1: active",
+                           "  - relay id 2: active"
+                         ]
+                  alice <## "group link:"
+                  void $ getTermLine alice,
+                dan <## "#team: you joined the group as relay"
+              ]
+
+            -- dan caches the roster (emitting the cath role-change item) and cath, an existing
+            -- member, connects to the new relay; Part B attaches her as moderator with the roster key
+            concurrentlyN_
+              [ do
+                  cath <## "#team: joining the group (connecting to relay dan)..."
+                  cath <## "#team: you joined the group (connected to relay dan)",
+                dan
+                  <### [ EndsWith "changed the role of cath from member to moderator (signed)",
+                         EndsWith "accepting request to join group #team...",
+                         EndsWith "member cath is connected"
+                       ]
+              ]
+
+            threadDelay 100000
+            -- dan holds the roster: it knows cath as moderator (it could only become joinable after this)
+            checkMemberRoleRoster dan "cath" "moderator"
+  where
+    checkMemberRoleRoster :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
+    checkMemberRoleRoster cc name expectedRole = do
+      roles <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
+      map (\(Only r) -> r) roles `shouldBe` [expectedRole]
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =

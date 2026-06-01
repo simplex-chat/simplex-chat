@@ -3701,15 +3701,9 @@ processChatCommand vr nm = \case
               let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
                in userProfileInGroup' user allowSimplexLinks incognitoProfile
             Nothing -> userProfileDirect user incognitoProfile Nothing True
-      chatEvent <- case gInfo_ of
-        Just (Just gInfo) | useRelays' gInfo -> do
-          let GroupInfo {membership = GroupMember {memberId}} = gInfo
-          memberPubKey <- case groupKeys gInfo of
-            Just GroupKeys {memberPrivKey} -> pure $ C.publicKey memberPrivKey
-            Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
-          pure $ XMember profileToSend memberId (MemberKey memberPubKey)
-        _ -> pure $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
-      dm <- encodeConnInfoPQ pqSup chatV chatEvent
+      dm <- case gInfo_ of
+        Just (Just gInfo) | useRelays' gInfo -> encodeMemberConnInfo gInfo profileToSend
+        _ -> encodeConnInfoPQ pqSup chatV $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined

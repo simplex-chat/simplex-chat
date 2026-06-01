@@ -86,6 +86,7 @@ module Simplex.Chat.Store.Groups
     getGroupRelayByGMId,
     getGroupRelays,
     getConnectedGroupRelays,
+    getGroupRelayByMemberId,
     setGroupRosterVersion,
     setCachedGroupRoster,
     getCachedGroupRoster,
@@ -1385,6 +1386,11 @@ getConnectedGroupRelays db GroupInfo {groupId} =
              |]
       )
       (groupId, GSMemConnected, RSAccepted, RSActive)
+
+getGroupRelayByMemberId :: DB.Connection -> GroupInfo -> GroupMemberId -> IO (Maybe GroupRelay)
+getGroupRelayByMemberId db GroupInfo {groupId} gmId =
+  maybeFirstRow toGroupRelay $
+    DB.query db (groupRelayQuery <> " WHERE gr.group_id = ? AND gr.group_member_id = ?") (groupId, gmId)
 
 groupRelayQuery :: Query
 groupRelayQuery =

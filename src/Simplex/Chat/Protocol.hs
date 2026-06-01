@@ -434,6 +434,11 @@ data MsgSigning = MsgSigning
 encodeChatBinding :: ChatBinding -> ByteString -> ByteString
 encodeChatBinding cb bindingData = smpEncode cb <> bindingData
 
+signChatMsgBody :: MsgSigning -> ByteString -> SignedMsg
+signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
+  let sig = C.ASignature C.SEd25519 $ C.sign' privKey (encodeChatBinding bindingTag bindingData <> msgBody)
+   in SignedMsg {chatBinding = bindingTag, signatures = MsgSignature keyRef sig L.:| [], signedBody = msgBody}
+
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
@@ -476,6 +481,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpRoster :: GroupRoster -> ChatMsgEvent 'Json
+  XGrpRosterAck :: VersionRoster -> Maybe Text -> ChatMsgEvent 'Json
   XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
@@ -1032,6 +1038,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpPrefs_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
   XGrpRoster_ :: CMEventTag 'Json
+  XGrpRosterAck_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
@@ -1092,6 +1099,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpPrefs_ -> "x.grp.prefs"
     XGrpDirectInv_ -> "x.grp.direct.inv"
     XGrpRoster_ -> "x.grp.roster"
+    XGrpRosterAck_ -> "x.grp.roster.ack"
     XGrpMsgForward_ -> "x.grp.msg.forward"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
@@ -1153,6 +1161,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.prefs" -> XGrpPrefs_
         "x.grp.direct.inv" -> XGrpDirectInv_
         "x.grp.roster" -> XGrpRoster_
+        "x.grp.roster.ack" -> XGrpRosterAck_
         "x.grp.msg.forward" -> XGrpMsgForward_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
@@ -1210,6 +1219,7 @@ toCMEventTag msg = case msg of
   XGrpPrefs _ -> XGrpPrefs_
   XGrpDirectInv {} -> XGrpDirectInv_
   XGrpRoster _ -> XGrpRoster_
+  XGrpRosterAck {} -> XGrpRosterAck_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
@@ -1369,6 +1379,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
       XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "roster")
+      XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
@@ -1441,6 +1452,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
       XGrpRoster GroupRoster {version, roster} -> o ["version" .= version, "roster" .= roster]
+      XGrpRosterAck version err -> o $ ("error" .=? err) ["version" .= version]
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where
           encodeFwdSender = \case

@@ -58,7 +58,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages, encodeBinaryBatch, encodeFwdElement)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -927,9 +927,9 @@ acceptContactRequestAsync
       liftIO $ setCommandConnId db user cmdId connId
       getContact db vr user contactId
 
-acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> CM GroupMember
+acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> Maybe GroupMember -> CM GroupMember
 acceptGroupJoinRequestAsync
-  user
+  user@User {userId}
   uclId
   gInfo@GroupInfo {groupProfile, membership, businessChat}
   cReqInvId
@@ -941,11 +941,18 @@ acceptGroupJoinRequestAsync
   gAccepted
   gLinkMemRole
   incognitoProfile
-  memberKey_ = do
+  memberKey_
+  existingMem_ = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
-    (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
+    -- a roster-established privileged member attaches a connection to its existing record (keeping
+    -- owner-authoritative role + key); everyone else is created fresh with the group-link role
+    (groupMemberId, memberId) <- case existingMem_ of
+      Just m -> do
+        withStore' $ \db -> updateGroupMemberStatus db userId m initialStatus
+        pure (groupMemberId' m, memberId' m)
+      Nothing -> withStore $ \db ->
+        createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
     let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -1666,6 +1673,16 @@ parseChatMessage conn s = do
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 {-# INLINE parseChatMessage #-}
 
+-- Like parseChatMessage, but preserves the parsed SignedMsg (conn-info signature),
+-- which the relay needs to verify a joiner's XMember key possession.
+parseChatMessageWithSig :: Connection -> ByteString -> CM (Maybe SignedMsg, ChatMessage 'Json)
+parseChatMessageWithSig conn s =
+  case parseChatMessages s of
+    [msg] -> liftEither . first (ChatError . errType) $ (\(APMsg _ (ParsedMsg _ sm m)) -> (sm,) <$> checkEncoding m) =<< msg
+    _ -> throwChatError $ CEException "parseChatMessageWithSig: single message is expected"
+  where
+    errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
+
 getChatScopeInfo :: VersionRangeChat -> User -> GroupChatScope -> CM GroupChatScopeInfo
 getChatScopeInfo vr user = \case
   GCSMemberSupport Nothing -> pure $ GCSIMemberSupport Nothing
@@ -2065,6 +2082,27 @@ encodeConnInfoPQ pqSup v chatMsgEvent = do
         pure connInfo'
       _ -> pure connInfo
     ECMLarge -> throwChatError $ CEException "large info"
+
+-- Encodes conn-info as a signed element (the '/'<binding><sigs><body> form parseChatMessages understands),
+-- so a relay-group joiner can prove possession of the member key it asserts in XMember.
+encodeSignedConnInfo :: MsgEncodingI e => MsgSigning -> ChatMsgEvent e -> CM ByteString
+encodeSignedConnInfo signing chatMsgEvent = do
+  vr <- chatVersionRange
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded body -> pure $ encodeBatchElement (Just $ signChatMsgBody signing body) body
+    ECMLarge -> throwChatError $ CEException "large signed info"
+
+-- Signed conn-info for a relay-group join: asserts the membership memberId and member key,
+-- signed with the member key bound to (publicGroupId, memberId) for relay-side verification.
+encodeMemberConnInfo :: GroupInfo -> Profile -> CM ByteString
+encodeMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys} profileToSend =
+  case groupKeys of
+    Just GroupKeys {publicGroupId, memberPrivKey} ->
+      let xMember = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey)
+          signing = MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
+       in encodeSignedConnInfo signing xMember
+    Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
 
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do

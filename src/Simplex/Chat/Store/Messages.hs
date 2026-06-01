@@ -237,10 +237,7 @@ createNewSndMessage db gVar connOrGroupId chatMsgEvent msgSigning_ encodeMessage
     case encodeMessage (SharedMsgId sharedMsgId) of
       ECMLarge -> pure $ Left SELargeMsg
       ECMEncoded msgBody -> do
-        let signedMsg_ = signBody <$> msgSigning_
-            signBody MsgSigning {bindingTag, bindingData, keyRef, privKey} =
-              let sig = C.ASignature C.SEd25519 $ C.sign' privKey (encodeChatBinding bindingTag bindingData <> msgBody)
-               in SignedMsg {chatBinding = bindingTag, signatures = MsgSignature keyRef sig :| [], signedBody = msgBody}
+        let signedMsg_ = (`signChatMsgBody` msgBody) <$> msgSigning_
         createdAt <- getCurrentTime
         DB.execute
           db
