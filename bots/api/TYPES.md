@@ -3361,7 +3361,7 @@ ParseError:
 ## RelayCapabilities
 
 **Record type**:
-- baseWebUrl: string?
+- webDomain: string?
 
 
 ---

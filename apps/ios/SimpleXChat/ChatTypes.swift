@@ -2539,7 +2539,7 @@ public struct PublicGroupAccess: Codable, Hashable {
 }
 
 public struct RelayCapabilities: Codable, Hashable {
-    public var baseWebUrl: String?
+    public var webDomain: String?
 }
 
 public struct PublicGroupProfile: Codable, Hashable {
