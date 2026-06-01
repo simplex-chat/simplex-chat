@@ -146,6 +146,7 @@ This file is generated automatically.
 - [Profile](#profile)
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
+- [PublicGroupAccess](#publicgroupaccess)
 - [PublicGroupData](#publicgroupdata)
 - [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
@@ -157,6 +158,7 @@ This file is generated automatically.
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
 - [RcvMsgError](#rcvmsgerror)
+- [RelayCapabilities](#relaycapabilities)
 - [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
@@ -165,6 +167,10 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameDomain](#simplexnamedomain)
+- [SimplexNameInfo](#simplexnameinfo)
+- [SimplexNameType](#simplexnametype)
+- [SimplexTLD](#simplextld)
 - [SndCIStatusProgress](#sndcistatusprogress)
 - [SndConnEvent](#sndconnevent)
 - [SndError](#snderror)
@@ -2091,6 +2097,10 @@ SimplexLink:
 - simplexUri: string
 - smpHosts: [string]
 
+SimplexName:
+- type: "simplexName"
+- nameInfo: [SimplexNameInfo](#simplexnameinfo)
+
 Command:
 - type: "command"
 - commandStr: string
@@ -2331,6 +2341,10 @@ NoRelays:
 - type: "noRelays"
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
+UpdateRequired:
+- type: "updateRequired"
+- groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
+
 
 ---
 
@@ -2487,6 +2501,7 @@ NoRelays:
 - userChatRelay: [UserChatRelay](#userchatrelay)
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
+- relayCap: [RelayCapabilities](#relaycapabilities)
 
 
 ---
@@ -3058,6 +3073,17 @@ NO_SESSION:
 
 ---
 
+## PublicGroupAccess
+
+**Record type**:
+- groupWebPage: string?
+- groupDomain: string?
+- domainWebPage: bool
+- allowEmbedding: bool
+
+
+---
+
 ## PublicGroupData
 
 **Record type**:
@@ -3072,6 +3098,7 @@ NO_SESSION:
 - groupType: [GroupType](#grouptype)
 - groupLink: string
 - publicGroupId: string
+- publicGroupAccess: [PublicGroupAccess](#publicgroupaccess)?
 
 
 ---
@@ -3331,6 +3358,14 @@ ParseError:
 
 ---
 
+## RelayCapabilities
+
+**Record type**:
+- baseWebUrl: string?
+
+
+---
+
 ## RelayProfile
 
 **Record type**:
@@ -3434,6 +3469,44 @@ A_QUEUE:
 - "group"
 - "channel"
 - "relay"
+
+
+---
+
+## SimplexNameDomain
+
+**Record type**:
+- nameTLD: [SimplexTLD](#simplextld)
+- domain: string
+- subDomain: [string]
+
+
+---
+
+## SimplexNameInfo
+
+**Record type**:
+- nameType: [SimplexNameType](#simplexnametype)
+- nameDomain: [SimplexNameDomain](#simplexnamedomain)
+
+
+---
+
+## SimplexNameType
+
+**Enum type**:
+- "publicGroup"
+- "contact"
+
+
+---
+
+## SimplexTLD
+
+**Enum type**:
+- "simplex"
+- "testing"
+- "web"
 
 
 ---

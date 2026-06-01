@@ -732,7 +732,7 @@ server test step */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Kontaktit voivat merkitä viestit poistettaviksi; voit katsella niitä.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Jatka";
 
 /* No comment provided by engineer. */

@@ -1687,6 +1687,10 @@ class Format_simplexLink(TypedDict):
     simplexUri: str
     smpHosts: list[str]  # non-empty
 
+class Format_simplexName(TypedDict):
+    type: Literal["simplexName"]
+    nameInfo: "SimplexNameInfo"
+
 class Format_command(TypedDict):
     type: Literal["command"]
     commandStr: str
@@ -1712,13 +1716,14 @@ Format = (
     | Format_uri
     | Format_hyperLink
     | Format_simplexLink
+    | Format_simplexName
     | Format_command
     | Format_mention
     | Format_email
     | Format_phone
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "command", "mention", "email", "phone"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
@@ -1854,6 +1859,10 @@ class GroupLinkPlan_noRelays(TypedDict):
     type: Literal["noRelays"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
 
+class GroupLinkPlan_updateRequired(TypedDict):
+    type: Literal["updateRequired"]
+    groupSLinkData_: NotRequired["GroupShortLinkData"]
+
 GroupLinkPlan = (
     GroupLinkPlan_ok
     | GroupLinkPlan_ownLink
@@ -1861,9 +1870,10 @@ GroupLinkPlan = (
     | GroupLinkPlan_connectingProhibit
     | GroupLinkPlan_known
     | GroupLinkPlan_noRelays
+    | GroupLinkPlan_updateRequired
 )
 
-GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays"]
+GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays", "updateRequired"]
 
 class GroupMember(TypedDict):
     groupMemberId: int  # int64
@@ -1939,6 +1949,7 @@ class GroupRelay(TypedDict):
     userChatRelay: "UserChatRelay"
     relayStatus: "RelayStatus"
     relayLink: NotRequired[str]
+    relayCap: "RelayCapabilities"
 
 class GroupRootKey_private(TypedDict):
     type: Literal["private"]
@@ -2346,6 +2357,12 @@ ProxyError = ProxyError_PROTOCOL | ProxyError_BROKER | ProxyError_BASIC_AUTH | P
 
 ProxyError_Tag = Literal["PROTOCOL", "BROKER", "BASIC_AUTH", "NO_SESSION"]
 
+class PublicGroupAccess(TypedDict):
+    groupWebPage: NotRequired[str]
+    groupDomain: NotRequired[str]
+    domainWebPage: bool
+    allowEmbedding: bool
+
 class PublicGroupData(TypedDict):
     publicMemberCount: int  # int64
 
@@ -2353,6 +2370,7 @@ class PublicGroupProfile(TypedDict):
     groupType: "GroupType"
     groupLink: str
     publicGroupId: str
+    publicGroupAccess: NotRequired["PublicGroupAccess"]
 
 class RCErrorType_internal(TypedDict):
     type: Literal["internal"]
@@ -2621,6 +2639,9 @@ RcvMsgError = RcvMsgError_dropped | RcvMsgError_parseError
 
 RcvMsgError_Tag = Literal["dropped", "parseError"]
 
+class RelayCapabilities(TypedDict):
+    baseWebUrl: NotRequired[str]
+
 class RelayProfile(TypedDict):
     displayName: str
     fullName: str
@@ -2681,6 +2702,19 @@ class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
+
+class SimplexNameDomain(TypedDict):
+    nameTLD: "SimplexTLD"
+    domain: str
+    subDomain: list[str]
+
+class SimplexNameInfo(TypedDict):
+    nameType: "SimplexNameType"
+    nameDomain: "SimplexNameDomain"
+
+SimplexNameType = Literal["publicGroup", "contact"]
+
+SimplexTLD = Literal["simplex", "testing", "web"]
 
 SndCIStatusProgress = Literal["partial", "complete"]
 

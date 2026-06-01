@@ -2524,7 +2524,8 @@ processChatCommand vr nm = \case
         -- generate owner key, OwnerAuth signed by root key
         memberId <- MemberId <$> liftIO (encodedRandomBytes gVar 12)
         (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
-        let groupProfile' = (groupProfile :: GroupProfile) {publicGroup = Just PublicGroupProfile {groupType = GTChannel, groupLink = sLnk, publicGroupId = B64UrlByteString entityId}}
+        -- TODO [channel web] pass publicGroupAccess from owner's profile
+        let groupProfile' = (groupProfile :: GroupProfile) {publicGroup = Just PublicGroupProfile {groupType = GTChannel, groupLink = sLnk, publicGroupId = B64UrlByteString entityId, publicGroupAccess = Nothing}}
             userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Just (PublicGroupData 1)}
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
         -- create connection with prepared link (single network call)
@@ -2643,8 +2644,7 @@ processChatCommand vr nm = \case
         Nothing -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
     (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
-    -- TODO check that user's role is > role, possibly restrict role to only observer and member
-    assertUserGroupRole gInfo GRModerator
+    assertUserGroupRole gInfo $ max GRModerator role
     case memberStatus m of
       GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve
         let GroupInfo {groupProfile = GroupProfile {memberAdmission}} = gInfo
@@ -4120,21 +4120,25 @@ processChatCommand vr nm = \case
               Nothing -> do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                if not direct && null relays
-                  then pure (con (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
-                  else do
-                    let FixedLinkData {linkConnReq = cReq, linkEntityId, rootKey} = fd
-                        linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
-                    let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
-                          fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
-                    case (B64UrlByteString <$> linkEntityId, profilePGId) of
-                      (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
-                      (Nothing, Nothing) -> pure ()
-                      _ -> throwChatError CEInvalidConnReq
-                    let ov = verifyLinkOwner rootKey owners l' sig_
-                    plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
-                    pure (con cReq, plan)
+                if
+                  | not direct && unsupportedGroupType groupSLinkData_ -> pure (con (linkConnReq fd), CPGroupLink (GLPUpdateRequired groupSLinkData_))
+                  | not direct && null relays -> pure (con (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
+                  | otherwise -> do
+                      let FixedLinkData {linkConnReq = cReq, linkEntityId, rootKey} = fd
+                          linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
+                      let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
+                            fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
+                      case (B64UrlByteString <$> linkEntityId, profilePGId) of
+                        (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
+                        (Nothing, Nothing) -> pure ()
+                        _ -> throwChatError CEInvalidConnReq
+                      let ov = verifyLinkOwner rootKey owners l' sig_
+                      plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
+                      pure (con cReq, plan)
             where
+              unsupportedGroupType = \case
+                Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
+                _ -> False
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
@@ -5522,7 +5526,8 @@ chatCommandP =
         addressAA = AddressSettings False <$> (Just . AutoAccept <$> (" incognito=" *> onOffP <|> pure False)) <*> autoReply
         businessAA = " business" *> (AddressSettings True (Just $ AutoAccept False) <$> autoReply)
         autoReply = optional (A.space *> msgContentP)
-    rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
+    rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (quotedP <|> text1P))
+    quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
 
@@ -5543,17 +5548,25 @@ mkValidName :: String -> String
 mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
     fst3 (x, _, _) = x
-    addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
+    addChar (r, prev, punct) c' = if validChar then (c : r, c, punct') else (r, prev, punct)
       where
-        c' = if isSpace c then ' ' else c
+        c = if isSpace c' then ' ' else c'
+        cat = generalCategory c
+        isPunct = case cat of
+          ConnectorPunctuation -> True
+          DashPunctuation -> True
+          OtherPunctuation -> True
+          _ -> False
         punct'
-          | isPunctuation c = punct + 1
-          | isSpace c = punct
+          | isPunct = punct + 1
+          | c == ' ' = punct
           | otherwise = 0
         validChar
-          | c == '\'' = False
-          | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
-          | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
-          | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
-          | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
-        validFirstChar = isLetter c || isNumber c || isSymbol c
+          | c `elem` prohibited = False
+          | prev == '\NUL' = c > ' ' && validFirstNameChar
+          | prev == ' ' = validFirstChar || (punct == 0 && isPunct)
+          | punct > 0 = validFirstChar || c == ' '
+          | otherwise = validFirstChar || c == ' ' || isMark c || isPunct
+        validFirstNameChar = isLetter c || cat == DecimalNumber || cat == OtherSymbol
+        validFirstChar = validFirstNameChar || cat == CurrencySymbol || cat == MathSymbol
+        prohibited = ".,;/\\#@'\"`~" :: String

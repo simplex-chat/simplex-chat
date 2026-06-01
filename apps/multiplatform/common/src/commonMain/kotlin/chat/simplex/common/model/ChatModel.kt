@@ -2210,10 +2210,24 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 }
 
 @Serializable
+data class PublicGroupAccess(
+  val groupWebPage: String? = null,
+  val groupDomain: String? = null,
+  val domainWebPage: Boolean = false,
+  val allowEmbedding: Boolean = false
+)
+
+@Serializable
+data class RelayCapabilities(
+  val baseWebUrl: String? = null
+)
+
+@Serializable
 data class PublicGroupProfile(
   val groupType: GroupType,
   val groupLink: String,
-  val publicGroupId: String
+  val publicGroupId: String,
+  val publicGroupAccess: PublicGroupAccess? = null
 )
 
 @Serializable
@@ -2337,7 +2351,8 @@ data class GroupRelay(
   val groupMemberId: Long,
   val userChatRelay: UserChatRelay,
   val relayStatus: RelayStatus,
-  val relayLink: String? = null
+  val relayLink: String? = null,
+  val relayCap: RelayCapabilities
 ) {
   val id: Long get() = groupRelayId
 }
@@ -4680,6 +4695,7 @@ sealed class Format {
     val viaHosts: String get() =
       "(${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
   }
+  @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
@@ -4697,6 +4713,7 @@ sealed class Format {
     is Uri -> linkStyle
     is HyperLink -> linkStyle
     is SimplexLink -> linkStyle
+    is SimplexName -> linkStyle
     is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
@@ -4726,6 +4743,32 @@ enum class SimplexLinkType(val linkType: String) {
       channel -> MR.strings.simplex_link_channel
       relay -> MR.strings.simplex_link_relay
   })
+}
+
+@Serializable
+data class SimplexNameInfo(
+  val nameType: SimplexNameType,
+  val nameDomain: SimplexNameDomain
+)
+
+@Serializable
+data class SimplexNameDomain(
+  val nameTLD: SimplexTLD,
+  val domain: String,
+  val subDomain: List<String>
+)
+
+@Serializable
+enum class SimplexTLD {
+  @SerialName("simplex") simplex,
+  @SerialName("testing") testing,
+  @SerialName("web") web
+}
+
+@Serializable
+enum class SimplexNameType {
+  @SerialName("publicGroup") publicGroup,
+  @SerialName("contact") contact
 }
 
 @Serializable
