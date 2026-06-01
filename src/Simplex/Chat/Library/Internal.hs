@@ -1048,7 +1048,8 @@ acceptRelayJoinRequestAsync
   cReqInvId
   cReqChatVRange
   relayLink = do
-    let msg = XGrpRelayAcpt relayLink
+    -- TODO [channel web] derive RelayCapabilities from relay config (RelayWebOptions)
+    let msg = XGrpRelayAcpt relayLink defaultRelayCapabilities
     subMode <- chatReadVar subscriptionMode
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
@@ -1058,6 +1059,28 @@ acceptRelayJoinRequestAsync
       gInfo' <- liftIO $ updateRelayOwnStatusFromTo db gInfo RSInvited RSAccepted
       ownerMember' <- getGroupMemberById db vr user groupMemberId
       pure (gInfo', ownerMember')
+
+rejectRelayInvitationAsync
+  :: User
+  -> Int64
+  -> VersionRangeChat
+  -> GroupRelayInvitation
+  -> InvitationId
+  -> VersionRangeChat
+  -> Int64
+  -> RelayRejectionReason
+  -> CM ()
+rejectRelayInvitationAsync user uclId vr groupRelayInv invId reqChatVRange initialDelay reason = do
+  (_gInfo, ownerMember) <- withStore $ \db ->
+    createRelayRequestGroup db vr user groupRelayInv invId reqChatVRange initialDelay GSMemInvited RSRejected
+  let GroupMember {groupMemberId} = ownerMember
+      msg = XGrpRelayReject reason
+  subMode <- chatReadVar subscriptionMode
+  chatVR <- chatVersionRange
+  let chatV = chatVR `peerConnChatVersion` reqChatVRange
+  connIds <- agentAcceptContactAsync user False invId msg subMode PQSupportOff chatV
+  withStore' $ \db ->
+    createJoiningMemberConnection db user uclId connIds chatV reqChatVRange groupMemberId subMode
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
@@ -1320,6 +1343,18 @@ setGroupLinkDataAsync user gInfo gLink = do
     (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
+
+connectToRelayAsync :: User -> GroupInfo -> ShortLinkContact -> CM ()
+connectToRelayAsync user gInfo relayLink = do
+  vr <- chatVersionRange
+  gVar <- asks random
+  relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo relayLink
+  case activeConn of
+    Just _ -> pure ()
+    Nothing -> do
+      subMode <- chatReadVar subscriptionMode
+      newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
+      withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
 
 updatePublicGroupData :: User -> GroupInfo -> CM GroupInfo
 updatePublicGroupData user gInfo
@@ -1808,9 +1843,12 @@ deleteOrUpdateMemberRecord user gInfo m =
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
 deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
   (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
-  checkGroupMemberHasItems db user m' >>= \case
-    Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-    Nothing -> deleteGroupMember db user m'
+  if isRelay m'
+    then deleteGroupMember db user m'
+    else
+      checkGroupMemberHasItems db user m' >>= \case
+        Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
+        Nothing -> deleteGroupMember db user m'
   pure gInfo'
 
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo
@@ -1818,7 +1856,14 @@ updateMemberRecordDeleted user@User {userId} gInfo m newStatus =
   withStore' $ \db -> do
     (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
     updateGroupMemberStatus db userId m' newStatus
+    deactivateRelay_ db m
     pure gInfo'
+
+deactivateRelay_ :: DB.Connection -> GroupMember -> IO ()
+deactivateRelay_ db m =
+  when (isRelay m) $ do
+    relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
+    forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
 
 deleteSupportChatIfExists :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
 deleteSupportChatIfExists db user gInfo m = do

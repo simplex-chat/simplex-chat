@@ -32,6 +32,8 @@ This file is generated automatically.
 - [APINewGroup](#apinewgroup)
 - [APINewPublicGroup](#apinewpublicgroup)
 - [APIGetGroupRelays](#apigetgrouprelays)
+- [APIAddGroupRelays](#apiaddgrouprelays)
+- [APIAllowRelayGroup](#apiallowrelaygroup)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -294,7 +296,7 @@ Send messages.
 ```
 
 ```python
-'/_send ' + str(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
+'/_send ' + ChatRef_cmd_string(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
 ```
 
 **Responses**:
@@ -334,7 +336,7 @@ Update message.
 ```
 
 ```python
-'/_update item ' + str(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + ' json ' + json.dumps(updatedMessage) # Python
+'/_update item ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + ' json ' + json.dumps(updatedMessage) # Python
 ```
 
 **Responses**:
@@ -373,7 +375,7 @@ Delete message.
 **Syntax**:
 
 ```
-/_delete item <str(chatRef)> <chatItemIds[0]>[,<chatItemIds[1]>...] broadcast|internal|internalMark
+/_delete item <str(chatRef)> <chatItemIds[0]>[,<chatItemIds[1]>...] broadcast|internal|internalMark|history
 ```
 
 ```javascript
@@ -381,7 +383,7 @@ Delete message.
 ```
 
 ```python
-'/_delete item ' + str(chatRef) + ' ' + ','.join(map(str, chatItemIds)) + ' ' + str(deleteMode) # Python
+'/_delete item ' + ChatRef_cmd_string(chatRef) + ' ' + ','.join(map(str, chatItemIds)) + ' ' + str(deleteMode) # Python
 ```
 
 **Responses**:
@@ -463,7 +465,7 @@ Add/remove message reaction.
 ```
 
 ```python
-'/_reaction ' + str(chatRef) + ' ' + str(chatItemId) + ' ' + ('on' if add else 'off') + ' ' + json.dumps(reaction) # Python
+'/_reaction ' + ChatRef_cmd_string(chatRef) + ' ' + str(chatItemId) + ' ' + ('on' if add else 'off') + ' ' + json.dumps(reaction) # Python
 ```
 
 **Responses**:
@@ -1034,6 +1036,88 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+### APIAddGroupRelays
+
+Add relays to group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- relayIds: [int64]
+
+**Syntax**:
+
+```
+/_add relays #<groupId> <relayIds[0]>[,<relayIds[1]>...]
+```
+
+```javascript
+'/_add relays #' + groupId + ' ' + relayIds.join(',') // JavaScript
+```
+
+```python
+'/_add relays #' + str(groupId) + ' ' + ','.join(map(str, relayIds)) # Python
+```
+
+**Responses**:
+
+GroupRelaysAdded: Group relays added.
+- type: "groupRelaysAdded"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+GroupRelaysAddFailed: Group relays add failed.
+- type: "groupRelaysAddFailed"
+- user: [User](./TYPES.md#user)
+- addRelayResults: [[AddRelayResult](./TYPES.md#addrelayresult)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIAllowRelayGroup
+
+Clear relay rejection for a channel (relay operator).
+
+*Network usage*: background.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_relay allow #<groupId>
+```
+
+```javascript
+'/_relay allow #' + groupId // JavaScript
+```
+
+```python
+'/_relay allow #' + str(groupId) # Python
+```
+
+**Responses**:
+
+RelayGroupAllowed: Relay rejection cleared for a channel.
+- type: "relayGroupAllowed"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
 ### APIUpdateGroupProfile
 
 Update group profile.
@@ -1340,7 +1424,7 @@ Connect via prepared SimpleX link. The link can be 1-time invitation link, conta
 ```
 
 ```python
-'/_connect ' + str(userId) + ((' ' + str(preparedLink_)) if preparedLink_ is not None else '') # Python
+'/_connect ' + str(userId) + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
 ```
 
 **Responses**:
@@ -1598,7 +1682,7 @@ Get chat previews. Supports time-based pagination — use this instead of APILis
 ```
 
 ```python
-'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + str(pagination) + ' ' + json.dumps(query) # Python
+'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + PaginationByTime_cmd_string(pagination) + ' ' + json.dumps(query) # Python
 ```
 
 **Responses**:
@@ -1636,7 +1720,7 @@ Delete chat.
 ```
 
 ```python
-'/_delete ' + str(chatRef) + ' ' + str(chatDeleteMode) # Python
+'/_delete ' + ChatRef_cmd_string(chatRef) + ' ' + ChatDeleteMode_cmd_string(chatDeleteMode) # Python
 ```
 
 **Responses**:

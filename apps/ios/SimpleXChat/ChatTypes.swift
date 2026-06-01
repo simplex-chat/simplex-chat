@@ -2531,10 +2531,22 @@ public enum GroupType: Codable, Hashable {
     }
 }
 
+public struct PublicGroupAccess: Codable, Hashable {
+    public var groupWebPage: String?
+    public var groupDomain: String?
+    public var domainWebPage: Bool = false
+    public var allowEmbedding: Bool = false
+}
+
+public struct RelayCapabilities: Codable, Hashable {
+    public var baseWebUrl: String?
+}
+
 public struct PublicGroupProfile: Codable, Hashable {
     public var groupType: GroupType
     public var groupLink: String
     public var publicGroupId: String
+    public var publicGroupAccess: PublicGroupAccess?
 }
 
 public struct GroupProfile: Codable, NamedChat, Hashable {
@@ -2635,11 +2647,12 @@ public struct GroupShortLinkData: Codable, Hashable {
 }
 
 public enum RelayStatus: String, Decodable, Equatable, Hashable {
-    case rsNew = "new"
-    case rsInvited = "invited"
-    case rsAccepted = "accepted"
-    case rsActive = "active"
-    case rsInactive = "inactive"
+    case new
+    case invited
+    case accepted
+    case active
+    case inactive
+    case rejected
 }
 
 public struct RelayProfile: Codable, Equatable, Hashable {
@@ -2702,17 +2715,19 @@ public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
     public var userChatRelay: UserChatRelay
     public var relayStatus: RelayStatus
     public var relayLink: String?
+    public var relayCap: RelayCapabilities
     public var id: Int64 { groupRelayId }
 }
 
 extension RelayStatus {
     public var text: LocalizedStringKey {
         switch self {
-        case .rsNew: "new"
-        case .rsInvited: "invited"
-        case .rsAccepted: "accepted"
-        case .rsActive: "active"
-        case .rsInactive: "inactive"
+        case .new: "new"
+        case .invited: "invited"
+        case .accepted: "accepted"
+        case .active: "active"
+        case .inactive: "inactive"
+        case .rejected: "rejected"
         }
     }
 }
@@ -4091,6 +4106,7 @@ public enum CIDeleteMode: String, Decodable, Hashable {
     case cidmBroadcast = "broadcast"
     case cidmInternal = "internal"
     case cidmInternalMark = "internalMark"
+    case cidmHistory = "history"
 }
 
 protocol ItemContent {
@@ -5101,6 +5117,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case uri
     case hyperLink(showText: String?, linkUri: String)
     case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case simplexName(nameInfo: SimplexNameInfo)
     case command(commandStr: String)
     case mention(memberName: String)
     case email
@@ -5133,6 +5150,28 @@ public enum SimplexLinkType: String, Decodable, Hashable {
         case .relay: return NSLocalizedString("SimpleX relay address", comment: "simplex link type")
         }
     }
+}
+
+public struct SimplexNameInfo: Decodable, Equatable, Hashable {
+    public var nameType: SimplexNameType
+    public var nameDomain: SimplexNameDomain
+}
+
+public struct SimplexNameDomain: Decodable, Equatable, Hashable {
+    public var nameTLD: SimplexTLD
+    public var domain: String
+    public var subDomain: [String]
+}
+
+public enum SimplexTLD: String, Decodable, Hashable {
+    case simplex
+    case testing
+    case web
+}
+
+public enum SimplexNameType: String, Decodable, Hashable {
+    case publicGroup
+    case contact
 }
 
 public enum FormatColor: String, Decodable, Hashable {

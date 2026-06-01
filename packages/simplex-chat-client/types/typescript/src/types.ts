@@ -527,6 +527,7 @@ export enum CIDeleteMode {
   Broadcast = "broadcast",
   Internal = "internal",
   InternalMark = "internalMark",
+  History = "history",
 }
 
 export type CIDeleted = CIDeleted.Deleted | CIDeleted.Blocked | CIDeleted.BlockedByAdmin | CIDeleted.Moderated
@@ -2357,6 +2358,7 @@ export type Format =
   | Format.Uri
   | Format.HyperLink
   | Format.SimplexLink
+  | Format.SimplexName
   | Format.Command
   | Format.Mention
   | Format.Email
@@ -2374,6 +2376,7 @@ export namespace Format {
     | "uri"
     | "hyperLink"
     | "simplexLink"
+    | "simplexName"
     | "command"
     | "mention"
     | "email"
@@ -2428,6 +2431,11 @@ export namespace Format {
     linkType: SimplexLinkType
     simplexUri: string
     smpHosts: string[] // non-empty
+  }
+
+  export interface SimplexName extends Interface {
+    type: "simplexName"
+    nameInfo: SimplexNameInfo
   }
 
   export interface Command extends Interface {
@@ -2601,6 +2609,7 @@ export type GroupLinkPlan =
   | GroupLinkPlan.ConnectingProhibit
   | GroupLinkPlan.Known
   | GroupLinkPlan.NoRelays
+  | GroupLinkPlan.UpdateRequired
 
 export namespace GroupLinkPlan {
   export type Tag = 
@@ -2610,6 +2619,7 @@ export namespace GroupLinkPlan {
     | "connectingProhibit"
     | "known"
     | "noRelays"
+    | "updateRequired"
 
   interface Interface {
     type: Tag
@@ -2646,6 +2656,11 @@ export namespace GroupLinkPlan {
 
   export interface NoRelays extends Interface {
     type: "noRelays"
+    groupSLinkData_?: GroupShortLinkData
+  }
+
+  export interface UpdateRequired extends Interface {
+    type: "updateRequired"
     groupSLinkData_?: GroupShortLinkData
   }
 }
@@ -2761,6 +2776,7 @@ export interface GroupRelay {
   userChatRelay: UserChatRelay
   relayStatus: RelayStatus
   relayLink?: string
+  relayCap: RelayCapabilities
 }
 
 export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
@@ -3341,6 +3357,13 @@ export namespace ProxyError {
   }
 }
 
+export interface PublicGroupAccess {
+  groupWebPage?: string
+  groupDomain?: string
+  domainWebPage: boolean
+  allowEmbedding: boolean
+}
+
 export interface PublicGroupData {
   publicMemberCount: number // int64
 }
@@ -3349,6 +3372,7 @@ export interface PublicGroupProfile {
   groupType: GroupType
   groupLink: string
   publicGroupId: string
+  publicGroupAccess?: PublicGroupAccess
 }
 
 export type RCErrorType = 
@@ -3737,6 +3761,10 @@ export namespace RcvMsgError {
   }
 }
 
+export interface RelayCapabilities {
+  baseWebUrl?: string
+}
+
 export interface RelayProfile {
   displayName: string
   fullName: string
@@ -3750,6 +3778,7 @@ export enum RelayStatus {
   Accepted = "accepted",
   Active = "active",
   Inactive = "inactive",
+  Rejected = "rejected",
 }
 
 export enum ReportReason {
@@ -3837,6 +3866,28 @@ export enum SimplexLinkType {
   Group = "group",
   Channel = "channel",
   Relay = "relay",
+}
+
+export interface SimplexNameDomain {
+  nameTLD: SimplexTLD
+  domain: string
+  subDomain: string[]
+}
+
+export interface SimplexNameInfo {
+  nameType: SimplexNameType
+  nameDomain: SimplexNameDomain
+}
+
+export enum SimplexNameType {
+  PublicGroup = "publicGroup",
+  Contact = "contact",
+}
+
+export enum SimplexTLD {
+  Simplex = "simplex",
+  Testing = "testing",
+  Web = "web",
 }
 
 export enum SndCIStatusProgress {

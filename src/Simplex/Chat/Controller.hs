@@ -159,6 +159,8 @@ data ChatConfig = ChatConfig
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
+    relayChecksInterval :: NominalDiffTime,
+    relayInactiveTTL :: NominalDiffTime,
     relayRequestRetryInterval :: RetryInterval,
     relayRequestExpiry :: (Int, NominalDiffTime),
     highlyAvailable :: Bool,
@@ -405,6 +407,7 @@ data ChatCommand
   | SetUserChatRelays [CLINewRelay]
   | APITestChatRelay UserId ShortLinkContact
   | TestChatRelay ShortLinkContact
+  | APIAllowRelayGroup {groupId :: GroupId}
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
@@ -521,6 +524,7 @@ data ChatCommand
   -- TODO [relays] starting role should be communicated in protocol from owner to relays (see channelSubscriberRole config)
   | APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
   | APIGetGroupRelays {groupId :: GroupId}
+  | APIAddGroupRelays {groupId :: GroupId, relayIds :: NonEmpty Int64}
   | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
@@ -529,6 +533,7 @@ data ChatCommand
   | BlockForAll GroupName ContactName Bool
   | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool}
   | LeaveGroup GroupName
+  | AllowRelayGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
@@ -732,6 +737,9 @@ data ChatResponse
   | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CRPublicGroupCreationFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupRelays {user :: User, groupInfo :: GroupInfo, groupRelays :: [GroupRelay]}
+  | CRRelayGroupAllowed {user :: User, groupInfo :: GroupInfo}
+  | CRGroupRelaysAdded {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+  | CRGroupRelaysAddFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupMembers {user :: User, group :: Group}
   | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
@@ -940,6 +948,7 @@ data ChatEvent
 
 data TerminalEvent
   = TEGroupLinkRejected {user :: User, groupInfo :: GroupInfo, groupRejectionReason :: GroupRejectionReason}
+  | TERelayRejected {user :: User, groupInfo :: GroupInfo, relayRejectionReason :: RelayRejectionReason}
   | TERejectingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRejectionReason :: GroupRejectionReason}
   | TENewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | TEContactVerificationReset {user :: User, contact :: Contact}
@@ -1042,6 +1051,7 @@ data GroupLinkPlan
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: BoolDef, ownerVerification :: Maybe OwnerVerification, linkOwners :: ListDef GroupLinkOwner}
   | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
+  | GLPUpdateRequired {groupSLinkData_ :: Maybe GroupShortLinkData}
   deriving (Show)
 
 data GroupLinkOwner = GroupLinkOwner
@@ -1087,6 +1097,7 @@ connectionPlanProceed = \case
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     GLPNoRelays _ -> False
+    GLPUpdateRequired _ -> False
     _ -> False
   CPError _ -> True
 

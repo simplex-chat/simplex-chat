@@ -182,6 +182,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
   CRGroupRelays u g relays -> ttyUser u $ viewGroupRelays g relays
+  CRGroupRelaysAdded u g _groupLink relays -> ttyUser u $ viewGroupRelays g relays
+  CRGroupRelaysAddFailed u results -> ttyUser u $ viewGroupRelaysAddFailed results
+  CRRelayGroupAllowed u g -> ttyUser u [ttyFullGroup g <> ": relay rejection cleared"]
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
   -- CRGroupConversationsArchived u _g _conversations -> ttyUser u []
@@ -220,7 +223,14 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRUserDeletedMembers u g members wm signed -> case members of
     [m] -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group" <> withMessages wm <> signedStr signed]
     mems' -> ttyUser u [ttyGroup' g <> ": you removed " <> sShow (length mems') <> " members from the group" <> withMessages wm <> signedStr signed]
-  CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
+  CRLeftMemberUser u g
+    | relayOwnStatus g == Just RSRejected ->
+        ttyUser u
+          [ ttyGroup' g <> ": you left the group (future invitations will be rejected)",
+            "use " <> highlight ("/group allow #" <> viewGroupName g) <> " to allow future invitations",
+            "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the group (also clears the rejection)"
+          ]
+    | otherwise -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g signed -> ttyUser u [ttyGroup' g <> ": you deleted the group" <> signedStr signed]
   CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
   CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc <> viewMsgTestInfo testView mc
@@ -539,6 +549,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtTerminalEvent te -> case te of
     TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
     TEGroupLinkRejected u g reason -> ttyUser u [ttyGroup' g <> ": join rejected, reason: " <> sShow reason]
+    TERelayRejected u g reason -> ttyUser u [ttyGroup' g <> ": relay rejected, reason: " <> sShow reason]
     TENewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
     TEContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
     TEGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
@@ -1239,13 +1250,17 @@ viewGroupCreated g testView =
   where
     relaysInstruction = "wait for selected relay(s) to join, then you can invite members via group link"
 
-viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
-viewPublicGroupCreationFailed results =
-  ["channel not created, results:"]
-    <> map showRelayResult results
+viewRelayResults :: StyledString -> [AddRelayResult] -> [StyledString]
+viewRelayResults header results = [header] <> map showRelayResult results
   where
     showRelayResult (AddRelayResult UserChatRelay {chatRelayId = DBEntityId i} err_) =
       "  relay " <> sShow i <> ": " <> maybe "ok" (plain . tshow) err_
+
+viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
+viewPublicGroupCreationFailed = viewRelayResults "channel not created, results:"
+
+viewGroupRelaysAddFailed :: [AddRelayResult] -> [StyledString]
+viewGroupRelaysAddFailed = viewRelayResults "relays not added, results:"
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
@@ -1429,11 +1444,14 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
     ldn_ :: GroupInfo -> Text
     ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
-    groupSS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}, groupSummary = GroupSummary {currentMembers}} =
+    groupSS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}, groupSummary = GroupSummary {currentMembers}, relayOwnStatus} =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
-        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
+        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> rejectionSuffix <> alias g
       where
+        rejectionSuffix = case relayOwnStatus of
+          Just RSRejected -> " [rejected]"
+          _ -> ""
         viewMemberStatus = \case
           GSMemRejected -> delete "you are rejected"
           GSMemRemoved -> delete "you are removed"
@@ -2120,6 +2138,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           ]
         knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
     GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
+    GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
     where
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)

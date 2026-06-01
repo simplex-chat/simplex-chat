@@ -494,6 +494,15 @@ data GroupInfo = GroupInfo
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
 
+relayServesGroup :: GroupInfo -> Bool
+relayServesGroup GroupInfo {relayOwnStatus} = case relayOwnStatus of
+  Just RSInactive -> False
+  Just RSRejected -> False
+  _ -> True
+
+publicGroupEditor :: GroupInfo -> GroupMember -> Bool
+publicGroupEditor gInfo mem = useRelays' gInfo && memberRole' mem >= GRModerator
+
 groupId' :: GroupInfo -> GroupId
 groupId' GroupInfo {groupId} = groupId
 
@@ -784,10 +793,19 @@ instance FromField GroupType where fromField = fromTextField_ textDecode
 
 instance ToField GroupType where toField = toField . textEncode
 
+data PublicGroupAccess = PublicGroupAccess
+  { groupWebPage :: Maybe Text,
+    groupDomain :: Maybe Text,
+    domainWebPage :: Bool,
+    allowEmbedding :: Bool
+  }
+  deriving (Eq, Show)
+
 data PublicGroupProfile = PublicGroupProfile
   { groupType :: GroupType,
     groupLink :: ShortLinkContact,
-    publicGroupId :: B64UrlByteString -- group identity = sha256(genesis root key), immutable
+    publicGroupId :: B64UrlByteString, -- group identity = sha256(genesis root key), immutable
+    publicGroupAccess :: Maybe PublicGroupAccess
   }
   deriving (Eq, Show)
 
@@ -913,6 +931,26 @@ instance FromJSON GroupRejectionReason where
   parseJSON = strParseJSON "GroupRejectionReason"
 
 instance ToJSON GroupRejectionReason where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+data RelayRejectionReason
+  = RRRRejoinRejected
+  | RRRUnknown {text :: Text}
+  deriving (Eq, Show)
+
+instance StrEncoding RelayRejectionReason where
+  strEncode = \case
+    RRRRejoinRejected -> "rejoin_rejected"
+    RRRUnknown text -> encodeUtf8 text
+  strP =
+    "rejoin_rejected" $> RRRRejoinRejected
+    <|> RRRUnknown . safeDecodeUtf8 <$> A.takeByteString
+
+instance FromJSON RelayRejectionReason where
+  parseJSON = strParseJSON "RelayRejectionReason"
+
+instance ToJSON RelayRejectionReason where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
@@ -2054,6 +2092,8 @@ instance FromJSON GroupType where
 instance ToJSON GroupType where
   toJSON = textToJSON
   toEncoding = textToEncoding
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupAccess)
 
 $(JQ.deriveJSON defaultJSON ''PublicGroupProfile)
 

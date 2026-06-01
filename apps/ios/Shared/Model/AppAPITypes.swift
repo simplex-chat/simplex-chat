@@ -73,6 +73,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiNewGroup(userId: Int64, incognito: Bool, groupProfile: GroupProfile)
     case apiNewPublicGroup(userId: Int64, incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile)
     case apiGetGroupRelays(groupId: Int64)
+    case apiAddGroupRelays(groupId: Int64, relayIds: [Int64])
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiAcceptMember(groupId: Int64, groupMemberId: Int64, memberRole: GroupMemberRole)
@@ -275,6 +276,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiNewGroup(userId, incognito, groupProfile): return "/_group \(userId) incognito=\(onOff(incognito)) \(encodeJSON(groupProfile))"
             case let .apiNewPublicGroup(userId, incognito, relayIds, groupProfile): return "/_public group \(userId) incognito=\(onOff(incognito)) \(relayIds.map(String.init).joined(separator: ",")) \(encodeJSON(groupProfile))"
             case let .apiGetGroupRelays(groupId): return "/_get relays #\(groupId)"
+            case let .apiAddGroupRelays(groupId, relayIds): return "/_add relays #\(groupId) \(relayIds.map(String.init).joined(separator: ","))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiAcceptMember(groupId, groupMemberId, memberRole): return "/_accept member #\(groupId) \(groupMemberId) \(memberRole.rawValue)"
@@ -468,6 +470,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiNewGroup: return "apiNewGroup"
             case .apiNewPublicGroup: return "apiNewPublicGroup"
             case .apiGetGroupRelays: return "apiGetGroupRelays"
+            case .apiAddGroupRelays: return "apiAddGroupRelays"
             case .apiAddMember: return "apiAddMember"
             case .apiJoinGroup: return "apiJoinGroup"
             case .apiAcceptMember: return "apiAcceptMember"
@@ -944,6 +947,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case publicGroupCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
     case publicGroupCreationFailed(user: UserRef, addRelayResults: [AddRelayResult])
     case groupRelays(user: UserRef, groupInfo: GroupInfo, groupRelays: [GroupRelay])
+    case groupRelaysAdded(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
+    case groupRelaysAddFailed(user: UserRef, addRelayResults: [AddRelayResult])
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
     case userDeletedMembers(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], withMessages: Bool)
@@ -997,6 +1002,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .publicGroupCreated: "publicGroupCreated"
         case .publicGroupCreationFailed: "publicGroupCreationFailed"
         case .groupRelays: "groupRelays"
+        case .groupRelaysAdded: "groupRelaysAdded"
+        case .groupRelaysAddFailed: "groupRelaysAddFailed"
         case .sentGroupInvitation: "sentGroupInvitation"
         case .userAcceptedGroupSent: "userAcceptedGroupSent"
         case .userDeletedMembers: "userDeletedMembers"
@@ -1046,6 +1053,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .publicGroupCreated(u, groupInfo, groupLink, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)")
         case let .publicGroupCreationFailed(u, addRelayResults): return withUser(u, "addRelayResults: \(addRelayResults)")
         case let .groupRelays(u, groupInfo, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupRelays: \(groupRelays)")
+        case let .groupRelaysAdded(u, groupInfo, groupLink, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)")
+        case let .groupRelaysAddFailed(u, addRelayResults): return withUser(u, "addRelayResults: \(addRelayResults)")
         case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
         case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
         case let .userDeletedMembers(u, groupInfo, members, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\nwithMessages: \(withMessages)")
@@ -1395,6 +1404,7 @@ enum GroupLinkPlan: Decodable, Hashable {
     case connectingProhibit(groupInfo_: GroupInfo?)
     case known(groupInfo: GroupInfo)
     case noRelays(groupSLinkData_: GroupShortLinkData?)
+    case updateRequired(groupSLinkData_: GroupShortLinkData?)
 }
 
 struct ChatTagData: Encodable {
@@ -2113,6 +2123,7 @@ struct AppSettings: Codable, Equatable {
     var privacyAskToApproveRelays: Bool? = nil
     var privacyAcceptImages: Bool? = nil
     var privacyLinkPreviews: Bool? = nil
+    var privacySanitizeLinks: Bool? = nil
     var privacyShowChatPreviews: Bool? = nil
     var privacySaveLastDraft: Bool? = nil
     var privacyProtectScreen: Bool? = nil
@@ -2148,6 +2159,7 @@ struct AppSettings: Codable, Equatable {
         if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
+        if privacySanitizeLinks != def.privacySanitizeLinks { empty.privacySanitizeLinks = privacySanitizeLinks }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
@@ -2184,6 +2196,7 @@ struct AppSettings: Codable, Equatable {
             privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
+            privacySanitizeLinks: false,
             privacyShowChatPreviews: true,
             privacySaveLastDraft: true,
             privacyProtectScreen: false,

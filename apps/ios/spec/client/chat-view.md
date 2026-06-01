@@ -350,8 +350,13 @@ Groups use separate [`groupLinkButton()`](../../Shared/Views/Chat/Group/GroupCha
 ### [`channelRelaysButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L639) → [`ChannelRelaysView`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
 
 Navigates to relay list view with role-based branches:
-- **Owner**: loads `[GroupRelay]` via [`apiGetGroupRelays`](../../Shared/Model/SimpleXAPI.swift#L1839) (owner-only API, guarded by `assertUserGroupRole GROwner` on backend). Joins with `chatModel.groupMembers` by `groupMemberId` for display names. Shows status indicators (colored circle + `RelayStatus.text`).
+- **Owner**: loads `[GroupRelay]` via [`apiGetGroupRelays`](../../Shared/Model/SimpleXAPI.swift#L1839) (owner-only API, guarded by `assertUserGroupRole GROwner` on backend). Joins with `chatModel.groupMembers` by `groupMemberId` for display names. Shows status indicators (colored circle + `RelayStatus.text`). When `relayStatus == .rsRejected` the indicator dot is red and the text reads "rejected", matching the `connFailed`/`removed` rendering.
 - **Member**: filters `chatModel.groupMembers` by `.memberRole == .relay`. Shows relay member display names only (no status data).
+- **Add relay sheet**: `existingRelayIds` excludes every `chatRelayId` present in `groupRelays` regardless of `relayStatus`, so an already-listed relay (including `.rsInactive` and `.rsRejected`) cannot be re-added from the sheet. This mirrors the backend gate at `APIAddGroupRelays` (`existingRelayIds`), which rejects duplicate `chatRelayId`s; operator must remove the relay first via the swipe action.
+
+### Relay Rejection Surface
+
+When a relay operator runs `/leave #channel`, the relay sends `x.grp.relay.reject` over the owner-relay direct contact channel. Owner-side handling: the corresponding `GroupRelay.relayStatus` transitions `RSInvited → RSRejected`; the relay's `GroupMember.memberStatus` is set to `.memLeft` so the owner UI renders the rejected relay identically to one that explicitly ran `/leave` (`.memRejected` is reserved for the knocking-admission flow). The transition surfaces through `CEvtGroupRelayUpdated`. In `GroupMemberInfoView`, an additional `Status: rejected by relay operator` info row appears when `groupRelay?.relayStatus == .rsRejected`. The status is final on the owner side — clearable only by the relay operator running `/group allow #<channel>`, which has no owner-facing event.
 
 ### Leave Button Logic
 
