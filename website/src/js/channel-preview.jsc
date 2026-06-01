@@ -433,11 +433,11 @@ const FORWARD_ICON_SVG = `<svg width="14" height="14" viewBox="0 -960 960 960" f
 
 function initChannelPreview(container) {
   const relayDomains = (container.dataset.relayDomains || '').split(',').map(u => u.trim()).filter(Boolean);
-  const groupId = container.dataset.publicGroupId || '';
-  const groupLink = container.dataset.groupLink || '';
+  const channelId = container.dataset.channelId || '';
+  const channelLink = container.dataset.channelLink || '';
 
-  if (!relayDomains.length || !groupId) {
-    container.innerHTML = '<p class="simplex-preview-empty">Missing configuration: data-relay-domains and data-public-group-id required.</p>';
+  if (!relayDomains.length || !channelId) {
+    container.innerHTML = '<p class="simplex-preview-empty">Missing configuration: data-relay-domains and data-channel-id required.</p>';
     return;
   }
 
@@ -445,12 +445,12 @@ function initChannelPreview(container) {
   container.classList.add('simplex-preview-container');
   container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
 
-  fetchPreview(relayDomains, groupId).then(data => {
+  fetchPreview(relayDomains, channelId).then(data => {
     if (!data) {
       container.innerHTML = '<p class="simplex-preview-empty">Failed to load channel preview.</p>';
       return;
     }
-    render(container, data, groupLink);
+    render(container, data, channelLink);
   });
 }
 
@@ -463,10 +463,10 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-async function fetchPreview(relayDomains, groupId) {
+async function fetchPreview(relayDomains, channelId) {
   for (const domain of relayDomains) {
     try {
-      const url = `https://${domain}/channel/${groupId}.json`;
+      const url = `https://${domain}/channel/${channelId}.json`;
       const resp = await fetch(url);
       if (!resp.ok) continue;
       return await resp.json();
@@ -477,7 +477,7 @@ async function fetchPreview(relayDomains, groupId) {
   return null;
 }
 
-function render(container, data, groupLink) {
+function render(container, data, channelLink) {
   const { channel, members, messages } = data;
   const membersMap = {};
   for (const m of members) {
@@ -485,7 +485,7 @@ function render(container, data, groupLink) {
   }
 
   container.innerHTML = '';
-  const header = renderHeader(channel, groupLink, members.length);
+  const header = renderHeader(channel, channelLink, members.length);
   container.appendChild(header);
 
   const messagesDiv = document.createElement('div');
@@ -497,7 +497,7 @@ function render(container, data, groupLink) {
   setupSecretToggles(container);
 }
 
-function renderHeader(channel, groupLink, subscriberCount) {
+function renderHeader(channel, channelLink, subscriberCount) {
   const header = document.createElement('div');
   header.className = 'simplex-preview-header';
 
@@ -525,14 +525,14 @@ function renderHeader(channel, groupLink, subscriberCount) {
 
   header.appendChild(info);
 
-  if (groupLink) {
+  if (channelLink) {
     const btn = document.createElement('a');
     btn.className = 'simplex-preview-join-btn';
     btn.textContent = 'Join';
     try {
-      btn.href = platformSimplexUri(groupLink);
+      btn.href = platformSimplexUri(channelLink);
     } catch(e) {
-      btn.href = groupLink;
+      btn.href = channelLink;
     }
     btn.target = '_blank';
     header.appendChild(btn);
@@ -942,6 +942,6 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-document.querySelectorAll('[data-simplex-group-preview]').forEach(initChannelPreview);
+document.querySelectorAll('[data-simplex-channel-preview]').forEach(initChannelPreview);
 
 })();

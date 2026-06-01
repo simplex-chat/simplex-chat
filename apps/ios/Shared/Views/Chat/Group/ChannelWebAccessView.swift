@@ -124,10 +124,10 @@ struct ChannelWebAccessView: View {
         if let pg = groupInfo.groupProfile.publicGroup,
            !relayDomains.isEmpty {
             """
-            <div data-simplex-group-preview
+            <div data-simplex-channel-preview
                  data-relay-domains="\(relayDomains.joined(separator: ","))"
-                 data-public-group-id="\(pg.publicGroupId)"
-                 data-group-link="\(pg.groupLink)"></div>
+                 data-channel-id="\(pg.publicGroupId)"
+                 data-channel-link="\(pg.groupLink)"></div>
             <script src="https://simplex.chat/js/channel-preview.js"></script>
             """
         } else {
