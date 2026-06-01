@@ -10361,8 +10361,6 @@ testChannelAddRelayWithRoster ps =
             alice <## "#team: group relays:"
             alice <## "  - relay id 1: active"
             alice <## "  - relay id 2: invited"
-            -- "relay id 2: active" only appears after dan acks the roster (XGrpRosterAck),
-            -- which the owner requires before publishing the relay as joinable
             concurrentlyN_
               [ do
                   alice <## "#team: group link relays updated, current relays:"
@@ -10375,8 +10373,8 @@ testChannelAddRelayWithRoster ps =
                 dan <## "#team: you joined the group as relay"
               ]
 
-            -- dan caches the roster (emitting the cath role-change item) and cath, an existing
-            -- member, connects to the new relay; Part B attaches her as moderator with the roster key
+            -- cath (an existing member) connects to the new relay and is attached to her roster
+            -- record, kept as moderator
             concurrentlyN_
               [ do
                   cath <## "#team: joining the group (connecting to relay dan)..."
@@ -10389,14 +10387,8 @@ testChannelAddRelayWithRoster ps =
               ]
 
             threadDelay 100000
-            -- dan holds the roster: it knows cath as moderator (it could only become joinable after this)
-            checkMemberRoleRoster dan "cath" "moderator"
-  where
-    checkMemberRoleRoster :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
-    checkMemberRoleRoster cc name expectedRole = do
-      roles <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
-      map (\(Only r) -> r) roles `shouldBe` [expectedRole]
+            -- the new relay holds the roster (cath is moderator) before it serves joiners
+            checkMemberRow dan "cath" (Just "moderator")
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =

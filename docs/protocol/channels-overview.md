@@ -236,6 +236,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 - Selectively target specific subscribers while delivering correctly to others.
 - Ignore the "message from channel" directive, revealing which owner sent a message. Detectable out-of-band.
 - Fabricate or hide subscriber connections, inflating or deflating counts. Detectable if subscribers are connected to other relays.
+- Replay a member's signed join (`XMember`) that it received to another relay, registering a connection attributed to that member there - the signature binds the channel and member ID but nothing connection-specific. This grants no authorship of signed messages as that member (their private key is still required) and is bounded by the unsigned-content fabrication above; future hardening would bind the signature to the connection or add an anti-replay nonce.
 
 *cannot:*
 

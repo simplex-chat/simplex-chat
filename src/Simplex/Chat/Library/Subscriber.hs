@@ -898,7 +898,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   Just _ -> do
                     -- hold off publishing this relay until it confirms (XGrpRosterAck) that it cached
                     -- the roster, so no joiner can impersonate a privileged member whose key it lacks
-                    relay_ <- withStore' $ \db -> getGroupRelayByMemberId db gInfo (groupMemberId' m)
+                    relay_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupRelayByGMId db (groupMemberId' m))
                     forM_ relay_ $ \relay -> withStore' $ \db -> void $ updateRelayStatus db relay RSAwaitingRoster
                     sendGroupRosterToRelay user gInfo m
             | otherwise -> do
@@ -3269,7 +3269,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     -- relay stays unpublished (fail-safe), so no one can join it impersonating a privileged member.
     xGrpRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
     xGrpRosterAck gInfo m ackVer err = do
-      relay_ <- withStore' $ \db -> getGroupRelayByMemberId db gInfo (groupMemberId' m)
+      relay_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupRelayByGMId db (groupMemberId' m))
       case relay_ of
         Just relay@GroupRelay {relayStatus = RSAwaitingRoster} -> case err of
           Nothing
