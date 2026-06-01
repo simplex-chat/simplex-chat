@@ -3757,7 +3757,7 @@ export namespace RcvMsgError {
 }
 
 export interface RelayCapabilities {
-  baseWebUrl?: string
+  webDomain?: string
 }
 
 export interface RelayProfile {

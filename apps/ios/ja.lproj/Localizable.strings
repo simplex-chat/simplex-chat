@@ -1005,7 +1005,7 @@ server test step */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "連絡先はメッセージを削除対象とすることができます。あなたには閲覧可能です。";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "続ける";
 
 /* No comment provided by engineer. */
