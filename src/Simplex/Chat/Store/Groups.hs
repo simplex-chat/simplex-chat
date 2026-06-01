@@ -1352,9 +1352,9 @@ groupRelayQuery =
   |]
 
 toGroupRelay :: (Int64, GroupMemberId, DBEntityId, ShortLinkContact, Text, Text, Maybe Text, Maybe ImageData, Text, BoolInt) :. (Maybe BoolInt, BoolInt, BoolInt, RelayStatus, Maybe ShortLinkContact, Maybe Text) -> GroupRelay
-toGroupRelay ((groupRelayId, groupMemberId, chatRelayId, address, displayName, fullName, shortDescr, image, domains, BI preset) :. (tested, BI enabled, BI deleted, relayStatus, relayLink, baseWebUrl)) =
+toGroupRelay ((groupRelayId, groupMemberId, chatRelayId, address, displayName, fullName, shortDescr, image, domains, BI preset) :. (tested, BI enabled, BI deleted, relayStatus, relayLink, webDomain)) =
   let userChatRelay = UserChatRelay {chatRelayId, address, relayProfile = toRelayProfile (displayName, fullName, shortDescr, image), domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
-      relayCap = RelayCapabilities {baseWebUrl}
+      relayCap = RelayCapabilities {webDomain}
    in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink, relayCap}
 
 createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupMember
@@ -1496,7 +1496,7 @@ setRelayLinkConfId db m confId relayLink = do
     (relayLink, currentTs, groupMemberId' m)
 
 updateRelayCapabilities :: DB.Connection -> GroupMember -> RelayCapabilities -> IO ()
-updateRelayCapabilities db m RelayCapabilities {baseWebUrl} = do
+updateRelayCapabilities db m RelayCapabilities {webDomain} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1505,7 +1505,7 @@ updateRelayCapabilities db m RelayCapabilities {baseWebUrl} = do
       SET base_web_url = ?, updated_at = ?
       WHERE group_member_id = ?
     |]
-    (baseWebUrl, currentTs, groupMemberId' m)
+    (webDomain, currentTs, groupMemberId' m)
 
 getRelayConfId :: DB.Connection -> GroupMember -> ExceptT StoreError IO ConfirmationId
 getRelayConfId db m =

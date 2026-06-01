@@ -2640,7 +2640,7 @@ RcvMsgError = RcvMsgError_dropped | RcvMsgError_parseError
 RcvMsgError_Tag = Literal["dropped", "parseError"]
 
 class RelayCapabilities(TypedDict):
-    baseWebUrl: NotRequired[str]
+    webDomain: NotRequired[str]
 
 class RelayProfile(TypedDict):
     displayName: str
