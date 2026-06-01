@@ -23,10 +23,10 @@ The relay defaults every joiner to observer, and it forwards a member's posts on
 
 ## Delivery: signed header + binary parts
 
-- **Header** = `XGrpRoster` (JSON, signed by the owner, relay-forwarded): version, SHA-256 of the blob, blob size. No member data inline.
-- **Parts** = new `BGrpRosterPart` (binary, unsigned): version, part number, total parts, raw bytes.
+- **Header** = `XGrpRoster` (JSON, signed by the owner, relay-forwarded): version, SHA-256 of the blob, and the number of parts. No member data inline.
+- **Parts** = new `BGrpRosterPart` (binary, unsigned): version, part number, raw bytes.
 
-The blob is the packed member list. The header's hash covers the **whole blob**, so the relay can re-split it however it likes. A receiver collects all parts, checks the hash against the signed header, then applies. **Nothing is applied until the hash matches** — no partial rosters.
+The blob is the packed member list. A receiver has the full roster once it holds all parts (`0 .. parts-1`, the count taken from the **signed** header), concatenates them in order, and the SHA-256 matches the header. **Nothing is applied until the hash matches** — no partial rosters, and because the part count is signed a relay can't mislead a receiver about how many parts to expect.
 
 Why this shape: only the small header needs a signature, and signing already works for JSON, so we avoid changing the signing wire format. The bulk stays raw binary instead of base64-bloated JSON. Up to ~280 members fit one part; beyond that the blob simply spans more parts through the same code path.
 
@@ -40,8 +40,8 @@ Why this shape: only the small header needs a signature, and signing already wor
 
 ## Storage and recovery
 
-- The relay caches the signed header + the assembled blob, and re-sends them to joiners (re-splitting freely).
-- Both relay and members **persist incoming parts in the database** and apply only when complete — so a restart mid-transfer resumes rather than losing progress.
+- The relay caches the signed header + the parts **verbatim** — the same "store the signed bytes and replay" approach used for today's single-message roster — and replays them to joiners unchanged. It reassembles only transiently, to verify the hash and update its own member records.
+- Both relay and members **persist incoming parts in the database** and apply only when complete — so a restart mid-transfer resumes rather than losing progress. On the relay the stored parts double as the cache it replays.
 - Apply + version bump + buffer cleanup happen in **one transaction**.
 
 ## One correctness point to keep in mind
@@ -50,7 +50,7 @@ Why this shape: only the small header needs a signature, and signing already wor
 
 ## Size cap
 
-A cap (proposed 256, tunable) bounds the blob, the relay's cached copy, and the per-update work. It's enforced when the owner promotes. The cap is a product choice: at ≤~280 the roster is header + 1 part; above that it spans more parts. Pick it for the real target.
+A cap (proposed 256, tunable) bounds the blob, the relay's cached copy, and the per-update work. It's enforced when the owner promotes, and a receiver rejects a header whose part count exceeds what the cap allows before buffering any parts. The cap is a product choice: at ≤~280 the roster is header + 1 part; above that it spans more parts. Pick it for the real target.
 
 ## Consequence to confirm
 
