@@ -116,16 +116,16 @@ struct ChannelWebAccessView: View {
         return webPage != currentWebPage || allowEmbedding != currentEmbedding
     }
 
-    private var relayUrls: [String] {
-        groupRelays.compactMap { $0.relayCap.baseWebUrl }
+    private var relayDomains: [String] {
+        groupRelays.compactMap { $0.relayCap.webDomain }
     }
 
     private var embedCode: String? {
         if let pg = groupInfo.groupProfile.publicGroup,
-           !relayUrls.isEmpty {
+           !relayDomains.isEmpty {
             """
             <div data-simplex-group-preview
-                 data-relay-urls="\(relayUrls.joined(separator: ","))"
+                 data-relay-domains="\(relayDomains.joined(separator: ","))"
                  data-public-group-id="\(pg.publicGroupId)"
                  data-group-link="\(pg.groupLink)"></div>
             <script src="https://simplex.chat/js/channel-preview.js"></script>

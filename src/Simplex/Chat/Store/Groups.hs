@@ -99,8 +99,8 @@ module Simplex.Chat.Store.Groups
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
     updateRelayOwnStatus_,
-    getRelaySentWebUrl,
-    updateRelaySentWebUrl,
+    getRelaySentWebDomain,
+    updateRelaySentWebDomain,
     isRelayGroupRejected,
     allowRelayGroup,
     getRelayServedGroups,
@@ -1644,13 +1644,13 @@ updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   let inactiveAt_ = if relayStatus == RSInactive then Just currentTs else Nothing
   DB.execute db "UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?" (relayStatus, inactiveAt_, currentTs, groupId)
 
-getRelaySentWebUrl :: DB.Connection -> GroupInfo -> IO (Maybe Text)
-getRelaySentWebUrl db GroupInfo {groupId} =
-  join <$> maybeFirstRow fromOnly (DB.query db "SELECT relay_sent_web_url FROM groups WHERE group_id = ?" (Only groupId))
+getRelaySentWebDomain :: DB.Connection -> GroupInfo -> IO (Maybe Text)
+getRelaySentWebDomain db GroupInfo {groupId} =
+  join <$> maybeFirstRow fromOnly (DB.query db "SELECT relay_sent_web_domain FROM groups WHERE group_id = ?" (Only groupId))
 
-updateRelaySentWebUrl :: DB.Connection -> GroupInfo -> Maybe Text -> IO ()
-updateRelaySentWebUrl db GroupInfo {groupId} webUrl =
-  DB.execute db "UPDATE groups SET relay_sent_web_url = ? WHERE group_id = ?" (webUrl, groupId)
+updateRelaySentWebDomain :: DB.Connection -> GroupInfo -> Maybe Text -> IO ()
+updateRelaySentWebDomain db GroupInfo {groupId} webDomain_ =
+  DB.execute db "UPDATE groups SET relay_sent_web_domain = ? WHERE group_id = ?" (webDomain_, groupId)
 
 -- Flip every RSRejected row sharing the targeted group's relay_request_group_link
 -- to RSInactive in one statement; returns the refreshed GroupInfo for the targeted groupId.

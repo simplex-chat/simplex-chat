@@ -242,12 +242,12 @@ coreChatOptsP appDir defaultDbName = do
           <> help "Run as a chat relay client"
       )
   webPreviewConfig <- do
-    baseWebUrl_ <-
+    webDomain_ <-
       optional $
         strOption
-          ( long "relay-web-url"
-              <> metavar "URL"
-              <> help "Base URL for channel web previews (relay only)"
+          ( long "relay-web-domain"
+              <> metavar "DOMAIN"
+              <> help "Domain for channel web previews (relay only)"
           )
     webJsonDir_ <-
       optional $
@@ -270,10 +270,10 @@ coreChatOptsP appDir defaultDbName = do
             <> help "Interval between web preview regeneration in seconds (relay only)"
             <> value 300
         )
-    pure $ case (baseWebUrl_, webJsonDir_) of
-      (Just baseWebUrl, Just webJsonDir) -> Just WebPreviewConfig {baseWebUrl, webJsonDir, webCorsFile, webUpdateInterval}
+    pure $ case (webDomain_, webJsonDir_) of
+      (Just webDomain, Just webJsonDir) -> Just WebPreviewConfig {webDomain, webJsonDir, webCorsFile, webUpdateInterval}
       (Nothing, Nothing) -> Nothing
-      _ -> error "--relay-web-url and --relay-web-dir must both be provided"
+      _ -> error "--relay-web-domain and --relay-web-dir must both be provided"
   highlyAvailable <-
     switch
       ( long "ha"

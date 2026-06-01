@@ -1046,8 +1046,8 @@ acceptRelayJoinRequestAsync
   cReqChatVRange
   relayLink = do
     ChatConfig {webPreviewConfig} <- asks config
-    let webUrl = (\WebPreviewConfig {baseWebUrl} -> baseWebUrl) <$> webPreviewConfig
-        msg = XGrpRelayAcpt relayLink RelayCapabilities {baseWebUrl = webUrl}
+    let webDomain_ = (\WebPreviewConfig {webDomain} -> webDomain) <$> webPreviewConfig
+        msg = XGrpRelayAcpt relayLink RelayCapabilities {webDomain = webDomain_}
     subMode <- chatReadVar subscriptionMode
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange

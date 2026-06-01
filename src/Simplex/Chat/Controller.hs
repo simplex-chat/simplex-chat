@@ -171,7 +171,7 @@ data ChatConfig = ChatConfig
   }
 
 data WebPreviewConfig = WebPreviewConfig
-  { baseWebUrl :: Text,
+  { webDomain :: Text,
     webJsonDir :: FilePath,
     webCorsFile :: Maybe FilePath,
     webUpdateInterval :: Int -- seconds

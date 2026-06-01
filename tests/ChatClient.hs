@@ -165,7 +165,7 @@ relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
 
 relayWebTestOpts :: Text -> FilePath -> ChatOpts
-relayWebTestOpts webUrl webDir = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {baseWebUrl = webUrl, webJsonDir = webDir, webCorsFile = Nothing, webUpdateInterval = 300}}}
+relayWebTestOpts webDomain webDir = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {webDomain, webJsonDir = webDir, webCorsFile = Nothing, webUpdateInterval = 300}}}
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts

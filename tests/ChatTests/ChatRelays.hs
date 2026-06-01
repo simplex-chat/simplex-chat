@@ -35,7 +35,7 @@ chatRelayTests = do
     it "test chat relay" testChatRelayTest
     it "relay profile updated in address" testRelayProfileUpdateInAddress
   describe "relay capabilities" $ do
-    it "relay sends baseWebUrl in capabilities" testRelayWebCapabilities
+    it "relay sends webDomain in capabilities" testRelayWebCapabilities
   describe "web preview" $ do
     it "render web preview JSON for channel" testWebPreviewRender
     it "generate CORS config" testWebPreviewCors
@@ -339,7 +339,7 @@ getTermLine2 c = (,) <$> getTermLine c <*> getTermLine c
 testRelayWebCapabilities :: HasCallStack => TestParams -> IO ()
 testRelayWebCapabilities ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps (relayWebTestOpts "https://relay.example.com/preview" (tmpPath ps </> "web_cap")) "bob" bobProfile $ \relay -> do
+    withNewTestChatOpts ps (relayWebTestOpts "relay.example.com" (tmpPath ps </> "web_cap")) "bob" bobProfile $ \relay -> do
       rName <- userName relay
       relay ##> "/ad"
       (relaySLink, _cLink) <- getContactLinks relay True
@@ -351,7 +351,7 @@ testRelayWebCapabilities ps =
       concurrentlyN_
         [ do
             alice <## "#news: group link relays updated, current relays:"
-            alice <## "  - relay id 1: active, web: https://relay.example.com/preview"
+            alice <## "  - relay id 1: active, web: relay.example.com"
             alice <## "group link:"
             _ <- getTermLine alice
             pure (),
@@ -362,7 +362,7 @@ testWebPreviewRender :: HasCallStack => TestParams -> IO ()
 testWebPreviewRender ps = do
   let webDir = tmpPath ps </> "web_preview"
   withNewTestChat ps "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts ps (relayWebTestOpts "https://relay.example.com/preview" webDir) "bob" bobProfile $ \relay -> do
+    withNewTestChatOpts ps (relayWebTestOpts "relay.example.com" webDir) "bob" bobProfile $ \relay -> do
       _ <- setupRelay alice relay
       alice ##> "/public group relays=1 #news"
       alice <## "group #news is created"
@@ -370,7 +370,7 @@ testWebPreviewRender ps = do
       concurrentlyN_
         [ do
             alice <## "#news: group link relays updated, current relays:"
-            alice <## "  - relay id 1: active, web: https://relay.example.com/preview"
+            alice <## "  - relay id 1: active, web: relay.example.com"
             alice <## "group link:"
             _ <- getTermLine alice
             pure (),
@@ -411,8 +411,8 @@ testWebPreviewCors ps = do
         ]
   writeCorsConfig entries corsFile
   corsContent <- readFile corsFile
-  corsContent `shouldContain` "/preview/abc123.json \"*\""
-  corsContent `shouldContain` "/preview/def456.json \"https://owner-site.com\""
+  corsContent `shouldContain` "/channel/abc123.json \"*\""
+  corsContent `shouldContain` "/channel/def456.json \"https://owner-site.com\""
   corsContent `shouldContain` "# ghi789.json (no origin configured)"
   corsContent `shouldContain` "Access-Control-Allow-Origin"
 

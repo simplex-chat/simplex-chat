@@ -172,11 +172,11 @@ private fun ChannelWebPageLayout(
 
 private fun embedCode(groupRelays: List<GroupRelay>, groupInfo: GroupInfo): String? {
   val pg = groupInfo.groupProfile.publicGroup ?: return null
-  val relayUrls = groupRelays.mapNotNull { it.relayCap.baseWebUrl }
-  if (relayUrls.isEmpty()) return null
-  val urls = relayUrls.joinToString(",")
+  val relayDomains = groupRelays.mapNotNull { it.relayCap.webDomain }
+  if (relayDomains.isEmpty()) return null
+  val domains = relayDomains.joinToString(",")
   return """<div data-simplex-group-preview
-     data-relay-urls="$urls"
+     data-relay-domains="$domains"
      data-public-group-id="${pg.publicGroupId}"
      data-group-link="${pg.groupLink}"></div>
 <script src="https://simplex.chat/js/channel-preview.js"></script>"""

@@ -432,12 +432,12 @@ const VOICE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 2
 const FORWARD_ICON_SVG = `<svg width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path transform="scale(-1,1) translate(-960,0)" d="m236.5-495.5 142.5 143q8.5 8.5 8.25 20.25T378.5-312q-9 8.5-21 8.5t-20.5-9L145.5-504q-9-8.5-9-20t9-20.5L338-737q9-9 20.75-8.75T379.5-737q8.5 8.5 8.5 20.5t-8.5 20.5l-143 143h403q84 0 139.75 56T835-357.5V-234q0 12.5-8.25 20.75T806.5-205q-12.5 0-20.75-8.25T777.5-234v-123.5q0-60-39-99t-99-39h-403Z"/></svg>`;
 
 function initChannelPreview(container) {
-  const relayUrls = (container.dataset.relayUrls || '').split(',').map(u => u.trim()).filter(Boolean);
+  const relayDomains = (container.dataset.relayDomains || '').split(',').map(u => u.trim()).filter(Boolean);
   const groupId = container.dataset.publicGroupId || '';
   const groupLink = container.dataset.groupLink || '';
 
-  if (!relayUrls.length || !groupId) {
-    container.innerHTML = '<p class="simplex-preview-empty">Missing configuration: data-relay-urls and data-public-group-id required.</p>';
+  if (!relayDomains.length || !groupId) {
+    container.innerHTML = '<p class="simplex-preview-empty">Missing configuration: data-relay-domains and data-public-group-id required.</p>';
     return;
   }
 
@@ -445,7 +445,7 @@ function initChannelPreview(container) {
   container.classList.add('simplex-preview-container');
   container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
 
-  fetchPreview(relayUrls, groupId).then(data => {
+  fetchPreview(relayDomains, groupId).then(data => {
     if (!data) {
       container.innerHTML = '<p class="simplex-preview-empty">Failed to load channel preview.</p>';
       return;
@@ -463,10 +463,10 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-async function fetchPreview(relayUrls, groupId) {
-  for (const baseUrl of relayUrls) {
+async function fetchPreview(relayDomains, groupId) {
+  for (const domain of relayDomains) {
     try {
-      const url = baseUrl.replace(/\/$/, '') + '/' + groupId + '.json';
+      const url = `https://${domain}/channel/${groupId}.json`;
       const resp = await fetch(url);
       if (!resp.ok) continue;
       return await resp.json();

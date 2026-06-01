@@ -1206,8 +1206,8 @@ viewReceivedContactRequest c Profile {fullName, shortDescr} =
   ]
 
 showRelay :: GroupRelay -> StyledString
-showRelay GroupRelay {groupRelayId, relayStatus, relayCap = RelayCapabilities {baseWebUrl}} =
-  "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus) <> maybe "" (\url -> ", web: " <> plain url) baseWebUrl
+showRelay GroupRelay {groupRelayId, relayStatus, relayCap = RelayCapabilities {webDomain}} =
+  "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus) <> maybe "" (\d -> ", web: " <> plain d) webDomain
 
 viewGroupRelays :: GroupInfo -> [GroupRelay] -> [StyledString]
 viewGroupRelays g relays =

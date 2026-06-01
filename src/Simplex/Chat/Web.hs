@@ -227,6 +227,9 @@ corsEntry publicGroupId PublicGroupAccess {groupWebPage, allowEmbedding} =
         | otherwise = CorsOrigins []
    in (fName, origin)
 
+channelPath :: Text
+channelPath = "/channel/"
+
 writeCorsConfig :: [(Text, CorsOrigin)] -> FilePath -> IO ()
 writeCorsConfig entries path =
   TIO.writeFile path $ T.unlines $
@@ -234,15 +237,15 @@ writeCorsConfig entries path =
     <> map corsLine entries
     <> [ "    default \"\"",
          "}",
-         "header /preview/*.json Access-Control-Allow-Origin {cors_origin}",
-         "header /preview/*.json Access-Control-Allow-Methods \"GET, OPTIONS\""
+         "header " <> channelPath <> "*.json Access-Control-Allow-Origin {cors_origin}",
+         "header " <> channelPath <> "*.json Access-Control-Allow-Methods \"GET, OPTIONS\""
        ]
   where
     corsLine (fName, origin) = case origin of
-      CorsAny -> "    /preview/" <> fName <> " \"*\""
+      CorsAny -> "    " <> channelPath <> fName <> " \"*\""
       CorsOrigins origins -> case origins of
         [] -> "    # " <> fName <> " (no origin configured)"
-        (o : _) -> "    /preview/" <> fName <> " \"" <> o <> "\""
+        (o : _) -> "    " <> channelPath <> fName <> " \"" <> o <> "\""
 
 publicGroupIdFileName :: B64UrlByteString -> String
 publicGroupIdFileName = B.unpack . strEncode
