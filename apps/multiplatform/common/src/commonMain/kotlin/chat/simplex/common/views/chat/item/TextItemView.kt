@@ -85,6 +85,13 @@ fun itemDisplayText(ci: ChatItem, linkMode: SimplexLinkMode): String {
   return formattedText.joinToString("") { itemSegmentDisplayText(it, ci, linkMode) }
 }
 
+// Display-only prefix rendered before ci.text (e.g. "Spam: " for reports).
+// Renderers and selection code MUST share this string — otherwise selection offsets drift from screen.
+fun itemPrefixText(ci: ChatItem): String = when (val mc = ci.content.msgContent) {
+  is MsgContent.MCReport -> if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: "
+  else -> ""
+}
+
 // Text transformations in MarkdownText must match itemSegmentDisplayText above
 @Composable
 fun MarkdownText (
@@ -274,6 +281,13 @@ fun MarkdownText (
                 }
               }
             }
+            is Format.SimplexName -> {
+              hasLinks = true
+              val ftStyle = Format.linkStyle
+              withAnnotation(tag = "SIMPLEX_NAME", annotation = i.toString()) {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            }
             is Format.Email -> {
               hasLinks = true
               val ftStyle = Format.linkStyle
@@ -322,6 +336,16 @@ fun MarkdownText (
               withAnnotation("WEB_URL") { a -> openBrowserAlert(a.item, uriHandler) }
               withAnnotation("OTHER_URL") { a -> safeOpenUri(a.item, uriHandler) }
               withAnnotation("SIMPLEX_URL") { a -> uriHandler.openVerifiedSimplexUri(a.item) }
+              withAnnotation("SIMPLEX_NAME") { a ->
+                val idx = a.item.toIntOrNull()
+                val nameInfo = (idx?.let { formattedText.getOrNull(it) }?.format as? Format.SimplexName)?.nameInfo
+                val (title, msg) = if (nameInfo?.nameType == SimplexNameType.contact) {
+                  generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
+                } else {
+                  generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
+                }
+                AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
+              }
             }
             if (hasSecrets) {
               withAnnotation("SECRET") { a ->
@@ -336,7 +360,7 @@ fun MarkdownText (
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
             icon.value =
-              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
+              if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SIMPLEX_NAME") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
                 PointerIcon.Hand
               } else {
                 PointerIcon.Text

@@ -167,7 +167,7 @@ struct FramedItemView: View {
             case let .report(text, reason):
                 ciMsgContentView(chatItem, txtPrefix: reason.attrString)
             case let .link(_, preview):
-                CILinkView(linkPreview: preview)
+                CILinkView(linkPreview: preview, maxWidth: maxWidth)
                 ciMsgContentView(chatItem)
             case let .chat(text, chatLink, ownerSig):
                 let hasText = text != chatLink.connLinkStr

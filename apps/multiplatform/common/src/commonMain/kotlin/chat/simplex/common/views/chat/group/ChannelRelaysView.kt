@@ -2,6 +2,7 @@ package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
 import SectionItemView
+import SectionItemViewLongClickable
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
@@ -16,9 +17,11 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
 fun ChannelRelaysView(
@@ -29,16 +32,18 @@ fun ChannelRelaysView(
   showMemberInfo: (GroupMember, GroupRelay?) -> Unit
 ) {
   BackHandler(onBack = close)
-  var groupRelays by remember { mutableStateOf<List<GroupRelay>>(emptyList()) }
+  val groupRelays = ChannelRelaysModel.groupRelays
 
   LaunchedEffect(Unit) {
     setGroupMembers(rhId, groupInfo, chatModel)
     if (groupInfo.isOwner) {
-      groupRelays = chatModel.controller.apiGetGroupRelays(groupInfo.groupId)
+      val relays = chatModel.controller.apiGetGroupRelays(groupInfo.groupId)
+      ChannelRelaysModel.set(groupId = groupInfo.groupId, groupRelays = relays)
     }
   }
 
   ChannelRelaysLayout(
+    rhId = rhId,
     groupInfo = groupInfo,
     chatModel = chatModel,
     groupRelays = groupRelays,
@@ -48,13 +53,14 @@ fun ChannelRelaysView(
 
 @Composable
 private fun ChannelRelaysLayout(
+  rhId: Long?,
   groupInfo: GroupInfo,
   chatModel: ChatModel,
   groupRelays: List<GroupRelay>,
   showMemberInfo: (GroupMember, GroupRelay?) -> Unit
 ) {
   val relayMembers = remember { chatModel.groupMembers }.value
-    .filter { it.memberRole == GroupMemberRole.Relay }
+    .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus != GroupMemberStatus.MemRemoved && it.memberStatus != GroupMemberStatus.MemGroupDeleted }
 
   ColumnWithScrollBar {
     AppBarTitle(generalGetString(MR.strings.channel_relays_title))
@@ -74,11 +80,24 @@ private fun ChannelRelaysLayout(
           if (index > 0) {
             Divider()
           }
-          SectionItemView(
+          val showMenu = remember { mutableStateOf(false) }
+          SectionItemViewLongClickable(
             click = { showMemberInfo(member, groupRelays.firstOrNull { it.groupMemberId == member.groupMemberId }) },
+            longClick = { showMenu.value = true },
             minHeight = 54.dp,
             padding = PaddingValues(horizontal = DEFAULT_PADDING)
           ) {
+            // TODO [relays] re-enable when relay management ships
+            /*
+            if (groupInfo.isOwner && member.canBeRemoved(groupInfo)) {
+              DefaultDropdownMenu(showMenu) {
+                ItemAction(generalGetString(MR.strings.button_remove_relay), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+                  removeMemberAlert(rhId, groupInfo, member)
+                  showMenu.value = false
+                })
+              }
+            }
+            */
             val statusText = if (groupInfo.isOwner) {
               ownerRelayStatusText(member, groupRelays)
             } else {
@@ -90,6 +109,37 @@ private fun ChannelRelaysLayout(
       }
       SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages))
     }
+    // TODO [relays] re-enable when relay management ships
+    /*
+    if (groupInfo.isOwner) {
+      SectionView {
+        SectionItemView(click = {
+          // Backend gate (APIAddGroupRelays) rejects any chatRelayId already in group_relays
+          // regardless of relayStatus, so all current rows must be excluded from the add list.
+          val existingRelayIds = groupRelays.mapNotNull { it.userChatRelay.chatRelayId }.toSet()
+          ModalManager.end.showModalCloseable(true) { close ->
+            AddGroupRelayView(
+              groupInfo = groupInfo,
+              existingRelayIds = existingRelayIds,
+              onRelayAdded = { withBGApi { setGroupMembers(rhId, groupInfo, chatModel) } },
+              close = close
+            )
+          }
+        }, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+          Icon(
+            painterResource(MR.images.ic_add),
+            contentDescription = null,
+            tint = MaterialTheme.colors.primary
+          )
+          Spacer(Modifier.width(4.dp))
+          Text(
+            generalGetString(MR.strings.add_relay_button),
+            color = MaterialTheme.colors.primary
+          )
+        }
+      }
+    }
+    */
     SectionBottomSpacer()
   }
 }
@@ -131,7 +181,10 @@ private fun subscriberRelayStatusText(member: GroupMember): String {
 }
 
 private fun ownerRelayStatusText(member: GroupMember, groupRelays: List<GroupRelay>): String {
-  return if (member.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)) {
+  val relayStatus = groupRelays.firstOrNull { it.groupMemberId == member.groupMemberId }?.relayStatus
+  return if (relayStatus == RelayStatus.Rejected) {
+    generalGetString(MR.strings.relay_status_rejected)
+  } else if (member.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)) {
     relayConnStatus(member).first
   } else if (member.activeConn?.connStatus is ConnStatus.Failed) {
     generalGetString(MR.strings.relay_conn_status_failed)
@@ -140,8 +193,7 @@ private fun ownerRelayStatusText(member: GroupMember, groupRelays: List<GroupRel
   } else if (member.activeConn?.connInactive == true) {
     generalGetString(MR.strings.member_info_member_inactive)
   } else {
-    groupRelays.firstOrNull { it.groupMemberId == member.groupMemberId }?.relayStatus?.text
-      ?: relayConnStatus(member).first
+    relayStatus?.text ?: relayConnStatus(member).first
   }
 }
 

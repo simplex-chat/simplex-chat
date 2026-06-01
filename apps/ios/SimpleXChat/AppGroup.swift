@@ -237,6 +237,8 @@ public let privacyEncryptLocalFilesGroupDefault = BoolDefault(defaults: groupDef
 
 public let privacyAskToApproveRelaysGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS)
 
+public let privacySanitizeLinksGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS)
+
 public let profileImageCornerRadiusGroupDefault = Default<Double>(defaults: groupDefaults, forKey: GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
 
 public let ntfBadgeCountGroupDefault = IntDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_BADGE_COUNT)

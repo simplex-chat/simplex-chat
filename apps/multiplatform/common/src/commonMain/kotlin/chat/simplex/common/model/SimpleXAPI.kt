@@ -91,6 +91,13 @@ enum class SimplexLinkMode {
   }
 }
 
+enum class CloseBehavior {
+  Ask, Quit, MinimizeToTray;
+  companion object { val default = Ask }
+}
+
+class HintPref(val reset: () -> Unit, val isUnchanged: () -> Boolean)
+
 // Spec: spec/state.md#AppPreferences
 class AppPreferences {
   // deprecated, remove in 2024
@@ -99,6 +106,7 @@ class AppPreferences {
     SHARED_PREFS_NOTIFICATIONS_MODE,
     if (!runServiceInBackground.get()) NotificationsMode.OFF else NotificationsMode.default
   )  { NotificationsMode.values().firstOrNull { it.name == this } }
+  val closeBehavior: SharedPreference<CloseBehavior> = mkSafeEnumPreference(SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR, CloseBehavior.default)
   val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
   val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
@@ -257,17 +265,23 @@ class AppPreferences {
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
   val chatBottomBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_BAR, true)
 
-  val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
-    laNoticeShown to false,
-    oneHandUICardShown to false,
-    addressCreationCardShown to false,
-    liveMessageAlertShown to false,
-    showHiddenProfilesNotice to true,
-    showMuteProfileAlert to true,
-    showReportsInSupportChatAlert to true,
-    showDeleteConversationNotice to true,
-    showDeleteContactNotice to true,
-    privacyLinkPreviewsShowAlert to true,
+  val hintPreferences: List<HintPref> = listOf(
+    hintPref(laNoticeShown, false),
+    hintPref(oneHandUICardShown, false),
+    hintPref(addressCreationCardShown, false),
+    hintPref(liveMessageAlertShown, false),
+    hintPref(showHiddenProfilesNotice, true),
+    hintPref(showMuteProfileAlert, true),
+    hintPref(showReportsInSupportChatAlert, true),
+    hintPref(showDeleteConversationNotice, true),
+    hintPref(showDeleteContactNotice, true),
+    hintPref(privacyLinkPreviewsShowAlert, true),
+    hintPref(closeBehavior, CloseBehavior.default),
+  )
+
+  private fun <T> hintPref(pref: SharedPreference<T>, default: T) = HintPref(
+    reset = { pref.set(default) },
+    isUnchanged = { pref.state.value == default },
   )
 
   private fun mkIntPreference(prefName: String, default: Int) =
@@ -479,6 +493,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
+    private const val SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR = "DesktopCloseBehavior"
     private const val SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
     private const val SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
     private const val SHARED_PREFS_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
@@ -1198,14 +1213,14 @@ object ChatController {
   suspend fun apiDeleteChatItems(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemIds: List<Long>, mode: CIDeleteMode): List<ChatItemDeletion>? {
     val r = sendCmd(rh, CC.ApiDeleteChatItem(type, id, scope, itemIds, mode))
     if (r is API.Result && r.res is CR.ChatItemsDeleted) return r.res.chatItemDeletions
-    Log.e(TAG, "apiDeleteChatItem bad response: ${r.responseType} ${r.details}")
+    apiErrorAlert("apiDeleteChatItems", generalGetString(MR.strings.error_deleting_message), r)
     return null
   }
 
   suspend fun apiDeleteMemberChatItems(rh: Long?, groupId: Long, itemIds: List<Long>): List<ChatItemDeletion>? {
     val r = sendCmd(rh, CC.ApiDeleteMemberChatItem(groupId, itemIds))
     if (r is API.Result && r.res is CR.ChatItemsDeleted) return r.res.chatItemDeletions
-    Log.e(TAG, "apiDeleteMemberChatItem bad response: ${r.responseType} ${r.details}")
+    apiErrorAlert("apiDeleteMemberChatItems", generalGetString(MR.strings.error_deleting_message), r)
     return null
   }
 
@@ -2161,6 +2176,19 @@ object ChatController {
     val r = sendCmd(null, CC.ApiGetGroupRelays(groupId))
     if (r is API.Result && r.res is CR.GroupRelays) return r.res.groupRelays
     return emptyList()
+  }
+
+  sealed class AddGroupRelaysResult {
+    data class Added(val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): AddGroupRelaysResult()
+    data class AddFailed(val addRelayResults: List<AddRelayResult>): AddGroupRelaysResult()
+  }
+
+  suspend fun apiAddGroupRelays(groupId: Long, relayIds: List<Long>): AddGroupRelaysResult? {
+    val r = sendCmdWithRetry(null, CC.ApiAddGroupRelays(groupId, relayIds))
+    if (r is API.Result && r.res is CR.GroupRelaysAdded) return AddGroupRelaysResult.Added(r.res.groupInfo, r.res.groupLink, r.res.groupRelays)
+    if (r is API.Result && r.res is CR.GroupRelaysAddFailed) return AddGroupRelaysResult.AddFailed(r.res.addRelayResults)
+    if (r != null) throw Exception("${r.responseType}: ${r.details}")
+    return null
   }
 
   suspend fun apiAddMember(rh: Long?, groupId: Long, contactId: Long, memberRole: GroupMemberRole): GroupMember? {
@@ -3666,6 +3694,7 @@ sealed class CC {
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiNewPublicGroup(val userId: Long, val incognito: Boolean, val relayIds: List<Long>, val groupProfile: GroupProfile): CC()
   class ApiGetGroupRelays(val groupId: Long): CC()
+  class ApiAddGroupRelays(val groupId: Long, val relayIds: List<Long>): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
   class ApiAcceptMember(val groupId: Long, val groupMemberId: Long, val memberRole: GroupMemberRole): CC()
@@ -3870,6 +3899,7 @@ sealed class CC {
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
     is ApiNewPublicGroup -> "/_public group $userId incognito=${onOff(incognito)} ${relayIds.joinToString(",")} ${json.encodeToString(groupProfile)}"
     is ApiGetGroupRelays -> "/_get relays #$groupId"
+    is ApiAddGroupRelays -> "/_add relays #$groupId ${relayIds.joinToString(",")}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiAcceptMember -> "/_accept member #$groupId $groupMemberId ${memberRole.memberRole}"
@@ -4053,6 +4083,7 @@ sealed class CC {
     is ApiNewGroup -> "apiNewGroup"
     is ApiNewPublicGroup -> "apiNewPublicGroup"
     is ApiGetGroupRelays -> "apiGetGroupRelays"
+    is ApiAddGroupRelays -> "apiAddGroupRelays"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
     is ApiAcceptMember -> "apiAcceptMember"
@@ -6402,6 +6433,8 @@ sealed class CR {
   @Serializable @SerialName("publicGroupCreated") class PublicGroupCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
   @Serializable @SerialName("publicGroupCreationFailed") class PublicGroupCreationFailed(val user: UserRef, val addRelayResults: List<AddRelayResult>): CR()
   @Serializable @SerialName("groupRelays") class GroupRelays(val user: UserRef, val groupInfo: GroupInfo, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("groupRelaysAdded") class GroupRelaysAdded(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("groupRelaysAddFailed") class GroupRelaysAddFailed(val user: UserRef, val addRelayResults: List<AddRelayResult>): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("groupLinkConnecting") class GroupLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember): CR()
@@ -6591,6 +6624,8 @@ sealed class CR {
     is PublicGroupCreated -> "publicGroupCreated"
     is PublicGroupCreationFailed -> "publicGroupCreationFailed"
     is GroupRelays -> "groupRelays"
+    is GroupRelaysAdded -> "groupRelaysAdded"
+    is GroupRelaysAddFailed -> "groupRelaysAddFailed"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
     is GroupLinkConnecting -> "groupLinkConnecting"
@@ -6773,6 +6808,8 @@ sealed class CR {
     is PublicGroupCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
     is PublicGroupCreationFailed -> withUser(user, "addRelayResults: $addRelayResults")
     is GroupRelays -> withUser(user, "groupInfo: $groupInfo\ngroupRelays: $groupRelays")
+    is GroupRelaysAdded -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
+    is GroupRelaysAddFailed -> withUser(user, "addRelayResults: $addRelayResults")
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is GroupLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember")
@@ -6956,6 +6993,7 @@ sealed class GroupLinkPlan {
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
   @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("noRelays") class NoRelays(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
+  @Serializable @SerialName("updateRequired") class UpdateRequired(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
 }
 
 abstract class TerminalItem {
@@ -8005,6 +8043,7 @@ data class AppSettings(
   var privacyAskToApproveRelays: Boolean? = null,
   var privacyAcceptImages: Boolean? = null,
   var privacyLinkPreviews: Boolean? = null,
+  var privacySanitizeLinks: Boolean? = null,
   var privacyChatListOpenLinks: PrivacyChatListOpenLinksMode? = null,
   var privacyShowChatPreviews: Boolean? = null,
   var privacySaveLastDraft: Boolean? = null,
@@ -8041,6 +8080,7 @@ data class AppSettings(
     if (privacyAskToApproveRelays != def.privacyAskToApproveRelays) { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
     if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
     if (privacyLinkPreviews != def.privacyLinkPreviews) { empty.privacyLinkPreviews = privacyLinkPreviews }
+    if (privacySanitizeLinks != def.privacySanitizeLinks) { empty.privacySanitizeLinks = privacySanitizeLinks }
     if (privacyChatListOpenLinks != def.privacyChatListOpenLinks) { empty.privacyChatListOpenLinks = privacyChatListOpenLinks }
     if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
     if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
@@ -8088,6 +8128,7 @@ data class AppSettings(
     privacyAskToApproveRelays?.let { def.privacyAskToApproveRelays.set(it) }
     privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
     privacyLinkPreviews?.let { def.privacyLinkPreviews.set(it) }
+    privacySanitizeLinks?.let { def.privacySanitizeLinks.set(it) }
     privacyChatListOpenLinks?.let { def.privacyChatListOpenLinks.set(it) }
     privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
     privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
@@ -8125,6 +8166,7 @@ data class AppSettings(
         privacyAskToApproveRelays = true,
         privacyAcceptImages = true,
         privacyLinkPreviews = true,
+        privacySanitizeLinks = false,
         privacyChatListOpenLinks = PrivacyChatListOpenLinksMode.ASK,
         privacyShowChatPreviews = true,
         privacySaveLastDraft = true,
@@ -8163,6 +8205,7 @@ data class AppSettings(
           privacyAskToApproveRelays = def.privacyAskToApproveRelays.get(),
           privacyAcceptImages = def.privacyAcceptImages.get(),
           privacyLinkPreviews = def.privacyLinkPreviews.get(),
+          privacySanitizeLinks = def.privacySanitizeLinks.get(),
           privacyChatListOpenLinks = def.privacyChatListOpenLinks.get(),
           privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
           privacySaveLastDraft = def.privacySaveLastDraft.get(),

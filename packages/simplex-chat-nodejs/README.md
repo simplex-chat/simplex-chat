@@ -14,7 +14,7 @@ Please share your use cases and implementations.
 ## Quick start: a simple bot
 
 ```
-npm i simplex-chat@6.5.0-beta.10
+npm i simplex-chat@6.5.1
 ```
 
 Simple bot that replies with squares of numbers you send to it:

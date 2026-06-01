@@ -41,6 +41,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatListQuery](#chatlistquery)
 - [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
 - [ChatSettings](#chatsettings)
@@ -136,6 +137,7 @@ This file is generated automatically.
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
 - [OwnerVerification](#ownerverification)
+- [PaginationByTime](#paginationbytime)
 - [PendingContactConnection](#pendingcontactconnection)
 - [PrefEnabled](#prefenabled)
 - [Preferences](#preferences)
@@ -144,6 +146,7 @@ This file is generated automatically.
 - [Profile](#profile)
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
+- [PublicGroupAccess](#publicgroupaccess)
 - [PublicGroupData](#publicgroupdata)
 - [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
@@ -155,6 +158,7 @@ This file is generated automatically.
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
 - [RcvMsgError](#rcvmsgerror)
+- [RelayCapabilities](#relaycapabilities)
 - [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
@@ -163,6 +167,10 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameDomain](#simplexnamedomain)
+- [SimplexNameInfo](#simplexnameinfo)
+- [SimplexNameType](#simplexnametype)
+- [SimplexTLD](#simplextld)
 - [SndCIStatusProgress](#sndcistatusprogress)
 - [SndConnEvent](#sndconnevent)
 - [SndError](#snderror)
@@ -587,6 +595,7 @@ ChatBanner:
 - "broadcast"
 - "internal"
 - "internalMark"
+- "history"
 
 
 ---
@@ -1329,6 +1338,22 @@ Message deletion result.
 
 ---
 
+## ChatListQuery
+
+**Discriminated union type**:
+
+Filters:
+- type: "filters"
+- favorite: bool
+- unread: bool
+
+Search:
+- type: "search"
+- search: string
+
+
+---
+
 ## ChatPeerType
 
 **Enum type**:
@@ -1358,7 +1383,7 @@ ChatType.cmdString(chatType) + chatId + (chatScope ? GroupChatScope.cmdString(ch
 ```
 
 ```python
-str(chatType) + str(chatId) + ((str(chatScope)) if chatScope is not None else '') # Python
+ChatType_cmd_string(chatType) + str(chatId) + ((GroupChatScope_cmd_string(chatScope)) if chatScope is not None else '') # Python
 ```
 
 
@@ -2072,6 +2097,10 @@ SimplexLink:
 - simplexUri: string
 - smpHosts: [string]
 
+SimplexName:
+- type: "simplexName"
+- nameInfo: [SimplexNameInfo](#simplexnameinfo)
+
 Command:
 - type: "command"
 - commandStr: string
@@ -2312,6 +2341,10 @@ NoRelays:
 - type: "noRelays"
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
+UpdateRequired:
+- type: "updateRequired"
+- groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
+
 
 ---
 
@@ -2468,6 +2501,7 @@ NoRelays:
 - userChatRelay: [UserChatRelay](#userchatrelay)
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
+- relayCap: [RelayCapabilities](#relaycapabilities)
 
 
 ---
@@ -2895,6 +2929,31 @@ Failed:
 
 ---
 
+## PaginationByTime
+
+**Discriminated union type**:
+
+Last:
+- type: "last"
+- count: int
+
+**Syntax**:
+
+```
+count=<count>
+```
+
+```javascript
+'count=' + count // JavaScript
+```
+
+```python
+'count=' + str(count) # Python
+```
+
+
+---
+
 ## PendingContactConnection
 
 **Record type**:
@@ -3014,6 +3073,17 @@ NO_SESSION:
 
 ---
 
+## PublicGroupAccess
+
+**Record type**:
+- groupWebPage: string?
+- groupDomain: string?
+- domainWebPage: bool
+- allowEmbedding: bool
+
+
+---
+
 ## PublicGroupData
 
 **Record type**:
@@ -3028,6 +3098,7 @@ NO_SESSION:
 - groupType: [GroupType](#grouptype)
 - groupLink: string
 - publicGroupId: string
+- publicGroupAccess: [PublicGroupAccess](#publicgroupaccess)?
 
 
 ---
@@ -3287,6 +3358,14 @@ ParseError:
 
 ---
 
+## RelayCapabilities
+
+**Record type**:
+- baseWebUrl: string?
+
+
+---
+
 ## RelayProfile
 
 **Record type**:
@@ -3306,6 +3385,7 @@ ParseError:
 - "accepted"
 - "active"
 - "inactive"
+- "rejected"
 
 
 ---
@@ -3389,6 +3469,44 @@ A_QUEUE:
 - "group"
 - "channel"
 - "relay"
+
+
+---
+
+## SimplexNameDomain
+
+**Record type**:
+- nameTLD: [SimplexTLD](#simplextld)
+- domain: string
+- subDomain: [string]
+
+
+---
+
+## SimplexNameInfo
+
+**Record type**:
+- nameType: [SimplexNameType](#simplexnametype)
+- nameDomain: [SimplexNameDomain](#simplexnamedomain)
+
+
+---
+
+## SimplexNameType
+
+**Enum type**:
+- "publicGroup"
+- "contact"
+
+
+---
+
+## SimplexTLD
+
+**Enum type**:
+- "simplex"
+- "testing"
+- "web"
 
 
 ---

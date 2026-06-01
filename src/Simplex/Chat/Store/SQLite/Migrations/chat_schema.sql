@@ -125,7 +125,11 @@ CREATE TABLE group_profiles(
   short_descr TEXT,
   group_type TEXT,
   group_link BLOB,
-  public_group_id BLOB
+  public_group_id BLOB,
+  group_web_page TEXT,
+  group_domain TEXT,
+  domain_web_page INTEGER,
+  allow_embedding INTEGER
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -176,7 +180,8 @@ CREATE TABLE groups(
   public_member_count INTEGER,
   relay_request_retries INTEGER NOT NULL DEFAULT 0,
   relay_request_delay INTEGER NOT NULL DEFAULT 0,
-  relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00', -- received
+  relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+  relay_inactive_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -777,6 +782,8 @@ CREATE TABLE group_relays(
   conf_id BLOB,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  base_web_url TEXT
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1294,6 +1301,12 @@ CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
   item_viewed,
   item_ts
 );
+CREATE INDEX idx_groups_relay_request_group_link
+ON groups(
+  user_id,
+  relay_request_group_link
+)
+WHERE relay_request_group_link IS NOT NULL;
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

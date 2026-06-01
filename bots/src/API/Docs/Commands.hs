@@ -119,6 +119,8 @@ chatCommandsDocsData =
         ("APINewGroup", [], "Create group.", ["CRGroupCreated", "CRChatCmdError"], [], Nothing, "/_group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Json "groupProfile"),
         ("APINewPublicGroup", [], "Create public group.", ["CRPublicGroupCreated", "CRPublicGroupCreationFailed", "CRChatCmdError"], [], Just UNInteractive, "/_public group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Join ',' "relayIds" <> " " <> Json "groupProfile"),
         ("APIGetGroupRelays", [], "Get group relays.", ["CRGroupRelays", "CRChatCmdError"], [], Nothing, "/_get relays #" <> Param "groupId"),
+        ("APIAddGroupRelays", [], "Add relays to group.", ["CRGroupRelaysAdded", "CRGroupRelaysAddFailed", "CRChatCmdError"], [], Just UNInteractive, "/_add relays #" <> Param "groupId" <> " " <> Join ',' "relayIds"),
+        ("APIAllowRelayGroup", [], "Clear relay rejection for a channel (relay operator).", ["CRRelayGroupAllowed", "CRChatCmdError"], [], Just UNBackground, "/_relay allow #" <> Param "groupId"),
         ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile")
       ]
     ),
@@ -133,6 +135,7 @@ chatCommandsDocsData =
     ( "Connection commands",
       "These commands may be used to create connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.",
       [ ("APIAddContact", [], "Create 1-time invitation link.", ["CRInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)),
+        -- `Maybe` in `connectionLink :: Maybe AConnectionLink` is used to signal link parsing error to the runtime (the handler returns CEInvalidConnReq on Nothing); it is NOT API-level optionality. The parameter is required from callers.
         ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link.", ["CRConnectionPlan", "CRChatCmdError"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectionLink"),
         ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
         ("Connect", [], "Connect via SimpleX link as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connLink_"),
@@ -144,6 +147,7 @@ chatCommandsDocsData =
       "Commands to list and delete conversations.",
       [ ("APIListContacts", [], "Get contacts.", ["CRContactsList", "CRChatCmdError"], [], Nothing, "/_contacts " <> Param "userId"),
         ("APIListGroups", [], "Get groups.", ["CRGroupsList", "CRChatCmdError"], [], Nothing, "/_groups " <> Param "userId" <> Optional "" (" @" <> Param "$0") "contactId_" <> Optional "" (" " <> Param "$0") "search"),
+        ("APIGetChats", [], "Get chat previews. Supports time-based pagination — use this instead of APIListContacts / APIListGroups when scanning at scale (those load every record into memory and fail on large databases).", ["CRApiChats", "CRChatCmdError"], [], Nothing, "/_get chats " <> Param "userId" <> OnOffParam "pcc" "pendingConnections" (Just False) <> " " <> Param "pagination" <> " " <> Json "query"),
         ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode"),
         ("APISetGroupCustomData", [], "Set group custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom #" <> Param "groupId" <> Optional "" (" " <> Json "$0") "customData"),
         ("APISetContactCustomData", [], "Set contact custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom @" <> Param "contactId" <> Optional "" (" " <> Json "$0") "customData"),
@@ -200,6 +204,7 @@ cliCommands =
     "AcceptMember",
     "AddContact",
     "AddMember",
+    "AllowRelayGroup",
     "BlockForAll",
     "ChatHelp",
     "ClearContact",
@@ -357,7 +362,6 @@ undocumentedCommands =
     "APIGetChatItemInfo",
     "APIGetChatItems",
     "APIGetChatItemTTL",
-    "APIGetChats",
     "APIGetChatTags",
     "APIGetConnNtfMessages",
     "APIGetContactCode",
