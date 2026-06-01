@@ -1409,7 +1409,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Вміст порушує умови використання";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Продовжуйте";
 
 /* No comment provided by engineer. */

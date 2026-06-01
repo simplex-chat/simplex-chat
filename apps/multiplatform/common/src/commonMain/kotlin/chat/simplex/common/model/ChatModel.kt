@@ -2250,7 +2250,7 @@ data class PublicGroupAccess(
 
 @Serializable
 data class RelayCapabilities(
-  val baseWebUrl: String? = null
+  val webDomain: String? = null
 )
 
 @Serializable

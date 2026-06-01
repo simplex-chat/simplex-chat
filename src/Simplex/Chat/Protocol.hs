@@ -263,12 +263,12 @@ data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RROther | RRU
   deriving (Eq, Show)
 
 data RelayCapabilities = RelayCapabilities
-  { baseWebUrl :: Maybe Text
+  { webDomain :: Maybe Text
   }
   deriving (Eq, Show)
 
 defaultRelayCapabilities :: RelayCapabilities
-defaultRelayCapabilities = RelayCapabilities {baseWebUrl = Nothing}
+defaultRelayCapabilities = RelayCapabilities {webDomain = Nothing}
 
 $(pure [])
 
