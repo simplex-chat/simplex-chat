@@ -185,18 +185,21 @@
         <target>%d ay</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d relays failed" xml:space="preserve">
+      <trans-unit id="%d relays failed" xml:space="preserve" approved="no">
         <source>%d relays failed</source>
+        <target state="translated">%d aktarıcı başarısız oldu</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d relays not active" xml:space="preserve">
+      <trans-unit id="%d relays not active" xml:space="preserve" approved="no">
         <source>%d relays not active</source>
+        <target state="translated">%d aktarıcı etkin değil</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d relays removed" xml:space="preserve">
+      <trans-unit id="%d relays removed" xml:space="preserve" approved="no">
         <source>%d relays removed</source>
+        <target state="translated">%d aktarıcı kaldırıldı</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
@@ -215,12 +218,14 @@ channel subscriber relay bar</note>
         <target>%d okunmamış mesaj(lar)</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="%d subscriber" xml:space="preserve">
+      <trans-unit id="%d subscriber" xml:space="preserve" approved="no">
         <source>%d subscriber</source>
+        <target state="translated">%d abone</target>
         <note>channel subscriber count</note>
       </trans-unit>
-      <trans-unit id="%d subscribers" xml:space="preserve">
+      <trans-unit id="%d subscribers" xml:space="preserve" approved="no">
         <source>%d subscribers</source>
+        <target state="translated">%d abone</target>
         <note>channel subscriber count</note>
       </trans-unit>
       <trans-unit id="%d weeks" xml:space="preserve">
@@ -228,26 +233,31 @@ channel subscriber relay bar</note>
         <target>%d hafta</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active" xml:space="preserve">
+      <trans-unit id="%d/%d relays active" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active</source>
+        <target state="translated">%1$d/%2$d aktarıcı etkin</target>
         <note>channel creation progress
 channel relay bar progress</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active, %d errors" xml:space="preserve">
+      <trans-unit id="%d/%d relays active, %d errors" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active, %3$d errors</source>
+        <target state="translated">%1$d/%2$d aktarıcı etkin, %3$d hata</target>
         <note>channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve">
+      <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active, %3$d failed</source>
+        <target state="translated">%1$d/%2$d aktarıcı etkin, %3$d başarısız</target>
         <note>channel creation progress with errors
 channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve">
+      <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active, %3$d removed</source>
+        <target state="translated">%1$d/%2$d aktarıcı etkin, %3$d kaldırıldı</target>
         <note>channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays connected" xml:space="preserve">
+      <trans-unit id="%d/%d relays connected" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays connected</source>
+        <target state="translated">%1$d/%2$d aktarıcı bağlı</target>
         <note>channel subscriber relay bar progress</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve">
