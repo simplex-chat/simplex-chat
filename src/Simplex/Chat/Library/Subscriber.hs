@@ -1618,16 +1618,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   -- a privileged memberId's key is owner-authoritative (the roster); the joiner must prove
                   -- possession of that exact key, otherwise this is an attempt to impersonate it
                   | isRosterRole (memberRole' rosterMem) ->
-                      if verifiedKeyPossession gInfo && memberPubKey rosterMem == Just joiningKey
+                      if verifyKey gInfo rosterMem
                         then acceptJoin gInfo (Just rosterMem) (memberRole' rosterMem)
                         else messageError "memberJoinRequestViaRelay: rejected join claiming privileged memberId (key mismatch or invalid signature)"
                 _ -> acceptJoin gInfo Nothing gLinkMemRole
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
           where
-            verifiedKeyPossession gInfo = case (signedMsg_, groupKeys gInfo) of
+            verifyKey gInfo rosterMem = case (signedMsg_, groupKeys gInfo) of
               (Just SignedMsg {chatBinding = CBGroup, signatures, signedBody}, Just GroupKeys {publicGroupId}) ->
-                verifyGroupSig joiningKey publicGroupId joiningMemberId signatures signedBody
+                memberPubKey rosterMem == Just joiningKey
+                  && verifyGroupSig joiningKey publicGroupId joiningMemberId signatures signedBody
               _ -> False
             acceptJoin gInfo existingMem_ acceptRole = do
               mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted acceptRole Nothing (Just joiningMemberKey) existingMem_

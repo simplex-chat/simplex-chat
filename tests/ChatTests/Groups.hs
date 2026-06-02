@@ -268,11 +268,6 @@ chatGroupTests = do
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
-      it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
-      it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
-      it "leaving moderator drops from the roster cache" testChannelLeftModeratorDropsFromRoster
-      it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
-      it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
@@ -284,7 +279,6 @@ chatGroupTests = do
       it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
       it "should deliver support scope messages via relay" testChannelSupportScope
       it "should add relay to existing channel" testChannelAddRelay
-      it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
@@ -292,6 +286,13 @@ chatGroupTests = do
         it "operator allow clears rejection and relay accepts again" testRelayAllowAcceptsAgain
         it "rejection on channel A does not affect unrelated channel B" testRelayDoesNotRejectUnrelatedChannel
         it "concurrent fresh invitations both rejected" testRelayRejectRaceConcurrentInvitations
+      describe "promoted members roster" $ do
+        it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
+        it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
+        it "leaving moderator drops from the roster cache" testChannelLeftModeratorDropsFromRoster
+        it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
+        it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
+        it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
