@@ -105,6 +105,13 @@ import UnliftIO.STM
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
 
+-- Verifies member signatures over CBGroup <> (publicGroupId, memberId) <> signedBody under the given key.
+-- signatures is NonEmpty so the verification can't be vacuously true.
+verifyGroupSig :: C.PublicKeyEd25519 -> B64UrlByteString -> MemberId -> NonEmpty MsgSignature -> ByteString -> Bool
+verifyGroupSig key publicGroupId memberId signatures signedBody =
+  let prefix = smpEncode CBGroup <> smpEncode (publicGroupId, memberId)
+   in all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 key) sig (prefix <> signedBody)) signatures
+
 processAgentMessage :: ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessage _ _ (DEL_RCVQS delQs) =
   toView $ CEvtAgentRcvQueuesDeleted $ L.map rcvQ delQs
@@ -893,16 +900,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           GCInviteeMember
             | isRelay m -> do
                 withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
-                case rosterVersion gInfo of
+                -- always send the relay a roster (materializing version 0 for old channels with NULL roster_version);
+                -- the relay stays RSInvited (unpublishable) until it acks, so no joiner can impersonate a privileged member
+                gInfo' <- case rosterVersion gInfo of
+                  Just _ -> pure gInfo
                   Nothing -> do
-                    gLink <- withStore $ \db -> getGroupLink db user gInfo
-                    setGroupLinkDataAsync user gInfo gLink
-                  Just _ -> do
-                    -- hold off publishing this relay until it confirms (XGrpRosterAck) that it cached
-                    -- the roster, so no joiner can impersonate a privileged member whose key it lacks
-                    relay_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupRelayByGMId db (groupMemberId' m))
-                    forM_ relay_ $ \relay -> withStore' $ \db -> void $ updateRelayStatus db relay RSAwaitingRoster
-                    sendGroupRosterToRelay user gInfo m
+                    withStore' $ \db -> setGroupRosterVersion db gInfo (VersionRoster 0)
+                    pure gInfo {rosterVersion = Just (VersionRoster 0)}
+                sendGroupRosterToRelay user gInfo' m
             | otherwise -> do
                 (gInfo', mStatus) <-
                   if not (memberPending m)
@@ -1612,7 +1617,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Just rosterMem
                   -- a privileged memberId's key is owner-authoritative (the roster); the joiner must prove
                   -- possession of that exact key, otherwise this is an attempt to impersonate it
-                  | memberRole' rosterMem >= GRModerator ->
+                  | isRosterRole (memberRole' rosterMem) ->
                       if verifiedKeyPossession gInfo && memberPubKey rosterMem == Just joiningKey
                         then acceptJoin gInfo (Just rosterMem) (memberRole' rosterMem)
                         else messageError "memberJoinRequestViaRelay: rejected join claiming privileged memberId (key mismatch or invalid signature)"
@@ -1622,8 +1627,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           where
             verifiedKeyPossession gInfo = case (signedMsg_, groupKeys gInfo) of
               (Just SignedMsg {chatBinding = CBGroup, signatures, signedBody}, Just GroupKeys {publicGroupId}) ->
-                let prefix = smpEncode CBGroup <> smpEncode (publicGroupId, joiningMemberId)
-                 in all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 joiningKey) sig (prefix <> signedBody)) signatures
+                verifyGroupSig joiningKey publicGroupId joiningMemberId signatures signedBody
               _ -> False
             acceptJoin gInfo existingMem_ acceptRole = do
               mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted acceptRole Nothing (Just joiningMemberKey) existingMem_
@@ -3201,25 +3205,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise = case verifiedMsg of
               VMSigned _ sm _ -> do
                 defaultRole <- unknownMemberRole gInfo
-                cached <-
-                  ( Right
-                      <$> withStore
-                        ( \db -> do
-                            res <- processRoster db defaultRole
-                            liftIO $ setCachedGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
-                            pure res
-                        )
-                    )
-                    `catchAllErrors` (pure . Left)
+                let cacheRoster = withStore $ \db -> do
+                      res <- processRoster db defaultRole
+                      liftIO $ setCachedGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
+                      pure res
+                    -- the relay acks only while still setting up (own status RSAccepted); once it is serving
+                    -- (RSActive) it must not ack subsequent roster broadcasts
+                    ackSetup = when (relayOwnStatus gInfo == Just RSAccepted) . sendRosterAck author newVer
+                cached <- (Right <$> cacheRoster) `catchAllErrors` (pure . Left)
                 case cached of
                   Right results -> do
                     emitRosterResults results
-                    sendRosterAck author newVer Nothing
+                    ackSetup Nothing
                     -- always broadcast on a bump: self-healing, and demotions must reach members
                     pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
                   Left e -> do
                     eToView e
-                    sendRosterAck author newVer (Just "relay could not cache the roster")
+                    ackSetup (Just "relay could not cache the roster")
                     pure Nothing
               VMUnsigned _ -> Nothing <$ messageWarning "x.grp.roster: unsigned roster"
         memberApplyRoster :: CM ()
@@ -3279,7 +3281,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpRosterAck gInfo m ackVer err = do
       relay_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupRelayByGMId db (groupMemberId' m))
       case relay_ of
-        Just relay@GroupRelay {relayStatus = RSAwaitingRoster} -> case err of
+        Just relay@GroupRelay {relayStatus = RSInvited} -> case err of
           Nothing
             | rosterVersion gInfo == Just ackVer -> do
                 withStore' $ \db -> void $ updateRelayStatus db relay RSAccepted
@@ -3644,8 +3646,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             | GroupMember {memberPubKey = Just pubKey, memberId} <- member ->
                 case chatBinding of
                   CBGroup | Just GroupKeys {publicGroupId} <- groupKeys gInfo ->
-                    let prefix = smpEncode chatBinding <> smpEncode (publicGroupId, memberId)
-                     in signed MSSVerified <$ guard (all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
+                    signed MSSVerified <$ guard (verifyGroupSig pubKey publicGroupId memberId signatures signedBody)
                   _ -> signed MSSSignedNoKey <$ guard signatureOptional
             | otherwise -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
             where

@@ -8695,7 +8695,7 @@ prepareChannel2Relays gName owner relay1 relay2 = do
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
         owner
           <### [ EndsWith ": active",
-                 EndsWith ": accepted"
+                 EndsWith ": invited"
                ]
         owner <## "group link:"
         void $ getTermLine owner -- consume group link line

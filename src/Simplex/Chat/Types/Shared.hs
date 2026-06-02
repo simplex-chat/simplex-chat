@@ -82,7 +82,6 @@ data RelayStatus
   = RSNew -- only for owner
   | RSInvited
   | RSAccepted
-  | RSAwaitingRoster -- connected, holding off publish until the relay confirms it cached the roster
   | RSActive
   | RSInactive
   | RSRejected
@@ -93,7 +92,6 @@ relayStatusText = \case
   RSNew -> "new"
   RSInvited -> "invited"
   RSAccepted -> "accepted"
-  RSAwaitingRoster -> "awaiting_roster"
   RSActive -> "active"
   RSInactive -> "inactive"
   RSRejected -> "rejected"
@@ -103,7 +101,6 @@ instance TextEncoding RelayStatus where
     RSNew -> "new"
     RSInvited -> "invited"
     RSAccepted -> "accepted"
-    RSAwaitingRoster -> "awaiting_roster"
     RSActive -> "active"
     RSInactive -> "inactive"
     RSRejected -> "rejected"
@@ -111,7 +108,6 @@ instance TextEncoding RelayStatus where
     "new" -> Just RSNew
     "invited" -> Just RSInvited
     "accepted" -> Just RSAccepted
-    "awaiting_roster" -> Just RSAwaitingRoster
     "active" -> Just RSActive
     "inactive" -> Just RSInactive
     "rejected" -> Just RSRejected
