@@ -95,7 +95,7 @@ module Simplex.Chat.Store.Groups
     createRelayConnection,
     updateRelayStatus,
     updateRelayStatusFromTo,
-    setRelayLinkAccepted,
+    setRelayKey,
     setRelayLinkConfId,
     updateRelayCapabilities,
     getRelayConfId,
@@ -354,11 +354,6 @@ setGroupLinkShortLink db gLnk@GroupLink {userContactLinkId, connLinkContact = CC
     (shortLink, BI True, BI True, userContactLinkId)
   pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True}
 
--- a relay channel starts at roster version 0 (owner only); member/invited channels stay Nothing so the
--- first received roster applies (a member at Just 0 would no-op a forwarded v0 roster and miss its mods)
-rosterVersion0 :: Bool -> Maybe VersionRoster
-rosterVersion0 useRelays = if useRelays then Just (VersionRoster 0) else Nothing
-
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> Maybe Profile -> Bool -> MemberId -> Maybe GroupKeys -> Maybe Int64 -> ExceptT StoreError IO GroupInfo
 createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays memberId groupKeys publicMemberCount_ = ExceptT $ do
@@ -367,6 +362,7 @@ createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays 
         Just PublicGroupProfile {groupType, groupLink, publicGroupId} -> (Just groupType, Just groupLink, Just publicGroupId)
         Nothing -> (Nothing, Nothing, Nothing)
       fullGroupPreferences = mergeGroupPreferences groupPreferences
+      rosterVersion0 = if useRelays then Just (VersionRoster 0) else Nothing
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
@@ -401,7 +397,7 @@ createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays 
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (BI useRelays, BI useRelays, ldn, userId, profileId, BI True, currentTs, currentTs, currentTs, currentTs)
-            :. (rootPrivKey_, rootPubKey_, memberPrivKey_, publicMemberCount_, rosterVersion0 useRelays)
+            :. (rootPrivKey_, rootPubKey_, memberPrivKey_, publicMemberCount_, rosterVersion0)
         )
       insertedRowId db
     let memberPubKey = C.publicKey . memberPrivKey <$> groupKeys
@@ -428,7 +424,7 @@ createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays 
           chatItemTTL = Nothing,
           uiThemes = Nothing,
           groupSummary = GroupSummary {currentMembers = 1, publicMemberCount = publicMemberCount_},
-          rosterVersion = rosterVersion0 useRelays,
+          rosterVersion = rosterVersion0,
           customData = Nothing,
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing,
@@ -1544,11 +1540,10 @@ updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
 
-setRelayLinkAccepted :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> MemberKey -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
-setRelayLinkAccepted db vr user m (MemberKey relayKey) profile = do
+setRelayKey :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> MemberKey -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
+setRelayKey db vr user m (MemberKey relayKey) profile = do
   let gmId = groupMemberId' m
   currentTs <- liftIO getCurrentTime
-  -- the relay stays RSInvited (unpublishable) until it acks the roster (xGrpRosterAck); only store its key + profile here
   liftIO $ DB.execute
     db
     [sql|

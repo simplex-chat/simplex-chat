@@ -1223,7 +1223,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   (confId, m', relay) <- withStore $ \db -> do
                     confId <- getRelayConfId db m
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                    (m', relay) <- setRelayLinkAccepted db vr user m (MemberKey relayKey) relayProfile
+                    (m', relay) <- setRelayKey db vr user m (MemberKey relayKey) relayProfile
                     pure (confId, m', relay)
                   allowAgentConnectionAsync user conn confId XOk
                   toView $ CEvtGroupRelayUpdated user gInfo m' relay
