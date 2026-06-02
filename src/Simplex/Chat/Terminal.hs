@@ -8,7 +8,6 @@
 module Simplex.Chat.Terminal where
 
 import Control.Monad
-import Control.Monad.IO.Class (liftIO)
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller
@@ -23,8 +22,6 @@ import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (NetworkConfig (..), SMPProxyFallback (..), SMPProxyMode (..), defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
-import System.Terminal (Key, Modifiers)
-import UnliftIO.STM
 #if !defined(dbPostgres)
 import Control.Exception (handle, throwIO)
 import qualified Data.ByteArray as BA
@@ -102,9 +99,4 @@ simplexChatTerminal cfg options t = run options
 #endif
 
 runChatTerminal :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
-runChatTerminal ct cc opts = do
-  keyQ <- newTQueueIO
-  raceAny_ [runKeyReader ct keyQ, runTerminalInput ct cc keyQ, runTerminalOutput ct cc opts, runInputLoop ct cc]
-
-runKeyReader :: ChatTerminal -> TQueue (Key, Modifiers) -> IO ()
-runKeyReader ct q = withChatTerm ct $ forever $ getKey >>= liftIO . atomically . writeTQueue q
+runChatTerminal ct cc opts = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc opts, runInputLoop ct cc]

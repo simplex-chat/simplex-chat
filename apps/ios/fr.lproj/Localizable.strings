@@ -1357,7 +1357,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Le contenu enfreint les conditions d'utilisation";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Continuer";
 
 /* No comment provided by engineer. */
