@@ -21,6 +21,7 @@ Owners stay on the link, never in the roster. Two edits, then every gate follows
 - `validateGroupRoster` filter (`Internal.hs:1236`) — fixes the bug where member entries are dropped.
 - `buildGroupRoster` filter (`Internal.hs:1248`).
 - promotion gates / cap / trigger / counts (`Commands.hs:2737, 2739, 2746, 2762, 2763, 2768`); update the cap error text at `2740`.
+- owner-remove roster refresh (`Commands.hs:2888`, guarded by `anyPrivilegedRemoved` computed from `isRosterRole` at `2899`) — so removing a plain member, not just a mod/admin, refreshes the roster.
 - receive gates: `xGrpMemNew` (`Subscriber.hs:2975/2990/3009`) and `xGrpMemRole` owner-only (`3157`).
 
 **2. Split the role query.** `getGroupRosterMembers` (`Store/Groups.hs:1214`) currently serves two now-diverging needs:
@@ -30,7 +31,7 @@ Owners stay on the link, never in the roster. Two edits, then every gate follows
 
 **Owner-only (confirmed decision).** Only the owner changes any roster role. The alternatives were considered and rejected for v1 — letting a mod/admin set member roles would need either the owner co-signing rosters from a mod/admin (owner round-trip + load) or a separate roster-signing key trusted from mod/admin (broader trust surface) — so owner-only keeps the single owner-key trust anchor.
 
-**Leaves are not a roster event.** A promoted member leaving or being removed is the membership axis (`XGrpLeave` / `XGrpMemDel`), which neutralizes the member on the relay. The roster is not bumped on leave/remove — that behaviour is being removed separately, and this plan does not rely on it.
+**Leave and owner-remove differ.** A member-initiated **leave** (`xGrpLeave`) does NOT bump the roster — that leave-triggered refresh is being removed separately and this plan does not rely on it; the leave is handled on the membership axis (`XGrpLeave` neutralizes the member on the relay). An owner-initiated **remove** (`APIRemoveMembers`) DOES still bump the roster via `bumpAndBroadcastRoster` (`Commands.hs:2888`), so a removed member is dropped from the roster blob for new joiners — and that site is widened (above) to cover plain members, not just mod/admin.
 
 ## Wire: signed header + unsigned blob
 
