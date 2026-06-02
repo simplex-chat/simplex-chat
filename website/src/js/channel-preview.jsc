@@ -487,6 +487,15 @@ const STYLE = `
   overflow-wrap: break-word;
 }
 
+.simplex-preview-info-descr a {
+  color: var(--sp-link);
+  text-decoration: none;
+}
+
+.simplex-preview-info-descr a:hover {
+  text-decoration: underline;
+}
+
 .simplex-preview-info-subscribers {
   font-size: 14px;
   color: var(--sp-text-secondary);
