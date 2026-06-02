@@ -616,7 +616,7 @@ const STYLE = `
   cursor: pointer;
   text-decoration: none;
   font-family: inherit;
-  margin: 0;
+  margin-top: 3px;
 }
 
 .simplex-preview-open-btn:hover {
