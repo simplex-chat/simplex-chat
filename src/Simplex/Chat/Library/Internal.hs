@@ -1666,21 +1666,14 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
     chSize = fromIntegral chunkSize
 
 parseChatMessage :: Connection -> ByteString -> CM (ChatMessage 'Json)
-parseChatMessage conn s = do
-  case parseChatMessages s of
-    [msg] -> liftEither . first (ChatError . errType) $ (\(APMsg _ (ParsedMsg _ _ m)) -> checkEncoding m) =<< msg
-    _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
-  where
-    errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
+parseChatMessage conn s = snd <$> parseChatMessage' conn s
 {-# INLINE parseChatMessage #-}
 
--- Like parseChatMessage, but preserves the parsed SignedMsg (conn-info signature),
--- which the relay needs to verify a joiner's XMember key possession.
-parseChatMessageWithSig :: Connection -> ByteString -> CM (Maybe SignedMsg, ChatMessage 'Json)
-parseChatMessageWithSig conn s =
+parseChatMessage' :: Connection -> ByteString -> CM (Maybe SignedMsg, ChatMessage 'Json)
+parseChatMessage' conn s =
   case parseChatMessages s of
     [msg] -> liftEither . first (ChatError . errType) $ (\(APMsg _ (ParsedMsg _ sm m)) -> (sm,) <$> checkEncoding m) =<< msg
-    _ -> throwChatError $ CEException "parseChatMessageWithSig: single message is expected"
+    _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 
