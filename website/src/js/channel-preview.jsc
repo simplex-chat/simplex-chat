@@ -43,8 +43,8 @@ const STYLE = `
   --sp-text-secondary: #B3AFAE;
   --sp-text-muted: #B3AFAE;
   --sp-text-small: #aaa;
-  --sp-bubble: #262627;
-  --sp-quote: #373739;
+  --sp-bubble: #071C46;
+  --sp-quote: #1B325C;
   --sp-border: #3A3A3C;
   --sp-link: #70F0F9;
   --sp-link-hover: #66D9E2;
