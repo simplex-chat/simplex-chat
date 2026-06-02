@@ -87,8 +87,8 @@ module Simplex.Chat.Store.Groups
     getGroupRelays,
     getConnectedGroupRelays,
     setGroupRosterVersion,
-    setCachedGroupRoster,
-    getCachedGroupRoster,
+    setGroupRoster,
+    getGroupRoster,
     setGroupMemberKeyRole,
     createRelayForOwner,
     getCreateRelayForMember,
@@ -1215,7 +1215,7 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
 
 -- Moderators and admins only, excluding owners and non-current members.
 -- Used for roster-related paths where owners must not be touched (owners are
--- link-anchored), and left/removed members must not appear in the cached roster.
+-- link-anchored), and left/removed members must not appear in the saved roster.
 getGroupRosterMembers :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupRosterMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
   filter memberCurrent . map (toContactMember vr user)
@@ -1415,9 +1415,9 @@ setGroupRosterVersion db GroupInfo {groupId} v = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?" (v, currentTs, groupId)
 
--- Relay caches the verbatim signed roster (parts + sending owner + broker ts) to re-forward to joiners.
-setCachedGroupRoster :: DB.Connection -> GroupInfo -> VersionRoster -> GroupMemberId -> UTCTime -> SignedMsg -> IO ()
-setCachedGroupRoster db GroupInfo {groupId} v ownerGMId brokerTs SignedMsg {chatBinding, signatures, signedBody} = do
+-- Relay saves the verbatim signed roster (parts + sending owner + broker ts) to re-forward to joiners.
+setGroupRoster :: DB.Connection -> GroupInfo -> VersionRoster -> GroupMemberId -> UTCTime -> SignedMsg -> IO ()
+setGroupRoster db GroupInfo {groupId} v ownerGMId brokerTs SignedMsg {chatBinding, signatures, signedBody} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1429,8 +1429,8 @@ setCachedGroupRoster db GroupInfo {groupId} v ownerGMId brokerTs SignedMsg {chat
     |]
     ((v, ownerGMId, brokerTs, chatBinding) :. (Binary (smpEncode signatures), Binary signedBody, currentTs, groupId))
 
-getCachedGroupRoster :: DB.Connection -> GroupInfo -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg))
-getCachedGroupRoster db GroupInfo {groupId} =
+getGroupRoster :: DB.Connection -> GroupInfo -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg))
+getGroupRoster db GroupInfo {groupId} =
   (>>= toRoster)
     <$> maybeFirstRow
       id

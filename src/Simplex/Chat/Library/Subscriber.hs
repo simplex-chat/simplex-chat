@@ -1140,7 +1140,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         checkSndInlineFTComplete conn msgId
         updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ forwardCachedRoster user gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ forwardGroupRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       SWITCH qd phase cStats -> do
         toView $ CEvtGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -1234,7 +1234,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ forwardCachedRoster user gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ forwardGroupRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
@@ -3202,29 +3202,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         validRoster = validateGroupRoster roster
         relayApplyRoster :: CM (Maybe DeliveryJobScope)
         relayApplyRoster
-          | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than cached version"
+          | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than saved version"
           | otherwise = case verifiedMsg of
               VMSigned _ sm _ -> do
-                defaultRole <- unknownMemberRole gInfo
-                let cacheRoster = withStore $ \db -> do
-                      res <- processRoster db defaultRole
-                      liftIO $ setCachedGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
-                      pure res
-                    -- the relay acks only while still setting up (own status RSAccepted); once it is serving
-                    -- (RSActive) it must not ack subsequent roster broadcasts
-                    ackSetup = when (relayOwnStatus gInfo == Just RSAccepted) . sendRosterAck author newVer
-                cached <- (Right <$> cacheRoster) `catchAllErrors` (pure . Left)
-                case cached of
+                saved <- (Right <$> setRoster sm) `catchAllErrors` (pure . Left)
+                case saved of
                   Right results -> do
                     emitRosterResults results
-                    ackSetup Nothing
+                    -- ack only while still setting up (own status RSAccepted); a serving relay (RSActive) must not ack roster broadcasts
+                    when (relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck author newVer Nothing
                     -- always broadcast on a bump: self-healing, and demotions must reach members
                     pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
                   Left e -> do
                     eToView e
-                    ackSetup (Just "relay could not cache the roster")
+                    when (relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck author newVer (Just "relay could not save the roster")
                     pure Nothing
               VMUnsigned _ -> Nothing <$ messageWarning "x.grp.roster: unsigned roster"
+        setRoster :: SignedMsg -> CM ([MemberId], [(GroupMember, GroupMemberRole)])
+        setRoster sm = do
+          defaultRole <- unknownMemberRole gInfo
+          withStore $ \db -> do
+            res <- processRoster db defaultRole
+            liftIO $ setGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
+            pure res
         memberApplyRoster :: CM ()
         memberApplyRoster
           | maybe False (newVer <) (rosterVersion gInfo) = messageWarning "x.grp.roster: older than accepted version"
@@ -3276,7 +3276,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         sendRosterAck owner ackVer err = void $ sendGroupMessage' user gInfo [owner] (XGrpRosterAck ackVer err)
 
     -- relay -> owner roster ack: only the owner acts. It publishes the relay (making it joinable)
-    -- only after the relay confirms the current roster is cached; on error or version mismatch the
+    -- only after the relay confirms the current roster is saved; on error or version mismatch the
     -- relay stays unpublished (fail-safe), so no one can join it impersonating a privileged member.
     xGrpRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
     xGrpRosterAck gInfo m ackVer err = do
@@ -3289,7 +3289,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 gLink <- withStore $ \db -> getGroupLink db user gInfo
                 setGroupLinkDataAsync user gInfo gLink
             | otherwise -> messageWarning "x.grp.roster.ack: stale version, awaiting ack for the current roster"
-          Just e -> messageError $ "x.grp.roster.ack: relay could not cache roster, keeping it unpublished: " <> e
+          Just e -> messageError $ "x.grp.roster.ack: relay could not save roster, keeping it unpublished: " <> e
         _ -> pure ()
 
     checkHostRole :: GroupMember -> GroupMemberRole -> CM ()

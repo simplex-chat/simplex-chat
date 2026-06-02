@@ -1167,12 +1167,12 @@ memberIntroEvt gInfo reMember =
       mRestrictions = memberRestrictions reMember
    in XGrpMemIntro mInfo mRestrictions
 
--- Forward the cached owner-signed roster verbatim, attributed to the owner who
+-- Forward the saved owner-signed roster verbatim, attributed to the owner who
 -- sent it, so the recipient verifies the owner signature.
-forwardCachedRoster :: User -> GroupInfo -> GroupMember -> CM ()
-forwardCachedRoster user gInfo subscriber = do
+forwardGroupRoster :: User -> GroupInfo -> GroupMember -> CM ()
+forwardGroupRoster user gInfo subscriber = do
   vr <- chatVersionRange
-  withStore' (\db -> getCachedGroupRoster db gInfo) >>= \case
+  withStore' (\db -> getGroupRoster db gInfo) >>= \case
     Nothing -> pure ()
     Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}) ->
       forM_ (eitherToMaybe (J.eitherDecodeStrict' signedBody) :: Maybe (ChatMessage 'Json)) $ \chatMsg ->
@@ -1194,9 +1194,9 @@ introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn,
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
   withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
-  -- owner intros first so the joiner has the owner profile loaded before applying the cached roster (signed by the owner)
+  -- owner intros first so the joiner has the owner profile loaded before applying the saved roster (signed by the owner)
   sendIntros owners
-  forwardCachedRoster user gInfo subscriber
+  forwardGroupRoster user gInfo subscriber
   sendIntros rosterMems
   withStore' $ \db ->
     setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
