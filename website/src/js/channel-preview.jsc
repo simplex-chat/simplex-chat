@@ -1059,6 +1059,7 @@ function setupSecretToggles(container) {
 }
 
 function renderMessages(container, messages, membersMap, channel) {
+  const hasAnySender = messages.some(function(m) { return m.sender; });
   let prevMsg = null;
   let prevDate = null;
 
@@ -1077,7 +1078,7 @@ function renderMessages(container, messages, membersMap, channel) {
 
     const separation = getItemSeparation(msg, prevMsg);
     const nextSeparation = getItemSeparation(nextMsg, msg);
-    const showAvatar = !prevMsg || msg.sender !== prevMsg.sender;
+    const showAvatar = hasAnySender && (!prevMsg || msg.sender !== prevMsg.sender);
     const showName = showAvatar;
     const showTail = nextSeparation.largeGap;
 
@@ -1088,23 +1089,25 @@ function renderMessages(container, messages, membersMap, channel) {
     const row = document.createElement('div');
     row.className = 'simplex-preview-msg-row' + (nextSeparation.largeGap ? ' has-gap' : '');
 
-    if (showName) {
-      const nameDiv = document.createElement('div');
-      nameDiv.className = 'simplex-preview-msg-name';
-      nameDiv.textContent = senderName;
-      container.appendChild(nameDiv);
-    }
+    if (hasAnySender) {
+      if (showName) {
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'simplex-preview-msg-name';
+        nameDiv.textContent = senderName;
+        container.appendChild(nameDiv);
+      }
 
-    if (showAvatar) {
-      const avatarImg = document.createElement('img');
-      avatarImg.className = 'simplex-preview-msg-avatar';
-      avatarImg.src = senderImage || DEFAULT_AVATAR;
-      avatarImg.alt = senderName;
-      row.appendChild(avatarImg);
-    } else {
-      const spacer = document.createElement('div');
-      spacer.className = 'simplex-preview-msg-avatar-placeholder';
-      row.appendChild(spacer);
+      if (showAvatar) {
+        const avatarImg = document.createElement('img');
+        avatarImg.className = 'simplex-preview-msg-avatar';
+        avatarImg.src = senderImage || DEFAULT_AVATAR;
+        avatarImg.alt = senderName;
+        row.appendChild(avatarImg);
+      } else {
+        const spacer = document.createElement('div');
+        spacer.className = 'simplex-preview-msg-avatar-placeholder';
+        row.appendChild(spacer);
+      }
     }
 
     const col = document.createElement('div');
