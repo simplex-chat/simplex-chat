@@ -1220,13 +1220,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
                     Just RelayShortLinkData {relayProfile = p} -> pure p
                     Nothing -> throwChatError $ CEException "relay link: no relay link data"
-                  (confId, m', relay) <- withStore $ \db -> do
+                  confId <- withStore $ \db -> do
                     confId <- getRelayConfId db m
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                    (m', relay) <- setRelayKey db vr user m (MemberKey relayKey) relayProfile
-                    pure (confId, m', relay)
+                    void $ setRelayKey db vr user m (MemberKey relayKey) relayProfile
+                    pure confId
                   allowAgentConnectionAsync user conn confId XOk
-                  toView $ CEvtGroupRelayUpdated user gInfo m' relay
                 else
                   -- TODO [relays] owner: TBC failed RelayStatus?
                   messageError "relay link: relay member ID mismatch"
@@ -3274,9 +3273,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         sendRosterAck :: GroupMember -> VersionRoster -> Maybe Text -> CM ()
         sendRosterAck owner ackVer err = void $ sendGroupMessage' user gInfo [owner] (XGrpRosterAck ackVer err)
 
-    -- relay -> owner roster ack: only the owner acts. It publishes the relay (making it joinable)
-    -- only after the relay confirms the current roster is saved; on error or version mismatch the
-    -- relay stays unpublished (fail-safe), so no one can join it impersonating a privileged member.
     xGrpRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
     xGrpRosterAck gInfo m ackVer err = do
       relay_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupRelayByGMId db (groupMemberId' m))
@@ -3284,11 +3280,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         Just relay@GroupRelay {relayStatus = RSInvited} -> case err of
           Nothing
             | rosterVersion gInfo == Just ackVer -> do
-                withStore' $ \db -> void $ updateRelayStatus db relay RSAccepted
-                gLink <- withStore $ \db -> getGroupLink db user gInfo
+                (relay', gLink) <- withStore $ \db -> do
+                  relay' <- liftIO $ updateRelayStatus db relay RSAccepted
+                  gLink <- getGroupLink db user gInfo
+                  pure (relay', gLink)
                 setGroupLinkDataAsync user gInfo gLink
+                toView $ CEvtGroupRelayUpdated user gInfo m relay'
             | otherwise -> messageWarning "x.grp.roster.ack: stale version, awaiting ack for the current roster"
-          Just e -> messageError $ "x.grp.roster.ack: relay could not save roster, keeping it unpublished: " <> e
+          Just e -> do
+            relay' <- withStore' $ \db -> updateRelayStatusFromTo db relay RSInvited RSRejected
+            toView $ CEvtGroupRelayUpdated user gInfo m relay'
+            messageError $ "x.grp.roster.ack: relay could not save roster, marked rejected: " <> e
         _ -> pure ()
 
     checkHostRole :: GroupMember -> GroupMemberRole -> CM ()
