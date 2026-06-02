@@ -19,9 +19,8 @@ module Simplex.Chat.Web
   )
 where
 
-import Control.Logger.Simple
 import Control.Monad (forM_)
-import Control.Monad.Except (runExceptT)
+import Data.Either (rights)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
@@ -33,7 +32,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatPagination (..), WebPreviewConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), WebPreviewConfig (..))
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
   ( CChatItem (..),
@@ -44,18 +43,15 @@ import Simplex.Chat.Messages
     CIQDirection (..),
     CIQuote (..),
     CIReactionCount,
-    Chat (..),
     ChatItem (..),
     ChatType (..),
   )
 import Simplex.Chat.Messages.CIContent (ciMsgContent)
 import Simplex.Chat.Protocol (MsgContent, MsgRef (..), QuotedMsg (..), isReport)
-import Simplex.Chat.Store (StoreError)
-import Simplex.Chat.Store.Groups (getRelayServedGroups)
-import Simplex.Chat.Store.Messages (getGroupChat)
+import Simplex.Chat.Store.Groups (getGroupOwners, getRelayServedGroups)
+import Simplex.Chat.Store.Messages (getGroupWebPreviewItems)
 import Simplex.Chat.Types
   ( B64UrlByteString,
-    GroupId,
     GroupInfo (..),
     GroupMember (..),
     GroupProfile (..),
@@ -129,57 +125,54 @@ renderWebPreviews WebPreviewConfig {webJsonDir, webCorsFile} cc user = do
       _ -> False
 
 renderGroupPreview :: FilePath -> ChatController -> User -> GroupInfo -> IO (Maybe (Text, CorsOrigin))
-renderGroupPreview webJsonDir cc user GroupInfo {groupId = gId, groupProfile = gp@GroupProfile {publicGroup}} =
+renderGroupPreview webJsonDir cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {publicGroup}} =
   case publicGroup of
     Just PublicGroupProfile {publicGroupId, publicGroupAccess} -> do
       let fName = publicGroupIdFileName publicGroupId <> ".json"
-      result <- loadMessages cc user gId
-      case result of
-        Left e -> do
-          logError $ "renderGroupPreview error for group " <> T.pack (show gId) <> ": " <> T.pack (show e)
-          pure Nothing
-        Right items -> do
-          ts <- getCurrentTime
-          let msgs = mapMaybe toWebMessage items
-              senders = uniqueSenders items
-              preview = WebChannelPreview
-                { channel = gp,
-                  members = senders,
-                  messages = msgs,
-                  updatedAt = ts
-                }
-          createDirectoryIfMissing True webJsonDir
-          LB.writeFile (webJsonDir </> fName) (J.encode preview)
-          pure $ corsEntry publicGroupId <$> publicGroupAccess
+      (items, owners) <- withTransaction (chatStore cc) $ \db -> do
+        is <- getGroupWebPreviewItems db user gInfo 50
+        os <- getGroupOwners db vr' user gInfo
+        pure (is, os)
+      ts <- getCurrentTime
+      let rendered = mapMaybe toRenderedItem $ rights items
+          msgs = map fst rendered
+          senders = uniqueSenders $ map memberToProfile owners <> mapMaybe snd rendered
+          preview = WebChannelPreview
+            { channel = gp,
+              members = senders,
+              messages = msgs,
+              updatedAt = ts
+            }
+      createDirectoryIfMissing True webJsonDir
+      LB.writeFile (webJsonDir </> fName) (J.encode preview)
+      pure $ corsEntry publicGroupId <$> publicGroupAccess
     Nothing -> pure Nothing
+  where
+    vr' = chatVRange (config cc)
 
-loadMessages :: ChatController -> User -> GroupId -> IO (Either StoreError [CChatItem 'CTGroup])
-loadMessages cc user gId =
-  withTransaction (chatStore cc) $ \db -> do
-    let vr' = chatVRange (config cc)
-    fmap (chatItems . fst) <$> runExceptT (getGroupChat db vr' user gId Nothing Nothing (CPLast 50) Nothing)
-
-toWebMessage :: CChatItem 'CTGroup -> Maybe WebMessage
-toWebMessage (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemDeleted, itemTimed, itemForwarded, itemEdited}, content, mentions, formattedText, quotedItem, reactions, file})
-  | isJust itemDeleted = Nothing
+toRenderedItem :: CChatItem 'CTGroup -> Maybe (WebMessage, Maybe WebMemberProfile)
+toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed, itemForwarded, itemEdited}, content, mentions, formattedText, quotedItem, reactions, file})
   | isJust itemTimed = Nothing
   | otherwise = case ciMsgContent content of
       Just mc | not (isReport mc) ->
-        let sender = case chatDir of
-              CIGroupRcv GroupMember {memberId} -> Just memberId
-              _ -> Nothing
-         in Just WebMessage
-              { sender,
-                ts = itemTs,
-                content = mc,
-                formattedText,
-                file = webFileInfo <$> file,
-                quote = quotedItem >>= ciQuoteToQuotedMsg,
-                mentions,
-                reactions,
-                forward = if isJust itemForwarded then Just True else Nothing,
-                edited = itemEdited
-              }
+        let (sender, senderProfile) = case chatDir of
+              CIGroupRcv m@GroupMember {memberId} -> (Just memberId, Just $ memberToProfile m)
+              _ -> (Nothing, Nothing)
+         in Just
+              ( WebMessage
+                  { sender,
+                    ts = itemTs,
+                    content = mc,
+                    formattedText,
+                    file = webFileInfo <$> file,
+                    quote = quotedItem >>= ciQuoteToQuotedMsg,
+                    mentions,
+                    reactions,
+                    forward = if isJust itemForwarded then Just True else Nothing,
+                    edited = itemEdited
+                  },
+                senderProfile
+              )
       _ -> Nothing
 
 ciQuoteToQuotedMsg :: CIQuote c -> Maybe QuotedMsg
@@ -202,14 +195,10 @@ ciQuoteToQuotedMsg CIQuote {chatDir = qDir, sharedMsgId, sentAt, content = qCont
 webFileInfo :: CIFile d -> WebFileInfo
 webFileInfo CIFile {fileName, fileSize} = WebFileInfo {fileName, fileSize}
 
-uniqueSenders :: [CChatItem 'CTGroup] -> [WebMemberProfile]
-uniqueSenders = nubBy sameId . mapMaybe senderProfile
+uniqueSenders :: [WebMemberProfile] -> [WebMemberProfile]
+uniqueSenders = nubBy sameId
   where
     sameId (WebMemberProfile {memberId = a}) (WebMemberProfile {memberId = b}) = a == b
-    senderProfile :: CChatItem 'CTGroup -> Maybe WebMemberProfile
-    senderProfile (CChatItem _ ChatItem {chatDir}) = case chatDir of
-      CIGroupRcv m -> Just $ memberToProfile m
-      _ -> Nothing
 
 memberToProfile :: GroupMember -> WebMemberProfile
 memberToProfile GroupMember {memberId, memberProfile = LocalProfile {displayName, image}} =

@@ -445,7 +445,7 @@ function initChannelPreview(container) {
   container.classList.add('simplex-preview-container');
   container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
 
-  fetchPreview(relayDomains, channelId).then(data => {
+  fetchPreview(relayDomains, channelId, channelLink).then(data => {
     if (!data) {
       container.innerHTML = '<p class="simplex-preview-empty">Failed to load channel preview.</p>';
       return;
@@ -463,13 +463,16 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-async function fetchPreview(relayDomains, channelId) {
+async function fetchPreview(relayDomains, channelId, channelLink) {
   for (const domain of relayDomains) {
     try {
       const url = `https://${domain}/channel/${channelId}.json`;
       const resp = await fetch(url);
       if (!resp.ok) continue;
-      return await resp.json();
+      const data = await resp.json();
+      const relayLink = data.channel?.publicGroup?.groupLink;
+      if (channelLink && relayLink && channelLink !== relayLink) continue;
+      return data;
     } catch(e) {
       continue;
     }
