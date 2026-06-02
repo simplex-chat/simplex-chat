@@ -38,15 +38,13 @@ Owners stay on the link, never in the roster. Two edits, then every gate follows
 **Authoritative metadata is in the signed header.** `version`, blob `fileSize`, and `fileDigest` all live in the owner-signed `XGrpRoster`; the unsigned `BFileChunk`s carry no authoritative metadata. (This is why "total parts in the unsigned part", an earlier review question, is a non-issue here.)
 
 - **Header**: `XGrpRoster { version :: VersionRoster, fileInv :: InlineFileInvitation }`, JSON, signed, forwarded. `InlineFileInvitation { fileSize, fileDigest :: FD.FileDigest }` is a lean `FileInvitation` (no name/connReq/inline/descr; always inline). Tiny; fits `maxEncodedMsgLength`.
-- **Blob**: the binary member list. `RosterMember { memberId, key, role, privileges :: Word16 }` — drop `name`, add `privileges` (reserved: always `0`, parsed and ignored in v1). ~53 B/entry. Members get a placeholder name from `nameFromMemberId`; real profiles arrive on first post.
+- **Blob**: the binary member list. `RosterMember { memberId, key, role, privileges :: Word16 }` — drop `name`, add `privileges` (reserved: always `0`, parsed and ignored in v1). ~60 B/entry. Members get a placeholder name from `nameFromMemberId`; real profiles arrive on first post.
 - **Serializer/parser**: a binary codec for the blob (a `Word16`-count-prefixed `[RosterMember]`); `RosterMember` becomes binary-only. Full code in *Blob format* below. Owner serializes → digest → chunks; receiver concatenates chunk bytes → verifies the digest → parses.
-- **Cap** `maxGroupRosterSize` → **256** (tunable). Enforce at promotion over the promoted set (`Commands.hs:2739`, via the widened predicate); re-validate the parsed entry count on receive (`Subscriber.hs:3171`); reject a signed `fileSize > cap × max-entry-size` before creating a file. Roster files are exempt from the inline `offer/receiveChunks` ceiling (at 256 ≈ 13.5 KB the blob is one chunk).
+- **Cap** `maxGroupRosterSize` → **256** (tunable). Enforce at promotion over the promoted set (`Commands.hs:2739`, via the widened predicate); re-validate the parsed entry count on receive (`Subscriber.hs:3171`); reject a signed `fileSize > cap × max-entry-size` before creating a file. Roster files are exempt from the inline `offer/receiveChunks` ceiling (at 256 ≈ 15 KB the blob is about one `fileChunkSize` chunk; the multipart path handles two if role words push it over).
 
 ### Blob format (serializer / parser)
 
-`RosterMember` is now **binary-only** — carried in the blob, never in a JSON message — so remove its `deriveJSON` (`Protocol.hs:806`) and give it the `Encoding` below. `MemberKey` (`Types.hs:972`, only `StrEncoding`) and `GroupMemberRole` (`Types/Shared.hs:33`, only `TextEncoding`) lack a binary `Encoding`: `MemberKey` delegates to the underlying `PublicKey` (`Crypto.hs:568`), and the role uses a compact 1-byte tag.
-
-> **Correction to the supplied code:** there is no `instance Encoding Word8` in the tree (only `Char`, `Bool`, `Word16`, `Word32`, `Int64`, …; `Encoding.hs:54-84`), so the role tag is a `Char` (which `Encoding Char` writes as one byte), not a `Word8`. Same wire bytes (1/2/3), just a type that has an instance.
+`RosterMember` is now **binary-only** — carried in the blob, never in a JSON message — so remove its `deriveJSON` (`Protocol.hs:806`) and give it the `Encoding` below. `MemberKey` (`Types.hs:972`, only `StrEncoding`) and `GroupMemberRole` (`Types/Shared.hs:33`, only `TextEncoding`) lack a binary `Encoding`: `MemberKey` delegates to the underlying `PublicKey` (`Crypto.hs:568`), and the role delegates to its canonical `TextEncoding` (the same `"member"/"moderator"/"admin"` form JSON and the DB use — single source of truth; `GRUnknown` round-trips).
 
 ```haskell
 -- MemberKey gains a binary Encoding (it only had StrEncoding); delegate to the Ed25519 key.
@@ -54,30 +52,20 @@ instance Encoding MemberKey where
   smpEncode (MemberKey k) = smpEncode k
   smpP = MemberKey <$> smpP
 
--- Compact 1-byte role tag (a Char — Encoding has no Word8 instance, Char encodes as one byte),
--- restricted to the roster (promoted) roles. The builder only emits these (isRosterRole filter);
--- the parser rejects anything else.
-rosterRoleTag :: GroupMemberRole -> Char
-rosterRoleTag = \case
-  GRMember -> '\1'
-  GRModerator -> '\2'
-  GRAdmin -> '\3'
-  _ -> '\NUL' -- never emitted: builder filters to isRosterRole
-
-rosterRoleFromTag :: Char -> Maybe GroupMemberRole
-rosterRoleFromTag = \case
-  '\1' -> Just GRMember
-  '\2' -> Just GRModerator
-  '\3' -> Just GRAdmin
-  _ -> Nothing
+-- Roles encode as their canonical text (the form JSON and the DB already use), not an ad-hoc
+-- numeric tag — single source of truth, and GRUnknown round-trips. textDecode returns Maybe
+-- (not Either), so the <$?> operator (Either-only, Util.hs:115) does NOT apply — use the maybe form.
+instance Encoding GroupMemberRole where
+  smpEncode = smpEncode . textEncode
+  smpP = maybe (fail "roster: bad role") pure . textDecode =<< smpP
 
 instance Encoding RosterMember where
   smpEncode RosterMember {memberId, key, role, privileges} =
-    smpEncode memberId <> smpEncode key <> smpEncode (rosterRoleTag role) <> smpEncode privileges
+    smpEncode memberId <> smpEncode key <> smpEncode role <> smpEncode privileges
   smpP = do
     memberId <- smpP
     key <- smpP
-    role <- rosterRoleFromTag <$> smpP >>= maybe (fail "roster: bad role tag") pure
+    role <- smpP
     privileges <- smpP
     pure RosterMember {memberId, key, role, privileges}
 
@@ -96,7 +84,7 @@ rosterBlobP = do
 
 - **Owner**: `encodeRosterBlob` over the promoted set → SHA-256 digest → chunk; the digest goes in the signed `XGrpRoster` header.
 - **Receiver**: concatenate chunk bytes → verify the digest (S1, over plaintext) → `parseAll rosterBlobP` (consume all input; reject trailing bytes). Parsing runs only after the digest matches, so the bytes are owner-attested; the `n > maxGroupRosterSize` guard and `parseAll` are defensive against a buggy/garbled blob.
-- **Per-entry layout**: `memberId` (1-byte len + id) + `key` (1-byte len + Ed25519 pubkey) + role (1 byte) + `privileges` (2 bytes) ≈ the ~53 B/entry estimate.
+- **Per-entry layout**: `memberId` (1-byte len + id) + `key` (1-byte len + Ed25519 pubkey) + role (1-byte len + role word, e.g. `member` = 7 B) + `privileges` (2 bytes) ≈ ~60 B/entry. The file-transferred blob has no tight size budget, so canonical text is fine.
 - `privileges` is reserved: serialized as `0`, parsed and ignored in v1.
 
 ## Delivery: send → header → chunks → completion
@@ -145,7 +133,7 @@ The version guard plus the per-version `shared_msg_id` keying are what make the 
 
 Per recipient, forward the signed header (as `forwardCachedRoster` does today) AND re-send the blob as `BFileChunk`s from `groups.roster_blob` (the send-from-bytes variant). An incoming `BFileChunk` returns no delivery task (`Subscriber.hs:1069`), so the blob send is driven here.
 
-**No per-member version gate in v1 (GAP 2).** QCONT/SENT re-forwards the cached roster unconditionally today (`Subscriber.hs:1129`, `~1226`), and no per-member delivered-version tracker exists in the tree — this plan adds none. So a re-serve re-sends the whole blob on every drain; at cap 256 that is one `BFileChunk` (~13.5 KB) per drain — acceptable.
+**No per-member version gate in v1 (GAP 2).** QCONT/SENT re-forwards the cached roster unconditionally today (`Subscriber.hs:1129`, `~1226`), and no per-member delivered-version tracker exists in the tree — this plan adds none. So a re-serve re-sends the whole blob on every drain; at cap 256 that is ~15 KB — one (occasionally two) `BFileChunk`s per drain — acceptable.
 
 It is safe because: an up-to-date member short-circuits the header and ACK-ignores the orphaned chunks; a stale (≤ pending) re-forward mid-transfer is a no-op via the short-circuit; and the completion version guard rejects any stale completion.
 
