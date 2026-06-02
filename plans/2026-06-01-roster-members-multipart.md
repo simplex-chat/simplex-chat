@@ -1,4 +1,4 @@
-# Roster: regular members + multipart delivery
+# Roster: regular members + larger rosters via inline file
 
 Date: 2026-06-01. Extends Section 1 of `2026-05-26-public-groups-via-relays-unified.md`.
 
@@ -8,7 +8,7 @@ Channels pin every subscriber to observer, so they can't post. We want owners to
 
 ## The change in one sentence
 
-The roster becomes the owner-signed list of **all promoted members** — member, moderator, admin (owners stay on the link, never in the roster) — delivered as a small **signed JSON header** plus a **packed binary blob split into parts**, so it can hold hundreds and scale to thousands.
+The roster becomes the owner-signed list of **all promoted members** — member, moderator, admin (owners stay on the link, never in the roster) — delivered by reusing the existing **inline file transfer**: a small signed `XGrpRoster` header carries the blob's size and digest, and the packed binary member list rides the file-chunk machinery. It scales to a few thousand members.
 
 ## Why a roster, and why members belong in it
 
@@ -21,36 +21,48 @@ The relay defaults every joiner to observer, and it forwards a member's posts on
 - **No name.** A roster-created member gets a placeholder name derived from its id; its real profile arrives separately when it first posts. (Clients will hide unknown-member rows in channels — separate client work.)
 - **privileges** — a reserved 16-bit field for future per-member capabilities (e.g. "post as the channel"). v1 only reserves it: always sent as 0, parsed and ignored. No storage, no behaviour yet.
 
-## Delivery: signed header + binary parts
+## Delivery: reuse the inline file transfer
 
-- **Header** = `XGrpRoster` (JSON, signed by the owner, relay-forwarded): version, SHA-256 of the blob, and the number of parts. No member data inline.
-- **Parts** = new `BGrpRosterPart` (binary, unsigned): version, part number, raw bytes.
+- **Header** = `XGrpRoster` (JSON, signed by the owner, relay-forwarded): version + an `InlineFileInvitation { fileSize, fileDigest }` — a lean `FileInvitation` with no `fileName` / `fileConnReq` / `fileInline` / `fileDescr` (it is always an inline send). No member data inline.
+- **Blob** = the packed member list, sent as `BFileChunk` against the `XGrpRoster` message's `shared_msg_id`, reusing the existing inline send/receive, chunk tracking, and restart recovery.
+- The file machinery owns chunking, completion, and recovery. We add the one thing it lacks: **verify the assembled blob against the signed `fileDigest`** on completion. That is the integrity gate — a relay can corrupt chunks, but the owner-signed digest catches it. (Inline receive does not check the digest today; reuse the existing `FileDigest`.)
 
-The blob is the packed member list. A receiver has the full roster once it holds all parts (`0 .. parts-1`, the count taken from the **signed** header), concatenates them in order, and the SHA-256 matches the header. **Nothing is applied until the hash matches** — no partial rosters, and because the part count is signed a relay can't mislead a receiver about how many parts to expect.
+Why reuse: the inline transfer already persists partial chunks and resumes after a restart, so we don't reinvent that. The signature stays on the small JSON header (the existing signing path), and the bulk stays raw binary.
 
-Why this shape: only the small header needs a signature, and signing already works for JSON, so we avoid changing the signing wire format. The bulk stays raw binary instead of base64-bloated JSON. Up to ~280 members fit one part; beyond that the blob simply spans more parts through the same code path.
+## Keeping it off the chat UI (the key adaptation)
+
+An inline file is normally a user-facing file attached to a chat item. To carry an internal roster blob:
+
+- **`shared_msg_id` on the `files` table**, so a roster file is found directly by the `XGrpRoster` message id. Today a file is only reachable *through* its chat item; a roster file has no chat item (`chat_item_id` NULL), so it needs the direct key.
+- **A file-type tag on `files`** marking a roster file. It auto-accepts, never surfaces in the UI, and on completion routes to: save the blob on the group, delete the file, apply the roster — instead of becoming a received-file chat item. (The on-disk file still needs a name; generate one from the message id.)
 
 ## Trust and safety (same model, wider set)
 
 - The header must be **signed by an owner** (asserted in the handler) — a relay can't forge it or re-attribute it to a member whose key it controls.
-- Parts are unsigned; their only integrity is the header's signed hash.
+- Chunks are unsigned; their only integrity is the header's signed digest, **verified on completion**.
 - A member's key is **trust-on-first-use**, pinned per id — a different key for a known id is rejected, never overwritten.
 - **Members are now roster-gated**: a relay announcing a member who isn't in the roster is rejected (relay can't conjure a poster), and a member's role/key can't be changed by an unsigned relay message.
 - **Anti-replay** preserved: older versions are rejected; equal version is a no-op.
 
-## Storage and recovery
+## Storage, relay, recovery
 
-- The relay caches the signed header + the parts **verbatim** — the same "store the signed bytes and replay" approach used for today's single-message roster — and replays them to joiners unchanged. It reassembles only transiently, to verify the hash and update its own member records.
-- Both relay and members **persist incoming parts in the database** and apply only when complete — so a restart mid-transfer resumes rather than losing progress, and a newer version supersedes any half-received older one. On the relay the stored parts double as the cache it replays.
-- Applying, bumping the version, and updating the parts buffer happen in **one transaction** — a member clears the buffer; a relay keeps the new version's parts as its cache and drops the old.
+- The blob transits through an on-disk file (the inline machinery's working store) — that's what gives restart recovery for free. On completion the assembled blob is **saved on the group as the durable copy**, and the file is deleted.
+- The relay re-serves joiners by **re-sending the cached group blob as an inline file** (drive the inline send from the stored blob — via a temp file or a send-from-bytes path; the current send reads from a file). It still forwards the owner's signed `XGrpRoster` verbatim, so chunks reference the same id and the joiner verifies the same signed digest.
+- A **newer version** (new `XGrpRoster` → new `shared_msg_id` → new file) supersedes any in-flight older transfer; stale roster files are cleaned up.
+- Apply + version bump happen in **one transaction**.
 
 ## One correctness point to keep in mind
 
-"All promoted members" (the blob) and "the moderation set" are different things. The join-time introduction flow (`introduceInChannel`) must keep using **moderators/admins only**. If it used the full member list, every new subscriber would be announced to every member and every member introduced to every joiner — large traffic, and it breaks subscriber anonymity. Members learn the promoted set — ids, roles, keys — from the forwarded roster blob, and each other's profiles when they post, not through individual introductions.
+"All promoted members" (the blob) and "the moderation set" are different things. The join-time introduction flow (`introduceInChannel`) must keep using **moderators/admins only**. If it used the full member list, every new subscriber would be announced to every member and every member introduced to every joiner — large traffic, and it breaks subscriber anonymity. Members learn the promoted set — ids, roles, keys — from the roster blob, and each other's profiles when they post, not through individual introductions.
 
-## Size cap
+## Watch: the file-type tag cross-cuts the file lifecycle
 
-A cap (proposed 256, tunable) bounds the blob, the relay's cached copy, and the per-update work. It's enforced when the owner promotes, and a receiver rejects a header whose part count exceeds what the cap allows before buffering any parts. The cap is a product choice: at ≤~280 the roster is header + 1 part; above that it spans more parts. Pick it for the real target.
+Every file path — accept, complete, cancel, delete, cleanup, and the file-list queries — must tolerate a roster file with a NULL `chat_item_id`, so it can't leak into a file list or break a deletion. This is the main cost of reusing the file machinery, and where bugs would hide.
+
+## Size cap and ceiling
+
+- A roster **cap** (proposed 256, tunable) bounds the blob, the cached copy, and the per-update work; enforced when the owner promotes.
+- Inline files have a built-in ceiling (`offerChunks` / `receiveChunks` ≈ 126–236 KB ≈ ~2,000–4,000 members at ~53 B each). Roster files either inherit it or are exempted — if exempted, the cap is the only size bound. The inline route doesn't suit tens of thousands; keep the target in the low thousands.
 
 ## Consequence to confirm
 
@@ -58,13 +70,13 @@ Because the roster is owner-signed, **only the owner can promote or demote membe
 
 ## Known limitations (inherited, not introduced here)
 
-- A malicious relay can withhold or corrupt a part, leaving a member on its last-applied roster — the same staleness a relay can impose by dropping any message. Existing members are still protected from *rollback* by the version check; the separate new-joiner rollback gap is documented in the channels overview.
-- A just-promoted member's first posts may render as "unknown member" until the roster finishes arriving — self-healing on the next post.
+- A malicious relay can withhold or corrupt chunks, leaving a member on its last-applied roster — the same staleness a relay can impose by dropping any message. Existing members are still protected from *rollback* by the version check; the separate new-joiner rollback gap is documented in the channels overview.
+- A just-promoted member's first posts may render as "unknown member" until the roster file finishes arriving — self-healing on the next post.
 
 ## Out of scope
 
 Granting/enforcing privileges; signing member message content; the joiner-role-on-profile change; iOS/Kotlin clients (including hiding unknown rows).
 
-## Smaller alternative, if a first cut is preferred
+## Possible optimization (not in v1)
 
-Keep the roster JSON and single-message, capped ~110, just adding members + the reserved field. That ships "members in channels" for smaller channels with none of the multipart machinery; parts can be added later.
+Even a small mod-only roster now goes through the file transfer (header + a chunk + an on-disk file), heavier than today's single signed message. If that churn matters, a size threshold could keep small rosters inline in `XGrpRoster` and use the file only above it — at the cost of a second code path. v1 keeps the single uniform file path.
