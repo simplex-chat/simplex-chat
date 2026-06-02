@@ -1298,6 +1298,9 @@ requiresSignature = \case
   XGrpLeave_ -> True
   XGrpRelayNew_ -> True
   XGrpRoster_ -> True
+  -- this only drives signing on send (groupMsgSigning); on receive XMember is gated per-role in
+  -- memberJoinRequestViaRelay (not withVerifiedMsg), so unsigned joins below a roster role still work (backward compat)
+  XMember_ -> True
   XInfo_ -> True
   _ -> False
 

@@ -2077,8 +2077,7 @@ encodeConnInfoPQ pqSup v chatMsgEvent = do
       _ -> pure connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
--- Encodes conn-info as a signed element (the '/'<binding><sigs><body> form parseChatMessages understands),
--- so a relay-group joiner can prove possession of the member key it asserts in XMember.
+-- conn-info wrapped as a signed element, so the receiver can verify the signature over the body
 encodeSignedConnInfo :: MsgEncodingI e => MsgSigning -> ChatMsgEvent e -> CM ByteString
 encodeSignedConnInfo signing chatMsgEvent = do
   vr <- chatVersionRange
@@ -2087,15 +2086,15 @@ encodeSignedConnInfo signing chatMsgEvent = do
     ECMEncoded body -> pure $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 
--- Signed conn-info for a relay-group join: asserts the membership memberId and member key,
--- signed with the member key bound to (publicGroupId, memberId) for relay-side verification.
-encodeMemberConnInfo :: GroupInfo -> Profile -> CM ByteString
-encodeMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys} profileToSend =
+-- signed XMember for a relay-group join: proves the joiner holds the member key it asserts
+encodeXMemberConnInfo :: GroupInfo -> Profile -> CM ByteString
+encodeXMemberConnInfo gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys} profileToSend =
   case groupKeys of
-    Just GroupKeys {publicGroupId, memberPrivKey} ->
-      let xMember = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey)
-          signing = MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
-       in encodeSignedConnInfo signing xMember
+    Just GroupKeys {memberPrivKey} ->
+      let xMemberEvt = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey)
+       in case groupMsgSigning gInfo xMemberEvt of
+            Just signing -> encodeSignedConnInfo signing xMemberEvt
+            Nothing -> throwChatError $ CEInternalError "XMember conn-info: group not configured for signing"
     Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
 
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)

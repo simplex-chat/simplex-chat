@@ -3702,7 +3702,7 @@ processChatCommand vr nm = \case
                in userProfileInGroup' user allowSimplexLinks incognitoProfile
             Nothing -> userProfileDirect user incognitoProfile Nothing True
       dm <- case gInfo_ of
-        Just (Just gInfo) | useRelays' gInfo -> encodeMemberConnInfo gInfo profileToSend
+        Just (Just gInfo) | useRelays' gInfo -> encodeXMemberConnInfo gInfo profileToSend
         _ -> encodeConnInfoPQ pqSup chatV $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode

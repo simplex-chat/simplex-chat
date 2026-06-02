@@ -1210,7 +1210,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
                       let incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
                           profileToSend = userProfileInGroup user gInfo incognitoProfile
-                      dm <- encodeMemberConnInfo gInfo profileToSend
+                      dm <- encodeXMemberConnInfo gInfo profileToSend
                       subMode <- chatReadVar subscriptionMode
                       void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
             CFGetRelayDataAccept -> do
