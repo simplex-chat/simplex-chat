@@ -535,7 +535,7 @@ const STYLE = `
 }
 
 .simplex-preview-badges a img {
-  height: 36px;
+  height: 40px;
   width: auto;
   display: block;
 }
@@ -589,24 +589,57 @@ const STYLE = `
   color: #333;
 }
 
-.simplex-preview-step-label {
+.simplex-preview-step-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  width: 100%;
+  min-height: 131px;
+  border-radius: 30px;
+  border: 1px solid rgba(168, 176, 180, 0.6);
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.simplex-preview-step-number {
+  position: absolute;
+  background: #0197FF;
+  height: 44px;
+  width: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top: 0;
+  left: 0;
+  transform: translate(-30%, -30%);
   font-size: 16px;
+  color: #fff;
+  font-weight: 700;
+  line-height: 36px;
+}
+
+.simplex-preview-step-title {
+  font-size: 20px;
   font-weight: 500;
-  text-align: center;
-  margin: 20px 0 8px;
+  margin: 0 0 16px;
   color: #000;
 }
 
 .simplex-preview-open-btn {
-  display: block;
+  display: inline-block;
   text-align: center;
   background: #0053D0;
   color: #fff;
   border: none;
   border-radius: 34px;
   padding: 12px 32px;
+  height: 44px;
   font-size: 16px;
-  font-weight: 600;
+  line-height: 19px;
+  letter-spacing: 0.02em;
   cursor: pointer;
   text-decoration: none;
   font-family: inherit;
@@ -958,10 +991,18 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
 
 function renderMobileConversion(container, channelLink, showAppBadges) {
   if (showAppBadges) {
-    const stepLabel = document.createElement('p');
-    stepLabel.className = 'simplex-preview-step-label';
-    stepLabel.textContent = 'Install SimpleX App';
-    container.appendChild(stepLabel);
+    const card1 = document.createElement('div');
+    card1.className = 'simplex-preview-step-card';
+
+    const num1 = document.createElement('div');
+    num1.className = 'simplex-preview-step-number';
+    num1.textContent = '1';
+    card1.appendChild(num1);
+
+    const title1 = document.createElement('p');
+    title1.className = 'simplex-preview-step-title';
+    title1.textContent = 'Install SimpleX app';
+    card1.appendChild(title1);
 
     const badges = document.createElement('div');
     badges.className = 'simplex-preview-badges';
@@ -980,14 +1021,35 @@ function renderMobileConversion(container, channelLink, showAppBadges) {
         '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>' +
         '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>';
     }
-    container.appendChild(badges);
-  }
+    card1.appendChild(badges);
+    container.appendChild(card1);
 
-  const openBtn = document.createElement('a');
-  openBtn.className = 'simplex-preview-open-btn';
-  openBtn.textContent = 'Open SimpleX App';
-  openBtn.href = channelLink;
-  container.appendChild(openBtn);
+    const card2 = document.createElement('div');
+    card2.className = 'simplex-preview-step-card';
+
+    const num2 = document.createElement('div');
+    num2.className = 'simplex-preview-step-number';
+    num2.textContent = '2';
+    card2.appendChild(num2);
+
+    const title2 = document.createElement('p');
+    title2.className = 'simplex-preview-step-title';
+    title2.textContent = 'Connect in app';
+    card2.appendChild(title2);
+
+    const openBtn = document.createElement('a');
+    openBtn.className = 'simplex-preview-open-btn';
+    openBtn.textContent = 'Open SimpleX app';
+    openBtn.href = channelLink;
+    card2.appendChild(openBtn);
+    container.appendChild(card2);
+  } else {
+    const openBtn = document.createElement('a');
+    openBtn.className = 'simplex-preview-open-btn';
+    openBtn.textContent = 'Open SimpleX app';
+    openBtn.href = channelLink;
+    container.appendChild(openBtn);
+  }
 }
 
 function setupExpandCollapse(section, readMore) {
