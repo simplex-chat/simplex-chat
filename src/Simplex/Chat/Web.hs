@@ -34,7 +34,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), WebPreviewConfig (..))
-import Simplex.Chat.Markdown (MarkdownList)
+import Simplex.Chat.Markdown (FormattedText (..), MarkdownList, parseMaybeMarkdownList)
 import Simplex.Chat.Messages
   ( CChatItem (..),
     CIDirection (..),
@@ -99,6 +99,8 @@ data WebMessage = WebMessage
 
 data WebChannelPreview = WebChannelPreview
   { channel :: GroupProfile,
+    shortDescription :: Maybe MarkdownList,
+    welcomeMessage :: Maybe MarkdownList,
     members :: [WebMemberProfile],
     messages :: [WebMessage],
     updatedAt :: UTCTime
@@ -129,7 +131,7 @@ renderWebPreviews WebPreviewConfig {webJsonDir, webCorsFile} cc user = do
       (\PublicGroupProfile {publicGroupId} -> publicGroupIdFileName publicGroupId <> ".json") <$> publicGroup
 
 renderGroupPreview :: FilePath -> ChatController -> User -> GroupInfo -> IO (Maybe (Text, CorsOrigin))
-renderGroupPreview webJsonDir cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {publicGroup}} =
+renderGroupPreview webJsonDir cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {shortDescr = sd, description = wd, publicGroup}} =
   case publicGroup of
     Just PublicGroupProfile {publicGroupId, publicGroupAccess} -> do
       let fName = publicGroupIdFileName publicGroupId <> ".json"
@@ -143,6 +145,8 @@ renderGroupPreview webJsonDir cc user gInfo@GroupInfo {groupProfile = gp@GroupPr
           senders = uniqueSenders $ map memberToProfile owners <> mapMaybe snd rendered
           preview = WebChannelPreview
             { channel = gp,
+              shortDescription = toFormattedText =<< sd,
+              welcomeMessage = toFormattedText =<< wd,
               members = senders,
               messages = msgs,
               updatedAt = ts
@@ -244,6 +248,13 @@ removeStaleFiles dir activeFiles = do
   let jsonFiles = S.filter (\f -> takeExtension f == ".json") . S.fromList
   allFiles <- jsonFiles <$> listDirectory dir
   mapM_ (\f -> removeFile (dir </> f)) $ S.difference allFiles activeFiles
+
+toFormattedText :: Text -> Maybe MarkdownList
+toFormattedText t = case parseMaybeMarkdownList t of
+  Just fts | any hasFormat fts -> Just fts
+  _ -> Nothing
+  where
+    hasFormat (FormattedText fmt _) = isJust fmt
 
 publicGroupIdFileName :: B64UrlByteString -> String
 publicGroupIdFileName = B.unpack . strEncode

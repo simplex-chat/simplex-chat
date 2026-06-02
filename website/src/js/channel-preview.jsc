@@ -9,10 +9,11 @@ const STYLE = `
   line-height: 1.4;
   color: #000;
   background: #fff;
-  max-width: 640px;
-  margin: 0 auto;
+  width: 100%;
+  height: 100%;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  display: flex;
 }
 
 .simplex-preview-header {
@@ -415,6 +416,151 @@ const STYLE = `
 .simplex-preview-text .magenta { color: magenta; }
 .simplex-preview-text .black { color: #000; }
 .simplex-preview-text .white { color: #000; }
+
+.simplex-preview-main {
+  flex: 1;
+  min-width: 0;
+  max-width: 640px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.simplex-preview-info {
+  overflow-y: auto;
+  background: #fff;
+}
+
+.simplex-preview-info-close {
+  display: none;
+}
+
+.simplex-preview-info-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 18px;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto 12px;
+}
+
+.simplex-preview-info-name {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.simplex-preview-info-subscribers {
+  font-size: 14px;
+  color: #8b8786;
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.simplex-preview-info-section {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.simplex-preview-info-section a {
+  color: #0088ff;
+  text-decoration: none;
+}
+
+.simplex-preview-info-section a:hover {
+  text-decoration: underline;
+}
+
+.simplex-preview-info-section .secret {
+  background: #8b8786;
+  color: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.simplex-preview-info-section .secret.visible {
+  background: transparent;
+  color: inherit;
+}
+
+.simplex-preview-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b8786;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.simplex-preview-read-more {
+  font-size: 13px;
+  color: #0088ff;
+  cursor: pointer;
+  margin-top: 4px;
+  user-select: none;
+}
+
+.simplex-preview-info .simplex-preview-join-btn {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+  width: 100%;
+}
+
+@media (min-width: 1000px) {
+  .simplex-preview-info {
+    width: 320px;
+    flex-shrink: 0;
+    border-left: 1px solid #e5e5e5;
+    padding: 24px;
+  }
+  .simplex-preview-header .simplex-preview-join-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 999px) {
+  .simplex-preview-main {
+    max-width: none;
+  }
+  .simplex-preview-info {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    padding: 16px;
+  }
+  .simplex-preview-info.open {
+    display: block;
+  }
+  .simplex-preview-info-close {
+    display: block;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #8b8786;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+  }
+  .simplex-preview-info-content {
+    padding-top: 32px;
+  }
+  .simplex-preview-header {
+    cursor: pointer;
+  }
+}
 `;
 
 const DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25.8 25.46"><circle cx="12.9" cy="12.73" r="12.72" fill="#eee"/><path d="M25.44 12.73c0 7.01-5.71 12.73-12.73 12.73C5.71 25.46 0 19.75 0 12.73 0 5.73 5.71.02 12.71.02c7.01 0 12.73 5.71 12.73 12.72zM4.22 17.11c0 .58.31.87 1.05.87h4.88c-.14-.26-.19-.55-.19-.82 0-1.03.59-2.19 1.63-3.1-.79-.5-1.75-.79-2.74-.79-2.37 0-4.63 1.68-4.63 3.84zm6.6.05c0 .56.36.82 1.27.82h8.1c.93 0 1.26-.26 1.26-.82 0-1.62-2.02-3.87-5.28-3.87-3.29 0-5.34 2.25-5.34 3.87zM6.66 9.87c0 1.37 1.01 2.42 2.19 2.42 1.2 0 2.2-1.05 2.2-2.43 0-1.33-1.02-2.36-2.2-2.36-1.16 0-2.19 1.05-2.19 2.37zm6.98-.5c0 1.56 1.13 2.78 2.52 2.78 1.36 0 2.5-1.22 2.5-2.79 0-1.53-1.15-2.71-2.5-2.71-1.38 0-2.52 1.21-2.52 2.73z" fill="#ccc" fill-opacity=".85"/></svg>');
@@ -497,16 +643,44 @@ function render(container, data, channelLink) {
   }
 
   container.innerHTML = '';
+
+  const main = document.createElement('div');
+  main.className = 'simplex-preview-main';
+
   const header = renderHeader(channel, channelLink, members.length);
-  container.appendChild(header);
+  main.appendChild(header);
 
   const messagesDiv = document.createElement('div');
   messagesDiv.className = 'simplex-preview-messages';
   renderMessages(messagesDiv, messages, membersMap, channel);
-  container.appendChild(messagesDiv);
+  main.appendChild(messagesDiv);
+
+  container.appendChild(main);
+
+  const info = document.createElement('div');
+  info.className = 'simplex-preview-info';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'simplex-preview-info-close';
+  closeBtn.innerHTML = '&#10005;';
+  closeBtn.addEventListener('click', () => info.classList.remove('open'));
+  info.appendChild(closeBtn);
+
+  const infoContent = document.createElement('div');
+  infoContent.className = 'simplex-preview-info-content';
+  renderInfoContent(infoContent, data, channelLink, members.length);
+  info.appendChild(infoContent);
+
+  container.appendChild(info);
+
+  header.addEventListener('click', (e) => {
+    if (e.target.closest('.simplex-preview-join-btn')) return;
+    if (window.innerWidth < 1000) info.classList.add('open');
+  });
 
   setupStickyHeader(header);
   setupSecretToggles(container);
+  main.scrollTop = main.scrollHeight;
 }
 
 function renderHeader(channel, channelLink, subscriberCount) {
@@ -531,7 +705,7 @@ function renderHeader(channel, channelLink, subscriberCount) {
   desc.className = 'simplex-preview-header-description';
   const parts = [];
   if (subscriberCount > 0) parts.push(subscriberCount + ' subscribers');
-  if (channel.description) parts.push(channel.description);
+  if (channel.shortDescr) parts.push(channel.shortDescr);
   desc.textContent = parts.join(' • ');
   info.appendChild(desc);
 
@@ -551,6 +725,90 @@ function renderHeader(channel, channelLink, subscriberCount) {
   }
 
   return header;
+}
+
+function renderInfoContent(container, data, channelLink, subscriberCount) {
+  const { channel } = data;
+
+  const avatar = document.createElement('img');
+  avatar.className = 'simplex-preview-info-avatar';
+  avatar.src = channel.image || DEFAULT_AVATAR;
+  avatar.alt = channel.displayName;
+  container.appendChild(avatar);
+
+  const name = document.createElement('h2');
+  name.className = 'simplex-preview-info-name';
+  name.textContent = channel.displayName;
+  container.appendChild(name);
+
+  if (subscriberCount > 0) {
+    const subs = document.createElement('p');
+    subs.className = 'simplex-preview-info-subscribers';
+    subs.textContent = subscriberCount + ' subscribers';
+    container.appendChild(subs);
+  }
+
+  const shortDescr = data.shortDescription || channel.shortDescr;
+  if (shortDescr) {
+    const section = document.createElement('div');
+    section.className = 'simplex-preview-info-section';
+    section.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr) : escapeHtml(shortDescr);
+    container.appendChild(section);
+  }
+
+  const welcome = data.welcomeMessage || channel.description;
+  if (welcome) {
+    const label = document.createElement('div');
+    label.className = 'simplex-preview-info-label';
+    label.textContent = 'Welcome message';
+    container.appendChild(label);
+
+    const section = document.createElement('div');
+    section.className = 'simplex-preview-info-section';
+    section.innerHTML = Array.isArray(welcome) ? renderMarkdown(welcome) : escapeHtml(welcome);
+    container.appendChild(section);
+
+    const readMore = document.createElement('div');
+    readMore.className = 'simplex-preview-read-more';
+    readMore.textContent = 'Read more';
+    readMore.style.display = 'none';
+    container.appendChild(readMore);
+
+    setTimeout(() => {
+      const lineHeight = parseFloat(getComputedStyle(section).lineHeight);
+      const maxLines = 7;
+      const maxHeight = maxLines * lineHeight;
+      const maxHeightPx = maxHeight + 'px';
+      section.style.maxHeight = maxHeightPx;
+      section.style.overflow = 'hidden';
+
+      if (section.scrollHeight > maxHeight + 4) {
+        readMore.style.display = 'block';
+        readMore.addEventListener('click', () => {
+          if (section.style.maxHeight === maxHeightPx) {
+            section.style.maxHeight = 'none';
+            readMore.textContent = 'Show less';
+          } else {
+            section.style.maxHeight = maxHeightPx;
+            readMore.textContent = 'Read more';
+          }
+        });
+      }
+    }, 0);
+  }
+
+  if (channelLink) {
+    const btn = document.createElement('a');
+    btn.className = 'simplex-preview-join-btn';
+    btn.textContent = 'Join';
+    try {
+      btn.href = platformSimplexUri(channelLink);
+    } catch(e) {
+      btn.href = channelLink;
+    }
+    btn.target = '_blank';
+    container.appendChild(btn);
+  }
 }
 
 function setupStickyHeader(header) {
