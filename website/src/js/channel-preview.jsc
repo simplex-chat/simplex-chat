@@ -1030,9 +1030,9 @@ function renderMobileConversion(container, channelLink, showAppBadges) {
 function setupExpandCollapse(section, readMore) {
   if (section._measured) return;
   const lineHeight = parseFloat(getComputedStyle(section).lineHeight);
-  if (!lineHeight) return;
+  if (!lineHeight || !section.scrollHeight) return;
   section._measured = true;
-  const maxLines = 7;
+  const maxLines = 4;
   const maxHeight = maxLines * lineHeight;
   const maxHeightPx = maxHeight + 'px';
   section.style.maxHeight = maxHeightPx;
