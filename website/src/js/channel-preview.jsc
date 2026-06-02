@@ -433,6 +433,7 @@ const FORWARD_ICON_SVG = `<svg width="14" height="14" viewBox="0 -960 960 960" f
 
 function initChannelPreview(container) {
   const relayDomains = (container.dataset.relayDomains || '').split(',').map(u => u.trim()).filter(Boolean);
+  const relayScheme = container.dataset.relayScheme || 'https';
   const channelId = container.dataset.channelId || '';
   const channelLink = container.dataset.channelLink || '';
 
@@ -445,7 +446,7 @@ function initChannelPreview(container) {
   container.classList.add('simplex-preview-container');
   container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
 
-  fetchPreview(relayDomains, channelId, channelLink).then(data => {
+  fetchPreview(relayScheme, relayDomains, channelLink, channelId).then(data => {
     if (!data) {
       container.innerHTML = '<p class="simplex-preview-empty">Failed to load channel preview.</p>';
       return;
@@ -463,10 +464,10 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
-async function fetchPreview(relayDomains, channelId, channelLink) {
+async function fetchPreview(relayScheme, relayDomains, channelLink, channelId) {
   for (const domain of relayDomains) {
     try {
-      const url = `https://${domain}/channel/${channelId}.json`;
+      const url = `${relayScheme}://${domain}/channel/${channelId}.json`;
       const resp = await fetch(url);
       if (!resp.ok) continue;
       const data = await resp.json();
