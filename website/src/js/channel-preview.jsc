@@ -506,37 +506,6 @@ const STYLE = `
   margin: 0 0 16px;
 }
 
-.simplex-preview-info-section {
-  font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: 12px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-.simplex-preview-info-section a {
-  color: var(--sp-link);
-  text-decoration: none;
-}
-
-.simplex-preview-info-section a:hover {
-  text-decoration: underline;
-}
-
-.simplex-preview-info-section .secret {
-  background: var(--sp-text-secondary);
-  color: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s;
-}
-
-.simplex-preview-info-section .secret.visible {
-  background: transparent;
-  color: inherit;
-}
-
 .simplex-preview-info .simplex-preview-join-btn {
   display: block;
   text-align: center;
@@ -802,7 +771,19 @@ function render(container, data, channelLink, showAppBadges) {
 
   const messagesDiv = document.createElement('div');
   messagesDiv.className = 'simplex-preview-messages';
-  renderMessages(messagesDiv, messages, membersMap, channel);
+  const welcome = data.welcomeMessage || channel.description;
+  var allMessages = messages;
+  if (welcome) {
+    var welcomeMsg = {
+      sender: null,
+      ts: messages.length > 0 ? messages[0].ts : new Date().toISOString(),
+      content: { type: 'text', text: typeof welcome === 'string' ? welcome : '' },
+      formattedText: Array.isArray(welcome) ? welcome : null,
+      reactions: []
+    };
+    allMessages = [welcomeMsg].concat(messages);
+  }
+  renderMessages(messagesDiv, allMessages, membersMap, channel);
   main.appendChild(messagesDiv);
 
   container.appendChild(main);
@@ -904,14 +885,6 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
     subs.className = 'simplex-preview-info-subscribers';
     subs.textContent = subscriberCount + ' subscribers';
     container.appendChild(subs);
-  }
-
-  const welcome = data.welcomeMessage || channel.description;
-  if (welcome) {
-    const section = document.createElement('div');
-    section.className = 'simplex-preview-info-section';
-    section.innerHTML = Array.isArray(welcome) ? renderMarkdown(welcome) : escapeHtml(welcome);
-    container.appendChild(section);
   }
 
   if (channelLink) {
