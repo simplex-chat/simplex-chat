@@ -420,19 +420,28 @@ const STYLE = `
 }
 
 .simplex-preview-info-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 18px;
+  width: 192px;
+  height: 192px;
+  border-radius: 42px;
   object-fit: cover;
   display: block;
-  margin: 0 auto 12px;
+  margin: 12px auto;
 }
 
 .simplex-preview-info-name {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 34px;
+  font-weight: 700;
   text-align: center;
-  margin: 0 0 4px;
+  margin: 0;
+}
+
+.simplex-preview-info-descr {
+  font-size: 14px;
+  color: #8b8786;
+  text-align: center;
+  margin: 8px 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .simplex-preview-info-subscribers {
@@ -727,8 +736,7 @@ function renderInfoContent(container, data, channelLink, subscriberCount) {
   const shortDescr = data.shortDescription || channel.shortDescr;
   if (shortDescr) {
     const descrDiv = document.createElement('div');
-    descrDiv.className = 'simplex-preview-info-section';
-    descrDiv.style.textAlign = 'center';
+    descrDiv.className = 'simplex-preview-info-descr';
     descrDiv.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr) : escapeHtml(shortDescr);
     container.appendChild(descrDiv);
   }
