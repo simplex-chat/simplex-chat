@@ -141,6 +141,7 @@ Query:
                 SELECT
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+                  gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
                   g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
                   g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -970,6 +971,7 @@ SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next (group_id=? A
 Query: 
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
                    gp.group_type, gp.group_link, gp.public_group_id,
+                   gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
                    gp.preferences, gp.member_admission
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
@@ -1217,8 +1219,9 @@ Query:
           INSERT INTO group_profiles
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
+             group_web_page, group_domain, domain_web_page, allow_embedding,
              user_id, preferences, member_admission, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -1741,6 +1744,7 @@ Query:
           UPDATE group_profiles
           SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
               group_type = ?, group_link = ?,
+              group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?,
               preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
@@ -5122,6 +5126,14 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_relays
+      SET base_web_url = ?, updated_at = ?
+      WHERE group_member_id = ?
+    
+Plan:
+SEARCH group_relays USING INDEX idx_group_relays_group_member_id (group_member_id=?)
+
+Query: 
+      UPDATE group_relays
       SET conf_id = ?, relay_link = ?, updated_at = ?
       WHERE group_member_id = ?
     
@@ -5313,6 +5325,7 @@ Query:
     SELECT
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -5349,6 +5362,7 @@ Query:
     SELECT
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -5378,6 +5392,7 @@ Query:
     SELECT
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -5793,7 +5808,7 @@ SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
            cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
-           gr.relay_status, gr.relay_link
+           gr.relay_status, gr.relay_link, gr.base_web_url
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
    
@@ -5810,7 +5825,7 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
            cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
-           gr.relay_status, gr.relay_link
+           gr.relay_status, gr.relay_link, gr.base_web_url
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
    WHERE gr.group_id = ?
@@ -5821,7 +5836,7 @@ SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
            cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
-           gr.relay_status, gr.relay_link
+           gr.relay_status, gr.relay_link, gr.base_web_url
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
    WHERE gr.group_member_id = ?
@@ -5832,7 +5847,7 @@ SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
            cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
-           gr.relay_status, gr.relay_link
+           gr.relay_status, gr.relay_link, gr.base_web_url
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
    WHERE gr.group_relay_id = ?
