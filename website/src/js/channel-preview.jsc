@@ -23,30 +23,18 @@ const STYLE = `
   z-index: 10;
   background: #fff;
   border-bottom: 1px solid #e5e5e5;
-  padding: 12px 16px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: padding 0.2s;
-}
-
-.simplex-preview-header.collapsed {
-  padding: 8px 16px;
 }
 
 .simplex-preview-header-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 11px;
-  object-fit: cover;
-  flex-shrink: 0;
-  transition: width 0.2s, height 0.2s;
-}
-
-.simplex-preview-header.collapsed .simplex-preview-header-avatar {
   width: 36px;
   height: 36px;
   border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .simplex-preview-header-info {
@@ -72,10 +60,6 @@ const STYLE = `
   text-overflow: ellipsis;
 }
 
-.simplex-preview-header.collapsed .simplex-preview-header-description {
-  display: none;
-}
-
 .simplex-preview-join-btn {
   flex-shrink: 0;
   background: #0088ff;
@@ -95,7 +79,7 @@ const STYLE = `
 }
 
 .simplex-preview-messages {
-  padding: 8px 0;
+  padding: 8px 16px;
 }
 
 .simplex-preview-date-separator {
@@ -128,11 +112,11 @@ const STYLE = `
 .simplex-preview-msg-row {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .simplex-preview-msg-row.has-gap {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .simplex-preview-msg-avatar {
@@ -489,15 +473,6 @@ const STYLE = `
   color: inherit;
 }
 
-.simplex-preview-info-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #8b8786;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
 .simplex-preview-read-more {
   font-size: 13px;
   color: #0088ff;
@@ -687,7 +662,6 @@ function render(container, data, channelLink) {
     main.style.overflow = '';
   });
 
-  setupStickyHeader(header, main);
   setupSecretToggles(container);
   if (infoContent._setupExpand) setTimeout(infoContent._setupExpand, 0);
   setTimeout(() => { main.scrollTop = main.scrollHeight; }, 0);
@@ -711,13 +685,12 @@ function renderHeader(channel, channelLink, subscriberCount) {
   name.textContent = channel.displayName;
   info.appendChild(name);
 
-  const desc = document.createElement('p');
-  desc.className = 'simplex-preview-header-description';
-  const parts = [];
-  if (subscriberCount > 0) parts.push(subscriberCount + ' subscribers');
-  if (channel.shortDescr) parts.push(channel.shortDescr);
-  desc.textContent = parts.join(' • ');
-  info.appendChild(desc);
+  if (subscriberCount > 0) {
+    const desc = document.createElement('p');
+    desc.className = 'simplex-preview-header-description';
+    desc.textContent = subscriberCount + ' subscribers';
+    info.appendChild(desc);
+  }
 
   header.appendChild(info);
 
@@ -751,6 +724,15 @@ function renderInfoContent(container, data, channelLink, subscriberCount) {
   name.textContent = channel.displayName;
   container.appendChild(name);
 
+  const shortDescr = data.shortDescription || channel.shortDescr;
+  if (shortDescr) {
+    const descrDiv = document.createElement('div');
+    descrDiv.className = 'simplex-preview-info-section';
+    descrDiv.style.textAlign = 'center';
+    descrDiv.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr) : escapeHtml(shortDescr);
+    container.appendChild(descrDiv);
+  }
+
   if (subscriberCount > 0) {
     const subs = document.createElement('p');
     subs.className = 'simplex-preview-info-subscribers';
@@ -758,21 +740,8 @@ function renderInfoContent(container, data, channelLink, subscriberCount) {
     container.appendChild(subs);
   }
 
-  const shortDescr = data.shortDescription || channel.shortDescr;
-  if (shortDescr) {
-    const section = document.createElement('div');
-    section.className = 'simplex-preview-info-section';
-    section.innerHTML = Array.isArray(shortDescr) ? renderMarkdown(shortDescr) : escapeHtml(shortDescr);
-    container.appendChild(section);
-  }
-
   const welcome = data.welcomeMessage || channel.description;
   if (welcome) {
-    const label = document.createElement('div');
-    label.className = 'simplex-preview-info-label';
-    label.textContent = 'Welcome message';
-    container.appendChild(label);
-
     const section = document.createElement('div');
     section.className = 'simplex-preview-info-section';
     section.innerHTML = Array.isArray(welcome) ? renderMarkdown(welcome) : escapeHtml(welcome);
@@ -823,17 +792,6 @@ function setupExpandCollapse(section, readMore) {
       }
     });
   }
-}
-
-function setupStickyHeader(header, scrollContainer) {
-  const observer = new IntersectionObserver(([entry]) => {
-    header.classList.toggle('collapsed', !entry.isIntersecting);
-  }, { threshold: 0, rootMargin: '-1px 0px 0px 0px', root: scrollContainer });
-
-  const sentinel = document.createElement('div');
-  sentinel.style.height = '1px';
-  header.parentNode.insertBefore(sentinel, header);
-  observer.observe(sentinel);
 }
 
 function setupSecretToggles(container) {
