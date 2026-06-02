@@ -518,7 +518,7 @@ const STYLE = `
   font-size: 18px;
   font-weight: 600;
   text-align: center;
-  margin: 0 0 20px;
+  margin: 0 0 16px;
   color: #000;
 }
 
@@ -556,7 +556,7 @@ const STYLE = `
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin: 0;
+  margin: 0 0 3px;
 }
 
 .simplex-preview-badges a {
