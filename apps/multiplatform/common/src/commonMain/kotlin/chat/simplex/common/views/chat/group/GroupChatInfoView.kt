@@ -12,6 +12,7 @@ import SectionView
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -922,6 +924,18 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
+    if (webPage != null) {
+      val uriHandler = LocalUriHandler.current
+      Text(
+        webPage,
+        style = MaterialTheme.typography.body2,
+        color = MaterialTheme.colors.primary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.clickable { uriHandler.openUriCatching(webPage) }
+      )
+    }
     if (groupInfo.useRelays) {
       val count = groupInfo.groupSummary.publicMemberCount
       if (count != null && count > 0) {
