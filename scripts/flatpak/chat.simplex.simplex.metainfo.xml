@@ -38,14 +38,10 @@
   </description>
 
   <releases>
-    <release version="6.5.3" date="2026-05-23">
+    <release version="6.5.4" date="2026-06-02">
       <url type="details">https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html</url>
       <description>
-        <p>New in v6.5.3:</p>
-        <ul>
-          <li>relays reject groups that were removed, can be manually re-allowed</li>
-        </ul>
-        <p>New in v6.5:</p>
+        <p>New in v6.5.4:</p>
         <p>Public channels - speak freely!</p>
         <ul>
           <li>Reliability: many relays per channel.</li>
