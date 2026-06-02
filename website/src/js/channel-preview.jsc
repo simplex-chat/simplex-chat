@@ -524,7 +524,7 @@ const STYLE = `
   width: 100%;
   height: 1px;
   background: var(--sp-border);
-  margin: 20px 0;
+  margin: 40px 0;
 }
 
 .simplex-preview-conversion-title {
