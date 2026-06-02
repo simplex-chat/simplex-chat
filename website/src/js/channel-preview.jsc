@@ -450,11 +450,13 @@ const STYLE = `
   min-width: 0;
   max-width: 640px;
   overflow-y: auto;
+  overscroll-behavior: none;
   position: relative;
 }
 
 .simplex-preview-info {
   overflow-y: auto;
+  overscroll-behavior: none;
   background: var(--sp-bg);
 }
 
@@ -532,14 +534,6 @@ const STYLE = `
 .simplex-preview-info-section .secret.visible {
   background: transparent;
   color: inherit;
-}
-
-.simplex-preview-read-more {
-  font-size: 13px;
-  color: var(--sp-link);
-  cursor: pointer;
-  margin-top: 4px;
-  user-select: none;
 }
 
 .simplex-preview-info .simplex-preview-join-btn {
@@ -827,11 +821,11 @@ function render(container, data, channelLink, showAppBadges) {
 
   container.appendChild(info);
 
-  header.addEventListener('click', () => {
+  header.addEventListener('click', (e) => {
+    if (e.target.closest('.simplex-preview-join-btn')) return;
     if (window.innerWidth < 1000) {
       info.classList.add('open');
       main.style.overflow = 'hidden';
-      if (infoContent._setupExpand) setTimeout(infoContent._setupExpand, 0);
     }
   });
 
@@ -841,7 +835,6 @@ function render(container, data, channelLink, showAppBadges) {
   });
 
   setupSecretToggles(container);
-  if (infoContent._setupExpand) setTimeout(infoContent._setupExpand, 0);
   setTimeout(() => { main.scrollTop = main.scrollHeight; }, 0);
 }
 
@@ -873,9 +866,10 @@ function renderHeader(channel, channelLink, subscriberCount) {
   header.appendChild(info);
 
   if (channelLink) {
-    const btn = document.createElement('button');
+    const btn = document.createElement('a');
     btn.className = 'simplex-preview-join-btn';
     btn.textContent = 'Join';
+    btn.href = channelLink;
     header.appendChild(btn);
   }
 
@@ -917,14 +911,6 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
     section.className = 'simplex-preview-info-section';
     section.innerHTML = Array.isArray(welcome) ? renderMarkdown(welcome) : escapeHtml(welcome);
     container.appendChild(section);
-
-    const readMore = document.createElement('div');
-    readMore.className = 'simplex-preview-read-more';
-    readMore.textContent = 'Read more';
-    readMore.style.display = 'none';
-    container.appendChild(readMore);
-
-    container._setupExpand = () => setupExpandCollapse(section, readMore);
   }
 
   if (channelLink) {
@@ -1081,29 +1067,6 @@ function renderMobileConversion(container, channelLink, showAppBadges) {
   container.appendChild(openBtn);
 }
 
-function setupExpandCollapse(section, readMore) {
-  if (section._measured) return;
-  const lineHeight = parseFloat(getComputedStyle(section).lineHeight);
-  if (!lineHeight || !section.scrollHeight) return;
-  section._measured = true;
-  const maxLines = 4;
-  const maxHeight = maxLines * lineHeight;
-  const maxHeightPx = maxHeight + 'px';
-  section.style.maxHeight = maxHeightPx;
-  section.style.overflow = 'hidden';
-  if (section.scrollHeight > maxHeight + 4) {
-    readMore.style.display = 'block';
-    readMore.addEventListener('click', () => {
-      if (section.style.maxHeight === maxHeightPx) {
-        section.style.maxHeight = 'none';
-        readMore.textContent = 'Show less';
-      } else {
-        section.style.maxHeight = maxHeightPx;
-        readMore.textContent = 'Read more';
-      }
-    });
-  }
-}
 
 function setupSecretToggles(container) {
   container.addEventListener('click', (e) => {
