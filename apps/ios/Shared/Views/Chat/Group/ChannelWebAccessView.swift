@@ -125,9 +125,10 @@ struct ChannelWebAccessView: View {
            !relayDomains.isEmpty {
             """
             <div data-simplex-channel-preview
-                 data-relay-domains="\(relayDomains.joined(separator: ","))"
-                 data-channel-id="\(pg.publicGroupId)"
-                 data-channel-link="\(pg.groupLink)"></div>
+              data-channel-link="\(pg.groupLink)"
+              data-channel-id="\(pg.publicGroupId)"
+              data-relay-domains="\(relayDomains.joined(separator: ","))"
+            ></div>
             <script src="https://simplex.chat/js/channel-preview.js"></script>
             """
         } else {
