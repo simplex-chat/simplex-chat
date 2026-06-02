@@ -447,6 +447,10 @@ function initChannelPreview(container) {
   container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
 
   fetchPreview(relayScheme, relayDomains, channelLink, channelId).then(data => {
+    if (data === 'link_mismatch') {
+      container.innerHTML = '<p class="simplex-preview-empty">All relays returned a different channel link from specified in the page.</p>';
+      return;
+    }
     if (!data) {
       container.innerHTML = '<p class="simplex-preview-empty">Failed to load channel preview.</p>';
       return;
@@ -465,6 +469,7 @@ function injectStyles() {
 }
 
 async function fetchPreview(relayScheme, relayDomains, channelLink, channelId) {
+  let linkMismatch = false;
   for (const domain of relayDomains) {
     try {
       const url = `${relayScheme}://${domain}/channel/${channelId}.json`;
@@ -472,13 +477,16 @@ async function fetchPreview(relayScheme, relayDomains, channelLink, channelId) {
       if (!resp.ok) continue;
       const data = await resp.json();
       const relayLink = data.channel?.publicGroup?.groupLink;
-      if (channelLink && relayLink && channelLink !== relayLink) continue;
+      if (channelLink && relayLink && channelLink !== relayLink) {
+        linkMismatch = true;
+        continue;
+      }
       return data;
     } catch(e) {
       continue;
     }
   }
-  return null;
+  return linkMismatch ? 'link_mismatch' : null;
 }
 
 function render(container, data, channelLink) {
