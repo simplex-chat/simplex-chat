@@ -2,13 +2,13 @@
 
 Date: 2026-06-01 (revised). Extends Section 1 of `2026-05-26-public-groups-via-relays-unified.md`.
 
-> Anchors re-verified against the tree. Two known drifts: the `xGrpRoster` block is ~8 lines below the original review numbers, and `encodeChatMessage` is in `Protocol.hs:909` (not `Internal.hs`). Confirm before editing.
+> Anchors re-verified against the tree (this pass). The `xGrpRoster` block sits ~8 lines below the original review numbers; the header-fits check uses `maxEncodedMsgLength = 15602` (`Protocol.hs:899`). Confirm before editing.
 
 ## Goal
 
 Let owners promote channel subscribers to **regular members** who can post, and carry more named members than fit one message.
 
-The JSON roster already exists (event, signing, relay cache, TOFU apply, broadcast, join forward, QCONT). This plan **changes only the delivery** and reuses the apply logic (`processRoster`).
+The JSON roster already exists (event, signing, relay cache, TOFU apply, broadcast, join forward, QCONT). This plan **widens the roster set to include plain members and changes the delivery** to a binary blob over the inline file transfer; the apply logic (`processRoster`) is reused.
 
 The member list moves out of the `XGrpRoster` message into a binary blob sent over the existing inline file transfer. `XGrpRoster` becomes a small signed header (version + the blob's size and digest).
 
@@ -22,29 +22,35 @@ Owners stay on the link, never in the roster. Two edits, then every gate follows
 - `buildGroupRoster` filter (`Internal.hs:1248`).
 - promotion gates / cap / trigger / counts (`Commands.hs:2737, 2739, 2746, 2762, 2763, 2768`); update the cap error text at `2740`.
 - owner-remove roster refresh (`Commands.hs:2888`, guarded by `anyPrivilegedRemoved` computed from `isRosterRole` at `2899`) — so removing a plain member, not just a mod/admin, refreshes the roster.
-- receive gates: `xGrpMemNew` (`Subscriber.hs:2975/2990/3009`) and `xGrpMemRole` owner-only (`3157`).
+- receive gates: `xGrpMemNew` (`Subscriber.hs:2983/2998/3017`) and `xGrpMemRole` owner-only (`3157`).
 
 **2. Split the role query.** `getGroupRosterMembers` (`Store/Groups.hs:1214`) currently serves two now-diverging needs:
 
 - **Build / revert** wants the promoted set. Redefine `getGroupRosterMembers` to `member_role IN (GRMember, GRModerator, GRAdmin)` (current members). Callers: `bumpAndBroadcastRoster` (`Internal.hs:2151`), `sendGroupRosterToRelay` (`2162`), and the `processRoster` revert set `currentPriv` (`Subscriber.hs:3207`). Build and revert MUST be the same query, or a dropped member is never reverted.
-- **`introduceInChannel`** (`Internal.hs:1185`) wants only the moderation set (mod+admin). Widening it would announce every joiner to every member and introduce every member to every joiner (traffic + anonymity blowup). Reuse the existing `getGroupModerators` (`Store/Groups.hs:1203`, returns mod+admin+owner) rather than adding a function: keep `getGroupOwners` for the owner-first intro, and take mod+admin as `getGroupModerators` minus owners (preserving the current-member filter `getGroupRosterMembers` had). Members are learned from the roster blob, not introductions.
+- **`introduceInChannel`** (`Internal.hs:1185`) wants only the moderation set (mod+admin). Widening it would announce every joiner to every member and introduce every member to every joiner (traffic + anonymity blowup). Reuse the existing `getGroupModerators` (`Store/Groups.hs:1203-1209`, returns mod+admin+owner) rather than adding a function: keep `getGroupOwners` for the owner-first intro, and take mod+admin as `getGroupModerators` minus owners. **Re-apply `filter memberCurrent`** — `getGroupModerators` does NOT filter current members (unlike the old `getGroupRosterMembers`), so without it a removed or left moderator would be introduced to joiners. Members are learned from the roster blob, not introductions.
 
 **Owner-only (confirmed decision).** Only the owner changes any roster role. The alternatives were considered and rejected for v1 — letting a mod/admin set member roles would need either the owner co-signing rosters from a mod/admin (owner round-trip + load) or a separate roster-signing key trusted from mod/admin (broader trust surface) — so owner-only keeps the single owner-key trust anchor.
 
-**Leave and owner-remove differ.** A member-initiated **leave** (`xGrpLeave`) does NOT bump the roster — that leave-triggered refresh is being removed separately and this plan does not rely on it; the leave is handled on the membership axis (`XGrpLeave` neutralizes the member on the relay). An owner-initiated **remove** (`APIRemoveMembers`) DOES still bump the roster via `bumpAndBroadcastRoster` (`Commands.hs:2888`), so a removed member is dropped from the roster blob for new joiners — and that site is widened (above) to cover plain members, not just mod/admin.
+**Leave and owner-remove differ.** This plan **removes** the `xGrpLeave` roster-bump block (`Subscriber.hs:3379-3380`): since `isRosterRole` is widened, it would otherwise fire `bumpAndBroadcastRoster` on every plain-member leave. So a member **leave** does NOT bump the roster — the leave is the membership axis (`XGrpLeave` neutralizes the member on the relay). An owner **remove** (`APIRemoveMembers`) DOES still bump via `bumpAndBroadcastRoster` (`Commands.hs:2888`, widened to cover plain members). `bumpAndBroadcastRoster` thus stays only for promotion (`APIMembersRole`) and owner-remove.
 
 ## Wire: signed header + unsigned blob
 
 **Authoritative metadata is in the signed header.** `version`, blob `fileSize`, and `fileDigest` all live in the owner-signed `XGrpRoster`; the unsigned `BFileChunk`s carry no authoritative metadata. (This is why "total parts in the unsigned part", an earlier review question, is a non-issue here.)
 
-- **Header**: `XGrpRoster { version :: VersionRoster, fileInv :: InlineFileInvitation }`, JSON, signed, forwarded. `InlineFileInvitation { fileSize, fileDigest :: FD.FileDigest }` is a lean `FileInvitation` (no name/connReq/inline/descr; always inline). Tiny; fits `maxEncodedMsgLength`.
+- **Header**: `XGrpRoster { version :: VersionRoster, fileInv :: InlineFileInvitation }`, JSON, signed, forwarded. `InlineFileInvitation { fileSize, fileDigest :: FD.FileDigest }` is a lean `FileInvitation` (no name/connReq/inline/descr; always inline). Tiny; fits `maxEncodedMsgLength` (15602, `Protocol.hs:899`).
 - **Blob**: the binary member list. `RosterMember { memberId, key, role, privileges :: Word16 }` — drop `name`, add `privileges` (reserved: always `0`, parsed and ignored in v1). ~60 B/entry. Members get a placeholder name from `nameFromMemberId`; real profiles arrive on first post.
 - **Serializer/parser**: a binary codec for the blob (a `Word16`-count-prefixed `[RosterMember]`); `RosterMember` becomes binary-only. Full code in *Blob format* below. Owner serializes → digest → chunks; receiver concatenates chunk bytes → verifies the digest → parses.
-- **Cap** `maxGroupRosterSize` → **256** (tunable). Enforce at promotion over the promoted set (`Commands.hs:2739`, via the widened predicate); re-validate the parsed entry count on receive (`Subscriber.hs:3171`); reject a signed `fileSize > cap × max-entry-size` before creating a file. Roster files are exempt from the inline `offer/receiveChunks` ceiling (at 256 ≈ 15 KB the blob is about one `fileChunkSize` chunk; the multipart path handles two if role words push it over).
+- **Cap** `maxGroupRosterSize` → **256** (tunable). Enforce at promotion over the promoted set (`Commands.hs:2739`, via the widened predicate); the receive-side entry-count bound is the parser alone (`rosterBlobP`'s `n > maxGroupRosterSize`); reject a signed `fileSize > cap × max-entry-size` before creating a file. Roster files are exempt from the inline `offer/receiveChunks` ceiling (at 256 ≈ 15 KB the blob is about one `fileChunkSize` chunk; the multipart path handles two if role words push it over).
+
+**Type changes.**
+
+- `GroupRoster` (`Protocol.hs:372-376`): `{version, roster :: [RosterMember]}` → `{version, fileInv :: InlineFileInvitation}`. It stays JSON (the signed header), so `InlineFileInvitation` needs a JSON instance; update its stale doc comment ("Owner-signed snapshot of the privileged (moderator/admin) set").
+- `RosterMember` (`Protocol.hs:378`): drop `name`, add `privileges :: Word16`; remove `deriveJSON` (`Protocol.hs:806`) — binary-only now — and add the `Encoding` below. `buildGroupRoster`'s constructor (`Internal.hs:1248`, currently `name = memberShortenedName m`) drops the `name` field; the consumer side already maps to `nameFromMemberId`.
+- `validateGroupRoster` (`Internal.hs:1234-1236`): was `GroupRoster -> GroupRoster` over `.roster`; now `[RosterMember] -> [RosterMember]`, run on the parsed blob.
 
 ### Blob format (serializer / parser)
 
-`RosterMember` is now **binary-only** — carried in the blob, never in a JSON message — so remove its `deriveJSON` (`Protocol.hs:806`) and give it the `Encoding` below. `MemberKey` (`Types.hs:972`, only `StrEncoding`) and `GroupMemberRole` (`Types/Shared.hs:33`, only `TextEncoding`) lack a binary `Encoding`: `MemberKey` delegates to the underlying `PublicKey` (`Crypto.hs:568`), and the role delegates to its canonical `TextEncoding` (the same `"member"/"moderator"/"admin"` form JSON and the DB use — single source of truth; `GRUnknown` round-trips).
+`RosterMember` is **binary-only** (carried in the blob, never in a JSON message) and gets the `Encoding` below. `MemberKey` (`Types.hs:972`, only `StrEncoding`) and `GroupMemberRole` (`Types/Shared.hs:33`, only `TextEncoding`) lack a binary `Encoding`: `MemberKey` delegates to the underlying `PublicKey` (`Crypto.hs:568`), and the role delegates to its canonical `TextEncoding` (the same `"member"/"moderator"/"admin"` form JSON and the DB use — single source of truth; `GRUnknown` round-trips).
 
 ```haskell
 -- MemberKey gains a binary Encoding (it only had StrEncoding); delegate to the Ed25519 key.
@@ -52,22 +58,15 @@ instance Encoding MemberKey where
   smpEncode (MemberKey k) = smpEncode k
   smpP = MemberKey <$> smpP
 
--- Roles encode as their canonical text (the form JSON and the DB already use), not an ad-hoc
--- numeric tag — single source of truth, and GRUnknown round-trips. textDecode returns Maybe
--- (not Either), so the <$?> operator (Either-only, Util.hs:115) does NOT apply — use the maybe form.
+-- General instance (belongs beside GroupMemberRole's TextEncoding in Types/Shared.hs, not here).
 instance Encoding GroupMemberRole where
   smpEncode = smpEncode . textEncode
-  smpP = maybe (fail "roster: bad role") pure . textDecode =<< smpP
+  smpP = maybe (fail "bad GroupMemberRole") pure . textDecode =<< smpP
 
+-- Tuple encoding (Encoding (a,b,c,d), Encoding.hs:192), as GrpMsgForward / FwdSender do.
 instance Encoding RosterMember where
-  smpEncode RosterMember {memberId, key, role, privileges} =
-    smpEncode memberId <> smpEncode key <> smpEncode role <> smpEncode privileges
-  smpP = do
-    memberId <- smpP
-    key <- smpP
-    role <- smpP
-    privileges <- smpP
-    pure RosterMember {memberId, key, role, privileges}
+  smpEncode RosterMember {memberId, key, role, privileges} = smpEncode (memberId, key, role, privileges)
+  smpP = RosterMember <$> smpP <*> smpP <*> smpP <*> smpP
 
 -- Blob = Word16 count (NOT smpEncodeList: its 1-byte count overflows at the 256 cap) followed
 -- by that many entries. This is the byte sequence the digest is computed over and verified
@@ -82,7 +81,7 @@ rosterBlobP = do
   A.count n smpP
 ```
 
-- **Owner**: `encodeRosterBlob` over the promoted set → SHA-256 digest → chunk; the digest goes in the signed `XGrpRoster` header.
+- **Owner**: `encodeRosterBlob` over the promoted set → `FileDigest` (SHA-512, as the file machinery computes it, `LC.sha512Hash`) → chunk; the digest goes in the signed `XGrpRoster` header.
 - **Receiver**: concatenate chunk bytes → verify the digest (S1, over plaintext) → `parseAll rosterBlobP` (consume all input; reject trailing bytes). Parsing runs only after the digest matches, so the bytes are owner-attested; the `n > maxGroupRosterSize` guard and `parseAll` are defensive against a buggy/garbled blob.
 - **Per-entry layout**: `memberId` (1-byte len + id) + `key` (1-byte len + Ed25519 pubkey) + role (1-byte len + role word, e.g. `member` = 7 B) + `privileges` (2 bytes) ≈ ~60 B/entry. The file-transferred blob has no tight size budget, so canonical text is fine.
 - `privileges` is reserved: serialized as `0`, parsed and ignored in v1.
@@ -158,7 +157,7 @@ Cleanup spans ALL of these — miss none:
 
 ## Storage / migration
 
-In-flight state lives on `groups` (mirroring the live cache) and `files` (located by `shared_msg_id`) — no join table. New tail migration **after `M20260526_group_roster`** (SQLite + Postgres; register in `Migrations.hs` and `simplex-chat.cabal`; tests regenerate the schema files).
+In-flight state lives on `groups` (mirroring the live cache) and `files` (located by `shared_msg_id`) — no join table. These columns go into the in-progress **`M20260601_group_roster`** migration (already part of this work, not yet merged — so it's editable, not an applied migration), SQLite + Postgres; tests regenerate the schema files.
 
 | `groups` column(s) | Holds | Lifecycle |
 |---|---|---|
@@ -183,6 +182,7 @@ The kept `roster_msg_*` columns stay the relay's verbatim-forward source and tru
 
 - A malicious relay can withhold/corrupt chunks → the member stays on its last-applied roster (it can drop any message anyway); new-joiner rollback now covers plain members.
 - A just-promoted member's first posts may show "unknown member" until the file arrives — self-healing.
+- A member who **leaves** lingers in the roster blob until the next bump (this plan drops the leave-triggered refresh). Harmless: they have no relay connection and cannot post, so a new joiner sees only a ghost row; the owner's explicit remove (`APIRemoveMembers`) drops them.
 - Out of scope: granting/enforcing `privileges`; member content signing; joiner-role-on-profile; clients. Do not couple the roster set to the joiner-role mechanism (decision 2) — it is the absolute `{member, mod, admin}`.
 
 ## Tests (`tests/ChatTests/Groups.hs`)
