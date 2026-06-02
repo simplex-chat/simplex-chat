@@ -121,7 +121,7 @@ const STYLE = `
 }
 
 .simplex-preview-messages {
-  padding: 8px 16px;
+  padding: 8px 16px 32px;
 }
 
 .simplex-preview-date-separator {
@@ -167,11 +167,13 @@ const STYLE = `
   border-radius: 7px;
   object-fit: cover;
   flex-shrink: 0;
+  margin-right: 9px;
 }
 
 .simplex-preview-msg-avatar-placeholder {
   width: 30px;
   flex-shrink: 0;
+  margin-right: 9px;
 }
 
 .simplex-preview-bubble {
@@ -180,7 +182,6 @@ const STYLE = `
   border-radius: 18px;
   min-width: 80px;
   overflow: visible;
-  margin-left: 9px;
 }
 
 .simplex-preview-bubble-inner {
