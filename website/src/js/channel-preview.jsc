@@ -980,11 +980,11 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
   const copyAction = document.createElement('p');
   copyAction.className = 'simplex-preview-copy-action';
   const copyLink = document.createElement('a');
-  copyLink.textContent = 'Copy link';
+  copyLink.textContent = 'copy link';
   copyLink.addEventListener('click', function() {
     navigator.clipboard.writeText(channelLink).then(function() {
       copyLink.textContent = 'Copied!';
-      setTimeout(function() { copyLink.textContent = 'Copy link'; }, 2000);
+      setTimeout(function() { copyLink.textContent = 'copy link'; }, 2000);
     });
   });
   copyAction.appendChild(document.createTextNode('Or '));
