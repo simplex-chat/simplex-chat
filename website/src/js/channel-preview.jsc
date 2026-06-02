@@ -453,13 +453,13 @@ const STYLE = `
   min-width: 0;
   max-width: 640px;
   overflow-y: auto;
-  overscroll-behavior: none;
+  overscroll-behavior: contain;
   position: relative;
 }
 
 .simplex-preview-info {
   overflow-y: auto;
-  overscroll-behavior: none;
+  overscroll-behavior: contain;
   background: var(--sp-bg);
 }
 
