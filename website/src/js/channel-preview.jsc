@@ -502,6 +502,10 @@ const STYLE = `
 
 .simplex-preview-conversion {
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 .simplex-preview-qr-container {
@@ -527,7 +531,7 @@ const STYLE = `
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin: 16px 0 0;
+  margin: 0;
 }
 
 .simplex-preview-badges a {
@@ -593,7 +597,7 @@ const STYLE = `
   font-size: 16px;
   font-weight: 500;
   text-align: center;
-  margin: 0 0 8px;
+  margin: 0;
   color: #000;
 }
 
@@ -612,7 +616,7 @@ const STYLE = `
   cursor: pointer;
   text-decoration: none;
   font-family: inherit;
-  margin-top: 16px;
+  margin: 0;
 }
 
 .simplex-preview-open-btn:hover {
@@ -960,8 +964,6 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
 }
 
 function renderMobileConversion(container, channelLink, showAppBadges) {
-  container.style.textAlign = 'center';
-
   if (showAppBadges) {
     const title = document.createElement('p');
     title.className = 'simplex-preview-step-title';
