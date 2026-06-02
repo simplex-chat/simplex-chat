@@ -14,6 +14,7 @@ const STYLE = `
   padding: 0;
   -webkit-font-smoothing: antialiased;
   display: flex;
+  justify-content: center;
 }
 
 .simplex-preview-header {
@@ -663,7 +664,6 @@ function render(container, data, channelLink) {
   const closeBtn = document.createElement('button');
   closeBtn.className = 'simplex-preview-info-close';
   closeBtn.innerHTML = '&#10005;';
-  closeBtn.addEventListener('click', () => info.classList.remove('open'));
   info.appendChild(closeBtn);
 
   const infoContent = document.createElement('div');
@@ -675,12 +675,22 @@ function render(container, data, channelLink) {
 
   header.addEventListener('click', (e) => {
     if (e.target.closest('.simplex-preview-join-btn')) return;
-    if (window.innerWidth < 1000) info.classList.add('open');
+    if (window.innerWidth < 1000) {
+      info.classList.add('open');
+      main.style.overflow = 'hidden';
+      if (infoContent._setupExpand) setTimeout(infoContent._setupExpand, 0);
+    }
   });
 
-  setupStickyHeader(header);
+  closeBtn.addEventListener('click', () => {
+    info.classList.remove('open');
+    main.style.overflow = '';
+  });
+
+  setupStickyHeader(header, main);
   setupSecretToggles(container);
-  main.scrollTop = main.scrollHeight;
+  if (infoContent._setupExpand) setTimeout(infoContent._setupExpand, 0);
+  setTimeout(() => { main.scrollTop = main.scrollHeight; }, 0);
 }
 
 function renderHeader(channel, channelLink, subscriberCount) {
@@ -774,27 +784,7 @@ function renderInfoContent(container, data, channelLink, subscriberCount) {
     readMore.style.display = 'none';
     container.appendChild(readMore);
 
-    setTimeout(() => {
-      const lineHeight = parseFloat(getComputedStyle(section).lineHeight);
-      const maxLines = 7;
-      const maxHeight = maxLines * lineHeight;
-      const maxHeightPx = maxHeight + 'px';
-      section.style.maxHeight = maxHeightPx;
-      section.style.overflow = 'hidden';
-
-      if (section.scrollHeight > maxHeight + 4) {
-        readMore.style.display = 'block';
-        readMore.addEventListener('click', () => {
-          if (section.style.maxHeight === maxHeightPx) {
-            section.style.maxHeight = 'none';
-            readMore.textContent = 'Show less';
-          } else {
-            section.style.maxHeight = maxHeightPx;
-            readMore.textContent = 'Read more';
-          }
-        });
-      }
-    }, 0);
+    container._setupExpand = () => setupExpandCollapse(section, readMore);
   }
 
   if (channelLink) {
@@ -811,11 +801,34 @@ function renderInfoContent(container, data, channelLink, subscriberCount) {
   }
 }
 
-function setupStickyHeader(header) {
-  let lastScroll = 0;
+function setupExpandCollapse(section, readMore) {
+  if (section._measured) return;
+  const lineHeight = parseFloat(getComputedStyle(section).lineHeight);
+  if (!lineHeight) return;
+  section._measured = true;
+  const maxLines = 7;
+  const maxHeight = maxLines * lineHeight;
+  const maxHeightPx = maxHeight + 'px';
+  section.style.maxHeight = maxHeightPx;
+  section.style.overflow = 'hidden';
+  if (section.scrollHeight > maxHeight + 4) {
+    readMore.style.display = 'block';
+    readMore.addEventListener('click', () => {
+      if (section.style.maxHeight === maxHeightPx) {
+        section.style.maxHeight = 'none';
+        readMore.textContent = 'Show less';
+      } else {
+        section.style.maxHeight = maxHeightPx;
+        readMore.textContent = 'Read more';
+      }
+    });
+  }
+}
+
+function setupStickyHeader(header, scrollContainer) {
   const observer = new IntersectionObserver(([entry]) => {
     header.classList.toggle('collapsed', !entry.isIntersecting);
-  }, { threshold: 0, rootMargin: '-1px 0px 0px 0px' });
+  }, { threshold: 0, rootMargin: '-1px 0px 0px 0px', root: scrollContainer });
 
   const sentinel = document.createElement('div');
   sentinel.style.height = '1px';
