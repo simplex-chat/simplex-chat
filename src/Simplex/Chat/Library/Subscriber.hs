@@ -3204,9 +3204,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         relayApplyRoster
           | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than saved version"
           | otherwise = case verifiedMsg of
-              VMSigned _ sm _ -> do
-                saved <- (Right <$> setRoster sm) `catchAllErrors` (pure . Left)
-                case saved of
+              VMSigned _ sm _ ->
+                tryAllErrors (setRoster sm) >>= \case
                   Right results -> do
                     emitRosterResults results
                     -- ack only while still setting up (own status RSAccepted); a serving relay (RSActive) must not ack roster broadcasts
