@@ -1056,7 +1056,7 @@ server test step */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Kontakty mohou označit zprávy ke smazání; vy je budete moci zobrazit.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Pokračovat";
 
 /* No comment provided by engineer. */

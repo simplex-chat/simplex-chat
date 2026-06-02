@@ -6994,6 +6994,7 @@ sealed class GroupLinkPlan {
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
   @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("noRelays") class NoRelays(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
+  @Serializable @SerialName("updateRequired") class UpdateRequired(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
 }
 
 abstract class TerminalItem {

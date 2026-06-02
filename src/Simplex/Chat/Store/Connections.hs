@@ -139,6 +139,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
                 SELECT
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+                  gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
                   g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
                   g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
