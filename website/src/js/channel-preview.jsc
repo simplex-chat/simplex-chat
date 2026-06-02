@@ -511,14 +511,14 @@ const STYLE = `
   width: 100%;
   height: 1px;
   background: #e5e5e5;
-  margin: 4px 0 0;
+  margin: 20px 0 0;
 }
 
 .simplex-preview-conversion-title {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
   text-align: center;
-  margin: 0;
+  margin: 16px 0 4px;
   color: #000;
 }
 
