@@ -27,6 +27,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.List (nubBy)
 import Data.Map.Strict (Map)
+import qualified Data.Set as S
 import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -66,8 +67,8 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Parsers (defaultJSON)
-import System.Directory (createDirectoryIfMissing)
-import System.FilePath ((</>))
+import System.Directory (createDirectoryIfMissing, listDirectory, removeFile)
+import System.FilePath (takeExtension, (</>))
 
 data WebFileInfo = WebFileInfo
   { fileName :: String,
@@ -114,15 +115,18 @@ $(JQ.deriveJSON defaultJSON ''WebChannelPreview)
 
 renderWebPreviews :: WebPreviewConfig -> ChatController -> User -> IO ()
 renderWebPreviews WebPreviewConfig {webJsonDir, webCorsFile} cc user = do
+  createDirectoryIfMissing True webJsonDir
   groups <- withTransaction (chatStore cc) $ \db -> getRelayServedGroups db vr' user
   let publishable = filter hasPublicGroup groups
+      activeFiles = S.fromList $ mapMaybe publicGroupFileName publishable
   corsEntries <- mapMaybe id <$> mapM (renderGroupPreview webJsonDir cc user) publishable
+  removeStaleFiles webJsonDir activeFiles
   forM_ webCorsFile $ writeCorsConfig corsEntries
   where
     vr' = chatVRange (config cc)
-    hasPublicGroup GroupInfo {groupProfile = GroupProfile {publicGroup}} = case publicGroup of
-      Just _ -> True
-      _ -> False
+    hasPublicGroup GroupInfo {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
+    publicGroupFileName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
+      (\PublicGroupProfile {publicGroupId} -> publicGroupIdFileName publicGroupId <> ".json") <$> publicGroup
 
 renderGroupPreview :: FilePath -> ChatController -> User -> GroupInfo -> IO (Maybe (Text, CorsOrigin))
 renderGroupPreview webJsonDir cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {publicGroup}} =
@@ -143,7 +147,6 @@ renderGroupPreview webJsonDir cc user gInfo@GroupInfo {groupProfile = gp@GroupPr
               messages = msgs,
               updatedAt = ts
             }
-      createDirectoryIfMissing True webJsonDir
       LB.writeFile (webJsonDir </> fName) (J.encode preview)
       pure $ corsEntry publicGroupId <$> publicGroupAccess
     Nothing -> pure Nothing
@@ -235,6 +238,12 @@ writeCorsConfig entries path =
       CorsOrigins origins -> case origins of
         [] -> "    # " <> fName <> " (no origin configured)"
         (o : _) -> "    " <> channelPath <> fName <> " \"" <> o <> "\""
+
+removeStaleFiles :: FilePath -> S.Set FilePath -> IO ()
+removeStaleFiles dir activeFiles = do
+  let jsonFiles = S.filter (\f -> takeExtension f == ".json") . S.fromList
+  allFiles <- jsonFiles <$> listDirectory dir
+  mapM_ (\f -> removeFile (dir </> f)) $ S.difference allFiles activeFiles
 
 publicGroupIdFileName :: B64UrlByteString -> String
 publicGroupIdFileName = B.unpack . strEncode
