@@ -128,6 +128,7 @@ struct ChannelWebAccessView: View {
               data-channel-link="\(pg.groupLink)"
               data-channel-id="\(pg.publicGroupId)"
               data-relay-domains="\(relayDomains.joined(separator: ","))"
+              data-app-download-buttons="on"
             ></div>
             <script src="https://simplex.chat/js/channel-preview.js"></script>
             """

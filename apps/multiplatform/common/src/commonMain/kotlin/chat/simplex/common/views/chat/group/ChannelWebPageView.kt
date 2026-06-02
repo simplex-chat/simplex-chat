@@ -179,6 +179,7 @@ private fun embedCode(groupRelays: List<GroupRelay>, groupInfo: GroupInfo): Stri
   data-channel-link="${pg.groupLink}"
   data-channel-id="${pg.publicGroupId}"
   data-relay-domains="$domains"
+  data-app-download-buttons="on"
 ></div>
 <script src="https://simplex.chat/js/channel-preview.js"></script>"""
 }
