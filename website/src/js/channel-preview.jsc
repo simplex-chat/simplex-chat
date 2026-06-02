@@ -508,13 +508,24 @@ const STYLE = `
   gap: 16px;
 }
 
-.simplex-preview-qr-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.simplex-preview-qr-toggle {
+  font-size: 14px;
+  color: #0088ff;
+  cursor: pointer;
+  text-decoration: none;
 }
 
-.simplex-preview-qr-container canvas {
+.simplex-preview-qr-toggle:hover {
+  text-decoration: underline;
+}
+
+.simplex-preview-qr-popup {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.simplex-preview-qr-popup canvas {
   border-radius: 8px;
 }
 
@@ -522,7 +533,7 @@ const STYLE = `
   font-size: 13px;
   color: #8b8786;
   text-align: center;
-  margin: 8px 0 0;
+  margin: 0;
 }
 
 .simplex-preview-badges {
@@ -544,18 +555,18 @@ const STYLE = `
   display: block;
 }
 
-.simplex-preview-copy-section {
+.simplex-preview-copy-label {
   font-size: 13px;
   color: #8b8786;
-  margin-top: 16px;
+  margin: 0;
 }
 
-.simplex-preview-copy-section a {
+.simplex-preview-copy-label a {
   color: #0088ff;
   text-decoration: none;
 }
 
-.simplex-preview-copy-section a:hover {
+.simplex-preview-copy-label a:hover {
   text-decoration: underline;
 }
 
@@ -563,20 +574,18 @@ const STYLE = `
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 6px;
-  background: #f5f5f6;
-  border-radius: 8px;
-  padding: 6px 10px;
+  width: 100%;
 }
 
 .simplex-preview-copy-link {
   flex: 1;
   font-size: 11px;
   color: #333;
-  word-break: break-all;
   font-family: monospace;
   min-width: 0;
-  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .simplex-preview-copy-btn {
@@ -899,34 +908,12 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
 }
 
 function renderDesktopConversion(container, channelLink, showAppBadges) {
-  const qrContainer = document.createElement('div');
-  qrContainer.className = 'simplex-preview-qr-container';
-  const canvas = document.createElement('canvas');
-  qrContainer.appendChild(canvas);
-
-  const caption = document.createElement('p');
-  caption.className = 'simplex-preview-qr-caption';
-  caption.textContent = 'Scan from mobile app to join';
-  qrContainer.appendChild(caption);
-  container.appendChild(qrContainer);
-
-  try {
-    QRCode.toCanvas(canvas, channelLink, {
-      errorCorrectionLevel: 'M',
-      color: { dark: '#062D56' },
-      width: 400,
-      margin: 1
-    }).then(function() {
-      canvas.style.width = '200px';
-      canvas.style.height = '200px';
-    }).catch(function() {
-      qrContainer.style.display = 'none';
-    });
-  } catch(e) {
-    qrContainer.style.display = 'none';
-  }
-
   if (showAppBadges) {
+    const title = document.createElement('p');
+    title.className = 'simplex-preview-step-title';
+    title.textContent = 'Install SimpleX app';
+    container.appendChild(title);
+
     const badges = document.createElement('div');
     badges.className = 'simplex-preview-badges';
     badges.innerHTML =
@@ -935,9 +922,60 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
     container.appendChild(badges);
   }
 
-  const copySection = document.createElement('div');
-  copySection.className = 'simplex-preview-copy-section';
-  copySection.innerHTML = 'Or copy link for <a href="https://simplex.chat/downloads" target="_blank">desktop app</a>:';
+  const qrToggle = document.createElement('a');
+  qrToggle.className = 'simplex-preview-qr-toggle';
+  qrToggle.textContent = 'Show QR code';
+  qrToggle.href = '#';
+  container.appendChild(qrToggle);
+
+  const qrPopup = document.createElement('div');
+  qrPopup.className = 'simplex-preview-qr-popup';
+  qrPopup.style.display = 'none';
+
+  const canvas = document.createElement('canvas');
+  qrPopup.appendChild(canvas);
+
+  const caption = document.createElement('p');
+  caption.className = 'simplex-preview-qr-caption';
+  caption.textContent = 'Scan from SimpleX app';
+  qrPopup.appendChild(caption);
+  container.appendChild(qrPopup);
+
+  qrToggle.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (qrPopup.style.display === 'none') {
+      qrPopup.style.display = 'flex';
+      qrToggle.textContent = 'Hide QR code';
+      if (!canvas._rendered) {
+        canvas._rendered = true;
+        try {
+          QRCode.toCanvas(canvas, channelLink, {
+            errorCorrectionLevel: 'M',
+            color: { dark: '#062D56' },
+            width: 400,
+            margin: 1
+          }).then(function() {
+            canvas.style.width = '200px';
+            canvas.style.height = '200px';
+          }).catch(function() {
+            qrPopup.style.display = 'none';
+            qrToggle.style.display = 'none';
+          });
+        } catch(err) {
+          qrPopup.style.display = 'none';
+          qrToggle.style.display = 'none';
+        }
+      }
+    } else {
+      qrPopup.style.display = 'none';
+      qrToggle.textContent = 'Show QR code';
+    }
+  });
+
+  const copyLabel = document.createElement('p');
+  copyLabel.className = 'simplex-preview-copy-label';
+  copyLabel.innerHTML = 'Or copy link for <a href="https://simplex.chat/downloads" target="_blank">desktop app</a>';
+  container.appendChild(copyLabel);
 
   const copyRow = document.createElement('div');
   copyRow.className = 'simplex-preview-copy-row';
@@ -959,8 +997,7 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
   });
   copyRow.appendChild(copyBtn);
 
-  copySection.appendChild(copyRow);
-  container.appendChild(copySection);
+  container.appendChild(copyRow);
 }
 
 function renderMobileConversion(container, channelLink, showAppBadges) {
