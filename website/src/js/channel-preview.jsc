@@ -67,8 +67,8 @@ const STYLE = `
   background: #0088ff;
   color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 34px;
+  padding: 6px 16px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -501,11 +501,25 @@ const STYLE = `
 }
 
 .simplex-preview-conversion {
-  margin-top: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
+}
+
+.simplex-preview-divider {
+  width: 100%;
+  height: 1px;
+  background: #e5e5e5;
+  margin: 4px 0 0;
+}
+
+.simplex-preview-conversion-title {
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
+  color: #000;
 }
 
 .simplex-preview-qr-toggle {
@@ -530,8 +544,9 @@ const STYLE = `
 }
 
 .simplex-preview-qr-caption {
-  font-size: 13px;
-  color: #8b8786;
+  font-size: 14px;
+  color: #000;
+  font-weight: 500;
   text-align: center;
   margin: 0;
 }
@@ -555,51 +570,20 @@ const STYLE = `
   display: block;
 }
 
-.simplex-preview-copy-label {
+.simplex-preview-copy-action {
   font-size: 13px;
   color: #8b8786;
   margin: 0;
 }
 
-.simplex-preview-copy-label a {
+.simplex-preview-copy-action a {
   color: #0088ff;
   text-decoration: none;
-}
-
-.simplex-preview-copy-label a:hover {
-  text-decoration: underline;
-}
-
-.simplex-preview-copy-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-}
-
-.simplex-preview-copy-link {
-  flex: 1;
-  font-size: 11px;
-  color: #333;
-  font-family: monospace;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.simplex-preview-copy-btn {
-  flex-shrink: 0;
-  background: none;
-  border: none;
   cursor: pointer;
-  padding: 2px;
-  color: #8b8786;
-  line-height: 1;
 }
 
-.simplex-preview-copy-btn:hover {
-  color: #333;
+.simplex-preview-copy-action a:hover {
+  text-decoration: underline;
 }
 
 .simplex-preview-step-title {
@@ -896,6 +880,18 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
   }
 
   if (channelLink) {
+    const showJoinSection = !isMobile.any() || showAppBadges;
+    if (showJoinSection) {
+      const divider = document.createElement('div');
+      divider.className = 'simplex-preview-divider';
+      container.appendChild(divider);
+
+      const joinTitle = document.createElement('p');
+      joinTitle.className = 'simplex-preview-conversion-title';
+      joinTitle.textContent = 'To join this channel';
+      container.appendChild(joinTitle);
+    }
+
     const conversion = document.createElement('div');
     conversion.className = 'simplex-preview-conversion';
     if (isMobile.any()) {
@@ -924,7 +920,7 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
 
   const qrToggle = document.createElement('a');
   qrToggle.className = 'simplex-preview-qr-toggle';
-  qrToggle.textContent = 'Show QR code';
+  qrToggle.textContent = 'Show QR code for mobile app';
   qrToggle.href = '#';
   container.appendChild(qrToggle);
 
@@ -932,20 +928,26 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
   qrPopup.className = 'simplex-preview-qr-popup';
   qrPopup.style.display = 'none';
 
-  const canvas = document.createElement('canvas');
-  qrPopup.appendChild(canvas);
-
   const caption = document.createElement('p');
   caption.className = 'simplex-preview-qr-caption';
   caption.textContent = 'Scan from SimpleX app';
   qrPopup.appendChild(caption);
+
+  const canvas = document.createElement('canvas');
+  qrPopup.appendChild(canvas);
+
+  const qrHide = document.createElement('a');
+  qrHide.className = 'simplex-preview-qr-toggle';
+  qrHide.textContent = 'Hide QR code';
+  qrHide.href = '#';
+  qrPopup.appendChild(qrHide);
   container.appendChild(qrPopup);
 
-  qrToggle.addEventListener('click', function(e) {
+  function toggleQr(e) {
     e.preventDefault();
     if (qrPopup.style.display === 'none') {
       qrPopup.style.display = 'flex';
-      qrToggle.textContent = 'Hide QR code';
+      qrToggle.style.display = 'none';
       if (!canvas._rendered) {
         canvas._rendered = true;
         try {
@@ -968,36 +970,26 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
       }
     } else {
       qrPopup.style.display = 'none';
-      qrToggle.textContent = 'Show QR code';
+      qrToggle.style.display = '';
     }
-  });
+  }
+  qrToggle.addEventListener('click', toggleQr);
+  qrHide.addEventListener('click', toggleQr);
 
-  const copyLabel = document.createElement('p');
-  copyLabel.className = 'simplex-preview-copy-label';
-  copyLabel.innerHTML = 'Or copy link for <a href="https://simplex.chat/downloads" target="_blank">desktop app</a>';
-  container.appendChild(copyLabel);
-
-  const copyRow = document.createElement('div');
-  copyRow.className = 'simplex-preview-copy-row';
-
-  const linkText = document.createElement('span');
-  linkText.className = 'simplex-preview-copy-link';
-  linkText.textContent = channelLink;
-  copyRow.appendChild(linkText);
-
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'simplex-preview-copy-btn';
-  copyBtn.innerHTML = COPY_ICON_SVG;
-  copyBtn.title = 'Copy to clipboard';
-  copyBtn.addEventListener('click', function() {
+  const copyAction = document.createElement('p');
+  copyAction.className = 'simplex-preview-copy-action';
+  const copyLink = document.createElement('a');
+  copyLink.textContent = 'Copy link';
+  copyLink.addEventListener('click', function() {
     navigator.clipboard.writeText(channelLink).then(function() {
-      copyBtn.title = 'Copied!';
-      setTimeout(function() { copyBtn.title = 'Copy to clipboard'; }, 2000);
+      copyLink.textContent = 'Copied!';
+      setTimeout(function() { copyLink.textContent = 'Copy link'; }, 2000);
     });
   });
-  copyRow.appendChild(copyBtn);
-
-  container.appendChild(copyRow);
+  copyAction.appendChild(document.createTextNode('Or '));
+  copyAction.appendChild(copyLink);
+  copyAction.appendChild(document.createTextNode(' for desktop app'));
+  container.appendChild(copyAction);
 }
 
 function renderMobileConversion(container, channelLink, showAppBadges) {
