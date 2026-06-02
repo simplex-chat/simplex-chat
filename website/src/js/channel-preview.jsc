@@ -556,7 +556,7 @@ const STYLE = `
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin: 0 0 3px;
+  margin: 0 0 6px;
 }
 
 .simplex-preview-badges a {
@@ -892,6 +892,9 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
 
     const conversion = document.createElement('div');
     conversion.className = 'simplex-preview-conversion';
+    if (!showJoinSection) {
+      conversion.style.marginTop = '28px';
+    }
     if (isMobile.any()) {
       renderMobileConversion(conversion, channelLink, showAppBadges);
     } else {
