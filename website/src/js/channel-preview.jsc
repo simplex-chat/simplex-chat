@@ -638,6 +638,9 @@ const STYLE = `
 }
 
 @media (max-width: 999px) {
+  .simplex-preview-container {
+    font-size: 17px;
+  }
   .simplex-preview-main {
     max-width: none;
   }
