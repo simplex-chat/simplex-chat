@@ -38,6 +38,7 @@ library
   exposed-modules:
       Simplex.Chat
       Simplex.Chat.AppSettings
+      Simplex.Chat.Badges
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
