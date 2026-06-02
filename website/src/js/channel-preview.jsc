@@ -511,14 +511,14 @@ const STYLE = `
   width: 100%;
   height: 1px;
   background: #e5e5e5;
-  margin: 20px 0 0;
+  margin: 20px 0;
 }
 
 .simplex-preview-conversion-title {
   font-size: 18px;
   font-weight: 600;
   text-align: center;
-  margin: 16px 0 4px;
+  margin: 0 0 20px;
   color: #000;
 }
 
@@ -588,7 +588,7 @@ const STYLE = `
 .simplex-preview-step-title {
   font-size: 14px;
   text-align: center;
-  margin: 0;
+  margin: 0 0 -8px;
   color: #000;
 }
 
