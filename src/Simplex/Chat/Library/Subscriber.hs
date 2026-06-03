@@ -1193,9 +1193,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CFGetRelayDataJoin -> do
               -- Update relay member with key, memberId and profile from link
               relayLinkData_ <- liftIO $ decodeLinkUserData cData
-              case (relayLinkData_, linkEntityId) of
-                (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
+              relayMemberId <- case (relayLinkData_, linkEntityId) of
+                (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
                   withStore $ \db -> updateRelayMemberData db user m (MemberId entityId) (MemberKey relayKey) p
+                  pure $ MemberId entityId
                 _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
               case cReq of
                 CRContactUri crData@ConnReqUriData {crClientData} -> do
@@ -1210,7 +1211,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
                       let incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
                           profileToSend = userProfileInGroup user gInfo incognitoProfile
-                      dm <- encodeXMemberConnInfo gInfo profileToSend
+                      dm <- encodeXMemberConnInfo gInfo relayMemberId profileToSend
                       subMode <- chatReadVar subscriptionMode
                       void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
             CFGetRelayDataAccept -> do
@@ -1347,7 +1348,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
-          XMember p joiningMemberId joiningMemberKey -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey
+          XMember p joiningMemberId joiningMemberKey viaRelay -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey viaRelay
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
           XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
@@ -1605,8 +1606,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Connection {connId = testCId} <- createRelayTestConnection db vr user acId ConnAccepted chatV subMode
                 liftIO $ setCommandConnId db user cmdId testCId
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
-        memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Maybe SignedMsg -> Profile -> MemberId -> MemberKey -> CM ()
-        memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey@(MemberKey joiningKey) = do
+        memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Maybe SignedMsg -> Profile -> MemberId -> MemberKey -> Maybe MemberId -> CM ()
+        memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey@(MemberKey joiningKey) viaRelay = do
           (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
@@ -1624,10 +1625,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
           where
+            -- replay defense: the viaRelay == own memberId check (viaRelay is in the signed body); without it a sibling relay could replay a privileged member's signed join
             verifyKey gInfo rosterMem = case (signedMsg_, groupKeys gInfo) of
               (Just SignedMsg {chatBinding = CBGroup, signatures, signedBody}, Just GroupKeys {publicGroupId}) ->
                 memberPubKey rosterMem == Just joiningKey
                   && verifyGroupSig joiningKey publicGroupId joiningMemberId signatures signedBody
+                  && viaRelay == Just (memberId' (membership gInfo))
               _ -> False
             acceptJoin gInfo existingMem_ acceptRole = do
               mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted acceptRole Nothing (Just joiningMemberKey) existingMem_

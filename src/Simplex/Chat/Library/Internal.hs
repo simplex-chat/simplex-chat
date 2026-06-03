@@ -2086,15 +2086,15 @@ encodeSignedConnInfo signing chatMsgEvent = do
     ECMEncoded body -> pure $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 
--- signed XMember for a relay-group join: proves the joiner holds the member key it asserts
-encodeXMemberConnInfo :: GroupInfo -> Profile -> CM ByteString
-encodeXMemberConnInfo gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys} profileToSend =
+-- signed XMember for a relay-group join: proves the joiner holds the member key it asserts, and carries
+-- viaRelay = the target relay's memberId inside the signed body so a sibling relay can't accept a replay
+encodeXMemberConnInfo :: GroupInfo -> MemberId -> Profile -> CM ByteString
+encodeXMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys} relayMemberId profileToSend =
   case groupKeys of
-    Just GroupKeys {memberPrivKey} ->
-      let xMemberEvt = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey)
-       in case groupMsgSigning gInfo xMemberEvt of
-            Just signing -> encodeSignedConnInfo signing xMemberEvt
-            Nothing -> throwChatError $ CEInternalError "XMember conn-info: group not configured for signing"
+    Just GroupKeys {publicGroupId, memberPrivKey} ->
+      let xMemberEvt = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey) (Just relayMemberId)
+          signing = MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
+       in encodeSignedConnInfo signing xMemberEvt
     Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
 
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
