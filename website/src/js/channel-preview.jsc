@@ -941,8 +941,8 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
     if (!isMobile.any()) {
       const openBtn = document.createElement('a');
       openBtn.className = 'simplex-preview-open-btn';
-      openBtn.style.marginTop = '31px';
-      openBtn.innerHTML = 'Join in SimpleX Chat app' + simplexLogoSvg();
+      openBtn.style.marginTop = '16px';
+      openBtn.innerHTML = 'Join in SimpleX Chat' + simplexLogoSvg();
       openBtn.href = channelLink;
       container.appendChild(openBtn);
     }
@@ -1087,7 +1087,7 @@ function renderMobileConversion(container, channelLink, showAppBadges) {
 
   const openBtn = document.createElement('a');
   openBtn.className = 'simplex-preview-open-btn';
-  openBtn.innerHTML = 'Join in SimpleX Chat app' + simplexLogoSvg();
+  openBtn.innerHTML = 'Join in SimpleX Chat' + simplexLogoSvg();
   openBtn.href = channelLink;
   container.appendChild(openBtn);
 }
