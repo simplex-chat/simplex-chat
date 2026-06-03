@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 
@@ -17,15 +17,17 @@ fun ScanCodeView(verifyCode: suspend (String?) -> Boolean, close: () -> Unit) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.scan_code))
     QRCodeScanner { text ->
-      val success  = verifyCode(text)
-      if (success) {
-        close()
-      } else {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.incorrect_code)
-        )
+      handleScan(null, text, QRCodeType.SecurityCode::class, close) { qr ->
+        val success = verifyCode(qr.text)
+        if (success) {
+          close()
+        } else {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.incorrect_code)
+          )
+        }
+        success
       }
-      success
     }
     Text(stringResource(MR.strings.scan_code_from_contacts_app), Modifier.padding(horizontal = DEFAULT_PADDING))
     SectionBottomSpacer()

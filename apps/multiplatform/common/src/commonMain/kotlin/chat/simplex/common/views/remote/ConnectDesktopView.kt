@@ -32,7 +32,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
@@ -99,7 +99,7 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
         is UIRemoteCtrlSessionState.Connected -> ActiveSession(session, session.sessionState.remoteCtrl, close)
       }
     } else {
-      ConnectDesktop(deviceName, remoteCtrls, sessionAddress)
+      ConnectDesktop(deviceName, remoteCtrls, sessionAddress, close)
     }
     SectionBottomSpacer()
   }
@@ -125,7 +125,7 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
 }
 
 @Composable
-private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<RemoteCtrlInfo>, sessionAddress: MutableState<String>) {
+private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<RemoteCtrlInfo>, sessionAddress: MutableState<String>, close: () -> Unit) {
   AppBarTitle(stringResource(MR.strings.connect_to_desktop))
   SectionView(stringResource(MR.strings.this_device_name)) {
     DevicesView(deviceName, remoteCtrls) {
@@ -136,7 +136,7 @@ private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<Re
     }
   }
   SectionDividerSpaced()
-  ScanDesktopAddressView(sessionAddress)
+  ScanDesktopAddressView(sessionAddress, close)
   if (controller.appPrefs.developerTools.get()) {
     SectionDividerSpaced()
     DesktopAddressView(sessionAddress)
@@ -353,11 +353,13 @@ private fun DevicesView(deviceName: String, remoteCtrls: SnapshotStateList<Remot
 }
 
 @Composable
-private fun ScanDesktopAddressView(sessionAddress: MutableState<String>) {
+private fun ScanDesktopAddressView(sessionAddress: MutableState<String>, close: () -> Unit) {
   SectionView(stringResource(MR.strings.scan_qr_code_from_desktop)) {
     QRCodeScanner { text ->
-      sessionAddress.value = text
-      connectDesktopAddress(sessionAddress, text)
+      handleScan(null, text, QRCodeType.DesktopAddress::class, close) { qr ->
+        sessionAddress.value = qr.text
+        connectDesktopAddress(sessionAddress, qr.text)
+      }
     }
   }
 }
