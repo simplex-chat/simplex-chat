@@ -4172,22 +4172,25 @@ processChatCommand vr nm = \case
                   _ -> pure (g, False)
                 pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' (BoolDef updated) ov (ListDef glOwners)))
     connectPlanName :: User -> SimplexNameInfo -> CM (ACreatedConnLink, ConnectionPlan)
-    connectPlanName user ni@SimplexNameInfo {nameType} = do
-      ct_ <- withFastStore $ \db -> getContactBySimplexName db vr user ni
-      case ct_ of
-        Just ct -> case preparedContact ct of
-          Just PreparedContact {connLinkToConnect} -> pure (connLinkToConnect, CPContactAddress (CAPKnown ct))
-          Nothing -> throwChatError CEInvalidConnReq
-        Nothing -> case nameType of
-          NTContact -> throwChatError $ CESimplexNameNotFound ni
-          NTPublicGroup -> do
-            g_ <- withFastStore $ \db -> getGroupInfoBySimplexName db vr user ni
-            case g_ of
-              Just g -> case preparedGroup g of
-                Just PreparedGroup {connLinkToConnect = ccLink} ->
-                  pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
-                Nothing -> throwChatError CEInvalidConnReq
-              Nothing -> throwChatError $ CESimplexNameNotFound ni
+    connectPlanName user ni@SimplexNameInfo {nameType} = case nameType of
+      -- The discriminator (`@` vs `#`) is encoded into the stored simplex_name
+      -- bytes via strEncode, so an `@contact` lookup can never match a group
+      -- row (and vice versa). Dispatch on nameType up front to skip a probe.
+      NTContact -> do
+        ct_ <- withFastStore $ \db -> getContactBySimplexName db vr user ni
+        case ct_ of
+          Just ct -> case preparedContact ct of
+            Just PreparedContact {connLinkToConnect} -> pure (connLinkToConnect, CPContactAddress (CAPKnown ct))
+            Nothing -> throwChatError CEInvalidConnReq
+          Nothing -> throwChatError $ CESimplexNameNotFound ni
+      NTPublicGroup -> do
+        g_ <- withFastStore $ \db -> getGroupInfoBySimplexName db vr user ni
+        case g_ of
+          Just g -> case preparedGroup g of
+            Just PreparedGroup {connLinkToConnect = ccLink} ->
+              pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
+            Nothing -> throwChatError CEInvalidConnReq
+          Nothing -> throwChatError $ CESimplexNameNotFound ni
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
