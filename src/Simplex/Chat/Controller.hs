@@ -1369,6 +1369,7 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CESimplexNameNotFound {simplexName :: SimplexNameInfo}
+  | CESimplexNameUnprepared {simplexName :: SimplexNameInfo}
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited

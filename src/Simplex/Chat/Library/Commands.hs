@@ -4181,15 +4181,20 @@ processChatCommand vr nm = \case
         case ct_ of
           Just ct -> case preparedContact ct of
             Just PreparedContact {connLinkToConnect} -> pure (connLinkToConnect, CPContactAddress (CAPKnown ct))
-            Nothing -> throwChatError CEInvalidConnReq
+            -- Row exists but carries no reconnect link (e.g. created via XInfo, not via prepare).
+            -- The name resolves; the device just lacks the connection material to re-establish.
+            Nothing -> throwChatError $ CESimplexNameUnprepared ni
           Nothing -> throwChatError $ CESimplexNameNotFound ni
       NTPublicGroup -> do
         g_ <- withFastStore $ \db -> getGroupInfoBySimplexName db vr user ni
         case g_ of
+          -- Mirror gPlan at line ~4133 in the link-based path: a removed member is not a
+          -- known-and-reconnectable group; treat as "not found" so the caller can try elsewhere.
+          Just g | memberRemoved (membership g) -> throwChatError $ CESimplexNameNotFound ni
           Just g -> case preparedGroup g of
             Just PreparedGroup {connLinkToConnect = ccLink} ->
               pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
-            Nothing -> throwChatError CEInvalidConnReq
+            Nothing -> throwChatError $ CESimplexNameUnprepared ni
           Nothing -> throwChatError $ CESimplexNameNotFound ni
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
