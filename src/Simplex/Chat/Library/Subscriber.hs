@@ -47,7 +47,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Library.Internal
-import Simplex.Chat.Web (channelChanged, channelRemoved)
+import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
 import Simplex.Chat.Messages.CIContent
@@ -1077,13 +1077,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext -> do
               let contentChanged :: CM ()
-                  contentChanged = atomically $ channelChanged cc groupId False
+                  contentChanged = atomically $ channelContentChanged cc groupId
               case event of
                 XMsgNew {} -> contentChanged
                 XMsgUpdate {} -> contentChanged
                 XMsgDel {} -> contentChanged
                 XMsgReact {} -> contentChanged
-                XGrpInfo {} -> atomically $ channelChanged cc groupId True
+                XGrpInfo p' -> atomically $ channelProfileUpdated cc groupId p'
                 XGrpDel {} -> atomically $ channelRemoved cc groupId
                 _ -> pure ()
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}

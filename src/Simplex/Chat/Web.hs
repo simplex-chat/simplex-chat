@@ -15,7 +15,10 @@ module Simplex.Chat.Web
     WebFileInfo (..),
     CorsOrigin (..),
     webPreviewWorker,
-    channelChanged,
+    renderWebPreviews,
+    writeCorsConfig,
+    channelContentChanged,
+    channelProfileUpdated,
     channelRemoved,
   )
 where
@@ -31,11 +34,10 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
-import Data.List (nubBy)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import Data.Maybe (isJust, mapMaybe)
+import Data.Maybe (isJust, mapMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -125,7 +127,7 @@ $(JQ.deriveJSON defaultJSON ''WebMessage)
 $(JQ.deriveJSON defaultJSON ''WebChannelPreview)
 
 webPreviewWorker :: WebPreviewConfig -> ChatController -> [User] -> IO ()
-webPreviewWorker WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterval} cc users =
+webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterval} cc users =
   forM_ (webPreviewState cc) $ \wps -> do
     createDirectoryIfMissing True webJsonDir
     initPublishableGroups wps
@@ -138,8 +140,12 @@ webPreviewWorker WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterval} c
       drainRemovals
       drainPriority
       handleCors
-      processOneRoutine
-      sleepOrWake
+      drainRoutine
+      groups <- loadRelayGroups
+      regenerateCors groups
+      cleanStaleFiles groups
+      seedRoutinePending wps
+      interruptibleSleep
       workerLoop wps
       where
         drainRemovals = atomically (tryReadTQueue filesToRemove) >>= \case
@@ -156,26 +162,18 @@ webPreviewWorker WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterval} c
 
         handleCors = do
           needed <- atomically $ swapTVar corsNeeded False
-          when needed regenerateCors
+          when needed $ loadRelayGroups >>= regenerateCors
 
-        processOneRoutine = do
+        drainRoutine = do
           mGId <- atomically $ do
             pending <- readTVar routinePending
             case S.minView pending of
               Nothing -> pure Nothing
               Just (gId, rest) -> writeTVar routinePending rest >> pure (Just gId)
-          forM_ mGId $ renderOneGroup wps
-
-        sleepOrWake = do
-          pending <- readTVarIO routinePending
-          if S.null pending
-            then do
-              cleanStaleFiles
-              seedRoutinePending wps
-              interruptibleSleep
-            else do
-              hasPriority <- atomically $ not <$> isEmptyTQueue priorityRender
-              unless hasPriority interruptibleSleep
+          forM_ mGId $ \gId -> do
+            renderOneGroup wps gId
+            drainPriority
+            drainRoutine
 
         interruptibleSleep = do
           delay <- registerDelay (webUpdateInterval * 1000000)
@@ -184,8 +182,7 @@ webPreviewWorker WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterval} c
               `orElse` takeTMVar wakeSignal
 
     initPublishableGroups WebPreviewState {publishableGroupIds} = do
-      groups <- withTransaction (chatStore cc) $ \db ->
-        concat <$> mapM (getRelayServedGroups db vr') users
+      groups <- loadRelayGroups
       let gIds = M.fromList [(groupId, f) | g@GroupInfo {groupId} <- groups, Just f <- [publicGroupFileName g]]
       atomically $ writeTVar publishableGroupIds gIds
 
@@ -194,20 +191,23 @@ webPreviewWorker WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterval} c
 
     renderOneGroup WebPreviewState {publishableGroupIds} gId = do
       publishable <- atomically $ M.member gId <$> readTVar publishableGroupIds
-      when publishable $ do
-        r <- withTransaction (chatStore cc) $ \db ->
-          findUser $ \u -> fmap (\g -> (u, g)) <$> runExceptT (getGroupInfo db vr' u gId)
-        case r of
-          Just (u, gInfo) | hasPublicGroup gInfo ->
-            void $ renderGroupPreview webJsonDir cc u gInfo
-          _ -> do
-            fName <- atomically $ do
-              ids <- readTVar publishableGroupIds
-              modifyTVar' publishableGroupIds (M.delete gId)
-              pure $ M.lookup gId ids
-            forM_ fName $ \f ->
-              removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
-            logInfo $ "web preview: group " <> T.pack (show gId) <> " no longer publishable"
+      when publishable $
+        do
+          r <- withTransaction (chatStore cc) $ \db ->
+            findUser $ \u -> fmap (\g -> (u, g)) <$> runExceptT (getGroupInfo db vr' u gId)
+          case r of
+            Just (u, gInfo) | hasPublicGroup gInfo ->
+              void $ renderGroupPreview cfg cc u gInfo
+            _ -> do
+              fName <- atomically $ do
+                ids <- readTVar publishableGroupIds
+                modifyTVar' publishableGroupIds (M.delete gId)
+                pure $ M.lookup gId ids
+              forM_ fName $ \f ->
+                removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
+              logInfo $ "web preview: group " <> T.pack (show gId) <> " no longer publishable"
+          `catch` \(e :: SomeException) ->
+            logError $ "web preview: error rendering group " <> T.pack (show gId) <> ": " <> T.pack (show e)
 
     findUser f = go users
       where
@@ -216,35 +216,43 @@ webPreviewWorker WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterval} c
           Right a -> pure (Just a)
           Left _ -> go us
 
-    regenerateCors = do
-      groups <- withTransaction (chatStore cc) $ \db ->
+    loadRelayGroups =
+      withTransaction (chatStore cc) $ \db ->
         concat <$> mapM (getRelayServedGroups db vr') users
+
+    regenerateCors groups = do
       let entries = mapMaybe groupCorsEntry groups
       forM_ webCorsFile $ writeCorsConfig entries
+
+    cleanStaleFiles groups = do
+      let activeFiles = S.fromList $ mapMaybe publicGroupFileName [g | g <- groups, hasPublicGroup g]
+      removeStaleFiles webJsonDir activeFiles
 
     groupCorsEntry GroupInfo {groupProfile = GroupProfile {publicGroup}} =
       publicGroup >>= \PublicGroupProfile {publicGroupId, publicGroupAccess} ->
         corsEntry publicGroupId <$> publicGroupAccess
 
-    cleanStaleFiles = do
-      groups <- withTransaction (chatStore cc) $ \db ->
-        concat <$> mapM (getRelayServedGroups db vr') users
-      let activeFiles = S.fromList $ mapMaybe publicGroupFileName [g | g <- groups, hasPublicGroup g]
-      removeStaleFiles webJsonDir activeFiles
+renderWebPreviews :: WebPreviewConfig -> ChatController -> User -> IO ()
+renderWebPreviews cfg@WebPreviewConfig {webJsonDir} cc user = do
+  let vr' = chatVRange (config cc)
+  createDirectoryIfMissing True webJsonDir
+  groups <- withTransaction (chatStore cc) $ \db -> getRelayServedGroups db vr' user
+  forM_ [gInfo | gInfo <- groups, hasPublicGroup gInfo] $ \gInfo ->
+    void $ renderGroupPreview cfg cc user gInfo
 
-renderGroupPreview :: FilePath -> ChatController -> User -> GroupInfo -> IO (Maybe (Text, CorsOrigin))
-renderGroupPreview webJsonDir cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {shortDescr = sd, description = wd, publicGroup}} =
+renderGroupPreview :: WebPreviewConfig -> ChatController -> User -> GroupInfo -> IO (Maybe (Text, CorsOrigin))
+renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {shortDescr = sd, description = wd, publicGroup}} =
   case publicGroup of
     Just PublicGroupProfile {publicGroupId, publicGroupAccess} -> do
       let fName = publicGroupIdFileName publicGroupId <> ".json"
       (items, owners) <- withTransaction (chatStore cc) $ \db -> do
-        is <- getGroupWebPreviewItems db user gInfo 50
+        is <- getGroupWebPreviewItems db user gInfo webPreviewItemCount
         os <- getGroupOwners db vr' user gInfo
         pure (is, os)
       ts <- getCurrentTime
       let rendered = mapMaybe toRenderedItem $ rights items
           msgs = map fst rendered
-          senders = uniqueSenders $ map memberToProfile owners <> mapMaybe snd rendered
+          senders = collectSenders $ map memberToProfile owners <> mapMaybe snd rendered
           preview = WebChannelPreview
             { channel = gp,
               shortDescription = toFormattedText =<< sd,
@@ -259,15 +267,33 @@ renderGroupPreview webJsonDir cc user gInfo@GroupInfo {groupProfile = gp@GroupPr
   where
     vr' = chatVRange (config cc)
 
-channelChanged :: ChatController -> Int64 -> Bool -> STM ()
-channelChanged cc gId updateCors =
-  forM_ (webPreviewState cc) $ \WebPreviewState {publishableGroupIds, priorityRender, corsNeeded, routinePending, wakeSignal} -> do
+channelContentChanged :: ChatController -> Int64 -> STM ()
+channelContentChanged cc gId =
+  forM_ (webPreviewState cc) $ \WebPreviewState {publishableGroupIds, priorityRender, routinePending, wakeSignal} -> do
     ids <- readTVar publishableGroupIds
     when (M.member gId ids) $ do
       writeTQueue priorityRender gId
       modifyTVar' routinePending (S.delete gId)
-      when updateCors $ writeTVar corsNeeded True
       void $ tryPutTMVar wakeSignal ()
+
+channelProfileUpdated :: ChatController -> Int64 -> GroupProfile -> STM ()
+channelProfileUpdated cc gId GroupProfile {publicGroup} =
+  forM_ (webPreviewState cc) $ \WebPreviewState {publishableGroupIds, priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal} ->
+    case publicGroup of
+      Just PublicGroupProfile {publicGroupId} -> do
+        let fName = publicGroupIdFileName publicGroupId <> ".json"
+        modifyTVar' publishableGroupIds (M.insert gId fName)
+        writeTQueue priorityRender gId
+        modifyTVar' routinePending (S.delete gId)
+        writeTVar corsNeeded True
+        void $ tryPutTMVar wakeSignal ()
+      Nothing -> do
+        ids <- readTVar publishableGroupIds
+        forM_ (M.lookup gId ids) $ writeTQueue filesToRemove
+        modifyTVar' publishableGroupIds (M.delete gId)
+        modifyTVar' routinePending (S.delete gId)
+        writeTVar corsNeeded True
+        void $ tryPutTMVar wakeSignal ()
 
 channelRemoved :: ChatController -> Int64 -> STM ()
 channelRemoved cc gId =
@@ -324,10 +350,8 @@ ciQuoteToQuotedMsg CIQuote {chatDir = qDir, sharedMsgId, sentAt, content = qCont
 webFileInfo :: CIFile d -> WebFileInfo
 webFileInfo CIFile {fileName, fileSize} = WebFileInfo {fileName, fileSize}
 
-uniqueSenders :: [WebMemberProfile] -> [WebMemberProfile]
-uniqueSenders = nubBy sameId
-  where
-    sameId (WebMemberProfile {memberId = a}) (WebMemberProfile {memberId = b}) = a == b
+collectSenders :: [WebMemberProfile] -> [WebMemberProfile]
+collectSenders = M.elems . M.fromList . map (\p@WebMemberProfile {memberId} -> (memberId, p))
 
 memberToProfile :: GroupMember -> WebMemberProfile
 memberToProfile GroupMember {memberId, memberProfile = LocalProfile {displayName, image}} =
@@ -341,9 +365,13 @@ corsEntry publicGroupId PublicGroupAccess {groupWebPage, allowEmbedding} =
   let fName = T.pack $ publicGroupIdFileName publicGroupId <> ".json"
       origin
         | allowEmbedding = CorsAny
-        | isJust groupWebPage = CorsOrigins $ mapMaybe id [groupWebPage]
-        | otherwise = CorsOrigins []
+        | otherwise = CorsOrigins $ filter isSafeOrigin $ maybeToList groupWebPage
    in (fName, origin)
+
+isSafeOrigin :: Text -> Bool
+isSafeOrigin t =
+  (T.isPrefixOf "https://" t || T.isPrefixOf "http://" t)
+    && T.all (\c -> c /= '"' && c /= '\n' && c /= '\r' && c /= ' ') t
 
 channelPath :: Text
 channelPath = "/channel/"

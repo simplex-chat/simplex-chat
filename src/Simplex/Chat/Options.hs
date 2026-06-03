@@ -270,10 +270,17 @@ coreChatOptsP appDir defaultDbName = do
             <> help "Interval between web preview regeneration in seconds (relay only)"
             <> value 300
         )
+    webPreviewItemCount <-
+      option auto
+        ( long "relay-web-item-count"
+            <> metavar "COUNT"
+            <> help "Number of recent messages in channel web preview (relay only)"
+            <> value 50
+        )
     pure $ case (webDomain_, webJsonDir_) of
-      (Just webDomain, Just webJsonDir) -> Just WebPreviewConfig {webDomain, webJsonDir, webCorsFile, webUpdateInterval}
+      (Just webDomain, Just webJsonDir) -> Just WebPreviewConfig {webDomain, webJsonDir, webCorsFile, webUpdateInterval, webPreviewItemCount}
       (Nothing, Nothing) -> Nothing
-      _ -> error "--relay-web-domain and --relay-web-dir must both be provided"
+      _ -> errorWithoutStackTrace "--relay-web-domain and --relay-web-dir must both be provided"
   highlyAvailable <-
     switch
       ( long "ha"

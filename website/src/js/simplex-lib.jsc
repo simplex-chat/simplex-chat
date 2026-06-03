@@ -67,7 +67,7 @@ function renderMarkdown(fts) {
           html += `<span class="small-text">${escapeHtml(text)}</span>`;
           break;
         case 'colored':
-          html += `<span class="${format.color}">${escapeHtml(text)}</span>`;
+          html += `<span class="${(format.color || '').replace(/[^a-zA-Z0-9_-]/g, '')}">${escapeHtml(text)}</span>`;
           break;
         case 'uri':
           let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:/') ? text : 'https://' + text;

@@ -175,7 +175,8 @@ data WebPreviewConfig = WebPreviewConfig
   { webDomain :: Text,
     webJsonDir :: FilePath,
     webCorsFile :: Maybe FilePath,
-    webUpdateInterval :: Int -- seconds
+    webUpdateInterval :: Int, -- seconds
+    webPreviewItemCount :: Int
   }
 
 data WebPreviewState = WebPreviewState

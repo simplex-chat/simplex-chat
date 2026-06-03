@@ -1440,7 +1440,7 @@ function renderReactions(reactions) {
     const badge = document.createElement('span');
     badge.className = 'simplex-preview-reaction';
     const emoji = r.reaction && r.reaction.emoji ? r.reaction.emoji : '?';
-    badge.innerHTML = emoji + (r.totalReacted > 1 ? '<span class="simplex-preview-reaction-count">' + r.totalReacted + '</span>' : '');
+    badge.innerHTML = escapeHtml(emoji) + (r.totalReacted > 1 ? '<span class="simplex-preview-reaction-count">' + r.totalReacted + '</span>' : '');
     div.appendChild(badge);
   }
   return div;
