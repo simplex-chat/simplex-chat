@@ -92,6 +92,7 @@ CREATE TABLE contacts(
   grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
+  simplex_name TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -182,7 +183,8 @@ CREATE TABLE groups(
   relay_request_retries INTEGER NOT NULL DEFAULT 0,
   relay_request_delay INTEGER NOT NULL DEFAULT 0,
   relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-  relay_inactive_at TEXT, -- received
+  relay_inactive_at TEXT,
+  simplex_name TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -351,6 +353,7 @@ CREATE TABLE connections(
   via_short_link_contact BLOB,
   via_contact_uri BLOB,
   relay_test INTEGER NOT NULL DEFAULT 0,
+  simplex_name TEXT,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -1307,6 +1310,18 @@ ON groups(
   relay_request_group_link
 )
 WHERE relay_request_group_link IS NOT NULL;
+CREATE INDEX idx_contacts_simplex_name
+ON contacts(
+  user_id,
+  simplex_name
+)
+WHERE simplex_name IS NOT NULL;
+CREATE INDEX idx_groups_simplex_name
+ON groups(
+  user_id,
+  simplex_name
+)
+WHERE simplex_name IS NOT NULL;
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
