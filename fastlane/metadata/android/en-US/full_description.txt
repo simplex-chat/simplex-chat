@@ -1,16 +1,14 @@
 <h1>SimpleX - the first messaging platform that has no user identifiers, not even random numbers!</h1>
-<p><a href="https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html" target="_blank">Security assessment</a> was done by Trail of Bits in November 2022.</p>
-<p>SimpleX Chat features:</p>
+<p>Features:</p>
 <ul>
-  <li>end-to-end encrypted messages, with editing, replies and deletion of messages.</li>
-  <li>sending end-to-end encrypted images and files.</li>
-  <li>single-use and long-term user addresses.</li>
-  <li>secret chat groups - only group members know it exists and who is the member.</li>
-  <li>end-to-end encrypted audio and video calls.</li>
-  <li>private instant notifications.</li>
-  <li>portable chat profile - you can transfer your chat contacts and history to another device (terminal or mobile).</li>
+  <li>End-to-end encrypted messages, images and files with editing, replies and deletion.</li>
+  <li>Single-use and long-term user addresses.</li>
+  <li>Secret chat groups - only group members know it exists and who is the member.</li>
+  <li>Audio and video calls.</li>
+  <li>Private instant notifications.</li>
+  <li>Portable chat profile - you can transfer your chat contacts and history to another device (terminal or mobile).</li>
 </ul>
-<p>SimpleX Chat advantages:</p>
+<p>SimpleX advantages:</p>
 <ul>
   <li><strong>Full privacy of your identity, profile, contacts and metadata</strong>: unlike any other existing messaging platform, SimpleX uses no phone numbers or any other identifiers assigned to the users - not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers.</li>
   <li><strong>Complete protection against spam and abuse</strong>: as you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address.</li>
