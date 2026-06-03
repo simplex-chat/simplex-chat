@@ -26,7 +26,7 @@ where
 import Control.Concurrent.STM (check)
 import Control.Exception (SomeException, catch)
 import Control.Logger.Simple
-import Control.Monad (forM_, unless, void, when)
+import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Data.Either (rights)
 import Data.Int (Int64)
@@ -77,7 +77,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Parsers (defaultJSON)
-import System.Directory (createDirectoryIfMissing, listDirectory, removeFile)
+import System.Directory (createDirectoryIfMissing, listDirectory, removeFile, renameFile)
 import System.FilePath (takeExtension, (</>))
 import UnliftIO.STM
 
@@ -261,7 +261,10 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
               messages = msgs,
               updatedAt = ts
             }
-      LB.writeFile (webJsonDir </> fName) (J.encode preview)
+      let destPath = webJsonDir </> fName
+          tmpPath = destPath <> ".tmp"
+      LB.writeFile tmpPath (J.encode preview)
+      renameFile tmpPath destPath
       pure $ corsEntry publicGroupId <$> publicGroupAccess
     Nothing -> pure Nothing
   where
@@ -395,8 +398,9 @@ writeCorsConfig entries path =
 
 removeStaleFiles :: FilePath -> S.Set FilePath -> IO ()
 removeStaleFiles dir activeFiles = do
-  let jsonFiles = S.filter (\f -> takeExtension f == ".json") . S.fromList
-  allFiles <- jsonFiles <$> listDirectory dir
+  let isPreviewFile f = takeExtension f == ".json" && all isBase64Url (takeWhile (/= '.') f)
+      isBase64Url c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_'
+  allFiles <- S.filter isPreviewFile . S.fromList <$> listDirectory dir
   mapM_ (\f -> removeFile (dir </> f)) $ S.difference allFiles activeFiles
 
 toFormattedText :: Text -> Maybe MarkdownList

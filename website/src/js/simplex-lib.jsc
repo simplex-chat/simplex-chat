@@ -14,6 +14,15 @@ function escapeHtml(text) {
     .replace(/\n/g, "<br>");
 }
 
+function escapeAttr(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function getSimplexLinkDescr(linkType) {
   switch (linkType) {
     case 'contact': return 'SimpleX contact address';
@@ -71,17 +80,17 @@ function renderMarkdown(fts) {
           break;
         case 'uri':
           let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:/') ? text : 'https://' + text;
-          html += `<a href="${href}"${targetBlank(href)}>${escapeHtml(text)}</a>`;
+          html += `<a href="${escapeAttr(href)}"${targetBlank(href)}>${escapeHtml(text)}</a>`;
           break;
         case 'hyperLink': {
           const { showText, linkUri } = format;
-          html += `<a href="${linkUri}"${targetBlank(linkUri)}>${escapeHtml(showText ?? linkUri)}</a>`;
+          html += `<a href="${escapeAttr(linkUri)}"${targetBlank(linkUri)}>${escapeHtml(showText ?? linkUri)}</a>`;
           break;
         }
         case 'simplexLink': {
           const { showText, linkType, simplexUri, smpHosts } = format;
           const linkText = showText ? escapeHtml(showText) : getSimplexLinkDescr(linkType);
-          html += `<a href="${platformSimplexUri(simplexUri)}" target="_blank">${linkText} <em>(${viaHost(smpHosts)})</em></a>`;
+          html += `<a href="${escapeAttr(platformSimplexUri(simplexUri))}" target="_blank">${linkText} <em>(${escapeHtml(viaHost(smpHosts))})</em></a>`;
           break;
         }
         case 'command':
@@ -91,10 +100,10 @@ function renderMarkdown(fts) {
           html += `<strong>${escapeHtml(text)}</strong>`;
           break;
         case 'email':
-          html += `<a href="mailto:${text}">${escapeHtml(text)}</a>`;
+          html += `<a href="mailto:${escapeAttr(text)}">${escapeHtml(text)}</a>`;
           break;
         case 'phone':
-          html += `<a href="tel:${text}">${escapeHtml(text)}</a>`;
+          html += `<a href="tel:${escapeAttr(text)}">${escapeHtml(text)}</a>`;
           break;
         case 'unknown':
           html += escapeHtml(text);
