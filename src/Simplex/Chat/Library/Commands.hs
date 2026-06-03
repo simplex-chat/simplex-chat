@@ -4179,7 +4179,7 @@ processChatCommand vr nm = \case
           Just PreparedContact {connLinkToConnect} -> pure (connLinkToConnect, CPContactAddress (CAPKnown ct))
           Nothing -> throwChatError CEInvalidConnReq
         Nothing -> case nameType of
-          NTContact -> throwChatError CEInvalidConnReq
+          NTContact -> throwChatError $ CESimplexNameNotFound ni
           NTPublicGroup -> do
             g_ <- withFastStore $ \db -> getGroupInfoBySimplexName db vr user ni
             case g_ of
@@ -4187,7 +4187,7 @@ processChatCommand vr nm = \case
                 Just PreparedGroup {connLinkToConnect = ccLink} ->
                   pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
                 Nothing -> throwChatError CEInvalidConnReq
-              Nothing -> throwChatError CEInvalidConnReq
+              Nothing -> throwChatError $ CESimplexNameNotFound ni
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
