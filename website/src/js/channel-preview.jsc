@@ -941,7 +941,9 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
     if (!isMobile.any()) {
       const openBtn = document.createElement('a');
       openBtn.className = 'simplex-preview-open-btn';
-      openBtn.style.marginTop = '16px';
+      openBtn.style.display = 'flex';
+      openBtn.style.width = 'fit-content';
+      openBtn.style.margin = '16px auto 0';
       openBtn.innerHTML = 'Join in SimpleX Chat' + simplexLogoSvg();
       openBtn.href = channelLink;
       container.appendChild(openBtn);
