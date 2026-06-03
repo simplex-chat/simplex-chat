@@ -949,7 +949,7 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
       openBtn.className = 'simplex-preview-open-btn';
       openBtn.style.display = 'flex';
       openBtn.style.width = 'fit-content';
-      openBtn.style.margin = '16px auto 0';
+      openBtn.style.margin = '32px auto 0';
       openBtn.textContent = 'Join in SimpleX Chat';
       appendSimplexLogo(openBtn);
       openBtn.href = channelLink;
