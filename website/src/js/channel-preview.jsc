@@ -16,8 +16,8 @@ const STYLE = `
   --sp-border: #e5e5e5;
   --sp-link: #0088ff;
   --sp-link-hover: #0077e0;
-  --sp-btn: #004ABB;
-  --sp-btn-hover: #003FA1;
+  --sp-btn: #007AE5;
+  --sp-btn-hover: #006BC9;
   --sp-color-blue: #0053d0;
   --sp-color-black: #000;
   --sp-color-white: #000;
@@ -109,7 +109,7 @@ const STYLE = `
   color: var(--sp-btn-text, #fff);
   border: none;
   border-radius: 34px;
-  padding: 6px 6px 6px 16px;
+  padding: 6px 10px 6px 10px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -124,6 +124,7 @@ const STYLE = `
   width: 15.4px;
   height: 15.4px;
   flex-shrink: 0;
+  margin-left: 2px;
 }
 
 .simplex-preview-join-btn .simplex-logo-light-bg {
@@ -957,7 +958,7 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
   if (showAppBadges) {
     const title = document.createElement('p');
     title.className = 'simplex-preview-step-title';
-    title.textContent = 'Install SimpleX app';
+    title.textContent = 'Install SimpleX Chat app';
     container.appendChild(title);
 
     const badges = document.createElement('div');
@@ -1050,7 +1051,7 @@ function renderMobileConversion(container, channelLink, showAppBadges) {
   if (showAppBadges) {
     const title = document.createElement('p');
     title.className = 'simplex-preview-step-title';
-    title.textContent = 'Install SimpleX app';
+    title.textContent = 'Install SimpleX Chat app';
     container.appendChild(title);
 
     const badges = document.createElement('div');
@@ -1075,7 +1076,7 @@ function renderMobileConversion(container, channelLink, showAppBadges) {
 
   const openBtn = document.createElement('a');
   openBtn.className = 'simplex-preview-open-btn';
-  openBtn.textContent = 'Join in SimpleX app';
+  openBtn.textContent = 'Join in SimpleX Chat app';
   openBtn.href = channelLink;
   container.appendChild(openBtn);
 }
