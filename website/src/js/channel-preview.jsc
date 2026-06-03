@@ -954,19 +954,33 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
   }
 }
 
+var BADGE_APPLE = '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>';
+var BADGE_GOOGLE = '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>';
+var BADGE_FDROID = '<a href="https://simplex.chat/fdroid" target="_blank"><img src="https://simplex.chat/img/new/f_droid.svg" alt="F-Droid"></a>';
+var BADGE_APK = '<a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img src="https://simplex.chat/img/design_3/android-dark.png" alt="APK Download"></a>';
+var BADGE_TESTFLIGHT = '<a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img src="https://simplex.chat/img/design_3/testflight-dark.png" alt="TestFlight"></a>';
+
+function renderAppBadges(container) {
+  const title = document.createElement('p');
+  title.className = 'simplex-preview-step-title';
+  title.textContent = 'Install SimpleX Chat app';
+  container.appendChild(title);
+
+  const badges = document.createElement('div');
+  badges.className = 'simplex-preview-badges';
+  if (isMobile.Android()) {
+    badges.innerHTML = BADGE_GOOGLE + BADGE_FDROID + BADGE_APK;
+  } else if (isMobile.iOS()) {
+    badges.innerHTML = BADGE_APPLE + BADGE_TESTFLIGHT;
+  } else {
+    badges.innerHTML = BADGE_APPLE + BADGE_GOOGLE;
+  }
+  container.appendChild(badges);
+}
+
 function renderDesktopConversion(container, channelLink, showAppBadges) {
   if (showAppBadges) {
-    const title = document.createElement('p');
-    title.className = 'simplex-preview-step-title';
-    title.textContent = 'Install SimpleX Chat app';
-    container.appendChild(title);
-
-    const badges = document.createElement('div');
-    badges.className = 'simplex-preview-badges';
-    badges.innerHTML =
-      '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>' +
-      '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>';
-    container.appendChild(badges);
+    renderAppBadges(container);
   }
 
   const qrToggle = document.createElement('a');
@@ -1049,29 +1063,7 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
 
 function renderMobileConversion(container, channelLink, showAppBadges) {
   if (showAppBadges) {
-    const title = document.createElement('p');
-    title.className = 'simplex-preview-step-title';
-    title.textContent = 'Install SimpleX Chat app';
-    container.appendChild(title);
-
-    const badges = document.createElement('div');
-    badges.className = 'simplex-preview-badges';
-
-    if (isMobile.Android()) {
-      badges.innerHTML =
-        '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>' +
-        '<a href="https://simplex.chat/fdroid" target="_blank"><img src="https://simplex.chat/img/new/f_droid.svg" alt="F-Droid"></a>' +
-        '<a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img src="https://simplex.chat/img/design_3/android-dark.png" alt="APK Download"></a>';
-    } else if (isMobile.iOS()) {
-      badges.innerHTML =
-        '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>' +
-        '<a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img src="https://simplex.chat/img/design_3/testflight-dark.png" alt="TestFlight"></a>';
-    } else {
-      badges.innerHTML =
-        '<a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="https://simplex.chat/img/new/apple_store.svg" alt="App Store"></a>' +
-        '<a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="https://simplex.chat/img/new/google_play.svg" alt="Google Play"></a>';
-    }
-    container.appendChild(badges);
+    renderAppBadges(container);
   }
 
   const openBtn = document.createElement('a');
