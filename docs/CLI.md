@@ -144,7 +144,7 @@ You may need to amend cabal.project.local to point to the actual openssl locatio
 
 ```shell
 cabal update
-cabal install simplex-chat
+cabal install simplex-chat:exe:simplex-chat
 ```
 
 ## Usage
