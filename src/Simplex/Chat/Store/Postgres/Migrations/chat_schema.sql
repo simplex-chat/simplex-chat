@@ -2193,7 +2193,7 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON test_chat_schema
 
 
 
-CREATE INDEX idx_contacts_simplex_name ON test_chat_schema.contacts USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
+CREATE UNIQUE INDEX idx_contacts_simplex_name ON test_chat_schema.contacts USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
 
 
 
@@ -2373,7 +2373,7 @@ CREATE INDEX idx_groups_relay_request_group_link ON test_chat_schema.groups USIN
 
 
 
-CREATE INDEX idx_groups_simplex_name ON test_chat_schema.groups USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
+CREATE UNIQUE INDEX idx_groups_simplex_name ON test_chat_schema.groups USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
 
 
 
