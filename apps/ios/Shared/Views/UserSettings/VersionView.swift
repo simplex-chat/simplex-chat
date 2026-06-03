@@ -13,18 +13,24 @@ struct VersionView: View {
     @State var versionInfo: CoreVersionInfo?
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("App version: v\(appVersion ?? "?")")
-            Text("App build: \(appBuild ?? "?")")
+        Form {
+            LabeledContent("App version", content: {
+                Text("v\(appVersion ?? "?")")
+            })
+            LabeledContent("App build", content: {
+                Text("\(appBuild ?? "?")")
+            })
             if let info = versionInfo {
-                Text("Core version: v\(info.version)")
-                if let v = try? AttributedString(markdown: "simplexmq: v\(info.simplexmqVersion) ([\(info.simplexmqCommit.prefix(7))](https://github.com/simplex-chat/simplexmq/commit/\(info.simplexmqCommit)))") {
-                    Text(v)
+                LabeledContent("Core version", content: {
+                    Text("v\(info.version)")
+                })
+                if let v = try? AttributedString(markdown: "v\(info.simplexmqVersion) ([\(info.simplexmqCommit.prefix(7))](https://github.com/simplex-chat/simplexmq/commit/\(info.simplexmqCommit)))") {
+                    LabeledContent("SimpleX MQ", content: {
+                        Text(v)
+                    })
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding()
         .onAppear {
             do {
                 versionInfo = try apiGetVersion()

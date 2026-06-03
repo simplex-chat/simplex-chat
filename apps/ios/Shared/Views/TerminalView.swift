@@ -47,8 +47,16 @@ struct TerminalView: View {
                     }
                 }
         } else {
-            Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
-            .onAppear(perform: runAuth)
+            if #available(iOS 17, *) {
+                ContentUnavailableView("Locked", systemImage: "lock", description: Text("Tap to unlock"))
+                    .onTapGesture(perform: runAuth)
+                    .onAppear(perform: runAuth)
+            } else {
+                Button(action: runAuth, label: {
+                    Label("Unlock", systemImage: "lock")
+                })
+                    .onAppear(perform: runAuth)
+            }
         }
     }
 

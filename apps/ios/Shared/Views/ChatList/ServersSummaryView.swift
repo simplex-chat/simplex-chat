@@ -101,7 +101,7 @@ struct ServersSummaryView: View {
             List {
                 Group {
                     if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                        Picker("User selection", selection: $selectedUserCategory) {
+                        Picker("Profile selection", selection: $selectedUserCategory) {
                             Text("All profiles").tag(PresentedUserCategory.allUsers)
                             Text("Current profile").tag(PresentedUserCategory.currentUser)
                         }
