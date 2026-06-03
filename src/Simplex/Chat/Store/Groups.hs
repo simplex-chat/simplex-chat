@@ -89,6 +89,7 @@ module Simplex.Chat.Store.Groups
     updateRelayStatusFromTo,
     setRelayLinkAccepted,
     setRelayLinkConfId,
+    updateRelayCapabilities,
     getRelayConfId,
     updateRelayMemberData,
     setGroupInProgressDone,
@@ -367,10 +368,11 @@ createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays 
           INSERT INTO group_profiles
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
+             group_web_page, group_domain, domain_web_page, allow_embedding,
              user_id, preferences, member_admission, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_)
+        ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. publicGroupAccessRow publicGroup
           :. (userId, groupPreferences, memberAdmission, currentTs, currentTs))
       profileId <- insertedRowId db
       DB.execute
@@ -868,10 +870,11 @@ createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus p
           INSERT INTO group_profiles
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
+             group_web_page, group_domain, domain_web_page, allow_embedding,
              user_id, preferences, member_admission, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_)
+        ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. publicGroupAccessRow publicGroup
           :. (userId, groupPreferences, memberAdmission, currentTs, currentTs))
       profileId <- insertedRowId db
       DB.execute
@@ -1343,15 +1346,16 @@ groupRelayQuery =
   [sql|
     SELECT gr.group_relay_id, gr.group_member_id,
            cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
-           gr.relay_status, gr.relay_link
+           gr.relay_status, gr.relay_link, gr.base_web_url
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
   |]
 
-toGroupRelay :: (Int64, GroupMemberId, DBEntityId, ShortLinkContact, Text, Text, Maybe Text, Maybe ImageData, Text, BoolInt) :. (Maybe BoolInt, BoolInt, BoolInt, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
-toGroupRelay ((groupRelayId, groupMemberId, chatRelayId, address, displayName, fullName, shortDescr, image, domains, BI preset) :. (tested, BI enabled, BI deleted, relayStatus, relayLink)) =
+toGroupRelay :: (Int64, GroupMemberId, DBEntityId, ShortLinkContact, Text, Text, Maybe Text, Maybe ImageData, Text, BoolInt) :. (Maybe BoolInt, BoolInt, BoolInt, RelayStatus, Maybe ShortLinkContact, Maybe Text) -> GroupRelay
+toGroupRelay ((groupRelayId, groupMemberId, chatRelayId, address, displayName, fullName, shortDescr, image, domains, BI preset) :. (tested, BI enabled, BI deleted, relayStatus, relayLink, webDomain)) =
   let userChatRelay = UserChatRelay {chatRelayId, address, relayProfile = toRelayProfile (displayName, fullName, shortDescr, image), domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
-   in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink}
+      relayCap = RelayCapabilities {webDomain}
+   in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink, relayCap}
 
 createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupMember
 createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {relayProfile = RelayProfile {displayName}} = do
@@ -1490,6 +1494,18 @@ setRelayLinkConfId db m confId relayLink = do
       WHERE group_member_id = ?
     |]
     (relayLink, currentTs, groupMemberId' m)
+
+updateRelayCapabilities :: DB.Connection -> GroupMember -> RelayCapabilities -> IO ()
+updateRelayCapabilities db m RelayCapabilities {webDomain} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_relays
+      SET base_web_url = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (webDomain, currentTs, groupMemberId' m)
 
 getRelayConfId :: DB.Connection -> GroupMember -> ExceptT StoreError IO ConfirmationId
 getRelayConfId db m =
@@ -2327,6 +2343,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
           UPDATE group_profiles
           SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
               group_type = ?, group_link = ?,
+              group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?,
               preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
@@ -2334,7 +2351,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
             WHERE user_id = ? AND group_id = ?
           )
         |]
-        ((newName, fullName, shortDescr, description, image, groupType_, groupLink_) :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
+        ((newName, fullName, shortDescr, description, image, groupType_, groupLink_) :. publicGroupAccessRow publicGroup :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
     updateGroup_ ldn currentTs = do
       DB.execute
         db
@@ -2374,14 +2391,16 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
             [sql|
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
                    gp.group_type, gp.group_link, gp.public_group_id,
+                   gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
                    gp.preferences, gp.member_admission
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
             WHERE g.group_id = ?
           |]
             (Only groupId)
-    toGroupProfile (displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_, groupPreferences, memberAdmission) =
-      GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_, groupPreferences, memberAdmission}
+    toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (groupPreferences, memberAdmission)) =
+      let publicGroupAccess = toPublicGroupAccess accessRow
+       in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, groupPreferences, memberAdmission}
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
