@@ -635,7 +635,7 @@ const STYLE = `
   color: var(--sp-btn-text, #fff);
   border: none;
   border-radius: 34px;
-  padding: 12px 12px 12px 32px;
+  padding: 16px 12px 16px 18px;
   height: 44px;
   font-size: 16px;
   line-height: 19px;
@@ -647,9 +647,10 @@ const STYLE = `
 }
 
 .simplex-preview-open-btn svg {
-  width: 17.6px;
-  height: 17.6px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
+  margin-left: 6px;
 }
 
 
@@ -1004,7 +1005,7 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
 
   const caption = document.createElement('p');
   caption.className = 'simplex-preview-qr-caption';
-  caption.textContent = 'Scan from SimpleX app';
+  caption.textContent = 'Scan from SimpleX Chat app';
   qrPopup.appendChild(caption);
 
   const canvas = document.createElement('canvas');
