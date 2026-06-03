@@ -2092,13 +2092,13 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
-    ILPKnown ct
-      | nextConnectPrepared ct -> [invLink ("known prepared contact " <> ttyContact' ct)]
-      | contactDeleted ct -> [invLink ("known deleted contact " <> ttyContact' ct)]
+    ILPKnown ct@Contact {simplexName = sn}
+      | nextConnectPrepared ct -> [invLink ("known prepared contact " <> ttyContact' ct)] <> simplexNameLine sn
+      | contactDeleted ct -> [invLink ("known deleted contact " <> ttyContact' ct)] <> simplexNameLine sn
       | otherwise ->
-          [ invLink ("known contact " <> ttyContact' ct),
-            "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
-          ]
+          [invLink ("known contact " <> ttyContact' ct)]
+            <> simplexNameLine sn
+            <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
     where
       invLink = ("invitation link: " <>)
       invOrBiz = \case
@@ -2110,13 +2110,13 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
-    CAPKnown ct
-      | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)]
+    CAPKnown ct@Contact {simplexName = sn}
+      | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> simplexNameLine sn
       | otherwise ->
-          [ ctAddr ("known contact " <> ttyContact' ct),
-            "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
-          ]
-    CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)]
+          [ctAddr ("known contact " <> ttyContact' ct)]
+            <> simplexNameLine sn
+            <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
+    CAPContactViaAddress ct@Contact {simplexName = sn} -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> simplexNameLine sn
     where
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
@@ -2133,21 +2133,21 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
     GLPConnectingProhibit (Just g) -> connecting g
-    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
+    GLPKnown g@GroupInfo {preparedGroup, membership = m, simplexName = sn} _ _ _ -> case preparedGroup of
       Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
         GSMemUnknown
           | connLinkStartedConnection -> connecting g
-          | otherwise -> [knownGroup "prepared "]
+          | otherwise -> [knownGroup "prepared "] <> simplexNameLine sn
         GSMemAccepted -> connecting g
         _
-          | memberRemoved m -> [knownGroup "deleted "] -- it should not get here, as this plan is returned as GLPOk
+          | memberRemoved m -> [knownGroup "deleted "] <> simplexNameLine sn -- it should not get here, as this plan is returned as GLPOk
           | otherwise -> knownActive
       _ -> knownActive
       where
         knownActive =
-          [ knownGroup "",
-            "use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"
-          ]
+          [knownGroup ""]
+            <> simplexNameLine sn
+            <> ["use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"]
         knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
     GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
     GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
@@ -2165,6 +2165,8 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
+    simplexNameLine :: Maybe SimplexNameInfo -> [StyledString]
+    simplexNameLine = maybe [] (\ni -> ["simplex name: " <> plain (shortNameInfoStr ni)])
     viewSigVerification = \case
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
