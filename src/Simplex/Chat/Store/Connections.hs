@@ -97,7 +97,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
               conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, user_contact_link_id,
               created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
-              conn_chat_version, peer_chat_min_version, peer_chat_max_version
+              conn_chat_version, peer_chat_min_version, peer_chat_max_version, simplex_name
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ? AND conn_status != ?
           |]
@@ -113,21 +113,22 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
               c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
               p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.conn_full_link_to_connect, c.conn_short_link_to_connect, c.welcome_shared_msg_id, c.request_shared_msg_id, c.contact_request_id,
               c.contact_group_member_id, c.contact_grp_inv_sent, c.grp_direct_inv_link, c.grp_direct_inv_from_group_id, c.grp_direct_inv_from_group_member_id, c.grp_direct_inv_from_member_conn_id, c.grp_direct_inv_started_connection,
-              c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl
+              c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl, c.simplex_name
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ? AND c.contact_status = ? AND c.deleted = 0
           |]
           (userId, contactId, CSActive)
     toContact' :: Int64 -> Connection -> [ChatTagId] -> ContactRow' -> Contact
-    toContact' contactId conn chatTags ((profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL)) =
+    toContact' contactId conn chatTags ((profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL, simplexNameRaw)) =
       let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
           preparedContact = toPreparedContact preparedContactRow
           groupDirectInv = toGroupDirectInvitation groupDirectInvRow
-       in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
+          simplexName = decodeSimplexName simplexNameRaw
+       in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData, simplexName}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = do
       gm <-
@@ -147,6 +148,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
                   g.use_relays, g.relay_own_status,
                   g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
                   g.root_priv_key, g.root_pub_key, g.member_priv_key,
+                  g.simplex_name,
                   -- GroupInfo {membership}
                   mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
                   mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,

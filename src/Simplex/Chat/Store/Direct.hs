@@ -214,7 +214,8 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
         pqRcvEnabled = Nothing,
         authErrCounter = 0,
         quotaErrCounter = 0,
-        createdAt = currentTs
+        createdAt = currentTs,
+        simplexName = Nothing
       }
   where
     (connType, contactId_, groupMemberId_, entityId) = case preparedEntity_ of
@@ -297,7 +298,7 @@ getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 =
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id, conn_status, conn_type, contact_conn_initiated, local_alias,
               contact_id, group_member_id, user_contact_link_id, created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
-              conn_chat_version, peer_chat_min_version, peer_chat_max_version
+              conn_chat_version, peer_chat_min_version, peer_chat_max_version, simplex_name
             FROM connections
             WHERE (user_id = ? AND via_contact_uri_hash = ?)
                OR (user_id = ? AND via_contact_uri_hash = ?)
@@ -317,11 +318,11 @@ getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
             cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.simplex_name,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
             c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version, c.simplex_name
           FROM contacts ct
           JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
           JOIN connections c ON c.contact_id = ct.contact_id
@@ -362,7 +363,8 @@ createDirectConnection' db userId acId ccLink contactId_ connStatus incognitoPro
         pqRcvEnabled = Nothing,
         authErrCounter = 0,
         quotaErrCounter = 0,
-        createdAt
+        createdAt,
+        simplexName = Nothing
       }
 
 createDirectConnection :: DB.Connection -> User -> ConnId -> CreatedLinkInvitation -> Maybe ContactId -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
@@ -867,7 +869,8 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
             chatItemTTL = Nothing,
             uiThemes = Nothing,
             chatDeleted = False,
-            customData = Nothing
+            customData = Nothing,
+            simplexName = Nothing
           }
   pure (ct, conn)
 
@@ -914,11 +917,11 @@ getContact_ db vr user@User {userId} contactId deleted = do
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.simplex_name,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version, c.simplex_name
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
@@ -943,7 +946,7 @@ getContactConnections db vr userId Contact {contactId} =
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
             c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version, c.simplex_name
           FROM connections c
           JOIN contacts ct ON ct.contact_id = c.contact_id
           WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
@@ -961,7 +964,7 @@ getConnectionById db vr User {userId} connId = ExceptT $ do
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, user_contact_link_id,
           created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
-          conn_chat_version, peer_chat_min_version, peer_chat_max_version
+          conn_chat_version, peer_chat_min_version, peer_chat_max_version, simplex_name
         FROM connections
         WHERE user_id = ? AND connection_id = ?
       |]

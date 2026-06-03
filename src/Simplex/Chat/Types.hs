@@ -52,7 +52,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -209,7 +209,8 @@ data Contact = Contact
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
-    customData :: Maybe CustomData
+    customData :: Maybe CustomData,
+    simplexName :: Maybe SimplexNameInfo
   }
   deriving (Eq, Show)
 
@@ -489,7 +490,8 @@ data GroupInfo = GroupInfo
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupKeys :: Maybe GroupKeys
+    groupKeys :: Maybe GroupKeys,
+    simplexName :: Maybe SimplexNameInfo
   }
   deriving (Eq, Show)
 
@@ -1734,7 +1736,8 @@ data Connection = Connection
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
     quotaErrCounter :: Int, -- if exceeds limit messages to group members are created as pending; sending to contacts is unaffected by this
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    simplexName :: Maybe SimplexNameInfo
   }
   deriving (Eq, Show)
 

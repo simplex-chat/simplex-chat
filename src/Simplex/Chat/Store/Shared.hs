@@ -30,6 +30,7 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
 import Simplex.Chat.Messages
@@ -38,7 +39,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
+import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionRequestUri, CreatedConnLink (..), SimplexNameInfo, UserId, connMode)
 import Simplex.Messaging.Agent.Store (AnyStoreError (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.Common (withSavepoint)
@@ -47,9 +48,10 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (AnyError (..))
+import Simplex.Messaging.Util (AnyError (..), eitherToMaybe)
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -224,12 +226,17 @@ toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, file
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, BoolInt, Maybe GroupLinkId, Maybe XContactId) :. (Maybe Int64, ConnStatus, ConnType, BoolInt, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, PQSupport, PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Int, Int, Maybe VersionChat, VersionChat, VersionChat)
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, BoolInt, Maybe GroupLinkId, Maybe XContactId) :. (Maybe Int64, ConnStatus, ConnType, BoolInt, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, PQSupport, PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Int, Int, Maybe VersionChat, VersionChat, VersionChat) :. Only (Maybe Text)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe BoolInt, Maybe GroupLinkId, Maybe XContactId) :. (Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe BoolInt, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQSupport, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe Int, Maybe VersionChat, Maybe VersionChat, Maybe VersionChat)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe BoolInt, Maybe GroupLinkId, Maybe XContactId) :. (Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe BoolInt, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQSupport, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe Int, Maybe VersionChat, Maybe VersionChat, Maybe VersionChat) :. Only (Maybe Text)
+
+-- Maybe Text column holds the surface form (e.g. "@alice.simplex"); reads
+-- that fail to parse degrade to Nothing rather than failing the whole row.
+decodeSimplexName :: Maybe Text -> Maybe SimplexNameInfo
+decodeSimplexName = (>>= eitherToMaybe . strDecode . encodeUtf8)
 
 toConnection :: VersionRangeChat -> ConnectionRow -> Connection
-toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, BI viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, connStatus, connType, BI contactConnInitiated, localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter, chatV, minVer, maxVer)) =
+toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, BI viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, connStatus, connType, BI contactConnInitiated, localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter, chatV, minVer, maxVer) :. Only simplexNameRaw) =
   Connection
     { connId,
       agentConnId = AgentConnId acId,
@@ -254,7 +261,8 @@ toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, BI vi
       pqRcvEnabled,
       authErrCounter,
       quotaErrCounter,
-      createdAt
+      createdAt,
+      simplexName = decodeSimplexName simplexNameRaw
     }
   where
     peerChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
@@ -264,8 +272,8 @@ toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, BI vi
     entityId_ ConnUserContact = userContactLinkId
 
 toMaybeConnection :: VersionRangeChat -> MaybeConnectionRow -> Maybe Connection
-toMaybeConnection vr ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, Just connStatus, Just connType, Just contactConnInitiated, Just localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just pqSupport, Just pqEncryption, pqSndEnabled_, pqRcvEnabled_, Just authErrCounter, Just quotaErrCounter, connChatVersion, Just minVer, Just maxVer)) =
-  Just $ toConnection vr ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled_, pqRcvEnabled_, authErrCounter, quotaErrCounter, connChatVersion, minVer, maxVer))
+toMaybeConnection vr ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, Just connStatus, Just connType, Just contactConnInitiated, Just localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just pqSupport, Just pqEncryption, pqSndEnabled_, pqRcvEnabled_, Just authErrCounter, Just quotaErrCounter, connChatVersion, Just minVer, Just maxVer) :. Only simplexNameRaw) =
+  Just $ toConnection vr ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled_, pqRcvEnabled_, authErrCounter, quotaErrCounter, connChatVersion, minVer, maxVer) :. Only simplexNameRaw)
 toMaybeConnection _ _ = Nothing
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQSupport -> IO Connection
@@ -312,7 +320,8 @@ createConnection_ db userId connType entityId acId connStatus connChatVersion pe
         pqSndEnabled = Nothing,
         pqRcvEnabled = Nothing,
         authErrCounter = 0,
-        quotaErrCounter = 0
+        quotaErrCounter = 0,
+        simplexName = Nothing
       }
   where
     ent ct = if connType == ct then entityId else Nothing
@@ -484,12 +493,12 @@ type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Ma
 
 type GroupDirectInvitationRow = (Maybe ConnReqInvitation, Maybe GroupId, Maybe GroupMemberId, Maybe Int64, BoolInt)
 
-type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
+type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64, Maybe Text)
 
 type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
+toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL, simplexNameRaw)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
@@ -497,7 +506,8 @@ toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, dis
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
       preparedContact = toPreparedContact preparedContactRow
       groupDirectInv = toGroupDirectInvitation groupDirectInvRow
-   in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
+      simplexName = decodeSimplexName simplexNameRaw
+   in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData, simplexName}
 
 toPreparedContact :: PreparedContactRow -> Maybe PreparedContact
 toPreparedContact (connFullLink, connShortLink, welcomeSharedMsgId, requestSharedMsgId) =
@@ -665,7 +675,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupKeysRow :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupKeysRow :. Only (Maybe Text) :. GroupMemberRow
 
 type PublicGroupAccessRow = (Maybe Text, Maybe Text, Maybe BoolInt, Maybe BoolInt)
 
@@ -674,7 +684,7 @@ type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, Ver
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences)
 
 toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. groupKeysRow :. userMemberRow) =
+toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. groupKeysRow :. Only simplexNameRaw :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
@@ -684,7 +694,8 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-   in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, customData, membersRequireAttention, viaGroupLinkUri, groupKeys}
+      simplexName = decodeSimplexName simplexNameRaw
+   in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, customData, membersRequireAttention, viaGroupLinkUri, groupKeys, simplexName}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
@@ -750,7 +761,7 @@ groupMemberQuery =
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version, c.simplex_name
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
@@ -785,6 +796,7 @@ groupInfoQueryFields =
       g.use_relays, g.relay_own_status,
       g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      g.simplex_name,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
