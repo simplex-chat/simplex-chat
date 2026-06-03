@@ -55,7 +55,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Web (renderWebPreviews)
+import Simplex.Chat.Web (webPreviewWorker)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -238,16 +238,14 @@ startChatController mainApp enableSndFiles = do
       ChatConfig {webPreviewConfig = cfg_} <- asks config
       case (relayUsers, cfg_) of
         (_ : _, Just cfg) -> do
-          wpAsync <- asks webPreviewAsync
-          readTVarIO wpAsync >>= \case
-            Nothing -> do
-              cc <- ask
-              a <- Just <$> async (liftIO $ forever $ do
-                forM_ relayUsers $ \relayUser ->
-                  renderWebPreviews cfg cc relayUser
-                threadDelay (webUpdateInterval cfg * 1000000))
-              atomically $ writeTVar wpAsync a
-            _ -> pure ()
+          wps_ <- asks webPreviewState
+          forM_ wps_ $ \WebPreviewState {webPreviewWorkerAsync} ->
+            readTVarIO webPreviewWorkerAsync >>= \case
+              Nothing -> do
+                cc <- ask
+                a <- Just <$> async (liftIO $ webPreviewWorker cfg cc relayUsers)
+                atomically $ writeTVar webPreviewWorkerAsync a
+              _ -> pure ()
         _ -> pure ()
     startExpireCIs user = whenM shouldExpireChats $ do
       startExpireCIThread user

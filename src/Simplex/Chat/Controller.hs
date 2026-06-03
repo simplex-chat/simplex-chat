@@ -39,6 +39,7 @@ import Data.Char (ord)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
+import Data.Set (Set)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.String
@@ -177,6 +178,27 @@ data WebPreviewConfig = WebPreviewConfig
     webUpdateInterval :: Int -- seconds
   }
 
+data WebPreviewState = WebPreviewState
+  { publishableGroupIds :: TVar (Map Int64 FilePath),
+    priorityRender :: TQueue Int64,
+    filesToRemove :: TQueue FilePath,
+    corsNeeded :: TVar Bool,
+    routinePending :: TVar (Set Int64),
+    wakeSignal :: TMVar (),
+    webPreviewWorkerAsync :: TVar (Maybe (Async ()))
+  }
+
+newWebPreviewState :: IO WebPreviewState
+newWebPreviewState = do
+  publishableGroupIds <- newTVarIO mempty
+  priorityRender <- newTQueueIO
+  filesToRemove <- newTQueueIO
+  corsNeeded <- newTVarIO False
+  routinePending <- newTVarIO mempty
+  wakeSignal <- newEmptyTMVarIO
+  webPreviewWorkerAsync <- newTVarIO Nothing
+  pure WebPreviewState {publishableGroupIds, priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal, webPreviewWorkerAsync}
+
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
     xftpServers :: NonEmpty (ServerCfg 'PXFTP)
@@ -264,7 +286,7 @@ data ChatController = ChatController
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
-    webPreviewAsync :: TVar (Maybe (Async ())),
+    webPreviewState :: Maybe WebPreviewState,
     chatRelayTests :: TMap ConnId RelayTest,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,

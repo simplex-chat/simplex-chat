@@ -183,7 +183,7 @@ newChatController
         deliveryJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
         relayGroupLinkChecksAsync <- newTVarIO Nothing
-        webPreviewAsync <- newTVarIO Nothing
+        webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
         chatRelayTests <- TM.emptyIO
         expireCIThreads <- TM.emptyIO
         expireCIFlags <- TM.emptyIO
@@ -228,7 +228,7 @@ newChatController
               deliveryJobWorkers,
               relayRequestWorkers,
               relayGroupLinkChecksAsync,
-              webPreviewAsync,
+              webPreviewState,
               chatRelayTests,
               expireCIThreads,
               expireCIFlags,
