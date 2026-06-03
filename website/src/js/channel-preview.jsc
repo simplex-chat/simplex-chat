@@ -114,8 +114,30 @@ const STYLE = `
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: inherit;
+}
+
+.simplex-preview-join-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.simplex-preview-join-btn .simplex-logo-light-bg {
+  display: none;
+}
+
+.simplex-preview-container.simplex-scheme-dark .simplex-preview-join-btn .simplex-logo-dark-bg,
+.dark .simplex-preview-container.simplex-scheme-site .simplex-preview-join-btn .simplex-logo-dark-bg {
+  display: none;
+}
+
+.simplex-preview-container.simplex-scheme-dark .simplex-preview-join-btn .simplex-logo-light-bg,
+.dark .simplex-preview-container.simplex-scheme-site .simplex-preview-join-btn .simplex-logo-light-bg {
+  display: inline;
 }
 
 .simplex-preview-join-btn:hover {
@@ -685,6 +707,18 @@ function tailSvg() {
   return '<svg width="9" height="16" viewBox="0 0 9 16" xmlns="http://www.w3.org/2000/svg"><path d="M9 0 L9 16 L0 16 Q9 11 9 0 Z" fill="currentColor"/></svg>';
 }
 
+function simplexLogoSvg() {
+  var darkBg = '<svg class="simplex-logo-dark-bg" viewBox="0 0 34 35" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    + '<path fill-rule="evenodd" clip-rule="evenodd" d="M3.03 8.61l5.592 5.592 5.748-5.747 2.797 2.796-5.749 5.747 5.593 5.593-2.874 2.874-5.593-5.593-5.748 5.748L0 22.823l5.748-5.748L.155 11.483l2.874-2.874z" fill="white"/>'
+    + '<path fill-rule="evenodd" clip-rule="evenodd" d="M14.092 25.516l2.852-2.852-.001-.001 5.704-5.702-5.595-5.594h.001l-2.798-2.797L8.66 2.975l2.852-2.851 5.594 5.594L22.81.016l2.797 2.797-5.704 5.703 5.596 5.594 5.704-5.703 2.797 2.797-5.704 5.703 5.596 5.595-2.852 2.851-5.595-5.594-5.704 5.703 5.596 5.594-2.852 2.852-5.595-5.595-5.703 5.703-2.798-2.797 5.704-5.703z" fill="url(#sp-logo-grad-d)"/>'
+    + '<defs><linearGradient id="sp-logo-grad-d" x1="12.838" y1="-0.678" x2="9.544" y2="31.449" gradientUnits="userSpaceOnUse"><stop stop-color="#01F1FF"/><stop offset="1" stop-color="#0197FF"/></linearGradient></defs></svg>';
+  var lightBg = '<svg class="simplex-logo-light-bg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    + '<path fill-rule="evenodd" clip-rule="evenodd" d="M3.03 8.594l5.592 5.592 5.748-5.748 2.797 2.797-5.749 5.747 5.593 5.593-2.874 2.874-5.593-5.593-5.748 5.748L0 22.807l5.748-5.748L.156 11.468l2.874-2.874z" fill="#023789"/>'
+    + '<path fill-rule="evenodd" clip-rule="evenodd" d="M14.092 25.5l2.851-2.851-.001-.001 5.704-5.702-5.595-5.594h.001l-2.798-2.797L8.66 2.96l2.851-2.852 5.595 5.595L22.81 0l2.797 2.797-5.704 5.703 5.596 5.594 5.704-5.703 2.797 2.797-5.704 5.703 5.596 5.595-2.852 2.851-5.595-5.594-5.704 5.703 5.596 5.595-2.852 2.851-5.595-5.594L5.386 34l-2.797-2.797 5.703-5.703z" fill="url(#sp-logo-grad-l)"/>'
+    + '<defs><linearGradient id="sp-logo-grad-l" x1="12.838" y1="-0.694" x2="9.543" y2="31.434" gradientUnits="userSpaceOnUse"><stop stop-color="#01F1FF"/><stop offset="1" stop-color="#0197FF"/></linearGradient></defs></svg>';
+  return darkBg + lightBg;
+}
+
 const FILE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>`;
 
 const VOICE_ICON_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>`;
@@ -855,7 +889,7 @@ function renderHeader(channel, channelLink, subscriberCount) {
   if (channelLink) {
     const btn = document.createElement('a');
     btn.className = 'simplex-preview-join-btn';
-    btn.textContent = 'Join';
+    btn.innerHTML = simplexLogoSvg() + 'Join';
     btn.href = channelLink;
     header.appendChild(btn);
   }
