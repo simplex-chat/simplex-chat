@@ -4,11 +4,25 @@ module ViewTests where
 
 import Data.Time
 import Simplex.Chat.View
+import Simplex.Messaging.Agent.Protocol (SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Test.Hspec
 
 viewTests :: Spec
 viewTests = do
   testRecent
+  testShareLinkStr
+
+testShareLinkStr :: Spec
+testShareLinkStr = describe "shareLinkStr" $ do
+  let alice = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])
+      grp = SimplexNameInfo NTPublicGroup (SimplexNameDomain TLDSimplex "team" [])
+      fallback = "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2Fexample"
+  it "uses simplex:/name URI for a contact's simplex name" $
+    shareLinkStr (Just alice) fallback `shouldBe` "simplex:/name@alice.simplex"
+  it "uses simplex:/name URI for a public group simplex name" $
+    shareLinkStr (Just grp) fallback `shouldBe` "simplex:/name#team.simplex"
+  it "falls back to the raw connection link when simplexName is Nothing" $
+    shareLinkStr Nothing fallback `shouldBe` fallback
 
 testRecent :: Spec
 testRecent = describe "recent" $ do

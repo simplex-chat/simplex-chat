@@ -1124,6 +1124,13 @@ simplexChatContact' = \case
   CLFull (CRContactUri crData) -> CLFull $ CRContactUri crData {crScheme = simplexChat}
   l@(CLShort _) -> l
 
+-- Prefer the canonical "simplex:/name@..." / "#..." URI when a
+-- SimplexNameInfo is present on the entity; fall back to the raw
+-- connection-link bytes.
+shareLinkStr :: Maybe SimplexNameInfo -> B.ByteString -> B.ByteString
+shareLinkStr (Just ni) _ = strEncode ni
+shareLinkStr Nothing fallback = fallback
+
 -- TODO [short links] show all settings
 viewAddressSettings :: AddressSettings -> [StyledString]
 viewAddressSettings AddressSettings {businessAddress, autoAccept, autoReply} = case autoAccept of
@@ -1138,10 +1145,10 @@ viewAddressSettings AddressSettings {businessAddress, autoAccept, autoReply} = c
   _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> GroupLink -> [StyledString]
-groupLink_ intro g GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
+groupLink_ intro g@GroupInfo {simplexName} GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
   [ intro,
     "",
-    plain $ maybe cReqStr strEncode shortLink,
+    plain $ shareLinkStr simplexName $ maybe cReqStr strEncode shortLink,
     "",
     "Anybody can connect to you and join group as " <> showRole acceptMemberRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
@@ -1215,12 +1222,12 @@ viewGroupRelays g relays =
     <> map showRelay relays
 
 viewGroupLinkRelaysUpdated :: GroupInfo -> GroupLink -> [GroupRelay] -> [StyledString]
-viewGroupLinkRelaysUpdated g groupLink relays =
+viewGroupLinkRelaysUpdated g@GroupInfo {simplexName} groupLink relays =
   [ttyFullGroup g <> ": group link relays updated, current relays:"]
     <> map showRelay relays
     <>
       [ "group link:",
-        plain $ maybe cReqStr strEncode shortLink
+        plain $ shareLinkStr simplexName $ maybe cReqStr strEncode shortLink
       ]
   where
     GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
@@ -1765,10 +1772,10 @@ smpProxyModeStr SPMNever _ = "private message routing disabled."
 smpProxyModeStr mode fallback = T.unpack $ safeDecodeUtf8 $ "private message routing mode: " <> strEncode mode <> ", fallback: " <> strEncode fallback
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, uiThemes, customData, simplexName} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> maybe [] viewConnectionStats stats
-    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact' l)]) contactLink
+    <> maybe [] (\l -> ["contact address: " <> plain (shareLinkStr simplexName (strEncode (simplexChatContact' l)))]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
