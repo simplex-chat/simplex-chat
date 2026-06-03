@@ -355,7 +355,7 @@ getGroupMembersByCursor db cxt user@User {userContactId} GroupInfo {groupId} cur
   map (toContactMember currentTs cxt user) <$>
     DB.query
       db
-      (groupMemberQuery <> " WHERE m.group_member_id IN ?")
+      (groupMemberQuery <> " WHERE m.group_member_id IN ? ORDER BY m.group_member_id ASC")
       (Only (In gmIds))
 #else
   rights <$> mapM (runExceptT . getGroupMemberById db cxt user) gmIds
