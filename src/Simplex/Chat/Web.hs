@@ -17,6 +17,7 @@ module Simplex.Chat.Web
     webPreviewWorker,
     renderWebPreviews,
     writeCorsConfig,
+    removeStaleFiles,
     channelContentChanged,
     channelProfileUpdated,
     channelRemoved,
@@ -78,7 +79,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Parsers (defaultJSON)
 import System.Directory (createDirectoryIfMissing, listDirectory, removeFile, renameFile)
-import System.FilePath (takeExtension, (</>))
+import System.FilePath (dropExtension, takeExtension, (</>))
 import UnliftIO.STM
 
 data WebFileInfo = WebFileInfo
@@ -398,7 +399,9 @@ writeCorsConfig entries path =
 
 removeStaleFiles :: FilePath -> S.Set FilePath -> IO ()
 removeStaleFiles dir activeFiles = do
-  let isPreviewFile f = takeExtension f == ".json" && all isBase64Url (takeWhile (/= '.') f)
+  let isPreviewFile f =
+        let base = dropExtension f
+         in takeExtension f == ".json" && not (null base) && all isBase64Url base
       isBase64Url c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_'
   allFiles <- S.filter isPreviewFile . S.fromList <$> listDirectory dir
   mapM_ (\f -> removeFile (dir </> f)) $ S.difference allFiles activeFiles

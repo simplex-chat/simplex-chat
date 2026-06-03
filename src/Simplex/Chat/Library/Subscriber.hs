@@ -870,6 +870,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else pure gInfo
               pure (m {memberStatus = GSMemConnected}, gInfo')
             toView $ CEvtUserJoinedGroup user gInfo' m'
+            when (isRelay membership) $ do
+              cc <- ask
+              atomically $ channelProfileUpdated cc groupId groupProfile
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             -- Create e2ee, feature and group description chat items only on first connected relay
             ifM
