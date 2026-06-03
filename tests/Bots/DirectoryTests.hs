@@ -96,7 +96,7 @@ directoryServiceTests = do
     it "should update subscriber count periodically" testLinkCheckUpdatesCount
 
 directoryProfile :: Profile
-directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
+directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing}
 
 mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> Maybe FilePath -> DirectoryOpts
 mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =

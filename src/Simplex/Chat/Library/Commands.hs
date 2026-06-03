@@ -5378,7 +5378,7 @@ chatCommandP =
         quoted = A.char '\'' *> A.takeTill (== '\'') <* A.char '\''
     newUserP userChatRelay = do
       (cName, shortDescr) <- profileNameDescr
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
@@ -5386,7 +5386,7 @@ chatCommandP =
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

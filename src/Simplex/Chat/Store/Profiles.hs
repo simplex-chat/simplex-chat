@@ -366,7 +366,7 @@ getUserContactProfiles db User {userId} =
       (Only userId)
   where
     toContactProfile :: (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe Preferences) -> Profile
-    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, peerType, preferences}
+    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, peerType, preferences, badge = Nothing}
 
 createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> ExceptT StoreError IO ()
 createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode =

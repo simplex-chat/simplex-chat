@@ -6,6 +6,8 @@
 
 module Simplex.Chat.Badges
   ( BadgeType (..),
+    BadgeStatus (..),
+    LocalBadge (..),
     BadgePurchase (..),
     BadgeMasterKey (..),
     BadgeRequest (..),
@@ -19,7 +21,7 @@ module Simplex.Chat.Badges
     verifyBadgeSignature,
     generateBadgeProof,
     verifyBadge,
-    isBadgeExpired,
+    mkBadgeStatus,
   ) where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
@@ -33,7 +35,7 @@ import Data.Time.Clock (UTCTime)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 
 -- Badge type
 
@@ -65,6 +67,23 @@ instance ToJSON BadgeType where
 
 instance FromJSON BadgeType where
   parseJSON = textParseJSON "BadgeType"
+
+-- Badge status and local badge
+
+data BadgeStatus = BSActive | BSExpired | BSFailed
+  deriving (Eq, Show)
+
+data LocalBadge = LocalBadge
+  { badgeStatus :: BadgeStatus,
+    badge :: SupporterBadge
+  }
+  deriving (Eq, Show)
+
+mkBadgeStatus :: UTCTime -> Bool -> SupporterBadge -> BadgeStatus
+mkBadgeStatus now verified SupporterBadge {badgeExpiry}
+  | not verified = BSFailed
+  | maybe False (now >) badgeExpiry = BSExpired
+  | otherwise = BSActive
 
 -- Payment proof
 
@@ -170,11 +189,10 @@ verifyBadge :: BBSPublicKey -> SupporterBadge -> IO Bool
 verifyBadge pk SupporterBadge {proof, presHeader, badgeExpiry, badgeType} =
   bbsProofVerify pk proof bbsBadgeHeader presHeader bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeDisclosedMessages badgeExpiry badgeType)
 
--- Check if badge has expired
+-- JSON
 
-isBadgeExpired :: UTCTime -> SupporterBadge -> Bool
-isBadgeExpired now SupporterBadge {badgeExpiry} = maybe False (now >) badgeExpiry
-
--- JSON for profile transmission
+$(JQ.deriveJSON (enumJSON $ dropPrefix "BS") ''BadgeStatus)
 
 $(JQ.deriveJSON defaultJSON ''SupporterBadge)
+
+$(JQ.deriveJSON defaultJSON ''LocalBadge)

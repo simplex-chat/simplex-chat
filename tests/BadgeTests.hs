@@ -17,8 +17,8 @@ badgeTests = do
   it "should reject badge with tampered type" testTamperedType
   it "should reject badge with tampered expiry" testTamperedExpiry
   it "should reject badge with wrong server key" testWrongKey
-  it "should check expiry dates correctly" testExpiryCheck
-  it "should treat lifetime badges as never expired" testLifetimeBadge
+  it "should compute badge status correctly" testExpiryCheck
+  it "should treat lifetime badges as always active" testLifetimeBadge
   it "should accept unknown badge types" testUnknownBadgeType
 
 testFullWorkflow :: IO ()
@@ -58,16 +58,17 @@ testExpiryCheck :: IO ()
 testExpiryCheck = do
   now <- getCurrentTime
   (_, past) <- issueBadgeProof BTSupporter (Just pastTime)
-  isBadgeExpired now past `shouldBe` True
+  mkBadgeStatus now True past `shouldBe` BSExpired
   (_, future) <- issueBadgeProof BTSupporter (Just futureTime)
-  isBadgeExpired now future `shouldBe` False
+  mkBadgeStatus now True future `shouldBe` BSActive
+  mkBadgeStatus now False future `shouldBe` BSFailed
 
 testLifetimeBadge :: IO ()
 testLifetimeBadge = do
   now <- getCurrentTime
   (pk, badge) <- issueBadgeProof BTCFInvestor Nothing
   verifyBadge pk badge >>= (`shouldBe` True)
-  isBadgeExpired now badge `shouldBe` False
+  mkBadgeStatus now True badge `shouldBe` BSActive
 
 testUnknownBadgeType :: IO ()
 testUnknownBadgeType = do

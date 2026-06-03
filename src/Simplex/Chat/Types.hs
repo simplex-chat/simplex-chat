@@ -47,6 +47,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
+import Simplex.Chat.Badges (LocalBadge, SupporterBadge)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -685,7 +686,8 @@ data Profile = Profile
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
-    peerType :: Maybe ChatPeerType
+    peerType :: Maybe ChatPeerType,
+    badge :: Maybe SupporterBadge
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -718,7 +720,7 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -758,6 +760,7 @@ data LocalProfile = LocalProfile
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
+    badge :: Maybe LocalBadge,
     localAlias :: LocalAlias
   }
   deriving (Eq, Show)
@@ -767,11 +770,11 @@ localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} localAlias =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localAlias}
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = Nothing, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = Nothing}
 
 data GroupType
   = GTChannel
