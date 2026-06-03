@@ -1310,13 +1310,13 @@ ON groups(
   relay_request_group_link
 )
 WHERE relay_request_group_link IS NOT NULL;
-CREATE INDEX idx_contacts_simplex_name
+CREATE UNIQUE INDEX idx_contacts_simplex_name
 ON contacts(
   user_id,
   simplex_name
 )
 WHERE simplex_name IS NOT NULL;
-CREATE INDEX idx_groups_simplex_name
+CREATE UNIQUE INDEX idx_groups_simplex_name
 ON groups(
   user_id,
   simplex_name

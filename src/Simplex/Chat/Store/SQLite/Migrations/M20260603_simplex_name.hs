@@ -12,11 +12,11 @@ ALTER TABLE contacts ADD COLUMN simplex_name TEXT;
 ALTER TABLE groups ADD COLUMN simplex_name TEXT;
 ALTER TABLE connections ADD COLUMN simplex_name TEXT;
 
-CREATE INDEX idx_contacts_simplex_name
+CREATE UNIQUE INDEX idx_contacts_simplex_name
   ON contacts(user_id, simplex_name)
   WHERE simplex_name IS NOT NULL;
 
-CREATE INDEX idx_groups_simplex_name
+CREATE UNIQUE INDEX idx_groups_simplex_name
   ON groups(user_id, simplex_name)
   WHERE simplex_name IS NOT NULL;
 |]
