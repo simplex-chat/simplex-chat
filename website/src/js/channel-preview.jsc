@@ -938,6 +938,15 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
   }
 
   if (channelLink) {
+    if (!isMobile.any()) {
+      const openBtn = document.createElement('a');
+      openBtn.className = 'simplex-preview-open-btn';
+      openBtn.style.marginTop = '31px';
+      openBtn.innerHTML = 'Join in SimpleX Chat app' + simplexLogoSvg();
+      openBtn.href = channelLink;
+      container.appendChild(openBtn);
+    }
+
     const showJoinSection = !isMobile.any() || showAppBadges;
     if (showJoinSection) {
       const divider = document.createElement('div');
