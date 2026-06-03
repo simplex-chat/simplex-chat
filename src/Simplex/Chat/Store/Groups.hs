@@ -49,9 +49,11 @@ module Simplex.Chat.Store.Groups
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
+    getGroupIdBySimplexName,
     getGroupMemberIdByName,
     getActiveMembersByName,
     getGroupInfoByName,
+    getGroupInfoBySimplexName,
     getGroupMember,
     getHostMember,
     getMentionedGroupMember,
@@ -1042,6 +1044,17 @@ getGroupInfoByName :: DB.Connection -> VersionRangeChat -> User -> GroupName -> 
 getGroupInfoByName db vr user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db vr user gId
+
+getGroupInfoBySimplexName :: DB.Connection -> VersionRangeChat -> User -> SimplexNameInfo -> ExceptT StoreError IO (Maybe GroupInfo)
+getGroupInfoBySimplexName db vr user ni =
+  liftIO (getGroupIdBySimplexName db user ni) >>= \case
+    Nothing -> pure Nothing
+    Just gId -> Just <$> getGroupInfo db vr user gId
+
+getGroupIdBySimplexName :: DB.Connection -> User -> SimplexNameInfo -> IO (Maybe GroupId)
+getGroupIdBySimplexName db User {userId} ni =
+  maybeFirstRow fromOnly $
+    DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND simplex_name = ?" (userId, ni)
 
 getGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db vr user@User {userId} groupId groupMemberId =

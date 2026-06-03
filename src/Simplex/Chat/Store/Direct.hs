@@ -46,9 +46,11 @@ module Simplex.Chat.Store.Direct
     deleteContactWithoutGroups,
     getDeletedContacts,
     getContactByName,
+    getContactBySimplexName,
     getContact,
     getContactViaShortLinkToConnect,
     getContactIdByName,
+    getContactIdBySimplexName,
     updateContactProfile,
     updateContactUserPreferences,
     updateContactAlias,
@@ -762,6 +764,23 @@ getContactByName :: DB.Connection -> VersionRangeChat -> User -> ContactName -> 
 getContactByName db vr user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
   getContact db vr user cId
+
+getContactBySimplexName :: DB.Connection -> VersionRangeChat -> User -> SimplexNameInfo -> ExceptT StoreError IO (Maybe Contact)
+getContactBySimplexName db vr user ni =
+  liftIO (getContactIdBySimplexName db user ni) >>= \case
+    Nothing -> pure Nothing
+    Just cId -> Just <$> getContact db vr user cId
+
+getContactIdBySimplexName :: DB.Connection -> User -> SimplexNameInfo -> IO (Maybe Int64)
+getContactIdBySimplexName db User {userId} ni =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT contact_id FROM contacts
+        WHERE user_id = ? AND simplex_name = ? AND deleted = 0
+      |]
+      (userId, ni)
 
 getUserContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
 getUserContacts db vr user@User {userId} = do
