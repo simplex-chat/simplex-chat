@@ -782,6 +782,7 @@ toBusinessChatInfo _ = Nothing
 groupInfoQuery :: Query
 groupInfoQuery = groupInfoQueryFields <> " " <> groupInfoQueryFrom
 
+-- Mirrored in Store/Connections.hs getGroupAndMember_ — keep column lists in sync.
 groupInfoQueryFields :: Query
 groupInfoQueryFields =
   [sql|
