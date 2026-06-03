@@ -3910,10 +3910,15 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     bucketSize <- asks $ deliveryBucketSize . config
                     senders <- withStore' $ \db ->
                       fmap catMaybes . forM senderGMIds $ \sId ->
-                        fmap eitherToMaybe . runExceptT $ do
+                        fmap (join . eitherToMaybe) . runExceptT $ do
                           sender <- getNonRemovedMemberById db vr user sId
-                          vec <- getMemberRelationsVector db sender
-                          pure (sender, vec)
+                          -- owners are already known to every member (group link + owner-intro in introduceInChannel),
+                          -- so we never disseminate their profile (redundant, and races with joins re-announcing the owner)
+                          if memberRole' sender == GROwner
+                            then pure Nothing
+                            else do
+                              vec <- getMemberRelationsVector db sender
+                              pure $ Just (sender, vec)
                     let missingSenders = length senderGMIds - length senders
                     when (missingSenders > 0) $
                       logInfo $ "delivery job " <> tshow jobId <> ": " <> tshow missingSenders <> " senders missing; skipping their profile prepend"
