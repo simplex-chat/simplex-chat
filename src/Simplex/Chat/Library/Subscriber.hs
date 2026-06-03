@@ -2945,7 +2945,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
-          ct <- withStore $ \db -> createDirectContact db vr user conn' p
+          let Connection {simplexName} = conn'
+          ct <- withStore $ \db -> createDirectContact db vr user conn' p simplexName
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do

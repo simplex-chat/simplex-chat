@@ -386,7 +386,7 @@ createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMo
       "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
       (userId, cReq, shortLink, slDataSet, slDataSet, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff Nothing
 
 getUserAddressConnection :: DB.Connection -> VersionRangeChat -> User -> ExceptT StoreError IO Connection
 getUserAddressConnection db vr User {userId} = do

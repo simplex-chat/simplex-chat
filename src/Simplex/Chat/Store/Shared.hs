@@ -276,8 +276,8 @@ toMaybeConnection vr ((Just connId, Just agentConnId, Just connLevel, viaContact
   Just $ toConnection vr ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled_, pqRcvEnabled_, authErrCounter, quotaErrCounter, connChatVersion, minVer, maxVer) :. Only simplexNameRaw)
 toMaybeConnection _ _ = Nothing
 
-createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQSupport -> IO Connection
-createConnection_ db userId connType entityId acId connStatus connChatVersion peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode pqSup = do
+createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQSupport -> Maybe SimplexNameInfo -> IO Connection
+createConnection_ db userId connType entityId acId connStatus connChatVersion peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode pqSup simplexName = do
   viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
     maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL" (userId, ucLinkId)
   let viaGroupLink = isJust viaLinkGroupId
@@ -287,12 +287,12 @@ createConnection_ db userId connType entityId acId connStatus connChatVersion pe
       INSERT INTO connections (
         user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, custom_user_profile_id, conn_status, conn_type,
         contact_id, group_member_id, user_contact_link_id, created_at, updated_at,
-        conn_chat_version, peer_chat_min_version, peer_chat_max_version, to_subscribe, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        conn_chat_version, peer_chat_min_version, peer_chat_max_version, to_subscribe, pq_support, pq_encryption, simplex_name
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, connLevel, viaContact, viaUserContactLink, BI viaGroupLink, customUserProfileId, connStatus, connType)
         :. (ent ConnContact, ent ConnMember, ent ConnUserContact, currentTs, currentTs)
-        :. (connChatVersion, minV, maxV, BI (subMode == SMOnlyCreate), pqSup, pqSup)
+        :. (connChatVersion, minV, maxV, BI (subMode == SMOnlyCreate), pqSup, pqSup, simplexName)
     )
   connId <- insertedRowId db
   pure
@@ -321,7 +321,7 @@ createConnection_ db userId connType entityId acId connStatus connChatVersion pe
         pqRcvEnabled = Nothing,
         authErrCounter = 0,
         quotaErrCounter = 0,
-        simplexName = Nothing
+        simplexName
       }
   where
     ent ct = if connType == ct then entityId else Nothing
@@ -418,10 +418,10 @@ setCommandConnId db User {userId} cmdId connId = do
 createContact :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
 createContact db user profile = do
   currentTs <- liftIO getCurrentTime
-  void $ createContact_ db user profile emptyChatPrefs Nothing "" currentTs
+  void $ createContact_ db user profile emptyChatPrefs Nothing "" currentTs Nothing
 
-createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
-createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, peerType, preferences} ctUserPreferences prepared localAlias currentTs =
+createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> Maybe SimplexNameInfo -> ExceptT StoreError IO ContactId
+createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, peerType, preferences} ctUserPreferences prepared localAlias currentTs simplexName =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -430,8 +430,8 @@ createContact_ db User {userId} Profile {displayName, fullName, shortDescr, imag
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-      ((profileId, ctUserPreferences, ldn, userId, currentTs, currentTs, currentTs, BI True) :. toPreparedContactRow prepared)
+      "INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id, simplex_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((profileId, ctUserPreferences, ldn, userId, currentTs, currentTs, currentTs, BI True) :. toPreparedContactRow prepared :. Only simplexName)
     contactId <- insertedRowId db
     pure $ Right contactId
 

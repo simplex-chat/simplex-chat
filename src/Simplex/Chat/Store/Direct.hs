@@ -110,7 +110,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -396,12 +396,12 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> VersionRangeChat -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> ExceptT StoreError IO Contact
-createPreparedContact db vr user p connLinkToConnect welcomeSharedMsgId = do
+createPreparedContact :: DB.Connection -> VersionRangeChat -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe SimplexNameInfo -> ExceptT StoreError IO Contact
+createPreparedContact db vr user p connLinkToConnect welcomeSharedMsgId simplexName = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences prepared "" currentTs
+  contactId <- createContact_ db user p ctUserPreferences prepared "" currentTs simplexName
   getContact db vr user contactId
 
 updatePreparedContactUser :: DB.Connection -> VersionRangeChat -> User -> Contact -> User -> ExceptT StoreError IO Contact
@@ -442,11 +442,11 @@ updatePreparedContactUser
         safeDeleteLDN db user oldLDN
       getContact db vr newUser contactId
 
-createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db vr user Connection {connId, localAlias} p = do
+createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -> Profile -> Maybe SimplexNameInfo -> ExceptT StoreError IO Contact
+createDirectContact db vr user Connection {connId, localAlias} p simplexName = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs
+  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs simplexName
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   getContact db vr user contactId
 
@@ -879,7 +879,7 @@ createAcceptedContactConn db User {userId} uclId_ contactId agentConnId connChat
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId currentTs p
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
-  createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing uclId_ customUserProfileId 0 currentTs subMode pqSup
+  createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing uclId_ customUserProfileId 0 currentTs subMode pqSup Nothing
 
 updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactAccepted db User {userId} Contact {contactId} contactUsed =
