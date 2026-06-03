@@ -127,17 +127,17 @@ const STYLE = `
   margin-left: 2px;
 }
 
-.simplex-preview-join-btn .simplex-logo-light-bg {
+.simplex-preview-container .simplex-logo-light-bg {
   display: none;
 }
 
-.simplex-preview-container.simplex-scheme-dark .simplex-preview-join-btn .simplex-logo-dark-bg,
-.dark .simplex-preview-container.simplex-scheme-site .simplex-preview-join-btn .simplex-logo-dark-bg {
+.simplex-preview-container.simplex-scheme-dark .simplex-logo-dark-bg,
+.dark .simplex-preview-container.simplex-scheme-site .simplex-logo-dark-bg {
   display: none;
 }
 
-.simplex-preview-container.simplex-scheme-dark .simplex-preview-join-btn .simplex-logo-light-bg,
-.dark .simplex-preview-container.simplex-scheme-site .simplex-preview-join-btn .simplex-logo-light-bg {
+.simplex-preview-container.simplex-scheme-dark .simplex-logo-light-bg,
+.dark .simplex-preview-container.simplex-scheme-site .simplex-logo-light-bg {
   display: inline;
 }
 
@@ -627,13 +627,15 @@ const STYLE = `
 }
 
 .simplex-preview-open-btn {
-  display: inline-block;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: var(--sp-btn);
   color: var(--sp-btn-text, #fff);
   border: none;
   border-radius: 34px;
-  padding: 12px 32px;
+  padding: 12px 12px 12px 32px;
   height: 44px;
   font-size: 16px;
   line-height: 19px;
@@ -643,6 +645,13 @@ const STYLE = `
   font-family: inherit;
   margin-top: 3px;
 }
+
+.simplex-preview-open-btn svg {
+  width: 17.6px;
+  height: 17.6px;
+  flex-shrink: 0;
+}
+
 
 .simplex-preview-open-btn:hover {
   background: var(--sp-btn-hover);
@@ -1068,7 +1077,7 @@ function renderMobileConversion(container, channelLink, showAppBadges) {
 
   const openBtn = document.createElement('a');
   openBtn.className = 'simplex-preview-open-btn';
-  openBtn.textContent = 'Join in SimpleX Chat app';
+  openBtn.innerHTML = 'Join in SimpleX Chat app' + simplexLogoSvg();
   openBtn.href = channelLink;
   container.appendChild(openBtn);
 }
