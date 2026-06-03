@@ -149,6 +149,31 @@ _defaultNtfServers =
 maxImageSize :: Integer
 maxImageSize = 261120 * 2 -- auto-receive on mobiles
 
+-- matches the cap mobile and desktop UIs pass to resizeImageToStrSize for profile images
+maxProfileImageSize :: Int
+maxProfileImageSize = 12500
+
+checkProfileImageSize :: Maybe ImageData -> CM ()
+checkProfileImageSize = mapM_ $ \(ImageData t) ->
+  let size = T.length t
+   in when (size > maxProfileImageSize) $ throwCmdError $ "Profile image is too large " <> show size
+
+checkProfileSize :: Profile -> CM ()
+checkProfileSize profile = do
+  vr <- chatVersionRange
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = XInfo profile}
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded _ -> pure ()
+    ECMLarge -> throwCmdError "Profile is too large"
+
+checkGroupProfileSize :: GroupProfile -> CM ()
+checkGroupProfileSize gProfile = do
+  vr <- chatVersionRange
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = XGrpInfo gProfile}
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded _ -> pure ()
+    ECMLarge -> throwCmdError "Group profile is too large"
+
 imageExtensions :: [String]
 imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
 
@@ -349,7 +374,10 @@ processChatCommand :: VersionRangeChat -> NetworkRequestMode -> ChatCommand -> C
 processChatCommand vr nm = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, pastTimestamp, userChatRelay, clientService} -> do
-    forM_ profile $ \Profile {displayName} -> checkValidName displayName
+    forM_ profile $ \p@Profile {displayName, image} -> do
+      checkValidName displayName
+      checkProfileImageSize image
+      checkProfileSize p
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
     users <- withFastStore' getUsers
@@ -2264,7 +2292,7 @@ processChatCommand vr nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db vr user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APIListContacts userId
-  APICreateMyAddress userId -> withUserId userId $ \user@User {userChatRelay} -> do
+  APICreateMyAddress userId server_ -> withUserId userId $ \user@User {userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
@@ -2275,13 +2303,13 @@ processChatCommand vr nm = \case
           | isTrue userChatRelay = relayShortLinkData (userProfileDirect user Nothing Nothing True)
           | otherwise = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
-    (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
+    (connId, ccLink) <- withAgent $ \a -> createConnectionOnServer a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing server_ IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     let ccLink'' = if isTrue userChatRelay then setShortLinkType CCTRelay ccLink' else ccLink'
     withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode
     pure $ CRUserContactLinkCreated user ccLink''
   CreateMyAddress -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APICreateMyAddress userId
+    processChatCommand vr nm $ APICreateMyAddress userId Nothing
   APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do
     conn <- withFastStore $ \db -> getUserAddressConnection db vr user
     withChatLock "deleteMyAddress" $ do
@@ -3710,10 +3738,12 @@ processChatCommand vr nm = \case
     updateProfile :: User -> Profile -> CM ChatResponse
     updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
     updateProfile_ :: User -> Profile -> Bool -> CM User -> CM ChatResponse
-    updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n'} shouldUpdateAddressData updateUser
+    updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
           when (n /= n') $ checkValidName n'
+          checkProfileImageSize img'
+          checkProfileSize p'
           -- read contacts before user update to correctly merge preferences
           contacts <- withFastStore' $ \db -> getUserContacts db vr user
           user' <- updateUser
@@ -3795,9 +3825,11 @@ processChatCommand vr nm = \case
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> CM ChatResponse
-    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n'} = do
+    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n', image = img'} = do
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
+      checkProfileImageSize img'
+      checkGroupProfileSize p'
       gInfo' <- withStore $ \db -> updateGroupProfile db user gInfo p'
       msg <- case businessChat of
         Just BusinessChatInfo {businessId} -> do
@@ -3938,8 +3970,10 @@ processChatCommand vr nm = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
     newGroup :: User -> IncognitoEnabled -> GroupProfile -> Bool -> MemberId -> Maybe GroupKeys -> Maybe Int64 -> CM GroupInfo
-    newGroup user incognito gProfile@GroupProfile {displayName} useRelays memberId groupKeys_ publicMemberCount_ = do
+    newGroup user incognito gProfile@GroupProfile {displayName, image} useRelays memberId groupKeys_ publicMemberCount_ = do
       checkValidName displayName
+      checkProfileImageSize image
+      checkGroupProfileSize gProfile
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       withFastStore $ \db -> createNewGroup db vr user gProfile incognitoProfile useRelays memberId groupKeys_ publicMemberCount_
@@ -5243,7 +5277,7 @@ chatCommandP =
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/_connect contact " *> (APIConnectContactViaAddress <$> A.decimal <*> incognitoOnOffP <* A.space <*> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),
-      "/_address " *> (APICreateMyAddress <$> A.decimal),
+      "/_address " *> (APICreateMyAddress <$> A.decimal <*> optional (A.space *> strP)),
       ("/address" <|> "/ad") $> CreateMyAddress,
       "/_delete_address " *> (APIDeleteMyAddress <$> A.decimal),
       ("/delete_address" <|> "/da") $> DeleteMyAddress,

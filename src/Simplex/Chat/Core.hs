@@ -17,12 +17,17 @@ import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
+import Data.Char (toLower)
 import Data.List (find)
+import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
+import System.FilePath (takeExtension)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
@@ -43,7 +48,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath, maintenance}, createBot} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath, maintenance}, createBot, userDisplayName, userImageFile} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -65,7 +70,21 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
           exitFailure
         Right cc -> do
           forM_ (preStartHook chatHooks) ($ cc)
-          u <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot) pure u_
+          img_ <- mapM loadImageFile userImageFile
+          u <- case u_ of
+            Nothing -> noMaintenance >> createActiveUser cc coreOptions createBot userDisplayName img_
+            Just u@User {localDisplayName} -> do
+              forM_ userDisplayName $ \name ->
+                when (localDisplayName /= name) $ do
+                  putStrLn $ "Active user display name " <> show localDisplayName <> " does not match --user-display-name " <> show name
+                  exitFailure
+              case img_ of
+                Nothing -> pure u
+                Just img ->
+                  execChatCommand' (UpdateProfileImage (Just img)) 0 `runReaderT` cc >>= \case
+                    Right (CRUserProfileUpdated u' _ _ _) -> pure u'
+                    Right (CRUserProfileNoChange u') -> pure u'
+                    r -> printResponseEvent (Nothing, Nothing) (config cc) r >> exitFailure
           unless testView $ putStrLn $ "Current user: " <> userStr u
           runSimplexChat cfg opts u cc chat
     noMaintenance = when maintenance $ do
@@ -73,11 +92,11 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       exitFailure
 
 runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
+runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc
-      when (chatRelay && not testView) $ askCreateRelayAddress cc u
+      when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer
       forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc
       waitEither_ a1 a2
@@ -120,34 +139,36 @@ selectActiveUser CoreChatOpts {chatRelay} st users
                     let user = users !! (n - 1)
                      in Just <$> withTransaction st (`setActiveUser` user)
 
-createActiveUser :: ChatController -> CoreChatOpts -> Maybe CreateBotOpts -> IO User
-createActiveUser cc CoreChatOpts {chatRelay} = \case
+createActiveUser :: ChatController -> CoreChatOpts -> Maybe CreateBotOpts -> Maybe Text -> Maybe ImageData -> IO User
+createActiveUser cc CoreChatOpts {chatRelay} createBot_ userDisplayName_ img_ = case createBot_ of
   Just CreateBotOpts {botDisplayName, allowFiles, clientService} -> do
     let preferences = if allowFiles then Nothing else Just emptyChatPrefs {files = Just FilesPreference {allow = FANo}}
     createUser exitFailure clientService $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
-  Nothing -> putStrLn noProfile >> loop
-    where
-      noProfile
-        | chatRelay =
-            "No chat relay user profile found, it will be created now.\n\
-            \Please choose chat relay display name."
-        | otherwise =
-            "No user profiles found, it will be created now.\n\
-            \Please choose your display name.\n\
-            \It will be sent to your contacts when you connect.\n\
-            \It is only stored on your device and you can change it later."
-      loop = do
-        displayName <- T.pack <$> withPrompt "display name" getLine
-        createUser loop False $ mkProfile displayName
+  Nothing -> case userDisplayName_ of
+    Just displayName -> createUser exitFailure False $ (mkProfile displayName :: Profile) {image = img_}
+    Nothing -> putStrLn prompt >> loop
+      where
+        prompt
+          | chatRelay =
+              "No chat relay user profile found, it will be created now.\n\
+              \Please choose chat relay display name."
+          | otherwise =
+              "No user profiles found, it will be created now.\n\
+              \Please choose your display name.\n\
+              \It will be sent to your contacts when you connect.\n\
+              \It is only stored on your device and you can change it later."
   where
+    loop = do
+      displayName <- T.pack <$> withPrompt "display name" getLine
+      createUser loop False $ mkProfile displayName
     mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
     createUser onError clientService p =
       execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, userChatRelay = BoolDef chatRelay, clientService = BoolDef clientService}) 0 `runReaderT` cc >>= \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 
-askCreateRelayAddress :: ChatController -> User -> IO ()
-askCreateRelayAddress cc@ChatController {chatStore} user =
+askCreateRelayAddress :: ChatController -> User -> Maybe SMPServerWithAuth -> IO ()
+askCreateRelayAddress cc@ChatController {chatStore} user@User {userId} server_ =
   withTransaction chatStore (\db -> runExceptT $ getUserAddress db user) >>= \case
     Right _ -> pure ()
     Left SEUserContactLinkNotFound -> promptCreate
@@ -157,7 +178,7 @@ askCreateRelayAddress cc@ChatController {chatStore} user =
     promptCreate = do
       ok <- onOffPrompt "Create relay address" True
       when ok $
-        execChatCommand' CreateMyAddress 0 `runReaderT` cc >>= \case
+        execChatCommand' (APICreateMyAddress userId server_) 0 `runReaderT` cc >>= \case
           Right (CRUserContactLinkCreated _ address) -> do
             putStrLn "Chat relay address is created:"
             putStrLn $ addressStr address
@@ -191,6 +212,17 @@ onOffPrompt prompt def =
       "n" -> pure False
       "N" -> pure False
       _ -> putStrLn "Invalid input, please enter 'y' or 'n'" >> onOffPrompt prompt def
+
+loadImageFile :: FilePath -> IO ImageData
+loadImageFile path = case map toLower (takeExtension path) of
+  ".png" -> readAs "image/png"
+  ".jpg" -> readAs "image/jpg"
+  ".jpeg" -> readAs "image/jpg"
+  ext -> putStrLn ("--user-image-file: unsupported image extension " <> show ext <> " (only .png, .jpg, .jpeg)") >> exitFailure
+  where
+    readAs mime = do
+      bs <- BS.readFile path
+      pure $ ImageData $ "data:" <> mime <> ";base64," <> decodeUtf8 (B64.encode bs)
 
 userStr :: User -> String
 userStr User {localDisplayName, profile = LocalProfile {fullName}} =

@@ -22,7 +22,7 @@ where
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -50,7 +50,9 @@ data ChatOpts = ChatOpts
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     markRead :: Bool,
-    createBot :: Maybe CreateBotOpts
+    createBot :: Maybe CreateBotOpts,
+    userDisplayName :: Maybe Text,
+    userImageFile :: Maybe FilePath
   }
 
 data CoreChatOpts = CoreChatOpts
@@ -66,6 +68,7 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
+    chatRelayServer :: Maybe SMPServerWithAuth,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
@@ -240,6 +243,14 @@ coreChatOptsP appDir defaultDbName = do
       ( long "relay"
           <> help "Run as a chat relay client"
       )
+  chatRelayServer <-
+    optional $
+      option
+        strParse
+        ( long "relay-address-server"
+            <> metavar "SERVER"
+            <> help "SMP server to use for chat relay address link (requires --relay)"
+        )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -283,6 +294,9 @@ coreChatOptsP appDir defaultDbName = do
         tbqSize,
         deviceName,
         chatRelay,
+        chatRelayServer = case chatRelayServer of
+          Just _ | not chatRelay -> error "--relay-address-server option requires --relay option"
+          _ -> chatRelayServer,
         highlyAvailable,
         yesToUpMigrations,
         migrationBackupPath,
@@ -396,6 +410,20 @@ chatOptsP appDir defaultDbName = do
       ( long "create-bot-client-service"
           <> help "Flag for created bot to use client service certificate"
       )
+  userDisplayName <-
+    optional $
+      strOption
+        ( long "user-display-name"
+            <> metavar "NAME"
+            <> help "Use existing active user with this display name, or create one on the first start (incompatible with --create-bot-display-name)"
+        )
+  userImageFile <-
+    optional $
+      strOption
+        ( long "user-image-file"
+            <> metavar "FILE"
+            <> help "Set user profile image from .png/.jpg file (requires --user-display-name); does not notify existing contacts"
+        )
   pure
     ChatOpts
       { coreOptions,
@@ -411,11 +439,17 @@ chatOptsP appDir defaultDbName = do
         muteNotifications,
         markRead,
         createBot = case createBotDisplayName of
-          Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles, clientService = createBotClientService}
+          Just botDisplayName
+            | isJust userDisplayName -> error "--user-display-name and --create-bot-display-name are mutually exclusive"
+            | otherwise -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles, clientService = createBotClientService}
           Nothing
             | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
             | createBotClientService -> error "--create-bot-client-service option requires --create-bot-name option"
-            | otherwise -> Nothing
+            | otherwise -> Nothing,
+        userDisplayName,
+        userImageFile = case userImageFile of
+          Just _ | isNothing userDisplayName -> error "--user-image-file option requires --user-display-name option"
+          _ -> userImageFile
       }
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]

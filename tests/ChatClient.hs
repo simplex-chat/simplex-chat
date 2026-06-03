@@ -120,7 +120,9 @@ testOpts =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = True,
-      createBot = Nothing
+      createBot = Nothing,
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }
 
 testCoreOpts :: CoreChatOpts
@@ -153,6 +155,7 @@ testCoreOpts =
       tbqSize = 16,
       deviceName = Nothing,
       chatRelay = False,
+      chatRelayServer = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,

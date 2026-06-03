@@ -1,5 +1,4 @@
 packages: .
--- packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
 -- uncomment two sections below to run tests with coverage
@@ -21,7 +20,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: 61ee188ee0839c34de16bc17934f04ebc7fd4873
+    tag: 468e141008a070087e667eaac1bf26fe9a4fd9c6
 
 source-repository-package
     type: git
