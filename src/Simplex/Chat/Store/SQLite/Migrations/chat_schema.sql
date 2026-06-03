@@ -126,7 +126,11 @@ CREATE TABLE group_profiles(
   short_descr TEXT,
   group_type TEXT,
   group_link BLOB,
-  public_group_id BLOB
+  public_group_id BLOB,
+  group_web_page TEXT,
+  group_domain TEXT,
+  domain_web_page INTEGER,
+  allow_embedding INTEGER
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -781,6 +785,8 @@ CREATE TABLE group_relays(
   conf_id BLOB,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  base_web_url TEXT
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,

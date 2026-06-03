@@ -1364,7 +1364,7 @@ server test step */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Контактите могат да маркират съобщения за изтриване; ще можете да ги разглеждате.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Продължи";
 
 /* No comment provided by engineer. */

@@ -1,5 +1,5 @@
 /* No comment provided by engineer. */
-" (can be copied)" = " (puede copiarse)";
+" (can be copied)" = " (puede ser copiado)";
 
 /* No comment provided by engineer. */
 "_italic_" = "\\_italic_";
@@ -504,9 +504,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Added message servers" = "Servidores de mensajes añadidos";
-
-/* No comment provided by engineer. */
-"Adding relays will be supported later." = "Añadir servidores estará disponible en una versión posterior.";
 
 /* No comment provided by engineer. */
 "Additional accent" = "Acento adicional";
@@ -1182,9 +1179,6 @@ alert subtitle */
 /* No comment provided by engineer. */
 "Channel will be deleted for you - this cannot be undone!" = "El canal será eliminado para tí. ¡No puede deshacerse!";
 
-/* alert message */
-"Channel will start working with %d of %d relays. Proceed?" = "El canal comenzará a funcionar con %1$d de %2$d servidores. ¿Continuar?";
-
 /* No comment provided by engineer. */
 "Channels" = "Canales";
 
@@ -1634,7 +1628,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "El contenido viola las condiciones de uso";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Continuar";
 
 /* No comment provided by engineer. */
@@ -4577,9 +4571,6 @@ alert button */
 /* alert title */
 "Private routing timeout" = "Timeout enrutamiento privado";
 
-/* alert action */
-"Proceed" = "Continuar";
-
 /* No comment provided by engineer. */
 "Profile and server connections" = "Eliminar perfil y conexiones";
 
@@ -4860,9 +4851,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "¿Eliminar contraseña de Keychain?";
-
-/* No comment provided by engineer. */
-"Remove subscriber" = "Eliminar suscriptor";
 
 /* alert title */
 "Remove subscriber?" = "¿Eliminar suscriptor?";

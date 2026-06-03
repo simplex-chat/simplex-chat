@@ -2241,10 +2241,24 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 }
 
 @Serializable
+data class PublicGroupAccess(
+  val groupWebPage: String? = null,
+  val groupDomain: String? = null,
+  val domainWebPage: Boolean = false,
+  val allowEmbedding: Boolean = false
+)
+
+@Serializable
+data class RelayCapabilities(
+  val webDomain: String? = null
+)
+
+@Serializable
 data class PublicGroupProfile(
   val groupType: GroupType,
   val groupLink: String,
-  val publicGroupId: String
+  val publicGroupId: String,
+  val publicGroupAccess: PublicGroupAccess? = null
 )
 
 @Serializable
@@ -2368,7 +2382,8 @@ data class GroupRelay(
   val groupMemberId: Long,
   val userChatRelay: UserChatRelay,
   val relayStatus: RelayStatus,
-  val relayLink: String? = null
+  val relayLink: String? = null,
+  val relayCap: RelayCapabilities
 ) {
   val id: Long get() = groupRelayId
 }
@@ -4764,6 +4779,11 @@ enum class SimplexLinkType(val linkType: String) {
 @Serializable
 data class SimplexNameInfo(
   val nameType: SimplexNameType,
+  val nameDomain: SimplexNameDomain
+)
+
+@Serializable
+data class SimplexNameDomain(
   val nameTLD: SimplexTLD,
   val domain: String,
   val subDomain: List<String>

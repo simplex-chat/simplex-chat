@@ -1439,7 +1439,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Treść narusza warunki użytkowania";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Kontynuuj";
 
 /* No comment provided by engineer. */

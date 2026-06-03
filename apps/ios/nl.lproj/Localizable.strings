@@ -1382,7 +1382,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Inhoud schendt de gebruiksvoorwaarden";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Doorgaan";
 
 /* No comment provided by engineer. */

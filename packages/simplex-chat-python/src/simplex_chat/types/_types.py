@@ -1945,6 +1945,7 @@ class GroupRelay(TypedDict):
     userChatRelay: "UserChatRelay"
     relayStatus: "RelayStatus"
     relayLink: NotRequired[str]
+    relayCap: "RelayCapabilities"
 
 class GroupRootKey_private(TypedDict):
     type: Literal["private"]
@@ -2353,6 +2354,12 @@ ProxyError = ProxyError_PROTOCOL | ProxyError_BROKER | ProxyError_BASIC_AUTH | P
 
 ProxyError_Tag = Literal["PROTOCOL", "BROKER", "BASIC_AUTH", "NO_SESSION"]
 
+class PublicGroupAccess(TypedDict):
+    groupWebPage: NotRequired[str]
+    groupDomain: NotRequired[str]
+    domainWebPage: bool
+    allowEmbedding: bool
+
 class PublicGroupData(TypedDict):
     publicMemberCount: int  # int64
 
@@ -2360,6 +2367,7 @@ class PublicGroupProfile(TypedDict):
     groupType: "GroupType"
     groupLink: str
     publicGroupId: str
+    publicGroupAccess: NotRequired["PublicGroupAccess"]
 
 class RCErrorType_internal(TypedDict):
     type: Literal["internal"]
@@ -2628,6 +2636,9 @@ RcvMsgError = RcvMsgError_dropped | RcvMsgError_parseError
 
 RcvMsgError_Tag = Literal["dropped", "parseError"]
 
+class RelayCapabilities(TypedDict):
+    webDomain: NotRequired[str]
+
 class RelayProfile(TypedDict):
     displayName: str
     fullName: str
@@ -2689,11 +2700,14 @@ class SimplePreference(TypedDict):
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
 
-class SimplexNameInfo(TypedDict):
-    nameType: "SimplexNameType"
+class SimplexNameDomain(TypedDict):
     nameTLD: "SimplexTLD"
     domain: str
     subDomain: list[str]
+
+class SimplexNameInfo(TypedDict):
+    nameType: "SimplexNameType"
+    nameDomain: "SimplexNameDomain"
 
 SimplexNameType = Literal["publicGroup", "contact"]
 

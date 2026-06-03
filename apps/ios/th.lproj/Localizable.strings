@@ -705,7 +705,7 @@ server test step */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "ผู้ติดต่อสามารถทําเครื่องหมายข้อความเพื่อลบได้ คุณจะสามารถดูได้";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "ดำเนินการต่อ";
 
 /* No comment provided by engineer. */

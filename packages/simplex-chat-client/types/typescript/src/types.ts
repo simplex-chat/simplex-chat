@@ -2770,6 +2770,7 @@ export interface GroupRelay {
   userChatRelay: UserChatRelay
   relayStatus: RelayStatus
   relayLink?: string
+  relayCap: RelayCapabilities
 }
 
 export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
@@ -3351,6 +3352,13 @@ export namespace ProxyError {
   }
 }
 
+export interface PublicGroupAccess {
+  groupWebPage?: string
+  groupDomain?: string
+  domainWebPage: boolean
+  allowEmbedding: boolean
+}
+
 export interface PublicGroupData {
   publicMemberCount: number // int64
 }
@@ -3359,6 +3367,7 @@ export interface PublicGroupProfile {
   groupType: GroupType
   groupLink: string
   publicGroupId: string
+  publicGroupAccess?: PublicGroupAccess
 }
 
 export type RCErrorType = 
@@ -3747,6 +3756,10 @@ export namespace RcvMsgError {
   }
 }
 
+export interface RelayCapabilities {
+  webDomain?: string
+}
+
 export interface RelayProfile {
   displayName: string
   fullName: string
@@ -3850,11 +3863,15 @@ export enum SimplexLinkType {
   Relay = "relay",
 }
 
-export interface SimplexNameInfo {
-  nameType: SimplexNameType
+export interface SimplexNameDomain {
   nameTLD: SimplexTLD
   domain: string
   subDomain: string[]
+}
+
+export interface SimplexNameInfo {
+  nameType: SimplexNameType
+  nameDomain: SimplexNameDomain
 }
 
 export enum SimplexNameType {

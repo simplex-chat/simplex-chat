@@ -3299,6 +3299,12 @@ testGLinkReviewMember =
       alice ##> "/_delete member chat #1 5"
       alice <## "bad chat command: member is pending"
 
+      -- moderator can't accept member with a role higher than their own
+      dan ##> "/_accept member #1 5 admin"
+      dan <## "#team: you have insufficient permissions for this action, the required role is admin"
+      dan ##> "/_accept member #1 5 owner"
+      dan <## "#team: you have insufficient permissions for this action, the required role is owner"
+
       -- accept member
       dan ##> "/_accept member #1 5 member"
       concurrentlyN_
