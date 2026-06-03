@@ -16,8 +16,8 @@ const STYLE = `
   --sp-border: #e5e5e5;
   --sp-link: #0088ff;
   --sp-link-hover: #0077e0;
-  --sp-btn: #0053D0;
-  --sp-btn-hover: #0047b3;
+  --sp-btn: #004ABB;
+  --sp-btn-hover: #003FA1;
   --sp-color-blue: #0053d0;
   --sp-color-black: #000;
   --sp-color-white: #000;
@@ -50,8 +50,8 @@ const STYLE = `
   --sp-border: #3A3A3C;
   --sp-link: #70F0F9;
   --sp-link-hover: #66D9E2;
-  --sp-btn: #70F0F9;
-  --sp-btn-hover: #66D9E2;
+  --sp-btn: #7EF1F9;
+  --sp-btn-hover: #75DCE4;
   --sp-btn-text: #000;
   --sp-color-blue: #70F0F9;
   --sp-color-black: #fff;
@@ -105,11 +105,11 @@ const STYLE = `
 
 .simplex-preview-join-btn {
   flex-shrink: 0;
-  background: var(--sp-link);
+  background: var(--sp-btn);
   color: var(--sp-btn-text, #fff);
   border: none;
   border-radius: 34px;
-  padding: 6px 16px;
+  padding: 6px 6px 6px 16px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -121,8 +121,8 @@ const STYLE = `
 }
 
 .simplex-preview-join-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 15.4px;
+  height: 15.4px;
   flex-shrink: 0;
 }
 
@@ -141,7 +141,7 @@ const STYLE = `
 }
 
 .simplex-preview-join-btn:hover {
-  background: var(--sp-link-hover);
+  background: var(--sp-btn-hover);
 }
 
 .simplex-preview-messages {
@@ -889,7 +889,7 @@ function renderHeader(channel, channelLink, subscriberCount) {
   if (channelLink) {
     const btn = document.createElement('a');
     btn.className = 'simplex-preview-join-btn';
-    btn.innerHTML = simplexLogoSvg() + 'Join';
+    btn.innerHTML = 'Join' + simplexLogoSvg();
     btn.href = channelLink;
     header.appendChild(btn);
   }
