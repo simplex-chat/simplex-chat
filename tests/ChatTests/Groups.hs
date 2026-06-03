@@ -23,7 +23,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime)
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf)
+import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
@@ -268,11 +268,6 @@ chatGroupTests = do
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
-      it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
-      it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
-      it "leaving moderator drops from the roster cache" testChannelLeftModeratorDropsFromRoster
-      it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
-      it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
@@ -291,6 +286,13 @@ chatGroupTests = do
         it "operator allow clears rejection and relay accepts again" testRelayAllowAcceptsAgain
         it "rejection on channel A does not affect unrelated channel B" testRelayDoesNotRejectUnrelatedChannel
         it "concurrent fresh invitations both rejected" testRelayRejectRaceConcurrentInvitations
+      describe "promoted members roster" $ do
+        it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
+        it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
+        it "leaving moderator drops from the roster cache" testChannelLeftModeratorDropsFromRoster
+        it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
+        it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
+        it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -8694,7 +8696,7 @@ prepareChannel2Relays gName owner relay1 relay2 = do
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
         owner
           <### [ EndsWith ": active",
-                 EndsWith ": accepted"
+                 Predicate (\l -> ": invited" `isSuffixOf` l || ": accepted" `isSuffixOf` l)
                ]
         owner <## "group link:"
         void $ getTermLine owner -- consume group link line
@@ -10335,6 +10337,65 @@ testChannelAddRelay ps =
             alice #> "#team hello"
             [bob, cath] *<# "#team> hello"
             [dan, eve] *<# "#team> hello [>>]"
+
+testChannelAddRelayWithRoster :: HasCallStack => TestParams -> IO ()
+testChannelAddRelayWithRoster ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "dan" danProfile $ \dan ->
+        withNewTestChat ps "cath" cathProfile $ \cath ->
+          withNewTestChat ps "eve" eveProfile $ \_eve -> do
+            (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+            memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+
+            -- promote cath to moderator: the roster is created (bob caches it)
+            threadDelay 100000
+            alice ##> "/mr #team cath moderator"
+            alice <## "#team: you changed the role of cath to moderator (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+                cath <## "#team: alice changed your role from member to moderator (signed)"
+              ]
+            threadDelay 100000
+
+            -- add dan as a 2nd relay; with a roster present it must cache the roster and ack
+            -- (XGrpRosterAck) before alice publishes it as joinable
+            dan ##> "/ad"
+            (danSLink, _cLink) <- getContactLinks dan True
+            alice ##> ("/relays name=dan " <> danSLink)
+            alice <## "ok"
+            alice ##> "/_add relays #1 2"
+            alice <## "#team: group relays:"
+            alice <## "  - relay id 1: active"
+            alice <## "  - relay id 2: invited"
+            concurrentlyN_
+              [ do
+                  alice <## "#team: group link relays updated, current relays:"
+                  alice
+                    <### [ "  - relay id 1: active",
+                           "  - relay id 2: active"
+                         ]
+                  alice <## "group link:"
+                  void $ getTermLine alice,
+                dan <## "#team: you joined the group as relay"
+              ]
+
+            -- cath (an existing member) connects to the new relay and is attached to her roster
+            -- record, kept as moderator
+            concurrentlyN_
+              [ do
+                  cath <## "#team: joining the group (connecting to relay dan)..."
+                  cath <## "#team: you joined the group (connected to relay dan)",
+                dan
+                  <### [ EndsWith "changed the role of cath from member to moderator (signed)",
+                         EndsWith "accepting request to join group #team...",
+                         EndsWith "member cath is connected"
+                       ]
+              ]
+
+            threadDelay 100000
+            -- the new relay holds the roster (cath is moderator) before it serves joiners
+            checkMemberRow dan "cath" (Just "moderator")
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =
