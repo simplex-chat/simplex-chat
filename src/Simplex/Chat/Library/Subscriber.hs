@@ -105,6 +105,13 @@ import UnliftIO.STM
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
 
+-- Verifies member signatures over CBGroup <> (publicGroupId, memberId) <> signedBody under the given key.
+-- signatures is NonEmpty so the verification can't be vacuously true.
+verifyGroupSig :: C.PublicKeyEd25519 -> B64UrlByteString -> MemberId -> NonEmpty MsgSignature -> ByteString -> Bool
+verifyGroupSig key publicGroupId memberId signatures signedBody =
+  let prefix = smpEncode CBGroup <> smpEncode (publicGroupId, memberId)
+   in all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 key) sig (prefix <> signedBody)) signatures
+
 processAgentMessage :: ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessage _ _ (DEL_RCVQS delQs) =
   toView $ CEvtAgentRcvQueuesDeleted $ L.map rcvQ delQs
@@ -893,8 +900,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           GCInviteeMember
             | isRelay m -> do
                 withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
-                gLink <- withStore $ \db -> getGroupLink db user gInfo
-                setGroupLinkDataAsync user gInfo gLink
+                -- always send the relay a roster (materializing version 0 for old channels with NULL roster_version);
+                -- the relay stays RSInvited (unpublishable) until it acks, so no joiner can impersonate a privileged member
+                gInfo' <- case rosterVersion gInfo of
+                  Just _ -> pure gInfo
+                  Nothing -> do
+                    withStore' $ \db -> setGroupRosterVersion db gInfo (VersionRoster 0)
+                    pure gInfo {rosterVersion = Just (VersionRoster 0)}
+                sendGroupRosterToRelay user gInfo' m
             | otherwise -> do
                 (gInfo', mStatus) <-
                   if not (memberPending m)
@@ -1066,6 +1079,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpInfo p' -> fmap ctx <$> xGrpInfo gInfo' m'' p' msg brokerTs
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps' msg
               XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' gr verifiedMsg brokerTs
+              XGrpRosterAck ackVer ackErr -> Nothing <$ xGrpRosterAck gInfo' m'' ackVer ackErr
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward fwd msg' -> Nothing <$ xGrpMsgForward gInfo' Nothing m'' fwd (ParsedMsg Nothing Nothing msg') brokerTs
@@ -1126,7 +1140,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         checkSndInlineFTComplete conn msgId
         updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ forwardCachedRoster user gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ forwardGroupRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       SWITCH qd phase cStats -> do
         toView $ CEvtGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -1179,9 +1193,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CFGetRelayDataJoin -> do
               -- Update relay member with key, memberId and profile from link
               relayLinkData_ <- liftIO $ decodeLinkUserData cData
-              case (relayLinkData_, linkEntityId) of
-                (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
+              relayMemberId <- case (relayLinkData_, linkEntityId) of
+                (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
                   withStore $ \db -> updateRelayMemberData db user m (MemberId entityId) (MemberKey relayKey) p
+                  pure $ MemberId entityId
                 _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
               case cReq of
                 CRContactUri crData@ConnReqUriData {crClientData} -> do
@@ -1194,13 +1209,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
                       -- Update connection with data derived from cReq, now available after getConnShortLinkAsync
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
-                      let GroupMember {memberId = membershipMemId} = membership
-                          incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
+                      let incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
                           profileToSend = userProfileInGroup user gInfo incognitoProfile
-                      memberPubKey <- case groupKeys gInfo of
-                        Just GroupKeys {memberPrivKey} -> pure $ C.publicKey memberPrivKey
-                        Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
-                      dm <- encodeConnInfo $ XMember profileToSend membershipMemId (MemberKey memberPubKey)
+                      dm <- encodeXMemberConnInfo gInfo relayMemberId profileToSend
                       subMode <- chatReadVar subscriptionMode
                       void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
             CFGetRelayDataAccept -> do
@@ -1210,13 +1221,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
                     Just RelayShortLinkData {relayProfile = p} -> pure p
                     Nothing -> throwChatError $ CEException "relay link: no relay link data"
-                  (confId, m', relay) <- withStore $ \db -> do
+                  confId <- withStore $ \db -> do
                     confId <- getRelayConfId db m
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                    (m', relay) <- setRelayLinkAccepted db vr user m (MemberKey relayKey) relayProfile
-                    pure (confId, m', relay)
+                    void $ setRelayKey db vr user m (MemberKey relayKey) relayProfile
+                    pure confId
                   allowAgentConnectionAsync user conn confId XOk
-                  toView $ CEvtGroupRelayUpdated user gInfo m' relay
                 else
                   -- TODO [relays] owner: TBC failed RelayStatus?
                   messageError "relay link: relay member ID mismatch"
@@ -1224,7 +1234,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ forwardCachedRoster user gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ forwardGroupRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
@@ -1335,10 +1345,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
       REQ invId pqSupport _ connInfo -> do
-        ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
+        (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
-          XMember p joiningMemberId joiningMemberKey -> memberJoinRequestViaRelay invId chatVRange p joiningMemberId joiningMemberKey
+          XMember p joiningMemberId joiningMemberKey viaRelay -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey viaRelay
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
           XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
@@ -1560,7 +1570,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           messageError "processContactConnMessage: chat version range incompatible for accepting group join request"
                       | otherwise -> do
                           let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                          mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ Nothing welcomeMsgId_ acceptance useRole profileMode Nothing
+                          mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ Nothing welcomeMsgId_ acceptance useRole profileMode Nothing Nothing
                           (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
                           createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                           toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
@@ -1596,19 +1606,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Connection {connId = testCId} <- createRelayTestConnection db vr user acId ConnAccepted chatV subMode
                 liftIO $ setCommandConnId db user cmdId testCId
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
-        -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
-        memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> MemberKey -> CM ()
-        memberJoinRequestViaRelay invId chatVRange p joiningMemberId joiningMemberKey = do
+        memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Maybe SignedMsg -> Profile -> MemberId -> MemberKey -> Maybe MemberId -> CM ()
+        memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey@(MemberKey joiningKey) viaRelay = do
           (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted gLinkMemRole Nothing (Just joiningMemberKey)
+              existing_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberByMemberId db vr user gInfo joiningMemberId)
+              case existing_ of
+                Just rosterMem
+                  -- a privileged memberId's key is owner-authoritative (the roster); the joiner must prove
+                  -- possession of that exact key, otherwise this is an attempt to impersonate it
+                  | isRosterRole (memberRole' rosterMem) ->
+                      if verifyKey gInfo rosterMem
+                        then acceptJoin gInfo (Just rosterMem) (memberRole' rosterMem)
+                        else messageError "memberJoinRequestViaRelay: rejected join claiming privileged memberId (key mismatch or invalid signature)"
+                _ -> acceptJoin gInfo Nothing gLinkMemRole
+            Nothing ->
+              messageError "memberJoinRequestViaRelay: no group link info for relay link"
+          where
+            -- replay defense: the viaRelay == own memberId check (viaRelay is in the signed body); without it a sibling relay could replay a privileged member's signed join
+            verifyKey gInfo rosterMem = case (signedMsg_, groupKeys gInfo) of
+              (Just SignedMsg {chatBinding = CBGroup, signatures, signedBody}, Just GroupKeys {publicGroupId}) ->
+                memberPubKey rosterMem == Just joiningKey
+                  && verifyGroupSig joiningKey publicGroupId joiningMemberId signatures signedBody
+                  && viaRelay == Just (memberId' (membership gInfo))
+              _ -> False
+            acceptJoin gInfo existingMem_ acceptRole = do
+              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted acceptRole Nothing (Just joiningMemberKey) existingMem_
               (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
               createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
               toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
-            Nothing ->
-              messageError "memberJoinRequestViaRelay: no group link info for relay link"
 
     muteEventInChannel :: GroupInfo -> GroupMember -> Bool
     muteEventInChannel gInfo@GroupInfo {membership} m =
@@ -3176,18 +3204,28 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         validRoster = validateGroupRoster roster
         relayApplyRoster :: CM (Maybe DeliveryJobScope)
         relayApplyRoster
-          | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than cached version"
+          | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than saved version"
           | otherwise = case verifiedMsg of
-              VMSigned _ sm _ -> do
-                defaultRole <- unknownMemberRole gInfo
-                results <- withStore $ \db -> do
-                  res <- processRoster db defaultRole
-                  liftIO $ setCachedGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
-                  pure res
-                emitRosterResults results
-                -- always broadcast on a bump: self-healing, and demotions must reach members
-                pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+              VMSigned _ sm _ ->
+                tryAllErrors (setRoster sm) >>= \case
+                  Right results -> do
+                    emitRosterResults results
+                    -- ack only while still setting up (own status RSAccepted); a serving relay (RSActive) must not ack roster broadcasts
+                    when (relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck author newVer Nothing
+                    -- always broadcast on a bump: self-healing, and demotions must reach members
+                    pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+                  Left e -> do
+                    eToView e
+                    when (relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck author newVer (Just "relay could not save the roster")
+                    pure Nothing
               VMUnsigned _ -> Nothing <$ messageWarning "x.grp.roster: unsigned roster"
+        setRoster :: SignedMsg -> CM ([MemberId], [(GroupMember, GroupMemberRole)])
+        setRoster sm = do
+          defaultRole <- unknownMemberRole gInfo
+          withStore $ \db -> do
+            res <- processRoster db defaultRole
+            liftIO $ setGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
+            pure res
         memberApplyRoster :: CM ()
         memberApplyRoster
           | maybe False (newVer <) (rosterVersion gInfo) = messageWarning "x.grp.roster: older than accepted version"
@@ -3235,6 +3273,28 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           (gInfo', author', scopeInfo) <- mkGroupChatScope gInfo author
           createInternalChatItem user (CDGroupRcv gInfo' scopeInfo author') (CIRcvGroupEvent gEvent) (Just brokerTs)
           toView CEvtMemberRole {user, groupInfo = gInfo', byMember = author', member, fromRole, toRole, msgSigned = Just MSSVerified}
+        sendRosterAck :: GroupMember -> VersionRoster -> Maybe Text -> CM ()
+        sendRosterAck owner ackVer err = void $ sendGroupMessage' user gInfo [owner] (XGrpRosterAck ackVer err)
+
+    xGrpRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
+    xGrpRosterAck gInfo m ackVer err = do
+      relay_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupRelayByGMId db (groupMemberId' m))
+      case relay_ of
+        Just relay@GroupRelay {relayStatus = RSInvited} -> case err of
+          Nothing
+            | rosterVersion gInfo == Just ackVer -> do
+                (relay', gLink) <- withStore $ \db -> do
+                  relay' <- liftIO $ updateRelayStatus db relay RSAccepted
+                  gLink <- getGroupLink db user gInfo
+                  pure (relay', gLink)
+                setGroupLinkDataAsync user gInfo gLink
+                toView $ CEvtGroupRelayUpdated user gInfo m relay'
+            | otherwise -> messageWarning "x.grp.roster.ack: stale version, awaiting ack for the current roster"
+          Just e -> do
+            relay' <- withStore' $ \db -> updateRelayStatusFromTo db relay RSInvited RSRejected
+            toView $ CEvtGroupRelayUpdated user gInfo m relay'
+            messageError $ "x.grp.roster.ack: relay could not save roster, marked rejected: " <> e
+        _ -> pure ()
 
     checkHostRole :: GroupMember -> GroupMemberRole -> CM ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
@@ -3591,8 +3651,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             | GroupMember {memberPubKey = Just pubKey, memberId} <- member ->
                 case chatBinding of
                   CBGroup | Just GroupKeys {publicGroupId} <- groupKeys gInfo ->
-                    let prefix = smpEncode chatBinding <> smpEncode (publicGroupId, memberId)
-                     in signed MSSVerified <$ guard (all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
+                    signed MSSVerified <$ guard (verifyGroupSig pubKey publicGroupId memberId signatures signedBody)
                   _ -> signed MSSSignedNoKey <$ guard signatureOptional
             | otherwise -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
             where
@@ -3854,10 +3913,15 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     bucketSize <- asks $ deliveryBucketSize . config
                     senders <- withStore' $ \db ->
                       fmap catMaybes . forM senderGMIds $ \sId ->
-                        fmap eitherToMaybe . runExceptT $ do
+                        fmap (join . eitherToMaybe) . runExceptT $ do
                           sender <- getNonRemovedMemberById db vr user sId
-                          vec <- getMemberRelationsVector db sender
-                          pure (sender, vec)
+                          -- owners are already known to every member (group link + owner-intro in introduceInChannel),
+                          -- so we never disseminate their profile (redundant, and races with joins re-announcing the owner)
+                          if memberRole' sender == GROwner
+                            then pure Nothing
+                            else do
+                              vec <- getMemberRelationsVector db sender
+                              pure $ Just (sender, vec)
                     let missingSenders = length senderGMIds - length senders
                     when (missingSenders > 0) $
                       logInfo $ "delivery job " <> tshow jobId <> ": " <> tshow missingSenders <> " senders missing; skipping their profile prepend"
