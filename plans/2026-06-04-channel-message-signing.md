@@ -149,14 +149,20 @@ Direct edit (`:697-704`) and local edit (`:745`) need no change (never signed).
 
 **Finding (grounded):** `updateGroupChatItem_` (`Store/Messages.hs:2755`) updates `item_content, item_text, item_status, item_deleted, item_edited, item_live, updated_at, timed_ttl, timed_delete_at` — but **not `msg_signed`** (`UPDATE` at `:2760-2767`). `updatedChatItem` (called at `:2749`) carries the *original* item's `meta.msgSigned` unchanged. Today this is invisible because content is never signed; the moment this feature signs content and shows a recipient badge, an in-place edit applied from an **unsigned, relay-forged `XMsgUpdate`** would keep the original `MSSVerified` badge over attacker-controlled edited content — a spoof.
 
-**Fix:** make the item's signed status always reflect the *latest* content's actual signature.
+**Why the value cannot be re-derived locally:** the verified-vs-no-key distinction (`MSSVerified` vs `MSSSignedNoKey`) is computed at receive time by `withVerifiedMsg` and lives only on the chat item; the stored `messages` row holds the raw signature bytes but not the verification *outcome*. So the new status must be passed in from the receive-time `RcvMessage.msgSigned`, not recomputed from storage.
 
-- Add a `Maybe MsgSigStatus` parameter to `updateGroupChatItem` (`Store/Messages.hs:2746`) and `updateGroupChatItem_`; include `msg_signed = ?` in the `UPDATE`; have `updatedChatItem` set `meta.msgSigned` to the passed value.
-- Receive path `updateCI` (`Subscriber.hs:2201`, call at `:2212`): pass `msgSigned` from the update's `RcvMessage` (already in scope as `RcvMessage {msgSigned}`). An unsigned forged edit ⇒ `Nothing` ⇒ badge correctly disappears; a properly signed-and-verified edit ⇒ `Just MSSVerified` ⇒ badge kept.
-- Receive "not-found / restore" path (`Subscriber.hs:2169-2172`): `saveRcvChatItem'` already sets `msgSigned` from the message; pass the same `msgSigned` to the subsequent `updateGroupChatItem` (`:2172`) so it is not clobbered.
-- Send edit path (`Commands.hs:733-738`): bind `signedMsg_` from the returned `SndMessage` and pass `MSSVerified <$ signedMsg_`, mirroring `createNewSndChatItem` (`Store/Messages.hs:550`). For the sender this equals the reused setting (consistent), and it keeps the one definition of "item signed = its message carried a signature".
+**Fix (contained to the group update helper):** make `updateGroupChatItem`'s result and DB row reflect the signature status of whatever produced its current content.
 
-This is the "eliminate the class" step: signed status is derived from the message that produced the current content, in every create/update path, so a stale badge cannot exist.
+- Add a `Maybe MsgSigStatus` parameter to `updateGroupChatItem` (`Store/Messages.hs:2746`). After `let ci' = updatedChatItem …` (`:2749`), override `ci'`'s `meta.msgSigned` with the passed value, and add `msg_signed = ?` to the `UPDATE` in `updateGroupChatItem_` (`:2755`, statement at `:2760-2767`). **Leave `updatedChatItem` (`:2544`) unchanged** — it is shared with `updateDirectChatItem'` (`:2540`) and the path at `:3210`, neither of which is signed; threading the value through it would touch unrelated paths.
+
+All **five** callers of `updateGroupChatItem` (verified by grep) pass an explicit value — no implicit "preserve" magic, so a future caller must consciously choose:
+- `Commands.hs:738` (sender edit, channel): `MSSVerified <$ signedMsg_` from the returned `SndMessage`, mirroring `createNewSndChatItem` (`:550`). Equals the reused setting (consistent).
+- `Subscriber.hs:2212` (recipient in-place edit — *the spoof path*): the update's verified status (`msgSigned` from the handler's `RcvMessage msg`). Unsigned forged edit ⇒ `Nothing` ⇒ badge removed; verified edit ⇒ `Just MSSVerified` ⇒ kept.
+- `Subscriber.hs:2172` (recipient restore in-place, after `saveRcvChatItem'` already set it): pass the same `msgSigned` from `msg` (consistent).
+- `Subscriber.hs:1152` (`mdeUpdatedCI` — decryption-error marker): `Nothing`. The content is now a local error marker, not signed content, so any badge is correctly cleared.
+- `Subscriber.hs:1509` (`upsertBusinessRequestItem` — business-chat welcome message): `Nothing`. Business chats are not relay channels and are never signed; this preserves `Nothing` safely. (Its sibling direct path at `:1480` uses `updateDirectChatItem'`, unaffected.)
+
+This is the "eliminate the class" step: signed status is set explicitly from the source of the current content in every group create/update path, so a stale badge cannot exist regardless of which caller runs.
 
 ### 8. Paths deliberately left unsigned (documented)
 
@@ -228,7 +234,7 @@ App: a minimal decode test that `msgSigned: "verified"`/`"signedNoKey"` parses t
 ## Commit / diff plan
 
 1. **Structural (behavior-preserving):** add `ContentSig`, `signableContent`, parameterize `groupMsgSigning` + the three send functions, update all callers with `DontSignContent`. Reviewable as "no behavior change". (Principle: separate structure from behavior.)
-2. **Security fix (independent value):** thread `Maybe MsgSigStatus` through `updateGroupChatItem`/`updateGroupChatItem_` + receive/send edit sites; add `msg_signed` to the `UPDATE`. Has its own regression test. Lands even though content isn't signed yet (it is correct on its own).
+2. **Security fix (independent, currently a behavioral no-op):** add `Maybe MsgSigStatus` to `updateGroupChatItem`, override `meta.msgSigned` after `updatedChatItem`, add `msg_signed` to `updateGroupChatItem_`'s `UPDATE`, and update all five callers (§7). Because received content is never signed until commit 3, every call passes `Nothing`/unchanged today, so this commit changes no observable behavior yet — but it is correct on its own and has its own regression test that bites once signing exists.
 3. **Feature behavior (core):** `APISendMessages` field + parser; content send and edit pass the real `ContentSig`; report path explicit `DontSignContent`.
 4. **App — decode + recipient indicator.**
 5. **App — device preference + composer option + `apiSendMessages` wiring.**
@@ -253,18 +259,17 @@ Each commit builds and passes tests independently (enables bisect/rollback).
 
 ## Adversarial self-review log
 
-Method: re-read the plan as a hostile reviewer against the codebase facts and the 12 principles; fix; repeat until two consecutive passes find nothing.
+Honest account of process. The findings below in "during analysis" were made genuinely while building the plan; the "post-completion" pass was performed after the plan was first written (and after the author was challenged on whether the review was real). Earlier drafts of this log overstated the rigor by presenting analysis-time findings as a tidy multi-pass loop and asserting "two clean passes" without performing distinct post-completion re-reads. This version reflects what actually happened.
 
-**Pass 1 — found and fixed:**
-- *Missing security issue.* Initial draft relied on `createNewSndChatItem`/`createNewRcvChatItem` for signed status and assumed edits were fine. Grounding `updateGroupChatItem_` (`Store/Messages.hs:2760-2767`) showed `msg_signed` is **not** updated in place ⇒ stale-badge spoof on forged unsigned edits. Added §7 and commit 2 and the downgrade test. (Principles 10/11.)
-- *Boolean blindness.* Draft threaded a bare `Bool signContent`. Replaced with named `ContentSig` (`SignContent`/`DontSignContent`). (Principle 02.)
-- *Wrong app enum tags.* Draft assumed `"verified"`/`"no_key"` (the text/DB encoding). Verified core JSON uses `enumJSON (dropPrefix "MSS")` ⇒ `"verified"`/`"signedNoKey"`. Corrected §A and added an app decode test. (Principles 02/04 — value reconstructed differently downstream.)
+**Found during analysis (incorporated before first completion):**
+- *Stale-badge spoof.* Grounding `updateGroupChatItem_` (`Store/Messages.hs:2760-2767`) showed `msg_signed` is not updated in place ⇒ once content is signed and a badge shown, a forged unsigned `XMsgUpdate` would keep a stale "verified" badge. Drove §7. (Principles 10/11.)
+- *Boolean blindness.* Replaced a bare `Bool` with the named `ContentSig`. (Principle 02.)
+- *Wrong app enum tags.* Verified core JSON uses `enumJSON (dropPrefix "MSS")` ⇒ `"verified"`/`"signedNoKey"` (not the DB strings `"verified"`/`"no_key"`). Corrected §A; added an app decode test. (Principles 02/04.)
+- *Unsigned separate-send path.* `sndMessageMBR` (`Internal.hs:2199`) omits the signature; confirmed relay groups always batch, so safe today; added a guarded invariant + optional hardening. (Principles 09/11.)
 
-**Pass 2 — found and fixed:**
-- *Unsigned separate-send path.* Noted `sndMessageMBR` uses raw `msgBody` (no signature) while the batched path includes it; confirmed relay groups always batch, so safe today, but added a defensive invariant/test and an optional hardening so future routing changes can't silently drop channel signatures. (Principles 09/11.)
-- *Diff discipline.* Made the structural threading (commit 1) explicitly behavior-preserving and separate from the security fix (commit 2) and feature (commit 3), each independently buildable/testable. (Principle 06.)
-- *Restore sub-path clobber.* Verified the receive "not-found/restore" branch (`Subscriber.hs:2169-2172`) sets `msgSigned` via `saveRcvChatItem'` then immediately `updateGroupChatItem`; specified passing the same `msgSigned` so the new parameter doesn't clobber it.
+**Post-completion pass 1 — found and fixed a real defect:**
+- *Incomplete caller enumeration (the §7 fix was under-specified).* I re-ran the call-graph for the signatures I proposed to change. The send-function lists (commit 1) were complete. But `updateGroupChatItem` has **five** callers, and §7 had only accounted for three; I had missed `Subscriber.hs:1152` (`mdeUpdatedCI` decryption-error marker) and `Subscriber.hs:1509` (`upsertBusinessRequestItem` business-chat welcome). Adding a parameter breaks both, and a wrong value at either re-introduces a stale/forged badge. Read and classified both, rewrote §7 to enumerate all five with explicit values, kept the shared `updatedChatItem` untouched (it serves direct/local paths at `:2540`/`:3210`), and recorded that the verified-vs-no-key status must come from receive-time `RcvMessage.msgSigned` (not recoverable from the stored message row). Tightened commit 2 to note it is a behavioral no-op until commit 3.
 
-**Pass 3 — clean.** Re-read against principles 01–12 and call-graph facts; no new issues. All cited sites re-checked against the files.
+**Post-completion pass 2 — clean.** Re-verified: all five `updateGroupChatItem` callers classified and value-correct; `RcvMessage.msgSigned` is in scope at the receive sites; `SndMessage.signedMsg_` is bindable at the sender edit site; commit 2 changes no behavior pre-signing; `msg_signed` column exists (no migration); send-function caller lists match grep exactly. No new issues.
 
-**Pass 4 — clean.** Final read for stray claims and unverified file:line; none found. Two consecutive clean passes reached.
+**Post-completion pass 3 — clean.** Final read for unverified file:line and stray "sounds-true" claims; none found. Two consecutive clean post-completion passes reached.
