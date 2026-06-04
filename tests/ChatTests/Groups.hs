@@ -10454,13 +10454,17 @@ testChannelRosterDigestMismatchRejected ps =
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
           threadDelay 100000
-          checkRosterVersionBelow frank 1
+          checkRosterNotApplied frank
   where
-    checkRosterVersionBelow :: HasCallStack => TestCC -> Int64 -> IO ()
-    checkRosterVersionBelow cc target = do
+    -- frank learns cath via the moderator introduction (XGrpMemIntro) regardless of the roster,
+    -- so checkMemberRow cannot distinguish applied vs rejected. The roster's authoritative effect
+    -- is its version: it must NOT advance to the corrupted roster's version 1, and frank must
+    -- actually hold the group (non-vacuous) so a NULL roster_version cannot pass by emptiness.
+    checkRosterNotApplied :: HasCallStack => TestCC -> IO ()
+    checkRosterNotApplied cc = do
       vs <- withCCTransaction cc $ \db ->
         DB.query_ db "SELECT roster_version FROM groups" :: IO [Only (Maybe Int64)]
-      all (< target) [v | Only (Just v) <- vs] `shouldBe` True
+      map (\(Only v) -> v) vs `shouldSatisfy` (\versions -> not (null versions) && Just 1 `notElem` versions)
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =

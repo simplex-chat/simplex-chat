@@ -87,7 +87,6 @@ module Simplex.Chat.Store.Groups
     getGroupRelays,
     getConnectedGroupRelays,
     setGroupRosterVersion,
-    setGroupRoster,
     getGroupRoster,
     getRosterBlob,
     setRosterPending,
@@ -1416,20 +1415,6 @@ setGroupRosterVersion :: DB.Connection -> GroupInfo -> VersionRoster -> IO ()
 setGroupRosterVersion db GroupInfo {groupId} v = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?" (v, currentTs, groupId)
-
--- Relay saves the verbatim signed roster (parts + sending owner + broker ts) to re-forward to joiners.
-setGroupRoster :: DB.Connection -> GroupInfo -> VersionRoster -> GroupMemberId -> UTCTime -> SignedMsg -> IO ()
-setGroupRoster db GroupInfo {groupId} v ownerGMId brokerTs SignedMsg {chatBinding, signatures, signedBody} = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE groups
-      SET roster_version = ?, roster_sending_owner_gm_id = ?, roster_broker_ts = ?,
-          roster_msg_chat_binding = ?, roster_msg_signatures = ?, roster_msg_body = ?, updated_at = ?
-      WHERE group_id = ?
-    |]
-    ((v, ownerGMId, brokerTs, chatBinding) :. (Binary (smpEncode signatures), Binary signedBody, currentTs, groupId))
 
 getGroupRoster :: DB.Connection -> GroupInfo -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg))
 getGroupRoster db GroupInfo {groupId} =
