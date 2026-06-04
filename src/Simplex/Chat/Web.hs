@@ -20,6 +20,7 @@ module Simplex.Chat.Web
     channelContentChanged,
     channelProfileUpdated,
     channelRemoved,
+    extractOrigin,
   )
 where
 
@@ -34,6 +35,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
+import Data.Text.Encoding (encodeUtf8)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -76,6 +78,8 @@ import Simplex.Chat.Types
   )
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Util (safeDecodeUtf8)
+import qualified URI.ByteString as U
 import Simplex.Messaging.Parsers (defaultJSON)
 import System.Directory (createDirectoryIfMissing, listDirectory, removeFile, renameFile)
 import System.FilePath (dropExtension, takeExtension, (</>))
@@ -369,13 +373,17 @@ corsEntry publicGroupId PublicGroupAccess {groupWebPage, allowEmbedding} =
   let fName = T.pack $ publicGroupIdFileName publicGroupId <> ".json"
       origin
         | allowEmbedding = CorsAny
-        | otherwise = CorsOrigins $ filter isSafeOrigin $ maybeToList groupWebPage
+        | otherwise = CorsOrigins $ mapMaybe extractOrigin $ maybeToList groupWebPage
    in (fName, origin)
 
-isSafeOrigin :: Text -> Bool
-isSafeOrigin t =
-  (T.isPrefixOf "https://" t || T.isPrefixOf "http://" t)
-    && T.all (\c -> c /= '"' && c /= '\n' && c /= '\r' && c /= ' ') t
+extractOrigin :: Text -> Maybe Text
+extractOrigin url =
+  case U.parseURI U.laxURIParserOptions (encodeUtf8 url) of
+    Right uri@U.URI {uriScheme = U.Scheme sch, uriAuthority = Just _}
+      | sch == "https" || sch == "http" ->
+          let originUri = uri {U.uriPath = "", U.uriQuery = U.Query [], U.uriFragment = Nothing}
+           in Just $ safeDecodeUtf8 $ U.serializeURIRef' originUri
+    _ -> Nothing
 
 channelPath :: Text
 channelPath = "/channel/"

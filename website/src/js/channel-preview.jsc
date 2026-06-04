@@ -327,6 +327,22 @@ const STYLE = `
   width: 300px;
 }
 
+.simplex-preview-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 80px;
+  background: var(--sp-quote);
+  border-radius: 12px;
+  color: var(--sp-text-secondary);
+}
+
+.simplex-preview-image-placeholder svg {
+  width: 32px;
+  height: 32px;
+}
+
 .simplex-preview-link-card {
   display: block;
   max-width: 400px;
@@ -714,6 +730,12 @@ const STYLE = `
 
 const DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25.8 25.46"><circle cx="12.9" cy="12.73" r="12.72" fill="#eee"/><path d="M25.44 12.73c0 7.01-5.71 12.73-12.73 12.73C5.71 25.46 0 19.75 0 12.73 0 5.73 5.71.02 12.71.02c7.01 0 12.73 5.71 12.73 12.72zM4.22 17.11c0 .58.31.87 1.05.87h4.88c-.14-.26-.19-.55-.19-.82 0-1.03.59-2.19 1.63-3.1-.79-.5-1.75-.79-2.74-.79-2.37 0-4.63 1.68-4.63 3.84zm6.6.05c0 .56.36.82 1.27.82h8.1c.93 0 1.26-.26 1.26-.82 0-1.62-2.02-3.87-5.28-3.87-3.29 0-5.34 2.25-5.34 3.87zM6.66 9.87c0 1.37 1.01 2.42 2.19 2.42 1.2 0 2.2-1.05 2.2-2.43 0-1.33-1.02-2.36-2.2-2.36-1.16 0-2.19 1.05-2.19 2.37zm6.98-.5c0 1.56 1.13 2.78 2.52 2.78 1.36 0 2.5-1.22 2.5-2.79 0-1.53-1.15-2.71-2.5-2.71-1.38 0-2.52 1.21-2.52 2.73z" fill="#ccc" fill-opacity=".85"/></svg>');
 
+const IMAGE_PLACEHOLDER_SVG = `<svg class="simplex-preview-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`;
+
+function isDataImage(src) {
+  return typeof src === 'string' && src.startsWith('data:image/');
+}
+
 function tailSvg() {
   return '<svg width="9" height="16" viewBox="0 0 9 16" xmlns="http://www.w3.org/2000/svg"><path d="M9 0 L9 16 L0 16 Q9 11 9 0 Z" fill="currentColor"/></svg>';
 }
@@ -881,7 +903,7 @@ function renderHeader(channel, channelLink, subscriberCount) {
 
   const avatar = document.createElement('img');
   avatar.className = 'simplex-preview-header-avatar';
-  avatar.src = channel.image || DEFAULT_AVATAR;
+  avatar.src = isDataImage(channel.image) ? channel.image : DEFAULT_AVATAR;
   avatar.alt = channel.displayName;
   header.appendChild(avatar);
 
@@ -919,7 +941,7 @@ function renderInfoContent(container, data, channelLink, subscriberCount, showAp
 
   const avatar = document.createElement('img');
   avatar.className = 'simplex-preview-info-avatar';
-  avatar.src = channel.image || DEFAULT_AVATAR;
+  avatar.src = isDataImage(channel.image) ? channel.image : DEFAULT_AVATAR;
   avatar.alt = channel.displayName;
   container.appendChild(avatar);
 
@@ -1152,7 +1174,7 @@ function renderMessages(container, messages, membersMap, channel) {
       if (showAvatar) {
         const avatarImg = document.createElement('img');
         avatarImg.className = 'simplex-preview-msg-avatar';
-        avatarImg.src = senderImage || DEFAULT_AVATAR;
+        avatarImg.src = isDataImage(senderImage) ? senderImage : DEFAULT_AVATAR;
         avatarImg.alt = senderName;
         row.appendChild(avatarImg);
       } else {
@@ -1262,7 +1284,7 @@ function renderQuote(quote) {
   quoteDiv.appendChild(contentDiv);
 
   if (quote.content) {
-    if (quote.content.type === 'image' || quote.content.type === 'video') {
+    if ((quote.content.type === 'image' || quote.content.type === 'video') && isDataImage(quote.content.image)) {
       const thumb = document.createElement('img');
       thumb.className = 'simplex-preview-quote-thumb';
       thumb.src = quote.content.image;
@@ -1290,13 +1312,18 @@ function classifyImage(img) {
 }
 
 function renderImageContent(inner, mc, msg, mediaOnly) {
-  if (mc.image) {
+  if (isDataImage(mc.image)) {
     const img = document.createElement('img');
     img.className = 'simplex-preview-image';
     img.src = mc.image;
     img.alt = 'Image';
     img.addEventListener('load', () => classifyImage(img));
     inner.appendChild(img);
+  } else {
+    const ph = document.createElement('div');
+    ph.className = 'simplex-preview-image-placeholder';
+    ph.innerHTML = IMAGE_PLACEHOLDER_SVG;
+    inner.appendChild(ph);
   }
   if (mc.text) {
     appendTextBlock(inner, msg);
@@ -1306,7 +1333,7 @@ function renderImageContent(inner, mc, msg, mediaOnly) {
 }
 
 function renderVideoContent(inner, mc, msg, mediaOnly) {
-  if (mc.image) {
+  if (isDataImage(mc.image)) {
     const wrapper = document.createElement('div');
     wrapper.style.position = 'relative';
     const img = document.createElement('img');
@@ -1320,6 +1347,11 @@ function renderVideoContent(inner, mc, msg, mediaOnly) {
     dur.textContent = formatDuration(mc.duration || 0);
     wrapper.appendChild(dur);
     inner.appendChild(wrapper);
+  } else {
+    const ph = document.createElement('div');
+    ph.className = 'simplex-preview-image-placeholder';
+    ph.innerHTML = IMAGE_PLACEHOLDER_SVG;
+    inner.appendChild(ph);
   }
   if (mc.text) {
     appendTextBlock(inner, msg);
@@ -1332,7 +1364,7 @@ function renderLinkContent(bubble, mc, msg) {
   if (mc.preview) {
     const card = document.createElement('div');
     card.className = 'simplex-preview-link-card';
-    if (mc.preview.image) {
+    if (isDataImage(mc.preview.image)) {
       const img = document.createElement('img');
       img.className = 'simplex-preview-link-card-image';
       img.src = mc.preview.image;

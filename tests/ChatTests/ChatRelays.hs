@@ -19,7 +19,7 @@ import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
 import Simplex.Chat.Types (GroupProfile (..))
 import Simplex.Chat.Controller (CorsOrigin (..))
-import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), removeStaleFiles, writeCorsConfig)
+import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), extractOrigin, removeStaleFiles, writeCorsConfig)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Util (decodeJSON)
 import qualified Data.Set as S
@@ -47,6 +47,7 @@ chatRelayTests = do
     it "channel deletion removes preview file" testWebPreviewChannelDeleted
     it "removeStaleFiles preserves non-base64url files" testWebPreviewStaleCleanup
     it "generate CORS config" testWebPreviewCors
+    it "extractOrigin strips path from URL" testExtractOrigin
   describe "share channel card" $ do
     it "share channel card in direct chat" testShareChannelDirect
     it "share channel card in group" testShareChannelGroup
@@ -565,6 +566,16 @@ testWebPreviewCors ps = do
   corsContent `shouldContain` "# ghi789.json (no origin configured)"
   corsContent `shouldContain` "Access-Control-Allow-Origin"
   corsContent `shouldContain` "Access-Control-Allow-Methods"
+
+testExtractOrigin :: HasCallStack => TestParams -> IO ()
+testExtractOrigin _ps = do
+  extractOrigin "https://owner.example.com/channel.html" `shouldBe` Just "https://owner.example.com"
+  extractOrigin "https://owner.example.com/path/to/page?q=1#frag" `shouldBe` Just "https://owner.example.com"
+  extractOrigin "https://owner.example.com:8443/page" `shouldBe` Just "https://owner.example.com:8443"
+  extractOrigin "https://owner.example.com" `shouldBe` Just "https://owner.example.com"
+  extractOrigin "http://localhost:3000/preview" `shouldBe` Just "http://localhost:3000"
+  extractOrigin "ftp://example.com/file" `shouldBe` Nothing
+  extractOrigin "not-a-url" `shouldBe` Nothing
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()
