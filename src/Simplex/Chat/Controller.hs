@@ -179,8 +179,16 @@ data WebPreviewConfig = WebPreviewConfig
     webPreviewItemCount :: Int
   }
 
+data PublishableGroup = PublishableGroup
+  { pgFileName :: FilePath,
+    pgCorsEntry :: Maybe (Text, CorsOrigin)
+  }
+
+data CorsOrigin = CorsAny | CorsOrigins [Text]
+  deriving (Show)
+
 data WebPreviewState = WebPreviewState
-  { publishableGroupIds :: TVar (Map Int64 FilePath),
+  { publishableGroupIds :: TVar (Map Int64 PublishableGroup),
     priorityRender :: TQueue Int64,
     filesToRemove :: TQueue FilePath,
     corsNeeded :: TVar Bool,

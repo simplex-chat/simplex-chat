@@ -104,6 +104,7 @@ module Simplex.Chat.Store.Groups
     isRelayGroupRejected,
     allowRelayGroup,
     getRelayServedGroups,
+    getRelayPublishableGroups,
     getRelayInactiveGroups,
     createNewContactMemberAsync,
     createJoiningMember,
@@ -1696,6 +1697,24 @@ getRelayServedGroups db vr User {userId, userContactId} = do
           <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?)"
       )
       (userId, userContactId, RSAccepted, RSActive)
+
+getRelayPublishableGroups :: DB.Connection -> User -> IO [(Int64, B64UrlByteString, Maybe PublicGroupAccess)]
+getRelayPublishableGroups db User {userId, userContactId} =
+  map toRow <$>
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id, gp.public_group_id,
+               gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding
+        FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id AND mu.contact_id = ?
+        WHERE g.user_id = ? AND g.relay_own_status IN (?, ?)
+          AND gp.public_group_id IS NOT NULL
+      |]
+      (userContactId, userId, RSAccepted, RSActive)
+  where
+    toRow ((gId, pgId) :. accessRow) = (gId, pgId, toPublicGroupAccess accessRow)
 
 getRelayInactiveGroups :: DB.Connection -> VersionRangeChat -> User -> NominalDiffTime -> IO [GroupInfo]
 getRelayInactiveGroups db vr User {userId, userContactId} ttl = do

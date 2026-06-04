@@ -13,7 +13,6 @@ module Simplex.Chat.Web
     WebMessage (..),
     WebMemberProfile (..),
     WebFileInfo (..),
-    CorsOrigin (..),
     webPreviewWorker,
     renderWebPreviews,
     writeCorsConfig,
@@ -43,7 +42,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), WebPreviewConfig (..), WebPreviewState (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..))
 import Simplex.Chat.Markdown (FormattedText (..), MarkdownList, parseMaybeMarkdownList)
 import Simplex.Chat.Messages
   ( CChatItem (..),
@@ -59,7 +58,7 @@ import Simplex.Chat.Messages
   )
 import Simplex.Chat.Messages.CIContent (ciMsgContent)
 import Simplex.Chat.Protocol (MsgContent, MsgRef (..), QuotedMsg (..), isReport)
-import Simplex.Chat.Store.Groups (getGroupOwners, getRelayServedGroups)
+import Simplex.Chat.Store.Groups (getGroupOwners, getRelayPublishableGroups, getRelayServedGroups)
 import Simplex.Chat.Store.Messages (getGroupWebPreviewItems)
 import Simplex.Chat.Store.Shared (getGroupInfo)
 import Simplex.Chat.Types
@@ -132,6 +131,8 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
   forM_ (webPreviewState cc) $ \wps -> do
     createDirectoryIfMissing True webJsonDir
     initPublishableGroups wps
+    cleanStaleFiles wps
+    regenerateCors wps
     seedRoutinePending wps
     workerLoop wps
   where
@@ -142,9 +143,6 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
       drainPriority
       handleCors
       drainRoutine
-      groups <- loadRelayGroups
-      regenerateCors groups
-      cleanStaleFiles groups
       seedRoutinePending wps
       interruptibleSleep
       workerLoop wps
@@ -163,7 +161,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
 
         handleCors = do
           needed <- atomically $ swapTVar corsNeeded False
-          when needed $ loadRelayGroups >>= regenerateCors
+          when needed $ regenerateCors wps
 
         drainRoutine = do
           mGId <- atomically $ do
@@ -183,9 +181,20 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
               `orElse` takeTMVar wakeSignal
 
     initPublishableGroups WebPreviewState {publishableGroupIds} = do
-      groups <- loadRelayGroups
-      let gIds = M.fromList [(groupId, f) | g@GroupInfo {groupId} <- groups, Just f <- [publicGroupFileName g]]
+      rows <- withTransaction (chatStore cc) $ \db ->
+        concat <$> mapM (getRelayPublishableGroups db) users
+      let gIds = M.fromList [(gId, toPublishableGroup pgId access) | (gId, pgId, access) <- rows]
       atomically $ writeTVar publishableGroupIds gIds
+
+    cleanStaleFiles WebPreviewState {publishableGroupIds} = do
+      ids <- readTVarIO publishableGroupIds
+      let activeFiles = S.fromList $ map pgFileName $ M.elems ids
+      removeStaleFiles webJsonDir activeFiles
+
+    regenerateCors WebPreviewState {publishableGroupIds} = do
+      ids <- readTVarIO publishableGroupIds
+      let entries = mapMaybe pgCorsEntry $ M.elems ids
+      forM_ webCorsFile $ writeCorsConfig entries
 
     seedRoutinePending WebPreviewState {publishableGroupIds, routinePending} =
       atomically $ M.keysSet <$> readTVar publishableGroupIds >>= writeTVar routinePending
@@ -201,9 +210,9 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
               void $ renderGroupPreview cfg cc u gInfo
             _ -> do
               fName <- atomically $ do
-                ids <- readTVar publishableGroupIds
+                pg <- M.lookup gId <$> readTVar publishableGroupIds
                 modifyTVar' publishableGroupIds (M.delete gId)
-                pure $ M.lookup gId ids
+                pure $ pgFileName <$> pg
               forM_ fName $ \f ->
                 removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
               logInfo $ "web preview: group " <> T.pack (show gId) <> " no longer publishable"
@@ -216,22 +225,6 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
         go (u : us) = f u >>= \case
           Right a -> pure (Just a)
           Left _ -> go us
-
-    loadRelayGroups =
-      withTransaction (chatStore cc) $ \db ->
-        concat <$> mapM (getRelayServedGroups db vr') users
-
-    regenerateCors groups = do
-      let entries = mapMaybe groupCorsEntry groups
-      forM_ webCorsFile $ writeCorsConfig entries
-
-    cleanStaleFiles groups = do
-      let activeFiles = S.fromList $ mapMaybe publicGroupFileName [g | g <- groups, hasPublicGroup g]
-      removeStaleFiles webJsonDir activeFiles
-
-    groupCorsEntry GroupInfo {groupProfile = GroupProfile {publicGroup}} =
-      publicGroup >>= \PublicGroupProfile {publicGroupId, publicGroupAccess} ->
-        corsEntry publicGroupId <$> publicGroupAccess
 
 renderWebPreviews :: WebPreviewConfig -> ChatController -> User -> IO ()
 renderWebPreviews cfg@WebPreviewConfig {webJsonDir} cc user = do
@@ -284,16 +277,19 @@ channelProfileUpdated :: ChatController -> Int64 -> GroupProfile -> STM ()
 channelProfileUpdated cc gId GroupProfile {publicGroup} =
   forM_ (webPreviewState cc) $ \WebPreviewState {publishableGroupIds, priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal} ->
     case publicGroup of
-      Just PublicGroupProfile {publicGroupId} -> do
-        let fName = publicGroupIdFileName publicGroupId <> ".json"
-        modifyTVar' publishableGroupIds (M.insert gId fName)
+      Just PublicGroupProfile {publicGroupId, publicGroupAccess} -> do
+        let pg = PublishableGroup
+              { pgFileName = publicGroupIdFileName publicGroupId <> ".json",
+                pgCorsEntry = corsEntry publicGroupId <$> publicGroupAccess
+              }
+        modifyTVar' publishableGroupIds (M.insert gId pg)
         writeTQueue priorityRender gId
         modifyTVar' routinePending (S.delete gId)
         writeTVar corsNeeded True
         void $ tryPutTMVar wakeSignal ()
       Nothing -> do
         ids <- readTVar publishableGroupIds
-        forM_ (M.lookup gId ids) $ writeTQueue filesToRemove
+        forM_ (pgFileName <$> M.lookup gId ids) $ writeTQueue filesToRemove
         modifyTVar' publishableGroupIds (M.delete gId)
         modifyTVar' routinePending (S.delete gId)
         writeTVar corsNeeded True
@@ -303,7 +299,7 @@ channelRemoved :: ChatController -> Int64 -> STM ()
 channelRemoved cc gId =
   forM_ (webPreviewState cc) $ \WebPreviewState {publishableGroupIds, filesToRemove, corsNeeded, routinePending, wakeSignal} -> do
     ids <- readTVar publishableGroupIds
-    forM_ (M.lookup gId ids) $ writeTQueue filesToRemove
+    forM_ (pgFileName <$> M.lookup gId ids) $ writeTQueue filesToRemove
     modifyTVar' publishableGroupIds (M.delete gId)
     modifyTVar' routinePending (S.delete gId)
     writeTVar corsNeeded True
@@ -361,8 +357,12 @@ memberToProfile :: GroupMember -> WebMemberProfile
 memberToProfile GroupMember {memberId, memberProfile = LocalProfile {displayName, image}} =
   WebMemberProfile {memberId, displayName, image}
 
-data CorsOrigin = CorsAny | CorsOrigins [Text]
-  deriving (Show)
+toPublishableGroup :: B64UrlByteString -> Maybe PublicGroupAccess -> PublishableGroup
+toPublishableGroup pgId access =
+  PublishableGroup
+    { pgFileName = publicGroupIdFileName pgId <> ".json",
+      pgCorsEntry = corsEntry pgId <$> access
+    }
 
 corsEntry :: B64UrlByteString -> PublicGroupAccess -> (Text, CorsOrigin)
 corsEntry publicGroupId PublicGroupAccess {groupWebPage, allowEmbedding} =
@@ -419,6 +419,3 @@ publicGroupIdFileName = B.unpack . strEncode
 hasPublicGroup :: GroupInfo -> Bool
 hasPublicGroup GroupInfo {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
 
-publicGroupFileName :: GroupInfo -> Maybe FilePath
-publicGroupFileName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
-  (\PublicGroupProfile {publicGroupId} -> publicGroupIdFileName publicGroupId <> ".json") <$> publicGroup

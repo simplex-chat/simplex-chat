@@ -18,7 +18,8 @@ import qualified Data.Text as T
 import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
 import Simplex.Chat.Types (GroupProfile (..))
-import Simplex.Chat.Web (CorsOrigin (..), WebChannelPreview (..), WebMessage (..), removeStaleFiles, writeCorsConfig)
+import Simplex.Chat.Controller (CorsOrigin (..))
+import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), removeStaleFiles, writeCorsConfig)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Util (decodeJSON)
 import qualified Data.Set as S
