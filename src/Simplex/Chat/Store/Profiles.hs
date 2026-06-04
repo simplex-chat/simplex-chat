@@ -159,7 +159,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]

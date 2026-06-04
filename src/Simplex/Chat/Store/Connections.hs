@@ -121,13 +121,13 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           (userId, contactId, CSActive)
     toContact' :: Int64 -> Connection -> [ChatTagId] -> ContactRow' -> Contact
     toContact' contactId conn chatTags ((profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL, simplexNameRaw)) =
-      let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = Nothing, peerType, preferences, localAlias}
+      let simplexName = decodeSimplexName simplexNameRaw
+          profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName, peerType, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
           preparedContact = toPreparedContact preparedContactRow
           groupDirectInv = toGroupDirectInvitation groupDirectInvRow
-          simplexName = decodeSimplexName simplexNameRaw
        in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData, simplexName}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = do
