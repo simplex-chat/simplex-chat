@@ -98,7 +98,7 @@ import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
-import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), textToHostMode)
+import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), ProxyClientError (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -107,7 +107,8 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), patt
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NameRecord, NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SMPServer, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
@@ -4623,6 +4624,62 @@ processChatCommand vr nm = \case
     getSharedMsgId = do
       gVar <- asks random
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
+
+-- | Failure modes for 'resolveOnUserServers' / 'iterateResolvers'.
+data ResolveError
+  = -- | No enabled SMP server speaks RSLV (every one returned CMD PROHIBITED, or no servers configured).
+    ResolverUnavailable
+  | -- | AUTH from a name-capable server. Every name server reads the same on-chain state, so we trust the first one's no.
+    NameNotRegistered
+  | -- | Last non-PROHIBITED, non-AUTH error (network, proxy, timeout). Surface to user so they can retry.
+    ResolverTransport AgentErrorType
+  deriving (Eq, Show)
+
+-- | Return the user's enabled SMP servers (preset and custom, excluding deleted).
+-- Mirrors the filter applied by 'useServers' before configuring the agent.
+enabledSMPServersForUser :: User -> CM [SMPServer]
+enabledSMPServersForUser user =
+  mapMaybe enabledSrv <$> withFastStore' (\db -> getProtocolServers db SPSMP user)
+  where
+    enabledSrv UserServer {server = ProtoServerWithAuth srv _, enabled, deleted}
+      | enabled && not deleted = Just srv
+      | otherwise = Nothing
+
+-- | Resolve a SimpleX name by trying the user's enabled SMP servers in order.
+-- AUTH from any name-capable server is treated as definitive NotFound: every
+-- name server reads the same on-chain state, so cross-server consensus is
+-- redundant for MVP. CMD PROHIBITED indicates the server doesn't speak
+-- namesSMPVersion; skip and try the next.
+resolveOnUserServers :: User -> SimplexNameDomain -> CM (Either ResolveError NameRecord)
+resolveOnUserServers user@User {userId} domain = do
+  srvs <- enabledSMPServersForUser user
+  a <- asks smpAgent
+  iterateResolvers srvs $ \srv ->
+    liftIO . runExceptT $ resolveSimplexName a NRMInteractive userId srv domain
+
+-- | Pure iteration logic for 'resolveOnUserServers'. Extracted so tests can
+-- supply a stub resolver without standing up a real agent / proxy.
+iterateResolvers ::
+  Monad m =>
+  [SMPServer] ->
+  (SMPServer -> m (Either AgentErrorType NameRecord)) ->
+  m (Either ResolveError NameRecord)
+iterateResolvers servers resolve = go servers Nothing
+  where
+    go [] lastErr = pure $ Left $ maybe ResolverUnavailable ResolverTransport lastErr
+    go (srv : rest) prevErr =
+      resolve srv >>= \case
+        Right nr -> pure $ Right nr
+        Left e
+          | isNotRegistered e -> pure $ Left NameNotRegistered
+          | isUnsupported e -> go rest prevErr
+          | otherwise -> go rest (Just e)
+    isNotRegistered = \case
+      SMP _ SMP.AUTH -> True
+      _ -> False
+    isUnsupported = \case
+      PROXY _ _ (ProxyProtocolError (SMP.CMD SMP.PROHIBITED)) -> True
+      _ -> False
 
 data ConnectViaContactResult
   = CVRConnectedContact Contact
