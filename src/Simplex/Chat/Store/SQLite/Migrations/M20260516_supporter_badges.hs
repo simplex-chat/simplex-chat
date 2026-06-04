@@ -12,7 +12,7 @@ ALTER TABLE contact_profiles ADD COLUMN badge_proof BLOB;
 ALTER TABLE contact_profiles ADD COLUMN badge_pres_header BLOB;
 ALTER TABLE contact_profiles ADD COLUMN badge_expiry TEXT;
 ALTER TABLE contact_profiles ADD COLUMN badge_type TEXT;
-ALTER TABLE contact_profiles ADD COLUMN badge_verified INTEGER;
+ALTER TABLE contact_profiles ADD COLUMN badge_verified INTEGER NOT NULL DEFAULT 0;
 |]
 
 down_m20260516_supporter_badges :: Query

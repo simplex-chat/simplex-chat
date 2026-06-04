@@ -32,7 +32,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
-import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, srvBadgePublicKey, verifyBadge)
+import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, srvBadgePublicKey, verifyBadge_)
 import Simplex.Chat.Messages
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
@@ -413,9 +413,9 @@ createContact db user profile = do
   void $ createContact_ db user profile emptyChatPrefs Nothing "" currentTs
 
 createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
-createContact_ db User {userId} p@Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
+createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-    badgeVerified <- forM badge $ verifyBadge srvBadgePublicKey
+    badgeVerified <- verifyBadge_ srvBadgePublicKey badge
     let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
     DB.execute
       db
@@ -493,7 +493,7 @@ type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: UTCTime -> VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
 toContact now vr user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow) :. connRow) =
-  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, badge = rowToBadge now badgeRow, preferences, localAlias}
+  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
@@ -554,7 +554,7 @@ toUser :: (UserId, UserId, ContactId, ProfileId, BoolInt, Int64) :. (ContactName
 toUser ((userId, auId, userContactId, profileId, BI activeUser, activeOrder) :. (displayName, fullName, shortDescr, image, contactLink, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, uiThemes, BI userChatRelay)) =
   User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptMemberContacts = BoolDef autoAcceptMemberContacts, viewPwdHash, userMemberProfileUpdatedAt, uiThemes, userChatRelay = BoolDef userChatRelay}
   where
-    profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, badge = Nothing, preferences = userPreferences, localAlias = ""}
+    profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localBadge = Nothing, preferences = userPreferences, localAlias = ""}
     fullPreferences = fullPreferences' userPreferences
     viewPwdHash = UserPwdHash <$> viewPwdHash_ <*> viewPwdSalt_
 
@@ -768,7 +768,7 @@ toContactMember now vr User {userContactId} (memberRow :. connRow) =
 
 rowToLocalProfile :: UTCTime -> ProfileRow -> LocalProfile
 rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, preferences) :. badgeRow) =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, badge = rowToBadge now badgeRow, localAlias, preferences}
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localBadge = rowToBadge now badgeRow, localAlias, preferences}
 
 toBusinessChatInfo :: BusinessChatInfoRow -> Maybe BusinessChatInfo
 toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId}

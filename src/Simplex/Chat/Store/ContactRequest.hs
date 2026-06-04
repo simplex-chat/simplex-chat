@@ -24,7 +24,7 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Int (Int64)
 import Data.Time.Clock (getCurrentTime)
-import Simplex.Chat.Badges (badgeToRow, srvBadgePublicKey, verifyBadge)
+import Simplex.Chat.Badges (badgeToRow, srvBadgePublicKey, verifyBadge_)
 import Simplex.Chat.Protocol (MsgContent, businessChatsVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
@@ -161,7 +161,7 @@ createOrUpdateContactRequest
       createContactRequest :: ExceptT StoreError IO RequestStage
       createContactRequest = do
         currentTs <- liftIO $ getCurrentTime
-        badgeVerified <- liftIO $ forM badge $ verifyBadge srvBadgePublicKey
+        badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
         let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
         ExceptT $ withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
           liftIO $
@@ -222,8 +222,8 @@ createOrUpdateContactRequest
       updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
       updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
         currentTs <- liftIO getCurrentTime
-        badgeVerified <- liftIO $ forM badge $ verifyBadge srvBadgePublicKey
-        let badgeRow@(bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
+        badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
+        let badgeRow = badgeToRow badge badgeVerified
         liftIO $ updateProfile currentTs badgeRow
         updateRequest currentTs
         ucr' <- getContactRequest db user contactRequestId

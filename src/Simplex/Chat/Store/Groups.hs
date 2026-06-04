@@ -196,7 +196,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Badges (BadgeRow, badgeToRow, srvBadgePublicKey, verifyBadge)
+import Simplex.Chat.Badges (BadgeRow, badgeToRow, srvBadgePublicKey, verifyBadge_)
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol hiding (Binary)
@@ -1727,7 +1727,7 @@ createJoiningMember
   memberStatus
   memberKey_ = do
     currentTs <- liftIO getCurrentTime
-    badgeVerified <- liftIO $ forM badge $ verifyBadge srvBadgePublicKey
+    badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
     let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
     ExceptT . withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
       liftIO $
@@ -2091,7 +2091,7 @@ createNewGroupMember db user gInfo invitingMember memInfo@MemberInfo {profile} m
 createNewMemberProfile_ :: DB.Connection -> User -> Profile -> UTCTime -> ExceptT StoreError IO (Text, ProfileId)
 createNewMemberProfile_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, badge, preferences} createdAt =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-    badgeVerified <- forM badge $ verifyBadge srvBadgePublicKey
+    badgeVerified <- verifyBadge_ srvBadgePublicKey badge
     let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
     DB.execute
       db
@@ -2153,7 +2153,7 @@ createNewMember_
           invitedBy,
           invitedByGroupMemberId = memInvitedByGroupMemberId,
           localDisplayName,
-          memberProfile = toLocalProfile memberContactProfileId memberProfile "" createdAt Nothing,
+          memberProfile = toLocalProfile memberContactProfileId memberProfile "" createdAt False,
           memberContactId,
           memberContactProfileId,
           activeConn,

@@ -700,12 +700,12 @@ setQuotaErrCounter db User {userId} Connection {connId} counter = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
 
-updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> IO ()
 updateContactProfile_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
   updateContactProfile_' db userId profileId profile badgeVerified currentTs
 
-updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> UTCTime -> IO ()
 updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} badgeVerified updatedAt = do
   let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
   DB.execute
@@ -719,12 +719,12 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, short
     ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. (bProof, bPresHeader, bExpiry, bType, bVerified) :. (userId, profileId))
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
-updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> IO ()
 updateMemberContactProfileReset_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
   updateMemberContactProfileReset_' db userId profileId profile badgeVerified currentTs
 
-updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> UTCTime -> IO ()
 updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt = do
   let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
   DB.execute
@@ -738,12 +738,12 @@ updateMemberContactProfileReset_' db userId profileId Profile {displayName, full
     ((displayName, fullName, shortDescr, image, updatedAt) :. (bProof, bPresHeader, bExpiry, bType, bVerified) :. (userId, profileId))
 
 -- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
-updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> IO ()
 updateMemberContactProfile_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
   updateMemberContactProfile_' db userId profileId profile badgeVerified currentTs
 
-updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> UTCTime -> IO ()
 updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt = do
   let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
   DB.execute
@@ -860,7 +860,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
         Contact
           { contactId,
             localDisplayName,
-            profile = toLocalProfile profileId profile "" currentTs Nothing,
+            profile = toLocalProfile profileId profile "" currentTs False,
             activeConn = Just conn,
             contactUsed,
             contactStatus = CSActive,

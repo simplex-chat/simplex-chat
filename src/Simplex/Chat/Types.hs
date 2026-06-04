@@ -760,7 +760,7 @@ data LocalProfile = LocalProfile
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
-    badge :: Maybe LocalBadge,
+    localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias
   }
   deriving (Eq, Show)
@@ -768,26 +768,23 @@ data LocalProfile = LocalProfile
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} localAlias now verified_ =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = mkLocalBadge, localAlias}
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Bool -> LocalProfile
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} localAlias now verified =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias}
   where
-    mkLocalBadge = do
-      b <- badge
-      verified <- verified_
-      pure LocalBadge {badgeStatus = mkBadgeStatus now verified b, badge = b}
+    localBadge = (\b -> LocalBadge {badgeStatus = mkBadgeStatus now verified b, badge = b}) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = (\LocalBadge {badge = b} -> b) <$> badge}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge} =
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = (\LocalBadge {badge} -> badge) <$> localBadge}
 
-profileBadgeVerified :: LocalProfile -> Profile -> IO (Maybe Bool)
-profileBadgeVerified LocalProfile {badge = oldBadge} Profile {badge = newBadge} =
-  case (oldBadge, newBadge) of
-    (_, Nothing) -> pure Nothing
+profileBadgeVerified :: LocalProfile -> Profile -> IO Bool
+profileBadgeVerified LocalProfile {localBadge} Profile {badge = newBadge} =
+  case (localBadge, newBadge) of
+    (_, Nothing) -> pure False
     (Just LocalBadge {badge = oldB, badgeStatus}, Just newB)
-      | oldB == newB -> pure $ Just (badgeStatus /= BSFailed)
-    (_, Just newB) -> Just <$> verifyBadge srvBadgePublicKey newB
+      | oldB == newB -> pure (badgeStatus /= BSFailed)
+    (_, Just newB) -> verifyBadge srvBadgePublicKey newB
 
 data GroupType
   = GTChannel

@@ -124,7 +124,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           (userId, contactId, CSActive)
     toContact' :: UTCTime -> Int64 -> Connection -> [ChatTagId] -> ContactRow' -> Contact
     toContact' currentTs contactId conn chatTags ((profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow) =
-      let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, badge = rowToBadge currentTs badgeRow, preferences, localAlias}
+      let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localBadge = rowToBadge currentTs badgeRow, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn

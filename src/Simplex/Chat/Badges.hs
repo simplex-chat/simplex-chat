@@ -22,6 +22,7 @@ module Simplex.Chat.Badges
     verifyBadgeSignature,
     generateBadgeProof,
     verifyBadge,
+    verifyBadge_,
     mkBadgeStatus,
     localBadgeVerified,
     srvBadgePublicKey,
@@ -203,6 +204,9 @@ verifyBadge :: BBSPublicKey -> SupporterBadge -> IO Bool
 verifyBadge pk SupporterBadge {proof, presHeader, badgeExpiry, badgeType} =
   bbsProofVerify pk proof bbsBadgeHeader presHeader bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeDisclosedMessages badgeExpiry badgeType)
 
+verifyBadge_ :: BBSPublicKey -> Maybe SupporterBadge -> IO Bool
+verifyBadge_ = maybe (pure False) . verifyBadge
+
 localBadgeVerified :: Maybe LocalBadge -> Maybe Bool
 localBadgeVerified = fmap $ \LocalBadge {badgeStatus} -> badgeStatus /= BSFailed
 
@@ -217,19 +221,17 @@ instance FromField BadgeType where fromField = fromTextField_ textDecode
 
 instance ToField BadgeType where toField = toField . textEncode
 
-type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, Maybe BoolInt)
+type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, BoolInt)
 
-badgeToRow :: Maybe SupporterBadge -> Maybe Bool -> BadgeRow
-badgeToRow Nothing _ = (Nothing, Nothing, Nothing, Nothing, Nothing)
+badgeToRow :: Maybe SupporterBadge -> Bool -> BadgeRow
 badgeToRow (Just SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType}) verified =
-  (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), BI <$> verified)
+  (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), BI verified)
+badgeToRow _ _ = (Nothing, Nothing, Nothing, Nothing, BI False)
 
 rowToBadge :: UTCTime -> BadgeRow -> Maybe LocalBadge
-rowToBadge _ (Nothing, _, _, _, _) = Nothing
-rowToBadge now (Just p, Just ph, badgeExpiry, Just btText, verified_) = do
+rowToBadge now (Just p, Just ph, badgeExpiry, Just btText, (BI verified)) = do
   bt <- textDecode btText
   let b = SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType = bt}
-      verified = maybe False unBI verified_
   Just LocalBadge {badgeStatus = mkBadgeStatus now verified b, badge = b}
 rowToBadge _ _ = Nothing
 

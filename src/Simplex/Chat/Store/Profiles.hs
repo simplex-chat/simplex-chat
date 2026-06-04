@@ -310,9 +310,9 @@ updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO U
 updateUserProfile db user p'
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
-      updateContactProfile_' db userId profileId p' Nothing currentTs
+      updateContactProfile_' db userId profileId p' False currentTs
       userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
-      pure user {profile = toLocalProfile profileId p' localAlias currentTs Nothing, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+      pure user {profile = toLocalProfile profileId p' localAlias currentTs False, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
@@ -322,9 +322,9 @@ updateUserProfile db user p'
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
-        updateContactProfile_' db userId profileId p' Nothing currentTs
+        updateContactProfile_' db userId profileId p' False currentTs
         updateContactLDN_ db user userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile = toLocalProfile profileId p' localAlias currentTs Nothing, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+        pure user {localDisplayName = newName, profile = toLocalProfile profileId p' localAlias currentTs False, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateUserMemberProfileUpdatedAt_ currentTs
       | userMemberProfileChanged = do
