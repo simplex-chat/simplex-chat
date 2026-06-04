@@ -15,6 +15,7 @@ import chat.simplex.common.simplexWindowState
 import kotlinx.coroutines.delay
 import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.IOException
 import java.net.URI
 import java.util.*
 import javax.imageio.ImageIO
@@ -24,6 +25,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
 private val uStyle = SpanStyle(textDecoration = TextDecoration.Underline)
+private const val MAX_IMAGE_DIMENSION = 4320
+private const val MAX_IMAGE_ASPECT_RATIO = 256
 private fun fontStyle(color: String) =
   SpanStyle(color = Color(color.replace("#", "ff").toLongOrNull(16) ?: Color.White.toArgb().toLong()))
 
@@ -165,9 +168,8 @@ actual fun getFileSize(uri: URI): Long? = uri.toFile().length()
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? =
   try {
-    uri.inputStream().use {
-      ImageIO.read(it).toComposeImageBitmap()
-    }
+    val data = uri.inputStream()?.use { it.readBytes() } ?: throw IOException("Unable to open image")
+    decodeBoundedImage(data)
   } catch (e: Exception) {
     Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
     if (withAlertOnException) showImageDecodingException()
@@ -177,13 +179,43 @@ actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitma
 
 actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? =
   try {
-    ImageIO.read(ByteArrayInputStream(data)).toComposeImageBitmap()
+    decodeBoundedImage(data)
   } catch (e: Exception) {
     Log.e(TAG, "Error while encoding bitmap from byte array: ${e.stackTraceToString()}")
     if (withAlertOnException) showImageDecodingException()
 
     null
   }
+
+private fun decodeBoundedImage(data: ByteArray): ImageBitmap {
+  validateImageDataWithinLimits(data)
+  return (ImageIO.read(ByteArrayInputStream(data)) ?: throw IOException("Unsupported image format"))
+    .toComposeImageBitmap()
+}
+
+internal fun validateImageDataWithinLimits(data: ByteArray) {
+  val stream = ImageIO.createImageInputStream(ByteArrayInputStream(data))
+    ?: throw IOException("Unsupported image format")
+  stream.use {
+    val readers = ImageIO.getImageReaders(it)
+    if (!readers.hasNext()) throw IOException("Unsupported image format")
+
+    val reader = readers.next()
+    try {
+      reader.input = it
+      if (!imageDimensionsWithinLimits(reader.getWidth(0), reader.getHeight(0))) {
+        throw IOException("Image dimensions exceed limit")
+      }
+    } finally {
+      reader.dispose()
+    }
+  }
+}
+
+internal fun imageDimensionsWithinLimits(width: Int, height: Int): Boolean =
+  width in 1..MAX_IMAGE_DIMENSION &&
+    height in 1..MAX_IMAGE_DIMENSION &&
+    height.toLong() <= width.toLong() * MAX_IMAGE_ASPECT_RATIO
 
 // LALAL implement to support animated drawable
 actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? = null
