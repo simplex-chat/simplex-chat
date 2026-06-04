@@ -731,8 +731,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   ct <- getContactViaMember db cxt user m
                   liftIO $ setNewContactMemberConnRequest db user m cReq
                   liftIO $ (ct,) <$> getGroupLinkId db user gInfo
-                sendGrpInvitation ct m groupLinkId
-                toView $ CEvtSentGroupInvitation user gInfo ct m
+                if memberRole' membership >= GRAdmin
+                  then do
+                    sendGrpInvitation ct m groupLinkId
+                    toView $ CEvtSentGroupInvitation user gInfo ct m
+                  else messageError "processGroupMessage: group link host no longer has admin role"
                 where
                   sendGrpInvitation :: Contact -> GroupMember -> Maybe GroupLinkId -> CM ()
                   sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} groupLinkId = do
@@ -1535,9 +1538,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               -- TODO [short links] deduplicate request by xContactId?
               gInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
-              if useRelays' gInfo
-                then messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored direct join request from " <> displayName <> " (group uses relays)"
-                else do
+              if
+                | useRelays' gInfo ->
+                    messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored direct join request from " <> displayName <> " (group uses relays)"
+                | memberRole' (membership gInfo) < GRAdmin ->
+                    messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored join request because host is no longer admin"
+                | otherwise -> do
                   acceptMember_ <- asks $ acceptMember . chatHooks . config
                   maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
                     Right (acceptance, useRole)
@@ -1588,10 +1594,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               gInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
-              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted gLinkMemRole Nothing (Just joiningMemberKey)
-              (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
-              createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-              toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
+              if memberRole' (membership gInfo) < GRAdmin
+                then messageWarning $ "memberJoinRequestViaRelay (group " <> groupName' gInfo <> "): ignored join request because host is no longer admin"
+                else do
+                  mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted gLinkMemRole Nothing (Just joiningMemberKey)
+                  (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
+                  createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                  toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
 
@@ -3117,6 +3126,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | otherwise = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
+              when (memberId' member == membershipMemId && memRole < GRAdmin) $
+                deleteGroupLinkIfExists user gInfo'
               (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
               (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
               groupMsgToView cInfo ci

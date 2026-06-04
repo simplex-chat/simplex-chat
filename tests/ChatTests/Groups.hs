@@ -108,6 +108,7 @@ chatGroupTests = do
     it "invitee incognito" testGroupLinkInviteeIncognito
     it "incognito - join/invite" testGroupLinkIncognitoJoinInvite
     it "group link member role" testGroupLinkMemberRole
+    it "demoted admin cannot keep using group link" testGroupLinkDemotedAdmin
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
   describe "group links - member screening" $ do
@@ -2928,6 +2929,24 @@ testGroupLinkMemberRole =
       cath <## "#team: you changed the role of bob to admin"
       bob <## "#team: cath changed your role from member to admin"
       alice <## "#team: cath changed the role of bob from member to admin"
+
+testGroupLinkDemotedAdmin :: HasCallStack => TestParams -> IO ()
+testGroupLinkDemotedAdmin =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob _cath -> do
+      createGroup2' "team" alice (bob, GRAdmin) True
+
+      bob ##> "/create link #team member"
+      _gLink <- getGroupLink bob "team" GRMember True
+
+      alice ##> "/mr #team bob member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob to member",
+          bob <## "#team: alice changed your role from admin to member"
+        ]
+
+      bob ##> "/show link #team"
+      bob <## "#team: you have insufficient permissions for this action, the required role is admin"
 
 testGroupLinkHostIncognito :: HasCallStack => TestParams -> IO ()
 testGroupLinkHostIncognito =
