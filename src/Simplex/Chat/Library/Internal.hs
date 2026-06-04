@@ -1447,13 +1447,27 @@ encodeShortLinkData d =
         | otherwise = s
    in UserLinkData s'
 
+maxDecompressedLinkDataLength :: Int
+maxDecompressedLinkDataLength = 65536
+
+decompressLinkUserData :: ByteString -> Either String ByteString
+decompressLinkUserData s = case Z1.decompressedSize s of
+  Just size
+    | size <= maxDecompressedLinkDataLength -> case Z1.decompress s of
+        Z1.Error e -> Left e
+        Z1.Skip -> Right ""
+        Z1.Decompress s' -> Right s'
+  _ ->
+    Left $
+      "compressed link data size not specified or exceeds "
+        <> show maxDecompressedLinkDataLength
+
 decodeLinkUserData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
 decodeLinkUserData cData
   | B.null s = pure Nothing
-  | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
-      Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
-      Z1.Skip -> pure Nothing
-      Z1.Decompress s' -> decode s'
+  | B.head s == 'X' = case decompressLinkUserData $ B.drop 1 s of
+      Left e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
+      Right s' -> decode s'
   | otherwise = decode s
   where
     decode s' = case J.eitherDecodeStrict s' of

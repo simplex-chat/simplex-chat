@@ -9,6 +9,11 @@ module ProtocolTests where
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
+import Simplex.Chat.Library.Internal
+  ( decodeLinkUserData,
+    encodeShortLinkData,
+    maxDecompressedLinkDataLength,
+  )
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -22,7 +27,9 @@ import Simplex.Messaging.Version
 import Test.Hspec
 
 protocolTests :: Spec
-protocolTests = decodeChatMessageTest
+protocolTests = do
+  decodeChatMessageTest
+  shortLinkDataTests
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")
@@ -108,6 +115,25 @@ testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = N
 
 testGroupProfile :: GroupProfile
 testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing}
+
+shortLinkDataTests :: Spec
+shortLinkDataTests = describe "Short link data encoding/decoding" $ do
+  it "decodes compressed short-link user data below the decompressed size limit" $ do
+    let value = replicate 11000 'a'
+    decodeLinkUserData (linkData value) `shouldReturn` Just value
+  it "rejects compressed short-link user data above the decompressed size limit" $ do
+    let value = replicate (maxDecompressedLinkDataLength + 1) 'a'
+    decodeLinkUserData (linkData value) `shouldReturn` (Nothing :: Maybe String)
+  where
+    linkData value =
+      ContactLinkData
+        supportedSMPAgentVRange
+        UserContactData
+          { direct = True,
+            owners = [],
+            relays = [],
+            userData = encodeShortLinkData (value :: String)
+          }
 
 decodeChatMessageTest :: Spec
 decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
