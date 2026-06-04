@@ -3122,7 +3122,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       where
         GroupMember {memberId = membershipMemId} = membership
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
-          | senderRole < GRAdmin || senderRole < fromRole =
+          | senderRole < maximum ([GRAdmin, fromRole, memRole] :: [GroupMemberRole]) =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | otherwise = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
