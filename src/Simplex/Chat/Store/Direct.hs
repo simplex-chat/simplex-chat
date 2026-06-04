@@ -400,13 +400,18 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> VersionRangeChat -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe SimplexNameInfo -> ExceptT StoreError IO Contact
+-- | Returns (contact, displaced) — displaced is Just the display_name of a
+-- contact_profiles row whose peer-claimed simplex_name was cleared to make
+-- room for the new contact's claim, so the caller can emit
+-- CEvtSimplexNameConflict.
+createPreparedContact :: DB.Connection -> VersionRangeChat -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe SimplexNameInfo -> ExceptT StoreError IO (Contact, Maybe ContactName)
 createPreparedContact db vr user p connLinkToConnect welcomeSharedMsgId simplexName = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences prepared "" currentTs simplexName
-  getContact db vr user contactId
+  (contactId, displaced) <- createContact_ db user p ctUserPreferences prepared "" currentTs simplexName
+  ct <- getContact db vr user contactId
+  pure (ct, displaced)
 
 updatePreparedContactUser :: DB.Connection -> VersionRangeChat -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
@@ -446,13 +451,15 @@ updatePreparedContactUser
         safeDeleteLDN db user oldLDN
       getContact db vr newUser contactId
 
-createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -> Profile -> Maybe SimplexNameInfo -> ExceptT StoreError IO Contact
+-- | Returns (contact, displaced) — see createPreparedContact for displaced.
+createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -> Profile -> Maybe SimplexNameInfo -> ExceptT StoreError IO (Contact, Maybe ContactName)
 createDirectContact db vr user Connection {connId, localAlias} p simplexName = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs simplexName
+  (contactId, displaced) <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs simplexName
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
-  getContact db vr user contactId
+  ct <- getContact db vr user contactId
+  pure (ct, displaced)
 
 deleteContactConnections :: DB.Connection -> User -> Contact -> IO ()
 deleteContactConnections db User {userId} Contact {contactId} = do
@@ -726,38 +733,6 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, short
     |]
     ((displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType, updatedAt) :. (userId, profileId))
 
--- | Clears simplex_name on any other contact_profiles row that holds the same
--- (user_id, simplex_name) so a subsequent UPDATE/INSERT setting that value
--- won't trip the partial UNIQUE index. Pass the profileId being updated to
--- exclude self; pass Nothing for the pre-INSERT case. Returns the displaced
--- row's display_name when a conflict was resolved, for the caller to surface
--- as CEvtSimplexNameConflict. Newer-claim-wins matches RSLV semantics: the
--- latest broadcast is the canonical assignment.
-clearConflictingContactProfileSimplexName_ :: DB.Connection -> UserId -> Maybe ProfileId -> Maybe SimplexNameInfo -> IO (Maybe ContactName)
-clearConflictingContactProfileSimplexName_ _ _ _ Nothing = pure Nothing
-clearConflictingContactProfileSimplexName_ db userId Nothing (Just simplexName) =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        UPDATE contact_profiles
-        SET simplex_name = NULL
-        WHERE user_id = ? AND simplex_name = ?
-        RETURNING display_name
-      |]
-      (userId, simplexName)
-clearConflictingContactProfileSimplexName_ db userId (Just profileId) (Just simplexName) =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        UPDATE contact_profiles
-        SET simplex_name = NULL
-        WHERE user_id = ? AND simplex_name = ? AND contact_profile_id <> ?
-        RETURNING display_name
-      |]
-      (userId, simplexName, profileId)
-
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
 updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
 updateMemberContactProfileReset_ db userId profileId profile = do
@@ -765,15 +740,15 @@ updateMemberContactProfileReset_ db userId profileId profile = do
   updateMemberContactProfileReset_' db userId profileId profile currentTs
 
 updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image} updatedAt = do
+updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, simplexName} updatedAt = do
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = NULL, preferences = NULL, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = NULL, simplex_name = ?, preferences = NULL, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, updatedAt, userId, profileId)
+    (displayName, fullName, shortDescr, image, simplexName, updatedAt, userId, profileId)
 
 -- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
 updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
@@ -782,15 +757,15 @@ updateMemberContactProfile_ db userId profileId profile = do
   updateMemberContactProfile_' db userId profileId profile currentTs
 
 updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image} updatedAt = do
+updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, simplexName} updatedAt = do
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, simplex_name = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, updatedAt, userId, profileId)
+    (displayName, fullName, shortDescr, image, simplexName, updatedAt, userId, profileId)
 
 updateContactLDN_ :: DB.Connection -> User -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt = do

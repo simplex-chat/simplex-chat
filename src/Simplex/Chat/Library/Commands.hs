@@ -2033,7 +2033,11 @@ processChatCommand vr nm = \case
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
-        ct <- withStore $ \db -> createPreparedContact db vr user profile accLink welcomeSharedMsgId Nothing
+        (ct, displaced_) <- withStore $ \db -> createPreparedContact db vr user profile accLink welcomeSharedMsgId Nothing
+        let Profile {simplexName = pSimplexName} = profile
+        forM_ ((,) <$> pSimplexName <*> displaced_) $ \(ni, displaced) ->
+          let Contact {localDisplayName = newLDN} = ct
+           in toView $ CEvtSimplexNameConflict user ni SNCEContact newLDN displaced
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing

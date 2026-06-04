@@ -166,7 +166,9 @@ module Simplex.Chat.Store.Groups
     setMemberContactStartedConnection,
     resetMemberContactFields,
     updateMemberProfile,
+    updateMemberProfileWithConflict,
     updateContactMemberProfile,
+    updateContactMemberProfileWithConflict,
     getXGrpLinkMemReceived,
     setXGrpLinkMemReceived,
     createNewUnknownGroupMember,
@@ -2379,13 +2381,15 @@ updateGroupProfileWithConflict :: DB.Connection -> User -> GroupInfo -> GroupPro
 updateGroupProfileWithConflict db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, simplexName, groupPreferences, memberAdmission}
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
-      displaced <- clearConflictingGroupProfileSimplexName_ db userId (Just groupId) simplexName
+      profileId_ <- getGroupProfileId_
+      displaced <- clearConflictingGroupProfileSimplexName_ db userId profileId_ simplexName
       updateGroupProfile_ currentTs
       pure ((g :: GroupInfo) {groupProfile = p', fullGroupPreferences}, displaced)
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
-        displaced <- clearConflictingGroupProfileSimplexName_ db userId (Just groupId) simplexName
+        profileId_ <- getGroupProfileId_
+        displaced <- clearConflictingGroupProfileSimplexName_ db userId profileId_ simplexName
         updateGroupProfile_ currentTs
         updateGroup_ ldn currentTs
         pure $ Right ((g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}, displaced)
@@ -2394,6 +2398,13 @@ updateGroupProfileWithConflict db user@User {userId} g@GroupInfo {groupId, local
     (groupType_, groupLink_) = case publicGroup of
       Just PublicGroupProfile {groupType, groupLink} -> (Just groupType, Just groupLink)
       Nothing -> (Nothing, Nothing)
+    -- groups.group_profile_id is ON DELETE SET NULL; treat the row as having
+    -- no profile to exclude (Nothing) when it has been nulled out, so the
+    -- conflict-clear sees every same-user row as a potential collision.
+    getGroupProfileId_ :: IO (Maybe ProfileId)
+    getGroupProfileId_ =
+      fmap (>>= fromOnly) . maybeFirstRow id $
+        DB.query db "SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
     updateGroupProfile_ currentTs =
       DB.execute
         db
@@ -2419,9 +2430,12 @@ updateGroupProfileWithConflict db user@User {userId} g@GroupInfo {groupId, local
       safeDeleteLDN db user localDisplayName
 
 -- | Mirror of clearConflictingContactProfileSimplexName_ for group_profiles.
--- Pass the groupId being updated to exclude its underlying group_profile_id
--- from the clear; pass Nothing for the pre-INSERT case. See that helper.
-clearConflictingGroupProfileSimplexName_ :: DB.Connection -> UserId -> Maybe GroupId -> Maybe SimplexNameInfo -> IO (Maybe GroupName)
+-- Pass the group_profile_id being updated to exclude self from the clear;
+-- pass Nothing for the pre-INSERT case. The profileId is taken directly
+-- (rather than derived from groupId via a NOT IN subquery) because
+-- groups.group_profile_id is ON DELETE SET NULL, and NOT IN (NULL)
+-- evaluates to UNKNOWN — which would silently no-op the clear.
+clearConflictingGroupProfileSimplexName_ :: DB.Connection -> UserId -> Maybe ProfileId -> Maybe SimplexNameInfo -> IO (Maybe GroupName)
 clearConflictingGroupProfileSimplexName_ _ _ _ Nothing = pure Nothing
 clearConflictingGroupProfileSimplexName_ db userId Nothing (Just simplexName) =
   maybeFirstRow fromOnly $
@@ -2434,21 +2448,17 @@ clearConflictingGroupProfileSimplexName_ db userId Nothing (Just simplexName) =
         RETURNING display_name
       |]
       (userId, simplexName)
-clearConflictingGroupProfileSimplexName_ db userId (Just groupId) (Just simplexName) =
+clearConflictingGroupProfileSimplexName_ db userId (Just profileId) (Just simplexName) =
   maybeFirstRow fromOnly $
     DB.query
       db
       [sql|
         UPDATE group_profiles
         SET simplex_name = NULL
-        WHERE user_id = ?
-          AND simplex_name = ?
-          AND group_profile_id NOT IN (
-            SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?
-          )
+        WHERE user_id = ? AND simplex_name = ? AND group_profile_id <> ?
         RETURNING display_name
       |]
-      (userId, simplexName, userId, groupId)
+      (userId, simplexName, profileId)
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
 updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do
@@ -3076,39 +3086,59 @@ setMemberContactStartedConnection db Contact {contactId} = do
     (BI True, currentTs, contactId)
 
 updateMemberProfile :: DB.Connection -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
-updateMemberProfile db user@User {userId} m p'
-  | displayName == newName = do
-      liftIO $ updateMemberContactProfileReset_ db userId profileId p'
-      pure m {memberProfile = profile}
+updateMemberProfile db user m p' = fst <$> updateMemberProfileWithConflict db user m p'
+
+-- | Like updateMemberProfile but additionally clears the simplex_name on any
+-- other contact_profiles row in the same user that already holds the same
+-- (user_id, simplex_name) — returning that row's display_name so the caller
+-- can emit CEvtSimplexNameConflict. Used by the incoming XInfo (member) path.
+updateMemberProfileWithConflict :: DB.Connection -> User -> GroupMember -> Profile -> ExceptT StoreError IO (GroupMember, Maybe ContactName)
+updateMemberProfileWithConflict db user@User {userId} m p'
+  | displayName == newName = liftIO $ do
+      currentTs <- getCurrentTime
+      displaced <- clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
+      updateMemberContactProfileReset_' db userId profileId p' currentTs
+      pure (m {memberProfile = profile}, displaced)
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
+        displaced <- clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
         updateMemberContactProfileReset_' db userId profileId p' currentTs
         DB.execute
           db
           "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
           (ldn, currentTs, userId, groupMemberId)
         safeDeleteLDN db user localDisplayName
-        pure $ Right m {localDisplayName = ldn, memberProfile = profile}
+        pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, displaced)
   where
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
-    Profile {displayName = newName} = p'
+    Profile {displayName = newName, simplexName = profileSimplexName} = p'
     profile = toLocalProfile profileId p' localAlias
 
 updateContactMemberProfile :: DB.Connection -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
-updateContactMemberProfile db user@User {userId} m ct@Contact {contactId} p'
-  | displayName == newName = do
-      liftIO $ updateMemberContactProfile_ db userId profileId p'
-      pure (m {memberProfile = profile}, ct {profile} :: Contact)
+updateContactMemberProfile db user m ct p' = (\(m', ct', _) -> (m', ct')) <$> updateContactMemberProfileWithConflict db user m ct p'
+
+-- | Like updateContactMemberProfile but additionally clears the simplex_name
+-- on any other contact_profiles row in the same user that already holds the
+-- same (user_id, simplex_name) — returning that row's display_name so the
+-- caller can emit CEvtSimplexNameConflict.
+updateContactMemberProfileWithConflict :: DB.Connection -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact, Maybe ContactName)
+updateContactMemberProfileWithConflict db user@User {userId} m ct@Contact {contactId} p'
+  | displayName == newName = liftIO $ do
+      currentTs <- getCurrentTime
+      displaced <- clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
+      updateMemberContactProfile_' db userId profileId p' currentTs
+      pure (m {memberProfile = profile}, ct {profile} :: Contact, displaced)
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
+        displaced <- clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
         updateMemberContactProfile_' db userId profileId p' currentTs
         updateContactLDN_ db user contactId localDisplayName ldn currentTs
-        pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)
+        pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact, displaced)
   where
     GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
-    Profile {displayName = newName} = p'
+    Profile {displayName = newName, simplexName = profileSimplexName} = p'
     profile = toLocalProfile profileId p' localAlias
 
 getXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO Bool

@@ -317,7 +317,7 @@ updateUserAutoAcceptMemberContacts db User {userId} autoAccept =
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
   | displayName == newName = liftIO $ do
-      updateContactProfile_ db userId profileId p'
+      updateContactProfile_ db userId profileId pNoSimplexName
       currentTs <- getCurrentTime
       userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
       pure user {profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
@@ -330,7 +330,7 @@ updateUserProfile db user p'
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
-        updateContactProfile_' db userId profileId p' currentTs
+        updateContactProfile_' db userId profileId pNoSimplexName currentTs
         updateContactLDN_ db user userContactId localDisplayName newName currentTs
         pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
@@ -342,6 +342,12 @@ updateUserProfile db user p'
     userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || img' /= image
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, localAlias}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = fn', shortDescr = d', image = img', preferences} = p'
+    -- contact_profiles.simplex_name is reserved for peer claims received via XInfo.
+    -- The user's own broadcastable simplex_name lives on contacts.simplex_name
+    -- (loaded by toUser into User.profile.simplexName via uct.simplex_name);
+    -- writing it here would (a) collide with peer claims on the partial UNIQUE
+    -- index, and (b) make a subsequent peer claim displace the user's own row.
+    pNoSimplexName = (p' :: Profile) {simplexName = Nothing}
     profile = toLocalProfile profileId p' localAlias
     fullPreferences = fullPreferences' preferences
 

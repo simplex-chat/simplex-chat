@@ -2683,7 +2683,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
-              m' <- withStore $ \db -> updateMemberProfile db user m p'
+              (m', displaced_) <- withStore $ \db -> updateMemberProfileWithConflict db user m p'
+              let GroupMember {localDisplayName = newLDN} = m'
+              emitSimplexNameConflict newLDN displaced_
               unless (muteEventInChannel gInfo m') $ do
                 forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2692,7 +2694,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               mCt <- withStore $ \db -> getContact db vr user mContactId
               if canUpdateProfile mCt
                 then do
-                  (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
+                  (m', ct', displaced_) <- withStore $ \db -> updateContactMemberProfileWithConflict db user m mCt p'
+                  let Contact {localDisplayName = newLDN} = ct'
+                  emitSimplexNameConflict newLDN displaced_
                   unless (muteEventInChannel gInfo m') $ do
                     forM_ msgTs_ $ createProfileUpdatedItem m'
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2709,6 +2713,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           pure m
       where
         allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo
+        Profile {simplexName = p'SimplexName} = p'
+        emitSimplexNameConflict newLDN displaced_ =
+          forM_ ((,) <$> p'SimplexName <*> displaced_) $ \(ni, displaced) ->
+            toView $ CEvtSimplexNameConflict user ni SNCEContact newLDN displaced
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -2950,7 +2958,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case chatMsgEvent of
         XInfo p -> do
           let Connection {simplexName} = conn'
-          ct <- withStore $ \db -> createDirectContact db vr user conn' p simplexName
+              Profile {simplexName = pSimplexName} = p
+          (ct, displaced_) <- withStore $ \db -> createDirectContact db vr user conn' p simplexName
+          forM_ ((,) <$> pSimplexName <*> displaced_) $ \(ni, displaced) ->
+            let Contact {localDisplayName = newLDN} = ct
+             in toView $ CEvtSimplexNameConflict user ni SNCEContact newLDN displaced
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
