@@ -6,12 +6,13 @@ module ResolveNameTests (resolveNameTests) where
 import Data.Functor.Identity (Identity (..))
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import qualified Data.Map.Strict as M
+import Data.Text (Text)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
-import Simplex.Chat.Library.Commands (ResolveError (..), iterateResolvers, resolveErrorToChatError)
+import Simplex.Chat.Library.Commands (ResolveError (..), firstNameLink, iterateResolvers, resolveErrorToChatError)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Client (ProxyClientError (..))
-import Simplex.Messaging.Protocol (NameRecord (..), SMPServer, mkNameOwner, pattern SMPServer)
+import Simplex.Messaging.Protocol (NameLink, NameRecord (..), SMPServer, mkNameLink, mkNameOwner, pattern SMPServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import Test.Hspec
 
@@ -64,6 +65,34 @@ resolveNameTests = do
       case resolveErrorToChatError aliceNi (ResolverTransport timeoutErr) of
         ChatErrorAgent e _ _ -> e `shouldBe` timeoutErr
         other -> expectationFailure $ "expected ChatErrorAgent, got " <> show other
+  -- firstNameLink is the pure link-picker used by dispatchResolvedRecord:
+  -- it selects nrContactLinks for NTContact, nrChannelLinks for NTPublicGroup,
+  -- returning the first entry. Empty lists collapse to CESimplexNameNotFound
+  -- so the UX is identical to a local-store miss.
+  describe "firstNameLink" $ do
+    it "picks the first nrContactLinks entry for NTContact" $
+      case firstNameLink NTContact [channelOne] [contactOne, contactTwo] aliceNi of
+        Right lnk -> lnk `shouldBe` "simplex:/contact-alice"
+        Left e -> expectationFailure $ "expected Right, got " <> show e
+    it "picks the first nrChannelLinks entry for NTPublicGroup" $
+      case firstNameLink NTPublicGroup [channelOne, channelTwo] [contactOne] groupNi of
+        Right lnk -> lnk `shouldBe` "simplex:/channel-team"
+        Left e -> expectationFailure $ "expected Right, got " <> show e
+    it "returns CESimplexNameNotFound when nrContactLinks is empty for NTContact" $
+      case firstNameLink NTContact [channelOne] [] aliceNi of
+        Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` aliceNi
+        other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
+    it "returns CESimplexNameNotFound when nrChannelLinks is empty for NTPublicGroup" $
+      case firstNameLink NTPublicGroup [] [contactOne] groupNi of
+        Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` groupNi
+        other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
+    -- NTContact ignores nrChannelLinks even when nrContactLinks is empty.
+    -- The resolver-side semantics say each name advertises a per-type link
+    -- set; cross-type fallback would silently connect to the wrong target.
+    it "does not fall back to nrChannelLinks for NTContact" $
+      case firstNameLink NTContact [channelOne] [] aliceNi of
+        Left (ChatError (CESimplexNameNotFound _)) -> pure ()
+        other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
 
 -- | Wrap a resolver to record which servers it was called for.
 recording :: IORef [SMPServer] -> (SMPServer -> IO (Either AgentErrorType NameRecord)) -> SMPServer -> IO (Either AgentErrorType NameRecord)
@@ -77,6 +106,23 @@ stubAuthThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.from
 
 aliceNi :: SimplexNameInfo
 aliceNi = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])
+
+groupNi :: SimplexNameInfo
+groupNi = SimplexNameInfo NTPublicGroup (SimplexNameDomain TLDSimplex "team" [])
+
+-- Synthetic links to exercise firstNameLink's selection logic. mkNameLink only
+-- enforces the ≤1024-byte upper bound; the strings are deliberately not real
+-- AConnShortLink encodings — the link parser is exercised separately by the
+-- A_LINK error path inside dispatchResolvedRecord and by AConnShortLink's own
+-- round-trip tests in simplexmq.
+mkLink :: Text -> NameLink
+mkLink = either error id . mkNameLink
+
+channelOne, channelTwo, contactOne, contactTwo :: NameLink
+channelOne = mkLink "simplex:/channel-team"
+channelTwo = mkLink "simplex:/channel-team-backup"
+contactOne = mkLink "simplex:/contact-alice"
+contactTwo = mkLink "simplex:/contact-alice-backup"
 
 srv1 :: SMPServer
 srv1 = SMPServer "smp1.example" "5223" (C.KeyHash "\1\2\3\4")

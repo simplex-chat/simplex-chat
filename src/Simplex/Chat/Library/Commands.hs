@@ -107,7 +107,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), patt
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NameRecord, NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SMPServer, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NameLink, NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SMPServer, SProtocolType (..), SubscriptionMode (..), UserProtocol, unNameLink, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -128,7 +128,7 @@ import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose)
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Data.Bifunctor (bimap, second)
+import Data.Bifunctor (bimap, first, second)
 import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 #else
 import Data.Bifunctor (bimap, first, second)
@@ -4205,7 +4205,7 @@ processChatCommand vr nm = \case
         resolveAndDispatch :: CM (ACreatedConnLink, ConnectionPlan)
         resolveAndDispatch =
           resolveOnUserServers user nameDomain >>= \case
-            Right nr -> dispatchResolvedRecord user ni nr
+            Right nr -> dispatchResolvedRecord vr nm user ni nr
             Left re -> throwError $ resolveErrorToChatError ni re
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
@@ -4663,10 +4663,76 @@ resolveOnUserServers user@User {userId} domain = do
   iterateResolvers srvs $ \srv ->
     liftIO . runExceptT $ resolveSimplexName a NRMInteractive userId srv domain
 
--- | Dispatch a resolved NameRecord through the existing link-based connect plan.
--- Implemented in Task 6.
-dispatchResolvedRecord :: User -> SimplexNameInfo -> NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
-dispatchResolvedRecord _ _ _ = throwChatError $ CEInternalError "dispatchResolvedRecord not yet implemented (Task 6)"
+-- | Dispatch a resolved NameRecord by eagerly preparing a contact/group row
+-- with @simplex_name@ set, then returning the same plan shape ('CAPKnown' /
+-- 'GLPKnown') the local-store-hit branch of 'connectPlanName' returns. The
+-- prepare-then-CAPKnown semantic threads the resolved name into persistence
+-- via the existing 'createPreparedContact' / 'createPreparedGroup' simplex_name
+-- parameter (introduced for the local-prepare path, see commit c6f26150), so
+-- the resolver hit reuses the same DB write path as a local-prepare hit.
+dispatchResolvedRecord :: VersionRangeChat -> NetworkRequestMode -> User -> SimplexNameInfo -> NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
+dispatchResolvedRecord vr nm user ni@SimplexNameInfo {nameType} NameRecord {nrChannelLinks, nrContactLinks} = do
+  lnk <- liftEither $ firstNameLink nameType nrChannelLinks nrContactLinks ni
+  acl <- liftEither $ first (chatErrorAgent . AGENT . A_LINK) $ strDecode (encodeUtf8 lnk)
+  prepareAndPlan acl
+  where
+    prepareAndPlan :: AConnShortLink -> CM (ACreatedConnLink, ConnectionPlan)
+    prepareAndPlan (ACSL SCMInvitation _) =
+      -- The resolver returns long-term contact/channel links; an invitation
+      -- link in a NameRecord is malformed for this flow.
+      throwError $ chatErrorAgent $ AGENT $ A_LINK "RSLV returned an invitation link"
+    prepareAndPlan (ACSL SCMContact l) = case l of
+      CSLContact _ CCTContact _ _ | nameType == NTContact -> prepareContact l
+      CSLContact _ CCTChannel _ _ | nameType == NTPublicGroup -> prepareGroup l
+      CSLContact _ CCTGroup _ _ | nameType == NTPublicGroup -> prepareGroup l
+      _ -> throwError $ chatErrorAgent $ AGENT $ A_LINK "RSLV link kind does not match name type"
+    prepareContact :: ConnShortLink 'CMContact -> CM (ACreatedConnLink, ConnectionPlan)
+    prepareContact l = do
+      let l' = serverShortLink' l
+      (FixedLinkData {linkConnReq = cReq}, cData) <- getShortLinkConnReq nm user l'
+      ContactShortLinkData {profile} <-
+        liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode contact profile from RSLV link") pure
+      let ccLink = CCLink cReq (Just l')
+          accLink = ACCL SCMContact ccLink
+      (ct, displaced_) <- withStore $ \db -> createPreparedContact db vr user profile accLink Nothing (Just ni)
+      let Profile {simplexName = pSimplexName} = profile
+      forM_ ((,) <$> pSimplexName <*> displaced_) $ \(claim, displaced) ->
+        let Contact {localDisplayName = newLDN} = ct
+         in toView $ CEvtSimplexNameConflict user claim SNCEContact newLDN displaced
+      pure (accLink, CPContactAddress (CAPKnown ct))
+    prepareGroup :: ConnShortLink 'CMContact -> CM (ACreatedConnLink, ConnectionPlan)
+    prepareGroup l = do
+      let l' = serverShortLink' l
+      (FixedLinkData {linkConnReq = cReq}, cData@(ContactLinkData _ UserContactData {direct})) <- getShortLinkConnReq' nm user l'
+      GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_} <-
+        liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode group profile from RSLV link") pure
+      let publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
+          useRelays = not direct
+      subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
+      gVar <- asks random
+      let ccLink = CCLink cReq (Just l')
+      (g, _hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile False ccLink Nothing useRelays subRole publicMemberCount_ (Just ni)
+      pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
+    -- Mirror the inline 'serverShortLink' helper defined in 'processChatCommand'
+    -- where this dispatch is invoked: RSLV-supplied short links may carry the
+    -- agent's simplex:/ scheme, but the prepared row stores hostname-scheme,
+    -- and the connect-plan / known-link lookups assume the hostname form.
+    serverShortLink' :: ConnShortLink m -> ConnShortLink m
+    serverShortLink' = \case
+      CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
+      CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
+
+-- | Pick the first link from the @NameRecord@ matching the queried name type.
+-- An empty list (record exists but advertises no link of this kind) is
+-- treated as "not found" — same UX as a local-store miss.
+firstNameLink :: SimplexNameType -> [NameLink] -> [NameLink] -> SimplexNameInfo -> Either ChatError Text
+firstNameLink nameType channelLinks contactLinks ni = case links of
+  l : _ -> Right $ unNameLink l
+  [] -> Left $ ChatError $ CESimplexNameNotFound ni
+  where
+    links = case nameType of
+      NTPublicGroup -> channelLinks
+      NTContact -> contactLinks
 
 -- | Map a resolver failure to the corresponding ChatError surfaced to the user.
 -- AUTH (NameNotRegistered) collapses to the same UX as a local-store miss, so
