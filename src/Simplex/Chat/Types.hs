@@ -688,6 +688,7 @@ data Profile = Profile
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
+    simplexName :: Maybe SimplexNameInfo,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
@@ -722,7 +723,7 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, simplexName = Nothing, preferences = Nothing, peerType = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -760,6 +761,7 @@ data LocalProfile = LocalProfile
     shortDescr :: Maybe Text,
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
+    simplexName :: Maybe SimplexNameInfo,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
     localAlias :: LocalAlias
@@ -770,12 +772,12 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} localAlias =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType} localAlias =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType} =
+  Profile {displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType}
 
 data GroupType
   = GTChannel
@@ -820,6 +822,7 @@ data GroupProfile = GroupProfile
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
     publicGroup :: Maybe PublicGroupProfile,
+    simplexName :: Maybe SimplexNameInfo,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission
   }

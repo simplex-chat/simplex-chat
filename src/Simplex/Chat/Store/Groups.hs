@@ -1587,6 +1587,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           description = Nothing,
           image = Nothing,
           publicGroup = Nothing,
+          simplexName = Nothing,
           groupPreferences = Nothing,
           memberAdmission = Nothing
         }
@@ -2446,7 +2447,7 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
             (Only groupId)
     toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (groupPreferences, memberAdmission)) =
       let publicGroupAccess = toPublicGroupAccess accessRow
-       in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, groupPreferences, memberAdmission}
+       in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, simplexName = Nothing, groupPreferences, memberAdmission}
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
