@@ -277,7 +277,7 @@ fun saveFileFromUri(
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
-          Files.copy(inputStream, tmpFile.toPath())
+          copyInputStreamToFile(inputStream, tmpFile, MAX_FILE_SIZE_XFTP)
           try {
             val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
             CryptoFile(destFileName, args)
@@ -288,7 +288,7 @@ fun saveFileFromUri(
           }
         }
       } else {
-        Files.copy(inputStream, destFile.toPath())
+        copyInputStreamToFile(inputStream, destFile, MAX_FILE_SIZE_XFTP)
         CryptoFile.plain(destFileName)
       }
     } else {
@@ -302,6 +302,27 @@ fun saveFileFromUri(
     if (withAlertOnException) showWrongUriAlert()
 
     null
+  }
+}
+
+class FileTooLargeException(maxBytes: Long) : IOException("file exceeds $maxBytes bytes")
+
+fun copyInputStreamToFile(inputStream: InputStream, destFile: File, maxBytes: Long) {
+  try {
+    destFile.outputStream().use { output ->
+      val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+      var copied = 0L
+      while (true) {
+        val read = inputStream.read(buffer)
+        if (read < 0) break
+        if (copied > maxBytes - read) throw FileTooLargeException(maxBytes)
+        output.write(buffer, 0, read)
+        copied += read
+      }
+    }
+  } catch (e: Throwable) {
+    destFile.delete()
+    throw e
   }
 }
 
