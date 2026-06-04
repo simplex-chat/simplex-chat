@@ -1270,6 +1270,8 @@ processChatCommand vr nm = \case
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId $ do
         deleteCIFiles user filesInfo
+        -- the roster blob file has no chat item, so it is missed by getGroupFileInfo above
+        cleanupGroupRosterFile user gInfo
         (members, recipients) <- getRecipients gInfo
         let doSendDel = memberActive membership && isOwner
         msgSigned <-
@@ -1304,6 +1306,7 @@ processChatCommand vr nm = \case
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user chatId
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       deleteCIFiles user filesInfo
+      cleanupGroupRosterFile user gInfo
       withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
       membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
       forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m

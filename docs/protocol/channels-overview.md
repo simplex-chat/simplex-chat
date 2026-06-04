@@ -236,6 +236,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 - Selectively target specific subscribers while delivering correctly to others.
 - Ignore the "message from channel" directive, revealing which owner sent a message. Detectable out-of-band.
 - Fabricate or hide subscriber connections, inflating or deflating counts. Detectable if subscribers are connected to other relays.
+- Replay a previously valid roster - the owner-signed header plus its blob - to a *new* joiner, re-introducing a member whose privileged role was later revoked (or masking a later demotion). The owner signature binds the channel entity ID and the roster version, and the header's digest binds the blob to that header, so cross-channel and cross-version substitution remain blocked; but a same-group replay to a joiner that has not yet seen a newer version is not prevented. Existing members are protected by the monotonic roster version check - they reject any roster not strictly newer than the one already applied, so the replay reaches only members with no prior roster state.
 
 *cannot:*
 

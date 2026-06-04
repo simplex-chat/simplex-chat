@@ -293,6 +293,8 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
+        it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly
+        it "corrupted roster blob is rejected on digest mismatch" testChannelRosterDigestMismatchRejected
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -10396,6 +10398,69 @@ testChannelAddRelayWithRoster ps =
             threadDelay 100000
             -- the new relay holds the roster (cath is moderator) before it serves joiners
             checkMemberRow dan "cath" (Just "moderator")
+
+-- With a tiny file chunk size the owner-signed roster blob spans several chunks, exercising
+-- split + reassembly both owner->relay and relay->joiner. dan getting cath as moderator means
+-- the chunks were reassembled in order and the digest verified over the reassembled blob.
+testChannelRosterMultipartReassembly :: HasCallStack => TestParams -> IO ()
+testChannelRosterMultipartReassembly ps =
+  withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfgOpts ps cfg testOpts "cath" cathProfile $ \cath ->
+        withNewTestChatCfgOpts ps cfg testOpts "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          threadDelay 100000
+          alice ##> "/mr #team cath moderator"
+          alice <## "#team: you changed the role of cath to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+              cath <## "#team: alice changed your role from member to moderator (signed)"
+            ]
+          threadDelay 100000
+          memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
+          dan <## "#team: alice changed the role of cath from member to moderator (signed)"
+          threadDelay 100000
+          checkMemberRow dan "cath" (Just "moderator")
+  where
+    cfg = testCfg {fileChunkSize = 30}
+
+-- A malicious/garbled relay blob is rejected at the receiver: the owner-signed header carries
+-- the digest, so a blob that does not hash to it is discarded and the roster is not applied
+-- (the receiver's roster version does not advance to the corrupted roster's version).
+testChannelRosterDigestMismatchRejected :: HasCallStack => TestParams -> IO ()
+testChannelRosterDigestMismatchRejected ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "frank" frankProfile $ \frank -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          threadDelay 100000
+          alice ##> "/mr #team cath moderator"
+          alice <## "#team: you changed the role of cath to moderator (signed)"
+          concurrentlyN_
+            [ bob <## "#team: alice changed the role of cath from member to moderator (signed)",
+              cath <## "#team: alice changed your role from member to moderator (signed)"
+            ]
+          threadDelay 100000
+          -- corrupt the relay's stored blob (same length, different content) so its digest no
+          -- longer matches the signed header (DB-agnostic: read it, overwrite with zeroed bytes)
+          withCCTransaction bob $ \db -> do
+            rows <- DB.query_ db "SELECT roster_blob FROM groups WHERE roster_blob IS NOT NULL" :: IO [Only (Binary ByteString)]
+            forM_ rows $ \(Only (Binary blob)) ->
+              DB.execute db "UPDATE groups SET roster_blob = ? WHERE roster_blob IS NOT NULL" (Only (Binary (B.replicate (B.length blob) '\NUL')))
+          -- frank joins; bob re-serves the valid header with the corrupted blob, frank rejects it
+          threadDelay 100000
+          memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
+          threadDelay 100000
+          checkRosterVersionBelow frank 1
+  where
+    checkRosterVersionBelow :: HasCallStack => TestCC -> Int64 -> IO ()
+    checkRosterVersionBelow cc target = do
+      vs <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT roster_version FROM groups" :: IO [Only (Maybe Int64)]
+      all (< target) [v | Only (Just v) <- vs] `shouldBe` True
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =

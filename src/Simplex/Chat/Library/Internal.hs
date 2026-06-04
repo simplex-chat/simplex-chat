@@ -79,6 +79,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (encryptFile, shuffle)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
+import qualified Simplex.Messaging.Crypto.Lazy as LC
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent
@@ -1172,15 +1173,19 @@ memberIntroEvt gInfo reMember =
 forwardGroupRoster :: User -> GroupInfo -> GroupMember -> CM ()
 forwardGroupRoster user gInfo subscriber = do
   vr <- chatVersionRange
-  withStore' (\db -> getGroupRoster db gInfo) >>= \case
-    Nothing -> pure ()
-    Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}) ->
-      forM_ (eitherToMaybe (J.eitherDecodeStrict' signedBody) :: Maybe (ChatMessage 'Json)) $ \chatMsg ->
+  withStore' (\db -> (,) <$> getGroupRoster db gInfo <*> getRosterBlob db gInfo) >>= \case
+    (Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}), blob_) ->
+      forM_ (eitherToMaybe (J.eitherDecodeStrict' signedBody) :: Maybe (ChatMessage 'Json)) $ \chatMsg@ChatMessage {msgId} ->
         withStore' (\db -> runExceptT $ getGroupMemberById db vr user ownerGMId) >>= \case
           Right owner -> do
             let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
             sendFwdMemberMessage subscriber fwd (VMSigned MSSVerified sm chatMsg)
+            -- re-serve the blob under the owner's original shared_msg_id (carried in the forwarded header),
+            -- so the joiner keys the roster file the same way whether it arrived direct or forwarded
+            forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
+              sendRosterBlobChunks user gInfo [subscriber] sid blob
           Left _ -> pure ()
+    _ -> pure ()
 
 -- Used in groups with relays to introduce moderators and above to a new member,
 -- and to announce the new member to moderators and above.
@@ -1238,9 +1243,10 @@ isRosterRole :: GroupMemberRole -> Bool
 isRosterRole r = r == GRModerator || r == GRAdmin
 
 -- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
-validateGroupRoster :: GroupRoster -> GroupRoster
-validateGroupRoster GroupRoster {version = ver, roster = entries} =
-  GroupRoster {version = ver, roster = dedup [] $ filter (\RosterMember {role} -> isRosterRole role) entries}
+-- Runs on the parsed roster blob.
+validateGroupRoster :: [RosterMember] -> [RosterMember]
+validateGroupRoster entries =
+  dedup [] $ filter (\RosterMember {role} -> isRosterRole role) entries
   where
     dedup _ [] = []
     dedup seen (rm@RosterMember {memberId} : rms)
@@ -1248,8 +1254,8 @@ validateGroupRoster GroupRoster {version = ver, roster = entries} =
       | otherwise = rm : dedup (memberId : seen) rms
 
 -- Privileged members without a known key are skipped (recipients can't verify them).
-buildGroupRoster :: VersionRoster -> [GroupMember] -> GroupRoster
-buildGroupRoster ver mods = GroupRoster {version = ver, roster = mapMaybe rosterMember mods}
+buildGroupRoster :: [GroupMember] -> [RosterMember]
+buildGroupRoster mods = mapMaybe rosterMember mods
   where
     rosterMember m@GroupMember {memberId, memberPubKey, memberRole}
       | isRosterRole memberRole = (\k -> RosterMember {memberId, name = memberShortenedName m, key = MemberKey k, role = memberRole}) <$> memberPubKey
@@ -1872,6 +1878,39 @@ closeFileHandle fileId files = do
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
 
+-- Roster-file cleanup keyed on the group (the roster file has no chat item, so the
+-- normal chat-item file enumeration misses it and the on-disk file would leak): evict
+-- the cached handle, remove the on-disk file, delete the rows (rcv_files/chunks cascade),
+-- and clear the pending columns.
+cleanupGroupRosterFile :: User -> GroupInfo -> CM ()
+cleanupGroupRosterFile User {userId} gInfo@GroupInfo {groupId} = do
+  info_ <- withStore' $ \db -> getGroupRosterFileInfo db userId groupId
+  forM_ info_ $ \(fileId, filePath_) -> do
+    lift $ closeFileHandle fileId rcvFiles
+    forM_ filePath_ removeRosterFsFile
+  withStore' $ \db -> do
+    deleteGroupRosterFile db userId groupId
+    clearRosterPending db gInfo
+
+-- Discard partial roster chunks so the transfer re-drives from chunk 1 (relay restart /
+-- re-subscribe / QCONT). MUST evict the cached AppendMode handle first, or appended bytes
+-- land after the stale prefix and corrupt the blob (the digest then fails).
+resetRosterPartialChunks :: RcvFileTransfer -> CM ()
+resetRosterPartialChunks ft@RcvFileTransfer {fileId, fileStatus} = do
+  lift $ closeFileHandle fileId rcvFiles
+  forM_ (rcvFilePath fileStatus) removeRosterFsFile
+  withStore' $ \db -> deleteRcvFileChunks db ft
+  where
+    rcvFilePath = \case
+      RFSAccepted p -> Just p
+      RFSConnected p -> Just p
+      _ -> Nothing
+
+removeRosterFsFile :: FilePath -> CM ()
+removeRosterFsFile fp = do
+  p <- lift $ toFSFilePath fp
+  removeFile p `catchAllErrors` \_ -> pure ()
+
 deleteMembersConnections :: User -> [GroupMember] -> CM ()
 deleteMembersConnections user members = deleteMembersConnections' user members False
 
@@ -2176,13 +2215,13 @@ bumpAndBroadcastRoster :: User -> GroupInfo -> CM ()
 bumpAndBroadcastRoster user gInfo = do
   vr <- chatVersionRange
   let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
-  (relays, roster) <- withStore' $ \db -> do
+  (relays, mods) <- withStore' $ \db -> do
     relays <- getGroupRelayMembers db vr user gInfo
     mods <- getGroupRosterMembers db vr user gInfo
     setGroupRosterVersion db gInfo rosterVer
-    pure (relays, buildGroupRoster rosterVer mods)
+    pure (relays, mods)
   forM_ (L.nonEmpty relays) $ \relays' ->
-    void $ sendGroupMessage' user gInfo (L.toList relays') (XGrpRoster roster)
+    sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster mods)
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
@@ -2190,7 +2229,29 @@ sendGroupRosterToRelay user gInfo relayMember =
   forM_ (rosterVersion gInfo) $ \rosterVer -> do
     vr <- chatVersionRange
     mods <- withStore' $ \db -> getGroupRosterMembers db vr user gInfo
-    void $ sendGroupMessage' user gInfo [relayMember] (XGrpRoster (buildGroupRoster rosterVer mods))
+    sendRoster user gInfo [relayMember] rosterVer (buildGroupRoster mods)
+
+-- Build the roster blob, send the owner-signed header carrying its size + digest, then
+-- send the blob as BFileChunks under the header's shared_msg_id. Row-less: no files/
+-- snd_files rows for the send, so there is no send-side cleanup; redelivery is the agent's.
+sendRoster :: User -> GroupInfo -> [GroupMember] -> VersionRoster -> [RosterMember] -> CM ()
+sendRoster user gInfo members rosterVer roster = do
+  let blob = encodeRosterBlob roster
+      fileInv = InlineFileInvitation {fileSize = fromIntegral (B.length blob), fileDigest = FD.FileDigest $ LC.sha512Hash $ LB.fromStrict blob}
+  SndMessage {sharedMsgId} <- sendGroupMessage' user gInfo members (XGrpRoster GroupRoster {version = rosterVer, fileInv})
+  sendRosterBlobChunks user gInfo members sharedMsgId blob
+
+-- Chunk a roster blob and send each as a BFileChunk under the header's shared_msg_id,
+-- to the same recipients. Used by both the owner send and the relay re-serve.
+sendRosterBlobChunks :: User -> GroupInfo -> [GroupMember] -> SharedMsgId -> ByteString -> CM ()
+sendRosterBlobChunks user gInfo members sharedMsgId blob = do
+  chSize <- fromIntegral <$> asks (fileChunkSize . config)
+  go chSize 1 blob
+  where
+    go chSize chunkNo bytes = do
+      let (chunk, rest) = B.splitAt chSize bytes
+      void $ sendGroupMessage' user gInfo members (BFileChunk sharedMsgId (FileChunk chunkNo chunk))
+      unless (B.null rest) $ go chSize (chunkNo + 1) rest
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo scope asGroup members events = do

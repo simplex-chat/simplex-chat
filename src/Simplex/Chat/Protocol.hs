@@ -48,12 +48,13 @@ import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Data.Word (Word32)
+import Data.Word (Word16, Word32)
 import Simplex.Chat.Call
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
@@ -367,11 +368,21 @@ data GrpMsgForward = GrpMsgForward
   }
   deriving (Eq, Show)
 
--- | Owner-signed snapshot of the privileged (moderator/admin) set; owners are
--- not included, their keys come from the link.
+-- | Owner-signed roster header for the privileged (moderator/admin) set; owners
+-- are not included, their keys come from the link. The member list itself is not
+-- here: it is sent as a binary blob over the inline file transfer, and this header
+-- carries only its inline-file invitation (size + owner-attested digest).
 data GroupRoster = GroupRoster
   { version :: VersionRoster,
-    roster :: [RosterMember]
+    fileInv :: InlineFileInvitation
+  }
+  deriving (Eq, Show)
+
+-- | Lean always-inline file invitation for the roster blob, carried in the signed
+-- header. The digest authenticates the unsigned blob; integrity is entirely the digest.
+data InlineFileInvitation = InlineFileInvitation
+  { fileSize :: Integer,
+    fileDigest :: FD.FileDigest
   }
   deriving (Eq, Show)
 
@@ -382,6 +393,13 @@ data RosterMember = RosterMember
     role :: GroupMemberRole
   }
   deriving (Eq, Show)
+
+-- RosterMember is binary-only: it rides in the roster blob, never in a JSON message.
+-- The blob codec (encodeRosterBlob / rosterBlobP) is defined with maxGroupRosterSize below,
+-- so rosterBlobP and the bound it references sit in one declaration group (past the TH splices).
+instance Encoding RosterMember where
+  smpEncode RosterMember {memberId, name, key, role} = smpEncode (memberId, name, key, role)
+  smpP = RosterMember <$> smpP <*> smpP <*> smpP <*> smpP
 
 instance Encoding FwdSender where
   smpEncode = \case
@@ -809,7 +827,7 @@ data MsgMention = MsgMention {memberId :: MemberId}
 newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
   deriving (Eq, Show)
 
-$(JQ.deriveJSON defaultJSON ''RosterMember)
+$(JQ.deriveJSON defaultJSON ''InlineFileInvitation)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
@@ -911,11 +929,22 @@ maxCompressedMsgLength = 13380
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
 
--- Bound so the signed roster fits maxEncodedMsgLength (15602 B): ~140 B per
--- RosterMember (memberId + Ed25519 key both base64, role, name capped at 16
--- chars by memberShortenedName). Fits 64 entries even with 4-byte-UTF-8 names.
+-- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
+-- promotion cap over the privileged (moderator/admin) set. The blob rides over the
+-- inline file transfer, so it is no longer bound by maxEncodedMsgLength.
 maxGroupRosterSize :: Int
 maxGroupRosterSize = 64
+
+-- The byte sequence the owner-signed digest is computed over and verified against
+-- before parsing. Word16 count (smpEncodeList's 1-byte count is too small for the future cap).
+encodeRosterBlob :: [RosterMember] -> ByteString
+encodeRosterBlob ms = smpEncode (fromIntegral (length ms) :: Word16) <> B.concat (map smpEncode ms)
+
+rosterBlobP :: A.Parser [RosterMember]
+rosterBlobP = do
+  n <- fromIntegral <$> smpP @Word16
+  when (n > maxGroupRosterSize) $ fail "roster: too many entries"
+  A.count n smpP
 
 -- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
 -- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
@@ -1398,7 +1427,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
-      XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "roster")
+      XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "fileInv")
       XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
@@ -1472,7 +1501,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpRoster GroupRoster {version, roster} -> o ["version" .= version, "roster" .= roster]
+      XGrpRoster GroupRoster {version, fileInv} -> o ["version" .= version, "fileInv" .= fileInv]
       XGrpRosterAck version err -> o $ ("error" .=? err) ["version" .= version]
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where

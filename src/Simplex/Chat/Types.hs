@@ -973,6 +973,11 @@ newtype MemberKey = MemberKey C.PublicKeyEd25519
   deriving (Eq, Show)
   deriving newtype (StrEncoding)
 
+-- Binary encoding for the roster blob; delegates to the Ed25519 key.
+instance Encoding MemberKey where
+  smpEncode (MemberKey k) = smpEncode k
+  smpP = MemberKey <$> smpP
+
 instance FromJSON MemberKey where
   parseJSON = strParseJSON "MemberKey"
 
@@ -1494,11 +1499,38 @@ instance ToJSON InlineFileMode where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+-- Discriminates ordinary chat files from the roster blob file, so the receive
+-- completion / cancel paths branch on the type rather than on chat_item_id (note
+-- folders and redirects also lack a chat item).
+data FileType = FTNormal | FTRoster
+  deriving (Eq, Show)
+
+instance TextEncoding FileType where
+  textEncode = \case
+    FTNormal -> "normal"
+    FTRoster -> "roster"
+  textDecode = \case
+    "normal" -> Just FTNormal
+    "roster" -> Just FTRoster
+    _ -> Nothing
+
+instance FromField FileType where fromField = fromTextField_ textDecode
+
+instance ToField FileType where toField = toField . textEncode
+
+instance FromJSON FileType where
+  parseJSON = textParseJSON "FileType"
+
+instance ToJSON FileType where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
+    fileType :: FileType,
     rcvFileInline :: Maybe InlineFileMode,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,

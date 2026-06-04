@@ -89,6 +89,11 @@ module Simplex.Chat.Store.Groups
     setGroupRosterVersion,
     setGroupRoster,
     getGroupRoster,
+    getRosterBlob,
+    setRosterPending,
+    getRosterPending,
+    promoteRosterPending,
+    clearRosterPending,
     setGroupMemberKeyRole,
     createRelayForOwner,
     getCreateRelayForMember,
@@ -218,6 +223,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConfirmationId, ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
+import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Encoding (smpDecode, smpEncode)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import Simplex.Messaging.Agent.Store.Entity (DBEntityId)
@@ -1439,6 +1445,102 @@ getGroupRoster db GroupInfo {groupId} =
     toRoster (Just ownerGMId, Just brokerTs, Just cb, Just (Binary sigsBs), Just (Binary body)) =
       (\sigs -> (ownerGMId, brokerTs, SignedMsg cb sigs body)) <$> eitherToMaybe (smpDecode sigsBs)
     toRoster _ = Nothing
+
+-- The durable completed roster blob a relay re-serves to joiners.
+getRosterBlob :: DB.Connection -> GroupInfo -> IO (Maybe ByteString)
+getRosterBlob db GroupInfo {groupId} = do
+  r <- maybeFirstRow fromOnly $ DB.query db "SELECT roster_blob FROM groups WHERE group_id = ?" (Only groupId)
+  pure $ case r of
+    Just (Just (Binary b)) -> Just b
+    _ -> Nothing
+
+-- In-flight roster transfer state. Version, digest, the sending owner's member id and
+-- broker ts are always stored (completion needs the owner to attribute chat items and to
+-- ack). The signed-header body/binding/signatures are relay-only (Nothing on a member),
+-- and are promoted to the live header at completion so the relay can re-forward it.
+setRosterPending :: DB.Connection -> GroupInfo -> VersionRoster -> FD.FileDigest -> GroupMemberId -> UTCTime -> Maybe SignedMsg -> IO ()
+setRosterPending db GroupInfo {groupId} v digest ownerGMId brokerTs sm_ = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET roster_pending_version = ?, roster_pending_digest = ?,
+          roster_pending_sending_owner_gm_id = ?, roster_pending_broker_ts = ?,
+          roster_pending_msg_chat_binding = ?, roster_pending_msg_signatures = ?, roster_pending_msg_body = ?,
+          updated_at = ?
+      WHERE group_id = ?
+    |]
+    ((v, Binary (FD.unFileDigest digest), ownerGMId, brokerTs)
+       :. ((\SignedMsg {chatBinding} -> chatBinding) <$> sm_, (\SignedMsg {signatures} -> Binary (smpEncode signatures)) <$> sm_, (\SignedMsg {signedBody} -> Binary signedBody) <$> sm_, currentTs, groupId))
+
+getRosterPending :: DB.Connection -> GroupInfo -> IO (Maybe (VersionRoster, FD.FileDigest, GroupMemberId, UTCTime, Maybe SignedMsg))
+getRosterPending db GroupInfo {groupId} =
+  (>>= toPending)
+    <$> maybeFirstRow
+      id
+      ( DB.query
+          db
+          [sql|
+            SELECT roster_pending_version, roster_pending_digest,
+                   roster_pending_sending_owner_gm_id, roster_pending_broker_ts,
+                   roster_pending_msg_chat_binding, roster_pending_msg_signatures, roster_pending_msg_body
+            FROM groups WHERE group_id = ?
+          |]
+          (Only groupId)
+      )
+  where
+    toPending (Just v, Just (Binary d), Just ownerGMId, Just brokerTs, cb_, sigs_, body_) =
+      Just (v, FD.FileDigest d, ownerGMId, brokerTs, sm_)
+      where
+        sm_ = case (cb_, sigs_, body_) of
+          (Just cb, Just (Binary sigsBs), Just (Binary body)) ->
+            (\sigs -> SignedMsg cb sigs body) <$> eitherToMaybe (smpDecode sigsBs)
+          _ -> Nothing
+    toPending _ = Nothing
+
+-- Completion promotion in one statement: copy pending header -> live, store the
+-- verified blob, bump version, clear pending. roster_blob and live roster_msg_* move together.
+promoteRosterPending :: DB.Connection -> GroupInfo -> ByteString -> IO ()
+promoteRosterPending db GroupInfo {groupId} blob = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE groups SET
+        roster_version = roster_pending_version,
+        roster_blob = ?,
+        roster_sending_owner_gm_id = roster_pending_sending_owner_gm_id,
+        roster_broker_ts = roster_pending_broker_ts,
+        roster_msg_chat_binding = roster_pending_msg_chat_binding,
+        roster_msg_signatures = roster_pending_msg_signatures,
+        roster_msg_body = roster_pending_msg_body,
+        roster_pending_version = NULL,
+        roster_pending_digest = NULL,
+        roster_pending_sending_owner_gm_id = NULL,
+        roster_pending_broker_ts = NULL,
+        roster_pending_msg_chat_binding = NULL,
+        roster_pending_msg_signatures = NULL,
+        roster_pending_msg_body = NULL,
+        updated_at = ?
+      WHERE group_id = ?
+    |]
+    (Binary blob, currentTs, groupId)
+
+clearRosterPending :: DB.Connection -> GroupInfo -> IO ()
+clearRosterPending db GroupInfo {groupId} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE groups SET
+        roster_pending_version = NULL, roster_pending_digest = NULL,
+        roster_pending_sending_owner_gm_id = NULL, roster_pending_broker_ts = NULL,
+        roster_pending_msg_chat_binding = NULL, roster_pending_msg_signatures = NULL, roster_pending_msg_body = NULL,
+        updated_at = ?
+      WHERE group_id = ?
+    |]
+    (currentTs, groupId)
 
 setGroupMemberKeyRole :: DB.Connection -> GroupMember -> C.PublicKeyEd25519 -> GroupMemberRole -> IO ()
 setGroupMemberKeyRole db GroupMember {groupMemberId} pubKey role = do
