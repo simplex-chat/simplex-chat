@@ -2639,6 +2639,7 @@ viewChatError isCmd logLevel testView = \case
     CEInvalidConnReq -> viewInvalidConnReq
     CESimplexNameNotFound ni -> ["no contact or group with simplex name " <> plain (shortNameInfoStr ni)]
     CESimplexNameUnprepared ni -> [plain (shortNameInfoStr ni) <> " is a known contact/group but has no link to reconnect via"]
+    CESimplexNameResolverUnavailable ni -> ["no SMP server in your list supports name resolution for " <> plain (shortNameInfoStr ni)]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $

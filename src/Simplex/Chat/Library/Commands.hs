@@ -4177,7 +4177,7 @@ processChatCommand vr nm = \case
                   _ -> pure (g, False)
                 pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' (BoolDef updated) ov (ListDef glOwners)))
     connectPlanName :: User -> SimplexNameInfo -> CM (ACreatedConnLink, ConnectionPlan)
-    connectPlanName user ni@SimplexNameInfo {nameType} = case nameType of
+    connectPlanName user ni@SimplexNameInfo {nameType, nameDomain} = case nameType of
       -- The discriminator (`@` vs `#`) is encoded into the stored simplex_name
       -- bytes via strEncode, so an `@contact` lookup can never match a group
       -- row (and vice versa). Dispatch on nameType up front to skip a probe.
@@ -4189,18 +4189,24 @@ processChatCommand vr nm = \case
             -- Row exists but carries no reconnect link (e.g. created via XInfo, not via prepare).
             -- The name resolves; the device just lacks the connection material to re-establish.
             Nothing -> throwChatError $ CESimplexNameUnprepared ni
-          Nothing -> throwChatError $ CESimplexNameNotFound ni
+          Nothing -> resolveAndDispatch
       NTPublicGroup -> do
         g_ <- withFastStore $ \db -> getGroupInfoBySimplexName db vr user ni
         case g_ of
           -- Mirror gPlan at line ~4133 in the link-based path: a removed member is not a
           -- known-and-reconnectable group; treat as "not found" so the caller can try elsewhere.
-          Just g | memberRemoved (membership g) -> throwChatError $ CESimplexNameNotFound ni
+          Just g | memberRemoved (membership g) -> resolveAndDispatch
           Just g -> case preparedGroup g of
             Just PreparedGroup {connLinkToConnect = ccLink} ->
               pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
             Nothing -> throwChatError $ CESimplexNameUnprepared ni
-          Nothing -> throwChatError $ CESimplexNameNotFound ni
+          Nothing -> resolveAndDispatch
+      where
+        resolveAndDispatch :: CM (ACreatedConnLink, ConnectionPlan)
+        resolveAndDispatch =
+          resolveOnUserServers user nameDomain >>= \case
+            Right nr -> dispatchResolvedRecord user ni nr
+            Left re -> throwError $ resolveErrorToChatError ni re
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
@@ -4656,6 +4662,22 @@ resolveOnUserServers user@User {userId} domain = do
   a <- asks smpAgent
   iterateResolvers srvs $ \srv ->
     liftIO . runExceptT $ resolveSimplexName a NRMInteractive userId srv domain
+
+-- | Dispatch a resolved NameRecord through the existing link-based connect plan.
+-- Implemented in Task 6.
+dispatchResolvedRecord :: User -> SimplexNameInfo -> NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
+dispatchResolvedRecord _ _ _ = throwChatError $ CEInternalError "dispatchResolvedRecord not yet implemented (Task 6)"
+
+-- | Map a resolver failure to the corresponding ChatError surfaced to the user.
+-- AUTH (NameNotRegistered) collapses to the same UX as a local-store miss, so
+-- the user can't tell from the error whether their device knew the name.
+-- Transport failures are forwarded through 'chatErrorAgent' so they reuse the
+-- existing agent-error reporting in the UI.
+resolveErrorToChatError :: SimplexNameInfo -> ResolveError -> ChatError
+resolveErrorToChatError ni = \case
+  NameNotRegistered -> ChatError $ CESimplexNameNotFound ni
+  ResolverUnavailable -> ChatError $ CESimplexNameResolverUnavailable ni
+  ResolverTransport e -> chatErrorAgent e
 
 -- | Pure iteration logic for 'resolveOnUserServers'. Extracted so tests can
 -- supply a stub resolver without standing up a real agent / proxy.
