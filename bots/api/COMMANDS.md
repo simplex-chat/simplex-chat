@@ -2,7 +2,7 @@
 
 This file is generated automatically.
 
-[Address commands](#address-commands)
+[Address commands](#
 - [APICreateMyAddress](#apicreatemyaddress)
 - [APIDeleteMyAddress](#apideletemyaddress)
 - [APIShowMyAddress](#apishowmyaddress)

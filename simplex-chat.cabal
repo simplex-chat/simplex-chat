@@ -135,6 +135,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260507_relay_inactive_at
           Simplex.Chat.Store.Postgres.Migrations.M20260514_relay_request_group_link_index
           Simplex.Chat.Store.Postgres.Migrations.M20260515_public_group_access
+          Simplex.Chat.Store.Postgres.Migrations.M20260516_supporter_badges
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -291,6 +292,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260507_relay_inactive_at
           Simplex.Chat.Store.SQLite.Migrations.M20260514_relay_request_group_link_index
           Simplex.Chat.Store.SQLite.Migrations.M20260515_public_group_access
+          Simplex.Chat.Store.SQLite.Migrations.M20260516_supporter_badges
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -551,6 +553,7 @@ test-suite simplex-chat-test
   main-is: Test.hs
   other-modules:
       APIDocs
+      BadgeTests
       Bots.BroadcastTests
       Bots.DirectoryTests
       ChatClient

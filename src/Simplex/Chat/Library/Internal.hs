@@ -1197,8 +1197,8 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
 
 redactedMemberProfile :: Bool -> Profile -> Profile
-redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType, badge = Nothing}
+redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType, badge} =
+  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType, badge}
   where
     removeSimplexLink s
       | allowSimplexLinks = Just s

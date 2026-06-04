@@ -32,6 +32,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
+import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, srvBadgePublicKey, verifyBadge)
 import Simplex.Chat.Messages
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
@@ -412,12 +413,14 @@ createContact db user profile = do
   void $ createContact_ db user profile emptyChatPrefs Nothing "" currentTs
 
 createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
-createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, peerType, preferences} ctUserPreferences prepared localAlias currentTs =
+createContact_ db User {userId} p@Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
+    badgeVerified <- forM badge $ verifyBadge srvBadgePublicKey
+    let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, chat_peer_type, user_id, local_alias, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-      ((displayName, fullName, shortDescr, image, contactLink, peerType) :. (userId, localAlias, preferences, currentTs, currentTs))
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, chat_peer_type, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((displayName, fullName, shortDescr, image, contactLink, peerType) :. (userId, localAlias, preferences, currentTs, currentTs) :. (bProof, bPresHeader, bExpiry, bType, bVerified))
     profileId <- insertedRowId db
     DB.execute
       db
@@ -484,13 +487,13 @@ type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Ma
 
 type GroupDirectInvitationRow = (Maybe ConnReqInvitation, Maybe GroupId, Maybe GroupMemberId, Maybe Int64, BoolInt)
 
-type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
+type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64) :. BadgeRow
 
 type ContactRow = Only ContactId :. ContactRow'
 
-toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
-  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, badge = Nothing, preferences, localAlias}
+toContact :: UTCTime -> VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
+toContact now vr user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow) :. connRow) =
+  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, badge = rowToBadge now badgeRow, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
@@ -516,12 +519,14 @@ toGroupDirectInvitation (Just groupDirectInvLink, fromGroupId_, fromGroupMemberI
   Just $ GroupDirectInvitation {groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, groupDirectInvStartedConnection}
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
-getProfileById db userId profileId =
-  ExceptT . firstRow rowToLocalProfile (SEProfileNotFound profileId) $
+getProfileById db userId profileId = do
+  currentTs <- liftIO getCurrentTime
+  ExceptT . firstRow (rowToLocalProfile currentTs) (SEProfileNotFound profileId) $
     DB.query
       db
       [sql|
-        SELECT cp.contact_profile_id, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, cp.preferences -- , ct.user_preferences
+        SELECT cp.contact_profile_id, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, cp.preferences,
+          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified
         FROM contact_profiles cp
         WHERE cp.user_id = ? AND cp.contact_profile_id = ?
       |]
@@ -671,11 +676,11 @@ type PublicGroupAccessRow = (Maybe Text, Maybe Text, Maybe BoolInt, Maybe BoolIn
 
 type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
 
-type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences)
+type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences) :. BadgeRow
 
-toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. groupKeysRow :. userMemberRow) =
-  let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
+toGroupInfo :: UTCTime -> VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
+toGroupInfo now vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. groupKeysRow :. userMemberRow) =
+  let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ (toPublicGroupAccess accessRow)
@@ -718,9 +723,9 @@ toGroupKeys (Just publicGroupId) (rootPrivKey_, rootPubKey_, Just memberPrivKey)
     <$> (GRKPrivate <$> rootPrivKey_ <|> GRKPublic <$> rootPubKey_)
 toGroupKeys _ _ = Nothing
 
-toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
-  let memberProfile = rowToLocalProfile profileRow
+toGroupMember :: UTCTime -> Int64 -> GroupMemberRow -> GroupMember
+toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
+  let memberProfile = rowToLocalProfile now profileRow
       memberSettings = GroupMemberSettings {showMessages}
       blockedByAdmin = maybe False mrsBlocked memberRestriction_
       invitedBy = toInvitedBy userContactId invitedById
@@ -745,6 +750,7 @@ groupMemberQuery =
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
@@ -756,13 +762,13 @@ groupMemberQuery =
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
   |]
 
-toContactMember :: VersionRangeChat -> User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
-toContactMember vr User {userContactId} (memberRow :. connRow) =
-  (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection vr connRow}
+toContactMember :: UTCTime -> VersionRangeChat -> User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
+toContactMember now vr User {userContactId} (memberRow :. connRow) =
+  (toGroupMember now userContactId memberRow) {activeConn = toMaybeConnection vr connRow}
 
-rowToLocalProfile :: ProfileRow -> LocalProfile
-rowToLocalProfile (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, preferences) =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, badge = Nothing, localAlias, preferences}
+rowToLocalProfile :: UTCTime -> ProfileRow -> LocalProfile
+rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, preferences) :. badgeRow) =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, badge = rowToBadge now badgeRow, localAlias, preferences}
 
 toBusinessChatInfo :: BusinessChatInfoRow -> Maybe BusinessChatInfo
 toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId}
@@ -789,6 +795,7 @@ groupInfoQueryFields =
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link
   |]
@@ -877,8 +884,9 @@ addGroupChatTags db g@GroupInfo {groupId} = do
 
 getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
+  currentTs <- getCurrentTime
   chatTags <- getGroupChatTags db groupId
-  firstRow (toGroupInfo vr userContactId chatTags) (SEGroupNotFound groupId) $
+  firstRow (toGroupInfo currentTs vr userContactId chatTags) (SEGroupNotFound groupId) $
     DB.query
       db
       (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")

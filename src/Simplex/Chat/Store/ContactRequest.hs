@@ -24,6 +24,7 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Int (Int64)
 import Data.Time.Clock (getCurrentTime)
+import Simplex.Chat.Badges (badgeToRow, srvBadgePublicKey, verifyBadge)
 import Simplex.Chat.Protocol (MsgContent, businessChatsVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
@@ -72,7 +73,7 @@ createOrUpdateContactRequest
   isSimplexTeam
   invId
   cReqChatVRange@(VersionRange minV maxV)
-  profile@Profile {displayName, fullName, shortDescr, image, contactLink, preferences}
+  profile@Profile {displayName, fullName, shortDescr, image, contactLink, badge, preferences}
   xContactId_
   welcomeMsgId_
   requestMsg_
@@ -103,8 +104,9 @@ createOrUpdateContactRequest
     where
       getAcceptedContact :: XContactId -> IO (Maybe Contact)
       getAcceptedContact xContactId = do
+        currentTs <- getCurrentTime
         ct_ <-
-          maybeFirstRow (toContact vr user []) $
+          maybeFirstRow (toContact currentTs vr user []) $
             DB.query
               db
               [sql|
@@ -114,6 +116,7 @@ createOrUpdateContactRequest
                   cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
                   ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
                   ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+                  cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified,
                   -- Connection
                   c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
                   c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -127,8 +130,9 @@ createOrUpdateContactRequest
         mapM (addDirectChatTags db) ct_
       getAcceptedBusinessChat :: XContactId -> IO (Maybe GroupInfo)
       getAcceptedBusinessChat xContactId = do
+        currentTs <- getCurrentTime
         g_ <-
-          maybeFirstRow (toGroupInfo vr userContactId []) $
+          maybeFirstRow (toGroupInfo currentTs vr userContactId []) $
             DB.query
               db
               (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
@@ -157,12 +161,14 @@ createOrUpdateContactRequest
       createContactRequest :: ExceptT StoreError IO RequestStage
       createContactRequest = do
         currentTs <- liftIO $ getCurrentTime
+        badgeVerified <- liftIO $ forM badge $ verifyBadge srvBadgePublicKey
+        let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
         ExceptT $ withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
           liftIO $
             DB.execute
               db
-              "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-              (displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs)
+              "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+              ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. (bProof, bPresHeader, bExpiry, bType, bVerified))
           profileId <- liftIO $ insertedRowId db
           liftIO $
             DB.execute
@@ -216,13 +222,15 @@ createOrUpdateContactRequest
       updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
       updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
         currentTs <- liftIO getCurrentTime
-        liftIO $ updateProfile currentTs
+        badgeVerified <- liftIO $ forM badge $ verifyBadge srvBadgePublicKey
+        let badgeRow@(bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
+        liftIO $ updateProfile currentTs badgeRow
         updateRequest currentTs
         ucr' <- getContactRequest db user contactRequestId
         re_ <- getRequestEntity ucr'
         pure $ RSCurrentRequest (Just ucr) ucr' re_
         where
-          updateProfile currentTs =
+          updateProfile currentTs (bProof, bPresHeader, bExpiry, bType, bVerified) =
             DB.execute
               db
               [sql|
@@ -232,7 +240,12 @@ createOrUpdateContactRequest
                   short_descr = ?,
                   image = ?,
                   contact_link = ?,
-                  updated_at = ?
+                  updated_at = ?,
+                  badge_proof = ?,
+                  badge_pres_header = ?,
+                  badge_expiry = ?,
+                  badge_type = ?,
+                  badge_verified = ?
               WHERE contact_profile_id IN (
                 SELECT contact_profile_id
                 FROM contact_requests
@@ -240,7 +253,7 @@ createOrUpdateContactRequest
                   AND contact_request_id = ?
               )
             |]
-              (displayName, fullName, shortDescr, image, contactLink, currentTs, userId, contactRequestId)
+              ((displayName, fullName, shortDescr, image, contactLink, currentTs) :. (bProof, bPresHeader, bExpiry, bType, bVerified) :. (userId, contactRequestId))
           updateRequest currentTs =
             if displayName == oldDisplayName
               then

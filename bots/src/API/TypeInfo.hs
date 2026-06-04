@@ -67,7 +67,7 @@ pattern TUTCTime :: String
 pattern TUTCTime = "UTCTime"
 
 primitiveTypes :: [ConsName]
-primitiveTypes = [TBool, TString, TInt, TInt64, TWord32, TDouble, TJSONObject, TUTCTime]
+primitiveTypes = [TBool, TString, TInt, TInt64, TWord32, TDouble, TJSONObject, TUTCTime, "BBSProof", "BBSPresHeader", "ByteString"]
 
 data SumTypeInfo = STI {typeName :: String, recordTypes :: [RecordTypeInfo]}
   deriving (Show)
