@@ -138,6 +138,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260530_client_services
           Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
           Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
+          Simplex.Chat.Store.Postgres.Migrations.M20260604_simplex_name_profiles
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -298,6 +299,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260530_client_services
           Simplex.Chat.Store.SQLite.Migrations.M20260531_member_removed_at
           Simplex.Chat.Store.SQLite.Migrations.M20260603_simplex_name
+          Simplex.Chat.Store.SQLite.Migrations.M20260604_simplex_name_profiles
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

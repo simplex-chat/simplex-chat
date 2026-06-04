@@ -532,7 +532,8 @@ CREATE TABLE test_chat_schema.contact_profiles (
     preferences text,
     contact_link bytea,
     short_descr text,
-    chat_peer_type text
+    chat_peer_type text,
+    simplex_name text
 );
 
 
@@ -856,7 +857,8 @@ CREATE TABLE test_chat_schema.group_profiles (
     group_web_page text,
     group_domain text,
     domain_web_page bigint,
-    allow_embedding bigint
+    allow_embedding bigint,
+    simplex_name text
 );
 
 
@@ -2137,6 +2139,10 @@ CREATE INDEX idx_contact_profiles_contact_link ON test_chat_schema.contact_profi
 
 
 
+CREATE UNIQUE INDEX idx_contact_profiles_simplex_name ON test_chat_schema.contact_profiles USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
+
+
+
 CREATE INDEX idx_contact_profiles_user_id ON test_chat_schema.contact_profiles USING btree (user_id);
 
 
@@ -2318,6 +2324,10 @@ CREATE INDEX idx_group_members_user_id ON test_chat_schema.group_members USING b
 
 
 CREATE INDEX idx_group_members_user_id_local_display_name ON test_chat_schema.group_members USING btree (user_id, local_display_name);
+
+
+
+CREATE UNIQUE INDEX idx_group_profiles_simplex_name ON test_chat_schema.group_profiles USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
 
 
 

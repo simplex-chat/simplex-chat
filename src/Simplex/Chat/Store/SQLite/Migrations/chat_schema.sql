@@ -19,7 +19,8 @@ CREATE TABLE contact_profiles(
   preferences TEXT,
   contact_link BLOB,
   short_descr TEXT,
-  chat_peer_type TEXT
+  chat_peer_type TEXT,
+  simplex_name TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -131,7 +132,8 @@ CREATE TABLE group_profiles(
   group_web_page TEXT,
   group_domain TEXT,
   domain_web_page INTEGER,
-  allow_embedding INTEGER
+  allow_embedding INTEGER,
+  simplex_name TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -1318,6 +1320,18 @@ ON contacts(
 WHERE simplex_name IS NOT NULL AND deleted = 0;
 CREATE UNIQUE INDEX idx_groups_simplex_name
 ON groups(
+  user_id,
+  simplex_name
+)
+WHERE simplex_name IS NOT NULL;
+CREATE UNIQUE INDEX idx_contact_profiles_simplex_name
+ON contact_profiles(
+  user_id,
+  simplex_name
+)
+WHERE simplex_name IS NOT NULL;
+CREATE UNIQUE INDEX idx_group_profiles_simplex_name
+ON group_profiles(
   user_id,
   simplex_name
 )
