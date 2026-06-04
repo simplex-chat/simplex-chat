@@ -501,9 +501,6 @@ type ContactRow = Only ContactId :. ContactRow'
 toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
 toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL, simplexNameRaw)) :. connRow) =
   let simplexName = decodeSimplexName simplexNameRaw
-      -- simplexName is mirrored into the embedded LocalProfile so that downstream
-      -- consumers that only see the profile (e.g., redactedMemberProfile forwarding)
-      -- carry the same value as Contact.simplexName.
       profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName, peerType, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
@@ -695,10 +692,13 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
       publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ (toPublicGroupAccess accessRow)
       groupKeys = toGroupKeys publicGroupId_ groupKeysRow
       simplexName = decodeSimplexName simplexNameRaw
-      -- groups.simplex_name is also surfaced via groupProfile.simplexName so that
-      -- outgoing wire GroupProfile (e.g., XGrpInfo, XGrpInv) carries the host's
-      -- canonical name. Task 3 will introduce group_profiles.simplex_name for the
-      -- peer-claimed value; until then both consumers read from groups.simplex_name.
+      -- groups.simplex_name is the per-user locally-known group name (set by the
+      -- prepare-via-name path; see prior plan Task 7). Mirrored into
+      -- groupProfile.simplexName as a stopgap until group_profiles.simplex_name
+      -- is introduced for the peer-claimed/canonical name. The mirror reads
+      -- NULL today (no writer yet) so XGrpInfo carries Nothing — the leak risk
+      -- of broadcasting the user's locally-resolved label as canonical only
+      -- materialises once the prepare path starts writing the column.
       groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup, simplexName, groupPreferences, memberAdmission}
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
