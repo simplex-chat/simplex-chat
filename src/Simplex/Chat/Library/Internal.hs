@@ -2487,7 +2487,7 @@ msgContentHasLink mc ft_ = case msgContentTag mc of
   MCLink_ -> True
   _ -> maybe False hasLinks ft_
 
-prepareAgentCreation :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> CM (CommandId, ConnId)
+prepareAgentCreation :: User -> CommandFunction -> Bool -> SConnectionMode c -> CM (CommandId, ConnId)
 prepareAgentCreation user cmdFunction enableNtfs cMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing cmdFunction
   connId <- withAgent $ \a -> prepareConnectionToCreate a (aUserId user) enableNtfs cMode PQSupportOff
@@ -2505,7 +2505,7 @@ prepareAgentJoin user conn_ enableNtfs cReqUri = do
     Nothing -> withAgent $ \a -> prepareConnectionToJoin a (aUserId user) enableNtfs cReqUri PQSupportOff
   pure (cmdId, connId)
 
-joinAgentConnectionAsync :: ConnectionModeI c => User -> CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
+joinAgentConnectionAsync :: User -> CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
 joinAgentConnectionAsync user cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
   withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 

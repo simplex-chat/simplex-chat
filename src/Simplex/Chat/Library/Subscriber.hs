@@ -3104,14 +3104,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
-      let enableNtfsGrp = chatHasNtfs chatSettings
-      groupConnIds@(gCmdId, gAcId) <- prepareAgentJoin user Nothing enableNtfsGrp groupConnReq
+      groupConnIds@(gCmdId, gAcId) <- prepareAgentJoin user Nothing (chatHasNtfs chatSettings) groupConnReq
       directConnIds <- forM directConnReq $ \dcr -> prepareAgentJoin user Nothing True dcr
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr `peerConnChatVersion` mcvr
       withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
-      joinAgentConnectionAsync user gCmdId False gAcId enableNtfsGrp groupConnReq dm subMode
+      joinAgentConnectionAsync user gCmdId False gAcId (chatHasNtfs chatSettings) groupConnReq dm subMode
       forM_ ((,) <$> directConnIds <*> directConnReq) $ \((dCmdId, dAcId), dcr) ->
         joinAgentConnectionAsync user dCmdId False dAcId True dcr dm subMode
 
