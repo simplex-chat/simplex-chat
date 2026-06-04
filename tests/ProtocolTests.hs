@@ -9,6 +9,7 @@ module ProtocolTests where
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
+import Simplex.Chat.Library.Internal (redactedMemberProfile, userProfileInGroup')
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -22,7 +23,9 @@ import Simplex.Messaging.Version
 import Test.Hspec
 
 protocolTests :: Spec
-protocolTests = decodeChatMessageTest
+protocolTests = do
+  decodeChatMessageTest
+  outgoingProfileSimplexNameTest
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")
@@ -321,3 +324,57 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.ok" $
     "{\"v\":\"1\",\"event\":\"x.ok\",\"params\":{}}"
       ==# XOk
+
+testUser :: Maybe SimplexNameInfo -> User
+testUser sn =
+  User
+    { userId = 1,
+      agentUserId = AgentUserId 1,
+      userContactId = 1,
+      localDisplayName = "alice",
+      profile =
+        LocalProfile
+          { profileId = 1,
+            displayName = "alice",
+            fullName = "Alice",
+            shortDescr = Nothing,
+            image = Nothing,
+            contactLink = Nothing,
+            simplexName = sn,
+            preferences = Nothing,
+            peerType = Nothing,
+            localAlias = ""
+          },
+      fullPreferences = fullPreferences' Nothing,
+      activeUser = True,
+      activeOrder = 1,
+      viewPwdHash = Nothing,
+      showNtfs = True,
+      sendRcptsContacts = True,
+      sendRcptsSmallGroups = True,
+      autoAcceptMemberContacts = False,
+      userMemberProfileUpdatedAt = Nothing,
+      userChatRelay = BoolDef False,
+      clientService = BoolDef False,
+      uiThemes = Nothing
+    }
+
+outgoingProfileSimplexNameTest :: Spec
+outgoingProfileSimplexNameTest = describe "outgoing Profile carries User.profile.simplexName" $ do
+  it "userProfileDirect passes simplexName through to wire Profile" $ do
+    let Profile {simplexName = sn} = userProfileDirect (testUser (Just testSimplexName)) Nothing Nothing True
+    sn `shouldBe` Just testSimplexName
+  it "userProfileDirect with Nothing on User.profile leaves wire simplexName Nothing" $ do
+    let Profile {simplexName = sn} = userProfileDirect (testUser Nothing) Nothing Nothing True
+    sn `shouldBe` Nothing
+  it "userProfileDirect with incognito profile suppresses simplexName" $ do
+    let incognito = Profile {displayName = "anon", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, simplexName = Nothing, peerType = Nothing, preferences = Nothing}
+        Profile {simplexName = sn} = userProfileDirect (testUser (Just testSimplexName)) (Just incognito) Nothing True
+    sn `shouldBe` Nothing
+  it "userProfileInGroup' passes simplexName through" $ do
+    let Profile {simplexName = sn} = userProfileInGroup' (testUser (Just testSimplexName)) True Nothing
+    sn `shouldBe` Just testSimplexName
+  it "redactedMemberProfile preserves simplexName" $ do
+    let p0 = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, image = Nothing, contactLink = Nothing, simplexName = Just testSimplexName, peerType = Nothing, preferences = Nothing}
+        Profile {simplexName = sn} = redactedMemberProfile True p0
+    sn `shouldBe` Just testSimplexName
