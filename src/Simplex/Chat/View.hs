@@ -2625,8 +2625,8 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexNameNotFound ni -> ["no contact or group with simplex name " <> plain (T.unpack (shortNameInfoStr ni))]
-    CESimplexNameUnprepared ni -> [plain (T.unpack (shortNameInfoStr ni)) <> " is a known contact/group but has no link to reconnect via"]
+    CESimplexNameNotFound ni -> ["no contact or group with simplex name " <> plain (shortNameInfoStr ni)]
+    CESimplexNameUnprepared ni -> [plain (shortNameInfoStr ni) <> " is a known contact/group but has no link to reconnect via"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $
