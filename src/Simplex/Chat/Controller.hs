@@ -946,6 +946,15 @@ data ChatEvent
   | CEvtTimedAction {action :: String, durationMilliseconds :: Int64}
   | CEvtTerminalEvent TerminalEvent
   | CEvtCustomChatEvent {user_ :: Maybe User, response :: Text}
+  | -- Emitted when an incoming peer Profile / GroupProfile carrying a
+    -- simplexName collides with another row in the same user's DB that
+    -- already holds that name. The older row's simplex_name is NULLed
+    -- (newer-claim-wins per RSLV); displacedFrom is the old row's local
+    -- display_name, claimedBy is the peer / group whose claim won.
+    CEvtSimplexNameConflict {user :: User, simplexName :: SimplexNameInfo, entity :: SimplexNameConflictEntity, claimedBy :: ContactName, displacedFrom :: ContactName}
+  deriving (Show)
+
+data SimplexNameConflictEntity = SNCEContact | SNCEGroup
   deriving (Show)
 
 data TerminalEvent
@@ -1770,6 +1779,8 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "RTS") ''RelayTestStep)
 $(JQ.deriveJSON defaultJSON ''RelayTestFailure)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "SNCE") ''SimplexNameConflictEntity)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CEvt") ''ChatEvent)
 

@@ -555,6 +555,18 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
     TEContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
     TEGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
   CEvtCustomChatEvent u r -> ttyUser' u $ map plain $ T.lines r
+  CEvtSimplexNameConflict u ni entity claimedBy displacedFrom ->
+    ttyUser u
+      [ "simplex name "
+          <> plain (shortNameInfoStr ni)
+          <> " now claimed by "
+          <> plain (entityLabel entity claimedBy)
+          <> ", was "
+          <> plain (entityLabel entity displacedFrom)
+      ]
+    where
+      entityLabel SNCEContact n = "@" <> n
+      entityLabel SNCEGroup n = "#" <> n
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss

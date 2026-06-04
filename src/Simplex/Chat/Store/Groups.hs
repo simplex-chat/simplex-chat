@@ -46,6 +46,8 @@ module Simplex.Chat.Store.Groups
     getGroupViaShortLinkToConnect,
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
+    updateGroupProfileWithConflict,
+    clearConflictingGroupProfileSimplexName_,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -230,11 +232,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences, Maybe Text) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
-  Just $ toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
+toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences, profileSimplexNameRaw) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
+  Just $ toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences, profileSimplexNameRaw) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
 toMaybeGroupMember _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -2367,17 +2369,26 @@ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange
   createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff Nothing
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
-updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission}
+updateGroupProfile db user g p' = fst <$> updateGroupProfileWithConflict db user g p'
+
+-- | Like updateGroupProfile but additionally clears the simplex_name on any
+-- other group_profiles row (for the same user) that already holds the same
+-- (user_id, simplex_name) — returning that row's display_name so the caller
+-- can emit CEvtSimplexNameConflict. Used by the XGrpInfo path.
+updateGroupProfileWithConflict :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO (GroupInfo, Maybe GroupName)
+updateGroupProfileWithConflict db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, simplexName, groupPreferences, memberAdmission}
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
+      displaced <- clearConflictingGroupProfileSimplexName_ db userId (Just groupId) simplexName
       updateGroupProfile_ currentTs
-      pure (g :: GroupInfo) {groupProfile = p', fullGroupPreferences}
+      pure ((g :: GroupInfo) {groupProfile = p', fullGroupPreferences}, displaced)
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
+        displaced <- clearConflictingGroupProfileSimplexName_ db userId (Just groupId) simplexName
         updateGroupProfile_ currentTs
         updateGroup_ ldn currentTs
-        pure $ Right (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
+        pure $ Right ((g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}, displaced)
   where
     fullGroupPreferences = mergeGroupPreferences groupPreferences
     (groupType_, groupLink_) = case publicGroup of
@@ -2391,6 +2402,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
           SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
               group_type = ?, group_link = ?,
               group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?,
+              simplex_name = ?,
               preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
@@ -2398,13 +2410,45 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
             WHERE user_id = ? AND group_id = ?
           )
         |]
-        ((newName, fullName, shortDescr, description, image, groupType_, groupLink_) :. publicGroupAccessRow publicGroup :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
+        ((newName, fullName, shortDescr, description, image, groupType_, groupLink_) :. publicGroupAccessRow publicGroup :. Only simplexName :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
     updateGroup_ ldn currentTs = do
       DB.execute
         db
         "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
+
+-- | Mirror of clearConflictingContactProfileSimplexName_ for group_profiles.
+-- Pass the groupId being updated to exclude its underlying group_profile_id
+-- from the clear; pass Nothing for the pre-INSERT case. See that helper.
+clearConflictingGroupProfileSimplexName_ :: DB.Connection -> UserId -> Maybe GroupId -> Maybe SimplexNameInfo -> IO (Maybe GroupName)
+clearConflictingGroupProfileSimplexName_ _ _ _ Nothing = pure Nothing
+clearConflictingGroupProfileSimplexName_ db userId Nothing (Just simplexName) =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        UPDATE group_profiles
+        SET simplex_name = NULL
+        WHERE user_id = ? AND simplex_name = ?
+        RETURNING display_name
+      |]
+      (userId, simplexName)
+clearConflictingGroupProfileSimplexName_ db userId (Just groupId) (Just simplexName) =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        UPDATE group_profiles
+        SET simplex_name = NULL
+        WHERE user_id = ?
+          AND simplex_name = ?
+          AND group_profile_id NOT IN (
+            SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?
+          )
+        RETURNING display_name
+      |]
+      (userId, simplexName, userId, groupId)
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
 updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do
@@ -2439,15 +2483,15 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
                    gp.group_type, gp.group_link, gp.public_group_id,
                    gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
-                   gp.preferences, gp.member_admission
+                   gp.simplex_name, gp.preferences, gp.member_admission
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
             WHERE g.group_id = ?
           |]
             (Only groupId)
-    toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (groupPreferences, memberAdmission)) =
+    toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (simplexNameRaw, groupPreferences, memberAdmission)) =
       let publicGroupAccess = toPublicGroupAccess accessRow
-       in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, simplexName = Nothing, groupPreferences, memberAdmission}
+       in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, simplexName = decodeSimplexName simplexNameRaw, groupPreferences, memberAdmission}
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do

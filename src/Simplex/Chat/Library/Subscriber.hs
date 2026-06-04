@@ -2560,12 +2560,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processContactProfileUpdate :: Contact -> Profile -> Bool -> CM Contact
     processContactProfileUpdate c@Contact {profile = lp} p' createItems
       | p /= p' = do
-          c' <- withStore $ \db ->
+          (c', displaced_) <- withStore $ \db ->
             if userTTL == rcvTTL
-              then updateContactProfile db user c p'
+              then updateContactProfileWithConflict db user c p'
               else do
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
-                updateContactProfile db user c' p'
+                updateContactProfileWithConflict db user c' p'
+          forM_ ((,) <$> p'SimplexName <*> displaced_) $ \(ni, displaced) ->
+            let Contact {localDisplayName = newLDN} = c'
+             in toView $ CEvtSimplexNameConflict user ni SNCEContact newLDN displaced
           when (directOrUsed c' && createItems) $ do
             createProfileUpdatedItem c'
             lift $ createRcvFeatureItems user c c'
@@ -2577,7 +2580,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         p = fromLocalProfile lp
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
-        Profile {preferences = rcvPrefs_} = p'
+        Profile {preferences = rcvPrefs_, simplexName = p'SimplexName} = p'
         rcvTTL = prefParam $ getPreference SCFTimedMessages rcvPrefs_
         ctUserPrefs' =
           let userDefault = getPreference SCFTimedMessages (fullPreferences user)
@@ -3284,7 +3287,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toView $ CEvtGroupDeleted user gInfo'' {membership = membership {memberStatus = GSMemGroupDeleted}} m' msgSigned
 
     xGrpInfo :: GroupInfo -> GroupMember -> GroupProfile -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpInfo g@GroupInfo {groupProfile = p@GroupProfile {publicGroup = pg}, businessChat} m@GroupMember {memberRole} p'@GroupProfile {publicGroup = pg'} msg@RcvMessage {msgSigned} brokerTs
+    xGrpInfo g@GroupInfo {groupProfile = p@GroupProfile {publicGroup = pg}, businessChat} m@GroupMember {memberRole} p'@GroupProfile {publicGroup = pg', simplexName = p'GroupSimplexName} msg@RcvMessage {msgSigned} brokerTs
       | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions" $> Nothing
       | let pgId = fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId),
         useRelays' g && (isNothing pg' || pgId pg' /= pgId pg) = messageError "x.grp.info: publicGroupId mismatch for channel" $> Nothing
@@ -3292,7 +3295,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise = do
           case businessChat of
             Nothing -> unless (p == p') $ do
-              g' <- withStore $ \db -> updateGroupProfile db user g p'
+              (g', displaced_) <- withStore $ \db -> updateGroupProfileWithConflict db user g p'
+              forM_ ((,) <$> p'GroupSimplexName <*> displaced_) $ \(ni, displaced) ->
+                let GroupInfo {localDisplayName = newLDN} = g'
+                 in toView $ CEvtSimplexNameConflict user ni SNCEGroup newLDN displaced
               (g'', m', scopeInfo) <- mkGroupChatScope g' m
               toView $ CEvtGroupUpdated user g g'' (Just m') msgSigned
               let cd = CDGroupRcv g'' scopeInfo m'
