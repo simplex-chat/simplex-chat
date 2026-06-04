@@ -105,6 +105,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
+import Simplex.Chat.Badges (badgeToRow)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -555,18 +556,20 @@ deleteUnusedProfile_ db userId profileId =
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db user@User {userId} c p'
   | displayName == newName = do
-      liftIO $ updateContactProfile_ db userId profileId p'
-      pure c {profile, mergedPreferences}
+      currentTs <- liftIO getCurrentTime
+      badgeVerified <- liftIO $ profileBadgeVerified lp p'
+      liftIO $ updateContactProfile_' db userId profileId p' badgeVerified currentTs
+      pure c {profile = toLocalProfile profileId p' localAlias currentTs badgeVerified, mergedPreferences}
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
-        updateContactProfile_' db userId profileId p' currentTs
+        badgeVerified <- profileBadgeVerified lp p'
+        updateContactProfile_' db userId profileId p' badgeVerified currentTs
         updateContactLDN_ db user contactId localDisplayName ldn currentTs
-        pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
+        pure $ Right c {localDisplayName = ldn, profile = toLocalProfile profileId p' localAlias currentTs badgeVerified, mergedPreferences}
   where
-    Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
+    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
     Profile {displayName = newName, preferences} = p'
-    profile = toLocalProfile profileId p' localAlias
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
@@ -694,55 +697,64 @@ setQuotaErrCounter db User {userId} Connection {connId} counter = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
 
-updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
-updateContactProfile_ db userId profileId profile = do
+updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateContactProfile_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
-  updateContactProfile_' db userId profileId profile currentTs
+  updateContactProfile_' db userId profileId profile badgeVerified currentTs
 
-updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} updatedAt = do
+updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} badgeVerified updatedAt = do
+  let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?,
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?,
+          updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt, userId, profileId)
+    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType) :. (bProof, bPresHeader, bExpiry, bType, bVerified, updatedAt, userId, profileId))
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
-updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
-updateMemberContactProfileReset_ db userId profileId profile = do
+updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateMemberContactProfileReset_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
-  updateMemberContactProfileReset_' db userId profileId profile currentTs
+  updateMemberContactProfileReset_' db userId profileId profile badgeVerified currentTs
 
-updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image} updatedAt = do
+updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt = do
+  let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = NULL, preferences = NULL, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = NULL, preferences = NULL,
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?,
+          updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, updatedAt, userId, profileId)
+    ((displayName, fullName, shortDescr, image) :. (bProof, bPresHeader, bExpiry, bType, bVerified, updatedAt, userId, profileId))
 
 -- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
-updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
-updateMemberContactProfile_ db userId profileId profile = do
+updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateMemberContactProfile_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
-  updateMemberContactProfile_' db userId profileId profile currentTs
+  updateMemberContactProfile_' db userId profileId profile badgeVerified currentTs
 
-updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image} updatedAt = do
+updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt = do
+  let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?,
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?,
+          updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, updatedAt, userId, profileId)
+    ((displayName, fullName, shortDescr, image) :. (bProof, bPresHeader, bExpiry, bType, bVerified, updatedAt, userId, profileId))
 
 updateContactLDN_ :: DB.Connection -> User -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt = do
@@ -848,7 +860,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
         Contact
           { contactId,
             localDisplayName,
-            profile = toLocalProfile profileId profile "",
+            profile = toLocalProfile profileId profile "" currentTs Nothing,
             activeConn = Just conn,
             contactUsed,
             contactStatus = CSActive,

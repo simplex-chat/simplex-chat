@@ -47,7 +47,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (LocalBadge, SupporterBadge)
+import Simplex.Chat.Badges (BadgeStatus (..), LocalBadge (..), SupporterBadge, mkBadgeStatus, srvBadgePublicKey, verifyBadge)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -768,13 +768,26 @@ data LocalProfile = LocalProfile
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} localAlias =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = Nothing, localAlias}
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> LocalProfile
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} localAlias now verified_ =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = mkLocalBadge, localAlias}
+  where
+    mkLocalBadge = do
+      b <- badge
+      verified <- verified_
+      pure LocalBadge {badgeStatus = mkBadgeStatus now verified b, badge = b}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = Nothing}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} =
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = (\LocalBadge {badge = b} -> b) <$> badge}
+
+profileBadgeVerified :: LocalProfile -> Profile -> IO (Maybe Bool)
+profileBadgeVerified LocalProfile {badge = oldBadge} Profile {badge = newBadge} =
+  case (oldBadge, newBadge) of
+    (_, Nothing) -> pure Nothing
+    (Just LocalBadge {badge = oldB, badgeStatus}, Just newB)
+      | oldB == newB -> pure $ Just (badgeStatus /= BSFailed)
+    (_, Just newB) -> Just <$> verifyBadge srvBadgePublicKey newB
 
 data GroupType
   = GTChannel

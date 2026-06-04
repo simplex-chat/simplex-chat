@@ -2134,7 +2134,7 @@ createNewMember_
           invitedBy,
           invitedByGroupMemberId = memInvitedByGroupMemberId,
           localDisplayName,
-          memberProfile = toLocalProfile memberContactProfileId memberProfile "",
+          memberProfile = toLocalProfile memberContactProfileId memberProfile "" createdAt Nothing,
           memberContactId,
           memberContactProfileId,
           activeConn,
@@ -2986,38 +2986,44 @@ setMemberContactStartedConnection db Contact {contactId} = do
 updateMemberProfile :: DB.Connection -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
 updateMemberProfile db user@User {userId} m p'
   | displayName == newName = do
-      liftIO $ updateMemberContactProfileReset_ db userId profileId p'
-      pure m {memberProfile = profile}
+      currentTs <- liftIO getCurrentTime
+      badgeVerified <- liftIO $ profileBadgeVerified (memberProfile m) p'
+      liftIO $ updateMemberContactProfileReset_' db userId profileId p' badgeVerified currentTs
+      pure m {memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified}
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
-        updateMemberContactProfileReset_' db userId profileId p' currentTs
+        badgeVerified <- profileBadgeVerified (memberProfile m) p'
+        updateMemberContactProfileReset_' db userId profileId p' badgeVerified currentTs
         DB.execute
           db
           "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
           (ldn, currentTs, userId, groupMemberId)
         safeDeleteLDN db user localDisplayName
-        pure $ Right m {localDisplayName = ldn, memberProfile = profile}
+        pure $ Right m {localDisplayName = ldn, memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified}
   where
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
     Profile {displayName = newName} = p'
-    profile = toLocalProfile profileId p' localAlias
 
 updateContactMemberProfile :: DB.Connection -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
 updateContactMemberProfile db user@User {userId} m ct@Contact {contactId} p'
   | displayName == newName = do
-      liftIO $ updateMemberContactProfile_ db userId profileId p'
+      currentTs <- liftIO getCurrentTime
+      badgeVerified <- liftIO $ profileBadgeVerified (memberProfile m) p'
+      liftIO $ updateMemberContactProfile_' db userId profileId p' badgeVerified currentTs
+      let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified
       pure (m {memberProfile = profile}, ct {profile} :: Contact)
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
-        updateMemberContactProfile_' db userId profileId p' currentTs
+        badgeVerified <- profileBadgeVerified (memberProfile m) p'
+        updateMemberContactProfile_' db userId profileId p' badgeVerified currentTs
         updateContactLDN_ db user contactId localDisplayName ldn currentTs
+        let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified
         pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)
   where
     GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
     Profile {displayName = newName} = p'
-    profile = toLocalProfile profileId p' localAlias
 
 getXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO Bool
 getXGrpLinkMemReceived db mId =

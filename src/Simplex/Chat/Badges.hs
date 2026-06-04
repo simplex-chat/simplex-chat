@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -22,20 +23,33 @@ module Simplex.Chat.Badges
     generateBadgeProof,
     verifyBadge,
     mkBadgeStatus,
+    localBadgeVerified,
+    srvBadgePublicKey,
+    BadgeRow,
+    badgeToRow,
+    rowToBadge,
   ) where
 
-import Data.Aeson (FromJSON (..), ToJSON (..))
-import qualified Data.Aeson.TH as JQ
 import Control.Concurrent.STM
 import Crypto.Random (ChaChaDRG)
+import Data.Aeson (FromJSON (..), ToJSON (..))
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple.FromField (FromField (..))
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 -- Badge type
 
@@ -188,6 +202,36 @@ generateBadgeProof pk BadgeCredential {masterKey, signature, badgeExpiry, badgeT
 verifyBadge :: BBSPublicKey -> SupporterBadge -> IO Bool
 verifyBadge pk SupporterBadge {proof, presHeader, badgeExpiry, badgeType} =
   bbsProofVerify pk proof bbsBadgeHeader presHeader bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeDisclosedMessages badgeExpiry badgeType)
+
+localBadgeVerified :: Maybe LocalBadge -> Maybe Bool
+localBadgeVerified = fmap $ \LocalBadge {badgeStatus} -> badgeStatus /= BSFailed
+
+-- Server public key (test key - replace with real key when badge service is deployed)
+
+srvBadgePublicKey :: BBSPublicKey
+srvBadgePublicKey = BBSPublicKey "" -- TODO generate real keypair
+
+-- DB
+
+instance FromField BadgeType where fromField = fromTextField_ textDecode
+
+instance ToField BadgeType where toField = toField . textEncode
+
+type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, Maybe BoolInt)
+
+badgeToRow :: Maybe SupporterBadge -> Maybe Bool -> BadgeRow
+badgeToRow Nothing _ = (Nothing, Nothing, Nothing, Nothing, Nothing)
+badgeToRow (Just SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType}) verified =
+  (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), BI <$> verified)
+
+rowToBadge :: UTCTime -> BadgeRow -> Maybe LocalBadge
+rowToBadge _ (Nothing, _, _, _, _) = Nothing
+rowToBadge now (Just p, Just ph, badgeExpiry, Just btText, verified_) = do
+  bt <- textDecode btText
+  let b = SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType = bt}
+      verified = maybe False unBI verified_
+  Just LocalBadge {badgeStatus = mkBadgeStatus now verified b, badge = b}
+rowToBadge _ _ = Nothing
 
 -- JSON
 
