@@ -9,6 +9,7 @@ module ProtocolTests where
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
+import Simplex.Chat.Library.Internal (groupLinkOwnerAuthAllowed)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -22,7 +23,9 @@ import Simplex.Messaging.Version
 import Test.Hspec
 
 protocolTests :: Spec
-protocolTests = decodeChatMessageTest
+protocolTests = do
+  decodeChatMessageTest
+  groupLinkOwnerAuthTests
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")
@@ -108,6 +111,13 @@ testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = N
 
 testGroupProfile :: GroupProfile
 testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing}
+
+groupLinkOwnerAuthTests :: Spec
+groupLinkOwnerAuthTests = describe "Group short-link owner metadata" $ do
+  it "allows only owners to publish owner authentication metadata" $ do
+    groupLinkOwnerAuthAllowed GROwner `shouldBe` True
+    groupLinkOwnerAuthAllowed GRAdmin `shouldBe` False
+    groupLinkOwnerAuthAllowed GRMember `shouldBe` False
 
 decodeChatMessageTest :: Spec
 decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
