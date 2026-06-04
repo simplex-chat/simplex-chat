@@ -14,7 +14,6 @@ module Simplex.Chat.Web
     WebMemberProfile (..),
     WebFileInfo (..),
     webPreviewWorker,
-    renderWebPreviews,
     writeCorsConfig,
     removeStaleFiles,
     channelContentChanged,
@@ -60,7 +59,7 @@ import Simplex.Chat.Messages
   )
 import Simplex.Chat.Messages.CIContent (ciMsgContent)
 import Simplex.Chat.Protocol (MsgContent, MsgRef (..), QuotedMsg (..), isReport)
-import Simplex.Chat.Store.Groups (getGroupOwners, getRelayPublishableGroups, getRelayServedGroups)
+import Simplex.Chat.Store.Groups (getGroupOwners, getRelayPublishableGroups)
 import Simplex.Chat.Store.Messages (getGroupWebPreviewItems)
 import Simplex.Chat.Store.Shared (getGroupInfo)
 import Simplex.Chat.Types
@@ -230,14 +229,6 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
           Right a -> pure (Just a)
           Left _ -> go us
 
-renderWebPreviews :: WebPreviewConfig -> ChatController -> User -> IO ()
-renderWebPreviews cfg@WebPreviewConfig {webJsonDir} cc user = do
-  let vr' = chatVRange (config cc)
-  createDirectoryIfMissing True webJsonDir
-  groups <- withTransaction (chatStore cc) $ \db -> getRelayServedGroups db vr' user
-  forM_ [gInfo | gInfo <- groups, hasPublicGroup gInfo] $ \gInfo ->
-    void $ renderGroupPreview cfg cc user gInfo
-
 renderGroupPreview :: WebPreviewConfig -> ChatController -> User -> GroupInfo -> IO (Maybe (Text, CorsOrigin))
 renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {shortDescr = sd, description = wd, publicGroup}} =
   case publicGroup of
@@ -250,7 +241,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
       ts <- getCurrentTime
       let rendered = mapMaybe toRenderedItem $ rights items
           msgs = map fst rendered
-          senders = collectSenders $ map memberToProfile owners <> mapMaybe snd rendered
+          senders = collectSenders $ map memberToProfile owners <> concatMap snd rendered
           preview = WebChannelPreview
             { channel = gp,
               shortDescription = toFormattedText =<< sd,
@@ -309,14 +300,17 @@ channelRemoved cc gId =
     writeTVar corsNeeded True
     void $ tryPutTMVar wakeSignal ()
 
-toRenderedItem :: CChatItem 'CTGroup -> Maybe (WebMessage, Maybe WebMemberProfile)
+toRenderedItem :: CChatItem 'CTGroup -> Maybe (WebMessage, [WebMemberProfile])
 toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed, itemForwarded, itemEdited}, content, mentions, formattedText, quotedItem, reactions, file})
   | isJust itemTimed = Nothing
   | otherwise = case ciMsgContent content of
       Just mc | not (isReport mc) ->
         let (sender, senderProfile) = case chatDir of
-              CIGroupRcv m@GroupMember {memberId} -> (Just memberId, Just $ memberToProfile m)
-              _ -> (Nothing, Nothing)
+              CIGroupRcv m@GroupMember {memberId} -> (Just memberId, [memberToProfile m])
+              _ -> (Nothing, [])
+            quotedProfile = case quotedItem of
+              Just CIQuote {chatDir = CIQGroupRcv (Just m)} -> [memberToProfile m]
+              _ -> []
          in Just
               ( WebMessage
                   { sender,
@@ -330,7 +324,7 @@ toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed,
                     forward = if isJust itemForwarded then Just True else Nothing,
                     edited = itemEdited
                   },
-                senderProfile
+                senderProfile <> quotedProfile
               )
       _ -> Nothing
 

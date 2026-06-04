@@ -23,6 +23,13 @@ function escapeAttr(text) {
     .replace(/>/g, "&gt;");
 }
 
+const SAFE_URI_SCHEME = /^(https?:|simplex:|mailto:|tel:)/i;
+
+function safeHref(uri) {
+  if (SAFE_URI_SCHEME.test(uri)) return escapeAttr(uri);
+  return `javascript:void(alert('Potentially malicious link blocked:\\n'+${JSON.stringify(uri)}))`;
+}
+
 function getSimplexLinkDescr(linkType) {
   switch (linkType) {
     case 'contact': return 'SimpleX contact address';
@@ -78,19 +85,20 @@ function renderMarkdown(fts) {
         case 'colored':
           html += `<span class="${(format.color || '').replace(/[^a-zA-Z0-9_-]/g, '')}">${escapeHtml(text)}</span>`;
           break;
-        case 'uri':
+        case 'uri': {
           let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:/') ? text : 'https://' + text;
-          html += `<a href="${escapeAttr(href)}"${targetBlank(href)}>${escapeHtml(text)}</a>`;
+          html += `<a href="${safeHref(href)}"${targetBlank(href)}>${escapeHtml(text)}</a>`;
           break;
+        }
         case 'hyperLink': {
           const { showText, linkUri } = format;
-          html += `<a href="${escapeAttr(linkUri)}"${targetBlank(linkUri)}>${escapeHtml(showText ?? linkUri)}</a>`;
+          html += `<a href="${safeHref(linkUri)}"${targetBlank(linkUri)}>${escapeHtml(showText ?? linkUri)}</a>`;
           break;
         }
         case 'simplexLink': {
           const { showText, linkType, simplexUri, smpHosts } = format;
           const linkText = showText ? escapeHtml(showText) : getSimplexLinkDescr(linkType);
-          html += `<a href="${escapeAttr(platformSimplexUri(simplexUri))}" target="_blank">${linkText} <em>(${escapeHtml(viaHost(smpHosts))})</em></a>`;
+          html += `<a href="${safeHref(platformSimplexUri(simplexUri))}" target="_blank">${linkText} <em>(${escapeHtml(viaHost(smpHosts))})</em></a>`;
           break;
         }
         case 'command':
