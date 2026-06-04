@@ -20,7 +20,7 @@ import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Remote (remoteFilesFolder)
+import Simplex.Chat.Remote (isValidRemoteStoreFileName, remoteFilesFolder)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
@@ -40,6 +40,24 @@ remoteTests = describe "Remote" $ do
         `shouldSatisfy` \case
           Right (StartRemoteHost Nothing (Just (RCCtrlAddress _ "Ethernet 2")) (Just 12345)) -> True
           _ -> False
+  describe "remote file names" $ do
+    it "rejects path-like names for remote file storage" $ \_ -> do
+      isValidRemoteStoreFileName "test.pdf" `shouldBe` True
+      isValidRemoteStoreFileName "test_1.pdf" `shouldBe` True
+      forM_
+        [ "",
+          ".",
+          "..",
+          "../test.pdf",
+          "nested/test.pdf",
+          "nested\\test.pdf",
+          "/tmp/test.pdf",
+          "C:\\tmp\\test.pdf",
+          "C:test.pdf",
+          "test.pdf:ads",
+          "test\0.pdf"
+        ]
+        (`shouldSatisfy` (not . isValidRemoteStoreFileName))
   xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
   xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
   xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
