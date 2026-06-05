@@ -2957,6 +2957,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
+          -- Consume the transient simplex_name carrier from the connection row
+          -- (set in createConnection_ on the connect-via-plan path) and pass it
+          -- to createDirectContact; after this point contacts.simplex_name is
+          -- the source of truth.
           let Connection {simplexName} = conn'
               Profile {simplexName = pSimplexName} = p
           (ct, displaced_) <- withStore $ \db -> createDirectContact db vr user conn' p simplexName

@@ -277,6 +277,15 @@ toMaybeConnection vr ((Just connId, Just agentConnId, Just connLevel, viaContact
   Just $ toConnection vr ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled_, pqRcvEnabled_, authErrCounter, quotaErrCounter, connChatVersion, minVer, maxVer) :. Only simplexNameRaw)
 toMaybeConnection _ _ = Nothing
 
+-- | Creates a new connection row. The @simplexName@ argument is a TRANSIENT
+-- carrier for the connect-via-plan (connect-by-name) path: when the user
+-- initiates a connection by typing #name.simplex, the peer's profile is not
+-- yet available. The name is stashed on connections.simplex_name so that, when
+-- XInfo arrives and the Contact row is created, the XInfo handler in
+-- Library/Subscriber.hs (saveConnInfo) can read it and pass it to
+-- createDirectContact. After contact creation, contacts.simplex_name is the
+-- source of truth and the connection's value becomes a historical snapshot
+-- that is intentionally never updated.
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQSupport -> Maybe SimplexNameInfo -> IO Connection
 createConnection_ db userId connType entityId acId connStatus connChatVersion peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode pqSup simplexName = do
   viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
