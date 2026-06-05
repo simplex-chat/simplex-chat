@@ -1055,6 +1055,21 @@ getGroupInfoBySimplexName db vr user ni =
     Nothing -> pure Nothing
     Just gId -> Just <$> getGroupInfo db vr user gId
 
+-- | Unlike the parallel 'getContactBySimplexName' lookup (which filters
+-- @ct.deleted = 0@ to match the @idx_contacts_simplex_name@ partial index),
+-- this query has no soft-delete predicate. The @groups@ table has no
+-- @deleted@ column: groups are hard-deleted by 'deleteGroup' (DELETE FROM
+-- groups), so there is no row to skip here. The "user removed from group
+-- but row retained" case (membership transitioned to
+-- 'GSMemRemoved'/'GSMemLeft'/'GSMemGroupDeleted') is handled by the
+-- 'memberRemoved' check in 'connectPlanName' / 'gPlan' (Commands.hs) before
+-- this lookup result is used as a known-and-reconnectable plan; the index
+-- collision only matters for 'createPreparedGroup' inserts, which the
+-- 'memberRemoved' branch falls through to via 'resolveAndDispatch'. That
+-- collision is currently possible but untriggered in practice; clearing
+-- @groups.simplex_name@ on a membership-removed transition (analogous to
+-- 'clearConflictingGroupProfileSimplexName_') is the right fix when it
+-- becomes reachable.
 getGroupIdBySimplexName :: DB.Connection -> User -> SimplexNameInfo -> IO (Maybe GroupId)
 getGroupIdBySimplexName db User {userId} ni =
   maybeFirstRow fromOnly $
