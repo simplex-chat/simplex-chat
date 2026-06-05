@@ -107,7 +107,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), patt
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NameLink, NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SMPServer, SProtocolType (..), SubscriptionMode (..), UserProtocol, unNameLink, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SMPServer, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -4671,8 +4671,8 @@ resolveOnUserServers user@User {userId} domain = do
 -- parameter (introduced for the local-prepare path, see commit c6f26150), so
 -- the resolver hit reuses the same DB write path as a local-prepare hit.
 dispatchResolvedRecord :: VersionRangeChat -> NetworkRequestMode -> User -> SimplexNameInfo -> NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
-dispatchResolvedRecord vr nm user ni@SimplexNameInfo {nameType} NameRecord {nrChannelLinks, nrContactLinks} = do
-  lnk <- liftEither $ firstNameLink nameType nrChannelLinks nrContactLinks ni
+dispatchResolvedRecord vr nm user ni@SimplexNameInfo {nameType} NameRecord {nrSimplexChannel, nrSimplexContact} = do
+  lnk <- liftEither $ firstNameLink nameType nrSimplexChannel nrSimplexContact ni
   acl <- liftEither $ first (chatErrorAgent . AGENT . A_LINK) $ strDecode (encodeUtf8 lnk)
   prepareAndPlan acl
   where
@@ -4722,17 +4722,16 @@ dispatchResolvedRecord vr nm user ni@SimplexNameInfo {nameType} NameRecord {nrCh
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
 
--- | Pick the first link from the @NameRecord@ matching the queried name type.
--- An empty list (record exists but advertises no link of this kind) is
--- treated as "not found" — same UX as a local-store miss.
-firstNameLink :: SimplexNameType -> [NameLink] -> [NameLink] -> SimplexNameInfo -> Either ChatError Text
-firstNameLink nameType channelLinks contactLinks ni = case links of
-  l : _ -> Right $ unNameLink l
-  [] -> Left $ ChatError $ CESimplexNameNotFound ni
+-- | Pick the link from the @NameRecord@ matching the queried name type.
+-- A missing per-type field (record exists but advertises no link of this kind)
+-- is treated as "not found" — same UX as a local-store miss.
+firstNameLink :: SimplexNameType -> Maybe Text -> Maybe Text -> SimplexNameInfo -> Either ChatError Text
+firstNameLink nameType simplexChannel simplexContact ni =
+  maybe (Left $ ChatError $ CESimplexNameNotFound ni) Right link
   where
-    links = case nameType of
-      NTPublicGroup -> channelLinks
-      NTContact -> contactLinks
+    link = case nameType of
+      NTPublicGroup -> simplexChannel
+      NTContact -> simplexContact
 
 -- | Map a resolver failure to the corresponding ChatError surfaced to the user.
 -- AUTH (NameNotRegistered) collapses to the same UX as a local-store miss, so

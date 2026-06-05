@@ -12,7 +12,7 @@ import Simplex.Chat.Library.Commands (ResolveError (..), firstNameLink, iterateR
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Client (ProxyClientError (..))
-import Simplex.Messaging.Protocol (NameLink, NameRecord (..), SMPServer, mkNameLink, mkNameOwner, pattern SMPServer)
+import Simplex.Messaging.Protocol (NameRecord (..), SMPServer, mkNameOwner, pattern SMPServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import Test.Hspec
 
@@ -66,31 +66,31 @@ resolveNameTests = do
         ChatErrorAgent e _ _ -> e `shouldBe` timeoutErr
         other -> expectationFailure $ "expected ChatErrorAgent, got " <> show other
   -- firstNameLink is the pure link-picker used by dispatchResolvedRecord:
-  -- it selects nrContactLinks for NTContact, nrChannelLinks for NTPublicGroup,
-  -- returning the first entry. Empty lists collapse to CESimplexNameNotFound
-  -- so the UX is identical to a local-store miss.
+  -- it selects nrSimplexContact for NTContact, nrSimplexChannel for NTPublicGroup.
+  -- A Nothing for the queried type collapses to CESimplexNameNotFound so the UX
+  -- is identical to a local-store miss.
   describe "firstNameLink" $ do
-    it "picks the first nrContactLinks entry for NTContact" $
-      case firstNameLink NTContact [channelOne] [contactOne, contactTwo] aliceNi of
-        Right lnk -> lnk `shouldBe` "simplex:/contact-alice"
+    it "picks nrSimplexContact for NTContact" $
+      case firstNameLink NTContact (Just channelLink) (Just contactLink) aliceNi of
+        Right lnk -> lnk `shouldBe` contactLink
         Left e -> expectationFailure $ "expected Right, got " <> show e
-    it "picks the first nrChannelLinks entry for NTPublicGroup" $
-      case firstNameLink NTPublicGroup [channelOne, channelTwo] [contactOne] groupNi of
-        Right lnk -> lnk `shouldBe` "simplex:/channel-team"
+    it "picks nrSimplexChannel for NTPublicGroup" $
+      case firstNameLink NTPublicGroup (Just channelLink) (Just contactLink) groupNi of
+        Right lnk -> lnk `shouldBe` channelLink
         Left e -> expectationFailure $ "expected Right, got " <> show e
-    it "returns CESimplexNameNotFound when nrContactLinks is empty for NTContact" $
-      case firstNameLink NTContact [channelOne] [] aliceNi of
+    it "returns CESimplexNameNotFound when nrSimplexContact is Nothing for NTContact" $
+      case firstNameLink NTContact (Just channelLink) Nothing aliceNi of
         Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` aliceNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
-    it "returns CESimplexNameNotFound when nrChannelLinks is empty for NTPublicGroup" $
-      case firstNameLink NTPublicGroup [] [contactOne] groupNi of
+    it "returns CESimplexNameNotFound when nrSimplexChannel is Nothing for NTPublicGroup" $
+      case firstNameLink NTPublicGroup Nothing (Just contactLink) groupNi of
         Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` groupNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
-    -- NTContact ignores nrChannelLinks even when nrContactLinks is empty.
-    -- The resolver-side semantics say each name advertises a per-type link
-    -- set; cross-type fallback would silently connect to the wrong target.
-    it "does not fall back to nrChannelLinks for NTContact" $
-      case firstNameLink NTContact [channelOne] [] aliceNi of
+    -- NTContact ignores nrSimplexChannel even when nrSimplexContact is Nothing.
+    -- The resolver-side semantics say each name advertises a per-type link;
+    -- cross-type fallback would silently connect to the wrong target.
+    it "does not fall back to nrSimplexChannel for NTContact" $
+      case firstNameLink NTContact (Just channelLink) Nothing aliceNi of
         Left (ChatError (CESimplexNameNotFound _)) -> pure ()
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
 
@@ -110,19 +110,13 @@ aliceNi = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])
 groupNi :: SimplexNameInfo
 groupNi = SimplexNameInfo NTPublicGroup (SimplexNameDomain TLDSimplex "team" [])
 
--- Synthetic links to exercise firstNameLink's selection logic. mkNameLink only
--- enforces the ≤1024-byte upper bound; the strings are deliberately not real
--- AConnShortLink encodings — the link parser is exercised separately by the
--- A_LINK error path inside dispatchResolvedRecord and by AConnShortLink's own
--- round-trip tests in simplexmq.
-mkLink :: Text -> NameLink
-mkLink = either error id . mkNameLink
-
-channelOne, channelTwo, contactOne, contactTwo :: NameLink
-channelOne = mkLink "simplex:/channel-team"
-channelTwo = mkLink "simplex:/channel-team-backup"
-contactOne = mkLink "simplex:/contact-alice"
-contactTwo = mkLink "simplex:/contact-alice-backup"
+-- Synthetic links to exercise firstNameLink's selection logic. The strings are
+-- deliberately not real AConnShortLink encodings — the link parser is exercised
+-- separately by the A_LINK error path inside dispatchResolvedRecord and by
+-- AConnShortLink's own round-trip tests in simplexmq.
+channelLink, contactLink :: Text
+channelLink = "simplex:/channel-team"
+contactLink = "simplex:/contact-alice"
 
 srv1 :: SMPServer
 srv1 = SMPServer "smp1.example" "5223" (C.KeyHash "\1\2\3\4")
@@ -133,15 +127,19 @@ srv2 = SMPServer "smp2.example" "5223" (C.KeyHash "\5\6\7\8")
 sampleRecord :: NameRecord
 sampleRecord =
   NameRecord
-    { nrDisplayName = "alice",
-      -- mkNameOwner enforces the 20-byte invariant; this string is intentionally 20 ASCII bytes.
+    { nrName = "alice",
+      nrNickname = Nothing,
+      nrWebsite = Nothing,
+      nrLocation = Nothing,
+      nrSimplexContact = Nothing,
+      nrSimplexChannel = Nothing,
+      nrEth = Nothing,
+      nrBtc = Nothing,
+      nrXmr = Nothing,
+      nrDot = Nothing,
+      -- mkNameOwner enforces the 20-byte invariant; these strings are intentionally 20 ASCII bytes.
       nrOwner = either error id $ mkNameOwner "owner-bytes-1234567x",
-      nrChannelLinks = [],
-      nrContactLinks = [],
-      nrAdminAddress = Nothing,
-      nrAdminEmail = Nothing,
-      nrExpiry = 0,
-      nrIsTest = True
+      nrResolver = either error id $ mkNameOwner "resolver-bytes12345x"
     }
 
 -- AUTH from a name-capable destination relay: surfaces as SMP host AUTH
