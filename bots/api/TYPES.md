@@ -10,6 +10,8 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AutoAccept](#autoaccept)
+- [BadgeStatus](#badgestatus)
+- [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
 - [BlockingReason](#blockingreason)
 - [BrokerErrorType](#brokererrortype)
@@ -122,6 +124,7 @@ This file is generated automatically.
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
+- [LocalBadge](#localbadge)
 - [LocalProfile](#localprofile)
 - [MemberCriteria](#membercriteria)
 - [MsgChatLink](#msgchatlink)
@@ -180,6 +183,7 @@ This file is generated automatically.
 - [StoreError](#storeerror)
 - [SubscriptionStatus](#subscriptionstatus)
 - [SupportGroupPreference](#supportgrouppreference)
+- [SupporterBadge](#supporterbadge)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -351,6 +355,27 @@ INACTIVE:
 
 **Record type**:
 - acceptIncognito: bool
+
+
+---
+
+## BadgeStatus
+
+**Enum type**:
+- "active"
+- "expired"
+- "failed"
+
+
+---
+
+## BadgeType
+
+**Enum type**:
+- "supporter"
+- "business"
+- "legend"
+- "cFInvestor"
 
 
 ---
@@ -2674,6 +2699,15 @@ Unknown:
 
 ---
 
+## LocalBadge
+
+**Record type**:
+- badgeStatus: [BadgeStatus](#badgestatus)
+- badge: [SupporterBadge](#supporterbadge)
+
+
+---
+
 ## LocalProfile
 
 **Record type**:
@@ -2685,6 +2719,7 @@ Unknown:
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
+- localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
 
 
@@ -3029,6 +3064,7 @@ count=<count>
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
+- badge: [SupporterBadge](#supporterbadge)?
 
 
 ---
@@ -4027,6 +4063,17 @@ NoSub:
 
 **Record type**:
 - enable: [GroupFeatureEnabled](#groupfeatureenabled)
+
+
+---
+
+## SupporterBadge
+
+**Record type**:
+- proof: string
+- presHeader: string
+- badgeExpiry: UTCTime?
+- badgeType: [BadgeType](#badgetype)
 
 
 ---

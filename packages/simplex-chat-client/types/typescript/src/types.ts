@@ -186,6 +186,19 @@ export interface AutoAccept {
   acceptIncognito: boolean
 }
 
+export enum BadgeStatus {
+  Active = "active",
+  Expired = "expired",
+  Failed = "failed",
+}
+
+export enum BadgeType {
+  Supporter = "supporter",
+  Business = "business",
+  Legend = "legend",
+  CFInvestor = "cFInvestor",
+}
+
 export interface BlockingInfo {
   reason: BlockingReason
   notice?: ClientNotice
@@ -2940,6 +2953,11 @@ export interface LinkPreview {
   content?: LinkContent
 }
 
+export interface LocalBadge {
+  badgeStatus: BadgeStatus
+  badge: SupporterBadge
+}
+
 export interface LocalProfile {
   profileId: number // int64
   displayName: string
@@ -2949,6 +2967,7 @@ export interface LocalProfile {
   contactLink?: string
   preferences?: Preferences
   peerType?: ChatPeerType
+  localBadge?: LocalBadge
   localAlias: string
 }
 
@@ -3299,6 +3318,7 @@ export interface Profile {
   contactLink?: string
   preferences?: Preferences
   peerType?: ChatPeerType
+  badge?: SupporterBadge
 }
 
 export type ProxyClientError = 
@@ -4733,6 +4753,13 @@ export namespace SubscriptionStatus {
 
 export interface SupportGroupPreference {
   enable: GroupFeatureEnabled
+}
+
+export interface SupporterBadge {
+  proof: string
+  presHeader: string
+  badgeExpiry?: string // ISO-8601 timestamp
+  badgeType: BadgeType
 }
 
 export enum SwitchPhase {
