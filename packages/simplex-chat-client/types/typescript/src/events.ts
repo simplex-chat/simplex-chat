@@ -9,6 +9,7 @@ export type ChatEvent =
   | CEvt.ContactDeletedByContact
   | CEvt.ReceivedContactRequest
   | CEvt.NewMemberContactReceivedInv
+  | CEvt.SimplexNameConflict
   | CEvt.ContactSndReady
   | CEvt.NewChatItems
   | CEvt.ChatItemReaction
@@ -62,6 +63,7 @@ export namespace CEvt {
     | "contactDeletedByContact"
     | "receivedContactRequest"
     | "newMemberContactReceivedInv"
+    | "simplexNameConflict"
     | "contactSndReady"
     | "newChatItems"
     | "chatItemReaction"
@@ -145,6 +147,15 @@ export namespace CEvt {
     contact: T.Contact
     groupInfo: T.GroupInfo
     member: T.GroupMember
+  }
+
+  export interface SimplexNameConflict extends Interface {
+    type: "simplexNameConflict"
+    user: T.User
+    simplexName: T.SimplexNameInfo
+    entity: T.SimplexNameConflictEntity
+    claimedBy: string
+    displacedFrom: string
   }
 
   export interface ContactSndReady extends Interface {

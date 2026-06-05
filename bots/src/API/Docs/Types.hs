@@ -245,6 +245,7 @@ chatTypesDocsData =
     (sti @ConnectionErrorType, STUnion, "", [], "", ""),
     (sti @ConnectionMode, (STEnum' $ take 3 . consLower "CM"), "", [], "", ""),
     (sti @ConnectionPlan, STUnion, "CP", [], "", ""),
+    (sti @ConnectTarget, STUnion, "CT", [], "", "Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names."),
     (sti @ConnStatus, STUnion, "Conn", [], "", ""),
     (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", [], "", ""),
     (sti @Contact, STRecord, "", [], "", ""),
@@ -347,6 +348,7 @@ chatTypesDocsData =
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
+    (sti @SimplexNameConflictEntity, STEnum, "SNCE", [], "", ""),
     (sti @SimplexNameDomain, STRecord, "", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
@@ -460,6 +462,7 @@ deriving instance Generic ConnectionEntity
 deriving instance Generic ConnectionErrorType
 deriving instance Generic ConnectionMode
 deriving instance Generic ConnectionPlan
+deriving instance Generic ConnectTarget
 deriving instance Generic ConnStatus
 deriving instance Generic ConnType
 deriving instance Generic Contact
@@ -566,6 +569,7 @@ deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexLinkType
+deriving instance Generic SimplexNameConflictEntity
 deriving instance Generic SimplexNameDomain
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType

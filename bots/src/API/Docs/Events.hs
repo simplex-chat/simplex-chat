@@ -67,6 +67,7 @@ chatEventsDocsData =
         ("CEvtContactDeletedByContact", "Bot user's connection with another contact is deleted (conversation is kept)."),
         ("CEvtReceivedContactRequest", "Contact request received.\n\nThis event is only sent when auto-accept is disabled.\n\nThe request needs to be accepted using [APIAcceptContact](./COMMANDS.md#apiacceptcontact) command"),
         ("CEvtNewMemberContactReceivedInv", "Received invitation to connect directly with a group member.\n\nThis event only needs to be processed to associate contact with group, the connection will proceed automatically."),
+        ("CEvtSimplexNameConflict", "A peer's profile update claimed a SimpleX name (`#name.simplex` / `@name.simplex`) that was already held locally by another contact or group. The displaced row's `simplex_name` is set to NULL and the claim moves to the newer row; this event surfaces the displacement so the bot can warn the user about a possible impersonation."),
         ("CEvtContactSndReady", "Connecting via 1-time invitation or after accepting contact request.\n\nAfter this event bot can send messages to this contact.") -- JOINED
       ]
     ),

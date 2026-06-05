@@ -10,6 +10,7 @@ This file is generated automatically.
   - [ContactDeletedByContact](#contactdeletedbycontact)
   - [ReceivedContactRequest](#receivedcontactrequest)
   - [NewMemberContactReceivedInv](#newmembercontactreceivedinv)
+  - [SimplexNameConflict](#simplexnameconflict)
   - [ContactSndReady](#contactsndready)
 
 [Message events](#message-events)
@@ -156,6 +157,21 @@ This event only needs to be processed to associate contact with group, the conne
 - contact: [Contact](./TYPES.md#contact)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
+
+---
+
+
+### SimplexNameConflict
+
+A peer's profile update claimed a SimpleX name (`#name.simplex` / `@name.simplex`) that was already held locally by another contact or group. The displaced row's `simplex_name` is set to NULL and the claim moves to the newer row; this event surfaces the displacement so the bot can warn the user about a possible impersonation.
+
+**Record type**:
+- type: "simplexNameConflict"
+- user: [User](./TYPES.md#user)
+- simplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)
+- entity: [SimplexNameConflictEntity](./TYPES.md#simplexnameconflictentity)
+- claimedBy: string
+- displacedFrom: string
 
 ---
 
