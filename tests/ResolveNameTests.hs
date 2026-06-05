@@ -12,39 +12,53 @@ import Simplex.Chat.Library.Commands (ResolveError (..), firstNameLink, iterateR
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Client (ProxyClientError (..))
-import Simplex.Messaging.Protocol (NameRecord (..), SMPServer, mkNameOwner, pattern SMPServer)
+import Simplex.Messaging.Protocol (BrokerErrorType (..), NameRecord (..), NetworkError (..), SMPServer, mkNameOwner, pattern SMPServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import Test.Hspec
 
 resolveNameTests :: Spec
 resolveNameTests = do
   -- iterateResolvers is the testable core of resolveOnUserServers: it walks
-  -- a list of candidate SMP servers, querying a resolver per server, applying
-  -- the AUTH-is-NotFound and PROHIBITED-is-skip rules from the plan.
+  -- a list of candidate SMP servers, querying a resolver per server. Only
+  -- transport-level failures (NETWORK / TIMEOUT / host-unreachable) fall through
+  -- to the next server. Any "the server answered" outcome — hit, AUTH, CMD
+  -- PROHIBITED, or any other definite error — stops iteration so the candidate
+  -- name is not broadcast to every operator the user has configured.
   describe "iterateResolvers" $ do
     it "returns the first server's NameRecord on hit" $ do
       let r = runIdentity $ iterateResolvers [srv1, srv2] $ \_ -> pure $ Right sampleRecord
       r `shouldBe` Right sampleRecord
-    it "skips CMD PROHIBITED servers and uses the next one's success" $ do
+    it "stops on CMD PROHIBITED and returns ResolverUnavailable" $ do
       callsRef <- newIORef []
-      r <- iterateResolvers [srv1, srv2] (recording callsRef stubProhibitedThenHit)
-      r `shouldBe` Right sampleRecord
-      -- both servers must be consulted, in order
-      readIORef callsRef `shouldReturn` [srv1, srv2]
+      r <- iterateResolvers [srv1, srv2] (recording callsRef (\_ -> pure $ Left prohibitedErr))
+      r `shouldBe` Left ResolverUnavailable
+      -- second server must NOT be consulted: PROHIBITED is a server response,
+      -- iterating would broadcast the queried name to every operator.
+      readIORef callsRef `shouldReturn` [srv1]
     it "treats AUTH as definitive NameNotRegistered and stops iteration" $ do
       callsRef <- newIORef []
       r <- iterateResolvers [srv1, srv2] (recording callsRef stubAuthThenHit)
       r `shouldBe` Left NameNotRegistered
       -- second server must NOT be consulted: AUTH is authoritative
       readIORef callsRef `shouldReturn` [srv1]
-    it "returns ResolverUnavailable when every server is non-name-capable" $ do
-      let r = runIdentity $ iterateResolvers [srv1, srv2] (\_ -> pure $ Left prohibitedErr)
-      r `shouldBe` Left ResolverUnavailable
-    it "returns ResolverTransport when only transport-style errors are seen" $ do
-      let r = runIdentity $ iterateResolvers [srv1, srv2] (\_ -> pure $ Left timeoutErr)
+    it "stops on a definite non-transport error and returns ResolverTransport" $ do
+      callsRef <- newIORef []
+      r <- iterateResolvers [srv1, srv2] (recording callsRef (\_ -> pure $ Left otherDefiniteErr))
       case r of
-        Left (ResolverTransport _) -> pure ()
+        Left (ResolverTransport e) -> e `shouldBe` otherDefiniteErr
         other -> expectationFailure $ "expected ResolverTransport, got " <> show other
+      -- second server must NOT be consulted: definite error means the server
+      -- answered, so iterating would leak the queried name.
+      readIORef callsRef `shouldReturn` [srv1]
+    it "iterates on transport-level errors and uses the next server's success" $ do
+      callsRef <- newIORef []
+      r <- iterateResolvers [srv1, srv2] (recording callsRef stubTransportThenHit)
+      r `shouldBe` Right sampleRecord
+      -- both servers must be consulted, in order: first server was unreachable.
+      readIORef callsRef `shouldReturn` [srv1, srv2]
+    it "returns ResolverUnavailable when every server is unreachable (all transport)" $ do
+      let r = runIdentity $ iterateResolvers [srv1, srv2] (\_ -> pure $ Left networkErr)
+      r `shouldBe` Left ResolverUnavailable
     it "returns ResolverUnavailable on an empty server list" $ do
       let r = runIdentity $ iterateResolvers [] (\_ -> pure $ Right sampleRecord)
       r `shouldBe` Left ResolverUnavailable
@@ -62,8 +76,8 @@ resolveNameTests = do
         ChatError (CESimplexNameResolverUnavailable ni) -> ni `shouldBe` aliceNi
         other -> expectationFailure $ "expected CESimplexNameResolverUnavailable, got " <> show other
     it "wraps ResolverTransport via chatErrorAgent so the UI reuses agent-error rendering" $
-      case resolveErrorToChatError aliceNi (ResolverTransport timeoutErr) of
-        ChatErrorAgent e _ _ -> e `shouldBe` timeoutErr
+      case resolveErrorToChatError aliceNi (ResolverTransport otherDefiniteErr) of
+        ChatErrorAgent e _ _ -> e `shouldBe` otherDefiniteErr
         other -> expectationFailure $ "expected ChatErrorAgent, got " <> show other
   -- firstNameLink is the pure link-picker used by dispatchResolvedRecord:
   -- it selects nrSimplexContact for NTContact, nrSimplexChannel for NTPublicGroup.
@@ -98,11 +112,11 @@ resolveNameTests = do
 recording :: IORef [SMPServer] -> (SMPServer -> IO (Either AgentErrorType NameRecord)) -> SMPServer -> IO (Either AgentErrorType NameRecord)
 recording ref f srv = modifyIORef' ref (<> [srv]) >> f srv
 
-stubProhibitedThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
-stubProhibitedThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left prohibitedErr)]
-
 stubAuthThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
 stubAuthThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left authErr)]
+
+stubTransportThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
+stubTransportThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left networkErr)]
 
 aliceNi :: SimplexNameInfo
 aliceNi = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])
@@ -151,7 +165,14 @@ authErr = SMP "smp1.example" SMP.AUTH
 prohibitedErr :: AgentErrorType
 prohibitedErr = PROXY "proxy.example" "smp1.example" (ProxyProtocolError (SMP.CMD SMP.PROHIBITED))
 
--- A generic transport-style failure that should bubble up as ResolverTransport
--- when no name-capable server was reached.
-timeoutErr :: AgentErrorType
-timeoutErr = INTERNAL "simulated network timeout"
+-- BROKER NETWORK: the server is unreachable. This is the kind of failure
+-- that should cause iteration to fall through to the next configured server,
+-- because no information about the queried name has been disclosed.
+networkErr :: AgentErrorType
+networkErr = BROKER "smp1.example" (NETWORK (NEConnectError "simulated network failure"))
+
+-- A definite, non-transport agent error: the server responded but in a way
+-- that doesn't match NAME / AUTH / CMD PROHIBITED. Should surface to the user
+-- as ResolverTransport without iterating, to avoid broadcasting the name.
+otherDefiniteErr :: AgentErrorType
+otherDefiniteErr = INTERNAL "simulated definite error"

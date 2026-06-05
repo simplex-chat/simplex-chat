@@ -4633,11 +4633,15 @@ processChatCommand vr nm = \case
 
 -- | Failure modes for 'resolveOnUserServers' / 'iterateResolvers'.
 data ResolveError
-  = -- | No enabled SMP server speaks RSLV (every one returned CMD PROHIBITED, or no servers configured).
+  = -- | First server returned CMD PROHIBITED (does not speak RSLV), or no servers configured.
+    -- We do not try further servers: each candidate-name query broadcasts the name
+    -- to the chosen relay, so iterating across operators on a definite "answered but
+    -- can't help" response would leak the queried name to every operator.
     ResolverUnavailable
   | -- | AUTH from a name-capable server. Every name server reads the same on-chain state, so we trust the first one's no.
     NameNotRegistered
-  | -- | Last non-PROHIBITED, non-AUTH error (network, proxy, timeout). Surface to user so they can retry.
+  | -- | First server returned a definite non-transport error (proxy, protocol, etc).
+    -- Surface to user so they can retry; do not iterate, for the same privacy reason.
     ResolverTransport AgentErrorType
   deriving (Eq, Show)
 
@@ -4652,10 +4656,13 @@ enabledSMPServersForUser user =
       | otherwise = Nothing
 
 -- | Resolve a SimpleX name by trying the user's enabled SMP servers in order.
--- AUTH from any name-capable server is treated as definitive NotFound: every
--- name server reads the same on-chain state, so cross-server consensus is
--- redundant for MVP. CMD PROHIBITED indicates the server doesn't speak
--- namesSMPVersion; skip and try the next.
+-- Only transport-level failures (NETWORK, TIMEOUT, host-unreachable) fall
+-- through to the next server. Any server that actually answered the request
+-- terminates iteration: AUTH is definitive NotFound (every name server reads
+-- the same on-chain state); CMD PROHIBITED means the server doesn't speak
+-- namesSMPVersion; any other definite error surfaces as ResolverTransport.
+-- Privacy: each query reveals the candidate name to the relay, so we must
+-- not broadcast misses to every operator the user has configured.
 resolveOnUserServers :: User -> SimplexNameDomain -> CM (Either ResolveError NameRecord)
 resolveOnUserServers user@User {userId} domain = do
   srvs <- enabledSMPServersForUser user
@@ -4751,16 +4758,17 @@ iterateResolvers ::
   [SMPServer] ->
   (SMPServer -> m (Either AgentErrorType NameRecord)) ->
   m (Either ResolveError NameRecord)
-iterateResolvers servers resolve = go servers Nothing
+iterateResolvers servers resolve = go servers
   where
-    go [] lastErr = pure $ Left $ maybe ResolverUnavailable ResolverTransport lastErr
-    go (srv : rest) prevErr =
+    go [] = pure $ Left ResolverUnavailable
+    go (srv : rest) =
       resolve srv >>= \case
         Right nr -> pure $ Right nr
         Left e
           | isNotRegistered e -> pure $ Left NameNotRegistered
-          | isUnsupported e -> go rest prevErr
-          | otherwise -> go rest (Just e)
+          | isUnsupported e -> pure $ Left ResolverUnavailable
+          | temporaryOrHostError e -> go rest
+          | otherwise -> pure $ Left $ ResolverTransport e
     isNotRegistered = \case
       SMP _ SMP.AUTH -> True
       _ -> False
