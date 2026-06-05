@@ -14,7 +14,7 @@ Decisions:
 
 Lands after #7017 (signed roster) and #7048 (roster over inline files; `GRMember` role). Neither merged yet (branch `f/allow-sign-new-msg`; `git log` tops at #7043). Dependency is specific: *verification* needs the sender's member public key, distributed via the roster; without it a signed message degrades to `MSSSignedNoKey` rather than `MSSVerified`. Integration tests must use the roster/channel setup from those PRs.
 
-**Line numbers are pre-rebase** (grounded against #7043). #7017 (≈ +108 `Internal.hs`, +249 `Subscriber.hs`, +55 `Commands.hs`, +47 `Protocol.hs`) and #7048 (≈ +74 `Internal.hs`, +179 `Subscriber.hs`, +39 `Protocol.hs`) shift them. Symbol-level claims survive; **re-locate by symbol**. The dependency PRs add no 6th `updateGroupChatItem` caller, but other branches are queued (`f/channel-comments`, `f/public-groups-members-in-roster`) — so the caller re-check is a gate below.
+**Line numbers are pre-rebase** (grounded against #7043); #7017/#7048 shift every anchor, so **re-locate by symbol**. The dependency PRs add no 6th `updateGroupChatItem` caller, but other branches are queued (`f/channel-comments`, `f/public-groups-members-in-roster`) — hence the caller re-check gate below.
 
 ## What already exists (so the change stays small)
 
@@ -58,7 +58,7 @@ signableContent = \case
 
 ### 2. Signing decision carries the opt-in
 
-Named type near `MsgSigning` (`Protocol.hs:426`) — a named proposition, not a bare `Bool` threaded through ~13 sites:
+Named type near `MsgSigning` (`Protocol.hs:426`) — not a bare `Bool`:
 ```haskell
 -- | Whether opt-in content signing applies to this group send.
 -- Independent of mandatory state-event signing (requiresSignature),
@@ -89,7 +89,7 @@ Behavior-preserving (all existing callers pass `DontSignContent`) ⇒ its own co
 - `sendGroupMessage`: `Commands.hs:889,2690,3272,3812,3815,3819`.
 - `sendGroupMessages_` direct: `Commands.hs:2826,3849`.
 
-The two variable-`ContentSig` sites are the feature (next commit): content send (`Commands.hs:4405`) and group edit (`Commands.hs:732`). (A named param beats encoding the choice on `gInfo` — a hidden premise — or duplicating `sendGroupMessages_`.)
+The two variable-`ContentSig` sites are the feature (next commit): content send (`Commands.hs:4405`) and group edit (`Commands.hs:732`).
 
 ### 4. API: per-send `sign` flag
 
@@ -186,10 +186,8 @@ Net: signed status is set explicitly from the source of current content in every
 - **Non-relay groups:** `useRelays'` guard ⇒ never signed; UI must not offer it.
 - **Live messages:** initial `XMsgNew` then repeated `XMsgUpdate`, each reusing the item's `msgSigned` ⇒ every increment signed. Extra cost per keystroke-batch; acceptable.
 - **Separate (non-batched) path drops signatures** (`sndMessageMBR` uses raw `msgBody`, `Internal.hs:2199`, vs the batched path's `encodeBatchElement`). Never reached in relay groups (`memberSendAction` → `MSASendBatched`). Add a test-asserted invariant; optionally make `sndMessageMBR` use `encodeBatchElement signedMsg_` too, so routing changes can't silently drop channel signatures.
-- **As-channel never signed:** see §5.
 - **Defense-in-depth: no signature on `FwdChannel`.** `encodeFwdElement` (`Batch.hs:108`) includes `signedMsg_` unconditionally; §5 makes it `Nothing` for `FwdChannel` in normal flow. Add a guard/assertion that `encodeFwdElement` carries no signature when `fwdSender = FwdChannel`, so no future upstream path can reintroduce the de-anonymization.
 - **History re-send strips signatures (badge non-determinism, by design).** Relay history catch-up rebuilds content via `prepareGroupMsg` into plain `XGrpMsgForward` events (`processContentItem`, `Internal.hs:1279-1305`) and lacks the private key ⇒ unsigned. So for the same message, a live-forward recipient sees a badge while a history-catch-up recipient does not. Graceful (absence ≠ forgery); document in UI/help and test.
-- **Edit downgrade:** covered by §7.
 - **Concurrency:** signing/verification are pure given keys; no new shared state. Send holds `withGroupLock`; receive update runs under existing receive-loop serialization. No new races.
 
 ## Tests
@@ -233,8 +231,3 @@ Each commit builds and passes tests independently (bisect/rollback).
 ## Open assumptions to confirm during implementation
 - App `GroupInfo` exposes relay+key state for the UI gate, or a derived boolean is added to its JSON.
 - Visual treatment of `signedNoKey` vs `verified`, and how to surface the "verified ≠ timestamp/ordering/completeness" caveat (threat model) in help.
-- JSON tags `"verified"`/`"signedNoKey"` are confirmed from `enumJSON $ dropPrefix "MSS"` (`Parsers.hs:97-107`); the §A decode test guards against regression.
-
----
-
-Reviewed against #7017/#7048 and an external code review; known limitations are listed in the threat model and Edge cases.
