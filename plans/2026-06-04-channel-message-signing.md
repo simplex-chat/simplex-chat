@@ -15,6 +15,8 @@ Per the up-front decisions:
 
 Lands after PR #7017 (signed roster) and PR #7048 (roster delivery over inline files; `GRMember` role in roster). Neither is merged on this branch yet (`f/allow-sign-new-msg`; `git log` tops out at #7043). The dependency is real and specific: content-signature *verification* requires the recipient to hold the sender's member public key, which is distributed via the roster. Until the signed roster is reliably delivered, signed content from a member whose key the recipient lacks degrades to `MSSSignedNoKey` ("signed, no key to verify") rather than `MSSVerified`. This is graceful, but the user-facing value depends on roster delivery being solid — so this plan must merge on top of those PRs and its integration tests must use their channel/roster setup.
 
+**Line numbers are pre-rebase.** Every `file:line` in this plan is grounded against #7043. #7017 (≈ +108 `Internal.hs`, +249 `Subscriber.hs`, +55 `Commands.hs`, +47 `Protocol.hs`) and #7048 (≈ +74 `Internal.hs`, +179 `Subscriber.hs`, +39 `Protocol.hs`) shift them. The **symbol-level** claims (function names, call sites, the five-caller set, parser structure) were verified to survive the rebase, but **re-locate by symbol, not by line number**, when implementing. Concretely, the dependency PRs do not add a 6th `updateGroupChatItem` caller, but other queued branches exist (`f/channel-comments`, `f/public-groups-members-in-roster`) — so make the caller re-verification below an explicit gate.
+
 ## What already exists (so the change stays small)
 
 The signing machinery is fully present and is reused unchanged on the wire:
@@ -26,7 +28,7 @@ The signing machinery is fully present and is reused unchanged on the wire:
 - **Received-item persistence.** `createNewRcvChatItem` records `RcvMessage.msgSigned` (`Store/Messages.hs:565,567`); `CIMeta.msgSigned :: Maybe MsgSigStatus` (`Messages.hs:520`).
 - **CLI rendering.** `sigStatusStr` (`View.hs:388`) already appends `" (signed)"` / `" (signed, no key to verify)"` to both sent and received item text. So CLI/test output reflects signed content with no extra work.
 
-The net effect: the wire format, signing, verification, DB persistence (both directions), and CLI display are already in place. What is missing is (1) the *decision* to sign content (currently `groupMsgSigning` returns `Nothing` for content), (2) the per-send plumbing of that decision from the API, (3) reuse of the setting on edit, (4) a security fix so in-place edits don't keep a stale signed badge, and (5) the apps (decode the field, the option, the recipient indicator).
+The net effect: the wire format, signing, verification, DB persistence (both directions), and CLI display are already in place. What is missing is (1) the *decision* to sign content (currently `groupMsgSigning` returns `Nothing` for content), (2) the per-send plumbing of that decision from the API, (3) reuse of the setting on edit, (4) a security fix so in-place edits don't keep a stale signed badge, (5) a structural gate so "publish as channel" posts are never signed (anonymity — HIGH blocker, §5), and (6) the apps (decode the field, the option, the recipient indicator).
 
 ## Threat model
 
@@ -35,8 +37,12 @@ Actors: a member (sender), recipients, and one or more **chat relays** that forw
 - **Forgery of content attributed to a member.** Without signing, a relay can inject `XMsgNew` attributed to any member. Signing closes this *for signed messages*: the relay lacks the member's Ed25519 private key, and the signature binds `(publicGroupId, memberId, body)` — so it cannot forge a valid signature, cannot cross-bind to another group/member, and cannot alter the body.
 - **Downgrade / signature stripping (residual, by design).** Because content signing is *optional*, a relay can strip a member's signature and deliver the message as unsigned. The recipient then sees no badge. Absence of a badge is therefore **not** proof of forgery — only *presence* of a verified badge is a positive guarantee. This is inherent to per-message optional signing; a future group-level "expected/required signing" setting (owner-configurable) would close it. Documented as a limitation; out of scope for v1.
 - **Stale-badge spoof on edits (MUST fix — see below).** A signed message that is edited with an *unsigned, relay-forged* `XMsgUpdate` must not retain its "verified" badge over attacker-controlled edited content. The current in-place update path does not refresh `msg_signed`, so this feature would introduce exactly this spoof unless fixed.
-- **Non-repudiation (privacy tradeoff, by design).** A verified signature is transferable proof that a specific member authored specific content. For journalists/activists this is a deniability loss. Hence opt-in, off by default, with an in-UI explanation.
+- **Publish-as-channel de-anonymization (MUST be structurally prevented — see §5).** Channels support "publish as the channel" (`showGroupAsSender` / `asGroup`): an owner posts and subscribers see the message as *from the channel*, not from the specific owner. This is Design Objective 6 in `docs/protocol/channels-overview.md:214` ("Sender anonymity within multi-owner channels — owners can publish as the channel, hiding which specific owner authored a message"), and today a relay revealing which owner authored an as-channel post is only a *deniable* leak ("Detectable out-of-band", `channels-overview.md:~237`). Signing breaks this: `groupMsgSigning` (`Internal.hs:1963-1967`) is blind to `showGroupAsSender` and would sign the `XMsgNew` with binding `(publicGroupId, ownerMemberId)`; the signature is broadcast on the wire even for `FwdChannel` (`encodeFwdElement` → `encodeBatchElement signedMsg_`, `Batch.hs:108`), and a malicious relay (which chooses `fwdSender = FwdMember ownerId`, `processContentItem:1302`) lets every subscriber verify it as `MSSVerified`. The deniable leak becomes **undeniable, non-repudiable cryptographic proof** of authorship. The device-default toggle makes this worse: a user enabling "sign my channel messages" for authenticity on comments would silently sign their anonymous owner broadcasts. For an anonymity property this must be structurally impossible, not behaviorally avoided. **Resolution:** signing is *never* applied to as-channel content (`showGroupAsSender ⇒ DontSignContent`, §5), the app option is hidden for as-channel sends (§C), and a defense-in-depth assertion ensures `encodeFwdElement` carries no signature when `fwdSender = FwdChannel` (Edge cases). This resolves the publish-as-channel-vs-authenticity conflict in favor of anonymity.
+- **Non-repudiation (privacy tradeoff, by design).** A verified signature is transferable proof that a specific member authored specific content. For journalists/activists this is a deniability loss. Hence opt-in, off by default, with an in-UI explanation. (For *as-channel* posts the loss would be unacceptable, not merely a tradeoff — hence the structural exclusion above.)
+- **What "verified" means — and does not.** The signed input is `encodeChatBinding CBGroup (publicGroupId, memberId) <> msgBody`, and `msgBody` embeds `sharedMsgId`, `MsgScope`, and content (`Store/Messages.hs:242`). So a verified badge proves **authorship + content integrity + group/member/scope/message binding** — and *nothing else*. It does **not** cover `fwdBrokerTs` (relay-controlled, `Protocol.hs:382-387`), message ordering, or completeness. Document this in UI/help so "verified" is not over-read as "this is when/in-what-order it was sent".
+- **Signed content is still relay-suppressible.** `XMsgDel_` is not in `requiresSignature` (`Protocol.hs:1252-1262`), so an unsigned, relay-forged owner-attributed delete is accepted (channel delete check is role-based against the relay-chosen author, `Subscriber.hs:~2269`). A malicious relay can therefore suppress a signed post for its subscribers. Pre-existing and within the relay's acknowledged drop/target power — not introduced here — but it bounds the integrity value of signing: signing proves *what was said*, not that *everything said is delivered*.
 - **Replay.** The signed body contains the `sharedMsgId` and `MsgScope`, both covered by the signature; cross-scope/cross-group replay is prevented by the binding, and same-message replay is a duplicate handled by existing dedup.
+- **Bad-signature spam (fail-closed, pre-existing).** A signature that fails verification causes the content to be **dropped** with an `RGEMsgBadSignature` item per occurrence (`Subscriber.hs:3473-3475,3483`), not delivered unsigned. A tampering/replaying relay can spam these items. This is the existing fail-closed behavior for state events; extending signing to content inherits it. Acceptable; noted.
 
 ## Core changes (Haskell)
 
@@ -125,9 +131,16 @@ Place the flag at `APISendMessages` (per-send) level rather than per-`ComposedMe
 
 ### 5. Content send path
 
-`sendGroupContentMessages` (`Commands.hs:4366`) and `sendGroupContentMessages_` (`:4375`) gain a `ContentSig` parameter, passed into the `sendGroupMessages user gInfo Nothing showGroupAsSender recipients <csig> chatMsgEvents` call (`:4405`).
+`sendGroupContentMessages` (`Commands.hs:4366`) and `sendGroupContentMessages_` (`:4375`) gain a `ContentSig` parameter. `showGroupAsSender` is already in scope at the send site (`:4405`); **as-channel posts are never signed** (HIGH blocker resolution — see threat model):
 
-- `APISendMessages` handler (`:637-650`): convert the new `signMessages :: Bool` to `if signMessages then SignContent else DontSignContent` and pass it down (both `SRGroup` and `SRDirect`; for direct it is ignored since `sendContactContentMessages` doesn't sign).
+```haskell
+let csig' = if showGroupAsSender then DontSignContent else csig
+(msgs_, gsr) <- sendGroupMessages user gInfo Nothing showGroupAsSender recipients csig' chatMsgEvents
+```
+
+This is the load-bearing anonymity gate: it must live here (structural), not only in the UI. It also keeps the sender's *own* item unsigned for as-channel posts (no misleading own-badge) and keeps §6 edit-reuse consistent (an as-channel original is never signed ⇒ its edits stay unsigned).
+
+- `APISendMessages` handler (`:637-650`): convert the new `signMessages :: Bool` to `if signMessages then SignContent else DontSignContent` and pass it down (both `SRGroup` and `SRDirect`; for direct it is ignored since `sendContactContentMessages` doesn't sign). The `showGroupAsSender` gate above then overrides it to `DontSignContent` for as-channel sends regardless of the API flag.
 - `APIReportMessage` (`:679`): passes `DontSignContent` (reports stay unsigned in v1). Documented; revisit if moderators need verifiable reporters.
 
 ### 6. Edit / restore reuse (the `XMsgUpdate` requirement)
@@ -141,7 +154,7 @@ let reuseSig = if isJust msgSigned then SignContent else DontSignContent
 SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients reuseSig event
 ```
 
-`msgSigned` is loaded by `getGroupCIWithReactions` (built via `mkCIMeta` in `toGroupChatItem`, `Store/Messages.hs:2412`); for the user's own item it is `Just MSSVerified` iff the original was signed, `Nothing` otherwise (including all pre-feature messages). This satisfies "the XMsgUpdate that restores a recipient-deleted message reuses the original sender setting": the sender always sends the edit signed exactly when the original was, regardless of whether the recipient still has the item.
+`msgSigned` is loaded by `getGroupCIWithReactions` (built via `mkCIMeta` in `toGroupChatItem`, `Store/Messages.hs:2412`); for the user's own item it is `Just MSSVerified` iff the original was signed, `Nothing` otherwise (including all pre-feature messages). `isJust msgSigned` is the correct test because `createNewSndChatItem` stores only `MSSVerified <$ signedMsg_` for sent items (`Store/Messages.hs:550`) — never `MSSSignedNoKey`. This satisfies "the XMsgUpdate that restores a recipient-deleted message reuses the original sender setting": the sender always sends the edit signed exactly when the original was, regardless of whether the recipient still has the item. It is also automatically consistent with the §5 anonymity gate — an as-channel original is never signed, so `msgSigned = Nothing` and its edits stay unsigned.
 
 Direct edit (`:697-704`) and local edit (`:745`) need no change (never signed).
 
@@ -153,7 +166,7 @@ Direct edit (`:697-704`) and local edit (`:745`) need no change (never signed).
 
 **Fix (contained to the group update helper):** make `updateGroupChatItem`'s result and DB row reflect the signature status of whatever produced its current content.
 
-- Add a `Maybe MsgSigStatus` parameter to `updateGroupChatItem` (`Store/Messages.hs:2746`). After `let ci' = updatedChatItem …` (`:2749`), override `ci'`'s `meta.msgSigned` with the passed value, and add `msg_signed = ?` to the `UPDATE` in `updateGroupChatItem_` (`:2755`, statement at `:2760-2767`). **Leave `updatedChatItem` (`:2544`) unchanged** — it is shared with `updateDirectChatItem'` (`:2540`) and the path at `:3210`, neither of which is signed; threading the value through it would touch unrelated paths.
+- Add a `Maybe MsgSigStatus` parameter to `updateGroupChatItem` (`Store/Messages.hs:2746`). After `let ci' = updatedChatItem …` (`:2749`), override `ci'`'s `meta.msgSigned` with the passed value, and add `msg_signed = ?` to the `UPDATE` in `updateGroupChatItem_` (`:2755`, statement at `:2760-2767`). `updateGroupChatItem_` is called *only* from `updateGroupChatItem` (confirmed by grep), so adding the column is safe and self-contained. **Leave `updatedChatItem` (`:2544`) unchanged** — it is shared with `updateDirectChatItem'` (`:2540`) and the path at `:3210`, neither of which is signed; threading the value through it would touch unrelated paths.
 
 All **five** callers of `updateGroupChatItem` (verified by grep) pass an explicit value — no implicit "preserve" magic, so a future caller must consciously choose:
 - `Commands.hs:738` (sender edit, channel): `MSSVerified <$ signedMsg_` from the returned `SndMessage`, mirroring `createNewSndChatItem` (`:550`). Equals the reused setting (consistent).
@@ -167,7 +180,7 @@ This is the "eliminate the class" step: signed status is set explicitly from the
 ### 8. Paths deliberately left unsigned (documented)
 
 - Auto-reply welcome content (`Subscriber.hs:1267` `XMsgUpdate`, `:1269` `XMsgNew`) goes through `sendGroupMessage'` ⇒ `DontSignContent`. Automated replies are not signed in v1.
-- `XMsgReact` (`Commands.hs:889`), `XMsgDel` (`Commands.hs:792-799`): unsigned in v1 (event scope decision). Note the asymmetry: a member's *post* can be verified, but their reactions/deletes cannot. Acceptable; candidates for a later extension of `signableContent`.
+- `XMsgReact` (`Commands.hs:889`), `XMsgDel` (`Commands.hs:792-799`): unsigned in v1 (event scope decision). Note the asymmetry: a member's *post* can be verified, but their reactions/deletes cannot. Beyond "can't verify deletes", this means a **signed post is still relay-suppressible** via a forged unsigned owner-attributed `XMsgDel` (see threat model). Acceptable for v1 and within the relay's acknowledged power; candidates for a later extension of `signableContent` (which would also let recipients reject unsigned deletes of signed posts).
 
 ## App changes (iOS + Kotlin)
 
@@ -190,7 +203,7 @@ Add `MsgSigStatus` to each app and an optional `msgSigned` field to `CIMeta`.
 
 - Thread `sign` alongside `ttl`: change the send closure from `(Int?) -> ...` to `(_ ttl: Int?, _ sign: Bool?) -> ...` (iOS `SendMessageView.swift:21`; Kotlin `SendMsgView.kt:54`), where `sign == nil` means "use device default". The composer computes the effective `sign = override ?? signChannelMessagesDefault` and passes a concrete `Bool` to `apiSendMessages`.
 - Add a long-press/context-menu item next to "Disappearing message" (iOS `SendMessageView.swift:224-247`; Kotlin `SendMsgView.kt:198-209`): "Sign message" when the default is off, or "Send without signing" when the default is on (symmetric override).
-- **Gate visibility** to channels where signing is meaningful and possible: relay channel + the user's membership has a signing key — the same predicate core uses (`useRelays'` + `groupKeys`). If app `GroupInfo` does not already expose this, add a small derived boolean to the `GroupInfo` JSON (e.g. `memberSigningAvailable = useRelays && membership has member key`) so the apps can gate without re-deriving relay/key state. Mirror how `timedMessageAllowed` gates the disappearing option.
+- **Gate visibility** to channels where signing is meaningful, possible, **and anonymity-safe**: relay channel + the user's membership has a signing key + **this send is not "publish as channel"**. The first two are the predicate core uses (`useRelays'` + `groupKeys`); the third (`not showGroupAsSender` for the current send) is the UI half of the HIGH-blocker resolution — the option must never be offered for as-channel publication, complementing the structural core gate in §5. If app `GroupInfo` does not already expose the relay/key state, add a small derived boolean to the `GroupInfo` JSON (e.g. `memberSigningAvailable = useRelays && membership has member key`); AND it with the composer's current as-channel state. Mirror how `timedMessageAllowed` gates the disappearing option.
 - `apiSendMessages`: add `sign: Bool` and append `sign=on|off` to the `/_send` string — iOS `ChatCommand.apiSendMessages` (`AppAPITypes.swift:48`, encode `:239`) and `SimpleXAPI.swift:545`; Kotlin `CC.ApiSendMessages` (`SimpleXAPI.kt:3676`, encode `:3867`) and `SimpleXAPI.kt:1097`.
 
 ### D. Recipient indicator
@@ -212,8 +225,11 @@ Add `MsgSigStatus` to each app and an optional `msgSigned` field to `CIMeta`.
 - **Non-relay groups:** `useRelays'` guard ⇒ never signed; the UI must not show the option outside relay channels.
 - **Live messages:** initial `XMsgNew` (signed iff requested) then repeated `XMsgUpdate`; each update reuses the item's `msgSigned` ⇒ every increment is signed. Extra signing cost per keystroke-batch; acceptable, noted.
 - **Separate (non-batched) send path drops signatures** (`sndMessageMBR` uses raw `msgBody`, `Internal.hs:2199`, vs the batched path's `encodeBatchElement`). This path is never taken in relay groups (`memberSendAction` only yields `MSASendBatched` under `useRelays'`). Add a test-asserted invariant so a future change to member-send routing cannot silently ship unsigned channel content; consider making `sndMessageMBR` also use `encodeBatchElement signedMsg_` defensively (small, isolated, keeps signing robust regardless of routing).
+- **As-channel posts are never signed** (`showGroupAsSender ⇒ DontSignContent`, §5) — the structural anonymity gate. The composer must also hide the option for as-channel sends (§C).
+- **Defense-in-depth: no signature on `FwdChannel`.** `encodeFwdElement` (`Batch.hs:108`) currently includes `signedMsg_` unconditionally. Because §5 ensures as-channel content is never signed, `signedMsg_` is already `Nothing` for `FwdChannel` in normal flow. Add an assertion/guard that `encodeFwdElement` carries no signature when `fwdSender = FwdChannel`, so a future code path cannot reintroduce the de-anonymization by signing an as-channel message upstream. Cheap, isolated, and turns the anonymity invariant into something the wire layer also enforces.
+- **History re-send strips signatures (badge non-determinism, by design).** A relay catching a member up via history rebuilds content from stored items through `prepareGroupMsg` and forwards it **unsigned** — `processContentItem` (`Internal.hs:1279-1305`) produces plain `XGrpMsgForward` events and the relay lacks the member's private key. So for the *same* message, a recipient who got the live forward sees a verified badge while one who got it via history catch-up sees none. This is graceful (absence ≠ forgery, consistent with the optional-signing model) but means badge presence is **not deterministic across recipients**. Document in UI/help; add an integration test (below).
 - **Edit downgrade:** covered by §7 — refreshing `msg_signed` from the update message.
-- **Reaction/delete asymmetry:** documented limitation.
+- **Reaction/delete asymmetry:** documented limitation (and signed posts remain relay-suppressible, §8 / threat model).
 - **Concurrency:** signing/verification are pure given the keys; no new shared mutable state. The send path already holds the group lock (`withGroupLock`), and the receive update path runs under the receive-loop serialization that other `msgSigned` consumers rely on. No new races introduced.
 
 ## Tests
@@ -227,6 +243,8 @@ Integration (`tests/ChatTests/`, using `setupRelay` / `prepareChannel1Relay` / `
 - **No key:** recipient lacking the sender's roster key ⇒ `(signed, no key to verify)` (`MSSSignedNoKey`).
 - **Edit reuse:** edit a signed message ⇒ the `XMsgUpdate` is signed, item stays `(signed)`; edit an unsigned message ⇒ stays unsigned.
 - **Edit downgrade (security):** simulate an unsigned `XMsgUpdate` for a previously-signed item (forging-relay scenario in the spirit of `ChatRelays.hs:220-230`) ⇒ the badge is **removed** (`msg_signed` refreshed to `Nothing`), not retained.
+- **As-channel never signed (security/anonymity):** an owner posts with `as_group=on` and `sign=on` ⇒ neither the owner's own item nor any subscriber's item is `(signed)`; assert no signature is present on the wire/stored message. This guards the HIGH-blocker resolution.
+- **History downgrade (non-determinism):** a member who receives a signed post via live forward sees `(signed)`; a member who joins later and catches up via relay history (`processContentItem`) sees the same message **without** `(signed)`. Documents and locks in the expected, graceful divergence.
 - **Forgery rejection:** a relay/member replaying or fabricating a signed message with a mismatched binding ⇒ signature stripped/`RGEMsgBadSignature` per existing `withVerifiedMsg` behavior.
 
 App: a minimal decode test that `msgSigned: "verified"`/`"signedNoKey"` parses to the right enum on both platforms (guards the JSON-tag gotcha in §A).
@@ -242,6 +260,13 @@ App: a minimal decode test that `msgSigned: "verified"`/`"signedNoKey"` parses t
 
 Each commit builds and passes tests independently (enables bisect/rollback).
 
+### Pre-implementation gates (after rebasing onto #7017 + #7048)
+
+- **MUST:** the as-channel signing gate (`showGroupAsSender ⇒ DontSignContent`, §5) is in the *core* send path, and the app sign option is hidden for as-channel sends (§C). This is the HIGH-blocker resolution and must not be UI-only.
+- **MUST:** re-run `grep -rn 'updateGroupChatItem\b'` on the rebased branch and confirm **every** caller passes an explicit `Maybe MsgSigStatus`. A missed caller silently re-introduces the §7 stale-badge spoof. (Pre-rebase set: `Commands.hs:738`; `Subscriber.hs:1152,1509,2172,2212`.)
+- **SHOULD:** re-run the `sendGroupMessages`/`sendGroupMessage`/`sendGroupMessages_` caller greps; confirm only the content-send and edit sites pass a variable `ContentSig`, all others `DontSignContent`.
+- **SHOULD:** the three "verified"-meaning caveats (no timestamp/ordering; history downgrade; relay-suppressible) are surfaced in UI/help, and the history-downgrade integration test exists.
+
 ## Out of scope / future
 
 - Group-level "expected/required signing" owner setting (would close the optional-downgrade gap).
@@ -252,8 +277,9 @@ Each commit builds and passes tests independently (enables bisect/rollback).
 ## Open assumptions to confirm during implementation
 
 - App `GroupInfo` either already exposes relay+key state for the UI gate, or a small derived boolean is added to its JSON.
-- Exact JSON tag for `MSSSignedNoKey` is `"signedNoKey"` (verify by encoding once; the app decode test guards it).
-- Visual treatment of `signedNoKey` vs `verified` (design).
+- Visual treatment of `signedNoKey` vs `verified` (design), and how to surface the "verified ≠ timestamp/ordering/completeness" caveat in help.
+
+(The JSON tags `"verified"` / `"signedNoKey"` are confirmed from `enumJSON $ dropPrefix "MSS"` in `Parsers.hs:97-107`, not just assumed; the app decode test still guards against regression.)
 
 ---
 
@@ -272,4 +298,6 @@ Honest account of process. The findings below in "during analysis" were made gen
 
 **Post-completion pass 2 — clean.** Re-verified: all five `updateGroupChatItem` callers classified and value-correct; `RcvMessage.msgSigned` is in scope at the receive sites; `SndMessage.signedMsg_` is bindable at the sender edit site; commit 2 changes no behavior pre-signing; `msg_signed` column exists (no migration); send-function caller lists match grep exactly. No new issues.
 
-**Post-completion pass 3 — clean.** Final read for unverified file:line and stray "sounds-true" claims; none found. Two consecutive clean post-completion passes reached.
+**Post-completion pass 3 — clean.** Final read for unverified file:line and stray "sounds-true" claims; none found. Two consecutive clean post-completion passes reached — *within the limit of the author's own seeing* (principle 08), which the next pass exposed.
+
+**Pass 4 — external review integration (found a HIGH blocker the author's own passes missed).** An independent review (`scratch/channel-message-signing-review.md`) verified every central claim against the code and the two dependency PRs and confirmed the bulk sound (`ContentSig`, structural/behavioral commit split, §7 storage-boundary fix and its exact 5-caller set, compatibility, test matrix, JSON tags). It found one **HIGH** issue I had missed entirely: signing is blind to `showGroupAsSender`, so signing an "publish as channel" post would attach non-repudiable proof of *which owner* authored an intentionally anonymous broadcast — converting a today-deniable relay leak (channels-overview Objective 6 / line ~237) into undeniable de-anonymization, and the device-default toggle would trigger it silently. I verified the mechanism in code (`groupMsgSigning:1963-67` blind to `showGroupAsSender`; `encodeFwdElement:108` emits the signature even for `FwdChannel`; relay controls `fwdSender`, `processContentItem:1302`) and resolved it structurally: as-channel content is never signed (§5 core gate), the app option is hidden for as-channel sends (§C), and a defense-in-depth `FwdChannel`-no-signature assertion (Edge cases). Threat model updated to frame this as the publish-as-channel-vs-authenticity resolution. Also integrated the review's MEDIUM caveats — history re-send strips signatures (badge non-determinism), "verified" covers authorship/integrity only (not timestamp/ordering/completeness), signed posts remain relay-suppressible — each grounded in code (`processContentItem:1279-1305`; `Protocol.hs:382-387`; `requiresSignature` lacks `XMsgDel_`) and given documentation + tests — and the sequencing notes (pre-rebase line numbers; mandatory post-rebase re-verification of the `updateGroupChatItem` caller set). Honest takeaway: my own passes converged on a local optimum and missed a domain-level anonymity invariant that required channel-design knowledge to see — concrete evidence for "asking for help is the highest-value review action" (principles 08/10).
