@@ -2566,9 +2566,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               else do
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
                 updateContactProfileWithConflict db user c' p'
-          forM_ ((,) <$> p'SimplexName <*> displaced_) $ \(ni, displaced) ->
-            let Contact {localDisplayName = newLDN} = c'
-             in toView $ CEvtSimplexNameConflict user ni SNCEContact newLDN displaced
+          let Contact {localDisplayName = newLDN} = c'
+          surfaceSimplexNameConflict user p'SimplexName displaced_ SNCEContact newLDN
           when (directOrUsed c' && createItems) $ do
             createProfileUpdatedItem c'
             lift $ createRcvFeatureItems user c c'
@@ -2685,7 +2684,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Nothing -> do
               (m', displaced_) <- withStore $ \db -> updateMemberProfileWithConflict db user m p'
               let GroupMember {localDisplayName = newLDN} = m'
-              emitSimplexNameConflict newLDN displaced_
+              surfaceSimplexNameConflict user p'SimplexName displaced_ SNCEContact newLDN
               unless (muteEventInChannel gInfo m') $ do
                 forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2696,7 +2695,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 then do
                   (m', ct', displaced_) <- withStore $ \db -> updateContactMemberProfileWithConflict db user m mCt p'
                   let Contact {localDisplayName = newLDN} = ct'
-                  emitSimplexNameConflict newLDN displaced_
+                  surfaceSimplexNameConflict user p'SimplexName displaced_ SNCEContact newLDN
                   unless (muteEventInChannel gInfo m') $ do
                     forM_ msgTs_ $ createProfileUpdatedItem m'
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2714,9 +2713,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo
         Profile {simplexName = p'SimplexName} = p'
-        emitSimplexNameConflict newLDN displaced_ =
-          forM_ ((,) <$> p'SimplexName <*> displaced_) $ \(ni, displaced) ->
-            toView $ CEvtSimplexNameConflict user ni SNCEContact newLDN displaced
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -2964,9 +2960,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let Connection {simplexName} = conn'
               Profile {simplexName = pSimplexName} = p
           (ct, displaced_) <- withStore $ \db -> createDirectContact db vr user conn' p simplexName
-          forM_ ((,) <$> pSimplexName <*> displaced_) $ \(ni, displaced) ->
-            let Contact {localDisplayName = newLDN} = ct
-             in toView $ CEvtSimplexNameConflict user ni SNCEContact newLDN displaced
+          let Contact {localDisplayName = newLDN} = ct
+          surfaceSimplexNameConflict user pSimplexName displaced_ SNCEContact newLDN
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
@@ -3312,9 +3307,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case businessChat of
             Nothing -> unless (p == p') $ do
               (g', displaced_) <- withStore $ \db -> updateGroupProfileWithConflict db user g p'
-              forM_ ((,) <$> p'GroupSimplexName <*> displaced_) $ \(ni, displaced) ->
-                let GroupInfo {localDisplayName = newLDN} = g'
-                 in toView $ CEvtSimplexNameConflict user ni SNCEGroup newLDN displaced
+              let GroupInfo {localDisplayName = newLDN} = g'
+              surfaceSimplexNameConflict user p'GroupSimplexName displaced_ SNCEGroup newLDN
               (g'', m', scopeInfo) <- mkGroupChatScope g' m
               toView $ CEvtGroupUpdated user g g'' (Just m') msgSigned
               let cd = CDGroupRcv g'' scopeInfo m'

@@ -2036,9 +2036,8 @@ processChatCommand vr nm = \case
       ACCL _ (CCLink cReq _) -> do
         (ct, displaced_) <- withStore $ \db -> createPreparedContact db vr user profile accLink welcomeSharedMsgId Nothing
         let Profile {simplexName = pSimplexName} = profile
-        forM_ ((,) <$> pSimplexName <*> displaced_) $ \(ni, displaced) ->
-          let Contact {localDisplayName = newLDN} = ct
-           in toView $ CEvtSimplexNameConflict user ni SNCEContact newLDN displaced
+            Contact {localDisplayName = newLDN} = ct
+        surfaceSimplexNameConflict user pSimplexName displaced_ SNCEContact newLDN
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing
@@ -4703,9 +4702,8 @@ dispatchResolvedRecord vr nm user ni@SimplexNameInfo {nameType} NameRecord {nrSi
           accLink = ACCL SCMContact ccLink
       (ct, displaced_) <- withStore $ \db -> createPreparedContact db vr user profile accLink Nothing (Just ni)
       let Profile {simplexName = pSimplexName} = profile
-      forM_ ((,) <$> pSimplexName <*> displaced_) $ \(claim, displaced) ->
-        let Contact {localDisplayName = newLDN} = ct
-         in toView $ CEvtSimplexNameConflict user claim SNCEContact newLDN displaced
+          Contact {localDisplayName = newLDN} = ct
+      surfaceSimplexNameConflict user pSimplexName displaced_ SNCEContact newLDN
       pure (accLink, CPContactAddress (CAPKnown ct))
     prepareGroup :: ConnShortLink 'CMContact -> CM (ACreatedConnLink, ConnectionPlan)
     prepareGroup l = do
