@@ -24,9 +24,13 @@ actual fun AdvancedSettingsAppSection(
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
 ) {
   SectionView {
-    SettingsActionItem(painterResource(MR.images.ic_power_settings_new), stringResource(MR.strings.settings_shutdown), ::shutdownAppAlert)
     SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(withAuth) })
   }
+}
+
+@Composable
+actual fun AppShutdownItem() {
+  SettingsActionItem(painterResource(MR.images.ic_power_settings_new), stringResource(MR.strings.settings_shutdown), ::shutdownAppAlert)
 }
 
 fun restartApp() {

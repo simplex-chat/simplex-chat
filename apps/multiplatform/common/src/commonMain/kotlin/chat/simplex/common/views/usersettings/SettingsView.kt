@@ -108,6 +108,7 @@ fun SettingsLayout(
         SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
       }
       SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
+      AppShutdownItem()
       AppVersionItem(showVersion)
     }
     SectionBottomSpacer()
@@ -159,6 +160,10 @@ expect fun AdvancedSettingsAppSection(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
 )
+
+// Shutdown is only available on Android; on desktop the app is closed via the window.
+@Composable
+expect fun AppShutdownItem()
 
 @Composable private fun DatabaseItem(encrypted: Boolean, saved: Boolean, openDatabaseView: () -> Unit, stopped: Boolean) {
   SectionItemView(openDatabaseView) {

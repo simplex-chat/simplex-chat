@@ -25,3 +25,6 @@ actual fun AdvancedSettingsAppSection(
     }
   }
 }
+
+@Composable
+actual fun AppShutdownItem() {}
