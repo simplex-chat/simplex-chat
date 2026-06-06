@@ -2800,11 +2800,6 @@ waitChatStartedAndActivated = do
     activated <- readTVar chatActivated
     unless (isJust started && activated) retry
 
-chatVersionRange :: CM VersionRangeChat
-chatVersionRange = lift chatVersionRange'
-{-# INLINE chatVersionRange #-}
-
--- | StoreCxt for the current config, threaded into all store calls. Built via 'mkStoreCxt'.
 chatStoreCxt :: CM StoreCxt
 chatStoreCxt = lift chatStoreCxt'
 {-# INLINE chatStoreCxt #-}
@@ -2812,6 +2807,10 @@ chatStoreCxt = lift chatStoreCxt'
 chatStoreCxt' :: CM' StoreCxt
 chatStoreCxt' = mkStoreCxt <$> asks config
 {-# INLINE chatStoreCxt' #-}
+
+chatVersionRange :: CM VersionRangeChat
+chatVersionRange = lift chatVersionRange'
+{-# INLINE chatVersionRange #-}
 
 chatVersionRange' :: CM' VersionRangeChat
 chatVersionRange' = do
