@@ -117,7 +117,8 @@
             "label": "zh_Hans",
             "name": "简体中文",
             "flag": "/img/flags/cn.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "nb_NO",
