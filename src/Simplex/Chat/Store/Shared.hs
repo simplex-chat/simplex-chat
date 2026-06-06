@@ -416,11 +416,10 @@ createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACre
 createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     badgeVerified <- verifyBadge_ srvBadgePublicKey badge
-    let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
     DB.execute
       db
       "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, chat_peer_type, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-      ((displayName, fullName, shortDescr, image, contactLink, peerType) :. (userId, localAlias, preferences, currentTs, currentTs) :. (bProof, bPresHeader, bExpiry, bType, bVerified))
+      ((displayName, fullName, shortDescr, image, contactLink, peerType) :. (userId, localAlias, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
     profileId <- insertedRowId db
     DB.execute
       db

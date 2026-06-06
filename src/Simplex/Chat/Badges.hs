@@ -221,17 +221,18 @@ instance FromField BadgeType where fromField = fromTextField_ textDecode
 
 instance ToField BadgeType where toField = toField . textEncode
 
-type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, BoolInt)
+type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, Maybe BoolInt)
 
 badgeToRow :: Maybe SupporterBadge -> Bool -> BadgeRow
 badgeToRow (Just SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType}) verified =
-  (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), BI verified)
-badgeToRow _ _ = (Nothing, Nothing, Nothing, Nothing, BI False)
+  (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), Just (BI verified))
+badgeToRow _ _ = (Nothing, Nothing, Nothing, Nothing, Just (BI False))
 
 rowToBadge :: UTCTime -> BadgeRow -> Maybe LocalBadge
-rowToBadge now (Just p, Just ph, badgeExpiry, Just btText, (BI verified)) = do
+rowToBadge now (Just p, Just ph, badgeExpiry, Just btText, verified_) = do
   bt <- textDecode btText
   let b = SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType = bt}
+      verified = maybe False unBI verified_
   Just LocalBadge {badgeStatus = mkBadgeStatus now verified b, badge = b}
 rowToBadge _ _ = Nothing
 

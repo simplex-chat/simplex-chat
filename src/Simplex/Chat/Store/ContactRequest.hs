@@ -162,13 +162,12 @@ createOrUpdateContactRequest
       createContactRequest = do
         currentTs <- liftIO $ getCurrentTime
         badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
-        let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
         ExceptT $ withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
           liftIO $
             DB.execute
               db
               "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-              ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. (bProof, bPresHeader, bExpiry, bType, bVerified))
+              ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
           profileId <- liftIO $ insertedRowId db
           liftIO $
             DB.execute
@@ -222,15 +221,14 @@ createOrUpdateContactRequest
       updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
       updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
         currentTs <- liftIO getCurrentTime
-        badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
-        let badgeRow = badgeToRow badge badgeVerified
-        liftIO $ updateProfile currentTs badgeRow
+        liftIO $ updateProfile currentTs
         updateRequest currentTs
         ucr' <- getContactRequest db user contactRequestId
         re_ <- getRequestEntity ucr'
         pure $ RSCurrentRequest (Just ucr) ucr' re_
         where
-          updateProfile currentTs (bProof, bPresHeader, bExpiry, bType, bVerified) =
+          updateProfile currentTs = do
+            badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
             DB.execute
               db
               [sql|
@@ -253,7 +251,7 @@ createOrUpdateContactRequest
                   AND contact_request_id = ?
               )
             |]
-              ((displayName, fullName, shortDescr, image, contactLink, currentTs) :. (bProof, bPresHeader, bExpiry, bType, bVerified) :. (userId, contactRequestId))
+              ((displayName, fullName, shortDescr, image, contactLink, currentTs) :. badgeToRow badge badgeVerified :. (userId, contactRequestId))
           updateRequest currentTs =
             if displayName == oldDisplayName
               then

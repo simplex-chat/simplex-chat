@@ -1730,13 +1730,12 @@ createJoiningMember
   memberKey_ = do
     currentTs <- liftIO getCurrentTime
     badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
-    let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
     ExceptT . withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
       liftIO $
         DB.execute
           db
           "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-          ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. (bProof, bPresHeader, bExpiry, bType, bVerified))
+          ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
       profileId <- liftIO $ insertedRowId db
       case cReqMemberId_ of
         Just memberId -> do
@@ -2094,11 +2093,10 @@ createNewMemberProfile_ :: DB.Connection -> User -> Profile -> UTCTime -> Except
 createNewMemberProfile_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, badge, preferences} createdAt =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     badgeVerified <- verifyBadge_ srvBadgePublicKey badge
-    let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
     DB.execute
       db
       "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-      ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, createdAt, createdAt) :. (bProof, bPresHeader, bExpiry, bType, bVerified))
+      ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, createdAt, createdAt) :. badgeToRow badge badgeVerified)
     profileId <- insertedRowId db
     pure $ Right (ldn, profileId)
 

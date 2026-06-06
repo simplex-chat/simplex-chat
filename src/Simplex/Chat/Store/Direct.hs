@@ -706,8 +706,7 @@ updateContactProfile_ db userId profileId profile badgeVerified = do
   updateContactProfile_' db userId profileId profile badgeVerified currentTs
 
 updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> UTCTime -> IO ()
-updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} badgeVerified updatedAt = do
-  let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
+updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
@@ -716,7 +715,7 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, short
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. (bProof, bPresHeader, bExpiry, bType, bVerified) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
 updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> IO ()
@@ -725,8 +724,7 @@ updateMemberContactProfileReset_ db userId profileId profile badgeVerified = do
   updateMemberContactProfileReset_' db userId profileId profile badgeVerified currentTs
 
 updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> UTCTime -> IO ()
-updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt = do
-  let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
+updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
@@ -735,7 +733,7 @@ updateMemberContactProfileReset_' db userId profileId Profile {displayName, full
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, updatedAt) :. (bProof, bPresHeader, bExpiry, bType, bVerified) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
 
 -- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
 updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> IO ()
@@ -744,8 +742,7 @@ updateMemberContactProfile_ db userId profileId profile badgeVerified = do
   updateMemberContactProfile_' db userId profileId profile badgeVerified currentTs
 
 updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Bool -> UTCTime -> IO ()
-updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt = do
-  let (bProof, bPresHeader, bExpiry, bType, bVerified) = badgeToRow badge badgeVerified
+updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
@@ -754,7 +751,7 @@ updateMemberContactProfile_' db userId profileId Profile {displayName, fullName,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, updatedAt) :. (bProof, bPresHeader, bExpiry, bType, bVerified) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
 
 updateContactLDN_ :: DB.Connection -> User -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt = do
