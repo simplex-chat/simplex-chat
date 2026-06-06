@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -112,7 +114,14 @@ data BadgePurchase
 -- Master key
 
 newtype BadgeMasterKey = BadgeMasterKey ByteString
-  deriving (Eq, Show)
+  deriving newtype (Eq, Show, StrEncoding)
+
+instance ToJSON BadgeMasterKey where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromJSON BadgeMasterKey where
+  parseJSON = strParseJSON "BadgeMasterKey"
 
 generateMasterKey :: TVar ChaChaDRG -> IO BadgeMasterKey
 generateMasterKey drg = BadgeMasterKey <$> atomically (C.randomBytes 32 drg)
@@ -122,14 +131,11 @@ generateMasterKey drg = BadgeMasterKey <$> atomically (C.randomBytes 32 drg)
 data BadgeRequest = BadgeRequest
   { masterKey :: BadgeMasterKey,
     badgeType :: BadgeType,
-    payment :: BadgePurchase
+    expiry :: Maybe UTCTime
   }
   deriving (Show)
 
-data VerifiedBadgeRequest = VerifiedBadgeRequest
-  { masterKey :: BadgeMasterKey,
-    badgeType :: BadgeType
-  }
+newtype VerifiedBadgeRequest = VerifiedBadgeRequest BadgeRequest
   deriving (Show)
 
 data BadgeCredential = BadgeCredential
@@ -172,14 +178,13 @@ badgeDisclosedMessages expiry bt = [encodeExpiry expiry, encodeUtf8 (textEncode 
 
 -- Payment verification (stub - always passes)
 
-verifyPayment :: BadgeRequest -> IO (Maybe VerifiedBadgeRequest)
-verifyPayment BadgeRequest {masterKey, badgeType} =
-  pure $ Just VerifiedBadgeRequest {masterKey, badgeType}
+verifyPayment :: BadgePurchase -> BadgeRequest -> IO (Maybe VerifiedBadgeRequest)
+verifyPayment _payment req = pure $ Just (VerifiedBadgeRequest req)
 
 -- Server-side: issue a badge credential
 
-issueBadge :: BBSSecretKey -> BBSPublicKey -> Maybe UTCTime -> VerifiedBadgeRequest -> IO (Either String BadgeCredential)
-issueBadge sk pk expiry VerifiedBadgeRequest {masterKey, badgeType} =
+issueBadge :: BBSSecretKey -> BBSPublicKey -> VerifiedBadgeRequest -> IO (Either String BadgeCredential)
+issueBadge sk pk (VerifiedBadgeRequest BadgeRequest {masterKey, badgeType, expiry}) =
   fmap mkCred <$> bbsSign sk pk bbsBadgeHeader (badgeMessages masterKey expiry badgeType)
   where
     mkCred sig = BadgeCredential {masterKey, signature = sig, badgeExpiry = expiry, badgeType}
@@ -243,3 +248,7 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "BS") ''BadgeStatus)
 $(JQ.deriveJSON defaultJSON ''SupporterBadge)
 
 $(JQ.deriveJSON defaultJSON ''LocalBadge)
+
+$(JQ.deriveJSON defaultJSON ''BadgeRequest)
+
+$(JQ.deriveJSON defaultJSON ''BadgeCredential)

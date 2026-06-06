@@ -23,12 +23,12 @@ badgeTests = do
 
 testFullWorkflow :: IO ()
 testFullWorkflow = do
-  (sk, pk) <- bbsKeyGen
+  Right (sk, pk) <- bbsKeyGen
   drg <- C.newRandom
   mk <- generateMasterKey drg
-  let req = BadgeRequest {masterKey = mk, badgeType = BTSupporter, payment = BPRedeemCode "TEST"}
-  Just vreq <- verifyPayment req
-  Right cred <- issueBadge sk pk (Just futureTime) vreq
+  let req = BadgeRequest {masterKey = mk, badgeType = BTSupporter, expiry = Just futureTime}
+  Just vreq <- verifyPayment (BPRedeemCode "TEST") req
+  Right cred <- issueBadge sk pk vreq
   let BadgeCredential {masterKey = mk'} = cred
   mk' `shouldBe` mk
   verifyBadgeSignature pk cred >>= (`shouldBe` True)
@@ -51,7 +51,7 @@ testTamperedExpiry = do
 testWrongKey :: IO ()
 testWrongKey = do
   (_, badge) <- issueBadgeProof BTSupporter (Just futureTime)
-  (_, pk2) <- bbsKeyGen
+  Right (_, pk2) <- bbsKeyGen
   verifyBadge pk2 badge >>= (`shouldBe` False)
 
 testExpiryCheck :: IO ()
@@ -85,10 +85,10 @@ pastTime = posixSecondsToUTCTime 1577836800 -- 2020-01-01
 
 issueBadgeProof :: BadgeType -> Maybe UTCTime -> IO (BBSPublicKey, SupporterBadge)
 issueBadgeProof bt expiry = do
-  (sk, pk) <- bbsKeyGen
+  Right (sk, pk) <- bbsKeyGen
   drg <- C.newRandom
   mk <- generateMasterKey drg
-  let vreq = VerifiedBadgeRequest {masterKey = mk, badgeType = bt}
-  Right cred <- issueBadge sk pk expiry vreq
+  let vreq = VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeType = bt, expiry}
+  Right cred <- issueBadge sk pk vreq
   Right badge <- generateBadgeProof pk cred (BBSPresHeader "test-nonce")
   pure (pk, badge)
