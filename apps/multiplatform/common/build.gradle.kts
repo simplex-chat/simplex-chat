@@ -151,6 +151,10 @@ kotlin {
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf")
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
+        // WebP decoder for ImageIO — desktop's javax.imageio.ImageIO ships only JPEG/PNG/GIF/BMP
+        // by default. Without this, picking a WebP via the image picker falls into the catch-block
+        // at Utils.desktop.kt:getBitmapFromUri and shows "image cannot be decoded".
+        implementation("com.twelvemonkeys.imageio:imageio-webp:3.11.0")
       }
     }
     val desktopTest by getting
