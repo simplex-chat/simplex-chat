@@ -280,6 +280,7 @@ cliCommands =
     "SetGroupTimedMessages",
     "SetLocalDeviceName",
     "SetProfileAddress",
+    "SetPublicGroupAccess",
     "SetSendReceipts",
     "SetShowMemberMessages",
     "SetShowMessages",

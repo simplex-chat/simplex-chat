@@ -244,6 +244,12 @@ struct GroupChatInfoView: View {
                         }
                     }
 
+                    if groupInfo.useRelays && groupInfo.isOwner {
+                        Section(header: Text("Advanced options").foregroundColor(theme.colors.secondary)) {
+                            channelWebAccessButton()
+                        }
+                    }
+
                     if developerTools {
                         Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                             infoRow("Local name", chat.chatInfo.localDisplayName)
@@ -654,6 +660,17 @@ struct GroupChatInfoView: View {
             groupLinkDestinationView()
         } label: {
             Label("Channel link", systemImage: "link")
+        }
+    }
+
+    private func channelWebAccessButton() -> some View {
+        let title: LocalizedStringKey = groupInfo.isChannel ? "Channel webpage" : "Group webpage"
+        return NavigationLink {
+            ChannelWebAccessView(groupInfo: $groupInfo)
+                .navigationBarTitle(title)
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label(title, systemImage: "globe")
         }
     }
 
