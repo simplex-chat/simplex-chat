@@ -58,6 +58,7 @@ This file is generated automatically.
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
 - [APISetUserAutoAcceptMemberContacts](#apisetuserautoacceptmembercontacts)
+- [APIVerifySimplexName](#apiverifysimplexname)
 
 [User profile commands](#user-profile-commands)
 - [ShowActiveUser](#showactiveuser)
@@ -1844,6 +1845,42 @@ Set auto-accept member contacts.
 
 ```python
 '/_set accept member contacts ' + str(userId) + ' ' + ('on' if onOff else 'off') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIVerifySimplexName
+
+Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Synchronously returns `CRCmdOk`; the verification outcome is delivered asynchronously via [CEvtSimplexNameVerified](./EVENTS.md#cevtsimplexnameverified) or [CEvtSimplexNameVerifyFailed](./EVENTS.md#cevtsimplexnameverifyfailed).
+
+*Network usage*: interactive.
+
+**Parameters**:
+- chatRef: [ChatRef](./TYPES.md#chatref)
+
+**Syntax**:
+
+```
+/_verify simplex name <str(chatRef)>
+```
+
+```javascript
+'/_verify simplex name ' + ChatRef.cmdString(chatRef) // JavaScript
+```
+
+```python
+'/_verify simplex name ' + ChatRef_cmd_string(chatRef) # Python
 ```
 
 **Responses**:

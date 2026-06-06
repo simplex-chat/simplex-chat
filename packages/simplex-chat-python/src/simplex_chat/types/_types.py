@@ -1429,6 +1429,7 @@ class Contact(TypedDict):
     chatDeleted: bool
     customData: NotRequired[dict[str, object]]
     simplexName: NotRequired["SimplexNameInfo"]
+    simplexNameVerifiedAt: NotRequired[str]  # ISO-8601 timestamp
 
 class ContactAddressPlan_ok(TypedDict):
     type: Literal["ok"]
@@ -1841,6 +1842,7 @@ class GroupInfo(TypedDict):
     viaGroupLinkUri: NotRequired[str]
     groupKeys: NotRequired["GroupKeys"]
     simplexName: NotRequired["SimplexNameInfo"]
+    simplexNameVerifiedAt: NotRequired[str]  # ISO-8601 timestamp
 
 class GroupKeys(TypedDict):
     publicGroupId: str
@@ -2747,6 +2749,24 @@ class SimplexNameInfo(TypedDict):
     nameDomain: "SimplexNameDomain"
 
 SimplexNameType = Literal["publicGroup", "contact"]
+
+class SimplexNameVerifyFailReason_linkMismatch(TypedDict):
+    type: Literal["linkMismatch"]
+
+class SimplexNameVerifyFailReason_nameNotRegistered(TypedDict):
+    type: Literal["nameNotRegistered"]
+
+class SimplexNameVerifyFailReason_resolverError(TypedDict):
+    type: Literal["resolverError"]
+    agentError: "AgentErrorType"
+
+SimplexNameVerifyFailReason = (
+    SimplexNameVerifyFailReason_linkMismatch
+    | SimplexNameVerifyFailReason_nameNotRegistered
+    | SimplexNameVerifyFailReason_resolverError
+)
+
+SimplexNameVerifyFailReason_Tag = Literal["linkMismatch", "nameNotRegistered", "resolverError"]
 
 SimplexTLD = Literal["simplex", "testing", "web"]
 

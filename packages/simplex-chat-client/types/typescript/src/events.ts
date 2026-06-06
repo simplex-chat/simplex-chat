@@ -10,6 +10,9 @@ export type ChatEvent =
   | CEvt.ReceivedContactRequest
   | CEvt.NewMemberContactReceivedInv
   | CEvt.SimplexNameConflict
+  | CEvt.SimplexNameVerified
+  | CEvt.SimplexNameVerifyFailed
+  | CEvt.SimplexNameUnverified
   | CEvt.ContactSndReady
   | CEvt.NewChatItems
   | CEvt.ChatItemReaction
@@ -64,6 +67,9 @@ export namespace CEvt {
     | "receivedContactRequest"
     | "newMemberContactReceivedInv"
     | "simplexNameConflict"
+    | "simplexNameVerified"
+    | "simplexNameVerifyFailed"
+    | "simplexNameUnverified"
     | "contactSndReady"
     | "newChatItems"
     | "chatItemReaction"
@@ -156,6 +162,29 @@ export namespace CEvt {
     entity: T.SimplexNameConflictEntity
     claimedBy: string
     displacedFrom: string
+  }
+
+  export interface SimplexNameVerified extends Interface {
+    type: "simplexNameVerified"
+    user: T.User
+    chatRef: T.ChatRef
+    simplexName: T.SimplexNameInfo
+    verifiedAt: string // ISO-8601 timestamp
+  }
+
+  export interface SimplexNameVerifyFailed extends Interface {
+    type: "simplexNameVerifyFailed"
+    user: T.User
+    chatRef: T.ChatRef
+    simplexName: T.SimplexNameInfo
+    reason: T.SimplexNameVerifyFailReason
+  }
+
+  export interface SimplexNameUnverified extends Interface {
+    type: "simplexNameUnverified"
+    user: T.User
+    chatRef: T.ChatRef
+    simplexName: T.SimplexNameInfo
   }
 
   export interface ContactSndReady extends Interface {

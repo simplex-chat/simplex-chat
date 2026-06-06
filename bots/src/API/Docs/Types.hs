@@ -352,6 +352,7 @@ chatTypesDocsData =
     (sti @SimplexNameDomain, STRecord, "", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
+    (sti @SimplexNameVerifyFailReason, STUnion, "SNVF", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
     (sti @SMPAgentError, STUnion, "", [], "", ""),
     (sti @SndCIStatusProgress, STEnum, "SSP", [], "", ""),
@@ -573,6 +574,7 @@ deriving instance Generic SimplexNameConflictEntity
 deriving instance Generic SimplexNameDomain
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
+deriving instance Generic SimplexNameVerifyFailReason
 deriving instance Generic SimplexTLD
 deriving instance Generic SMPAgentError
 deriving instance Generic SndCIStatusProgress

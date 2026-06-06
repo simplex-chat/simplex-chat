@@ -2025,6 +2025,7 @@ export interface Contact {
   chatDeleted: boolean
   customData?: object
   simplexName?: SimplexNameInfo
+  simplexNameVerifiedAt?: string // ISO-8601 timestamp
 }
 
 export type ContactAddressPlan = 
@@ -2619,6 +2620,7 @@ export interface GroupInfo {
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
   simplexName?: SimplexNameInfo
+  simplexNameVerifiedAt?: string // ISO-8601 timestamp
 }
 
 export interface GroupKeys {
@@ -3930,6 +3932,32 @@ export interface SimplexNameInfo {
 export enum SimplexNameType {
   PublicGroup = "publicGroup",
   Contact = "contact",
+}
+
+export type SimplexNameVerifyFailReason = 
+  | SimplexNameVerifyFailReason.LinkMismatch
+  | SimplexNameVerifyFailReason.NameNotRegistered
+  | SimplexNameVerifyFailReason.ResolverError
+
+export namespace SimplexNameVerifyFailReason {
+  export type Tag = "linkMismatch" | "nameNotRegistered" | "resolverError"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface LinkMismatch extends Interface {
+    type: "linkMismatch"
+  }
+
+  export interface NameNotRegistered extends Interface {
+    type: "nameNotRegistered"
+  }
+
+  export interface ResolverError extends Interface {
+    type: "resolverError"
+    agentError: AgentErrorType
+  }
 }
 
 export enum SimplexTLD {

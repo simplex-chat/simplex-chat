@@ -172,6 +172,7 @@ This file is generated automatically.
 - [SimplexNameDomain](#simplexnamedomain)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
+- [SimplexNameVerifyFailReason](#simplexnameverifyfailreason)
 - [SimplexTLD](#simplextld)
 - [SndCIStatusProgress](#sndcistatusprogress)
 - [SndConnEvent](#sndconnevent)
@@ -1756,6 +1757,7 @@ Error:
 - chatDeleted: bool
 - customData: JSONObject?
 - simplexName: [SimplexNameInfo](#simplexnameinfo)?
+- simplexNameVerifiedAt: UTCTime?
 
 
 ---
@@ -2304,6 +2306,7 @@ MemberSupport:
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?
 - simplexName: [SimplexNameInfo](#simplexnameinfo)?
+- simplexNameVerifiedAt: UTCTime?
 
 
 ---
@@ -3541,6 +3544,23 @@ A_QUEUE:
 **Enum type**:
 - "publicGroup"
 - "contact"
+
+
+---
+
+## SimplexNameVerifyFailReason
+
+**Discriminated union type**:
+
+LinkMismatch:
+- type: "linkMismatch"
+
+NameNotRegistered:
+- type: "nameNotRegistered"
+
+ResolverError:
+- type: "resolverError"
+- agentError: [AgentErrorType](#agenterrortype)
 
 
 ---

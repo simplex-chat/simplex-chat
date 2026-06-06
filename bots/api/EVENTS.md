@@ -11,6 +11,9 @@ This file is generated automatically.
   - [ReceivedContactRequest](#receivedcontactrequest)
   - [NewMemberContactReceivedInv](#newmembercontactreceivedinv)
   - [SimplexNameConflict](#simplexnameconflict)
+  - [SimplexNameVerified](#simplexnameverified)
+  - [SimplexNameVerifyFailed](#simplexnameverifyfailed)
+  - [SimplexNameUnverified](#simplexnameunverified)
   - [ContactSndReady](#contactsndready)
 
 [Message events](#message-events)
@@ -172,6 +175,47 @@ A peer's profile update claimed a SimpleX name (`#name.simplex` / `@name.simplex
 - entity: [SimplexNameConflictEntity](./TYPES.md#simplexnameconflictentity)
 - claimedBy: string
 - displacedFrom: string
+
+---
+
+
+### SimplexNameVerified
+
+RSLV verification of a contact's or group's SimpleX name claim succeeded: the resolved link matches the peer's stored connection link and `simplex_name_verified_at` has been written. Emitted asynchronously after [APIVerifySimplexName](./COMMANDS.md#apiverifysimplexname).
+
+**Record type**:
+- type: "simplexNameVerified"
+- user: [User](./TYPES.md#user)
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- simplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)
+- verifiedAt: UTCTime
+
+---
+
+
+### SimplexNameVerifyFailed
+
+RSLV verification of a SimpleX name claim did not succeed. `reason` indicates the cause: `SNVFLinkMismatch` (resolved link does not match stored link), `SNVFNameNotRegistered` (no on-chain record exists), or `SNVFResolverError` (transport / proxy failure, with the agent error inline). The `simplex_name` claim is **not** cleared. Emitted asynchronously after [APIVerifySimplexName](./COMMANDS.md#apiverifysimplexname).
+
+**Record type**:
+- type: "simplexNameVerifyFailed"
+- user: [User](./TYPES.md#user)
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- simplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)
+- reason: [SimplexNameVerifyFailReason](./TYPES.md#simplexnameverifyfailreason)
+
+---
+
+
+### SimplexNameUnverified
+
+A peer's incoming profile update (XInfo / XGrpInfo) carries a SimpleX name claim that the user has not yet verified — i.e. `simplex_name_verified_at` is NULL. Bots / UI may surface an unverified indicator next to the contact / group name; the user can clear it by invoking [APIVerifySimplexName](./COMMANDS.md#apiverifysimplexname).
+
+**Record type**:
+- type: "simplexNameUnverified"
+- user: [User](./TYPES.md#user)
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- simplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)
 
 ---
 
