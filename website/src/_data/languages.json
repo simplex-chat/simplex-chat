@@ -118,7 +118,8 @@
             "name": "简体中文",
             "flag": "/img/flags/cn.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "nb_NO",
