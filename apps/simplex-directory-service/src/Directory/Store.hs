@@ -85,7 +85,6 @@ import Data.Time.Clock.System (systemEpochDay)
 import Directory.Search
 import Directory.Util
 import Simplex.Chat.Controller
-import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
@@ -315,28 +314,28 @@ getGroupReg_ db gId =
 getGroupAndReg :: ChatController -> User -> GroupId -> IO (Either String (GroupInfo, GroupReg))
 getGroupAndReg cc user@User {userId, userContactId} gId =
   withDB "getGroupAndReg" cc $ \db ->
-    ExceptT $ firstRow (toGroupInfoReg (vr cc) user) ("group " ++ show gId ++ " not found") $
+    ExceptT $ firstRow (toGroupInfoReg (storeCxt cc) user) ("group " ++ show gId ++ " not found") $
     DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
 
 getUserGroupReg :: ChatController -> User -> ContactId -> UserGroupRegId -> IO (Either String (GroupInfo, GroupReg))
 getUserGroupReg cc user@User {userId, userContactId} ctId ugrId =
   withDB "getUserGroupReg" cc $ \db ->
-    ExceptT $ firstRow (toGroupInfoReg (vr cc) user) ("group " ++ show ugrId ++ " not found") $
+    ExceptT $ firstRow (toGroupInfoReg (storeCxt cc) user) ("group " ++ show ugrId ++ " not found") $
       DB.query db (groupReqQuery <> " AND r.contact_id = ? AND r.user_group_reg_id = ?") (userId, userContactId, ctId, ugrId)
 
 getUserGroupRegs :: ChatController -> User -> ContactId -> IO (Either String [(GroupInfo, GroupReg)])
 getUserGroupRegs cc user@User {userId, userContactId} ctId =
   withDB' "getUserGroupRegs" cc $ \db ->
-    map (toGroupInfoReg (vr cc) user)
+    map (toGroupInfoReg (storeCxt cc) user)
       <$> DB.query db (groupReqQuery <> " AND r.contact_id = ? ORDER BY r.user_group_reg_id") (userId, userContactId, ctId)
 
 getAllListedGroups :: ChatController -> User -> IO (Either String [(GroupInfo, GroupReg, Maybe GroupLink)])
-getAllListedGroups cc user = withDB' "getAllListedGroups" cc $ \db -> getAllListedGroups_ db (vr cc) user
+getAllListedGroups cc user = withDB' "getAllListedGroups" cc $ \db -> getAllListedGroups_ db (storeCxt cc) user
 
-getAllListedGroups_ :: DB.Connection -> VersionRangeChat -> User -> IO [(GroupInfo, GroupReg, Maybe GroupLink)]
-getAllListedGroups_ db vr' user@User {userId, userContactId} =
+getAllListedGroups_ :: DB.Connection -> StoreCxt -> User -> IO [(GroupInfo, GroupReg, Maybe GroupLink)]
+getAllListedGroups_ db cxt user@User {userId, userContactId} =
   DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
-    >>= mapM (withGroupLink . toGroupInfoReg vr' user)
+    >>= mapM (withGroupLink . toGroupInfoReg cxt user)
   where
     withGroupLink (g, gr) = (g,gr,) . eitherToMaybe <$> runExceptT (getGroupLink db user g)
 
@@ -382,7 +381,7 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           countQuery' = countQuery <> " JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE r.group_reg_status = ? "
           orderBy = " ORDER BY g.summary_current_members_count DESC, r.group_reg_id ASC "
   where
-    groups = (map (toGroupInfoReg (vr cc) user) <$>)
+    groups = (map (toGroupInfoReg (storeCxt cc) user) <$>)
     count = maybeFirstRow' 0 fromOnly
     listedGroupQuery = groupReqQuery <> " AND r.group_reg_status = ? "
     countQuery = "SELECT COUNT(1) FROM groups g JOIN sx_directory_group_regs r ON g.group_id = r.group_id "
@@ -395,22 +394,22 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
         )
       |]
 
-getAllGroupRegs_ :: DB.Connection -> User -> IO [(GroupInfo, GroupReg)]
-getAllGroupRegs_ db user@User {userId, userContactId} =
-  map (toGroupInfoReg supportedChatVRange user)
+getAllGroupRegs_ :: DB.Connection -> StoreCxt -> User -> IO [(GroupInfo, GroupReg)]
+getAllGroupRegs_ db cxt user@User {userId, userContactId} =
+  map (toGroupInfoReg cxt user)
     <$> DB.query db groupReqQuery (userId, userContactId)
 
 getDuplicateGroupRegs :: ChatController -> User -> Text -> IO (Either String [(GroupInfo, GroupReg)])
 getDuplicateGroupRegs cc user@User {userId, userContactId} displayName =
   withDB' "getDuplicateGroupRegs" cc $ \db ->
-    map (toGroupInfoReg (vr cc) user)
+    map (toGroupInfoReg (storeCxt cc) user)
       <$> DB.query db (groupReqQuery <> " AND gp.display_name = ?") (userId, userContactId, displayName)
 
 listLastGroups :: ChatController -> User -> Int -> IO (Either String ([(GroupInfo, GroupReg)], Int))
 listLastGroups cc user@User {userId, userContactId} count =
   withDB' "getUserGroupRegs" cc $ \db -> do
     gs <-
-      map (toGroupInfoReg (vr cc) user)
+      map (toGroupInfoReg (storeCxt cc) user)
         <$> DB.query db (groupReqQuery <> " ORDER BY group_reg_id DESC LIMIT ?") (userId, userContactId, count)
     n <- maybeFirstRow' 0 fromOnly $ DB.query_ db "SELECT COUNT(1) FROM sx_directory_group_regs"
     pure (gs, n)
@@ -419,14 +418,14 @@ listPendingGroups :: ChatController -> User -> Int -> IO (Either String ([(Group
 listPendingGroups cc user@User {userId, userContactId} count =
   withDB' "getUserGroupRegs" cc $ \db -> do
     gs <-
-      map (toGroupInfoReg (vr cc) user)
+      map (toGroupInfoReg (storeCxt cc) user)
         <$> DB.query db (groupReqQuery <> " AND r.group_reg_status LIKE 'pending_approval%' ORDER BY group_reg_id DESC LIMIT ?") (userId, userContactId, count)
     n <- maybeFirstRow' 0 fromOnly $ DB.query_ db "SELECT COUNT(1) FROM sx_directory_group_regs WHERE group_reg_status LIKE 'pending_approval%'"
     pure (gs, n)
 
-toGroupInfoReg :: VersionRangeChat -> User -> (GroupInfoRow :. GroupRegRow) -> (GroupInfo, GroupReg)
-toGroupInfoReg vr' User {userContactId} (groupRow :. grRow) =
-  (toGroupInfo vr' userContactId [] groupRow, rowToGroupReg grRow)
+toGroupInfoReg :: StoreCxt -> User -> (GroupInfoRow :. GroupRegRow) -> (GroupInfo, GroupReg)
+toGroupInfoReg cxt User {userContactId} (groupRow :. grRow) =
+  (toGroupInfo cxt userContactId [] groupRow, rowToGroupReg grRow)
 
 type GroupRegRow = (GroupId, UserGroupRegId, ContactId, Maybe GroupMemberId, GroupRegStatus, BoolInt, UTCTime)
 
