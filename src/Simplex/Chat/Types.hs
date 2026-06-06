@@ -2033,6 +2033,10 @@ type VersionChat = Version ChatVersion
 
 type VersionRangeChat = VersionRange ChatVersion
 
+-- | Ambient read-only context threaded through store functions (replaces the
+-- bare `vr` parameter). Extended over time with more store-wide context.
+newtype StoreCxt = StoreCxt {vr :: VersionRangeChat}
+
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
 
