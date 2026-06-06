@@ -16,12 +16,8 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (catchAll)
 
 storeCxt :: ChatController -> StoreCxt
-storeCxt ChatController {config} = storeCxtConfig config
+storeCxt ChatController {config} = mkStoreCxt config
 {-# INLINE storeCxt #-}
-
-storeCxtConfig :: ChatConfig -> StoreCxt
-storeCxtConfig ChatConfig {chatVRange} = StoreCxt chatVRange
-{-# INLINE storeCxtConfig #-}
 
 withDB' :: Text -> ChatController -> (DB.Connection -> IO a) -> IO (Either String a)
 withDB' cxt cc a = withDB cxt cc $ ExceptT . fmap Right . a

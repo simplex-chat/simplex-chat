@@ -2804,13 +2804,13 @@ chatVersionRange :: CM VersionRangeChat
 chatVersionRange = lift chatVersionRange'
 {-# INLINE chatVersionRange #-}
 
--- | The single point where StoreCxt is constructed; threaded into all store calls.
+-- | StoreCxt for the current config, threaded into all store calls. Built via 'mkStoreCxt'.
 chatStoreCxt :: CM StoreCxt
-chatStoreCxt = StoreCxt <$> chatVersionRange
+chatStoreCxt = lift chatStoreCxt'
 {-# INLINE chatStoreCxt #-}
 
 chatStoreCxt' :: CM' StoreCxt
-chatStoreCxt' = StoreCxt <$> chatVersionRange'
+chatStoreCxt' = mkStoreCxt <$> asks config
 {-# INLINE chatStoreCxt' #-}
 
 chatVersionRange' :: CM' VersionRangeChat
