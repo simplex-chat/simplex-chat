@@ -112,7 +112,7 @@ fun GroupMentions(
           isVisible.value = true
           mentionName.value = ft.format.memberName
           mentionRange.value = r
-          mentionMemberId.value = composeState.value.mentions[mentionName.value]?.memberId
+          mentionMemberId.value = if (mentionName.value in composeState.value.memberMentions) composeState.value.mentions[mentionName.value]?.memberId else null
           if (!chatModel.membersLoaded.value) {
             scope.launch {
               setGroupMembers(rhId, chatInfo.groupInfo, chatModel)
@@ -210,7 +210,7 @@ fun GroupMentions(
       },
     contentAlignment = Alignment.BottomStart
   ) {
-    val showMaxReachedBox = composeState.value.memberMentions.size >= MAX_NUMBER_OF_MENTIONS && isVisible.value && composeState.value.mentions[mentionName.value] == null
+    val showMaxReachedBox = composeState.value.memberMentions.size >= MAX_NUMBER_OF_MENTIONS && isVisible.value && mentionName.value !in composeState.value.memberMentions
     LazyColumnWithScrollBarNoAppBar(
       Modifier
         .heightIn(max = MAX_PICKER_HEIGHT)

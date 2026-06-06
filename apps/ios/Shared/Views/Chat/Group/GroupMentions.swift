@@ -130,7 +130,7 @@ struct GroupMentionsView: View {
                 isVisible = true
                 mentionName = name
                 mentionRange = r
-                mentionMemberId = composeState.mentions[name]?.memberId
+                mentionMemberId = composeState.memberMentions[name] != nil ? composeState.mentions[name]?.memberId : nil
                 if !m.membersLoaded {
                     Task {
                         await m.loadGroupMembers(groupInfo)
