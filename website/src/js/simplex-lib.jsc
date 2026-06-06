@@ -27,7 +27,7 @@ const SAFE_URI_SCHEME = /^(https?:|simplex:|mailto:|tel:)/i;
 
 function safeHref(uri) {
   if (SAFE_URI_SCHEME.test(uri)) return escapeAttr(uri);
-  return `javascript:void(alert('Potentially malicious link blocked:\\n'+${JSON.stringify(uri)}))`;
+  return escapeAttr(`javascript:void(alert('Potentially malicious link blocked:\\n'+${JSON.stringify(uri)}))`);
 }
 
 function getSimplexLinkDescr(linkType) {

@@ -146,8 +146,8 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
       drainPriority
       handleCors
       drainRoutine
-      seedRoutinePending wps
-      interruptibleSleep
+      timerFired <- interruptibleSleep
+      when timerFired $ seedRoutinePending wps
       workerLoop wps
       where
         drainRemovals = atomically (tryReadTQueue filesToRemove) >>= \case
@@ -177,11 +177,13 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
             drainPriority
             drainRoutine
 
+        -- returns True when the refresh timer fired, False when woken early by a change signal;
+        -- a full routine re-render is only seeded on the timer, so changes render incrementally
         interruptibleSleep = do
           delay <- registerDelay (webUpdateInterval * 1000000)
           atomically $
-            (readTVar delay >>= check)
-              `orElse` takeTMVar wakeSignal
+            (True <$ (readTVar delay >>= check))
+              `orElse` (False <$ takeTMVar wakeSignal)
 
     initPublishableGroups WebPreviewState {publishableGroupIds} = do
       rows <- withTransaction (chatStore cc) $ \db ->
@@ -205,7 +207,10 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     renderOneGroup WebPreviewState {publishableGroupIds} gId = do
       publishable <- atomically $ M.member gId <$> readTVar publishableGroupIds
       when publishable $
-        do
+        renderOrRemoveStale `catch` \(e :: SomeException) ->
+          logError $ "web preview: error rendering group " <> T.pack (show gId) <> ": " <> T.pack (show e)
+      where
+        renderOrRemoveStale = do
           r <- withTransaction (chatStore cc) $ \db ->
             findUser $ \u -> fmap (\g -> (u, g)) <$> runExceptT (getGroupInfo db vr' u gId)
           case r of
@@ -219,8 +224,6 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
               forM_ fName $ \f ->
                 removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
               logInfo $ "web preview: group " <> T.pack (show gId) <> " no longer publishable"
-          `catch` \(e :: SomeException) ->
-            logError $ "web preview: error rendering group " <> T.pack (show gId) <> ": " <> T.pack (show e)
 
     findUser f = go users
       where
@@ -376,8 +379,14 @@ extractOrigin url =
     Right uri@U.URI {uriScheme = U.Scheme sch, uriAuthority = Just _}
       | sch == "https" || sch == "http" ->
           let originUri = uri {U.uriPath = "", U.uriQuery = U.Query [], U.uriFragment = Nothing}
-           in Just $ safeDecodeUtf8 $ U.serializeURIRef' originUri
+              origin = safeDecodeUtf8 $ U.serializeURIRef' originUri
+           in if T.all safeOriginChar origin then Just origin else Nothing
     _ -> Nothing
+  where
+    -- percent-encoded bytes in the host (e.g. %22, %0a) are decoded by serializeURIRef',
+    -- so reject any origin with characters that could break out of the Caddy CORS config or header
+    safeOriginChar c =
+      (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c `elem` (".-:/[]" :: [Char])
 
 channelPath :: Text
 channelPath = "/channel/"
@@ -401,9 +410,11 @@ writeCorsConfig entries path =
 
 removeStaleFiles :: FilePath -> S.Set FilePath -> IO ()
 removeStaleFiles dir activeFiles = do
-  let isPreviewFile f =
-        let base = dropExtension f
-         in takeExtension f == ".json" && not (null base) && all isBase64Url base
+  let -- matches "<base64url>.json" and leftover "<base64url>.json.tmp" from an interrupted write
+      isPreviewFile f =
+        let f' = if takeExtension f == ".tmp" then dropExtension f else f
+            base = dropExtension f'
+         in takeExtension f' == ".json" && not (null base) && all isBase64Url base
       isBase64Url c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_'
   allFiles <- S.filter isPreviewFile . S.fromList <$> listDirectory dir
   mapM_ (\f -> removeFile (dir </> f)) $ S.difference allFiles activeFiles
