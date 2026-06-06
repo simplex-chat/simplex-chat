@@ -243,8 +243,8 @@ createRelayMemberConnectionAsync db user@User {userId} gInfo GroupMember {groupM
   where
     customUserProfileId_ = localProfileId <$> incognitoMembershipProfile gInfo
 
-createRelayTestConnection :: DB.Connection -> VersionRangeChat -> User -> ConnId -> ConnStatus -> VersionChat -> SubscriptionMode -> ExceptT StoreError IO Connection
-createRelayTestConnection db vr user@User {userId} agentConnId connStatus chatV subMode = do
+createRelayTestConnection :: DB.Connection -> StoreCxt -> User -> ConnId -> ConnStatus -> VersionChat -> SubscriptionMode -> ExceptT StoreError IO Connection
+createRelayTestConnection db cxt user@User {userId} agentConnId connStatus chatV subMode = do
   currentTs <- liftIO getCurrentTime
   liftIO $
     DB.execute
@@ -261,7 +261,7 @@ createRelayTestConnection db vr user@User {userId} agentConnId connStatus chatV 
           :. (BI True, currentTs, currentTs)
       )
   connId <- liftIO $ insertedRowId db
-  getConnectionById db vr user connId
+  getConnectionById db cxt user connId
 
 updateConnLinkData :: DB.Connection -> User -> Connection -> ConnReqContact -> ConnReqUriHash -> Maybe GroupLinkId -> VersionChat -> PQSupport -> IO ()
 updateConnLinkData db User {userId} Connection {connId} cReq cReqHash groupLinkId_ chatV pqSup = do
@@ -285,13 +285,13 @@ setPreparedGroupStartedConnection db groupId = do
     "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
     (BI True, currentTs, groupId)
 
-getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Either (Maybe Connection) Contact)
-getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 =
-  getContactByConnReqHash db vr user cReqHash1 cReqHash2 >>= maybe (Left <$> getConnection) (pure . Right)
+getConnReqContactXContactId :: DB.Connection -> StoreCxt -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Either (Maybe Connection) Contact)
+getConnReqContactXContactId db cxt user@User {userId} cReqHash1 cReqHash2 =
+  getContactByConnReqHash db cxt user cReqHash1 cReqHash2 >>= maybe (Left <$> getConnection) (pure . Right)
   where
     getConnection :: IO (Maybe Connection)
     getConnection =
-      maybeFirstRow (toConnection vr) $
+      maybeFirstRow (toConnection cxt) $
         DB.query
           db
           [sql|
@@ -305,10 +305,10 @@ getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 =
           |]
           (userId, cReqHash1, userId, cReqHash2)
 
-getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact)
-getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
+getContactByConnReqHash :: DB.Connection -> StoreCxt -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact)
+getContactByConnReqHash db cxt user@User {userId} cReqHash1 cReqHash2 = do
   ct <-
-    maybeFirstRow (toContact vr user []) $
+    maybeFirstRow (toContact cxt user []) $
       DB.query
         db
         [sql|
@@ -394,18 +394,18 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> VersionRangeChat -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> ExceptT StoreError IO Contact
-createPreparedContact db vr user p connLinkToConnect welcomeSharedMsgId = do
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> ExceptT StoreError IO Contact
+createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
   contactId <- createContact_ db user p ctUserPreferences prepared "" currentTs
-  getContact db vr user contactId
+  getContact db cxt user contactId
 
-updatePreparedContactUser :: DB.Connection -> VersionRangeChat -> User -> Contact -> User -> ExceptT StoreError IO Contact
+updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
   db
-  vr
+  cxt
   user
   Contact {contactId, localDisplayName = oldLDN, profile = profile@LocalProfile {profileId, displayName}}
   newUser@User {userId = newUserId} = do
@@ -438,15 +438,15 @@ updatePreparedContactUser
           |]
           (newUserId, currentTs, contactId)
         safeDeleteLDN db user oldLDN
-      getContact db vr newUser contactId
+      getContact db cxt newUser contactId
 
-createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db vr user Connection {connId, localAlias} p = do
+createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db cxt user Connection {connId, localAlias} p = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
   contactId <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
-  getContact db vr user contactId
+  getContact db cxt user contactId
 
 deleteContactConnections :: DB.Connection -> User -> Contact -> IO ()
 deleteContactConnections db User {userId} Contact {contactId} = do
@@ -500,13 +500,13 @@ deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDis
         deleteUnusedIncognitoProfileById_ db user profileId
 
 -- TODO remove in future versions: only used for legacy contact cleanup
-getDeletedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
-getDeletedContacts db vr user@User {userId} = do
+getDeletedContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]
+getDeletedContacts db cxt user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)
-  rights <$> mapM (runExceptT . getDeletedContact db vr user) contactIds
+  rights <$> mapM (runExceptT . getDeletedContact db cxt user) contactIds
 
-getDeletedContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Contact
-getDeletedContact db vr user contactId = getContact_ db vr user contactId True
+getDeletedContact :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO Contact
+getDeletedContact db cxt user contactId = getContact_ db cxt user contactId True
 
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
@@ -756,15 +756,15 @@ updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt 
     (newName, updatedAt, userId, contactId)
   safeDeleteLDN db user displayName
 
-getContactByName :: DB.Connection -> VersionRangeChat -> User -> ContactName -> ExceptT StoreError IO Contact
-getContactByName db vr user localDisplayName = do
+getContactByName :: DB.Connection -> StoreCxt -> User -> ContactName -> ExceptT StoreError IO Contact
+getContactByName db cxt user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
-  getContact db vr user cId
+  getContact db cxt user cId
 
-getUserContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
-getUserContacts db vr user@User {userId} = do
+getUserContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]
+getUserContacts db cxt user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
-  contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
+  contacts <- rights <$> mapM (runExceptT . getContact db cxt user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
 getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO (Maybe Int64)
@@ -890,22 +890,22 @@ getContactIdByName db User {userId} cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ? AND deleted = 0" (userId, cName)
 
-getContactViaShortLinkToConnect :: forall c. ConnectionModeI c => DB.Connection -> VersionRangeChat -> User -> ConnShortLink c -> ExceptT StoreError IO (Maybe (ConnectionRequestUri c, Contact))
-getContactViaShortLinkToConnect db vr user@User {userId} shortLink = do
+getContactViaShortLinkToConnect :: forall c. ConnectionModeI c => DB.Connection -> StoreCxt -> User -> ConnShortLink c -> ExceptT StoreError IO (Maybe (ConnectionRequestUri c, Contact))
+getContactViaShortLinkToConnect db cxt user@User {userId} shortLink = do
   liftIO (maybeFirstRow id $ DB.query db "SELECT contact_id, conn_full_link_to_connect FROM contacts WHERE user_id = ? AND conn_short_link_to_connect = ?" (userId, shortLink)) >>= \case
     Just (ctId :: Int64, Just (ACR cMode cReq)) ->
       case testEquality cMode (sConnectionMode @c) of
-        Just Refl -> Just . (cReq,) <$> getContact db vr user ctId
+        Just Refl -> Just . (cReq,) <$> getContact db cxt user ctId
         Nothing -> pure Nothing
     _ -> pure Nothing
 
-getContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Contact
-getContact db vr user contactId = getContact_ db vr user contactId False
+getContact :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO Contact
+getContact db cxt user contactId = getContact_ db cxt user contactId False
 
-getContact_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
-getContact_ db vr user@User {userId} contactId deleted = do
+getContact_ :: DB.Connection -> StoreCxt -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
+getContact_ db cxt user@User {userId} contactId deleted = do
   chatTags <- liftIO $ getDirectChatTags db contactId
-  ExceptT . firstRow (toContact vr user chatTags) (SEContactNotFound contactId) $
+  ExceptT . firstRow (toContact cxt user chatTags) (SEContactNotFound contactId) $
     DB.query
       db
       [sql|
@@ -932,8 +932,8 @@ getUserByContactRequestId db contactRequestId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
     DB.query db (userQuery <> " JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?") (Only contactRequestId)
 
-getContactConnections :: DB.Connection -> VersionRangeChat -> UserId -> Contact -> IO [Connection]
-getContactConnections db vr userId Contact {contactId} =
+getContactConnections :: DB.Connection -> StoreCxt -> UserId -> Contact -> IO [Connection]
+getContactConnections db cxt userId Contact {contactId} =
   connections =<< liftIO getConnections_
   where
     getConnections_ =
@@ -950,11 +950,11 @@ getContactConnections db vr userId Contact {contactId} =
         |]
         (userId, userId, contactId)
     connections [] = pure []
-    connections rows = pure $ map (toConnection vr) rows
+    connections rows = pure $ map (toConnection cxt) rows
 
-getConnectionById :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Connection
-getConnectionById db vr User {userId} connId = ExceptT $ do
-  firstRow (toConnection vr) (SEConnectionNotFoundById connId) $
+getConnectionById :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO Connection
+getConnectionById db cxt User {userId} connId = ExceptT $ do
+  firstRow (toConnection cxt) (SEConnectionNotFoundById connId) $
     DB.query
       db
       [sql|

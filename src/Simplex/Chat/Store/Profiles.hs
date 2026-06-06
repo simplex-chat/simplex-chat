@@ -380,9 +380,9 @@ createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMo
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
-getUserAddressConnection :: DB.Connection -> VersionRangeChat -> User -> ExceptT StoreError IO Connection
-getUserAddressConnection db vr User {userId} = do
-  ExceptT . firstRow (toConnection vr) SEUserContactLinkNotFound $
+getUserAddressConnection :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO Connection
+getUserAddressConnection db cxt User {userId} = do
+  ExceptT . firstRow (toConnection cxt) SEUserContactLinkNotFound $
     DB.query
       db
       [sql|
@@ -525,8 +525,8 @@ setUserContactLinkShortLink db userContactLinkId shortLink =
     |]
     (shortLink, BI True, BI True, BI False, userContactLinkId)
 
-getContactWithoutConnViaAddress :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
-getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
+getContactWithoutConnViaAddress :: DB.Connection -> StoreCxt -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
+getContactWithoutConnViaAddress db cxt user@User {userId} (cReqSchema1, cReqSchema2) = do
   ctId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -539,10 +539,10 @@ getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchem
           WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
         |]
         (userId, cReqSchema1, cReqSchema2)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db cxt user) ctId_
 
-getContactWithoutConnViaShortAddress :: DB.Connection -> VersionRangeChat -> User -> ShortLinkContact -> IO (Maybe Contact)
-getContactWithoutConnViaShortAddress db vr user@User {userId} shortLink = do
+getContactWithoutConnViaShortAddress :: DB.Connection -> StoreCxt -> User -> ShortLinkContact -> IO (Maybe Contact)
+getContactWithoutConnViaShortAddress db cxt user@User {userId} shortLink = do
   ctId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -555,7 +555,7 @@ getContactWithoutConnViaShortAddress db vr user@User {userId} shortLink = do
           WHERE cp.user_id = ? AND cp.contact_link = ? AND c.connection_id IS NULL
         |]
         (userId, shortLink)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db cxt user) ctId_
 
 updateUserAddressSettings :: DB.Connection -> Int64 -> AddressSettings -> IO ()
 updateUserAddressSettings db userContactLinkId AddressSettings {businessAddress, autoAccept, autoReply} =

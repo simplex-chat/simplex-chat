@@ -49,7 +49,7 @@ import Database.SQLite.Simple.QQ (sql)
 createOrUpdateContactRequest ::
   DB.Connection ->
   TVar ChaChaDRG ->
-  VersionRangeChat ->
+  StoreCxt ->
   User ->
   Int64 ->
   UserContactLink ->
@@ -65,7 +65,7 @@ createOrUpdateContactRequest ::
 createOrUpdateContactRequest
   db
   gVar
-  vr
+  cxt
   user@User {userId, userContactId}
   uclId
   UserContactLink {addressSettings = AddressSettings {businessAddress}}
@@ -89,7 +89,7 @@ createOrUpdateContactRequest
           Nothing ->
             liftIO (getAcceptedBusinessChat xContactId) >>= \case
               Just gInfo@GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
-                clientMember <- getGroupMemberByMemberId db vr user gInfo customerId
+                clientMember <- getGroupMemberByMemberId db cxt user gInfo customerId
                 cr <- liftIO $ getContactRequestByXContactId xContactId
                 pure $ RSAcceptedRequest cr (REBusinessChat gInfo clientMember)
               Just GroupInfo {businessChat = Nothing} -> throwError SEInvalidBusinessChatContactRequest
@@ -104,7 +104,7 @@ createOrUpdateContactRequest
       getAcceptedContact :: XContactId -> IO (Maybe Contact)
       getAcceptedContact xContactId = do
         ct_ <-
-          maybeFirstRow (toContact vr user []) $
+          maybeFirstRow (toContact cxt user []) $
             DB.query
               db
               [sql|
@@ -128,7 +128,7 @@ createOrUpdateContactRequest
       getAcceptedBusinessChat :: XContactId -> IO (Maybe GroupInfo)
       getAcceptedBusinessChat xContactId = do
         g_ <-
-          maybeFirstRow (toGroupInfo vr userContactId []) $
+          maybeFirstRow (toGroupInfo cxt userContactId []) $
             DB.query
               db
               (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
@@ -200,12 +200,12 @@ createOrUpdateContactRequest
                     "UPDATE contact_requests SET contact_id = ? WHERE contact_request_id = ?"
                     (contactId, contactRequestId)
                 ucr <- getContactRequest db user contactRequestId
-                ct <- getContact db vr user contactId
+                ct <- getContact db cxt user contactId
                 pure $ RSCurrentRequest Nothing ucr (Just $ REContact ct)
               createBusinessChat = do
                 let groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs $ preferences' user
                 (gInfo@GroupInfo {groupId}, clientMember) <-
-                  createBusinessRequestGroup db vr gVar user cReqChatVRange profile profileId ldn groupPreferences
+                  createBusinessRequestGroup db cxt gVar user cReqChatVRange profile profileId ldn groupPreferences
                 liftIO $
                   DB.execute
                     db
@@ -278,13 +278,13 @@ createOrUpdateContactRequest
       getRequestEntity UserContactRequest {contactRequestId, contactId_, businessGroupId_} =
         case (contactId_, businessGroupId_) of
           (Just contactId, Nothing) -> do
-            ct <- getContact db vr user contactId
+            ct <- getContact db cxt user contactId
             pure $ Just (REContact ct)
           (Nothing, Just businessGroupId) -> do
-            gInfo <- getGroupInfo db vr user businessGroupId
+            gInfo <- getGroupInfo db cxt user businessGroupId
             case gInfo of
               GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
-                clientMember <- getGroupMemberByMemberId db vr user gInfo customerId
+                clientMember <- getGroupMemberByMemberId db cxt user gInfo customerId
                 pure $ Just (REBusinessChat gInfo clientMember)
               _ -> throwError SEInvalidBusinessChatContactRequest
           (Nothing, Nothing) -> pure Nothing
