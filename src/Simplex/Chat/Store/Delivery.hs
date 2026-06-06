@@ -351,7 +351,8 @@ getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} curs
               :. (cursorGMId, count)
           )
 #if defined(dbPostgres)
-  map (toContactMember vr user) <$>
+  currentTs <- getCurrentTime
+  map (toContactMember currentTs vr user) <$>
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_member_id IN ?")

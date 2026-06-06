@@ -1165,8 +1165,9 @@ getGroupMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
 getGroupMembersByIndexes :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> [Int64] -> IO [GroupMember]
 getGroupMembersByIndexes db vr user gInfo indexesInGroup = do
 #if defined(dbPostgres)
+  currentTs <- getCurrentTime
   let GroupInfo {groupId} = gInfo
-  map (toContactMember vr user) <$>
+  map (toContactMember currentTs vr user) <$>
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN ?")
@@ -1178,8 +1179,9 @@ getGroupMembersByIndexes db vr user gInfo indexesInGroup = do
 getSupportScopeMembersByIndexes :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMemberId -> [Int64] -> IO [GroupMember]
 getSupportScopeMembersByIndexes db vr user gInfo scopeGMId indexesInGroup = do
 #if defined(dbPostgres)
+  currentTs <- getCurrentTime
   let GroupInfo {groupId} = gInfo
-  map (toContactMember vr user) <$>
+  map (toContactMember currentTs vr user) <$>
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN ? AND (m.member_role IN (?,?,?) OR m.group_member_id = ?)")
