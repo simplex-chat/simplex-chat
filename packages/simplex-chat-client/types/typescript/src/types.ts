@@ -4909,7 +4909,7 @@ export interface UserContactRequest {
   cReqChatVRange: VersionRange
   localDisplayName: string
   profileId: number // int64
-  profile: Profile
+  profile: LocalProfile
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
   xContactId?: string

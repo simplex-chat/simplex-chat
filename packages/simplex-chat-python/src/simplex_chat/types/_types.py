@@ -3447,7 +3447,7 @@ class UserContactRequest(TypedDict):
     cReqChatVRange: "VersionRange"
     localDisplayName: str
     profileId: int  # int64
-    profile: "Profile"
+    profile: "LocalProfile"
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
     xContactId: NotRequired[str]

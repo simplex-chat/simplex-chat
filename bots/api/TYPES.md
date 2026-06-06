@@ -4260,7 +4260,7 @@ Handshake:
 - cReqChatVRange: [VersionRange](#versionrange)
 - localDisplayName: string
 - profileId: int64
-- profile: [Profile](#profile)
+- profile: [LocalProfile](#localprofile)
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - xContactId: string?
