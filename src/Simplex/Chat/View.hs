@@ -567,6 +567,16 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
     where
       entityLabel SNCEContact n = "@" <> n
       entityLabel SNCEGroup n = "#" <> n
+  CEvtSimplexNameVerified u _chatRef ni _ts ->
+    ttyUser u ["simplex name " <> plain (shortNameInfoStr ni) <> " verified"]
+  CEvtSimplexNameVerifyFailed u _chatRef ni r ->
+    ttyUser u ["simplex name " <> plain (shortNameInfoStr ni) <> " verification failed: " <> reason r]
+    where
+      reason SNVFLinkMismatch = "link mismatch"
+      reason SNVFNameNotRegistered = "name not registered"
+      reason (SNVFResolverError e) = "resolver error: " <> sShow e
+  CEvtSimplexNameUnverified u _chatRef ni ->
+    ttyUser u ["simplex name " <> plain (shortNameInfoStr ni) <> " is unverified"]
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss

@@ -2566,8 +2566,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               else do
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
                 updateContactProfileWithConflict db user c' p'
-          let Contact {localDisplayName = newLDN} = c'
+          let Contact {contactId = ctId, localDisplayName = newLDN, simplexNameVerifiedAt = vAt} = c'
           surfaceSimplexNameConflict user p'SimplexName displaced_ SNCEContact newLDN
+          -- Passive unverified warning: a non-empty incoming claim that the user
+          -- has not verified (or whose prior verification was cleared by the
+          -- claim transition in updateContactProfileWithConflict) should be
+          -- surfaced so the UI can prompt the user to invoke APIVerifySimplexName.
+          forM_ p'SimplexName $ \ni ->
+            when (isNothing vAt) $
+              toView $ CEvtSimplexNameUnverified user (ChatRef CTDirect ctId Nothing) ni
           when (directOrUsed c' && createItems) $ do
             createProfileUpdatedItem c'
             lift $ createRcvFeatureItems user c c'
@@ -3307,8 +3314,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case businessChat of
             Nothing -> unless (p == p') $ do
               (g', displaced_) <- withStore $ \db -> updateGroupProfileWithConflict db user g p'
-              let GroupInfo {localDisplayName = newLDN} = g'
+              let GroupInfo {groupId = gId, localDisplayName = newLDN, simplexNameVerifiedAt = vAt} = g'
               surfaceSimplexNameConflict user p'GroupSimplexName displaced_ SNCEGroup newLDN
+              -- Passive unverified warning, mirrors processContactProfileUpdate.
+              forM_ p'GroupSimplexName $ \ni ->
+                when (isNothing vAt) $
+                  toView $ CEvtSimplexNameUnverified user (ChatRef CTGroup gId Nothing) ni
               (g'', m', scopeInfo) <- mkGroupChatScope g' m
               toView $ CEvtGroupUpdated user g g'' (Just m') msgSigned
               let cd = CDGroupRcv g'' scopeInfo m'

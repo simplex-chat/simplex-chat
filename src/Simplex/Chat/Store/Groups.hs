@@ -47,6 +47,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     updateGroupProfileWithConflict,
+    setGroupSimplexNameVerifiedAt,
     clearConflictingGroupProfileSimplexName_,
     updateGroupPreferences,
     updateGroupProfileFromMember,
@@ -425,7 +426,8 @@ createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays 
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing,
           groupKeys,
-          simplexName = Nothing
+          simplexName = Nothing,
+          simplexNameVerifiedAt = Nothing
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -503,7 +505,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   membersRequireAttention = 0,
                   viaGroupLinkUri = Nothing,
                   groupKeys = Nothing,
-                  simplexName = Nothing
+                  simplexName = Nothing,
+                  simplexNameVerifiedAt = Nothing
                 },
               groupMemberId
             )
@@ -2393,13 +2396,14 @@ updateGroupProfile db user g p' = fst <$> updateGroupProfileWithConflict db user
 -- (user_id, simplex_name) — returning that row's display_name so the caller
 -- can emit CEvtSimplexNameConflict. Used by the XGrpInfo path.
 updateGroupProfileWithConflict :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO (GroupInfo, Maybe GroupName)
-updateGroupProfileWithConflict db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, simplexName, groupPreferences, memberAdmission}
+updateGroupProfileWithConflict db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, simplexName = prevClaim}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, simplexName, groupPreferences, memberAdmission}
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
       profileId_ <- getGroupProfileId_
       displaced <- clearConflictingGroupProfileSimplexName_ db userId profileId_ simplexName
       updateGroupProfile_ currentTs
-      pure ((g :: GroupInfo) {groupProfile = p', fullGroupPreferences}, displaced)
+      clearVerifiedAtIfClaimChanged
+      pure ((g' :: GroupInfo) {groupProfile = p', fullGroupPreferences}, displaced)
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
@@ -2407,9 +2411,18 @@ updateGroupProfileWithConflict db user@User {userId} g@GroupInfo {groupId, local
         displaced <- clearConflictingGroupProfileSimplexName_ db userId profileId_ simplexName
         updateGroupProfile_ currentTs
         updateGroup_ ldn currentTs
-        pure $ Right ((g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}, displaced)
+        clearVerifiedAtIfClaimChanged
+        pure $ Right ((g' :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}, displaced)
   where
     fullGroupPreferences = mergeGroupPreferences groupPreferences
+    claimChanged = prevClaim /= simplexName
+    g' = if claimChanged then (g :: GroupInfo) {simplexNameVerifiedAt = Nothing} else g
+    -- Mirrors updateContactProfileWithConflict: clear the verification when
+    -- the peer's claim transitions to/from/between values; prior verification
+    -- was bound to the prior claim.
+    clearVerifiedAtIfClaimChanged =
+      when claimChanged $
+        DB.execute db "UPDATE groups SET simplex_name_verified_at = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
     (groupType_, groupLink_) = case publicGroup of
       Just PublicGroupProfile {groupType, groupLink} -> (Just groupType, Just groupLink)
       Nothing -> (Nothing, Nothing)
@@ -2474,6 +2487,14 @@ clearConflictingGroupProfileSimplexName_ db userId (Just profileId) (Just simple
         RETURNING display_name
       |]
       (userId, simplexName, profileId)
+
+-- | Mirror of setContactSimplexNameVerifiedAt for groups.
+setGroupSimplexNameVerifiedAt :: DB.Connection -> User -> GroupId -> UTCTime -> IO ()
+setGroupSimplexNameVerifiedAt db User {userId} groupId ts =
+  DB.execute
+    db
+    "UPDATE groups SET simplex_name_verified_at = ? WHERE user_id = ? AND group_id = ?"
+    (ts, userId, groupId)
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
 updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do
@@ -2962,7 +2983,7 @@ createMemberContact
               simplexName = Nothing
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing, simplexName = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing, simplexName = Nothing, simplexNameVerifiedAt = Nothing}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do

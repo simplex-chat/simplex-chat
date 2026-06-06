@@ -1461,6 +1461,8 @@ instance MsgDirectionI d => ToJSON (CIFile d) where
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCS") ''GroupChatScope)
 
+$(JQ.deriveJSON defaultJSON ''ChatRef)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIDirection)
 
 instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIDirection c d) where

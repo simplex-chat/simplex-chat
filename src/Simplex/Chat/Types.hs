@@ -210,7 +210,12 @@ data Contact = Contact
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
     customData :: Maybe CustomData,
-    simplexName :: Maybe SimplexNameInfo
+    simplexName :: Maybe SimplexNameInfo,
+    -- | Timestamp of the most recent successful RSLV verification of the peer's
+    -- simplex_name claim against this contact's connection link. NULL means the
+    -- claim is unverified (UI should surface an indicator). Cleared back to NULL
+    -- whenever simplex_name changes in updateContactProfileWithConflict.
+    simplexNameVerifiedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -491,7 +496,10 @@ data GroupInfo = GroupInfo
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupKeys :: Maybe GroupKeys,
-    simplexName :: Maybe SimplexNameInfo
+    simplexName :: Maybe SimplexNameInfo,
+    -- | See 'Contact.simplexNameVerifiedAt'. Verified against the channel link
+    -- stored for the group; cleared by updateGroupProfileWithConflict.
+    simplexNameVerifiedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 

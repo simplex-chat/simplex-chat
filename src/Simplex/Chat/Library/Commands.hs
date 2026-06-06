@@ -2248,6 +2248,7 @@ processChatCommand vr nm = \case
     (ccLink, plan) <- connectPlanName user ni
     connectWithPlan user incognito ccLink plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APIVerifySimplexName chatRef -> withUser $ \user -> apiVerifySimplexName user chatRef
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db vr user contactId
     ccLink <- case contactLink of
@@ -4749,6 +4750,78 @@ resolveErrorToChatError ni = \case
   ResolverUnavailable -> ChatError $ CESimplexNameResolverUnavailable ni
   ResolverTransport e -> chatErrorAgent e
 
+-- | Best-effort comparison between an RSLV-resolved link (a 'Text' from the
+-- name record) and the peer's stored connection link. Both are normalized via
+-- 'strDecode' + 'strEncode' so scheme drift (simplex:/ vs https://simplex.chat)
+-- doesn't cause a false negative. If the RSLV text fails to parse as a contact
+-- link, we treat it as a mismatch — the resolver returned something we don't
+-- understand, which is not a valid verification.
+linksMatch :: Text -> ConnLinkContact -> Bool
+linksMatch resolved stored = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
+  Right (ACL SCMContact resolvedLink) -> normalize resolvedLink == normalize stored
+  _ -> False
+  where
+    -- Mirror the inline 'serverShortLink' helper used elsewhere in this module:
+    -- the agent's simplex:/ scheme and the server-hostname scheme encode the
+    -- same link; verification must be scheme-insensitive.
+    normalize :: ConnLinkContact -> ByteString
+    normalize = \case
+      CLFull cReq -> strEncode cReq
+      CLShort (CSLContact _ ct srv linkKey) ->
+        strEncode (CSLContact SLSServer ct srv linkKey :: ConnShortLink 'CMContact)
+
+-- | Resolves the chat row's simplex_name claim via RSLV and compares the
+-- resolved per-type link to the peer's stored connection link. On match,
+-- timestamps the contact/group row and emits CEvtSimplexNameVerified.
+-- On mismatch / RSLV failure, emits CEvtSimplexNameVerifyFailed.
+-- Throws CESimplexNameNotFound when the row has no claim to verify.
+apiVerifySimplexName :: User -> ChatRef -> CM ChatResponse
+apiVerifySimplexName user chatRef = do
+  vr <- chatVersionRange
+  (claim, storedLink, persistVerified) <- loadClaimAndLink vr
+  let domain = (\SimplexNameInfo {nameDomain} -> nameDomain) claim
+      nameType' = (\SimplexNameInfo {nameType} -> nameType) claim
+  resolveOnUserServers user domain >>= \case
+    Right NameRecord {nrSimplexContact, nrSimplexChannel} -> do
+      let resolvedLink = case nameType' of
+            NTContact -> nrSimplexContact
+            NTPublicGroup -> nrSimplexChannel
+      case resolvedLink of
+        Just lnk | linksMatch lnk storedLink -> do
+          ts <- liftIO getCurrentTime
+          withStore' $ \db -> persistVerified db ts
+          toView $ CEvtSimplexNameVerified user chatRef claim ts
+        _ ->
+          toView $ CEvtSimplexNameVerifyFailed user chatRef claim SNVFLinkMismatch
+    Left NameNotRegistered ->
+      toView $ CEvtSimplexNameVerifyFailed user chatRef claim SNVFNameNotRegistered
+    Left ResolverUnavailable ->
+      throwChatError $ CESimplexNameResolverUnavailable claim
+    Left (ResolverTransport e) ->
+      toView $ CEvtSimplexNameVerifyFailed user chatRef claim (SNVFResolverError e)
+  pure $ CRCmdOk (Just user)
+  where
+    -- Returns the claim to verify, the peer's stored link, and a callback that
+    -- persists the verified_at timestamp to the appropriate table. Throws a
+    -- command error when the row has no claim or no link (nothing to verify).
+    loadClaimAndLink :: VersionRangeChat -> CM (SimplexNameInfo, ConnLinkContact, DB.Connection -> UTCTime -> IO ())
+    loadClaimAndLink vr = case chatRef of
+      ChatRef CTDirect cId _ -> do
+        ct <- withFastStore $ \db -> getContact db vr user cId
+        let Contact {contactId, simplexName = ctSimplexName, profile = LocalProfile {contactLink}} = ct
+        claim <- maybe (throwCmdError "contact has no simplex_name to verify") pure ctSimplexName
+        lnk <- maybe (throwCmdError "contact has no stored link to verify against") pure contactLink
+        pure (claim, lnk, \db ts -> setContactSimplexNameVerifiedAt db user contactId ts)
+      ChatRef CTGroup gId _ -> do
+        g <- withFastStore $ \db -> getGroupInfo db vr user gId
+        let GroupInfo {groupId, simplexName = gSimplexName, preparedGroup} = g
+        claim <- maybe (throwCmdError "group has no simplex_name to verify") pure gSimplexName
+        PreparedGroup {connLinkToConnect = CCLink cReq shortLink_} <-
+          maybe (throwCmdError "group has no stored link to verify against") pure preparedGroup
+        let lnk = maybe (CLFull cReq) CLShort shortLink_
+        pure (claim, lnk, \db ts -> setGroupSimplexNameVerifiedAt db user groupId ts)
+      _ -> throwCmdError "APIVerifySimplexName supports only direct and group chat refs"
+
 -- | Pure iteration logic for 'resolveOnUserServers'. Extracted so tests can
 -- supply a stub resolver without standing up a real agent / proxy.
 iterateResolvers ::
@@ -5395,6 +5468,7 @@ chatCommandP =
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
+      "/_verify simplex name " *> (APIVerifySimplexName <$> chatRefP),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,

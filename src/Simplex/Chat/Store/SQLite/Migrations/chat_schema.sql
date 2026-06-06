@@ -94,6 +94,7 @@ CREATE TABLE contacts(
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
   simplex_name TEXT,
+  simplex_name_verified_at TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -186,7 +187,8 @@ CREATE TABLE groups(
   relay_request_delay INTEGER NOT NULL DEFAULT 0,
   relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
   relay_inactive_at TEXT,
-  simplex_name TEXT, -- received
+  simplex_name TEXT,
+  simplex_name_verified_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

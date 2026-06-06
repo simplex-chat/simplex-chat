@@ -54,6 +54,7 @@ module Simplex.Chat.Store.Direct
     getContactIdBySimplexName,
     updateContactProfile,
     updateContactProfileWithConflict,
+    setContactSimplexNameVerifiedAt,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -322,7 +323,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
             cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.simplex_name, cp.simplex_name,
+            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.simplex_name, cp.simplex_name, ct.simplex_name_verified_at,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
             c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -573,24 +574,45 @@ updateContactProfile db user c p' = fst <$> updateContactProfileWithConflict db 
 -- (user_id, simplex_name) — returning that row's display_name so the caller
 -- can emit CEvtSimplexNameConflict. Used by the incoming-XInfo path; local
 -- updates that don't expect conflicts can continue to use updateContactProfile.
+--
+-- Also clears contacts.simplex_name_verified_at when the peer's simplex_name
+-- claim changes (any value transition, including Nothing<->Just): the prior
+-- verification was tied to the prior claim and must be re-issued by the user.
 updateContactProfileWithConflict :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO (Contact, Maybe ContactName)
 updateContactProfileWithConflict db user@User {userId} c p'
   | displayName == newName = do
       displaced <- liftIO $ clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
       liftIO $ updateContactProfile_ db userId profileId p'
-      pure (c {profile, mergedPreferences}, displaced)
+      liftIO clearVerifiedAtIfClaimChanged
+      pure (c' {profile, mergedPreferences}, displaced)
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
         displaced <- clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
         updateContactProfile_' db userId profileId p' currentTs
         updateContactLDN_ db user contactId localDisplayName ldn currentTs
-        pure $ Right (c {localDisplayName = ldn, profile, mergedPreferences}, displaced)
+        clearVerifiedAtIfClaimChanged
+        pure $ Right (c' {localDisplayName = ldn, profile, mergedPreferences}, displaced)
   where
-    Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
+    Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias, simplexName = prevClaim}, userPreferences} = c
     Profile {displayName = newName, simplexName = profileSimplexName, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
+    claimChanged = prevClaim /= profileSimplexName
+    c' = if claimChanged then (c :: Contact) {simplexNameVerifiedAt = Nothing} else c
+    clearVerifiedAtIfClaimChanged =
+      when claimChanged $
+        DB.execute db "UPDATE contacts SET simplex_name_verified_at = NULL WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+
+-- | Records that the user successfully RSLV-verified the peer's simplex_name
+-- claim against the contact's stored connection link. Cleared back to NULL by
+-- updateContactProfileWithConflict whenever the peer's claim transitions.
+setContactSimplexNameVerifiedAt :: DB.Connection -> User -> ContactId -> UTCTime -> IO ()
+setContactSimplexNameVerifiedAt db User {userId} contactId ts =
+  DB.execute
+    db
+    "UPDATE contacts SET simplex_name_verified_at = ? WHERE user_id = ? AND contact_id = ?"
+    (ts, userId, contactId)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do
@@ -908,7 +930,8 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
             uiThemes = Nothing,
             chatDeleted = False,
             customData = Nothing,
-            simplexName = Nothing
+            simplexName = Nothing,
+            simplexNameVerifiedAt = Nothing
           }
   pure (ct, conn)
 
@@ -955,7 +978,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.simplex_name, cp.simplex_name,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.simplex_name, cp.simplex_name, ct.simplex_name_verified_at,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
