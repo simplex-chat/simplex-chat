@@ -406,6 +406,8 @@
                   "chat_send_remote_cmd_retry"
                   "chat_valid_name"
                   "chat_json_length"
+                  "chat_badge_keygen"
+                  "chat_badge_issue"
                   "chat_write_file"
                 ];
                 postInstall = ''
@@ -525,6 +527,8 @@
                   "chat_send_remote_cmd_retry"
                   "chat_valid_name"
                   "chat_json_length"
+                  "chat_badge_keygen"
+                  "chat_badge_issue"
                   "chat_write_file"
                 ];
                 postInstall = ''
