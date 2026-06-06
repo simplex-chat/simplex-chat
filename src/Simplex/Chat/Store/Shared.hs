@@ -437,6 +437,11 @@ createContact db user profile = do
 -- row's display_name when a conflict was resolved, for the caller to surface
 -- as CEvtSimplexNameConflict. Newer-claim-wins matches RSLV semantics: the
 -- latest broadcast is the canonical assignment.
+--
+-- Cross-table collision with group_profiles.simplex_name is structurally
+-- impossible: strEncode SimplexNameInfo prefixes contact names with '@' and
+-- group names with '#', so the encoded bytes stored in the column never
+-- overlap between the two tables.
 clearConflictingContactProfileSimplexName_ :: DB.Connection -> UserId -> Maybe ProfileId -> Maybe SimplexNameInfo -> IO (Maybe ContactName)
 clearConflictingContactProfileSimplexName_ _ _ _ Nothing = pure Nothing
 clearConflictingContactProfileSimplexName_ db userId Nothing (Just simplexName) =
