@@ -1113,22 +1113,25 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
-getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
-  CLQFilters {favorite = False, unread = False} -> map toPreview <$> getPreviews ""
-  CLQFilters {favorite = True, unread = False} -> pure []
-  CLQFilters {favorite = False, unread = True} -> map toPreview <$> getPreviews ""
-  CLQFilters {favorite = True, unread = True} -> map toPreview <$> getPreviews ""
-  CLQSearch {search} -> map toPreview <$> getPreviews search
+getContactRequestChatPreviews_ db User {userId} pagination clq = do
+  currentTs <- getCurrentTime
+  case clq of
+    CLQFilters {favorite = False, unread = False} -> map (toPreview currentTs) <$> getPreviews ""
+    CLQFilters {favorite = True, unread = False} -> pure []
+    CLQFilters {favorite = False, unread = True} -> map (toPreview currentTs) <$> getPreviews ""
+    CLQFilters {favorite = True, unread = True} -> map (toPreview currentTs) <$> getPreviews ""
+    CLQSearch {search} -> map (toPreview currentTs) <$> getPreviews search
   where
     query =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-          cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, cr.xcontact_id,
+          cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
           cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
-          cr.peer_chat_min_version, cr.peer_chat_max_version
+          cr.peer_chat_min_version, cr.peer_chat_max_version,
+          p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified
         FROM contact_requests cr
         JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
         JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
@@ -1150,9 +1153,9 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
       PTLast count -> DB.query db (query <> " ORDER BY cr.updated_at DESC LIMIT ?") (params search :. Only count)
       PTAfter ts count -> DB.query db (query <> " AND cr.updated_at > ? ORDER BY cr.updated_at ASC LIMIT ?") (params search :. (ts, count))
       PTBefore ts count -> DB.query db (query <> " AND cr.updated_at < ? ORDER BY cr.updated_at DESC LIMIT ?") (params search :. (ts, count))
-    toPreview :: ContactRequestRow -> AChatPreviewData
-    toPreview cReqRow =
-      let cReq@UserContactRequest {updatedAt} = toContactRequest cReqRow
+    toPreview :: UTCTime -> ContactRequestRow -> AChatPreviewData
+    toPreview now cReqRow =
+      let cReq@UserContactRequest {updatedAt} = toContactRequest now cReqRow
           aChat = AChat SCTContactRequest $ Chat (ContactRequest cReq) [] emptyChatStats
        in ACPD SCTContactRequest $ ContactRequestPD updatedAt aChat
 

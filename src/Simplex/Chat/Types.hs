@@ -368,7 +368,7 @@ data UserContactRequest = UserContactRequest
     cReqChatVRange :: VersionRangeChat,
     localDisplayName :: ContactName,
     profileId :: Int64,
-    profile :: Profile,
+    profile :: LocalProfile,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId,

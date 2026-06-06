@@ -782,18 +782,21 @@ getUserContactLinkIdByCReq db contactRequestId =
     DB.query db "SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?" (Only contactRequestId)
 
 getContactRequest :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserContactRequest
-getContactRequest db User {userId} contactRequestId =
-  ExceptT . firstRow toContactRequest (SEContactRequestNotFound contactRequestId) $
+getContactRequest db User {userId} contactRequestId = do
+  currentTs <- liftIO getCurrentTime
+  ExceptT . firstRow (toContactRequest currentTs) (SEContactRequestNotFound contactRequestId) $
     DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.contact_request_id = ?") (userId, contactRequestId)
 
 getContactRequest' :: DB.Connection -> User -> Int64 -> IO (Maybe UserContactRequest)
-getContactRequest' db User {userId} contactRequestId =
-  maybeFirstRow toContactRequest $
+getContactRequest' db User {userId} contactRequestId = do
+  currentTs <- getCurrentTime
+  maybeFirstRow (toContactRequest currentTs) $
     DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.contact_request_id = ?") (userId, contactRequestId)
 
 getBusinessContactRequest :: DB.Connection -> User -> GroupId -> IO (Maybe UserContactRequest)
-getBusinessContactRequest db _user groupId =
-  maybeFirstRow toContactRequest $
+getBusinessContactRequest db _user groupId = do
+  currentTs <- getCurrentTime
+  maybeFirstRow (toContactRequest currentTs) $
     DB.query db (contactRequestQuery <> " WHERE cr.business_group_id = ?") (Only groupId)
 
 contactRequestQuery :: Query
@@ -802,10 +805,11 @@ contactRequestQuery =
     SELECT
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-      cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, cr.xcontact_id,
+      cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
       cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
       cr.created_at, cr.updated_at,
-      cr.peer_chat_min_version, cr.peer_chat_max_version
+      cr.peer_chat_min_version, cr.peer_chat_max_version,
+      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified
     FROM contact_requests cr
     JOIN contact_profiles p USING (contact_profile_id)
   |]
@@ -841,7 +845,7 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createContactFromRequest :: DB.Connection -> User -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
+createContactFromRequest :: DB.Connection -> User -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> LocalProfile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
 createContactFromRequest db user@User {userId, profile = LocalProfile {preferences}} uclId_ agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile xContactId incognitoProfile subMode pqSup contactUsed = do
   currentTs <- getCurrentTime
   let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
@@ -857,7 +861,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
         Contact
           { contactId,
             localDisplayName,
-            profile = toLocalProfile profileId profile "" currentTs False,
+            profile,
             activeConn = Just conn,
             contactUsed,
             contactStatus = CSActive,

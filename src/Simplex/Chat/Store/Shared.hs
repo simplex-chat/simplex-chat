@@ -531,11 +531,11 @@ getProfileById db userId profileId = do
       |]
       (userId, profileId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Maybe GroupId, Maybe Int64) :. (Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType) :. (Maybe XContactId, PQSupport, Maybe SharedMsgId, Maybe SharedMsgId, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Maybe GroupId, Maybe Int64) :. (Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias) :. (Maybe XContactId, PQSupport, Maybe SharedMsgId, Maybe SharedMsgId, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat) :. BadgeRow
 
-toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, preferences, createdAt, updatedAt, minVer, maxVer)) = do
-  let profile = Profile {displayName, fullName, shortDescr, image, contactLink, peerType, preferences, badge = Nothing}
+toContactRequest :: UTCTime -> ContactRequestRow -> UserContactRequest
+toContactRequest now ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, preferences, createdAt, updatedAt, minVer, maxVer) :. badgeRow) = do
+  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, preferences, localBadge = rowToBadge now badgeRow, localAlias}
       cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
    in UserContactRequest {contactRequestId, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, createdAt, updatedAt}
 

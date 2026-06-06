@@ -139,18 +139,20 @@ createOrUpdateContactRequest
               (xContactId, userId, userContactId)
         mapM (addGroupChatTags db) g_
       getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
-      getContactRequestByXContactId xContactId =
-        maybeFirstRow toContactRequest $
+      getContactRequestByXContactId xContactId = do
+        currentTs <- getCurrentTime
+        maybeFirstRow (toContactRequest currentTs) $
           DB.query
             db
             [sql|
               SELECT
                 cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
                 cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-                cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, cr.xcontact_id,
+                cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
                 cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
                 cr.created_at, cr.updated_at,
-                cr.peer_chat_min_version, cr.peer_chat_max_version
+                cr.peer_chat_min_version, cr.peer_chat_max_version,
+                p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified
               FROM contact_requests cr
               JOIN contact_profiles p USING (contact_profile_id)
               WHERE cr.user_id = ?
@@ -166,8 +168,8 @@ createOrUpdateContactRequest
           liftIO $
             DB.execute
               db
-              "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-              ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
+              "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+              ((displayName, fullName, shortDescr, image, contactLink, userId) :. ("" :: LocalAlias, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
           profileId <- liftIO $ insertedRowId db
           liftIO $
             DB.execute
@@ -219,7 +221,7 @@ createOrUpdateContactRequest
                 ucr <- getContactRequest db user contactRequestId
                 pure $ RSCurrentRequest Nothing ucr (Just $ REBusinessChat gInfo clientMember)
       updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
-      updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
+      updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = LocalProfile {displayName = oldDisplayName}} = do
         currentTs <- liftIO getCurrentTime
         liftIO $ updateProfile currentTs
         updateRequest currentTs
