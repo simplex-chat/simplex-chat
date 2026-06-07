@@ -33,14 +33,14 @@
     <string name="allow_to_send_disappearing">Дозволити надсилати зникаючі повідомлення.</string>
     <string name="callstatus_accepted">прийнятий виклик</string>
     <string name="always_use_relay">Завжди використовувати реле</string>
-    <string name="settings_section_title_app">ДОДАТОК</string>
+    <string name="settings_section_title_app">Додаток</string>
     <string name="allow_direct_messages">Дозволити надсилання приватних повідомлень учасникам.</string>
     <string name="allow_to_delete_messages">Дозволити безповоротно видаляти надіслані повідомлення. (24 години)</string>
     <string name="allow_to_send_voice">Дозволяйте надсилати голосові повідомлення.</string>
     <string name="allow_message_reactions">Дозволити реакції на повідомлення.</string>
     <string name="v5_1_self_destruct_passcode_descr">Вся інформація стирається при його введенні.</string>
     <string name="v5_0_app_passcode">Пароль для додатка</string>
-    <string name="settings_section_title_icon">ІКОНКА ДОДАТКУ</string>
+    <string name="settings_section_title_icon">Іконка додатку</string>
     <string name="allow_disappearing_messages_only_if">Дозволити зникаючі повідомлення тільки за умови, що ваш контакт дозволяє їх.</string>
     <string name="allow_your_contacts_adding_message_reactions">Дозвольте вашим контактам додавати реакції на повідомлення.</string>
     <string name="allow_message_reactions_only_if">Дозволити реакції на повідомлення тільки за умови, що ваш контакт дозволяє їх.</string>
@@ -278,8 +278,8 @@
     <string name="icon_descr_flip_camera">Повернути камеру</string>
     <string name="icon_descr_call_rejected">Відхилений виклик</string>
     <string name="integrity_msg_skipped">%1$d пропущено повідомлень</string>
-    <string name="settings_section_title_chats">ЧАТИ</string>
-    <string name="settings_section_title_socks">SOCKS-ПРОКСІ</string>
+    <string name="settings_section_title_chats">Чати</string>
+    <string name="settings_section_title_socks">SOCKS-проксі</string>
     <string name="error_starting_chat">Помилка при запуску чату</string>
     <string name="stop_chat_confirmation">Зупинити</string>
     <string name="import_database_confirmation">Імпортувати</string>
@@ -416,9 +416,9 @@
     <string name="icon_descr_call_connecting">Підключення виклику</string>
     <string name="privacy_and_security">Конфіденційність і безпека</string>
     <string name="your_privacy">Конфіденційність</string>
-    <string name="settings_section_title_settings">НАЛАШТУВАННЯ</string>
-    <string name="settings_section_title_help">ДОПОМОГА</string>
-    <string name="settings_section_title_support">ПІДТРИМАЙТЕ SIMPLEX CHAT</string>
+    <string name="settings_section_title_settings">Налаштування</string>
+    <string name="settings_section_title_help">Допомога</string>
+    <string name="settings_section_title_support">Підтримайте SimpleX Chat</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Зупиніть чат, щоб експортувати, імпортувати або видалити базу даних чату. Ви не зможете отримувати та надсилати повідомлення, поки чат зупинено.</string>
     <string name="error_deleting_database">Помилка видалення бази даних чату</string>
     <string name="notifications_will_be_hidden">Сповіщення будуть доставлятися лише до зупинки додатка!</string>
@@ -464,7 +464,7 @@
     <string name="settings_restart_app">Перезапустити</string>
     <string name="your_chat_database">База даних чату</string>
     <string name="chat_is_stopped">Чат зупинено</string>
-    <string name="chat_database_section">БАЗА ДАНИХ ЧАТУ</string>
+    <string name="chat_database_section">База даних чату</string>
     <string name="new_database_archive">Новий архів бази даних</string>
     <string name="stop_chat_question">Зупинити чат\?</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ваша поточна база даних чату буде ВИДАЛЕНА та ЗАМІНЕНА імпортованою.
@@ -658,11 +658,11 @@
     <string name="self_destruct_passcode_enabled">Пароль самознищення увімкнено!</string>
     <string name="self_destruct_passcode_changed">Пароль самознищення змінено!</string>
     <string name="your_profile_is_stored_on_your_device">Ваш профіль, контакти та доставлені повідомлення зберігаються на вашому пристрої.</string>
-    <string name="settings_section_title_you">ВИ</string>
-    <string name="settings_section_title_device">ПРИСТРІЙ</string>
+    <string name="settings_section_title_you">Ви</string>
+    <string name="settings_section_title_device">Пристрій</string>
     <string name="settings_shutdown">Вимкнути</string>
-    <string name="settings_section_title_themes">ТЕМИ</string>
-    <string name="settings_section_title_messages">ПОВІДОМЛЕННЯ ТА ФАЙЛИ</string>
+    <string name="settings_section_title_themes">Теми</string>
+    <string name="settings_section_title_messages">Повідомлення та файли</string>
     <string name="chat_is_running">Чат працює</string>
     <string name="import_database">Імпортувати базу даних</string>
     <string name="old_database_archive">Старий архів бази даних</string>
@@ -782,7 +782,7 @@
     <string name="custom_time_unit_months">місяці</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Ви вже підключені до %1$s через це посилання.</string>
     <string name="settings_section_title_incognito">Режим інкогніто</string>
-    <string name="conn_stats_section_title_servers">СЕРВЕРИ</string>
+    <string name="conn_stats_section_title_servers">Сервери</string>
     <string name="save_welcome_message_question">Зберегти вітальне повідомлення?</string>
     <string name="receiving_via">Отримання через</string>
     <string name="muted_when_inactive">Приглушено, коли неактивно!</string>
@@ -879,7 +879,7 @@
     <string name="ttl_day">%d день</string>
     <string name="ttl_days">%d днів</string>
     <string name="feature_cancelled_item">скасовано %s</string>
-    <string name="run_chat_section">ЗАПУСК ЧАТУ</string>
+    <string name="run_chat_section">Запуск чату</string>
     <string name="database_passphrase">Пароль бази даних</string>
     <string name="export_database">Експортувати базу даних</string>
     <string name="delete_files_and_media_all">Видалити всі файли</string>
@@ -930,7 +930,7 @@
     <string name="snd_conn_event_switch_queue_phase_changing">змінює адресу…</string>
     <string name="leave_group_button">Залишити</string>
     <string name="group_member_role_observer">спостерігач</string>
-    <string name="member_info_section_title_member">УЧАСНИК</string>
+    <string name="member_info_section_title_member">Учасник</string>
     <string name="incognito_info_protects">Режим інкогніто захищає вашу конфіденційність, використовуючи новий випадковий профіль для кожного контакту.</string>
     <string name="v4_5_reduced_battery_usage_descr">Більше поліпшень незабаром!</string>
     <string name="only_group_owners_can_enable_voice">Тільки власники груп можуть увімкнути голосові повідомлення.</string>
@@ -979,7 +979,7 @@
     <string name="icon_descr_contact_checked">Контакт відмічено</string>
     <string name="invite_prohibited_description">Ви намагаєтеся запросити контакт, з яким ви поділилися інкогніто-профілем, до групи, в якій ви використовуєте основний профіль</string>
     <string name="error_creating_link_for_group">Помилка при створенні посилання на групу</string>
-    <string name="section_title_for_console">ДЛЯ КОНСОЛІ</string>
+    <string name="section_title_for_console">Для консолі</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Учасника буде вилучено з групи - цю дію неможливо скасувати!</string>
     <string name="change_role">Змінити роль</string>
     <string name="you_will_still_receive_calls_and_ntfs">Ви все ще отримуватимете дзвінки та сповіщення від приглушених профілів, коли вони активні.</string>
@@ -1021,7 +1021,7 @@
     <string name="host_verb">Хост</string>
     <string name="port_verb">Порт</string>
     <string name="network_use_onion_hosts_required">Обов\'язково</string>
-    <string name="theme_colors_section_title">КОЛЬОРИ ІНТЕРФЕЙСУ</string>
+    <string name="theme_colors_section_title">Кольори інтерфейсу</string>
     <string name="create_address_and_let_people_connect">Створіть адресу, щоб дозволити людям підключатися до вас.</string>
     <string name="your_contacts_will_remain_connected">Контакти залишатимуться підключеними.</string>
     <string name="create_simplex_address">Створити SimpleX-адресу</string>
@@ -1110,7 +1110,7 @@
     <string name="from_gallery_button">Галерея</string>
     <string name="icon_descr_simplex_team">Команда SimpleX</string>
     <string name="contact_wants_to_connect_with_you">хоче підключитися до вас!</string>
-    <string name="settings_section_title_experimenta">ЕКСПЕРИМЕНТАЛЬНІ ФУНКЦІЇ</string>
+    <string name="settings_section_title_experimenta">Експериментальні функції</string>
     <string name="you_must_use_the_most_recent_version_of_database">Ви повинні використовувати найновішу версію бази даних чату лише на одному пристрої, інакше ви можете припинити отримання повідомлень від деяких контактів.</string>
     <string name="messages_section_description">Цей параметр застосовується до повідомлень у вашому поточному профілі чату</string>
     <string name="encrypted_database">Зашифрована база даних</string>
@@ -1163,7 +1163,7 @@
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Кожен може хостити сервери.</string>
     <string name="settings_developer_tools">Інструменти розробника</string>
     <string name="settings_experimental_features">Експериментальні функції</string>
-    <string name="settings_section_title_calls">ДЗВІНКИ</string>
+    <string name="settings_section_title_calls">Дзвінки</string>
     <string name="save_passphrase_in_keychain">Зберегти ключову фразу в сховищі ключів</string>
     <string name="error_encrypting_database">Помилка шифрування бази даних</string>
     <string name="remove_passphrase_from_keychain">Вилучити ключову фразу із сховища ключів?</string>
@@ -1259,7 +1259,7 @@
     <string name="files_and_media_prohibited">Заборонено файли та медіа!</string>
     <string name="connect__your_profile_will_be_shared">Буде відправлено ваш профіль %1$s.</string>
     <string name="receipts_groups_disable_for_all">Вимкнути для всіх груп</string>
-    <string name="settings_section_title_delivery_receipts">НАДСИЛАТИ ПОВІДОМЛЕННЯ ПРО ДОСТАВКУ</string>
+    <string name="settings_section_title_delivery_receipts">Надсилати повідомлення про доставку</string>
     <string name="connect_via_member_address_alert_title">Підключитися безпосередньо?</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="connect_via_member_address_alert_desc">Запит на підключення буде відправлено учаснику групи.</string>
@@ -1734,7 +1734,7 @@
     <string name="v5_7_call_sounds">Звуки вхідного дзвінка</string>
     <string name="chat_theme_apply_to_light_mode">Світлий режим</string>
     <string name="update_network_smp_proxy_fallback_question">Запасний варіант маршрутизації повідомлень</string>
-    <string name="settings_section_title_private_message_routing">МАРШРУТИЗАЦІЯ ПРИВАТНИХ ПОВІДОМЛЕНЬ</string>
+    <string name="settings_section_title_private_message_routing">Маршрутизація приватних повідомлень</string>
     <string name="forwarded_description">переслано</string>
     <string name="network_type_other">Інше</string>
     <string name="allow_to_send_simplex_links">Дозволити надсилати посилання SimpleX.</string>
@@ -1746,7 +1746,7 @@
     <string name="permissions_camera_and_record_audio">Камера та мікрофон</string>
     <string name="permissions_grant">Надайте дозвіл(и) на здійснення дзвінків</string>
     <string name="permissions_open_settings">Відкрити налаштування</string>
-    <string name="settings_section_title_files">ФАЙЛИ</string>
+    <string name="settings_section_title_files">Файли</string>
     <string name="settings_section_title_profile_images">Зображення профілів</string>
     <string name="settings_section_title_network_connection">Підключення до мережі</string>
     <string name="feature_roles_admins">адміністратори</string>
@@ -2049,7 +2049,7 @@
     <string name="reset_all_hints">Скинути всі підказки</string>
     <string name="app_check_for_updates_update_available">Доступно оновлення: %s</string>
     <string name="app_check_for_updates_canceled">Завантаження оновлення скасовано</string>
-    <string name="settings_section_title_chat_database">БАЗА ДАНИХ ЧАТУ</string>
+    <string name="settings_section_title_chat_database">База даних чату</string>
     <string name="select_chat_profile">Вибрати профіль чату</string>
     <string name="switching_profile_error_title">Помилка при зміні профілю</string>
     <string name="delete_messages_cannot_be_undone_warning">Повідомлення будуть видалені — це не можна скасувати!</string>
@@ -2513,7 +2513,7 @@
     <string name="allow_your_contacts_to_send_files_and_media">Дозвольте своїм контактам надсилати файли та медіа.</string>
     <string name="chat_banner_bot">Бот</string>
     <string name="both_you_and_your_contact_can_send_files">Ви, і ваш контакт можете надсилати файли та медіа.</string>
-    <string name="settings_section_title_contact_requests_from_groups">ЗАПИТИ НА ЗВ’ЯЗОК ВІД ГРУП</string>
+    <string name="settings_section_title_contact_requests_from_groups">Запити на зв’язок від груп</string>
     <string name="deprecated_options_section">Застарілі опції</string>
     <string name="error_marking_member_support_chat_read">Помилка при відмітці як прочитане</string>
     <string name="files_prohibited_in_this_chat">Файли та медіа заборонені у цьому чаті.</string>

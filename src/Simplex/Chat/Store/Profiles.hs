@@ -20,7 +20,6 @@ module Simplex.Chat.Store.Profiles
     UserMsgReceiptSettings (..),
     UserContactLink (..),
     GroupLinkInfo (..),
-    createUserRecord,
     createUserRecordAt,
     getUsersInfo,
     getUsers,
@@ -38,6 +37,7 @@ module Simplex.Chat.Store.Profiles
     getUserFileInfo,
     deleteUserRecord,
     updateUserPrivacy,
+    updateClientService,
     updateAllContactReceipts,
     updateUserContactReceipts,
     updateUserGroupReceipts,
@@ -128,11 +128,8 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> Bool -> ExceptT StoreError IO User
-createUserRecord db auId p userChatRelay activeUser = createUserRecordAt db auId p userChatRelay activeUser =<< liftIO getCurrentTime
-
-createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> Bool -> UTCTime -> ExceptT StoreError IO User
-createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} userChatRelay activeUser currentTs =
+createUserRecordAt :: DB.Connection -> AgentUserId -> Bool -> Bool -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
+createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
@@ -142,9 +139,9 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDe
     order <- getNextActiveOrder db
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?)"
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?)"
       ( (auId, displayName, BI activeUser, BI userChatRelay, order)
-          :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, currentTs, currentTs)
+          :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI clientService, currentTs, currentTs)
       )
     userId <- insertedRowId db
     DB.execute
@@ -162,7 +159,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDe
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, Nothing, BI userChatRelay)
+    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -285,6 +282,17 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
   where
     hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
 
+updateClientService :: DB.Connection -> UserId -> Bool -> IO ()
+updateClientService db userId enable =
+  DB.execute
+    db
+    [sql|
+      UPDATE users
+      SET client_service = ?
+      WHERE user_id = ?
+    |]
+    (BI enable, userId)
+
 updateAllContactReceipts :: DB.Connection -> Bool -> IO ()
 updateAllContactReceipts db onOff =
   DB.execute
@@ -380,9 +388,9 @@ createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMo
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
-getUserAddressConnection :: DB.Connection -> VersionRangeChat -> User -> ExceptT StoreError IO Connection
-getUserAddressConnection db vr User {userId} = do
-  ExceptT . firstRow (toConnection vr) SEUserContactLinkNotFound $
+getUserAddressConnection :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO Connection
+getUserAddressConnection db cxt User {userId} = do
+  ExceptT . firstRow (toConnection cxt) SEUserContactLinkNotFound $
     DB.query
       db
       [sql|
@@ -525,8 +533,8 @@ setUserContactLinkShortLink db userContactLinkId shortLink =
     |]
     (shortLink, BI True, BI True, BI False, userContactLinkId)
 
-getContactWithoutConnViaAddress :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
-getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
+getContactWithoutConnViaAddress :: DB.Connection -> StoreCxt -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
+getContactWithoutConnViaAddress db cxt user@User {userId} (cReqSchema1, cReqSchema2) = do
   ctId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -539,10 +547,10 @@ getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchem
           WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
         |]
         (userId, cReqSchema1, cReqSchema2)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db cxt user) ctId_
 
-getContactWithoutConnViaShortAddress :: DB.Connection -> VersionRangeChat -> User -> ShortLinkContact -> IO (Maybe Contact)
-getContactWithoutConnViaShortAddress db vr user@User {userId} shortLink = do
+getContactWithoutConnViaShortAddress :: DB.Connection -> StoreCxt -> User -> ShortLinkContact -> IO (Maybe Contact)
+getContactWithoutConnViaShortAddress db cxt user@User {userId} shortLink = do
   ctId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -555,7 +563,7 @@ getContactWithoutConnViaShortAddress db vr user@User {userId} shortLink = do
           WHERE cp.user_id = ? AND cp.contact_link = ? AND c.connection_id IS NULL
         |]
         (userId, shortLink)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db cxt user) ctId_
 
 updateUserAddressSettings :: DB.Connection -> Int64 -> AddressSettings -> IO ()
 updateUserAddressSettings db userContactLinkId AddressSettings {businessAddress, autoAccept, autoReply} =

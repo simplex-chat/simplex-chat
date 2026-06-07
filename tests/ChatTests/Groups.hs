@@ -18,8 +18,10 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Maybe (fromMaybe, isJust, listToMaybe, maybeToList)
+import Data.Time (UTCTime)
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
@@ -32,7 +34,7 @@ import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelation)
+import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -41,6 +43,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
+import System.Directory (copyFile, doesFileExist)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -49,7 +52,6 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
-import System.Directory (copyFile)
 import System.FilePath ((</>))
 #endif
 
@@ -251,6 +253,13 @@ chatGroupTests = do
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
+    describe "deliver member profiles via relay" $ do
+      it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerReceivesProfile
+      it "2 relays: deduplicate member announcement" testChannel2RelaysDeduplicateProfile
+      it "multi senders disseminate independently" testChannelMultiSendersIndependent
+      it "large profile fits in body" testChannelLargeProfileFits
+      it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfiles
+      it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
     describe "channel operations" $ do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
@@ -1910,7 +1919,7 @@ testGroupDelayedModerationFullDelete ps = do
 testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
+    \alice bob cath -> withXFTPServer $ do
       createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 750000
       alice ##> "/set delete #team on"
@@ -1928,22 +1937,61 @@ testDeleteMemberWithMessages =
             cath <## "Full deletion: on"
         ]
       threadDelay 750000
-      bob #> "#team hello"
-      concurrently_
-        (alice <# "#team bob> hello")
-        (cath <# "#team bob> hello")
-      alice #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
-      bob #$> ("/_get chat #1 count=1", chat, [(1, "hello")])
-      cath #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+
+      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
+      cath #$> ("/_files_folder ./tests/tmp/cath_app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/bob_app_files/test.jpg"
+
+      bob ##> "/_send #1 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"file from bob\"}}]"
+      bob <# "#team file from bob"
+      bob <# "/f #team test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+
+      alice <# "#team bob> file from bob"
+      alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      cath <# "#team bob> file from bob"
+      cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob <## "completed uploading file 1 (test.jpg) for #team"
+
+      alice ##> "/fr 1"
+      alice
+        <### [ "saving file 1 from bob to test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
+      alice <## "completed receiving file 1 (test.jpg) from bob"
+
+      cath ##> "/fr 1"
+      cath
+        <### [ "saving file 1 from bob to test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
+      cath <## "completed receiving file 1 (test.jpg) from bob"
+
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      B.readFile "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` src
+      B.readFile "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` src
+      B.readFile "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` src
+
       threadDelay 1000000
       alice ##> "/rm #team bob messages=on"
       alice <## "#team: you removed bob from the group with all messages"
       bob <## "#team: alice removed you from the group with all messages"
       bob <## "use /d #team to delete the group"
       cath <## "#team: alice removed bob from the group with all messages"
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by you]"), (1, "removed bob")])
-      bob #$> ("/_get chat #1 count=2", chat, [(1, "moderated [deleted by alice]"), (0, "removed you")])
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by alice]"), (0, "removed bob")])
+
+      doesFileExist "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` False
+      doesFileExist "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` False
+      doesFileExist "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` False
+
+      -- Under fullDelete, bob's items are physically deleted on all sides; only the system event remains.
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "removed bob")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "removed you")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "removed bob")])
 
 testDeleteMemberMarkMessagesDeleted :: HasCallStack => TestParams -> IO ()
 testDeleteMemberMarkMessagesDeleted =
@@ -3250,6 +3298,12 @@ testGLinkReviewMember =
       -- deleting support chat with pending member is prohibited
       alice ##> "/_delete member chat #1 5"
       alice <## "bad chat command: member is pending"
+
+      -- moderator can't accept member with a role higher than their own
+      dan ##> "/_accept member #1 5 admin"
+      dan <## "#team: you have insufficient permissions for this action, the required role is admin"
+      dan ##> "/_accept member #1 5 owner"
+      dan <## "#team: you have insufficient permissions for this action, the required role is owner"
 
       -- accept member
       dan ##> "/_accept member #1 5 member"
@@ -8546,10 +8600,11 @@ testChannels1RelayDeliver ps =
             -- alice knows cath via XGrpMemNew announcement from relay
             alice <# "#team cath> > hi"
             alice <## "    + 👍"
-            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            -- dan/eve learn cath via prepended XGrpMemNew before the forwarded reaction
+            dan <## "#team: bob introduced cath (Catherine) in the channel"
             dan <# "#team cath> > hi"
             dan <## "    + 👍"
-            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <## "#team: bob introduced cath (Catherine) in the channel"
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
 
@@ -8689,7 +8744,7 @@ memberJoinChannel' gName gId relaySfx ownerSfx memberRelaySfx relays owners shor
              relay <## ("#" <> gName <> ": " <> sfxMName relaySfx <> " joined the group")
          | relay <- relays
          ]
-      <> [ owner <### [EndsWith ("added " <> sfxName ownerSfx <> " to the group")]
+      <> [ owner <### [EndsWith ("introduced " <> sfxName ownerSfx <> " in the channel")]
          | owner <- owners
          ]
 
@@ -8721,10 +8776,28 @@ memberJoinChannelIncognito gName relays owners shortLink fullLink member = do
              relay <## ("#" <> gName <> ": " <> memIncognito <> " joined the group")
          | relay <- relays
          ]
-      <> [ owner <### [EndsWith ("added " <> memIncognito <> " to the group")]
+      <> [ owner <### [EndsWith ("introduced " <> memIncognito <> " in the channel")]
          | owner <- owners
          ]
   pure memIncognito
+
+-- | Assert that sender's member_relations_vector has 'MRIntroduced' at
+-- the recipient's index, looked up by display name on the same DB.
+memberIntroducedTo :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
+memberIntroducedTo cc senderName recipientName = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query
+      db
+      [sql|
+        SELECT s.member_relations_vector, r.index_in_group
+        FROM group_members s, group_members r
+        WHERE s.local_display_name = ? AND r.local_display_name = ?
+      |]
+      (senderName, recipientName) ::
+      IO [(Maybe ByteString, Int64)]
+  case rows of
+    [(mv, idx)] -> getRelation idx (fromMaybe B.empty mv) `shouldBe` MRIntroduced
+    _ -> expectationFailure $ "memberIntroducedTo: expected exactly one row for " <> show (senderName, recipientName) <> ", got " <> show (length rows)
 
 testChannels1RelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
 testChannels1RelayDeliverLoop deliveryBucketSize ps =
@@ -8745,10 +8818,10 @@ testChannels1RelayDeliverLoop deliveryBucketSize ps =
             bob <## "    + 👍"
             alice <# "#team cath> > hi"
             alice <## "    + 👍"
-            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            dan <## "#team: bob introduced cath (Catherine) in the channel"
             dan <# "#team cath> > hi"
             dan <## "    + 👍"
-            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <## "#team: bob introduced cath (Catherine) in the channel"
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
   where
@@ -8787,14 +8860,14 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team dan> 6 [>>]"
                    ]
             cath
-              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record dan",
+              <### [ "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
                      WithTime "#team dan> 6 [>>]"
                    ]
             dan
-              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record cath",
+              <### [ "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
@@ -8802,8 +8875,8 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team cath> 5 [>>]"
                    ]
             eve
-              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record cath",
-                     "#team: bob forwarded a message from an unknown member, creating unknown member record dan",
+              <### [ "#team: bob introduced cath (Catherine) in the channel",
+                     "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
                      WithTime "#team> 3 [>>]",
@@ -8813,6 +8886,231 @@ testChannelsSenderDeduplicateOwn ps = do
                    ]
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
+
+testChannelLateJoinerReceivesProfile :: HasCallStack => TestParams -> IO ()
+testChannelLateJoinerReceivesProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          -- first forward: dan learns cath via prepended XGrpMemNew.
+          cath #> "#team hi"
+          bob <# "#team cath> hi"
+          alice <# "#team cath> hi [>>]"
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> hi [>>]"
+
+          -- second forward: dan's bit is set, no prepend, no view event.
+          cath #> "#team hi again"
+          bob <# "#team cath> hi again"
+          alice <# "#team cath> hi again [>>]"
+          dan <# "#team cath> hi again [>>]"
+
+          memberIntroducedTo bob "cath" "alice"
+          memberIntroducedTo bob "cath" "dan"
+
+          -- profile update: rename piggybacks on next send; no re-prepend, bits stay set.
+          cath ##> "/p kate Kate"
+          cath <## "user profile is changed to kate (Kate) (your 0 contacts are notified)"
+
+          cath #> "#team renamed"
+          bob <# "#team kate> renamed"
+          alice <# "#team kate> renamed [>>]"
+          dan <# "#team kate> renamed [>>]"
+          threadDelay 500000
+          memberIntroducedTo bob "kate" "alice"
+          memberIntroducedTo bob "kate" "dan"
+
+testChannel2RelaysDeduplicateProfile :: HasCallStack => TestParams -> IO ()
+testChannel2RelaysDeduplicateProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+            memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink dan
+            memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink eve
+
+            -- first forward: both relays prepend XGrpMemNew(dan) for eve;
+            -- second hits xGrpMemNew's "already created via another relay" branch.
+            dan #> "#team hi"
+            bob <# "#team dan> hi"
+            cath <# "#team dan> hi"
+            alice <# "#team dan> hi [>>]"
+            eve .<## " introduced dan (Daniel) in the channel"
+            eve <# "#team dan> hi [>>]"
+
+            -- second forward: eve's bit is set on both relays, no prepend.
+            dan #> "#team hi again"
+            bob <# "#team dan> hi again"
+            cath <# "#team dan> hi again"
+            alice <# "#team dan> hi again [>>]"
+            eve <# "#team dan> hi again [>>]"
+
+            -- both relays independently mark eve in dan's vector;
+            -- alice's bit was set at join via introduceInChannel and stays set.
+            memberIntroducedTo bob "dan" "alice"
+            memberIntroducedTo bob "dan" "eve"
+            memberIntroducedTo cath "dan" "alice"
+            memberIntroducedTo cath "dan" "eve"
+
+            -- profile update: rename piggybacks on next send; no re-prepend, bits stay set.
+            dan ##> "/p dean Dean"
+            dan <## "user profile is changed to dean (Dean) (your 0 contacts are notified)"
+
+            dan #> "#team renamed"
+            bob <# "#team dean> renamed"
+            cath <# "#team dean> renamed"
+            alice <# "#team dean> renamed [>>]"
+            eve <# "#team dean> renamed [>>]"
+            threadDelay 500000
+            memberIntroducedTo bob "dean" "alice"
+            memberIntroducedTo bob "dean" "eve"
+            memberIntroducedTo cath "dean" "alice"
+            memberIntroducedTo cath "dean" "eve"
+
+testChannelLargeProfileFits :: HasCallStack => TestParams -> IO ()
+testChannelLargeProfileFits ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          -- ~14000 chars: profile fits in a singleton batch AND packs
+          -- inline with the forwarded body (exercises the in-body path).
+          let bigImage = T.pack ("data:image/png;base64," <> replicate 14000 'A')
+          withCCTransaction bob $ \db ->
+            DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (bigImage, "cath" :: T.Text)
+
+          cath #> "#team hi"
+          bob <# "#team cath> hi"
+          alice <# "#team cath> hi [>>]"
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> hi [>>]"
+
+          memberIntroducedTo bob "cath" "dan"
+
+testChannelMultipleLargeProfiles :: HasCallStack => TestParams -> IO ()
+testChannelMultipleLargeProfiles ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- ~14500 chars each: one rides inline with the body,
+            -- the other spills into a standalone overflow batch.
+            let cathImage = T.pack ("data:image/png;base64," <> replicate 14500 'A')
+                danImage = T.pack ("data:image/png;base64," <> replicate 14500 'B')
+            withCCTransaction bob $ \db -> do
+              DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (cathImage, "cath" :: T.Text)
+              DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (danImage, "dan" :: T.Text)
+
+            -- deliveryWorkerDelay=250ms lets the relay coalesce cath's and
+            -- dan's sends into one multi-sender job.
+            cath #> "#team from cath"
+            bob <# "#team cath> from cath"
+            dan #> "#team from dan"
+            bob <# "#team dan> from dan"
+
+            alice
+              <### [ WithTime "#team cath> from cath [>>]",
+                     WithTime "#team dan> from dan [>>]"
+                   ]
+            cath
+              <### [ "#team: bob introduced dan (Daniel) in the channel",
+                     WithTime "#team dan> from dan [>>]"
+                   ]
+            dan
+              <### [ "#team: bob introduced cath (Catherine) in the channel",
+                     WithTime "#team cath> from cath [>>]"
+                   ]
+            eve
+              <### [ "#team: bob introduced dan (Daniel) in the channel",
+                     "#team: bob introduced cath (Catherine) in the channel",
+                     WithTime "#team cath> from cath [>>]",
+                     WithTime "#team dan> from dan [>>]"
+                   ]
+
+            memberIntroducedTo bob "cath" "eve"
+            memberIntroducedTo bob "dan" "eve"
+  where
+    cfg = testCfg {deliveryWorkerDelay = 250000}
+
+-- Asserted via SQL on the relay's DB rather than terminal output: the
+-- "updated profile" chat item rendering on relays/owners is order-sensitive.
+testChannelProfileUpdateNoRePrepend :: HasCallStack => TestParams -> IO ()
+testChannelProfileUpdateNoRePrepend ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+
+          cath #> "#team hi"
+          bob <# "#team cath> hi"
+          alice <# "#team cath> hi [>>]"
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> hi [>>]"
+
+          memberIntroducedTo bob "cath" "dan"
+
+          -- /p only delivers XInfo to direct contacts; for group members it
+          -- piggybacks on the next group send via shouldSendProfileUpdate.
+          cath ##> "/p kate Kate"
+          cath <## "user profile is changed to kate (Kate) (your 0 contacts are notified)"
+
+          cath #> "#team hi again"
+          bob <# "#team kate> hi again"
+          alice <# "#team kate> hi again [>>]"
+          dan <# "#team kate> hi again [>>]"
+          threadDelay 500000
+          memberIntroducedTo bob "kate" "dan"
+
+testChannelMultiSendersIndependent :: HasCallStack => TestParams -> IO ()
+testChannelMultiSendersIndependent ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- cath posts: dan and eve learn cath via prepended XGrpMemNew
+            cath #> "#team from cath"
+            bob <# "#team cath> from cath"
+            alice <# "#team cath> from cath [>>]"
+            dan <## "#team: bob introduced cath (Catherine) in the channel"
+            dan <# "#team cath> from cath [>>]"
+            eve <## "#team: bob introduced cath (Catherine) in the channel"
+            eve <# "#team cath> from cath [>>]"
+
+            -- dan posts: cath and eve learn dan independently of cath's vector
+            dan #> "#team from dan"
+            bob <# "#team dan> from dan"
+            alice <# "#team dan> from dan [>>]"
+            cath <## "#team: bob introduced dan (Daniel) in the channel"
+            cath <# "#team dan> from dan [>>]"
+            eve <## "#team: bob introduced dan (Daniel) in the channel"
+            eve <# "#team dan> from dan [>>]"
+
+            -- second post from cath: all recipients have cath marked, no prepend
+            cath #> "#team again from cath"
+            bob <# "#team cath> again from cath"
+            alice <# "#team cath> again from cath [>>]"
+            dan <# "#team cath> again from cath [>>]"
+            eve <# "#team cath> again from cath [>>]"
 
 testChannels2RelaysDeliver :: HasCallStack => TestParams -> IO ()
 testChannels2RelaysDeliver ps =
@@ -8836,10 +9134,10 @@ testChannels2RelaysDeliver ps =
               cath <## "    + 👍"
               alice <# "#team dan> > hi"
               alice <## "    + 👍"
-              eve .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              eve .<## " introduced dan (Daniel) in the channel"
               eve <# "#team dan> > hi"
               eve <## "    + 👍"
-              frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              frank .<## " introduced dan (Daniel) in the channel"
               frank <# "#team dan> > hi"
               frank <## "    + 👍"
 
@@ -8874,10 +9172,10 @@ testChannels2RelaysIncognito ps =
               cath <## "    + 👍"
               alice <# ("#team " <> danIncognito <> "> > hi")
               alice <## "    + 👍"
-              eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              eve .<## (" introduced " <> danIncognito <> " in the channel")
               eve <# ("#team " <> danIncognito <> "> > hi")
               eve <## "    + 👍"
-              frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              frank .<## (" introduced " <> danIncognito <> " in the channel")
               frank <# ("#team " <> danIncognito <> "> > hi")
               frank <## "    + 👍"
 
@@ -9090,10 +9388,10 @@ testChannelChangeRoleSigned ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9145,10 +9443,10 @@ testChannelBlockMemberSigned ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9208,10 +9506,10 @@ testChannelRemoveMemberSigned ps =
             concurrentlyN_
               [ alice <# "#team eve> hello from eve [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  dan <## "#team: bob introduced eve (Eve) in the channel"
                   dan <# "#team eve> hello from eve [>>]",
                 do
-                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  cath <## "#team: bob introduced eve (Eve) in the channel"
                   cath <# "#team eve> hello from eve [>>]"
               ]
 
@@ -9242,6 +9540,9 @@ testChannelRemoveMemberSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
 
+            -- eve had items (posted "hello from eve") -> kept as permanent GSMemRemoved records, removed_at NULL
+            checkRemovedMember alice "eve" False
+
             -- after first removal
             alice ##> "/_info #1"
             alice <## "group ID: 1"
@@ -9268,6 +9569,9 @@ testChannelRemoveMemberSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")]) -- no new chat item
 
+            -- dan had no items -> kept as GSMemRemoved record with removed_at set (TTL cleanup path)
+            checkRemovedMember alice "dan" True
+
             -- after second removal
             alice ##> "/_info #1"
             alice <## "group ID: 1"
@@ -9276,6 +9580,14 @@ testChannelRemoveMemberSigned ps =
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
             cath <## "subscribers: 2"
+
+-- asserts the member row is GSMemRemoved, with removed_at set (TTL tombstone) or NULL (permanent)
+checkRemovedMember :: HasCallStack => TestCC -> String -> Bool -> Expectation
+checkRemovedMember cc name removedAtSet = do
+  rows <-
+    withCCTransaction cc $ \db ->
+      DB.query db "SELECT member_status, removed_at FROM group_members WHERE local_display_name = ?" (Only name) :: IO [(String, Maybe UTCTime)]
+  map (\(status, removedAt) -> (status, isJust removedAt)) rows `shouldBe` [("removed", removedAtSet)]
 
 testChannelDeleteGroupSigned :: HasCallStack => TestParams -> IO ()
 testChannelDeleteGroupSigned ps =
@@ -9376,10 +9688,10 @@ testChannelSubscriberLeave ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9430,7 +9742,8 @@ testChannelSubscriberLeave ps =
             dan <## "use /d #team to delete the group"
             bob <## "#team: dan left the group (signed)"
             alice <## "#team: dan left the group (signed)"
-            -- eve doesn't know dan - no unknown member record created (skipped for XGrpLeave)
+            -- dan never sent before leaving and is now left, so the relay does not prepend
+            -- his XGrpMemNew; eve receives the bare XGrpLeave and does not create a record (allowCreate=False)
             alice #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             bob #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(1, "left (signed)")])
@@ -9449,8 +9762,10 @@ testChannelSubscriberLeave ps =
             checkMemberStatus alice "dan" (Just "left")
             checkMemberStatus bob "dan" (Just "left")
             checkMemberStatus dan "dan" (Just "left")
-            -- eve doesn't know dan - no member record (XGrpLeave skips unknown member creation)
+            -- the relay did not announce left dan, and the bare XGrpLeave does not create a
+            -- record (allowCreate=False), so eve never learned dan
             checkMemberStatus eve "dan" Nothing
+            -- cath left earlier and was excluded from the forward; no record on cath
             checkMemberStatus cath "dan" Nothing
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
@@ -9627,10 +9942,10 @@ testChannelSubscriberProfileUpdate ps =
             concurrentlyN_
               [ alice <# "#team cath> hello from cath [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> hello from cath [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
@@ -9673,10 +9988,10 @@ testChannelSubscriberProfileUpdate ps =
             concurrentlyN_
               [ alice <# "#team dave> hello from dave [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record dave"
+                  eve <## "#team: bob introduced dave in the channel"
                   eve <# "#team dave> hello from dave [>>]",
                 do
-                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record dave"
+                  cath <## "#team: bob introduced dave in the channel"
                   cath <# "#team dave> hello from dave [>>]"
               ]
             -- no profile update items in main scope (dan has no support chat, item not created)
@@ -10441,11 +10756,11 @@ testChannelMessageQuote ps =
                   alice <# "#team cath> > hello from channel [>>]"
                   alice <## "      replying to channel [>>]",
                 do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <## "#team: bob introduced cath (Catherine) in the channel"
                   dan <# "#team cath> > hello from channel [>>]"
                   dan <## "      replying to channel [>>]",
                 do
-                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <## "#team: bob introduced cath (Catherine) in the channel"
                   eve <# "#team cath> > hello from channel [>>]"
                   eve <## "      replying to channel [>>]"
               ]
@@ -10801,9 +11116,9 @@ testChannelMemberMessageUpdate ps =
             bob <# "#team cath> hello"
             concurrentlyN_
               [ alice <# "#team cath> hello [>>]",
-                do dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                do dan <## "#team: bob introduced cath (Catherine) in the channel"
                    dan <# "#team cath> hello [>>]",
-                do eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                do eve <## "#team: bob introduced cath (Catherine) in the channel"
                    eve <# "#team cath> hello [>>]"
               ]
 
@@ -10832,9 +11147,9 @@ testChannelMemberMessageDelete ps =
             bob <# "#team cath> hello"
             concurrentlyN_
               [ alice <# "#team cath> hello [>>]",
-                do dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                do dan <## "#team: bob introduced cath (Catherine) in the channel"
                    dan <# "#team cath> hello [>>]",
-                do eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                do eve <## "#team: bob introduced cath (Catherine) in the channel"
                    eve <# "#team cath> hello [>>]"
               ]
 

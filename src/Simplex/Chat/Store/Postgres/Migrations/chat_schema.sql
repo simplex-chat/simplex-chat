@@ -635,14 +635,14 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     job_scope_spec_tag text,
     job_scope_include_pending smallint,
     job_scope_support_gm_id bigint,
-    single_sender_group_member_id bigint,
     body bytea,
     cursor_group_member_id bigint,
     job_status text NOT NULL,
     job_err_reason text,
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    sender_group_member_ids text
 );
 
 
@@ -818,7 +818,8 @@ CREATE TABLE test_chat_schema.group_members (
     index_in_group bigint DEFAULT 0 NOT NULL,
     member_relations_vector bytea,
     relay_link bytea,
-    member_pub_key bytea
+    member_pub_key bytea,
+    removed_at timestamp with time zone
 );
 
 
@@ -849,7 +850,11 @@ CREATE TABLE test_chat_schema.group_profiles (
     short_descr text,
     group_type text,
     group_link bytea,
-    public_group_id bytea
+    public_group_id bytea,
+    group_web_page text,
+    group_domain text,
+    domain_web_page bigint,
+    allow_embedding bigint
 );
 
 
@@ -874,7 +879,8 @@ CREATE TABLE test_chat_schema.group_relays (
     relay_link bytea,
     conf_id bytea,
     created_at text DEFAULT now() NOT NULL,
-    updated_at text DEFAULT now() NOT NULL
+    updated_at text DEFAULT now() NOT NULL,
+    base_web_url text
 );
 
 
@@ -962,7 +968,7 @@ CREATE TABLE test_chat_schema.groups (
     public_member_count bigint,
     relay_request_retries bigint DEFAULT 0 NOT NULL,
     relay_request_delay bigint DEFAULT 0 NOT NULL,
-    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 04:00:00+04'::timestamp with time zone NOT NULL,
+    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 01:00:00+01'::timestamp with time zone NOT NULL,
     relay_inactive_at timestamp with time zone
 );
 
@@ -1433,7 +1439,8 @@ CREATE TABLE test_chat_schema.users (
     ui_themes text,
     active_order bigint DEFAULT 0 NOT NULL,
     auto_accept_member_contacts smallint DEFAULT 0 NOT NULL,
-    is_user_chat_relay smallint DEFAULT 0 NOT NULL
+    is_user_chat_relay smallint DEFAULT 0 NOT NULL,
+    client_service smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -2203,10 +2210,6 @@ CREATE INDEX idx_delivery_jobs_next ON test_chat_schema.delivery_jobs USING btre
 
 
 
-CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON test_chat_schema.delivery_jobs USING btree (single_sender_group_member_id);
-
-
-
 CREATE INDEX idx_delivery_tasks_created_at ON test_chat_schema.delivery_tasks USING btree (created_at);
 
 
@@ -2832,11 +2835,6 @@ ALTER TABLE ONLY test_chat_schema.delivery_jobs
 
 ALTER TABLE ONLY test_chat_schema.delivery_jobs
     ADD CONSTRAINT delivery_jobs_job_scope_support_gm_id_fkey FOREIGN KEY (job_scope_support_gm_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.delivery_jobs
-    ADD CONSTRAINT delivery_jobs_single_sender_group_member_id_fkey FOREIGN KEY (single_sender_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 

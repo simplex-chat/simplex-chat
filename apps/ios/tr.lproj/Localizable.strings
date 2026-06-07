@@ -169,6 +169,18 @@
 /* time interval */
 "%d months" = "%d ay";
 
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays failed" = "%d aktarıcı başarısız oldu";
+
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays not active" = "%d aktarıcı etkin değil";
+
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays removed" = "%d aktarıcı kaldırıldı";
+
 /* time interval */
 "%d sec" = "%d saniye";
 
@@ -178,8 +190,31 @@
 /* integrity error chat item */
 "%d skipped message(s)" = "%d okunmamış mesaj(lar)";
 
+/* channel subscriber count */
+"%d subscriber" = "%d abone";
+
+/* channel subscriber count */
+"%d subscribers" = "%d abone";
+
 /* time interval */
 "%d weeks" = "%d hafta";
+
+/* channel creation progress
+channel relay bar progress */
+"%d/%d relays active" = "%1$d/%2$d aktarıcı etkin";
+
+/* channel relay bar */
+"%d/%d relays active, %d errors" = "%1$d/%2$d aktarıcı etkin, %3$d hata";
+
+/* channel creation progress with errors
+channel relay bar */
+"%d/%d relays active, %d failed" = "%1$d/%2$d aktarıcı etkin, %3$d başarısız";
+
+/* channel relay bar */
+"%d/%d relays active, %d removed" = "%1$d/%2$d aktarıcı etkin, %3$d kaldırıldı";
+
+/* channel subscriber relay bar progress */
+"%d/%d relays connected" = "%1$d/%2$d aktarıcı bağlı";
 
 /* No comment provided by engineer. */
 "%lld" = "%lld";
@@ -1424,7 +1459,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "İçerik kullanım koşullarını ihlal ediyor";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Devam et";
 
 /* No comment provided by engineer. */
@@ -1824,7 +1859,7 @@ alert button */
 "Developer options" = "Geliştirici seçenekleri";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Geliştirici araçları";
+"Developer" = "Geliştirici araçları";
 
 /* No comment provided by engineer. */
 "Device" = "Cihaz";
@@ -4064,7 +4099,7 @@ alert button */
 "Previously connected servers" = "Önceden bağlanılmış sunucular";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Gizlilik & güvenlik";
+"Your privacy" = "Gizlilik & güvenlik";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Müşterileriniz için gizlilik.";
@@ -6029,7 +6064,7 @@ server test failure */
 "You can enable later via Settings" = "Daha sonra Ayarlardan etkinleştirebilirsin";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.";
+"You can enable them later via app Your privacy settings." = "Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Bir kez daha deneyebilirsiniz.";

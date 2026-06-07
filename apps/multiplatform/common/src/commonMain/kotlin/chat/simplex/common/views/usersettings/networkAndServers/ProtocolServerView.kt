@@ -5,6 +5,7 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
@@ -80,7 +81,8 @@ fun ProtocolServerView(
           )
         }
       }
-    }
+    },
+    cardScreen = true,
   ) {
     Box {
       ProtocolServerLayout(
@@ -140,7 +142,7 @@ private fun PresetServer(
   testing: Boolean,
   testServer: () -> Unit
 ) {
-  SectionView(stringResource(MR.strings.smp_servers_preset_address).uppercase()) {
+  SectionView(stringResource(MR.strings.smp_servers_preset_address)) {
     SelectionContainer {
       Text(
         server.value.server,
@@ -172,7 +174,7 @@ fun CustomServer(
     }
   }
   SectionView(
-    stringResource(MR.strings.smp_servers_your_server_address).uppercase(),
+    stringResource(MR.strings.smp_servers_your_server_address),
     icon = painterResource(MR.images.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
@@ -190,13 +192,13 @@ fun CustomServer(
         }
     }
   }
-  SectionDividerSpaced(maxTopPadding = true)
+  SectionDividerSpaced()
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
 
   if (valid.value) {
     SectionDividerSpaced()
-    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
+    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device)) {
       QRCode(serverAddress.value, small = true)
     }
   }
@@ -210,7 +212,7 @@ private fun UseServerSection(
   testServer: () -> Unit,
   onDelete: (() -> Unit)? = null,
 ) {
-  SectionView(stringResource(MR.strings.smp_servers_use_server).uppercase()) {
+  SectionView(stringResource(MR.strings.smp_servers_use_server)) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
       Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server.value)

@@ -204,7 +204,7 @@ linkCheckThread_ opts env@ServiceState {eventQ}
         threadDelay $ linkCheckInterval opts * 1000000
         u <- readTVarIO $ currentUser cc
         forM_ u $ \user ->
-          withDB' "linkCheckThread" cc (\db -> getAllGroupRegs_ db user) >>= \case
+          withDB' "linkCheckThread" cc (\db -> getAllGroupRegs_ db (storeCxt cc) user) >>= \case
             Left e -> logError $ "linkCheckThread error: " <> T.pack e
             Right grs -> forM_ grs $ \(gInfo, gr) ->
               unless (groupRemoved $ groupRegStatus gr) $
@@ -462,7 +462,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     getOwnerGroupMember :: GroupId -> GroupReg -> IO (Either String GroupMember)
     getOwnerGroupMember gId GroupReg {dbOwnerMemberId} = case dbOwnerMemberId of
-      Just mId -> withDB "getGroupMember" cc $ \db -> withExceptT show $ getGroupMember db (vr cc) user gId mId
+      Just mId -> withDB "getGroupMember" cc $ \db -> withExceptT show $ getGroupMember db (storeCxt cc) user gId mId
       Nothing -> pure $ Left "no owner member in group registration"
 
     deServiceJoinedGroup :: ContactId -> GroupInfo -> GroupMember -> IO ()
@@ -556,7 +556,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}))) ->
               case dbOwnerMemberId gr of
                 Just ownerGMId ->
-                  withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
+                  withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (storeCxt cc) user groupId ownerGMId) >>= \case
                     Right ownerMember
                       | let GroupMember {memberRole = role} = ownerMember, role >= GROwner ->
                           setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') (`updatedNotification` g')
@@ -813,7 +813,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           _ -> False
         checkValidOwner dbOwnerMemberId owners onValid = case dbOwnerMemberId of
           Just ownerGMId ->
-            withDB "checkGroupLink" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
+            withDB "checkGroupLink" cc (\db -> withExceptT show $ getGroupMember db (storeCxt cc) user groupId ownerGMId) >>= \case
               Right GroupMember {memberId, memberPubKey}
                 | any (\GroupLinkOwner {memberId = mId, memberKey} -> memberId == mId && memberPubKey == Just memberKey) owners -> onValid
               _ -> setGroupStatus logError st env cc groupId GRSSuspendedBadRoles $ \gr' ->
@@ -970,6 +970,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         GLPConnectingProhibit _ -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."
         GLPConnectingConfirmReconnect -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."
         GLPNoRelays _ -> sendMessage cc ct $ T.toTitle gt <> " has no active relays. Please try again later."
+        GLPUpdateRequired _ -> sendMessage cc ct $ T.toTitle gt <> " requires a newer version."
         GLPOwnLink _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
       _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
 
@@ -984,7 +985,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           addGroupReg notifyAdminUsers st cc ct gInfo GRSProposed $ \_ -> pure ()
           sendChatCmd cc (APIConnectPreparedGroup gId False (Just ownerContact) Nothing) >>= \case
             Right CRStartedConnectionToGroup {groupInfo = gInfo'} ->
-              withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (vr cc) user gInfo' mId) >>= \case
+              withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (storeCxt cc) user gInfo' mId) >>= \case
                 Right ownerMember ->
                   void $ setGroupRegOwner cc gId ownerMember
                 Left e -> do
@@ -997,7 +998,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deReregistration ct g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} profileChanged LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)} = do
       let mId = MemberId oIdBytes
           gt = maybe "group" groupTypeStr' pg_
-      withDB "getGroupMemberByMemberId" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (vr cc) user g mId) >>= \case
+      withDB "getGroupMemberByMemberId" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (storeCxt cc) user g mId) >>= \case
         Right ownerMember@GroupMember {memberRole = role, memberStatus} ->
           if
             | role >= GROwner && memberStatus /= GSMemUnknown ->
@@ -1450,7 +1451,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     getOwnersInfo :: [(GroupInfo, GroupReg)] -> IO [((GroupInfo, GroupReg), Maybe (Either String Contact))]
     getOwnersInfo gs =
       fmap (either (\e -> map (,Just (Left e)) gs) id) $ withDB' "getOwnersInfo" cc $ \db ->
-        mapM (\g@(_, gr) -> fmap ((g,) . Just . first show) $ runExceptT $ getContact db (vr cc) user $ dbContactId gr) gs
+        mapM (\g@(_, gr) -> fmap ((g,) . Just . first show) $ runExceptT $ getContact db (storeCxt cc) user $ dbContactId gr) gs
 
     sendGroupsInfo :: Contact -> ChatItemId -> Bool -> ([(GroupInfo, GroupReg)], Int) -> IO ()
     sendGroupsInfo ct ciId isAdmin (gs, n) = do
@@ -1518,7 +1519,7 @@ updateGroupListingFiles cc u dir =
     Left e -> logError $ "generateListing error: failed to read groups: " <> T.pack e
 
 getContact' :: ChatController -> User -> ContactId -> IO (Either String Contact)
-getContact' cc user ctId = withDB "getContact" cc $ \db ->  withExceptT show $ getContact db (vr cc) user ctId
+getContact' cc user ctId = withDB "getContact" cc $ \db ->  withExceptT show $ getContact db (storeCxt cc) user ctId
 
 getGroupLink' :: ChatController -> User -> GroupInfo -> IO (Either String GroupLink)
 getGroupLink' cc user gInfo =

@@ -9,6 +9,8 @@ rm -rf website/src/docs/contributing
 rm -rf website/src/docs/rfcs
 rm website/src/docs/lang/*/README.md
 rm -rf website/src/docs/dependencies
+rm -f website/src/docs/LINKS.md
+cp -R docs/links/images website/src/link-images 2>/dev/null || true
 cp -R blog website/src
 cp -R images website/src
 rm website/src/blog/README.md
