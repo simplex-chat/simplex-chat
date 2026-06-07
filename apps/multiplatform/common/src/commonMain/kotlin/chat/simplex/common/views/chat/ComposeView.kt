@@ -288,14 +288,20 @@ expect fun AttachmentSelection(
 )
 
 fun MutableState<ComposeState>.onFilesAttached(uris: List<URI>) {
-  val groups =  uris.groupBy { isImage(it) }
-  val images = groups[true] ?: emptyList()
+  val groups = uris.groupBy { isImage(it) || isVideoUri(it) }
+  val media = groups[true] ?: emptyList()
   val files = groups[false] ?: emptyList()
-  if (images.isNotEmpty()) {
-    CoroutineScope(Dispatchers.IO).launch { processPickedMedia(images, null) }
+  if (media.isNotEmpty()) {
+    CoroutineScope(Dispatchers.IO).launch { processPickedMedia(media, null) }
   } else if (files.isNotEmpty()) {
     processPickedFile(uris.first(), null)
   }
+}
+
+private fun isVideoUri(uri: URI): Boolean {
+  val name = getFileName(uri)?.lowercase() ?: return false
+  return name.endsWith(".mov") || name.endsWith(".avi") || name.endsWith(".mp4") ||
+      name.endsWith(".mpg") || name.endsWith(".mpeg") || name.endsWith(".mkv")
 }
 
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
