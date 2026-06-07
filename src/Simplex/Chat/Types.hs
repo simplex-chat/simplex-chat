@@ -2035,6 +2035,10 @@ type VersionChat = Version ChatVersion
 
 type VersionRangeChat = VersionRange ChatVersion
 
+-- | Store-wide context passed to store functions in place of the bare `vr`
+-- parameter. Built from config by mkStoreCxt; more fields are added here over time.
+newtype StoreCxt = StoreCxt {vr :: VersionRangeChat}
+
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
 
