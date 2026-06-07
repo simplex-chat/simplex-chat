@@ -35,7 +35,6 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Text.Encoding (encodeUtf8)
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Maybe (isJust, mapMaybe, maybeToList)
@@ -49,7 +48,6 @@ import Simplex.Chat.Messages
   ( CChatItem (..),
     CIDirection (..),
     CIFile (..),
-    CIMention,
     CIMeta (..),
     CIQDirection (..),
     CIQuote (..),
@@ -67,10 +65,10 @@ import Simplex.Chat.Types
     GroupInfo (..),
     GroupMember (..),
     GroupProfile (..),
+    GroupSummary (..),
     ImageData,
     LocalProfile (..),
     MemberId,
-    MemberName,
     PublicGroupAccess (..),
     PublicGroupProfile (..),
     User (..),
@@ -104,7 +102,6 @@ data WebMessage = WebMessage
     formattedText :: Maybe MarkdownList,
     file :: Maybe WebFileInfo,
     quote :: Maybe QuotedMsg,
-    mentions :: Map MemberName CIMention,
     reactions :: [CIReactionCount],
     forward :: Maybe Bool,
     edited :: Bool
@@ -116,6 +113,7 @@ data WebChannelPreview = WebChannelPreview
     shortDescription :: Maybe MarkdownList,
     welcomeMessage :: Maybe MarkdownList,
     members :: [WebMemberProfile],
+    subscribers :: Maybe Int64,
     messages :: [WebMessage],
     updatedAt :: UTCTime
   }
@@ -231,7 +229,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
           Left _ -> go us
 
 renderGroupPreview :: WebPreviewConfig -> ChatController -> User -> GroupInfo -> IO (Maybe (Text, CorsOrigin))
-renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {shortDescr = sd, description = wd, publicGroup}} =
+renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gInfo@GroupInfo {groupProfile = gp@GroupProfile {shortDescr = sd, description = wd, publicGroup}, groupSummary = GroupSummary {publicMemberCount}} =
   case publicGroup of
     Just PublicGroupProfile {publicGroupId, publicGroupAccess} -> do
       let fName = publicGroupIdFileName publicGroupId <> ".json"
@@ -248,6 +246,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
               shortDescription = toFormattedText =<< sd,
               welcomeMessage = toFormattedText =<< wd,
               members = senders,
+              subscribers = publicMemberCount,
               messages = msgs,
               updatedAt = ts
             }
@@ -302,7 +301,7 @@ channelRemoved cc gId =
     void $ tryPutTMVar wakeSignal ()
 
 toRenderedItem :: CChatItem 'CTGroup -> Maybe (WebMessage, [WebMemberProfile])
-toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed, itemForwarded, itemEdited}, content, mentions, formattedText, quotedItem, reactions, file})
+toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed, itemForwarded, itemEdited}, content, formattedText, quotedItem, reactions, file})
   | isJust itemTimed = Nothing
   | otherwise = case ciMsgContent content of
       Just mc | not (isReport mc) ->
@@ -320,7 +319,6 @@ toRenderedItem (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs, itemTimed,
                     formattedText,
                     file = webFileInfo <$> file,
                     quote = quotedItem >>= ciQuoteToQuotedMsg,
-                    mentions,
                     reactions,
                     forward = if isJust itemForwarded then Just True else Nothing,
                     edited = itemEdited

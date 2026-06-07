@@ -843,7 +843,7 @@ function render(container, data, channelLink, showAppBadges) {
   const main = document.createElement('div');
   main.className = 'simplex-preview-main';
 
-  const header = renderHeader(channel, channelLink, members.length);
+  const header = renderHeader(channel, channelLink, data.subscribers);
   main.appendChild(header);
 
   const messagesDiv = document.createElement('div');
@@ -875,7 +875,7 @@ function render(container, data, channelLink, showAppBadges) {
 
   const infoContent = document.createElement('div');
   infoContent.className = 'simplex-preview-info-content';
-  renderInfoContent(infoContent, data, channelLink, members.length, showAppBadges);
+  renderInfoContent(infoContent, data, channelLink, data.subscribers, showAppBadges);
   info.appendChild(infoContent);
 
   container.appendChild(info);
