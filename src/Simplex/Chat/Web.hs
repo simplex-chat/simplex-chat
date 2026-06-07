@@ -23,7 +23,7 @@ module Simplex.Chat.Web
   )
 where
 
-import Control.Concurrent.STM (check)
+import Control.Concurrent.STM (check, flushTQueue)
 import Control.Exception (SomeException, catch)
 import Control.Logger.Simple
 import Control.Monad (forM_, void, when)
@@ -145,9 +145,9 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
       drainRemovals
       drainPriority
       handleCors
-      drainRoutine
-      timerFired <- interruptibleSleep
-      when timerFired $ seedRoutinePending wps
+      renderRoutine
+      noRoutine <- atomically $ S.null <$> readTVar routinePending
+      when noRoutine waitRefresh
       workerLoop wps
       where
         drainRemovals = atomically (tryReadTQueue filesToRemove) >>= \case
@@ -156,34 +156,32 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
             removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
             drainRemovals
 
-        drainPriority = atomically (tryReadTQueue priorityRender) >>= \case
-          Nothing -> pure ()
-          Just gId -> do
-            renderOneGroup wps gId
-            drainPriority
+        -- flush the whole queue and render each group once: a burst of changes in one
+        -- channel enqueues its id many times, but only needs a single render
+        drainPriority = do
+          gIds <- atomically $ flushTQueue priorityRender
+          forM_ (S.fromList gIds) $ renderOneGroup wps
 
         handleCors = do
           needed <- atomically $ swapTVar corsNeeded False
           when needed $ regenerateCors wps
 
-        drainRoutine = do
+        -- render a single routine item; the main loop calls this once per iteration
+        renderRoutine = do
           mGId <- atomically $ do
             pending <- readTVar routinePending
             case S.minView pending of
               Nothing -> pure Nothing
               Just (gId, rest) -> writeTVar routinePending rest >> pure (Just gId)
-          forM_ mGId $ \gId -> do
-            renderOneGroup wps gId
-            drainPriority
-            drainRoutine
+          forM_ mGId $ renderOneGroup wps
 
-        -- returns True when the refresh timer fired, False when woken early by a change signal;
-        -- a full routine re-render is only seeded on the timer, so changes render incrementally
-        interruptibleSleep = do
+        -- routine list drained: wait for the refresh timer or a change signal; only the timer
+        -- seeds the next full sweep, a change just returns to let the main loop service it
+        waitRefresh = do
           delay <- registerDelay (webUpdateInterval * 1000000)
-          atomically $
-            (True <$ (readTVar delay >>= check))
-              `orElse` (False <$ takeTMVar wakeSignal)
+          timerFired <- atomically $
+            (True <$ (readTVar delay >>= check)) `orElse` (False <$ takeTMVar wakeSignal)
+          when timerFired $ seedRoutinePending wps
 
     initPublishableGroups WebPreviewState {publishableGroupIds} = do
       rows <- withTransaction (chatStore cc) $ \db ->
