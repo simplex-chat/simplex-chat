@@ -1185,7 +1185,7 @@ function renderMessages(container, messages, membersMap, channel) {
     }
 
     const col = document.createElement('div');
-    const bubble = renderBubble(msg, member, showTail, membersMap);
+    const bubble = renderBubble(msg, member, showTail, membersMap, channel);
     col.appendChild(bubble);
 
     if (msg.reactions && msg.reactions.length > 0) {
@@ -1198,7 +1198,7 @@ function renderMessages(container, messages, membersMap, channel) {
   }
 }
 
-function renderBubble(msg, member, showTail, membersMap) {
+function renderBubble(msg, member, showTail, membersMap, channel) {
   const mc = msg.content;
   const mediaOnly = (mc.type === 'image' || mc.type === 'video') && !mc.text && !msg.quote && !msg.forward;
   const noTailContent = (mc.type === 'image' || mc.type === 'video' || mc.type === 'voice') && !mc.text;
@@ -1225,7 +1225,7 @@ function renderBubble(msg, member, showTail, membersMap) {
   }
 
   if (msg.quote) {
-    inner.appendChild(renderQuote(msg.quote, membersMap));
+    inner.appendChild(renderQuote(msg.quote, membersMap, channel));
   }
 
   switch (mc.type) {
@@ -1262,18 +1262,27 @@ function renderBubble(msg, member, showTail, membersMap) {
   return bubble;
 }
 
-function renderQuote(quote, membersMap) {
+function renderQuote(quote, membersMap, channel) {
   const quoteDiv = document.createElement('div');
   quoteDiv.className = 'simplex-preview-quote';
 
   const contentDiv = document.createElement('div');
   contentDiv.className = 'simplex-preview-quote-content';
 
-  if (quote.msgRef && quote.msgRef.memberId) {
+  const ref = quote.msgRef;
+  let senderName = '';
+  if (ref) {
+    if (ref.memberId) {
+      const quotedMember = membersMap[ref.memberId];
+      senderName = quotedMember ? quotedMember.displayName : '';
+    } else if (ref.sent) {
+      senderName = channel.displayName;
+    }
+  }
+  if (senderName) {
     const sender = document.createElement('div');
     sender.className = 'simplex-preview-quote-sender';
-    const quotedMember = membersMap[quote.msgRef.memberId];
-    sender.textContent = quote.msgRef.sent ? 'You' : (quotedMember ? quotedMember.displayName : '');
+    sender.textContent = senderName;
     contentDiv.appendChild(sender);
   }
 
