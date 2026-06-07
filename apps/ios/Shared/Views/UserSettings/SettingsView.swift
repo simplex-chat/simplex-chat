@@ -370,9 +370,7 @@ struct SettingsView: View {
                         .navigationBarTitle("App version")
                         .modifier(ThemedBackground())
                 } label: {
-//                    settingsRow("chevron.left.forwardslash.chevron.right", color: theme.colors.secondary) {
-                        Text(verbatim: "v\(appVersion ?? "?")")
-//                    }
+                    Text(verbatim: "v\(appVersion ?? "?")")
                 }
             }
         }

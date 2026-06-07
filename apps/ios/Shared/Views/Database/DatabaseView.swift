@@ -251,6 +251,7 @@ struct DatabaseView: View {
 
             runChatToggleView()
         }
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func databaseAlert(_ alertItem: DatabaseAlert) -> Alert {
