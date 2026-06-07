@@ -3463,7 +3463,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             | GroupMember {memberPubKey = Just pubKey, memberId} <- member ->
                 case chatBinding of
                   CBGroup ->
-                    let prefix = smpEncode chatBinding <> maybe (smpEncode pubKey) (\GroupKeys {publicGroupId} -> smpEncode (publicGroupId, memberId)) (groupKeys gInfo)
+                    let prefix = case groupKeys gInfo of
+                          Just GroupKeys {publicGroupId} -> smpEncode (chatBinding, publicGroupId, memberId)
+                          Nothing -> smpEncode (chatBinding, memberId, pubKey)
                      in signed MSSVerified <$ guard (all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
                   _ -> signed MSSSignedNoKey <$ guard signatureOptional
             | otherwise -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
