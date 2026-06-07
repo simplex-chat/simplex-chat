@@ -3466,7 +3466,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     let prefix = smpEncode chatBinding <> bindingData
                         bindingData = case groupKeys gInfo of
                           Just GroupKeys {publicGroupId} -> smpEncode (publicGroupId, memberId)
-                          Nothing -> smpEncode (memberId, pubKey)
+                          Nothing -> smpEncode (memberId, pubKey) -- forward compatibility for verifying signed messages in p2p groups
                      in signed MSSVerified <$ guard (all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
                   _ -> signed MSSSignedNoKey <$ guard signatureOptional
             | otherwise -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
