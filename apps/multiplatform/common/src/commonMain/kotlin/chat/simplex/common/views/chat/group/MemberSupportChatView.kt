@@ -85,7 +85,7 @@ fun MemberSupportChatAppBar(
           } else {
             null
           }
-          ModalManager.end.showModalCloseable(true) { closeCurrent ->
+          ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(scopeMember_.groupMemberId) } }.value?.let { mem ->
               GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = true, close = closeCurrent) {
                 closeCurrent()

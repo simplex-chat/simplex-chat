@@ -3,10 +3,9 @@ package chat.simplex.common.views.chat
 import InfoRow
 import InfoRowEllipsis
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -553,7 +552,7 @@ fun ChatInfoLayout(
 
     LocalAliasEditor(chat.id, localAlias, updateValue = onLocalAliasChanged)
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     Box(
       Modifier.fillMaxWidth(),
@@ -573,10 +572,10 @@ fun ChatInfoLayout(
       }
     }
 
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (customUserProfile != null) {
-      SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+      SectionView(generalGetString(MR.strings.incognito)) {
         SectionItemViewSpaceBetween {
           Text(generalGetString(MR.strings.incognito_random_profile))
           Text(customUserProfile.chatViewName, color = Indigo)
@@ -601,7 +600,7 @@ fun ChatInfoLayout(
       }
 
       WallpaperButton {
-        ModalManager.end.showModal {
+        ModalManager.end.showModal(cardScreen = true) {
           val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
           val c = chat.value
           if (c != null) {
@@ -610,30 +609,30 @@ fun ChatInfoLayout(
         }
       }
     }
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
 
     SectionView {
       ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
-      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
     }
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+    SectionDividerSpaced()
 
     val conn = contact.activeConn
     if (conn != null) {
       SectionView {
         InfoRow("E2E encryption", if (conn.connPQEnabled) "Quantum resistant" else "Standard")
-        SectionDividerSpaced()
       }
+      SectionDividerSpaced()
     }
 
     if (contact.contactLink != null) {
-      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title)) {
         SimpleXLinkQRCode(contact.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
+      SectionDividerSpaced()
     }
 
     if (contact.ready && contact.active) {
@@ -670,7 +669,7 @@ fun ChatInfoLayout(
           }
         }
       }
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
     }
 
     SectionView {

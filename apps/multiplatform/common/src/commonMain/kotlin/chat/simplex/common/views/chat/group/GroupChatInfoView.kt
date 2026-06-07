@@ -1,20 +1,25 @@
 package chat.simplex.common.views.chat.group
 
+import CARD_PADDING
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewLongClickable
 import SectionItemViewSpaceBetween
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -111,7 +117,7 @@ fun ModalData.GroupChatInfoView(
           setGroupMembers(rhId, groupInfo, chatModel)
           if (!isActive) return@launch
 
-          ModalManager.end.showModalCloseable(true) { close ->
+          ModalManager.end.showModalCloseable(showClose = true) { close ->
             AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
           }
         }
@@ -126,7 +132,7 @@ fun ModalData.GroupChatInfoView(
           } else {
             member to null
           }
-          ModalManager.end.showModalCloseable(true) { closeCurrent ->
+          ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
               GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, groupRelay = groupRelay, close = closeCurrent) {
                 closeCurrent()
@@ -167,7 +173,7 @@ fun ModalData.GroupChatInfoView(
       clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo) }
+          ModalManager.end.showModal(cardScreen = true) { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo) }
       },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
@@ -552,7 +558,7 @@ fun ModalData.GroupChatInfoLayout(
 
       LocalAliasEditor(chat.id, groupInfo.localAlias, isContact = false, updateValue = onLocalAliasChanged)
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       Box(
         Modifier.fillMaxWidth(),
@@ -581,10 +587,10 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       if (groupInfo.useRelays && groupInfo.membership.memberIncognito) {
-        SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+        SectionView(generalGetString(MR.strings.incognito)) {
           SectionItemViewSpaceBetween {
             Text(generalGetString(MR.strings.incognito_random_profile))
             Text(groupInfo.membership.chatViewName, color = Indigo)
@@ -658,7 +664,7 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       if (anyTopSectionRowShow) {
-        SectionDividerSpaced(maxBottomPadding = false)
+        SectionDividerSpaced()
       }
       SectionView {
         if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
@@ -677,7 +683,7 @@ fun ModalData.GroupChatInfoLayout(
         else if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs
         else MR.strings.only_chat_owners_can_change_prefs
       SectionTextFooter(stringResource(footerId))
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionDividerSpaced()
 
       SectionView {
         if (!groupInfo.useRelays) {
@@ -688,7 +694,7 @@ fun ModalData.GroupChatInfoLayout(
           }
         }
         WallpaperButton {
-          ModalManager.end.showModal {
+          ModalManager.end.showModal(cardScreen = true) {
             val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
             val c = chat.value
             if (c != null) {
@@ -697,12 +703,12 @@ fun ModalData.GroupChatInfoLayout(
           }
         }
         ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
-        SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
       }
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
+      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+      SectionDividerSpaced()
 
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-        SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
+        SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1), cardShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)) {
           if (groupInfo.canAddMembers) {
             val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
             val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -725,32 +731,36 @@ fun ModalData.GroupChatInfoLayout(
       }
     }
     if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-      items(filteredMembers.value, key = { it.groupMemberId }) { member ->
-        Divider()
-        val showMenu = remember { mutableStateOf(false) }
-        val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
-        SectionItemViewLongClickable(
-          click = {
-            if (selectedItems.value != null) {
-              if (canBeSelected) {
-                toggleItemSelection(member.groupMemberId, selectedItems)
+      itemsIndexed(filteredMembers.value, key = { _, m -> m.groupMemberId }) { index, member ->
+        val isLast = index == filteredMembers.value.lastIndex
+        val shape = if (isLast) RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp) else RectangleShape
+        Column(Modifier.padding(horizontal = CARD_PADDING).fillMaxWidth().clip(shape).background(sectionCardColor())) {
+          Divider()
+          val showMenu = remember { mutableStateOf(false) }
+          val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
+          SectionItemViewLongClickable(
+            click = {
+              if (selectedItems.value != null) {
+                if (canBeSelected) {
+                  toggleItemSelection(member.groupMemberId, selectedItems)
+                }
+              } else {
+                showMemberInfo(member, null)
               }
-            } else {
-              showMemberInfo(member, null)
-            }
-          },
-          longClick = { showMenu.value = true },
-          minHeight = 54.dp,
-          padding = PaddingValues(horizontal = DEFAULT_PADDING)
-        ) {
-          Box(contentAlignment = Alignment.CenterStart) {
-            androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
-              SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
-            }
-            val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
-            DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
-            Box(Modifier.padding(start = selectionOffset)) {
-              MemberRow(member)
+            },
+            longClick = { showMenu.value = true },
+            minHeight = 54.dp,
+            padding = PaddingValues(horizontal = DEFAULT_PADDING)
+          ) {
+            Box(contentAlignment = Alignment.CenterStart) {
+              androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
+                SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
+              }
+              val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
+              DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
+              Box(Modifier.padding(start = selectionOffset)) {
+                MemberRow(member)
+              }
             }
           }
         }
@@ -758,7 +768,7 @@ fun ModalData.GroupChatInfoLayout(
     }
     item {
       if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        SectionDividerSpaced()
       }
       SectionView {
         if (groupInfo.useRelays && (groupInfo.isOwner || activeSortedMembers.any { it.memberRole == GroupMemberRole.Relay })) {
@@ -922,6 +932,18 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
+    if (webPage != null) {
+      val uriHandler = LocalUriHandler.current
+      Text(
+        webPage,
+        style = MaterialTheme.typography.body2,
+        color = MaterialTheme.colors.primary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.clickable { uriHandler.openUriCatching(webPage) }
+      )
+    }
     if (groupInfo.useRelays) {
       val count = groupInfo.groupSummary.publicMemberCount
       if (count != null && count > 0) {
@@ -1186,7 +1208,9 @@ private fun ChannelLinkButton(onClick: () -> Unit) {
 @Composable
 private fun ChannelLinkQRCodeSection(groupLink: String) {
   val clipboard = LocalClipboardManager.current
-  SimpleXLinkQRCode(connReq = groupLink)
+  Box(Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
+    SimpleXLinkQRCode(connReq = groupLink)
+  }
   SectionItemView({
     clipboard.shareText(simplexChatLink(groupLink))
   }) {

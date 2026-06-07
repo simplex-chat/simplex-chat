@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chatlist
 
 import SectionCustomFooter
-import SectionDivider
 import SectionItemView
 import TextIconSpaced
 import androidx.compose.animation.core.animateDpAsState
@@ -157,7 +156,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
                 Icon(painterResource(MR.images.ic_drag_handle), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
               }
             }
-            SectionDivider()
+            Divider(Modifier.padding(horizontal = 8.dp))
           }
         }
       }

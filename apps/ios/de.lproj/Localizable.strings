@@ -373,7 +373,7 @@ time interval */
 "A new random profile will be shared." = "Es wird ein neues Zufallsprofil geteilt.";
 
 /* No comment provided by engineer. */
-"A separate TCP connection will be used **for each chat profile you have in the app**." = "**Für jedes von Ihnen in der App genutzte Chat-Profil** wird eine separate TCP-Verbindung genutzt.";
+"A separate TCP connection will be used **for each chat profile you have in the app**." = "**Für jedes von Ihnen in der App genutzte Chat-Profil** wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "**Für jeden Kontakt und jedes Gruppenmitglied** wird eine separate TCP-Verbindung genutzt.\n**Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.";
@@ -506,9 +506,6 @@ swipe action */
 "Added message servers" = "Nachrichtenserver hinzugefügt";
 
 /* No comment provided by engineer. */
-"Adding relays will be supported later." = "Das Hinzufügen von Relais wird zu einem späteren Zeitpunkt unterstützt.";
-
-/* No comment provided by engineer. */
 "Additional accent" = "Erste Akzentfarbe";
 
 /* No comment provided by engineer. */
@@ -617,7 +614,7 @@ swipe action */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Alle Ihre Kontakte bleiben verbunden. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Relais hochgeladen.";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Router hochgeladen.";
 
 /* No comment provided by engineer. */
 "Allow" = "Erlauben";
@@ -716,10 +713,10 @@ swipe action */
 "always" = "Immer";
 
 /* No comment provided by engineer. */
-"Always use private routing." = "Sie nutzen immer privates Routing.";
+"Always use private routing." = "Immer privates Routing nutzen.";
 
 /* No comment provided by engineer. */
-"Always use relay" = "Über ein Relais verbinden";
+"Always use relay" = "Immer über einen Router verbinden";
 
 /* No comment provided by engineer. */
 "An empty chat profile with the provided name is created, and the app opens as usual." = "Es wurde ein leeres Chat-Profil mit dem eingegebenen Namen erstellt und die App öffnet wie gewohnt.";
@@ -764,7 +761,7 @@ swipe action */
 "App version: v%@" = "App Version: v%@";
 
 /* No comment provided by engineer. */
-"Appearance" = "Erscheinungsbild";
+"Appearance" = "Darstellung";
 
 /* No comment provided by engineer. */
 "Apply" = "Anwenden";
@@ -1182,9 +1179,6 @@ alert subtitle */
 /* No comment provided by engineer. */
 "Channel will be deleted for you - this cannot be undone!" = "Der Kanal wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!";
 
-/* alert message */
-"Channel will start working with %d of %d relays. Proceed?" = "Der Kanal wird mit %1$d von %2$d Relais gestartet. Fortfahren?";
-
 /* No comment provided by engineer. */
 "Channels" = "Kanäle";
 
@@ -1237,7 +1231,7 @@ alert subtitle */
 "Chat preferences were changed." = "Die Chat-Präferenzen wurden geändert.";
 
 /* No comment provided by engineer. */
-"Chat profile" = "Benutzerprofil";
+"Chat profile" = "Chat-Profil";
 
 /* No comment provided by engineer. */
 "Chat relay" = "Chat-Relais";
@@ -1367,7 +1361,7 @@ chat toolbar */
 "Completed" = "Abgeschlossen";
 
 /* No comment provided by engineer. */
-"Conditions accepted on: %@." = "Die Nutzungsbedingungen wurden akzeptiert am: %@.";
+"Conditions accepted on: %@." = "Die Nutzungsbedingungen wurden am %@ akzeptiert.";
 
 /* No comment provided by engineer. */
 "Conditions are accepted for the operator(s): **%@**." = "Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.";
@@ -1382,10 +1376,10 @@ chat toolbar */
 "Conditions will be accepted for the operator(s): **%@**." = "Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.";
 
 /* No comment provided by engineer. */
-"Conditions will be accepted on: %@." = "Die Nutzungsbedingungen werden akzeptiert am: %@.";
+"Conditions will be accepted on: %@." = "Die Nutzungsbedingungen werden am %@ akzeptiert.";
 
 /* No comment provided by engineer. */
-"Conditions will be automatically accepted for enabled operators on: %@." = "Die Nutzungsbedingungen der aktivierten Betreiber werden automatisch akzeptiert am: %@.";
+"Conditions will be automatically accepted for enabled operators on: %@." = "Die Nutzungsbedingungen der aktivierten Betreiber werden am %@ automatisch akzeptiert.";
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICE-Server konfigurieren";
@@ -1634,7 +1628,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Inhalt verletzt Nutzungsbedingungen";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Weiter";
 
 /* No comment provided by engineer. */
@@ -2070,7 +2064,7 @@ alert button */
 "Developer options" = "Optionen für Entwickler";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Entwicklertools";
+"Developer" = "Entwicklertools";
 
 /* No comment provided by engineer. */
 "Device" = "Gerät";
@@ -2169,10 +2163,10 @@ alert button */
 "Do NOT send messages directly, even if your or destination server does not support private routing." = "Nachrichten werden nicht direkt versendet, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.";
 
 /* No comment provided by engineer. */
-"Do not use credentials with proxy." = "Verwenden Sie keine Anmeldeinformationen mit einem Proxy.";
+"Do not use credentials with proxy." = "Keine Anmeldeinformationen mit einem Proxy verwenden.";
 
 /* No comment provided by engineer. */
-"Do NOT use private routing." = "Sie nutzen KEIN privates Routing.";
+"Do NOT use private routing." = "KEIN privates Routing nutzen.";
 
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "SimpleX NICHT für Notrufe nutzen.";
@@ -3975,10 +3969,10 @@ servers warning */
 "New server" = "Neuer Server";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used every time you start the app." = "Jedes Mal wenn Sie die App starten, werden neue SOCKS-Anmeldeinformationen genutzt";
+"New SOCKS credentials will be used every time you start the app." = "Bei jedem Neustart der App, werden neue SOCKS-Anmeldeinformationen genutzt.";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used for each server." = "Für jeden Server werden neue SOCKS-Anmeldeinformationen genutzt";
+"New SOCKS credentials will be used for each server." = "Für jeden Server werden neue SOCKS-Anmeldeinformationen genutzt.";
 
 /* pref value */
 "no" = "Nein";
@@ -4074,7 +4068,7 @@ servers warning */
 "No received or sent files" = "Keine herunter- oder hochgeladenen Dateien";
 
 /* servers error */
-"No servers for private message routing." = "Keine Server für privates Nachrichten-Routing.";
+"No servers for private message routing." = "Keine Router für privates Nachrichten-Routing.";
 
 /* servers error */
 "No servers to receive files." = "Keine Server für das Herunterladen von Dateien.";
@@ -4539,7 +4533,7 @@ alert button */
 "Previously connected servers" = "Bisher verbundene Server";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Datenschutz & Sicherheit";
+"Your privacy" = "Datenschutz & Sicherheit";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Schutz der Privatsphäre Ihrer Kunden.";
@@ -4548,7 +4542,7 @@ alert button */
 "Privacy policy and conditions of use." = "Datenschutz- und Nutzungsbedingungen.";
 
 /* No comment provided by engineer. */
-"Privacy: for owners and subscribers." = "Privatsphäre: für Besitzer und Abonnenten.";
+"Privacy: for owners and subscribers." = "Privatsphäre: Für Eigentümer und Abonnenten.";
 
 /* No comment provided by engineer. */
 "Private and secure messaging." = "Private und sichere Kommunikation.";
@@ -4576,9 +4570,6 @@ alert button */
 
 /* alert title */
 "Private routing timeout" = "Zeitüberschreitung der privaten Routing-Sitzung";
-
-/* alert action */
-"Proceed" = "Fortfahren";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profil und Serververbindungen";
@@ -4644,7 +4635,7 @@ alert button */
 "Protect your chat profiles with a password!" = "Ihre Chat-Profile mit einem Passwort schützen!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais, die Ihre Kontakte ausgewählt haben.\nAktivieren Sie es in den *Netzwerk & Server* Einstellungen.";
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Schützen Sie Ihre IP-Adresse vor den Nachrichten-Routern, die Ihre Kontakte ausgewählt haben.\nAktivieren Sie es in den *Netzwerk & Server* Einstellungen.";
 
 /* No comment provided by engineer. */
 "Protocol background timeout" = "Protokoll Hintergrund-Zeitüberschreitung";
@@ -4829,13 +4820,13 @@ swipe action */
 "Relay server is only used if necessary. Another party can observe your IP address." = "Relais-Server werden nur genutzt, wenn sie benötigt werden. Ihre IP-Adresse kann von Anderen erfasst werden.";
 
 /* No comment provided by engineer. */
-"Relay server protects your IP address, but it can observe the duration of the call." = "Relais-Server schützen Ihre IP-Adresse, aber sie können die Anrufdauer erfassen.";
+"Relay server protects your IP address, but it can observe the duration of the call." = "Relais-Server schützen Ihre IP-Adresse, können aber die Anrufdauer erfassen.";
 
 /* No comment provided by engineer. */
 "Relay test failed!" = "Relais-Test fehlgeschlagen!";
 
 /* No comment provided by engineer. */
-"Reliability: many relays per channel." = "Zuverlässigkeit: mehrere Relais pro Kanal.";
+"Reliability: many relays per channel." = "Zuverlässigkeit: Mehrere Relais pro Kanal.";
 
 /* alert action */
 "Remove" = "Entfernen";
@@ -4860,9 +4851,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "Passwort aus dem Schlüsselbund entfernen?";
-
-/* No comment provided by engineer. */
-"Remove subscriber" = "Abonnent entfernen";
 
 /* alert title */
 "Remove subscriber?" = "Abonnent entfernen?";
@@ -5223,7 +5211,7 @@ chat item action */
 "security code changed" = "Sicherheitscode wurde geändert";
 
 /* No comment provided by engineer. */
-"Security: owners hold channel keys." = "Sicherheit: Eigentümer besitzen die Kanalschlüssel.";
+"Security: owners hold channel keys." = "Sicherheit: Nur die Eigentümer des Kanals besitzen die Schlüssel.";
 
 /* chat item action */
 "Select" = "Auswählen";
@@ -5280,10 +5268,10 @@ chat item action */
 "Send message to enable calls." = "Nachricht senden, um Anrufe zu aktivieren.";
 
 /* No comment provided by engineer. */
-"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Zielserver kein privates Routing unterstützt.";
+"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Ziel-Server kein privates Routing unterstützt.";
 
 /* No comment provided by engineer. */
-"Send messages directly when your or destination server does not support private routing." = "Nachrichten werden direkt versendet, wenn Ihr oder der Zielserver kein privates Routing unterstützt.";
+"Send messages directly when your or destination server does not support private routing." = "Nachrichten werden direkt versendet, wenn Ihr oder der Ziel-Server kein privates Routing unterstützt.";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Benachrichtigungen senden";
@@ -5406,7 +5394,7 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "Server-Warteschlangen-Information: %1$@\n\nZuletzt empfangene Nachricht: %2$@";
 
 /* relay test error */
-"Server requires authorization to connect to relay, check password." = "Der Server erfordert eine Autorisierung, um eine Verbindung zum Relais herzustellen. Bitte Passwort überprüfen.";
+"Server requires authorization to connect to relay, check password." = "Der Server erfordert eine Autorisierung, um eine Verbindung zum Router herzustellen. Bitte Passwort überprüfen.";
 
 /* server test error */
 "Server requires authorization to create queues, check password." = "Der Server erfordert zum Erstellen von Warteschlangen eine Autorisierung. Bitte überprüfen Sie das Passwort.";
@@ -5539,7 +5527,7 @@ chat item action */
 "Share profile" = "Profil teilen";
 
 /* No comment provided by engineer. */
-"Share relay address" = "Relais-Adresse teilen";
+"Share relay address" = "Router-Adresse teilen";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "Die SimpleX-Adresse auf sozialen Medien teilen.";
@@ -6141,7 +6129,7 @@ server test failure */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Um Ihre Informationen zu schützen, schalten Sie die SimpleX-Sperre ein.\nSie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.";
 
 /* No comment provided by engineer. */
-"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.";
+"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Router genutzt.";
 
 /* No comment provided by engineer. */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Zum Schutz Ihrer Privatsphäre verwendet SimpleX an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.";
@@ -6270,7 +6258,7 @@ server test failure */
 "Unknown error" = "Unbekannter Fehler";
 
 /* No comment provided by engineer. */
-"unknown servers" = "Unbekannte Relais";
+"unknown servers" = "Unbekannte Server";
 
 /* alert title */
 "Unknown servers!" = "Unbekannte Server!";
@@ -6417,10 +6405,10 @@ server test failure */
 "Use only local notifications?" = "Nur lokale Benachrichtigungen nutzen?";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "Sie nutzen privates Routing mit unbekannten Servern, wenn Ihre IP-Adresse nicht geschützt ist.";
+"Use private routing with unknown servers when IP address is not protected." = "Bei unbekannten Servern privates Routing nutzen, wenn Ihre IP-Adresse nicht geschützt ist.";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "Sie nutzen privates Routing mit unbekannten Servern.";
+"Use private routing with unknown servers." = "Bei unbekannten Servern privates Routing nutzen.";
 
 /* No comment provided by engineer. */
 "Use relay" = "Relais verwenden";
@@ -6672,7 +6660,7 @@ server test failure */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für Datei-Server sichtbar sein.";
 
 /* alert message */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für diese XFTP-Relais sichtbar sein: %@.";
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für diese XFTP-Router sichtbar sein: %@.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Falsches Datenbank-Passwort";
@@ -6759,7 +6747,7 @@ server test failure */
 "You can accept calls from lock screen, without device and app authentication." = "Sie können Anrufe ohne Geräte- und App-Authentifizierung vom Sperrbildschirm aus annehmen.";
 
 /* No comment provided by engineer. */
-"You can change it in Appearance settings." = "Kann von Ihnen in den Erscheinungsbild-Einstellungen geändert werden.";
+"You can change it in Appearance settings." = "Sie können dies in den Einstellungen unter „Darstellung“ ändern.";
 
 /* No comment provided by engineer. */
 "You can configure servers via settings." = "Sie können die Server über die Einstellungen konfigurieren.";
@@ -6771,7 +6759,7 @@ server test failure */
 "You can enable later via Settings" = "Sie können diese später in den Einstellungen aktivieren";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Sie können diese später in den Datenschutz & Sicherheits-Einstellungen der App aktivieren.";
+"You can enable them later via app Your privacy settings." = "Sie können diese später in den Datenschutz & Sicherheits-Einstellungen der App aktivieren.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Sie können es nochmal probieren.";

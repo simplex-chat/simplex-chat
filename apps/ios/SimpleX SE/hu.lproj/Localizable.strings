@@ -29,7 +29,7 @@
 "Database error" = "Adatbázishiba";
 
 /* No comment provided by engineer. */
-"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata nem egyezik a kulcstartóba mentettől.";
+"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata eltér a kulcstartóban tárolttól.";
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "A csevegés megnyitásához adja meg az adatbázis jelmondatát.";
@@ -101,11 +101,11 @@
 "Unsupported format" = "Nem támogatott formátum";
 
 /* No comment provided by engineer. */
-"Wait" = "Várjon";
+"Wait" = "Várakozás";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Érvénytelen adatbázis-jelmondat";
 
 /* No comment provided by engineer. */
-"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "A megosztást az Adatvédelem és biztonság / SimpleX-zár menüben engedélyezheti.";
+"You can allow sharing in Your privacy / SimpleX Lock settings." = "A megosztást az Adatvédelem és biztonság / SimpleX-zár menüben engedélyezheti.";
 

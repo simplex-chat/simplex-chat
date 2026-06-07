@@ -83,7 +83,7 @@
     <string name="keychain_is_storing_securely">Android Keystore се използва за сигурно съхраняване на паролата - тоа позволява на услугата за известия да работи.</string>
     <string name="empty_chat_profile_is_created">Създаен беше празен профил за чат с предоставеното име и приложението се отвари както обикновено.</string>
     <string name="notifications_mode_off_desc">Приложението може да получава известия само когато работи, няма да се стартира услуга във фонов режим</string>
-    <string name="settings_section_title_icon">ИКОНА НА ПРИЛОЖЕНИЕТО</string>
+    <string name="settings_section_title_icon">Икона на приложението</string>
     <string name="la_authenticate">Идентифицирай</string>
     <string name="turning_off_service_and_periodic">Оптимизацията на батерията е активна, изключват се фоновата услуга и периодичните заявки за нови съобщения. Можете да ги активирате отново през настройките.</string>
     <string name="network_session_mode_user_description"><![CDATA[Ще се използва отделна TCP връзка (и идентификационни данни за SOCKS) <b>за всеки чат профил, който имате в приложението</b>.]]></string>
@@ -169,13 +169,13 @@
     <string name="call_connection_via_relay">чрез реле</string>
     <string name="icon_descr_video_call">видео разговор</string>
     <string name="your_calls">Вашите обаждания</string>
-    <string name="settings_section_title_app">ПРИЛОЖЕНИЕ</string>
+    <string name="settings_section_title_app">Приложение</string>
     <string name="full_backup">Резервно копие на данните от приложението</string>
     <string name="app_passcode_replaced_with_self_destruct">Кода за достъп до приложение се заменя с код за самоунищожение.</string>
     <string name="auto_accept_images">Автоматично приемане на изображения</string>
     <string name="authentication_cancelled">Идентификацията е отменена</string>
     <string name="send_link_previews">Изпрати визуализация на линковете</string>
-    <string name="settings_section_title_calls">ОБАЖДАНИЯ</string>
+    <string name="settings_section_title_calls">Обаждания</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore ще се използва за сигурно съхраняване на паролата, след като рестартирате приложението или промените паролата - това ще позволи получаването на известия.</string>
     <string name="change_database_passphrase_question">Промяна на паролата на базата данни\?</string>
     <string name="rcv_group_event_changed_member_role">променена ролята от %s на %s</string>
@@ -223,7 +223,7 @@
     <string name="chat_database_deleted">Базата данни е изтрита</string>
     <string name="chat_is_running">Чатът работи</string>
     <string name="chat_is_stopped">Чатът е спрян</string>
-    <string name="chat_database_section">БАЗА ДАННИ</string>
+    <string name="chat_database_section">База данни</string>
     <string name="chat_database_imported">Базата данни е импортирана</string>
     <string name="confirm_new_passphrase">Потвърди новата парола…</string>
     <string name="confirm_database_upgrades">Потвърди актуализаациите на базата данни</string>
@@ -314,13 +314,13 @@
     <string name="change_lock_mode">Промяна на режима на заключване</string>
     <string name="change_self_destruct_mode">Промени режима на самоунищожение</string>
     <string name="change_self_destruct_passcode">Промени кода за достъп за самоунищожение</string>
-    <string name="settings_section_title_chats">ЧАТОВЕ</string>
+    <string name="settings_section_title_chats">Чатове</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">промяна на адреса…</string>
     <string name="maximum_supported_file_size">В момента максималният поддържан размер на файла е %1$s.</string>
     <string name="info_row_database_id">ID в базата данни</string>
     <string name="share_text_database_id">ID в базата данни: %d</string>
     <string name="receipts_section_contacts">Контакти</string>
-    <string name="settings_section_title_themes">ТЕМИ</string>
+    <string name="settings_section_title_themes">Теми</string>
     <string name="set_password_to_export_desc">Базата данни е криптирана с автоматично генерирана парола. Моля, променете я преди експортиране.</string>
     <string name="database_passphrase">Парола за базата данни</string>
     <string name="delete_database">Изтрий базата данни</string>
@@ -406,7 +406,7 @@
     <string name="developer_options">Идентификатори в базата данни и опция за изолация на транспорта.</string>
     <string name="delete_address">Изтрий адрес</string>
     <string name="delete_address__question">Изтрий адрес\?</string>
-    <string name="theme_colors_section_title">ЦВЕТОВЕ НА ИНТЕРФЕЙСА</string>
+    <string name="theme_colors_section_title">Цветове на интерфейса</string>
     <string name="create_profile_button">Създай</string>
     <string name="create_profile">Създай профил</string>
     <string name="delete_image">Изтрий изображение</string>
@@ -446,7 +446,7 @@
     <string name="receipts_contacts_title_enable">Активирай потвърждениeто\?</string>
     <string name="receipts_contacts_override_disabled">Изпращането на потвърждениe за доставка е деактивирано за %d контакта</string>
     <string name="receipts_contacts_override_enabled">Изпращането на потвърждениe е активирано за %d контакта</string>
-    <string name="settings_section_title_device">УСТРОЙСТВО</string>
+    <string name="settings_section_title_device">Устройство</string>
     <string name="receipts_contacts_disable_keep_overrides">Деактивиране (запазване на промените)</string>
     <string name="total_files_count_and_size">%d файл(а) с общ размер от %s</string>
     <string name="encrypt_database">Криптирай</string>
@@ -485,7 +485,7 @@
     <string name="receipts_section_description_1">Те могат да бъдат променени в настройките за всеки контакт и група.</string>
     <string name="settings_developer_tools">Инструменти за разработчици</string>
     <string name="receipts_contacts_disable_for_all">Деактивиране за всички</string>
-    <string name="settings_section_title_delivery_receipts">ИЗПРАЩАЙТЕ ПОТВЪРЖДЕНИE ЗА ДОСТАВКА НА</string>
+    <string name="settings_section_title_delivery_receipts">Изпращайте потвърждениe за доставка на</string>
     <string name="delete_messages_after">Изтрий съобщенията след</string>
     <string name="chat_item_ttl_seconds">%s секунда(и)</string>
     <string name="delete_messages">Изтрий съобщенията</string>
@@ -622,7 +622,7 @@
     <string name="full_name__field">Пълно име:</string>
     <string name="exit_without_saving">Изход без запазване</string>
     <string name="hidden_profile_password">Парола за скрит профил</string>
-    <string name="settings_section_title_experimenta">ЕКСПЕРИМЕНТАЛЕН</string>
+    <string name="settings_section_title_experimenta">Експериментален</string>
     <string name="file_with_path">Файл: %s</string>
     <string name="icon_descr_expand_role">Разшири избора на роля</string>
     <string name="fix_connection_question">Поправи връзката\?</string>
@@ -632,7 +632,7 @@
     <string name="v4_4_disappearing_messages_desc">Изпратените съобщения ще бъдат изтрити след зададеното време.</string>
     <string name="group_link">Групов линк</string>
     <string name="files_and_media">Файлове и медия</string>
-    <string name="section_title_for_console">ЗА КОНЗОЛАТА</string>
+    <string name="section_title_for_console">За конзолата</string>
     <string name="group_preferences">Групови настройки</string>
     <string name="icon_descr_file">Файл</string>
     <string name="file_not_found">Файлът не е намерен</string>
@@ -643,7 +643,7 @@
     <string name="v5_2_favourites_filter_descr">Филтрирайте непрочетените и любимите чатове.</string>
     <string name="group_members_can_send_dms">Членовете могат да изпращат лични съобщения.</string>
     <string name="icon_descr_help">помощ</string>
-    <string name="settings_section_title_help">ПОМОЩ</string>
+    <string name="settings_section_title_help">Помощ</string>
     <string name="email_invite_body">Здравей,
 \nСвържи се с мен през SimpleX Chat: %s</string>
     <string name="group_members_can_add_message_reactions">Членовете могат да добавят реакции към съобщенията.</string>
@@ -805,7 +805,7 @@
     <string name="onboarding_notifications_mode_off">Когато приложението работи</string>
     <string name="onboarding_notifications_mode_periodic">Периодично</string>
     <string name="paste_the_link_you_received">Постави получения линк</string>
-    <string name="settings_section_title_messages">СЪОБЩЕНИЯ И ФАЙЛОВЕ</string>
+    <string name="settings_section_title_messages">Съобщения и файлове</string>
     <string name="no_received_app_files">Няма получени или изпратени файлове</string>
     <string name="notifications_will_be_hidden">Известията ще се доставят само докато приложението не е спряно!</string>
     <string name="remove_passphrase_from_keychain">Премахване на парола от Keystore\?</string>
@@ -987,7 +987,7 @@
     <string name="lock_mode">Режим на заключване</string>
     <string name="alert_text_fragment_please_report_to_developers">Моля, докладвайте го на разработчиците.</string>
     <string name="protect_app_screen">Защити екрана на приложението</string>
-    <string name="member_info_section_title_member">ЧЛЕН</string>
+    <string name="member_info_section_title_member">Член</string>
     <string name="remove_member_confirmation">Премахване</string>
     <string name="network_option_ping_count">PING бройка</string>
     <string name="only_your_contact_can_add_message_reactions">Само вашият контакт може да добавя реакции на съобщенията.</string>
@@ -1042,8 +1042,8 @@
     <string name="share_with_contacts">Сподели с контактите</string>
     <string name="stop_sharing">Спри споделянето</string>
     <string name="stop_sharing_address">Спри споделянето на адреса\?</string>
-    <string name="settings_section_title_settings">НАСТРОЙКИ</string>
-    <string name="run_chat_section">СТАРТИРАНЕ НА ЧАТ</string>
+    <string name="settings_section_title_settings">Настройки</string>
+    <string name="run_chat_section">Стартиране на чат</string>
     <string name="text_field_set_contact_placeholder">Задай име на контакт…</string>
     <string name="no_info_on_delivery">Няма информация за доставката</string>
     <string name="revoke_file__title">Отзови файл\?</string>
@@ -1067,7 +1067,7 @@
     <string name="receipts_groups_override_enabled">Изпращането на потвърждениe за доставка е разрешено за %d групи</string>
     <string name="restart_the_app_to_use_imported_chat_database">Рестартирайте приложението, за да използвате импортирана база данни.</string>
     <string name="send_receipts_disabled_alert_msg">Тази група има над %1$d членове, потвърждениeто за доставка няма да се изпраща.</string>
-    <string name="conn_stats_section_title_servers">СЪРВЪРИ</string>
+    <string name="conn_stats_section_title_servers">Сървъри</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="delivery">Доставка</string>
     <string name="receipts_groups_enable_keep_overrides">Активиране (запазване на груповите промени)</string>
@@ -1093,7 +1093,7 @@
     <string name="share_image">Сподели медия…</string>
     <string name="simplex_address">SimpleX адрес</string>
     <string name="v4_2_security_assessment_desc">Сигурността на SimpleX Chat беше одитирана от Trail of Bits.</string>
-    <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
+    <string name="settings_section_title_socks">SOCKS прокси</string>
     <string name="settings_restart_app">Рестартиране</string>
     <string name="settings_shutdown">Изключване</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Рестартирайте приложението, за да създадете нов чат профил.</string>
@@ -1152,7 +1152,7 @@
     <string name="color_title">Заглавие</string>
     <string name="to_share_with_your_contact">(за споделяне с вашия контакт)</string>
     <string name="alert_message_no_group">Тази група вече не съществува.</string>
-    <string name="settings_section_title_support">ПОДКРЕПЕТЕ SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">Подкрепете SimpleX Chat</string>
     <string name="contact_sent_large_file">Вашият контакт изпрати файл, който е по-голям от поддържания в момента максимален размер (%1$s).</string>
     <string name="in_developing_desc">Тази функция все още не се поддържа. Опитайте следващата версия.</string>
     <string name="tap_to_start_new_chat">Докосни за започване на нов чат</string>
@@ -1231,7 +1231,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed">адреса за получаване е променен</string>
     <string name="you_can_share_this_address_with_your_contacts">Можете да споделите този адрес с вашите контакти, за да им позволите да се свържат с %s.</string>
     <string name="unfavorite_chat">Премахни от любимите</string>
-    <string name="settings_section_title_you">ВИЕ</string>
+    <string name="settings_section_title_you">Вие</string>
     <string name="your_chat_database">Вашата база данни</string>
     <string name="icon_descr_waiting_for_image">Изчаква се получаването на изображението</string>
     <string name="waiting_for_image">Изчаква се получаването на изображението</string>
@@ -1775,7 +1775,7 @@
     <string name="private_routing_explanation">За да защити вашия IP адрес, поверително рутиране използва вашите SMP сървъри за доставяне на съобщения.</string>
     <string name="forward_alert_forward_messages_without_files">Препращане на съобщенията без файловете?</string>
     <string name="network_smp_proxy_mode_unknown">Неизвестни сървъри</string>
-    <string name="settings_section_title_files">ФАЙЛОВЕ</string>
+    <string name="settings_section_title_files">Файлове</string>
     <string name="chat_list_always_visible">Показване на списъка на чатовете в нов прозорец</string>
     <string name="color_mode_system">Системна</string>
     <string name="color_mode_dark">Тъмна</string>
@@ -1800,7 +1800,7 @@
     <string name="snd_error_proxy">Препращащ сървър: %1$s\nГрешка: %2$s</string>
     <string name="srv_error_version">Версията на сървъра е несъвместима с мрежовите настройки.</string>
     <string name="protect_ip_address">Защити IP адреса</string>
-    <string name="settings_section_title_private_message_routing">ПОВЕРИТЕЛНО РУТИРАНЕ НА СЪОБЩЕНИЯ</string>
+    <string name="settings_section_title_private_message_routing">Поверително рутиране на съобщения</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Приложението ще поиска потвърждение за изтегляния от неизвестни файлови сървъри (с изключение на .onion сървъри или когато SOCKS прокси е активирано).</string>
     <string name="ci_status_other_error">Грешка: %1$s</string>
     <string name="forward_files_not_accepted_receive_files">Изтегляне</string>
@@ -2038,7 +2038,7 @@
     <string name="app_check_for_updates_button_download">Изтегли %s (%s)</string>
     <string name="app_check_for_updates_button_skip">Пропусни тази версия</string>
     <string name="app_check_for_updates_notice_title">Провери за актуализации</string>
-    <string name="settings_section_title_chat_database">БАЗА ДАННИ</string>
+    <string name="settings_section_title_chat_database">База данни</string>
     <string name="you_can_still_send_messages_to_contact">Можете да изпращате съобщения до %1$s от архивираните контакти.</string>
     <string name="chat_bottom_bar">Достъпен панел</string>
     <string name="cant_send_message_to_member_alert_title">Изпращането на съобщения на груповия член не е налично</string>
@@ -2501,7 +2501,7 @@
     <string name="share_old_link_alert_button">Сподели стар линк</string>
     <string name="share_group_profile_via_link_alert_text">Линкът ще бъде кратък и профилът на групата ще бъде споделен чрез него.</string>
     <string name="upgrade_group_link">Обнови групов линк</string>
-    <string name="settings_section_title_contact_requests_from_groups">ЗАЯВКИ ЗА КОНТАКТ ОТ ГРУПИ</string>
+    <string name="settings_section_title_contact_requests_from_groups">Заявки за контакт от групи</string>
     <string name="member_is_deleted_cant_accept_request">Членът е изтрит - не може да се приеме заявката</string>
     <string name="rcv_direct_event_group_inv_link_received">заявка за връзка от група %1$s</string>
     <string name="this_setting_is_for_your_current_profile">Тази настройка е за текущия профил</string>

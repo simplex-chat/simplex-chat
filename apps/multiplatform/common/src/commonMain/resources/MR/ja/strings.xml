@@ -880,7 +880,7 @@
     <string name="send_us_an_email">メールを送る</string>
     <string name="share_image">メディア共有…</string>
     <string name="simplex_link_mode">SimpleXリンク</string>
-    <string name="settings_section_title_support">SIMPLEX CHATを支援</string>
+    <string name="settings_section_title_support">SimpleX Chatを支援</string>
     <string name="smp_servers_test_servers">テストサーバ</string>
     <string name="switch_receiving_address_desc">受信アドレスは別のサーバーに変更されます。アドレス変更は送信者がオンラインになった後に完了します。</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに SimpleX メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>

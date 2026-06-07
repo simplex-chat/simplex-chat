@@ -10,6 +10,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -181,7 +182,7 @@ fun OperatorViewLayout(
   val duplicateHosts = findDuplicateHosts(serverErrors.value)
 
   Column {
-    SectionView(generalGetString(MR.strings.operator).uppercase()) {
+    SectionView(generalGetString(MR.strings.operator)) {
       SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }) {
         Row(
           Modifier.fillMaxWidth(),
@@ -238,7 +239,7 @@ fun OperatorViewLayout(
       if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
         val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
+        SectionView(generalGetString(MR.strings.chat_relays)) {
           userServers.value[operatorIndex].chatRelays.forEachIndexed { index, relay ->
             if (!relay.deleted) {
               ChatRelayViewLink(relay, duplicateRelayAddresses) {
@@ -252,7 +253,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_use_for_messages).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_use_for_messages)) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
               stringResource(MR.strings.operator_use_for_messages_receiving),
@@ -306,7 +307,7 @@ fun OperatorViewLayout(
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].smpServers.any { it.preset }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
+        SectionView(generalGetString(MR.strings.message_servers)) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
             if (!server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -340,7 +341,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].smpServers.any { !it.preset && !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_added_message_servers).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_added_message_servers)) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -356,7 +357,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_use_for_files).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_use_for_files)) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
               stringResource(MR.strings.operator_use_for_sending),
@@ -389,7 +390,7 @@ fun OperatorViewLayout(
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].xftpServers.any { it.preset }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.media_and_file_servers).uppercase()) {
+        SectionView(generalGetString(MR.strings.media_and_file_servers)) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (!server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -423,7 +424,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.preset && !it.deleted}) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_added_xftp_servers).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_added_xftp_servers)) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -490,7 +491,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
       }
     }
 
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
 
     val uriHandler = LocalUriHandler.current
     SectionView {
@@ -507,7 +508,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
 
     val selfhost = serverOperator.info.selfhost
     if (selfhost != null) {
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
       SectionView {
         SectionItemView {
           val (text, link) = selfhost

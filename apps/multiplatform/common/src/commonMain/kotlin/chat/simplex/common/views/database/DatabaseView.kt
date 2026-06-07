@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -43,29 +44,8 @@ fun DatabaseView() {
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
-  val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val stopped = remember { m.chatRunning }.value == false
-  val saveArchiveLauncher = rememberFileChooserLauncher(false) { to: URI? ->
-    val archive = chatArchiveFile.value
-    if (archive != null && to != null) {
-      copyFileToFile(File(archive), to) {}
-    }
-    // delete no matter the database was exported or canceled the export process
-    if (archive != null) {
-      File(archive).delete()
-      chatArchiveFile.value = null
-    }
-  }
   val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
-  val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
-    if (to != null) {
-      importArchiveAlert {
-        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
-          importArchive(to, appFilesCountAndSize, progressIndicator, false)
-        }
-      }
-    }
-  }
   val chatItemTTL = remember { mutableStateOf(m.chatItemTTL.value) }
   Box(
     Modifier.fillMaxSize(),
@@ -78,27 +58,10 @@ fun DatabaseView() {
       useKeychain.value,
       m.chatDbEncrypted.value,
       m.controller.appPrefs.storeDBPassphrase.state.value,
-      m.controller.appPrefs.initialRandomDBPassphrase,
-      importArchiveLauncher,
       appFilesCountAndSize,
       chatItemTTL,
       user,
       m.users,
-      startChat = { startChat(m, chatLastStart, m.chatDbChanged, progressIndicator) },
-      stopChatAlert = { stopChatAlert(m, progressIndicator) },
-      exportArchive = {
-        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
-          exportArchive(m, progressIndicator, chatArchiveFile, saveArchiveLauncher)
-        }
-      },
-      deleteChatAlert = {
-        deleteChatAlert {
-          stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
-            deleteChat(m, progressIndicator)
-            true
-          }
-        }
-      },
       deleteAppFilesAndMedia = {
         deleteFilesAndMediaAlert {
           stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
@@ -119,12 +82,9 @@ fun DatabaseView() {
           setCiTTL(m, rhId, chatItemTTL, progressIndicator, appFilesCountAndSize)
         }
       },
-      disconnectAllHosts = {
-        val connected = chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }
-        connected.forEachIndexed { index, h ->
-          controller.stopRemoteHostAndReloadHosts(h, index == connected.lastIndex && chatModel.connectedToRemote())
-        }
-      }
+      showDatabaseManagement = {
+        ModalManager.start.showModal(cardScreen = true) { DatabaseManagementView() }
+      },
     )
     if (progressIndicator.value) {
       Box(
@@ -150,27 +110,21 @@ fun DatabaseLayout(
   useKeyChain: Boolean,
   chatDbEncrypted: Boolean?,
   passphraseSaved: Boolean,
-  initialRandomDBPassphrase: SharedPreference<Boolean>,
-  importArchiveLauncher: FileChooserLauncher,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   chatItemTTL: MutableState<ChatItemTTL>,
   currentUser: User?,
   users: List<UserInfo>,
-  startChat: () -> Unit,
-  stopChatAlert: () -> Unit,
-  exportArchive: () -> Unit,
-  deleteChatAlert: () -> Unit,
   deleteAppFilesAndMedia: () -> Unit,
   onChatItemTTLSelected: (ChatItemTTL?) -> Unit,
-  disconnectAllHosts: () -> Unit,
+  showDatabaseManagement: () -> Unit,
 ) {
   val operationsDisabled = progressIndicator && !chatModel.desktopNoUserNoRemote
 
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.your_chat_database))
+    AppBarTitle(stringResource(MR.strings.chat_data))
 
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(stringResource(MR.strings.messages_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.messages_section_title)) {
         TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
       }
       SectionTextFooter(
@@ -184,85 +138,23 @@ fun DatabaseLayout(
           }
         }
       )
-      SectionDividerSpaced(maxTopPadding = true)
-    }
-    val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
-    if (chatModel.localUserCreated.value == true) {
-      // still show the toggle in case database was stopped when the user opened this screen because it can be in the following situations:
-      // - database was stopped after migration and the app relaunched
-      // - something wrong happened with database operations and the database couldn't be launched when it should
-      SectionView(stringResource(MR.strings.run_chat_section)) {
-        if (!toggleEnabled) {
-          SectionItemView(disconnectAllHosts) {
-            Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
-          }
-        }
-        RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
-      }
-      if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
     }
 
-    SectionView(stringResource(MR.strings.chat_database_section)) {
-      if (chatModel.localUserCreated.value != true && !toggleEnabled) {
-        SectionItemView(disconnectAllHosts) {
-          Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
-        }
-      }
+    SectionView {
       val unencrypted = chatDbEncrypted == false
       SettingsActionItem(
         if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
         else painterResource(MR.images.ic_lock),
-        stringResource(MR.strings.database_passphrase),
-        click = { ModalManager.start.showModal { DatabaseEncryptionView(chatModel, false) } },
+        stringResource(MR.strings.database_passphrase_and_export),
+        click = showDatabaseManagement,
         iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
-        disabled = operationsDisabled
-      )
-      if (appPlatform.isDesktop) {
-        SettingsActionItem(
-          painterResource(MR.images.ic_folder_open),
-          stringResource(MR.strings.open_database_folder),
-          ::desktopOpenDatabaseDir,
-          disabled = operationsDisabled
-        )
-      }
-      SettingsActionItem(
-        painterResource(MR.images.ic_ios_share),
-        stringResource(MR.strings.export_database),
-        click = {
-          if (initialRandomDBPassphrase.get()) {
-            exportProhibitedAlert()
-            ModalManager.start.showModal {
-              DatabaseEncryptionView(chatModel, false)
-            }
-          } else {
-            exportArchive()
-          }
-        },
-        textColor = MaterialTheme.colors.primary,
-        iconColor = MaterialTheme.colors.primary,
-        disabled = operationsDisabled
-      )
-      SettingsActionItem(
-        painterResource(MR.images.ic_download),
-        stringResource(MR.strings.import_database),
-        { withLongRunningApi { importArchiveLauncher.launch("application/zip") } },
-        textColor = Color.Red,
-        iconColor = Color.Red,
-        disabled = operationsDisabled
-      )
-      SettingsActionItem(
-        painterResource(MR.images.ic_delete_forever),
-        stringResource(MR.strings.delete_database),
-        deleteChatAlert,
-        textColor = Color.Red,
-        iconColor = Color.Red,
         disabled = operationsDisabled
       )
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
+    SectionView(stringResource(MR.strings.files_and_media_section)) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,
@@ -283,6 +175,155 @@ fun DatabaseLayout(
       }
     )
     SectionBottomSpacer()
+  }
+}
+
+@Composable
+fun DatabaseManagementView() {
+  val m = chatModel
+  val progressIndicator = remember { mutableStateOf(false) }
+  val prefs = m.controller.appPrefs
+  val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
+  val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
+  val chatArchiveFile = remember { mutableStateOf<String?>(null) }
+  val stopped = remember { m.chatRunning }.value == false
+  val saveArchiveLauncher = rememberFileChooserLauncher(false) { to: URI? ->
+    val archive = chatArchiveFile.value
+    if (archive != null && to != null) {
+      copyFileToFile(File(archive), to) {}
+    }
+    // delete no matter the database was exported or canceled the export process
+    if (archive != null) {
+      File(archive).delete()
+      chatArchiveFile.value = null
+    }
+  }
+  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
+  val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+    if (to != null) {
+      importArchiveAlert {
+        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
+          importArchive(to, appFilesCountAndSize, progressIndicator, false)
+        }
+      }
+    }
+  }
+  val operationsDisabled = progressIndicator.value && !m.desktopNoUserNoRemote
+
+  Box(Modifier.fillMaxSize()) {
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.database_passphrase_and_export))
+
+      val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
+      val disconnectAllHosts = {
+        val connected = chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }
+        connected.forEachIndexed { index, h ->
+          controller.stopRemoteHostAndReloadHosts(h, index == connected.lastIndex && chatModel.connectedToRemote())
+        }
+      }
+      SectionView(stringResource(MR.strings.chat_database_section)) {
+        if (chatModel.localUserCreated.value != true && !toggleEnabled) {
+          SectionItemView(disconnectAllHosts) {
+            Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
+          }
+        }
+        val unencrypted = m.chatDbEncrypted.value == false
+        SettingsActionItem(
+          if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeychain.value) painterResource(MR.images.ic_vpn_key_filled)
+          else painterResource(MR.images.ic_lock),
+          stringResource(MR.strings.database_passphrase),
+          click = { ModalManager.start.showModal(cardScreen = true) { DatabaseEncryptionView(chatModel, false) } },
+          iconColor = if (unencrypted || (appPlatform.isDesktop && prefs.storeDBPassphrase.state.value)) WarningOrange else MaterialTheme.colors.secondary,
+          disabled = operationsDisabled
+        )
+        if (appPlatform.isDesktop) {
+          SettingsActionItem(
+            painterResource(MR.images.ic_folder_open),
+            stringResource(MR.strings.open_database_folder),
+            ::desktopOpenDatabaseDir,
+            disabled = operationsDisabled
+          )
+        }
+        SettingsActionItem(
+          painterResource(MR.images.ic_ios_share),
+          stringResource(MR.strings.export_database),
+          click = {
+            if (prefs.initialRandomDBPassphrase.get()) {
+              exportProhibitedAlert()
+              ModalManager.start.showModal {
+                DatabaseEncryptionView(chatModel, false)
+              }
+            } else {
+              stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
+                exportArchive(m, progressIndicator, chatArchiveFile, saveArchiveLauncher)
+              }
+            }
+          },
+          textColor = MaterialTheme.colors.primary,
+          iconColor = MaterialTheme.colors.primary,
+          disabled = operationsDisabled
+        )
+        SettingsActionItem(
+          painterResource(MR.images.ic_download),
+          stringResource(MR.strings.import_database),
+          { withLongRunningApi { importArchiveLauncher.launch("application/zip") } },
+          textColor = Color.Red,
+          iconColor = Color.Red,
+          disabled = operationsDisabled
+        )
+        SettingsActionItem(
+          painterResource(MR.images.ic_delete_forever),
+          stringResource(MR.strings.delete_database),
+          {
+            deleteChatAlert {
+              stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
+                deleteChat(m, progressIndicator)
+                true
+              }
+            }
+          },
+          textColor = Color.Red,
+          iconColor = Color.Red,
+          disabled = operationsDisabled
+        )
+      }
+
+      if (chatModel.localUserCreated.value == true) {
+        SectionDividerSpaced()
+        // still show the toggle in case database was stopped when the user opened this screen because it can be in the following situations:
+        // - database was stopped after migration and the app relaunched
+        // - something wrong happened with database operations and the database couldn't be launched when it should
+        SectionView(stringResource(MR.strings.run_chat_section)) {
+          if (!toggleEnabled) {
+            SectionItemView(disconnectAllHosts) {
+              Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
+            }
+          }
+          RunChatSetting(
+            stopped,
+            toggleEnabled && !progressIndicator.value,
+            startChat = { startChat(m, chatLastStart, m.chatDbChanged, progressIndicator) },
+            stopChatAlert = { stopChatAlert(m, progressIndicator) }
+          )
+        }
+        if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
+      }
+      SectionBottomSpacer()
+    }
+    if (progressIndicator.value) {
+      Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        CircularProgressIndicator(
+          Modifier
+            .padding(horizontal = 2.dp)
+            .size(30.dp),
+          color = MaterialTheme.colors.secondary,
+          strokeWidth = 2.5.dp
+        )
+      }
+    }
   }
 }
 
@@ -831,19 +872,13 @@ fun PreviewDatabaseLayout() {
       useKeyChain = false,
       chatDbEncrypted = false,
       passphraseSaved = false,
-      initialRandomDBPassphrase = SharedPreference({ true }, {}),
-      importArchiveLauncher = rememberFileChooserLauncher(true) {},
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.None) },
       currentUser = User.sampleData,
       users = listOf(UserInfo.sampleData),
-      startChat = {},
-      stopChatAlert = {},
-      exportArchive = {},
-      deleteChatAlert = {},
       deleteAppFilesAndMedia = {},
       onChatItemTTLSelected = {},
-      disconnectAllHosts = {},
+      showDatabaseManagement = {},
     )
   }
 }

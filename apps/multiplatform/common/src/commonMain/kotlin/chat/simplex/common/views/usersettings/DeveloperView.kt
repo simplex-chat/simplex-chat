@@ -4,9 +4,12 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -29,14 +32,14 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
       ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.start.showModalCloseable { TerminalView(false) } } }
       ResetHintsItem(unchangedHints)
       SettingsPreferenceItem(painterResource(MR.images.ic_code), stringResource(MR.strings.show_developer_options), developerTools)
-      SectionTextFooter(
-        generalGetString(if (devTools.value) MR.strings.show_dev_options else MR.strings.hide_dev_options) + " " +
-            generalGetString(MR.strings.developer_options)
-      )
     }
+    SectionTextFooter(
+      generalGetString(if (devTools.value) MR.strings.show_dev_options else MR.strings.hide_dev_options) + " " +
+          generalGetString(MR.strings.developer_options)
+    )
     if (devTools.value) {
-      SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.developer_options_section).uppercase()) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.developer_options_section)) {
         SettingsActionItemWithContent(painterResource(MR.images.ic_breaking_news), stringResource(MR.strings.debug_logs)) {
           DefaultSwitch(
             checked = remember { appPrefs.logLevel.state }.value <= LogLevel.DEBUG,
@@ -59,15 +62,15 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
       }
     }
-    SectionDividerSpaced(maxTopPadding = true)
-    SectionView(stringResource(MR.strings.deprecated_options_section).uppercase()) {
+    SectionDividerSpaced()
+    SectionView(stringResource(MR.strings.deprecated_options_section)) {
       val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })
-      SectionBottomSpacer()
     }
+    SectionBottomSpacer()
   }
 }
 

@@ -1409,7 +1409,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Вміст порушує умови використання";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Продовжуйте";
 
 /* No comment provided by engineer. */
@@ -1806,7 +1806,7 @@ alert button */
 "Developer options" = "Можливості для розробників";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Інструменти для розробників";
+"Developer" = "Інструменти для розробників";
 
 /* No comment provided by engineer. */
 "Device" = "Пристрій";
@@ -4019,7 +4019,7 @@ alert button */
 "Previously connected servers" = "Раніше підключені сервери";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Конфіденційність і безпека";
+"Your privacy" = "Конфіденційність і безпека";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Конфіденційність для ваших клієнтів.";
@@ -5966,7 +5966,7 @@ server test failure */
 "You can enable later via Settings" = "Ви можете увімкнути пізніше в Налаштуваннях";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Ви можете увімкнути їх пізніше в налаштуваннях конфіденційності та безпеки програми.";
+"You can enable them later via app Your privacy settings." = "Ви можете увімкнути їх пізніше в налаштуваннях конфіденційності та безпеки програми.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Ви можете спробувати ще раз.";

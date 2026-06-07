@@ -39,7 +39,8 @@ CREATE TABLE users(
   ui_themes TEXT,
   active_order INTEGER NOT NULL DEFAULT 0,
   auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
-  is_user_chat_relay INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
+  client_service INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -125,7 +126,11 @@ CREATE TABLE group_profiles(
   short_descr TEXT,
   group_type TEXT,
   group_link BLOB,
-  public_group_id BLOB
+  public_group_id BLOB,
+  group_web_page TEXT,
+  group_domain TEXT,
+  domain_web_page INTEGER,
+  allow_embedding INTEGER
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -221,6 +226,7 @@ CREATE TABLE group_members(
   member_relations_vector BLOB,
   relay_link BLOB,
   member_pub_key BLOB,
+  removed_at TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -734,7 +740,6 @@ CREATE TABLE delivery_jobs(
   job_scope_spec_tag TEXT,
   job_scope_include_pending INTEGER,
   job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
@@ -742,6 +747,8 @@ CREATE TABLE delivery_jobs(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  sender_group_member_ids TEXT
 ) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
@@ -778,6 +785,8 @@ CREATE TABLE group_relays(
   conf_id BLOB,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  base_web_url TEXT
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1217,9 +1226,6 @@ CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
 CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON delivery_jobs(
   job_scope_support_gm_id
-);
-CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(
-  single_sender_group_member_id
 );
 CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
   group_id,
