@@ -2779,8 +2779,8 @@ alert button</note>
         <source>Developer options</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer tools" xml:space="preserve">
-        <source>Developer tools</source>
+      <trans-unit id="Developer" xml:space="preserve">
+        <source>Developer</source>
         <target>เครื่องมือสำหรับนักพัฒนา</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

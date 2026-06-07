@@ -1157,8 +1157,8 @@
         <target state="translated">يطور</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer tools" xml:space="preserve" approved="no">
-        <source>Developer tools</source>
+      <trans-unit id="Developer" xml:space="preserve" approved="no">
+        <source>Developer</source>
         <target state="translated">أدوات المطور</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
