@@ -383,7 +383,7 @@ fun uniqueCombine(fileName: String, dir: File): String {
   val ext = orig.extension
   fun tryCombine(n: Int): String {
     val suffix = if (n == 0) "" else "_$n"
-    val f = "$name$suffix.$ext"
+    val f = if (ext.isEmpty()) "$name$suffix" else "$name$suffix.$ext"
     return if (File(dir, f).exists()) tryCombine(n + 1) else f
   }
   return tryCombine(0)
