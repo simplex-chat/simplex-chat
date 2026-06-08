@@ -3050,8 +3050,8 @@ alert button</note>
         <target>Можливості для розробників</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer tools" xml:space="preserve">
-        <source>Developer tools</source>
+      <trans-unit id="Developer" xml:space="preserve">
+        <source>Developer</source>
         <target>Інструменти для розробників</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

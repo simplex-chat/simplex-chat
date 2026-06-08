@@ -18,10 +18,9 @@ import Directory.Listing
 import Directory.Options
 import Directory.Store
 import Simplex.Chat (createChatDatabase)
-import Simplex.Chat.Controller (ChatConfig (..), ChatDatabase (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatDatabase (..), mkStoreCxt)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store.Groups (getHostMember)
 import Simplex.Chat.Store.Profiles (getUsers)
 import Simplex.Chat.Store.Shared (getGroupInfo)
@@ -62,7 +61,7 @@ checkDirectoryLog opts cfg =
     runDirectoryMigrations opts cfg st
     gs <- readDirectoryLogData logFile
     withActiveUser st $ \user -> withTransaction st $ \db -> do
-      mapM_ (verifyGroupRegistration db user) gs
+      mapM_ (verifyGroupRegistration (mkStoreCxt cfg) db user) gs
     putStrLn $ show (length gs) <> " group registrations OK"
 
 importDirectoryLogToDB :: DirectoryOpts -> ChatConfig -> IO ()
@@ -73,7 +72,7 @@ importDirectoryLogToDB opts cfg = do
     ctRegs <- TM.emptyIO
     withActiveUser st $ \user -> withTransaction st $ \db -> do
       forM_ gs $ \gr ->
-        whenM (verifyGroupRegistration db user gr) $ do
+        whenM (verifyGroupRegistration (mkStoreCxt cfg) db user gr) $ do
           putStrLn $ "importing group " <> show (dbGroupId gr)
           insertGroupReg db =<< fixUserGroupRegId ctRegs gr
       renamePath logFile (logFile ++ ".bak")
@@ -101,28 +100,28 @@ exportDBToDirectoryLog opts cfg =
     runDirectoryMigrations opts cfg st
     withActiveUser st $ \user -> do
       gs <- withFile logFile WriteMode $ \h -> withTransaction st $ \db -> do
-        gs <- getAllGroupRegs_ db user
+        gs <- getAllGroupRegs_ db (mkStoreCxt cfg) user
         forM_ gs $ \(_, gr) ->
-          whenM (verifyGroupRegistration db user gr) $
+          whenM (verifyGroupRegistration (mkStoreCxt cfg) db user gr) $
             B.hPutStrLn h $ strEncode $ GRCreate gr
         pure gs
       putStrLn $ show (length gs) <> " group registrations exported"
 
 saveGroupListingFiles :: DirectoryOpts -> ChatConfig -> IO ()
-saveGroupListingFiles opts _cfg = case webFolder opts of
+saveGroupListingFiles opts cfg = case webFolder opts of
   Nothing -> exit "use --web-folder to generate listings"
   Just dir ->
     withChatStore opts $ \st -> withActiveUser st $ \user ->
       withTransaction st $ \db ->
-        getAllListedGroups_ db supportedChatVRange user >>= generateListing dir
+        getAllListedGroups_ db (mkStoreCxt cfg) user >>= generateListing dir
 
-verifyGroupRegistration :: DB.Connection -> User -> GroupReg -> IO Bool
-verifyGroupRegistration db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId, groupRegStatus} =
-  runExceptT (getGroupInfo db supportedChatVRange user gId) >>= \case
+verifyGroupRegistration :: StoreCxt -> DB.Connection -> User -> GroupReg -> IO Bool
+verifyGroupRegistration cxt db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId, groupRegStatus} =
+  runExceptT (getGroupInfo db cxt user gId) >>= \case
     Left e -> False <$ putStrLn ("Error: loading group " <> show gId <> " (skipping): " <> show e)
     Right GroupInfo {localDisplayName} -> do
       let groupRef = show gId <> " " <> T.unpack localDisplayName
-      runExceptT (getHostMember db supportedChatVRange user gId) >>= \case
+      runExceptT (getHostMember db cxt user gId) >>= \case
         Left e -> False <$ putStrLn ("Error: loading host member of group " <> groupRef <> " (skipping): " <> show e)
         Right GroupMember {groupMemberId = mId', memberContactId = ctId'} -> case dbOwnerMemberId of
           Nothing -> True <$ putStrLn ("Warning: group " <> groupRef <> " has no owner member ID, host member ID is " <> show mId' <> ", registration status: " <> B.unpack (strEncode groupRegStatus))
