@@ -13,11 +13,13 @@ ALTER TABLE contact_profiles ADD COLUMN badge_pres_header BLOB;
 ALTER TABLE contact_profiles ADD COLUMN badge_expiry TEXT;
 ALTER TABLE contact_profiles ADD COLUMN badge_type TEXT;
 ALTER TABLE contact_profiles ADD COLUMN badge_verified INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE contact_profiles ADD COLUMN badge_extra TEXT;
 |]
 
 down_m20260516_supporter_badges :: Query
 down_m20260516_supporter_badges =
   [sql|
+ALTER TABLE contact_profiles DROP COLUMN badge_extra;
 ALTER TABLE contact_profiles DROP COLUMN badge_verified;
 ALTER TABLE contact_profiles DROP COLUMN badge_type;
 ALTER TABLE contact_profiles DROP COLUMN badge_expiry;

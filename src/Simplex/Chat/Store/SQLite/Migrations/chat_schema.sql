@@ -24,7 +24,8 @@ CREATE TABLE contact_profiles(
   badge_pres_header BLOB,
   badge_expiry TEXT,
   badge_type TEXT,
-  badge_verified INTEGER NOT NULL DEFAULT 0
+  badge_verified INTEGER NOT NULL DEFAULT 0,
+  badge_extra TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,

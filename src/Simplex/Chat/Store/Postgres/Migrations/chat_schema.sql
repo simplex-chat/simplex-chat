@@ -536,7 +536,8 @@ CREATE TABLE test_chat_schema.contact_profiles (
     badge_pres_header bytea,
     badge_expiry text,
     badge_type text,
-    badge_verified smallint DEFAULT 0 NOT NULL
+    badge_verified smallint DEFAULT 0 NOT NULL,
+    badge_extra text
 );
 
 

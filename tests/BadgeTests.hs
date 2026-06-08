@@ -41,12 +41,12 @@ testFullWorkflow = do
 testTamperedType :: IO ()
 testTamperedType = do
   (pk, SupporterBadge {proof, presHeader, badgeExpiry}) <- issueBadgeProof BTSupporter (Just futureTime)
-  verifyBadge pk (SupporterBadge {proof, presHeader, badgeExpiry, badgeType = BTBusiness}) >>= (`shouldBe` False)
+  verifyBadge pk (SupporterBadge {proof, presHeader, badgeExpiry, badgeType = BTBusiness, badgeExtra = ""}) >>= (`shouldBe` False)
 
 testTamperedExpiry :: IO ()
 testTamperedExpiry = do
   (pk, SupporterBadge {proof, presHeader, badgeType}) <- issueBadgeProof BTSupporter (Just futureTime)
-  verifyBadge pk (SupporterBadge {proof, presHeader, badgeExpiry = Just pastTime, badgeType}) >>= (`shouldBe` False)
+  verifyBadge pk (SupporterBadge {proof, presHeader, badgeExpiry = Just pastTime, badgeType, badgeExtra = ""}) >>= (`shouldBe` False)
 
 testWrongKey :: IO ()
 testWrongKey = do
@@ -66,7 +66,7 @@ testExpiryCheck = do
 testLifetimeBadge :: IO ()
 testLifetimeBadge = do
   now <- getCurrentTime
-  (pk, badge) <- issueBadgeProof BTCFInvestor Nothing
+  (pk, badge) <- issueBadgeProof BTInvestor Nothing
   verifyBadge pk badge >>= (`shouldBe` True)
   mkBadgeStatus now True badge `shouldBe` BSActive
 

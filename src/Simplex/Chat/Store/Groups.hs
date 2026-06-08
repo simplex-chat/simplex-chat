@@ -1734,7 +1734,7 @@ createJoiningMember
       liftIO $
         DB.execute
           db
-          "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
           ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
       profileId <- liftIO $ insertedRowId db
       case cReqMemberId_ of
@@ -2095,7 +2095,7 @@ createNewMemberProfile_ db User {userId} Profile {displayName, fullName, shortDe
     badgeVerified <- verifyBadge_ srvBadgePublicKey badge
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
       ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, createdAt, createdAt) :. badgeToRow badge badgeVerified)
     profileId <- insertedRowId db
     pure $ Right (ldn, profileId, badgeVerified)

@@ -60,7 +60,7 @@ data BadgeType
   = BTSupporter
   | BTBusiness
   | BTLegend
-  | BTCFInvestor
+  | BTInvestor
   | BTUnknown Text
   deriving (Eq, Show)
 
@@ -69,13 +69,13 @@ instance TextEncoding BadgeType where
     BTSupporter -> "supporter"
     BTBusiness -> "business"
     BTLegend -> "legend"
-    BTCFInvestor -> "cf_investor"
+    BTInvestor -> "investor"
     BTUnknown tag -> tag
   textDecode s = Just $ case s of
     "supporter" -> BTSupporter
     "business" -> BTBusiness
     "legend" -> BTLegend
-    "cf_investor" -> BTCFInvestor
+    "investor" -> BTInvestor
     tag -> BTUnknown tag
 
 instance ToJSON BadgeType where
@@ -142,7 +142,8 @@ data BadgeCredential = BadgeCredential
   { masterKey :: BadgeMasterKey,
     signature :: BBSSignature,
     badgeExpiry :: Maybe UTCTime,
-    badgeType :: BadgeType
+    badgeType :: BadgeType,
+    badgeExtra :: Text
   }
   deriving (Eq, Show)
 
@@ -150,7 +151,8 @@ data SupporterBadge = SupporterBadge
   { proof :: BBSProof,
     presHeader :: BBSPresHeader,
     badgeExpiry :: Maybe UTCTime,
-    badgeType :: BadgeType
+    badgeType :: BadgeType,
+    badgeExtra :: Text
   }
   deriving (Eq, Show)
 
@@ -160,21 +162,21 @@ bbsBadgeHeader :: BBSHeader
 bbsBadgeHeader = BBSHeader "SimpleX badges v1"
 
 bbsBadgeMessageCount :: Int
-bbsBadgeMessageCount = 3
+bbsBadgeMessageCount = 4
 
 bbsBadgeDisclosedIndexes :: [Int]
-bbsBadgeDisclosedIndexes = [1, 2]
+bbsBadgeDisclosedIndexes = [1, 2, 3]
 
 -- Message encoding
 
 encodeExpiry :: Maybe UTCTime -> ByteString
 encodeExpiry = maybe "lifetime" strEncode
 
-badgeMessages :: BadgeMasterKey -> Maybe UTCTime -> BadgeType -> [ByteString]
-badgeMessages (BadgeMasterKey ms) expiry bt = [ms, encodeExpiry expiry, encodeUtf8 (textEncode bt)]
+badgeMessages :: BadgeMasterKey -> Maybe UTCTime -> BadgeType -> Text -> [ByteString]
+badgeMessages (BadgeMasterKey ms) expiry bt extra = [ms, encodeExpiry expiry, encodeUtf8 (textEncode bt), encodeUtf8 extra]
 
-badgeDisclosedMessages :: Maybe UTCTime -> BadgeType -> [ByteString]
-badgeDisclosedMessages expiry bt = [encodeExpiry expiry, encodeUtf8 (textEncode bt)]
+badgeDisclosedMessages :: Maybe UTCTime -> BadgeType -> Text -> [ByteString]
+badgeDisclosedMessages expiry bt extra = [encodeExpiry expiry, encodeUtf8 (textEncode bt), encodeUtf8 extra]
 
 -- Payment verification (stub - always passes)
 
@@ -185,29 +187,30 @@ verifyPayment _payment req = pure $ Just (VerifiedBadgeRequest req)
 
 issueBadge :: BBSSecretKey -> BBSPublicKey -> VerifiedBadgeRequest -> IO (Either String BadgeCredential)
 issueBadge sk pk (VerifiedBadgeRequest BadgeRequest {masterKey, badgeType, expiry}) =
-  fmap mkCred <$> bbsSign sk pk bbsBadgeHeader (badgeMessages masterKey expiry badgeType)
+  fmap mkCred <$> bbsSign sk pk bbsBadgeHeader (badgeMessages masterKey expiry badgeType badgeExtra)
   where
-    mkCred sig = BadgeCredential {masterKey, signature = sig, badgeExpiry = expiry, badgeType}
+    badgeExtra = "" -- reserved, empty for now
+    mkCred sig = BadgeCredential {masterKey, signature = sig, badgeExpiry = expiry, badgeType, badgeExtra}
 
 -- Client-side: verify the credential received from server
 
 verifyBadgeSignature :: BBSPublicKey -> BadgeCredential -> IO Bool
-verifyBadgeSignature pk BadgeCredential {masterKey, signature, badgeExpiry, badgeType} =
-  bbsVerify pk signature bbsBadgeHeader (badgeMessages masterKey badgeExpiry badgeType)
+verifyBadgeSignature pk BadgeCredential {masterKey, signature, badgeExpiry, badgeType, badgeExtra} =
+  bbsVerify pk signature bbsBadgeHeader (badgeMessages masterKey badgeExpiry badgeType badgeExtra)
 
 -- Client-side: generate a proof for a contact/group
 
 generateBadgeProof :: BBSPublicKey -> BadgeCredential -> BBSPresHeader -> IO (Either String SupporterBadge)
-generateBadgeProof pk BadgeCredential {masterKey, signature, badgeExpiry, badgeType} ph =
-  fmap mkBadge <$> bbsProofGen pk signature bbsBadgeHeader ph bbsBadgeDisclosedIndexes (badgeMessages masterKey badgeExpiry badgeType)
+generateBadgeProof pk BadgeCredential {masterKey, signature, badgeExpiry, badgeType, badgeExtra} ph =
+  fmap mkBadge <$> bbsProofGen pk signature bbsBadgeHeader ph bbsBadgeDisclosedIndexes (badgeMessages masterKey badgeExpiry badgeType badgeExtra)
   where
-    mkBadge p = SupporterBadge {proof = p, presHeader = ph, badgeExpiry, badgeType}
+    mkBadge p = SupporterBadge {proof = p, presHeader = ph, badgeExpiry, badgeType, badgeExtra}
 
 -- Recipient-side: verify a badge proof
 
 verifyBadge :: BBSPublicKey -> SupporterBadge -> IO Bool
-verifyBadge pk SupporterBadge {proof, presHeader, badgeExpiry, badgeType} =
-  bbsProofVerify pk proof bbsBadgeHeader presHeader bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeDisclosedMessages badgeExpiry badgeType)
+verifyBadge pk SupporterBadge {proof, presHeader, badgeExpiry, badgeType, badgeExtra} =
+  bbsProofVerify pk proof bbsBadgeHeader presHeader bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeDisclosedMessages badgeExpiry badgeType badgeExtra)
 
 verifyBadge_ :: BBSPublicKey -> Maybe SupporterBadge -> IO Bool
 verifyBadge_ = maybe (pure False) . verifyBadge
@@ -226,17 +229,17 @@ instance FromField BadgeType where fromField = fromTextField_ textDecode
 
 instance ToField BadgeType where toField = toField . textEncode
 
-type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, Maybe BoolInt)
+type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, Maybe BoolInt, Maybe Text)
 
 badgeToRow :: Maybe SupporterBadge -> Bool -> BadgeRow
-badgeToRow (Just SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType}) verified =
-  (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), Just (BI verified))
-badgeToRow _ _ = (Nothing, Nothing, Nothing, Nothing, Just (BI False))
+badgeToRow (Just SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType, badgeExtra}) verified =
+  (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), Just (BI verified), Just badgeExtra)
+badgeToRow _ _ = (Nothing, Nothing, Nothing, Nothing, Just (BI False), Nothing)
 
 rowToBadge :: UTCTime -> BadgeRow -> Maybe LocalBadge
-rowToBadge now (Just p, Just ph, badgeExpiry, Just btText, verified_) = do
+rowToBadge now (Just p, Just ph, badgeExpiry, Just btText, verified_, extra_) = do
   bt <- textDecode btText
-  let b = SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType = bt}
+  let b = SupporterBadge {proof = BBSProof p, presHeader = BBSPresHeader ph, badgeExpiry, badgeType = bt, badgeExtra = maybe "" id extra_}
       verified = maybe False unBI verified_
   Just LocalBadge {badgeStatus = mkBadgeStatus now verified b, badge = b}
 rowToBadge _ _ = Nothing
