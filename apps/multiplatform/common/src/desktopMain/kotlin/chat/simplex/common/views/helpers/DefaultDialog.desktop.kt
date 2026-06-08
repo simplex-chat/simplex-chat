@@ -13,11 +13,15 @@ import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.awt.Container
 import java.awt.FileDialog
+import java.awt.event.ActionListener
 import java.io.File
+import javax.swing.JButton
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileFilter
 import javax.swing.filechooser.FileNameExtensionFilter
+import javax.swing.plaf.basic.BasicFileChooserUI
 
 @Composable
 actual fun DefaultDialog(
@@ -77,6 +81,9 @@ fun FrameWindowScope.FileDialogChooserMultiple(
       fileChooser.dialogTitle = title
       fileChooser.isMultiSelectionEnabled = allowMultiple && isLoad
       fileChooser.isAcceptAllFileFilterUsed = fileFilter == null
+      if (!isLoad && desktopPlatform.isLinux()) {
+        installUnixSaveGlobBypass(fileChooser)
+      }
       if (fileFilter != null && fileFilterDescription != null) {
         fileChooser.addChoosableFileFilter(object: FileFilter() {
           override fun accept(file: File?): Boolean = fileFilter(file)
@@ -118,6 +125,36 @@ fun FrameWindowScope.FileDialogChooserMultiple(
       job.cancel()
     }
   }
+}
+
+// Replace the Save button's action with a literal-filename handler. This bypasses JFileChooser's
+// glob-on-save behaviour, which mis-handles '[' as a glob char on Unix (breaking filenames like
+// '[1].pdf') and is not a feature of any native OS save dialog — macOS NSSavePanel and native
+// Windows / Linux GTK / KDE save dialogs all treat the typed filename as a literal name.
+private fun installUnixSaveGlobBypass(fc: JFileChooser) {
+  val ui = fc.ui as? BasicFileChooserUI ?: return
+  val original: ActionListener = ui.approveSelectionAction
+  val btn = findButtonWithListener(fc, original) ?: return
+  btn.removeActionListener(original)
+  btn.addActionListener {
+    val name = ui.fileName?.takeIf { it.isNotEmpty() } ?: return@addActionListener
+    val typed = File(name)
+    val target = if (typed.isAbsolute) typed else File(fc.currentDirectory, name)
+    if (target.isDirectory && fc.isTraversable(target)) {
+      fc.currentDirectory = target
+    } else {
+      fc.selectedFile = target
+      fc.approveSelection()
+    }
+  }
+}
+
+private fun findButtonWithListener(c: Container, listener: ActionListener): JButton? {
+  for (comp in c.components) {
+    if (comp is JButton && comp.actionListeners.any { it === listener }) return comp
+    if (comp is Container) findButtonWithListener(comp, listener)?.let { return it }
+  }
+  return null
 }
 
 /*
