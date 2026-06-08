@@ -577,7 +577,7 @@ struct ChatInfoView: View {
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
-            message: Text(chat.chatInfo.displayName) + Text(verbatim: "\n\n") + Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
+            message: Text(chat.chatInfo.displayName + "\n\n") + Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
             primaryButton: .destructive(Text("Clear")) {
                 Task {
                     await clearChat(chat)

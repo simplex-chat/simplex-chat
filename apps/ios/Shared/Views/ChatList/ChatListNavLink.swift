@@ -568,7 +568,7 @@ struct ChatListNavLink: View {
         let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
         return Alert(
             title: Text(label),
-            message: Text(chat.chatInfo.displayName) + Text(verbatim: "\n\n") + deleteGroupAlertMessage(groupInfo),
+            message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
             primaryButton: .destructive(Text("Delete")) {
                 Task { await deleteChat(chat) }
             },
@@ -600,7 +600,7 @@ struct ChatListNavLink: View {
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
-            message: Text(chat.chatInfo.displayName) + Text(verbatim: "\n\n") + Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
+            message: Text(chat.chatInfo.displayName + "\n\n") + Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
             primaryButton: .destructive(Text("Clear")) {
                 Task { await clearChat(chat) }
             },
@@ -630,7 +630,7 @@ struct ChatListNavLink: View {
         )
         return Alert(
             title: Text(titleLabel),
-            message: Text(chat.chatInfo.displayName) + Text(verbatim: "\n\n") + Text(messageLabel),
+            message: Text(chat.chatInfo.displayName + "\n\n") + Text(messageLabel),
             primaryButton: .destructive(Text("Leave")) {
                 Task { await leaveGroup(groupInfo.groupId) }
             },
@@ -701,7 +701,7 @@ func rejectContactRequestAlert(_ contactRequestId: Int64) -> Alert {
 func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
     Alert(
         title: Text("Delete pending connection?"),
-        message: Text(contactConnection.displayName) + Text(verbatim: "\n\n")
+        message: Text(contactConnection.displayName + "\n\n")
             + (contactConnection.initiated
                 ? Text("The contact you shared this link with will NOT be able to connect!")
                 : Text("The connection you accepted will be cancelled!")),
