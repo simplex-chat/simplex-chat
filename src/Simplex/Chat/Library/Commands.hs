@@ -4730,10 +4730,12 @@ dispatchResolvedRecord vr nm user ni@SimplexNameInfo {nameType} NameRecord {nrSi
 
 -- | Pick the link from the @NameRecord@ matching the queried name type.
 -- A missing per-type field (record exists but advertises no link of this kind)
--- is treated as "not found" — same UX as a local-store miss.
-firstNameLink :: SimplexNameType -> Maybe Text -> Maybe Text -> SimplexNameInfo -> Either ChatError Text
-firstNameLink nameType simplexChannel simplexContact ni =
-  maybe (Left $ ChatError $ CESimplexNameNotFound ni) Right link
+-- is treated as "not found" — same UX as a local-store miss. The text fields
+-- on 'NameRecord' use the empty string as the absent sentinel.
+firstNameLink :: SimplexNameType -> Text -> Text -> SimplexNameInfo -> Either ChatError Text
+firstNameLink nameType simplexChannel simplexContact ni
+  | T.null link = Left $ ChatError $ CESimplexNameNotFound ni
+  | otherwise = Right link
   where
     link = case nameType of
       NTPublicGroup -> simplexChannel
@@ -4786,13 +4788,12 @@ apiVerifySimplexName user chatRef = do
       let resolvedLink = case nameType' of
             NTContact -> nrSimplexContact
             NTPublicGroup -> nrSimplexChannel
-      case resolvedLink of
-        Just lnk | linksMatch lnk storedLink -> do
+      if not (T.null resolvedLink) && linksMatch resolvedLink storedLink
+        then do
           ts <- liftIO getCurrentTime
           withStore' $ \db -> persistVerified db ts
           toView $ CEvtSimplexNameVerified user chatRef claim ts
-        _ ->
-          toView $ CEvtSimplexNameVerifyFailed user chatRef claim SNVFLinkMismatch
+        else toView $ CEvtSimplexNameVerifyFailed user chatRef claim SNVFLinkMismatch
     Left NameNotRegistered ->
       toView $ CEvtSimplexNameVerifyFailed user chatRef claim SNVFNameNotRegistered
     Left ResolverUnavailable ->

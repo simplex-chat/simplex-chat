@@ -85,31 +85,32 @@ resolveNameTests = do
         other -> expectationFailure $ "expected ChatErrorAgent, got " <> show other
   -- firstNameLink is the pure link-picker used by dispatchResolvedRecord:
   -- it selects nrSimplexContact for NTContact, nrSimplexChannel for NTPublicGroup.
-  -- A Nothing for the queried type collapses to CESimplexNameNotFound so the UX
-  -- is identical to a local-store miss.
+  -- The text fields use the empty string as the "absent" sentinel; an empty
+  -- link for the queried type collapses to CESimplexNameNotFound so the UX is
+  -- identical to a local-store miss.
   describe "firstNameLink" $ do
-    it "picks nrSimplexContact for NTContact" $
-      case firstNameLink NTContact (Just channelLink) (Just contactLink) aliceNi of
+    it "NTContact path picks simplexContact" $
+      case firstNameLink NTContact channelLink contactLink aliceNi of
         Right lnk -> lnk `shouldBe` contactLink
         Left e -> expectationFailure $ "expected Right, got " <> show e
-    it "picks nrSimplexChannel for NTPublicGroup" $
-      case firstNameLink NTPublicGroup (Just channelLink) (Just contactLink) groupNi of
+    it "NTPublicGroup path picks simplexChannel" $
+      case firstNameLink NTPublicGroup channelLink contactLink groupNi of
         Right lnk -> lnk `shouldBe` channelLink
         Left e -> expectationFailure $ "expected Right, got " <> show e
-    it "returns CESimplexNameNotFound when nrSimplexContact is Nothing for NTContact" $
-      case firstNameLink NTContact (Just channelLink) Nothing aliceNi of
+    it "empty Text returns NotFound" $
+      case firstNameLink NTContact "" "" aliceNi of
         Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` aliceNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
-    it "returns CESimplexNameNotFound when nrSimplexChannel is Nothing for NTPublicGroup" $
-      case firstNameLink NTPublicGroup Nothing (Just contactLink) groupNi of
+    -- Each name advertises a per-type link; cross-type fallback would silently
+    -- connect to the wrong target, so a populated off-type slot must not satisfy
+    -- the queried type.
+    it "cross-type contact link with NTPublicGroup returns NotFound" $
+      case firstNameLink NTPublicGroup "" contactLink groupNi of
         Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` groupNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
-    -- NTContact ignores nrSimplexChannel even when nrSimplexContact is Nothing.
-    -- The resolver-side semantics say each name advertises a per-type link;
-    -- cross-type fallback would silently connect to the wrong target.
-    it "does not fall back to nrSimplexChannel for NTContact" $
-      case firstNameLink NTContact (Just channelLink) Nothing aliceNi of
-        Left (ChatError (CESimplexNameNotFound _)) -> pure ()
+    it "cross-type channel link with NTContact returns NotFound" $
+      case firstNameLink NTContact channelLink "" aliceNi of
+        Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` aliceNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
   -- linksMatch is the byte-equal-after-normalize comparator that gates
   -- APIVerifySimplexName. The agent's simplex:/ scheme and the server-hostname
@@ -192,11 +193,11 @@ sampleRecord :: NameRecord
 sampleRecord =
   NameRecord
     { nrName = "alice",
-      nrNickname = Nothing,
-      nrWebsite = Nothing,
-      nrLocation = Nothing,
-      nrSimplexContact = Nothing,
-      nrSimplexChannel = Nothing,
+      nrNickname = "",
+      nrWebsite = "",
+      nrLocation = "",
+      nrSimplexContact = "",
+      nrSimplexChannel = "",
       nrEth = Nothing,
       nrBtc = Nothing,
       nrXmr = Nothing,
