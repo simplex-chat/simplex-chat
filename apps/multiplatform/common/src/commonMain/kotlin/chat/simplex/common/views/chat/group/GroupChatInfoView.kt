@@ -199,7 +199,8 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
     }
   AlertManager.shared.showAlertDialog(
     title = generalGetString(titleId),
-    text = generalGetString(messageId),
+    text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}",
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withBGApi {
@@ -233,7 +234,8 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
     MR.strings.you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved
   AlertManager.shared.showAlertDialog(
     title = generalGetString(titleId),
-    text = generalGetString(messageId),
+    text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}",
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
       withLongRunningApi(60_000) {
