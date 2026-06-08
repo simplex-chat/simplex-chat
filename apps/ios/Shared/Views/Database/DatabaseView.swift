@@ -466,6 +466,7 @@ struct DatabaseView: View {
     }
 
     private func exportArchive() async -> Bool {
+        if !(await confirmExportStorage()) { return false }
         await MainActor.run {
             progressIndicator = true
         }
