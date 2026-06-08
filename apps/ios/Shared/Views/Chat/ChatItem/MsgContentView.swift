@@ -208,7 +208,9 @@ private func handleTextTaps(
         var browser: Bool = false
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
-                if let url = attrs[linkAttrKey] as? String {
+                if let nameInfo = attrs[nameAttrKey] as? SimplexNameInfo {
+                    showUnsupportedNameAlert(nameInfo)
+                } else if let url = attrs[linkAttrKey] as? String {
                     linkURL = url
                     browser = attrs[webLinkAttrKey] != nil
                 } else if let showSecrets, let i = attrs[secretAttrKey] as? Int {
@@ -251,6 +253,7 @@ private let webLinkAttrKey = NSAttributedString.Key("chat.simplex.app.webLink")
 private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
 private let commandAttrKey = NSAttributedString.Key("chat.simplex.app.command")
+private let nameAttrKey = NSAttributedString.Key("chat.simplex.app.name")
 
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
 
@@ -423,6 +426,12 @@ func messageText(
                     } else {
                         t = mentionText(memberName)
                     }
+                }
+            case let .simplexName(nameInfo):
+                attrs = linkAttrs()
+                if !preview {
+                    attrs[nameAttrKey] = nameInfo
+                    handleTaps = true
                 }
             case .email:
                 attrs = linkAttrs()

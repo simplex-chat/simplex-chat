@@ -1005,7 +1005,7 @@ server test step */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "連絡先はメッセージを削除対象とすることができます。あなたには閲覧可能です。";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "続ける";
 
 /* No comment provided by engineer. */
@@ -1270,7 +1270,7 @@ alert button */
 "Developer options" = "開発者向けの設定";
 
 /* No comment provided by engineer. */
-"Developer tools" = "開発ツール";
+"Developer" = "開発ツール";
 
 /* No comment provided by engineer. */
 "Device" = "端末";
@@ -2533,7 +2533,7 @@ alert button */
 "Preview" = "プレビュー";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "プライバシーとセキュリティ";
+"Your privacy" = "プライバシーとセキュリティ";
 
 /* No comment provided by engineer. */
 "Private filenames" = "プライベートなファイル名";
@@ -3459,7 +3459,7 @@ server test failure */
 "You can enable later via Settings" = "あとで設定から有効にできます";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "あとでアプリのプライバシーとセキュリティの設定から有効にすることができます。";
+"You can enable them later via app Your privacy settings." = "あとでアプリのプライバシーとセキュリティの設定から有効にすることができます。";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。";

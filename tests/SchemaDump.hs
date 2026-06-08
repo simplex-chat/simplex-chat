@@ -145,7 +145,7 @@ skipComparisonForDownMigrations =
     -- on down migration single_sender_group_member_id column and its index
     -- are re-added at the end of the table / file (ALTER TABLE ADD COLUMN
     -- appends; CREATE INDEX appends).
-    "20260515_delivery_job_senders"
+    "20260529_delivery_job_senders"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String

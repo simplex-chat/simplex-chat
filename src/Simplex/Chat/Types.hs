@@ -795,10 +795,19 @@ instance FromField GroupType where fromField = fromTextField_ textDecode
 
 instance ToField GroupType where toField = toField . textEncode
 
+data PublicGroupAccess = PublicGroupAccess
+  { groupWebPage :: Maybe Text,
+    groupDomain :: Maybe Text,
+    domainWebPage :: Bool,
+    allowEmbedding :: Bool
+  }
+  deriving (Eq, Show)
+
 data PublicGroupProfile = PublicGroupProfile
   { groupType :: GroupType,
     groupLink :: ShortLinkContact,
-    publicGroupId :: B64UrlByteString -- group identity = sha256(genesis root key), immutable
+    publicGroupId :: B64UrlByteString, -- group identity = sha256(genesis root key), immutable
+    publicGroupAccess :: Maybe PublicGroupAccess
   }
   deriving (Eq, Show)
 
@@ -2026,6 +2035,10 @@ type VersionChat = Version ChatVersion
 
 type VersionRangeChat = VersionRange ChatVersion
 
+-- | Store-wide context passed to store functions in place of the bare `vr`
+-- parameter. Built from config by mkStoreCxt; more fields are added here over time.
+newtype StoreCxt = StoreCxt {vr :: VersionRangeChat}
+
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
 
@@ -2085,6 +2098,8 @@ instance FromJSON GroupType where
 instance ToJSON GroupType where
   toJSON = textToJSON
   toEncoding = textToEncoding
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupAccess)
 
 $(JQ.deriveJSON defaultJSON ''PublicGroupProfile)
 

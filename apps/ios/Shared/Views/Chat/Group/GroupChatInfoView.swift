@@ -325,6 +325,15 @@ struct GroupChatInfoView: View {
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage,
+               let url = URL(string: webPage) {
+                Link(destination: url) {
+                    Text(webPage)
+                        .font(.subheadline)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+            }
             if groupInfo.useRelays,
                let count = groupInfo.groupSummary.publicMemberCount,
                count > 0 {

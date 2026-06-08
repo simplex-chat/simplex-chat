@@ -194,8 +194,15 @@
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="unsupported_connection_link">Unsupported connection link</string>
   <string name="link_requires_newer_app_version_please_upgrade">This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</string>
+  <string name="unsupported_channel_name">Unsupported channel name</string>
+  <string name="unsupported_contact_name">Unsupported contact name</string>
+  <string name="channel_name_requires_newer_app_version">Connecting via channel name requires a newer app version.</string>
+  <string name="contact_name_requires_newer_app_version">Connecting via contact name requires a newer app version.</string>
+  <string name="please_upgrade_the_app">Please upgrade the app.</string>
   <string name="channel_temporarily_unavailable">Channel temporarily unavailable</string>
   <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
+  <string name="app_update_required">App update required</string>
+  <string name="group_link_requires_newer_version">This group requires a newer version of the app. Please update the app to join.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="connection_error_blocked">Connection blocked</string>
@@ -1548,6 +1555,13 @@
   <string name="settings_section_title_files">Files</string>
   <string name="settings_section_title_delivery_receipts">Send delivery receipts to</string>
   <string name="settings_section_title_contact_requests_from_groups">Contact requests from groups</string>
+  <string name="settings_section_title_about">About</string>
+  <string name="settings_section_title_contact">Contact</string>
+  <string name="settings_section_title_support_project">Support the project</string>
+  <string name="chat_data">Chat data</string>
+  <string name="help_and_support">Help &amp; support</string>
+  <string name="more_privacy">More privacy</string>
+  <string name="advanced_settings">Advanced settings</string>
   <string name="settings_restart_app">Restart</string>
   <string name="settings_shutdown">Shutdown</string>
   <string name="settings_developer_tools">Developer tools</string>
@@ -2674,7 +2688,7 @@
   <string name="dont_enable_receipts">Don\'t enable</string>
   <string name="you_can_enable_delivery_receipts_later">You can enable later via Settings</string>
   <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
-  <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
+  <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Your privacy settings.</string>
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
 
   <!-- Remote access -->

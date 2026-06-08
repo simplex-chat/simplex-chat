@@ -16,7 +16,8 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
-import Simplex.Chat.Controller (ChatConfig (..), versionNumber)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
+import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote (remoteFilesFolder)
@@ -24,6 +25,7 @@ import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Util
+import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 import UnliftIO
@@ -32,6 +34,12 @@ import UnliftIO.Directory
 
 remoteTests :: SpecWith TestParams
 remoteTests = describe "Remote" $ do
+  describe "/start remote host parser" $ do
+    it "parses iface name with a space followed by port=" $ \_ ->
+      parseChatCommand "/start remote host new addr=192.168.1.5 iface=\"Ethernet 2\" port=12345"
+        `shouldSatisfy` \case
+          Right (StartRemoteHost Nothing (Just (RCCtrlAddress _ "Ethernet 2")) (Just 12345)) -> True
+          _ -> False
   xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
   xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
   xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests

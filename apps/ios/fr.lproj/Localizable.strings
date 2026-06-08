@@ -1357,7 +1357,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Le contenu enfreint les conditions d'utilisation";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Continuer";
 
 /* No comment provided by engineer. */
@@ -1745,7 +1745,7 @@ alert button */
 "Developer options" = "Options pour les développeurs";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Outils du développeur";
+"Developer" = "Outils du développeur";
 
 /* No comment provided by engineer. */
 "Device" = "Appareil";
@@ -3742,7 +3742,7 @@ alert button */
 "Previously connected servers" = "Serveurs précédemment connectés";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Vie privée et sécurité";
+"Your privacy" = "Vie privée et sécurité";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Respect de la vie privée de vos clients.";
@@ -5448,7 +5448,7 @@ server test failure */
 "You can enable later via Settings" = "Vous pouvez l'activer ultérieurement via Paramètres";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Vous pouvez les activer ultérieurement via les paramètres de Confidentialité et Sécurité de l'application.";
+"You can enable them later via app Your privacy settings." = "Vous pouvez les activer ultérieurement via les paramètres de Confidentialité et Sécurité de l'application.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Vous pouvez faire un nouvel essai.";

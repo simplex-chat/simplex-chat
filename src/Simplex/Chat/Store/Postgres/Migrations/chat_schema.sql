@@ -850,7 +850,11 @@ CREATE TABLE test_chat_schema.group_profiles (
     short_descr text,
     group_type text,
     group_link bytea,
-    public_group_id bytea
+    public_group_id bytea,
+    group_web_page text,
+    group_domain text,
+    domain_web_page bigint,
+    allow_embedding bigint
 );
 
 
@@ -875,7 +879,8 @@ CREATE TABLE test_chat_schema.group_relays (
     relay_link bytea,
     conf_id bytea,
     created_at text DEFAULT now() NOT NULL,
-    updated_at text DEFAULT now() NOT NULL
+    updated_at text DEFAULT now() NOT NULL,
+    base_web_url text
 );
 
 
@@ -963,7 +968,7 @@ CREATE TABLE test_chat_schema.groups (
     public_member_count bigint,
     relay_request_retries bigint DEFAULT 0 NOT NULL,
     relay_request_delay bigint DEFAULT 0 NOT NULL,
-    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 04:00:00+04'::timestamp with time zone NOT NULL,
+    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 01:00:00+01'::timestamp with time zone NOT NULL,
     relay_inactive_at timestamp with time zone
 );
 

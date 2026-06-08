@@ -506,9 +506,6 @@ swipe action */
 "Added message servers" = "Server dei messaggi aggiunti";
 
 /* No comment provided by engineer. */
-"Adding relays will be supported later." = "L'aggiunta di relay verrà supportata prossimamente.";
-
-/* No comment provided by engineer. */
 "Additional accent" = "Principale aggiuntivo";
 
 /* No comment provided by engineer. */
@@ -1182,9 +1179,6 @@ alert subtitle */
 /* No comment provided by engineer. */
 "Channel will be deleted for you - this cannot be undone!" = "Il canale verrà eliminato per te, non è reversibile!";
 
-/* alert message */
-"Channel will start working with %d of %d relays. Proceed?" = "Il canale sarà operativo con %1$d di %2$d relay. Procedere?";
-
 /* No comment provided by engineer. */
 "Channels" = "Canali";
 
@@ -1634,7 +1628,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Il contenuto viola le condizioni di utilizzo";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Continua";
 
 /* No comment provided by engineer. */
@@ -2070,7 +2064,7 @@ alert button */
 "Developer options" = "Opzioni sviluppatore";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Strumenti di sviluppo";
+"Developer" = "Strumenti di sviluppo";
 
 /* No comment provided by engineer. */
 "Device" = "Dispositivo";
@@ -4293,10 +4287,10 @@ alert button */
 "Open migration to another device" = "Apri migrazione ad un altro dispositivo";
 
 /* new chat action */
-"Open new channel" = "Apri un canale nuovo";
+"Open new channel" = "Apri il nuovo canale";
 
 /* new chat action */
-"Open new chat" = "Apri una chat nuova";
+"Open new chat" = "Apri la nuova chat";
 
 /* new chat action */
 "Open new group" = "Apri il nuovo gruppo";
@@ -4539,7 +4533,7 @@ alert button */
 "Previously connected servers" = "Server precedentemente connessi";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Privacy e sicurezza";
+"Your privacy" = "Privacy e sicurezza";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Privacy per i tuoi clienti.";
@@ -4576,9 +4570,6 @@ alert button */
 
 /* alert title */
 "Private routing timeout" = "Scadenza dell'instradamento privato";
-
-/* alert action */
-"Proceed" = "Procedi";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profilo e connessioni al server";
@@ -4860,9 +4851,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "Rimuovere la password dal portachiavi?";
-
-/* No comment provided by engineer. */
-"Remove subscriber" = "Rimuovi iscritto";
 
 /* alert title */
 "Remove subscriber?" = "Rimuovere l'iscritto?";
@@ -6771,7 +6759,7 @@ server test failure */
 "You can enable later via Settings" = "Puoi attivarle più tardi nelle impostazioni";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Puoi attivarle più tardi nelle impostazioni di privacy e sicurezza dell'app.";
+"You can enable them later via app Your privacy settings." = "Puoi attivarle più tardi nelle impostazioni di privacy e sicurezza dell'app.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Puoi fare un altro tentativo.";
