@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Configure all aspects of app behavior including notifications, network/servers, privacy, appearance, database management, call settings, and developer tools. Accessed from the UserPicker sheet on the chat list.
+Configure all aspects of app behavior including notifications, network/servers, privacy, appearance, database management, call settings, and Developer. Accessed from the UserPicker sheet on the chat list.
 
 ## Route / Navigation
 
@@ -22,7 +22,7 @@ Configure all aspects of app behavior including notifications, network/servers, 
 | Notifications | `bolt` (color varies by token status) | `NotificationsView` | Push notification mode and preview settings |
 | Network & servers | `externaldrive.connected.to.line.below` | `NetworkAndServers` | SMP/XFTP servers, proxy, .onion hosts, advanced network |
 | Audio & video calls | `video` | `CallSettings` | WebRTC relay policy, ICE servers, CallKit options |
-| Privacy & security | `lock` | `PrivacySettings` | SimpleX Lock, screen protection, delivery receipts, auto-accept |
+| Your privacy | `lock` | `PrivacySettings` | SimpleX Lock, screen protection, delivery receipts, auto-accept |
 | Appearance | `sun.max` | `AppearanceSettings` | Theme, language, wallpapers, chat bubbles, toolbar opacity |
 
 All rows disabled when `chatModel.chatRunning != true`. Appearance row only shown when `UIApplication.shared.supportsAlternateIcons`.
@@ -77,7 +77,7 @@ Adding a relay: `NewChatRelayView` form with name, address, test, and enable tog
 
 Server validation (`validateServers_`) now returns both errors and warnings.
 
-#### Privacy & Security (`PrivacySettings`)
+#### Your privacy (`PrivacySettings`)
 
 | Setting | Description |
 |---|---|
@@ -152,7 +152,7 @@ Database row shows exclamation octagon icon in red when `chatRunning == false`.
 
 | Row | Icon | Destination | Description |
 |---|---|---|---|
-| Developer tools | `chevron.left.forwardslash.chevron.right` | `DeveloperView` | Chat console/terminal, log level, confirm DB upgrades |
+| Developer | `chevron.left.forwardslash.chevron.right` | `DeveloperView` | Chat console/terminal, log level, confirm DB upgrades |
 | App version | (none) | `VersionView` | Shows "v{version} ({build})" |
 
 ## Loading / Error States

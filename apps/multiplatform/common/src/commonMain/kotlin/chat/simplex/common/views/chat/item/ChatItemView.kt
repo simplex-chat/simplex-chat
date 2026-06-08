@@ -12,8 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
@@ -1224,12 +1226,25 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
   val style = shapeStyle(chatItem, chatItemTail.value, tailVisible, revealed)
   val cornerRoundness = chatItemRoundness.value.coerceIn(0f, 1f)
 
-  val shape = when (style) {
-    is ShapeStyle.Bubble -> chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true)
-    is ShapeStyle.RoundRect -> RoundedCornerShape(style.radius * cornerRoundness)
+  return when (style) {
+    is ShapeStyle.Bubble -> {
+      // Modifier.clip of the bubble GenericShape mis-hit-tests its path on very tall
+      // items, dropping long-press on the lower part of the bubble (issue #6991). Clip
+      // in the draw pass instead — drawing is clipped identically (the press ripple
+      // included), with no effect on hit-test.
+      val shape = chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true)
+      this.drawWithCache {
+        val path = Path().apply {
+          addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache))
+        }
+        onDrawWithContent {
+          clipPath(path) { this@onDrawWithContent.drawContent() }
+        }
+      }
+    }
+    // RoundRect hit-tests correctly — no bug here, keep the antialiased Modifier.clip.
+    is ShapeStyle.RoundRect -> this.clip(RoundedCornerShape(style.radius * cornerRoundness))
   }
-
-  return this.clip(shape)
 }
 
 private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->

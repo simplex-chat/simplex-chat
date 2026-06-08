@@ -3039,8 +3039,8 @@ alert button</note>
         <target>Options pour les développeurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer tools" xml:space="preserve">
-        <source>Developer tools</source>
+      <trans-unit id="Developer" xml:space="preserve">
+        <source>Developer</source>
         <target>Outils du développeur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

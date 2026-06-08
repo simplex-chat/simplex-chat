@@ -74,8 +74,8 @@ getChatLockEntity db agentConnId = do
 -- TODO consider whether ConnFailed connections should be excluded:
 -- - from receiving: getConnectionEntity, getContactConnEntityByConnReqHash
 -- - from subscribing: getContactConnsToSub, getUCLConnsToSub, getMemberConnsToSub, getPendingConnsToSub
-getConnectionEntity :: DB.Connection -> VersionRangeChat -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
-getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
+getConnectionEntity :: DB.Connection -> StoreCxt -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
+getConnectionEntity db cxt user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_
   case entityId of
     Nothing ->
@@ -90,7 +90,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
   where
     getConnection_ :: ExceptT StoreError IO Connection
     getConnection_ = ExceptT $ do
-      firstRow (toConnection vr) (SEConnectionNotFound agentConnId) $
+      firstRow (toConnection cxt) (SEConnectionNotFound agentConnId) $
         DB.query
           db
           [sql|
@@ -175,7 +175,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
       liftIO $ bitraverse (addGroupChatTags db) pure gm
     toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
     toGroupAndMember c (groupInfoRow :. memberRow) =
-      let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
+      let groupInfo = toGroupInfo cxt userContactId [] groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c})
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
@@ -194,17 +194,17 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
 
-getConnectionEntityByConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
-getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
+getConnectionEntityByConnReq :: DB.Connection -> StoreCxt -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
+getConnectionEntityByConnReq db cxt user@User {userId} (cReqSchema1, cReqSchema2) = do
   connId_ <-
     maybeFirstRow fromOnly $
       DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db cxt user) connId_
 
-getConnectionEntityViaShortLink :: DB.Connection -> VersionRangeChat -> User -> ShortLinkInvitation -> IO (Maybe (ConnReqInvitation, ConnectionEntity))
-getConnectionEntityViaShortLink db vr user@User {userId} shortLink = fmap eitherToMaybe $ runExceptT $ do
+getConnectionEntityViaShortLink :: DB.Connection -> StoreCxt -> User -> ShortLinkInvitation -> IO (Maybe (ConnReqInvitation, ConnectionEntity))
+getConnectionEntityViaShortLink db cxt user@User {userId} shortLink = fmap eitherToMaybe $ runExceptT $ do
   (cReq, connId) <- ExceptT getConnReqConnId
-  (cReq,) <$> getConnectionEntity db vr user connId
+  (cReq,) <$> getConnectionEntity db cxt user connId
   where
     getConnReqConnId =
       firstRow' toConnReqConnId (SEInternalError "connection not found") $
@@ -225,8 +225,8 @@ getConnectionEntityViaShortLink db vr user@User {userId} shortLink = fmap either
 -- multiple connections can have same via_contact_uri_hash if request was repeated;
 -- this function searches for latest connection with contact so that "known contact" plan would be chosen;
 -- deleted connections are filtered out to allow re-connecting via same contact address
-getContactConnEntityByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
-getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2) = do
+getContactConnEntityByConnReqHash :: DB.Connection -> StoreCxt -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
+getContactConnEntityByConnReqHash db cxt user@User {userId} (cReqHash1, cReqHash2) = do
   connId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -243,7 +243,7 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
           ) c
         |]
         (userId, cReqHash1, cReqHash2, ConnDeleted)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db cxt user) connId_
 
 getContactConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getContactConnsToSub db User {userId} filterToSubscribe =
