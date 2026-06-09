@@ -1311,56 +1311,46 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         r n'' = Just (ci, CIRcvDecryptionError mde n'')
     mdeUpdatedCI _ _ = Nothing
 
-    -- Receives an inline file chunk for a normal file (chat-item-linked) or the group roster blob
-    -- (file_type = roster, no chat item); fileType selects start, completion, and cancel. The agent
-    -- message is acked once by the caller's outer per-MSG withAckMessage, not here.
+    -- gInfo_ is Just only for the roster blob (no chat item) and selects roster cancel/completion;
+    -- Nothing for every normal file. Inner ack removed: the outer per-MSG withAckMessage is the sole ack.
     receiveFileChunk :: Maybe GroupInfo -> RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> CM ()
-    receiveFileChunk gInfo_ ft@RcvFileTransfer {fileId, fileType, fileStatus, chunkSize} conn_ MsgMeta {recipient = (msgId, _), integrity} = \case
-      FileChunkCancel -> case fileType of
-        FTRoster -> forM_ gInfo_ $ cleanupGroupRosterFile user
-        FTNormal ->
+    receiveFileChunk gInfo_ ft@RcvFileTransfer {fileId, chunkSize} conn_ MsgMeta {recipient = (msgId, _), integrity} = \case
+      FileChunkCancel -> case gInfo_ of
+        Just gInfo -> cleanupGroupRosterFile user gInfo
+        Nothing ->
           unless (rcvFileCompleteOrCancelled ft) $ do
             cancelRcvFileTransfer user ft
             ci <- withStore $ \db -> getChatItemByFileId db cxt user fileId
             toView $ CEvtRcvFileSndCancelled user ci ft
-      FileChunk {chunkNo, chunkBytes = chunk}
-        -- a normal inline file not accepted for inline receipt: chunk 1 prohibited, rest ignored
-        | fileType == FTNormal, RFSNew <- fileStatus ->
-            when (chunkNo == 1) $ throwChatError $ CEInlineFileProhibited fileId
-        | otherwise -> do
-            -- normal: transition to receiving on chunk 1 before the integrity check (prior order)
-            when (fileType == FTNormal && chunkNo == 1) $ startReceivingFile user fileId
-            case integrity of
-              MsgOk -> pure ()
-              MsgError MsgDuplicate -> pure () -- TODO remove once agent removes duplicates
-              MsgError e ->
-                badRcvFileChunk ft $ "invalid file chunk number " <> show chunkNo <> ": " <> show e
-            -- roster: a re-driven transfer (relay restart / re-subscribe / QCONT) restarts from
-            -- chunk 1; discard partials so stale bytes can't corrupt the reassembled blob
-            when (fileType == FTRoster && chunkNo == 1) $ do
-              last_ <- withStore' $ \db -> getRcvFileLastChunkNo db ft
-              when (isJust last_) $ resetRosterPartialChunks ft
-            withStore' (\db -> createRcvFileChunk db ft chunkNo msgId) >>= \case
-              RcvChunkOk
-                | B.length chunk /= fromInteger chunkSize -> badRcvFileChunk ft "incorrect chunk size"
-                | otherwise -> appendFileChunk ft chunkNo chunk False
-              RcvChunkFinal
-                | B.length chunk > fromInteger chunkSize -> badRcvFileChunk ft "incorrect chunk size"
-                | otherwise -> do
-                    appendFileChunk ft chunkNo chunk True
-                    case fileType of
-                      FTRoster -> forM_ gInfo_ $ \gInfo -> rosterCompletion gInfo ft
-                      FTNormal -> do
-                        ci <- withStore $ \db -> do
-                          liftIO $ do
-                            updateRcvFileStatus db fileId FSComplete
-                            updateCIFileStatus db user fileId CIFSRcvComplete
-                            deleteRcvFileChunks db ft
-                          getChatItemByFileId db cxt user fileId
-                        toView $ CEvtRcvFileComplete user ci
-                        mapM_ (deleteAgentConnectionAsync . aConnId) conn_
-              RcvChunkDuplicate -> pure ()
-              RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
+      FileChunk {chunkNo, chunkBytes = chunk} -> do
+        case integrity of
+          MsgOk -> pure ()
+          MsgError MsgDuplicate -> pure () -- TODO remove once agent removes duplicates
+          MsgError e ->
+            badRcvFileChunk ft $ "invalid file chunk number " <> show chunkNo <> ": " <> show e
+        withStore' (\db -> createRcvFileChunk db ft chunkNo msgId) >>= \case
+          RcvChunkOk ->
+            if B.length chunk /= fromInteger chunkSize
+              then badRcvFileChunk ft "incorrect chunk size"
+              else appendFileChunk ft chunkNo chunk False
+          RcvChunkFinal ->
+            if B.length chunk > fromInteger chunkSize
+              then badRcvFileChunk ft "incorrect chunk size"
+              else do
+                appendFileChunk ft chunkNo chunk True
+                case gInfo_ of
+                  Just gInfo -> rosterCompletion gInfo ft
+                  Nothing -> do
+                    ci <- withStore $ \db -> do
+                      liftIO $ do
+                        updateRcvFileStatus db fileId FSComplete
+                        updateCIFileStatus db user fileId CIFSRcvComplete
+                        deleteRcvFileChunks db ft
+                      getChatItemByFileId db cxt user fileId
+                    toView $ CEvtRcvFileComplete user ci
+                    mapM_ (deleteAgentConnectionAsync . aConnId) conn_
+          RcvChunkDuplicate -> pure ()
+          RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
@@ -2484,18 +2474,40 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     bFileChunk :: Contact -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
     bFileChunk ct sharedMsgId chunk meta = do
       ft <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId >>= getRcvFileTransfer db user
-      receiveFileChunk Nothing ft Nothing meta chunk
+      receiveInlineChunk ft chunk meta
 
-    -- A group BFileChunk is a normal inline file chunk or a roster blob chunk; both are located by
-    -- (group_id, shared_msg_id) and dispatched by file_type inside receiveFileChunk. A chunk that
-    -- matches no in-flight transfer (an orphaned re-served roster chunk to an up-to-date member, or
-    -- a missing normal file) is ignored; the outer withAckMessage acks the agent message.
+    -- A group BFileChunk is a normal inline file chunk or a roster blob chunk, both located by
+    -- (group_id, shared_msg_id). A chunk matching no in-flight transfer (an orphaned re-served roster
+    -- chunk, or a missing normal file) is ignored; the outer withAckMessage acks it.
     bFileChunkGroup :: GroupInfo -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
     bFileChunkGroup gInfo@GroupInfo {groupId} sharedMsgId chunk meta = do
       fileId_ <- withStore' $ \db -> getGroupRcvFileIdBySharedMsgId db userId groupId sharedMsgId
       forM_ fileId_ $ \fileId -> do
         ft <- withStore $ \db -> getRcvFileTransfer db user fileId
-        receiveFileChunk (Just gInfo) ft Nothing meta chunk
+        case fileType ft of
+          FTRoster -> receiveRosterChunk gInfo ft meta chunk
+          FTNormal -> receiveInlineChunk ft chunk meta
+
+    receiveInlineChunk :: RcvFileTransfer -> FileChunk -> MsgMeta -> CM ()
+    receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
+      | chunkNo == 1 = throwChatError $ CEInlineFileProhibited fileId
+      | otherwise = pure ()
+    receiveInlineChunk ft@RcvFileTransfer {fileId} chunk meta = do
+      case chunk of
+        FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile user fileId
+        _ -> pure ()
+      receiveFileChunk Nothing ft Nothing meta chunk
+
+    -- A roster re-serve re-sends the blob from chunk 1; discard any partial first, else chunk 1 over a
+    -- partial is out-of-order (RcvChunkError) and appending after the stale prefix corrupts the blob.
+    receiveRosterChunk :: GroupInfo -> RcvFileTransfer -> MsgMeta -> FileChunk -> CM ()
+    receiveRosterChunk gInfo ft meta chunk = do
+      case chunk of
+        FileChunk {chunkNo} | chunkNo == 1 -> do
+          last_ <- withStore' $ \db -> getRcvFileLastChunkNo db ft
+          when (isJust last_) $ resetRosterPartialChunks ft
+        _ -> pure ()
+      receiveFileChunk (Just gInfo) ft Nothing meta chunk
 
     xFileCancelGroup :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> CM (Maybe DeliveryTaskContext)
     xFileCancelGroup g@GroupInfo {groupId} m_ sharedMsgId = do
