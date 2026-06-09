@@ -363,16 +363,16 @@ processChatCommand cxt nm = \case
     user <- withFastStore $ \db -> do
       user <- createUserRecordAt db (AgentUserId auId) p userChatRelay True ts
       mapM_ (setUserServers db user ts) uss
-      createPresetContactCards db user `catchAllErrors` \_ -> pure ()
+      createPresetContactCards db cxt user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
       pure user
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
-      createPresetContactCards :: DB.Connection -> User -> ExceptT StoreError IO ()
-      createPresetContactCards db user = do
-        createContact db user simplexStatusContactProfile
-        createContact db user simplexTeamContactProfile
+      createPresetContactCards :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO ()
+      createPresetContactCards db cxt user = do
+        createContact db cxt user simplexStatusContactProfile
+        createContact db cxt user simplexTeamContactProfile
       chooseServers :: Maybe User -> CM ([UpdatedUserOperatorServers], (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP)))
       chooseServers user_ = do
         as <- asks randomAgentServers
@@ -3624,7 +3624,7 @@ processChatCommand cxt nm = \case
         relayLinkData_ <- liftIO $ decodeLinkUserData cData
         case (relayLinkData_, linkEntityId) of
           (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
-            withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
+            withFastStore $ \db -> updateRelayMemberData db cxt user relayMember (MemberId entityId) (MemberKey relayKey) p
           _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
         let cReq = linkConnReq fd
             relayLinkToConnect = CCLink cReq (Just relayLink)

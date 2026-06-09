@@ -163,7 +163,7 @@ createOrUpdateContactRequest
       createContactRequest :: ExceptT StoreError IO RequestStage
       createContactRequest = do
         currentTs <- liftIO $ getCurrentTime
-        badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
+        badgeVerified <- liftIO $ verifyBadge_ (badgeKey cxt) badge
         ExceptT $ withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
           liftIO $
             DB.execute
@@ -230,7 +230,7 @@ createOrUpdateContactRequest
         pure $ RSCurrentRequest (Just ucr) ucr' re_
         where
           updateProfile currentTs = do
-            badgeVerified <- liftIO $ verifyBadge_ srvBadgePublicKey badge
+            badgeVerified <- liftIO $ verifyBadge_ (badgeKey cxt) badge
             DB.execute
               db
               [sql|

@@ -947,8 +947,9 @@ acceptGroupJoinRequestAsync
   memberKey_ = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
+    cxt <- chatStoreCxt
     (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
+      createJoiningMember db cxt gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
     let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -964,7 +965,6 @@ acceptGroupJoinRequestAsync
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
-    cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
     withStore $ \db -> do
@@ -982,8 +982,9 @@ acceptGroupJoinSendRejectAsync
   cReqXContactId_
   rejectionReason = do
     gVar <- asks random
+    cxt <- chatStoreCxt
     (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ Nothing Nothing GRObserver GSMemRejected Nothing
+      createJoiningMember db cxt gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ Nothing Nothing GRObserver GSMemRejected Nothing
     let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkReject $
@@ -994,7 +995,6 @@ acceptGroupJoinSendRejectAsync
                 rejectionReason
               }
     subMode <- chatReadVar subscriptionMode
-    cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user False cReqInvId msg subMode PQSupportOff chatV
     withStore $ \db -> do

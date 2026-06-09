@@ -18,7 +18,7 @@ import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
@@ -1187,13 +1187,13 @@ testPlanAddressContactViaAddress =
         Left _ -> error "error parsing contact link"
         Right cReq -> do
           let profile = aliceProfile {contactLink = Just cReq}
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> ("/_connect plan 1 " <> cLink)
@@ -1208,7 +1208,7 @@ testPlanAddressContactViaAddress =
           alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api
@@ -1249,13 +1249,13 @@ testPlanAddressContactViaShortAddress =
         Left _ -> error "error parsing contact link"
         Right shortLink -> do
           let profile = aliceProfile {contactLink = Just shortLink}
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> ("/_connect plan 1 " <> sLink)
@@ -1270,7 +1270,7 @@ testPlanAddressContactViaShortAddress =
           alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api

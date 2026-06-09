@@ -47,7 +47,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (Badge (..), BadgeCrypto (..), BadgeInfo (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, srvBadgePublicKey, verifyBadge)
+import Simplex.Chat.Badges (Badge (..), BadgeCrypto (..), BadgeInfo (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -783,13 +784,13 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contact
       BadgeProof {} -> Just b
       BadgeCredential {} -> Nothing
 
-profileBadgeVerified :: LocalProfile -> Profile -> IO Bool
-profileBadgeVerified LocalProfile {localBadge} Profile {badge = newBadge} =
+profileBadgeVerified :: BBSPublicKey -> LocalProfile -> Profile -> IO Bool
+profileBadgeVerified key LocalProfile {localBadge} Profile {badge = newBadge} =
   case (localBadge, newBadge) of
     (_, Nothing) -> pure False
     (Just lb, Just (BadgeProof _ _ newInfo))
       | localBadgeInfo lb == newInfo -> pure (localBadgeStatus lb /= BSFailed)
-    (_, Just newB) -> verifyBadge srvBadgePublicKey newB
+    (_, Just newB) -> verifyBadge key newB
 
 data GroupType
   = GTChannel
@@ -2053,7 +2054,7 @@ type VersionRangeChat = VersionRange ChatVersion
 
 -- | Store-wide context passed to store functions in place of the bare `vr`
 -- parameter. Built from config by mkStoreCxt; more fields are added here over time.
-newtype StoreCxt = StoreCxt {vr :: VersionRangeChat}
+data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKey :: BBSPublicKey}
 
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v

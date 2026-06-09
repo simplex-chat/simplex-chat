@@ -81,6 +81,7 @@ import Simplex.Messaging.Agent.Store.DB (SQLError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
@@ -137,6 +138,7 @@ coreVersionInfo simplexmqCommit =
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     chatVRange :: VersionRangeChat,
+    badgePublicKey :: BBSPublicKey,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -172,7 +174,7 @@ data ChatConfig = ChatConfig
 -- | Builds the read-only context threaded through store functions from chat config.
 -- The single construction point, so new store-wide config (e.g. server keys) is added in one place.
 mkStoreCxt :: ChatConfig -> StoreCxt
-mkStoreCxt ChatConfig {chatVRange} = StoreCxt chatVRange
+mkStoreCxt ChatConfig {chatVRange, badgePublicKey} = StoreCxt chatVRange badgePublicKey
 {-# INLINE mkStoreCxt #-}
 
 data RandomAgentServers = RandomAgentServers

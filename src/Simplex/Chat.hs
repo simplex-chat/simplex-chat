@@ -29,6 +29,7 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
 import Simplex.Chat.Controller
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey (..))
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Operators.Presets
@@ -65,6 +66,7 @@ defaultChatConfig =
             tbqSize = 1024
           },
       chatVRange = supportedChatVRange,
+      badgePublicKey = BBSPublicKey "",
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options

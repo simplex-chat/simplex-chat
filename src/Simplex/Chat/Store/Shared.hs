@@ -407,15 +407,15 @@ setCommandConnId db User {userId} cmdId connId = do
     |]
     (connId, updatedAt, userId, cmdId)
 
-createContact :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
-createContact db user profile = do
+createContact :: DB.Connection -> StoreCxt -> User -> Profile -> ExceptT StoreError IO ()
+createContact db cxt user profile = do
   currentTs <- liftIO getCurrentTime
-  void $ createContact_ db user profile emptyChatPrefs Nothing "" currentTs
+  void $ createContact_ db cxt user profile emptyChatPrefs Nothing "" currentTs
 
-createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
-createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
+createContact_ :: DB.Connection -> StoreCxt -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
+createContact_ db cxt User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-    badgeVerified <- verifyBadge_ srvBadgePublicKey badge
+    badgeVerified <- verifyBadge_ (badgeKey cxt) badge
     DB.execute
       db
       "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, chat_peer_type, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"

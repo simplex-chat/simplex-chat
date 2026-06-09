@@ -402,7 +402,7 @@ createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences prepared "" currentTs
+  contactId <- createContact_ db cxt user p ctUserPreferences prepared "" currentTs
   getContact db cxt user contactId
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
@@ -447,7 +447,7 @@ createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Profil
 createDirectContact db cxt user Connection {connId, localAlias} p = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs
+  contactId <- createContact_ db cxt user p ctUserPreferences Nothing localAlias currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   getContact db cxt user contactId
 
@@ -555,10 +555,10 @@ deleteUnusedProfile_ db userId profileId =
         :. (userId, profileId, userId, profileId, profileId)
     )
 
-updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
-updateContactProfile db user@User {userId} c p' = do
+updateContactProfile :: DB.Connection -> StoreCxt -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
+updateContactProfile db cxt user@User {userId} c p' = do
   currentTs <- liftIO getCurrentTime
-  badgeVerified <- liftIO $ profileBadgeVerified lp p'
+  badgeVerified <- liftIO $ profileBadgeVerified (badgeKey cxt) lp p'
   let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified
   updateContactProfile' currentTs badgeVerified profile
   where

@@ -1170,7 +1170,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               relayLinkData_ <- liftIO $ decodeLinkUserData cData
               case (relayLinkData_, linkEntityId) of
                 (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
-                  withStore $ \db -> updateRelayMemberData db user m (MemberId entityId) (MemberKey relayKey) p
+                  withStore $ \db -> updateRelayMemberData db cxt user m (MemberId entityId) (MemberKey relayKey) p
                 _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
               case cReq of
                 CRContactUri crData@ConnReqUriData {crClientData} -> do
@@ -2553,10 +2553,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | p /= p' = do
           c' <- withStore $ \db ->
             if userTTL == rcvTTL
-              then updateContactProfile db user c p'
+              then updateContactProfile db cxt user c p'
               else do
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
-                updateContactProfile db user c' p'
+                updateContactProfile db cxt user c' p'
           when (directOrUsed c' && createItems) $ do
             createProfileUpdatedItem c'
             lift $ createRcvFeatureItems user c c'
@@ -2671,7 +2671,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
-              m' <- withStore $ \db -> updateMemberProfile db user m p'
+              m' <- withStore $ \db -> updateMemberProfile db cxt user m p'
               unless (muteEventInChannel gInfo m') $ do
                 forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2680,7 +2680,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               mCt <- withStore $ \db -> getContact db cxt user mContactId
               if canUpdateProfile mCt
                 then do
-                  (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
+                  (m', ct') <- withStore $ \db -> updateContactMemberProfile db cxt user m mCt p'
                   unless (muteEventInChannel gInfo m') $ do
                     forM_ msgTs_ $ createProfileUpdatedItem m'
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2976,7 +2976,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               | otherwise -> messageError "x.grp.mem.new error: member already exists" $> Nothing
             Left _ -> do
               (newMember, gInfo') <- withStore $ \db -> do
-                newMember <- createNewGroupMember db user gInfo m memInfo GCPostMember initialStatus
+                newMember <- createNewGroupMember db cxt user gInfo m memInfo GCPostMember initialStatus
                 gInfo' <-
                   if memberPending newMember
                     then liftIO $ increaseGroupMembersRequireAttention db user gInfo
@@ -3028,7 +3028,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         MemberInfo mId mRole v p _
                           | mRole == GROwner -> MemberInfo mId mRole v p Nothing
                         _ -> memInfo
-                  void $ withStore $ \db -> createIntroReMember db user gInfo memInfo' memRestrictions
+                  void $ withStore $ \db -> createIntroReMember db cxt user gInfo memInfo' memRestrictions
               | otherwise -> do
                   when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
                   case memChatVRange of
@@ -3040,7 +3040,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                           groupConnIds <- createConn subMode
                           let chatV = maybe (minVersion (vr cxt)) (\peerVR -> vr cxt `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
                           void $ withStore $ \db -> do
-                            reMember <- createIntroReMember db user gInfo memInfo memRestrictions
+                            reMember <- createIntroReMember db cxt user gInfo memInfo memRestrictions
                             createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
                       | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
@@ -3075,7 +3075,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
             -- For now, this branch compensates for the lack of delayed message delivery.
             `catchError` \case
-              SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
+              SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo GCPostMember GSMemAnnounced
               e -> throwError e
         -- TODO [knocking] separate pending statuses from GroupMemberStatus?
         -- TODO            add GSMemIntroInvitedPending, GSMemConnectedPending, etc.?
