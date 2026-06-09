@@ -31,8 +31,7 @@ module Simplex.Chat.Store.Files
     getSharedMsgIdByFileId,
     getFileIdBySharedMsgId,
     getGroupFileIdBySharedMsgId,
-    getGroupRosterFileId,
-    createGroupRosterRcvFile,
+    getGroupRcvFileIdBySharedMsgId,
     getGroupRosterFileInfo,
     deleteGroupRosterFile,
     getRcvFileLastChunkNo,
@@ -325,56 +324,20 @@ getGroupFileIdBySharedMsgId db userId groupId sharedMsgId =
       |]
       (userId, groupId, sharedMsgId)
 
--- The roster blob file is located by (group_id, shared_msg_id, file_type = roster),
--- not by a chat item (it has none). Nothing => no in-flight roster transfer (orphaned
--- chunk to an up-to-date member), which the caller ACKs and ignores.
-getGroupRosterFileId :: DB.Connection -> UserId -> Int64 -> SharedMsgId -> IO (Maybe Int64)
-getGroupRosterFileId db userId groupId sharedMsgId =
+-- Locates a received group file (normal or roster) by the header's shared_msg_id without the
+-- chat_items join, so it finds the chat-item-free roster blob and normal inline files alike.
+-- Nothing => no in-flight transfer (an orphaned re-served chunk), which the caller ACKs and ignores.
+getGroupRcvFileIdBySharedMsgId :: DB.Connection -> UserId -> Int64 -> SharedMsgId -> IO (Maybe Int64)
+getGroupRcvFileIdBySharedMsgId db userId groupId sharedMsgId =
   maybeFirstRow fromOnly $
     DB.query
       db
       [sql|
-        SELECT file_id FROM files
-        WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND file_type = ?
+        SELECT f.file_id FROM files f
+        JOIN rcv_files r ON r.file_id = f.file_id
+        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ?
       |]
-      (userId, groupId, sharedMsgId, FTRoster)
-
--- Chat-item-free received file for the roster blob: cryptoArgs are never set (the
--- blob is verified as plaintext against the owner-signed digest), file_type = roster,
--- located by the header's shared_msg_id.
-createGroupRosterRcvFile :: DB.Connection -> UserId -> GroupInfo -> SharedMsgId -> Integer -> Integer -> IO RcvFileTransfer
-createGroupRosterRcvFile db userId GroupInfo {groupId, localDisplayName = gName} sharedMsgId fileSize chunkSize = do
-  currentTs <- getCurrentTime
-  fileId <- do
-    DB.execute
-      db
-      [sql|
-        INSERT INTO files
-          (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-      |]
-      (userId, groupId, rosterFileName, fileSize, chunkSize, Just IFMSent, CIFSRcvInvitation, FPSMP, FTRoster, sharedMsgId, currentTs, currentTs)
-    insertedRowId db
-  DB.execute
-    db
-    "INSERT INTO rcv_files (file_id, file_status, file_inline, rcv_file_inline, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-    (fileId, FSNew, Just IFMSent, Just IFMSent, currentTs, currentTs)
-  pure
-    RcvFileTransfer
-      { fileId,
-        xftpRcvFile = Nothing,
-        fileInvitation = FileInvitation {fileName = rosterFileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Just IFMSent, fileDescr = Nothing},
-        fileStatus = RFSNew,
-        fileType = FTRoster,
-        rcvFileInline = Just IFMSent,
-        senderDisplayName = gName,
-        chunkSize,
-        cancelled = False,
-        grpMemberId = Nothing,
-        cryptoArgs = Nothing
-      }
-  where
-    rosterFileName = "roster"
+      (userId, groupId, sharedMsgId)
 
 -- For roster-file cleanup keyed on the group (not a chat item): the file_id and its
 -- on-disk path, so the caller can evict the cached handle and remove the file.
@@ -458,8 +421,8 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
 
-createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupInfo -> Maybe GroupMember -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
-createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gName} m_ f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
+createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupInfo -> Maybe GroupMember -> FileType -> Maybe SharedMsgId -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
+createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gName} m_ fileType sharedMsgId_ f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
@@ -471,15 +434,15 @@ createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gNam
   fileId <- liftIO $ do
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, fileProtocol, currentTs, currentTs)
+      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, fileProtocol, fileType, sharedMsgId_, currentTs, currentTs)
     insertedRowId db
   liftIO $
     DB.execute
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, grpMemberId_, rfdId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = grpMemberId_, cryptoArgs = Nothing}
+  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, fileType, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = grpMemberId_, cryptoArgs = Nothing}
 
 createRcvStandaloneFileTransfer :: DB.Connection -> UserId -> CryptoFile -> Int64 -> Word32 -> ExceptT StoreError IO Int64
 createRcvStandaloneFileTransfer db userId (CryptoFile filePath cfArgs_) fileSize chunkSize = do
