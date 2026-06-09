@@ -37,14 +37,23 @@ private fun showWrongQRCodeAlert(rhId: Long?, scanned: QRCodeType, expected: KCl
     )
     return
   }
-  // Unrecognised: we cannot name the kind. Keep the existing "invalid" wording, expected-aware
-  // (the server screen keeps its own, more specific "Invalid server address!" title).
+  // Unrecognised: we cannot name the kind. Keep each screen's own existing "invalid" wording —
+  // the server screen says "Invalid server address!", the verify screen says "Incorrect security
+  // code!" (it scans a code, not a link), everything else the generic "not a SimpleX link".
   if (scanned is QRCodeType.Unknown) {
-    val forServer = expected == QRCodeType.ServerAddress::class
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(if (forServer) MR.strings.smp_servers_invalid_address else MR.strings.invalid_qr_code),
-      text = generalGetString(if (forServer) MR.strings.smp_servers_check_address else MR.strings.code_you_scanned_is_not_simplex_link_qr_code),
-    )
+    when (expected) {
+      QRCodeType.ServerAddress::class -> AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.smp_servers_invalid_address),
+        text = generalGetString(MR.strings.smp_servers_check_address),
+      )
+      QRCodeType.SecurityCode::class -> AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.incorrect_code),
+      )
+      else -> AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.invalid_qr_code),
+        text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code),
+      )
+    }
     return
   }
   // Recognised wrong kind: "<what it is>\n\n<where to scan it>".
@@ -72,7 +81,7 @@ private fun showWrongQRCodeAlert(rhId: Long?, scanned: QRCodeType, expected: KCl
 // runs into the instruction below). Reuses the existing link-type labels for connection links.
 private val QRCodeType.description: String
   get() = when (this) {
-    is QRCodeType.ConnectionLink -> linkType?.let { String.format(generalGetString(MR.strings.qr_type_connection), it.description) } ?: generalGetString(MR.strings.qr_type_simplex_address)
+    is QRCodeType.ConnectionLink -> String.format(generalGetString(MR.strings.qr_type_connection), linkType.description)
     is QRCodeType.ServerAddress -> generalGetString(MR.strings.qr_type_server_address)
     is QRCodeType.MigrationLink -> generalGetString(MR.strings.qr_type_migration_link)
     is QRCodeType.DesktopAddress -> generalGetString(MR.strings.qr_type_desktop_address)

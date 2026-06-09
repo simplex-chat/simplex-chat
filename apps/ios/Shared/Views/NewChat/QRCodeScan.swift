@@ -32,16 +32,18 @@ private func showWrongQRCodeAlert(_ scanned: QRCodeType, expected: QRCodeKind, t
         ))
         return
     }
-    // Unrecognised: we cannot name the kind. Keep the existing "invalid" wording, expected-aware
-    // (the server screen keeps its own, more specific "Invalid server address!" title).
+    // Unrecognised: we cannot name the kind. Keep each screen's own existing "invalid" wording —
+    // the server screen says "Invalid server address!", the verify screen says "Incorrect security
+    // code!" (it scans a code, not a link), everything else the generic "not a SimpleX link".
     if case .unknown = scanned {
-        let forServer = expected == .serverAddress
-        AlertManager.shared.showAlert(mkAlert(
-            title: forServer ? "Invalid server address!" : "Invalid QR code",
-            message: forServer
-                ? "Check server address and try again."
-                : "The code you scanned is not a SimpleX link QR code."
-        ))
+        switch expected {
+        case .serverAddress:
+            AlertManager.shared.showAlert(mkAlert(title: "Invalid server address!", message: "Check server address and try again."))
+        case .securityCode:
+            AlertManager.shared.showAlert(mkAlert(title: "Incorrect security code!"))
+        default:
+            AlertManager.shared.showAlert(mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."))
+        }
         return
     }
     // Recognised wrong kind: "<what it is>\n\n<where to scan it>".
@@ -74,8 +76,7 @@ private extension QRCodeType {
     var kindName: String {
         switch self {
         case let .connectionLink(_, linkType):
-            if let lt = linkType { return String(format: NSLocalizedString("This is a %@.", comment: "qr type"), lt.description) }
-            return NSLocalizedString("This is a SimpleX address.", comment: "qr type")
+            return String.localizedStringWithFormat(NSLocalizedString("This is a %@.", comment: "qr type"), linkType.description)
         case .serverAddress: return NSLocalizedString("This is a SimpleX server address.", comment: "qr type")
         case .migrationLink: return NSLocalizedString("This is a link to migrate to another device.", comment: "qr type")
         case .desktopAddress: return NSLocalizedString("This is an address for linking a mobile to a SimpleX desktop app.", comment: "qr type")

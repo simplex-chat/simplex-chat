@@ -11,8 +11,9 @@ import chat.simplex.common.views.migration.strHasSimplexFileLink
 sealed class QRCodeType {
   abstract val text: String
 
-  // A SimpleX connection link (contact / invitation / group / channel / relay).
-  data class ConnectionLink(override val text: String, val linkType: SimplexLinkType?): QRCodeType()
+  // A SimpleX connection link (contact / invitation / group / channel / relay). The link parser
+  // always yields a non-null linkType (there is no address-name case on master).
+  data class ConnectionLink(override val text: String, val linkType: SimplexLinkType): QRCodeType()
   // A SMP/XFTP chat server address (the UserServer is built by the caller that has rhId).
   data class ServerAddress(override val text: String): QRCodeType()
   // A database migration file link (move a profile to this device).
@@ -53,12 +54,14 @@ fun parseQRCode(raw: String): QRCodeType {
 }
 
 // A contact's security / verification code QR encodes the raw code with no scheme. The core
-// builds it as `verificationCode = T.pack . unwords . chunks 5 . show . os2ip` — decimal digits
-// of a SHA-256 integer, in groups of 5 separated by spaces (e.g. "61889 38426 ... 25"). Recognise
-// it by shape: ≥32 decimal digits once the grouping whitespace is stripped (no hex — `show` only
-// emits decimal). Checked last (after every real link/address parser), so those never reach here;
-// the scanned text keeps its spaces, so verifyCode still matches.
+// builds it as `verificationCode = T.pack . unwords . chunks 5 . show . os2ip` — decimal digits of
+// a SHA integer, in groups (of 5) separated by spaces (e.g. "61889 38426 ... 25"). Recognise it by
+// that exact shape: 2+ whitespace-separated groups of decimal digits, 32+ digits total. Requiring
+// the grouping keeps a bare long number from being mistaken for a code. Checked last (after every
+// real link/address parser); the scanned text keeps its spaces, so verifyCode still matches.
 internal fun isSecurityCode(t: String): Boolean {
-  val digits = t.filterNot { it.isWhitespace() }
-  return digits.length >= 32 && digits.all { it in '0'..'9' }
+  val groups = t.trim().split(Regex("\\s+"))
+  return groups.size >= 2 &&
+    groups.sumOf { it.length } >= 32 &&
+    groups.all { g -> g.all { it in '0'..'9' } }
 }

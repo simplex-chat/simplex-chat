@@ -48,13 +48,17 @@ when in doubt about behaviour, that doc is authoritative.
 
 ## As-built deltas vs this plan (branch `nd/qr-scan-clarity`, off `master`)
 
-The plan was verified against `stable`; the branch is off `master`, which is **behind** stable.
-The code therefore differs from the plan text in these (intentional, documented) ways:
+The branch is rebased onto current `master` (which has caught up to `stable` — it now has
+`strConnectTarget`/`ConnectTarget`/SimplexName). The code differs from the original plan text in
+these (intentional, documented) ways:
 
-1. **Classifier (master):** no `strConnectTarget`/`ConnectTarget`/SimplexName on master, so
-   `parseQRCode` uses `parseToMarkdown` (`size == 1`) + `Format.SimplexLink.linkType` — see the
-   updated C1.0 above. There is **no address-name case** on master, so `ConnectionLink.linkType`
-   is always non-null and ConnectView gains no "names now accepted" improvement.
+1. **Classifier uses `parseToMarkdown`, not `strConnectTarget`.** `parseQRCode` matches a
+   connection link with `parseToMarkdown` (`size == 1`) + `Format.SimplexLink.linkType` — this is
+   exactly master's own scanner check (`strIsSimplexLink`). A SimpleX **name** therefore does NOT
+   match (it is `Format.SimplexName`, not `Format.SimplexLink`), so it classifies as `Unknown`,
+   the same "not a SimpleX link" the master connect *scanner* shows today (names are handled only
+   by the **paste** path via `strConnectTarget`, untouched here). Consequently `ConnectionLink`
+   only ever wraps a real link, so `ConnectionLink.linkType` is **non-null** by construction.
 2. **iOS uses a small `enum QRCodeKind`** (`connectionLink/serverAddress/migrationLink/
    desktopAddress/code`) for `expected`, not a closure: Swift has no `KClass`, and the alert
    needs the expected kind for the Unknown-on-server message. This is the Code↔Unknown pairing
@@ -104,7 +108,7 @@ is NOT compiled** (no Xcode here) — and the two new Swift files still need add
 ```kotlin
 sealed class QRCodeType {
   abstract val text: String
-  data class ConnectionLink(override val text: String, val linkType: SimplexLinkType?): QRCodeType()
+  data class ConnectionLink(override val text: String, val linkType: SimplexLinkType): QRCodeType()  // non-null on master
   data class ServerAddress (override val text: String): QRCodeType()
   data class MigrationLink (override val text: String): QRCodeType()
   data class DesktopAddress(override val text: String): QRCodeType()
@@ -128,7 +132,7 @@ fun parseQRCode(raw: String): QRCodeType {              // no rhId; FFI parse on
       when {
         link != null                  -> QRCodeType.ConnectionLink(t, link.linkType)
         parseServerAddress(t) != null -> QRCodeType.ServerAddress(t)
-        isSecurityCode(t)             -> QRCodeType.SecurityCode(t)   // long hex/decimal digits, no scheme
+        isSecurityCode(t)             -> QRCodeType.SecurityCode(t)   // space-grouped decimal digits, no scheme
         else                          -> QRCodeType.Unknown(t)
       }
     }
@@ -137,12 +141,12 @@ fun parseQRCode(raw: String): QRCodeType {              // no rhId; FFI parse on
 
 // A contact's verification code QR is the raw code, no scheme. Core builds it as
 // `verificationCode = unwords . chunks 5 . show . os2ip` = DECIMAL digits grouped in 5s separated
-// by SPACES, so strip whitespace, then require decimal digits only (show emits no hex). Checked
-// last, so real links/addresses never reach here. NB: qr.text keeps the spaces, so verifyCode
-// (core noSpaces-normalises) still matches. Canonical fixture: tests/ChatTests/Direct.hs.
+// by SPACES. Match that exact shape — 2+ whitespace-separated groups of decimal digits, 32+ total
+// — so a bare long number isn't mistaken for a code. Checked last; qr.text keeps the spaces, so
+// verifyCode (core noSpaces-normalises) still matches. Canonical fixture: tests/ChatTests/Direct.hs.
 internal fun isSecurityCode(t: String): Boolean {
-  val digits = t.filterNot { it.isWhitespace() }
-  return digits.length >= 32 && digits.all { it in '0'..'9' }
+  val groups = t.trim().split(Regex("\\s+"))
+  return groups.size >= 2 && groups.sumOf { it.length } >= 32 && groups.all { g -> g.all { it in '0'..'9' } }
 }
 ```
 - [x] **C1.1 — unit test `parseQRCode`** (load-bearing). One fixture per kind + garbage, and
@@ -173,8 +177,9 @@ suspend fun handleScan(
 
   `showWrongQRCodeAlert(rhId, scanned, expected, close)` + the per-kind `description`/`whereToScan`
   metadata implement the design's message rules (recognised-wrong → `wrong_qr_code` +
-  `"<desc>\n\n<where>"`; relay → `relay_address_alert_title` + `relay_address_alert_message`; Unknown → `invalid_qr_code` +
-  expected-aware msg; **no-user** → no button + `qr_where_no_user`). Connect button dismisses the
+  `"<desc>\n\n<where>"`; relay → `relay_address_alert_title` + `relay_address_alert_message`; Unknown →
+  expected-aware: server → `smp_servers_invalid_address`, verify screen → `incorrect_code`, else
+  `invalid_qr_code`; **no-user** → no button + `qr_where_no_user`). Connect button dismisses the
   scanner first, then connects:
   `onConfirm = { close(); withBGApi { planAndConnect(rhId, qr.text, close = null) } }`.
   Nothing calls these yet. Build.
@@ -260,7 +265,6 @@ a full `Alert(…primaryButton…)` for Connect; `ScanCodeView.verify` returns `
 ```
 wrong_qr_code              = "Wrong QR code"
 qr_type_connection         = "This is a %s."   # %s = SimplexLinkType.description (e.g. "SimpleX group link")
-qr_type_simplex_address    = "This is a SimpleX address."
 qr_type_server_address     = "This is a SimpleX server address."
 qr_type_migration_link     = "This is a link to migrate to another device."
 qr_type_desktop_address    = "This is an address for linking a mobile to a SimpleX desktop app."
