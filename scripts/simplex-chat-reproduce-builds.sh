@@ -80,7 +80,7 @@ for os_pair in ${oses}; do
     # CLI
     docker exec \
         -t "${container_name}" \
-        sh -c 'cabal clean && cabal update && cabal build -j && mkdir -p /out && for i in simplex-chat; do bin=$(find /project/dist-newstyle -name "$i" -type f -executable) && chmod +x "$bin" && mv "$bin" /out/; done && strip /out/simplex-chat'
+        sh -c 'cabal clean && cabal update && cabal build -j --constraint "simplex-chat +optimize" --constraint "simplexmq +optimize" && mkdir -p /out && for i in simplex-chat; do bin=$(find /project/dist-newstyle -name "$i" -type f -executable) && chmod +x "$bin" && mv "$bin" /out/; done && strip /out/simplex-chat'
 
     # Copy CLI
     docker cp \

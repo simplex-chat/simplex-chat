@@ -50,6 +50,15 @@
             }
           )
 
+          ({ ... }:
+            {
+              # Build with -O2 in all nix outputs (desktop, mobile, libs).
+              # The optimize flag defaults off (fast local/PR builds); nix always enables it.
+              packages.simplex-chat.flags.optimize = true;
+              packages.simplexmq.flags.optimize = true;
+            }
+          )
+
           ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
             # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
             # on pretty much all unix platforms, but then blows up on windows m(
