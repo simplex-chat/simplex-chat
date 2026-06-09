@@ -1883,7 +1883,7 @@ cleanupGroupRosterFile User {userId} gInfo@GroupInfo {groupId} = do
   info_ <- withStore' $ \db -> getGroupRosterFileInfo db userId groupId
   forM_ info_ $ \(fileId, filePath_) -> do
     lift $ closeFileHandle fileId rcvFiles
-    forM_ filePath_ removeRosterFsFile
+    forM_ filePath_ removeFsFile
   withStore' $ \db -> do
     deleteGroupRosterFile db userId groupId
     clearRosterPending db gInfo
@@ -1893,7 +1893,7 @@ cleanupGroupRosterFile User {userId} gInfo@GroupInfo {groupId} = do
 resetRosterPartialChunks :: RcvFileTransfer -> CM ()
 resetRosterPartialChunks ft@RcvFileTransfer {fileId, fileStatus} = do
   lift $ closeFileHandle fileId rcvFiles
-  forM_ (rcvFilePath fileStatus) removeRosterFsFile
+  forM_ (rcvFilePath fileStatus) removeFsFile
   withStore' $ \db -> deleteRcvFileChunks db ft
   where
     rcvFilePath = \case
@@ -1901,8 +1901,8 @@ resetRosterPartialChunks ft@RcvFileTransfer {fileId, fileStatus} = do
       RFSConnected p -> Just p
       _ -> Nothing
 
-removeRosterFsFile :: FilePath -> CM ()
-removeRosterFsFile fp = do
+removeFsFile :: FilePath -> CM ()
+removeFsFile fp = do
   p <- lift $ toFSFilePath fp
   removeFile p `catchAllErrors` \_ -> pure ()
 
