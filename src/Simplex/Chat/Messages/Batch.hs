@@ -79,15 +79,16 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
           let encoded = encodeBatch mode bodies
            in Right (MsgBatch encoded msgs) : batches
 
--- | Batches delivery tasks into (batch, accepted, large).
+-- | Batches delivery tasks into (batch, accepted, large); the batch is
+-- 'Nothing' when no task was accepted.
 -- Always uses binary batch format for relay groups.
-batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
+batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (Maybe ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
 batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
     addToBatch :: ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int) -> MessageDeliveryTask -> ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int)
     addToBatch (msgBodies, accepted, large, len, n) task
-      -- too large: skip, record in large
-      | msgLen > maxLen = (msgBodies, accepted, task : large, len, n)
+      -- element can't fit even a singleton batch (4-byte binary-batch framing)
+      | msgLen + 4 > maxLen = (msgBodies, accepted, task : large, len, n)
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
       | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, task : accepted, large, len', n + 1)
@@ -98,10 +99,10 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
         msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} verifiedMsg
         msgLen = B.length msgBody
         len' = len + msgLen
-    toResult :: ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int) -> (ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
+    toResult :: ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int) -> (Maybe ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
     toResult (msgBodies, accepted, large, _, _) =
-      let encoded = encodeBinaryBatch (reverse msgBodies)
-       in (encoded, reverse accepted, reverse large)
+      let body_ = if null msgBodies then Nothing else Just (encodeBinaryBatch (reverse msgBodies))
+       in (body_, reverse accepted, reverse large)
 
 -- | Encode a batch element for relay groups: ><GrpMsgForward>[/<sigs>]<body>.
 encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString
