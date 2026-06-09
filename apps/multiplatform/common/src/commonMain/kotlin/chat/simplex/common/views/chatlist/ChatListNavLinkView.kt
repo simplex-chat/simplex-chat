@@ -254,9 +254,9 @@ suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, contentT
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
   // groupMembers loading can take a long time and if the user already closed the screen, coroutine may be canceled
   val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)
-  val currentMembers = chatModel.groupMembers.value
+  val currentMembersById = chatModel.groupMembers.value.associateBy { it.id }
   val newMembers = groupMembers.map { newMember ->
-    val currentMember = currentMembers.find { it.id == newMember.id }
+    val currentMember = currentMembersById[newMember.id]
     val currentMemberStats = currentMember?.activeConn?.connectionStats
     val newMemberConn = newMember.activeConn
     if (currentMemberStats != null && newMemberConn != null && newMemberConn.connectionStats == null) {
