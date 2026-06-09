@@ -773,7 +773,6 @@
   <!-- unified QR scan: wrong-type alert -->
   <string name="wrong_qr_code">Wrong QR code</string>
   <string name="qr_type_connection">This is a %s.</string>
-  <string name="qr_type_simplex_address">This is a SimpleX address.</string>
   <string name="qr_type_server_address">This is a SimpleX server address.</string>
   <string name="qr_type_migration_link">This is a link to migrate to another device.</string>
   <string name="qr_type_desktop_address">This is an address for linking a mobile to a SimpleX desktop app.</string>

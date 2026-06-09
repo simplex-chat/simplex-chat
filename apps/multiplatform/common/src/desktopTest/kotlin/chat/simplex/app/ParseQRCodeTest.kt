@@ -57,8 +57,14 @@ class ParseQRCodeTest {
   }
 
   @Test
+  fun securityCode_ungroupedLongNumber_isNotRecognised() {
+    // A bare long number (no space grouping) is not the verificationCode shape — must not match.
+    assertFalse(isSecurityCode("6188938426639340957696390793898412485253"))
+  }
+
+  @Test
   fun securityCode_shortNumber_isNotRecognised() {
-    assertFalse(isSecurityCode("12345 67890"))      // only 10 digits once spaces are stripped
+    assertFalse(isSecurityCode("12345 67890"))      // grouped, but only 10 digits total
   }
 
   @Test

@@ -6,14 +6,13 @@ verified constraints. Exact code, signatures, string keys/values, and the commit
 Cx / Appendix A"). When the two disagree, the impl plan wins on code/strings; this doc wins on
 intent.
 
-> **Branch note (stable vs master).** This design was verified against `stable`; the
-> implementation branch is off `master`, which is **behind** stable. On master there is **no**
-> `strConnectTarget` / `ConnectTarget` / SimplexName, and short-link classification goes through
-> `parseToMarkdown` (size==1 → `Format.SimplexLink`), iOS through `strHasSingleSimplexLink`. So
-> wherever the sections below name `strConnectTarget`/`ConnectTarget`/`simplexName` or cite a
-> `file:line` (source map, type model, navigation/adversarial reviews), read them as the *stable*
-> reference that motivated the design; the **authoritative master mapping is the impl plan's
-> "As-built deltas vs this plan"** section. Name-link cases are **N/A on master**.
+> **Branch note.** This branch is rebased onto current `master`, which has caught up to `stable`
+> (it now has `strConnectTarget` / `ConnectTarget` / SimplexName). The scanner classifier uses
+> `parseToMarkdown` (size==1 → `Format.SimplexLink`) — equivalent to master's own scanner check
+> `strIsSimplexLink` — so a SimpleX **name** QR classifies as `Unknown` ("not a SimpleX link"),
+> exactly as master's connect *scanner* behaves today. Names are recognised only by the **paste**
+> path (`strConnectTarget` → "unsupported name" alert), which this change does not touch, so there
+> is **no scanner regression**. `file:line` references in the source map / reviews below are approximate.
 
 ## Goal
 
@@ -82,7 +81,8 @@ genuinely-unrecognised case (a non-SimpleX QR, or garbage).
 
 Six variants, each carrying the scanned `text`:
 - **ConnectionLink** — also carries the link sub-type (contact / invitation / group / channel /
-  relay), or none for a SimpleX address-*name*.
+  relay). On master the parser always yields a non-null sub-type (no address-*name* case — that
+  exists only on stable), so the field is non-nullable here.
 - **ServerAddress** — `text` only; the `UserServer` is built later in `onMatch`, so the
   classifier needs no `rhId`.
 - **MigrationLink**, **DesktopAddress** — `text` only.
