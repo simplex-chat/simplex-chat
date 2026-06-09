@@ -39,6 +39,7 @@ library
       Simplex.Chat
       Simplex.Chat.AppSettings
       Simplex.Chat.Badges
+      Simplex.Chat.Badges.CLI
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery

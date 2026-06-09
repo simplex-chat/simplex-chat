@@ -8,6 +8,7 @@ module BadgeTests (badgeTests) where
 
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import qualified Data.Aeson as J
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import Simplex.Messaging.Crypto.BBS
@@ -22,6 +23,7 @@ badgeTests = do
   it "should compute badge status correctly" testExpiryCheck
   it "should treat lifetime badges as always active" testLifetimeBadge
   it "should accept unknown badge types" testUnknownBadgeType
+  it "credential serializes to a paste-able token and back" testCredentialSerialization
 
 proofOf :: Badge 'BCProof -> BBSProof
 proofOf (BadgeProof _ p _) = p
@@ -82,6 +84,23 @@ testUnknownBadgeType :: IO ()
 testUnknownBadgeType = do
   (pk, badge) <- issueBadgeProof (BTUnknown "future_type") (Just futureTime)
   verifyBadge pk badge >>= (`shouldBe` True)
+
+testCredentialSerialization :: IO ()
+testCredentialSerialization = do
+  Right (sk, pk) <- bbsKeyGen
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  let mkCred expiry = do
+        Right cred <- issueBadge sk pk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = expiry, badgeExtra = ""}})
+        pure cred
+  dated <- mkCred (Just futureTime)
+  lifetime <- mkCred Nothing
+  J.eitherDecode (J.encode dated) `shouldBe` Right dated
+  J.eitherDecode (J.encode lifetime) `shouldBe` Right lifetime
+  -- a decoded credential still verifies against the issuing key
+  case J.eitherDecode (J.encode dated) of
+    Right cred -> verifyCredential pk cred >>= (`shouldBe` True)
+    Left e -> expectationFailure e
 
 -- Helpers
 

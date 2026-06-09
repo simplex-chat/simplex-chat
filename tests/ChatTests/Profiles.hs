@@ -21,7 +21,6 @@ import Data.Maybe (listToMaybe)
 import qualified Data.Text as T
 import Simplex.Chat.Badges (BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), generateMasterKey, issueBadge, localBadgeStatus, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt, withFastStore')
-import Simplex.Chat.Library.Commands (addUserBadge)
 import Simplex.Chat.Library.Internal (chatStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion)
@@ -201,7 +200,9 @@ testUserBadgeBroadcast ps = do
     test sk pk alice bob = do
       connectUsers alice bob
       cred <- issueSupporterBadge sk pk
-      runCCUser alice (`addUserBadge` cred)
+      -- the same single-line JSON `simplex-chat badge sign` prints, pasted into the app
+      alice ##> ("/badge add " <> T.unpack (encodeJSON cred))
+      alice <## "ok"
       -- the badge XInfo is delivered in order before this message, so by the time bob shows it the badge is stored
       alice #> "@bob hi"
       bob <# "alice> hi"
