@@ -17,16 +17,13 @@ import Control.Monad
 import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (listToMaybe)
 import qualified Data.Text as T
-import Simplex.Chat.Badges (BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), generateMasterKey, issueBadge, localBadgeStatus, verifyPayment)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt, withFastStore')
-import Simplex.Chat.Library.Internal (chatStoreCxt)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion)
-import Simplex.Chat.Store.Direct (getUserContacts)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Contact (Contact, localDisplayName, profile), LocalProfile (LocalProfile, localBadge), Profile (..), GroupRejectionReason (..))
+import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -203,10 +200,13 @@ testUserBadgeBroadcast ps = do
       -- the same single-line JSON `simplex-chat badge sign` prints, pasted into the app
       alice ##> ("/badge add " <> T.unpack (encodeJSON cred))
       alice <## "ok"
-      -- the badge XInfo is delivered in order before this message, so by the time bob shows it the badge is stored
+      -- own badge is shown (add succeeded)
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice, * supporter)"
+      alice <## "use /p <name> [<bio>] to change it"
+      -- the badge XInfo is delivered in order before this message, so the contact has stored it
       alice #> "@bob hi"
-      bob <# "alice> hi"
-      contactBadgeStatus bob "alice" `shouldReturn` Just BSActive
+      bob <# "alice *> hi"
     issueSupporterBadge sk pk = do
       drg <- C.newRandom
       mk <- generateMasterKey drg
@@ -214,10 +214,6 @@ testUserBadgeBroadcast ps = do
       Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
       Right cred <- issueBadge sk pk vreq
       pure cred
-    contactBadgeStatus cc name = runCCUser cc $ \user -> do
-      cxt <- chatStoreCxt
-      cts <- withFastStore' $ \db -> getUserContacts db cxt user
-      pure $ listToMaybe [localBadgeStatus lb | Contact {localDisplayName, profile = LocalProfile {localBadge = Just lb}} <- cts, localDisplayName == name]
 
 testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
 testUpdateProfileImage =
