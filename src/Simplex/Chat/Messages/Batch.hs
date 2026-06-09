@@ -24,7 +24,6 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B
 import Data.Char (ord)
 import Data.Function (on)
-import Data.Foldable (foldr')
 import Data.List (foldl', sortBy)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -79,8 +78,7 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
           let encoded = encodeBatch mode bodies
            in Right (MsgBatch encoded msgs) : batches
 
--- | Batches delivery tasks into (batch, accepted, large); the batch is
--- 'Nothing' when no task was accepted.
+-- | Batches delivery tasks into (batch if any task was accepted, accepted, large).
 -- Always uses binary batch format for relay groups.
 batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (Maybe ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
 batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
@@ -101,8 +99,9 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
         len' = len + msgLen
     toResult :: ([ByteString], [MessageDeliveryTask], [MessageDeliveryTask], Int, Int) -> (Maybe ByteString, [MessageDeliveryTask], [MessageDeliveryTask])
     toResult (msgBodies, accepted, large, _, _) =
-      let body_ = if null msgBodies then Nothing else Just (encodeBinaryBatch (reverse msgBodies))
-       in (body_, reverse accepted, reverse large)
+      let encoded = encodeBinaryBatch (reverse msgBodies)
+          body = if null accepted then Nothing else Just encoded
+       in (body, reverse accepted, reverse large)
 
 -- | Encode a batch element for relay groups: ><GrpMsgForward>[/<sigs>]<body>.
 encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString

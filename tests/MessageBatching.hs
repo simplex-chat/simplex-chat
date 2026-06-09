@@ -1,4 +1,3 @@
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,14 +16,27 @@ import Data.List.NonEmpty (NonEmpty (..))
 import Data.String (IsString (..))
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Calendar (fromGregorian)
-import Data.Time.Clock (UTCTime (..))
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
+import Simplex.Chat.Delivery
+  ( DeliveryJobScope (DJSGroup, jobSpec),
+    DeliveryJobSpec (DJDeliveryJob, includePending),
+    MessageDeliveryTask (MessageDeliveryTask, brokerTs, fwdSender, jobScope, senderGMId, taskId, verifiedMsg),
+    deliveryTaskId,
+  )
 import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
-import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), MessageDeliveryTask (..), deliveryTaskId)
 import Simplex.Chat.Messages (SndMessage (..))
-import Simplex.Chat.Protocol (ChatMessage (..), ChatMsgEvent (XOk), FwdSender (FwdChannel), GrpMsgForward (..), VerifiedMsg (VMUnsigned), maxEncodedMsgLength, supportedChatVRange)
-import Simplex.Chat.Types (SharedMsgId (..))
+import Simplex.Chat.Protocol
+  ( ChatMessage (ChatMessage),
+    ChatMsgEvent (XMsgNew),
+    FwdSender (FwdChannel),
+    GrpMsgForward (GrpMsgForward),
+    MsgContent (MCText),
+    VerifiedMsg (VMUnsigned),
+    maxEncodedMsgLength,
+    mcSimple,
+  )
+import Simplex.Chat.Types (SharedMsgId (..), chatInitialVRange)
 import Simplex.Messaging.Encoding (Large (..), smpEncodeList)
 import Test.Hspec
 
@@ -33,9 +45,8 @@ batchingTests = describe "message batching tests" $ do
   testBatchingCorrectness
   testBinaryBatchingCorrectness
   it "image x.msg.new and x.msg.file.descr should fit into single batch" testImageFitsSingleBatch
-  describe "relay delivery batching" $ do
-    it "all tasks too large: no batch, all marked large" testRelayBatchAllLarge
-    it "element fits raw but not as framed singleton: marked large, not deferred" testRelayBatchSingletonOverflow
+  it "does not create a relay delivery body when every task is oversized" testRelayBatchAllLarge
+  it "classifies a task that fits raw but not as a framed singleton as large" testRelayBatchSingletonOverflow
 
 instance IsString SndMessage where
   fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', signedMsg_ = Nothing}
@@ -139,6 +150,37 @@ testImageFitsSingleBatch = do
 
   runBatcherTest' BMJson maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]
 
+testRelayBatchAllLarge :: IO ()
+testRelayBatchAllLarge = do
+  let task1 = deliveryTask 1 "one"
+      task2 = deliveryTask 2 "two"
+      (body_, accepted, large) = batchDeliveryTasks1 chatInitialVRange 1 (task1 :| [task2])
+  body_ `shouldBe` Nothing
+  map deliveryTaskId accepted `shouldBe` []
+  map deliveryTaskId large `shouldBe` [1, 2]
+
+deliveryTask :: Int64 -> T.Text -> MessageDeliveryTask
+deliveryTask taskId text =
+  MessageDeliveryTask
+    { taskId,
+      jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}},
+      senderGMId = 1,
+      fwdSender = FwdChannel,
+      brokerTs = systemToUTCTime $ MkSystemTime 0 0,
+      verifiedMsg =
+        VMUnsigned
+          (ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText text)
+    }
+
+testRelayBatchSingletonOverflow :: IO ()
+testRelayBatchSingletonOverflow = do
+  let task = deliveryTask 1 "overflow"
+      elemLen = B.length $ encodeFwdElement (GrpMsgForward (fwdSender task) (brokerTs task)) (verifiedMsg task)
+      (body_, accepted, large) = batchDeliveryTasks1 chatInitialVRange (elemLen + 2) (task :| [])
+  body_ `shouldBe` Nothing
+  map deliveryTaskId accepted `shouldBe` []
+  map deliveryTaskId large `shouldBe` [1]
+
 runBatcherTest :: BatchMode -> Int -> [SndMessage] -> [ChatError] -> [ByteString] -> Spec
 runBatcherTest mode maxLen msgs expectedErrors expectedBatches =
   it
@@ -156,34 +198,3 @@ runBatcherTest' mode maxLen msgs expectedErrors expectedBatches = do
   batchedStrs `shouldBe` expectedBatches
   where
     testErrors = map (\case ChatError (CEInternalError s) -> Just s; _ -> Nothing)
-
-testBrokerTs :: UTCTime
-testBrokerTs = UTCTime (fromGregorian 2024 1 1) 0
-
-deliveryTask :: Int64 -> MessageDeliveryTask
-deliveryTask tId =
-  MessageDeliveryTask
-    { taskId = tId,
-      jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}},
-      senderGMId = 1,
-      fwdSender = FwdChannel,
-      brokerTs = testBrokerTs,
-      verifiedMsg = VMUnsigned (ChatMessage {chatVRange = supportedChatVRange, msgId = Nothing, chatMsgEvent = XOk})
-    }
-
-testRelayBatchAllLarge :: IO ()
-testRelayBatchAllLarge = do
-  let (body_, accepted, large) = batchDeliveryTasks1 supportedChatVRange 1 (deliveryTask 1 :| [deliveryTask 2])
-  body_ `shouldBe` Nothing
-  map deliveryTaskId accepted `shouldBe` []
-  map deliveryTaskId large `shouldBe` [1, 2]
-
-testRelayBatchSingletonOverflow :: IO ()
-testRelayBatchSingletonOverflow = do
-  let task = deliveryTask 1
-      MessageDeliveryTask {fwdSender, brokerTs, verifiedMsg} = task
-      elemLen = B.length $ encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs = brokerTs} verifiedMsg
-      (body_, accepted, large) = batchDeliveryTasks1 supportedChatVRange (elemLen + 2) (task :| [])
-  body_ `shouldBe` Nothing
-  map deliveryTaskId accepted `shouldBe` []
-  map deliveryTaskId large `shouldBe` [1]
