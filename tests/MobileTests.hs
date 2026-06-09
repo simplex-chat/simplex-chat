@@ -32,7 +32,7 @@ import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import JSONFixtures
 import Simplex.Chat
-import Simplex.Chat.Badges (BadgeRequest (..), BadgeType (..), generateMasterKey, verifyBadgeSignature)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeRequest (..), BadgeType (..), generateMasterKey, verifyCredential)
 import Simplex.Chat.Controller (ChatController (..), ChatDatabase (..))
 import Simplex.Chat.Mobile hiding (error)
 import Simplex.Chat.Mobile.Badges hiding (error)
@@ -321,9 +321,9 @@ testBadgeKeygenIssueCApi _ = do
   keyPair <- ffiResult =<< (peekCString =<< cChatBadgeKeygen)
   let BBSKeyPair {publicKey} = keyPair
   mk <- generateMasterKey g
-  let req = BadgeIssueReq {keyPair, request = BadgeRequest {masterKey = mk, badgeType = BTSupporter, expiry = Nothing}}
+  let req = BadgeIssueReq {keyPair, request = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = ""}}}
   cred <- ffiResult =<< (peekCString =<< cChatBadgeIssue =<< newCString (LB.unpack (J.encode req)))
-  verifyBadgeSignature publicKey cred `shouldReturn` True
+  verifyCredential publicKey cred `shouldReturn` True
 
 -- Decode an FFI `BadgeResult` envelope, returning the result or failing on error.
 ffiResult :: FromJSON r => String -> IO r

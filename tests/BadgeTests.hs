@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -21,32 +23,38 @@ badgeTests = do
   it "should treat lifetime badges as always active" testLifetimeBadge
   it "should accept unknown badge types" testUnknownBadgeType
 
+proofOf :: Badge 'BCProof -> BBSProof
+proofOf (BadgeProof _ p _) = p
+
+proofInfo :: Badge 'BCProof -> BadgeInfo
+proofInfo (BadgeProof _ _ i) = i
+
 testFullWorkflow :: IO ()
 testFullWorkflow = do
   Right (sk, pk) <- bbsKeyGen
   drg <- C.newRandom
   mk <- generateMasterKey drg
-  let req = BadgeRequest {masterKey = mk, badgeType = BTSupporter, expiry = Just futureTime}
+  let req = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Just futureTime, badgeExtra = ""}}
   Just vreq <- verifyPayment (BPRedeemCode "TEST") req
   Right cred <- issueBadge sk pk vreq
-  let BadgeCredential {masterKey = mk'} = cred
+  let BadgeCredential mk' _ _ = cred
   mk' `shouldBe` mk
-  verifyBadgeSignature pk cred >>= (`shouldBe` True)
+  verifyCredential pk cred >>= (`shouldBe` True)
   Right badge <- generateBadgeProof pk cred (BBSPresHeader "nonce-1")
   verifyBadge pk badge >>= (`shouldBe` True)
   Right badge2 <- generateBadgeProof pk cred (BBSPresHeader "nonce-2")
   verifyBadge pk badge2 >>= (`shouldBe` True)
-  proof badge `shouldNotBe` proof badge2
+  proofOf badge `shouldNotBe` proofOf badge2
 
 testTamperedType :: IO ()
 testTamperedType = do
-  (pk, SupporterBadge {proof, presHeader, badgeExpiry}) <- issueBadgeProof BTSupporter (Just futureTime)
-  verifyBadge pk (SupporterBadge {proof, presHeader, badgeExpiry, badgeType = BTBusiness, badgeExtra = ""}) >>= (`shouldBe` False)
+  (pk, BadgeProof ph p info) <- issueBadgeProof BTSupporter (Just futureTime)
+  verifyBadge pk (BadgeProof ph p info {badgeType = BTBusiness}) >>= (`shouldBe` False)
 
 testTamperedExpiry :: IO ()
 testTamperedExpiry = do
-  (pk, SupporterBadge {proof, presHeader, badgeType}) <- issueBadgeProof BTSupporter (Just futureTime)
-  verifyBadge pk (SupporterBadge {proof, presHeader, badgeExpiry = Just pastTime, badgeType, badgeExtra = ""}) >>= (`shouldBe` False)
+  (pk, BadgeProof ph p info) <- issueBadgeProof BTSupporter (Just futureTime)
+  verifyBadge pk (BadgeProof ph p info {badgeExpiry = Just pastTime}) >>= (`shouldBe` False)
 
 testWrongKey :: IO ()
 testWrongKey = do
@@ -57,18 +65,18 @@ testWrongKey = do
 testExpiryCheck :: IO ()
 testExpiryCheck = do
   now <- getCurrentTime
-  (_, past) <- issueBadgeProof BTSupporter (Just pastTime)
-  mkBadgeStatus now True past `shouldBe` BSExpired
-  (_, future) <- issueBadgeProof BTSupporter (Just futureTime)
-  mkBadgeStatus now True future `shouldBe` BSActive
-  mkBadgeStatus now False future `shouldBe` BSFailed
+  let pastInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Just pastTime, badgeExtra = ""}
+      futureInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Just futureTime, badgeExtra = ""}
+  mkBadgeStatus now True pastInfo `shouldBe` BSExpired
+  mkBadgeStatus now True futureInfo `shouldBe` BSActive
+  mkBadgeStatus now False futureInfo `shouldBe` BSFailed
 
 testLifetimeBadge :: IO ()
 testLifetimeBadge = do
   now <- getCurrentTime
   (pk, badge) <- issueBadgeProof BTInvestor Nothing
   verifyBadge pk badge >>= (`shouldBe` True)
-  mkBadgeStatus now True badge `shouldBe` BSActive
+  mkBadgeStatus now True (proofInfo badge) `shouldBe` BSActive
 
 testUnknownBadgeType :: IO ()
 testUnknownBadgeType = do
@@ -83,12 +91,12 @@ futureTime = posixSecondsToUTCTime 4102444800 -- 2099-12-31
 pastTime :: UTCTime
 pastTime = posixSecondsToUTCTime 1577836800 -- 2020-01-01
 
-issueBadgeProof :: BadgeType -> Maybe UTCTime -> IO (BBSPublicKey, SupporterBadge)
+issueBadgeProof :: BadgeType -> Maybe UTCTime -> IO (BBSPublicKey, Badge 'BCProof)
 issueBadgeProof bt expiry = do
   Right (sk, pk) <- bbsKeyGen
   drg <- C.newRandom
   mk <- generateMasterKey drg
-  let vreq = VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeType = bt, expiry}
+  let vreq = VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = bt, badgeExpiry = expiry, badgeExtra = ""}}
   Right cred <- issueBadge sk pk vreq
   Right badge <- generateBadgeProof pk cred (BBSPresHeader "test-nonce")
   pure (pk, badge)

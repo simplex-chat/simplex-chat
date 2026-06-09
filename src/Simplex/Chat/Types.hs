@@ -47,7 +47,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (BadgeStatus (..), LocalBadge (..), SupporterBadge, mkBadgeStatus, srvBadgePublicKey, verifyBadge)
+import Simplex.Chat.Badges (Badge (..), BadgeCrypto (..), BadgeInfo (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, srvBadgePublicKey, verifyBadge)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -687,7 +687,7 @@ data Profile = Profile
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
-    badge :: Maybe SupporterBadge
+    badge :: Maybe (Badge 'BCProof)
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -772,18 +772,23 @@ toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Bool -> Local
 toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} localAlias now verified =
   LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias}
   where
-    localBadge = (\b -> LocalBadge {badgeStatus = mkBadgeStatus now verified b, badge = b}) <$> badge
+    localBadge = (\b@(BadgeProof _ _ info) -> LocalBadge b (mkBadgeStatus now verified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = (\LocalBadge {badge} -> badge) <$> localBadge}
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge}
+  where
+    wireBadge :: LocalBadge -> Maybe (Badge 'BCProof)
+    wireBadge (LocalBadge b _) = case b of
+      BadgeProof {} -> Just b
+      BadgeCredential {} -> Nothing
 
 profileBadgeVerified :: LocalProfile -> Profile -> IO Bool
 profileBadgeVerified LocalProfile {localBadge} Profile {badge = newBadge} =
   case (localBadge, newBadge) of
     (_, Nothing) -> pure False
-    (Just LocalBadge {badge = oldB, badgeStatus}, Just newB)
-      | oldB == newB -> pure (badgeStatus /= BSFailed)
+    (Just lb, Just (BadgeProof _ _ newInfo))
+      | localBadgeInfo lb == newInfo -> pure (localBadgeStatus lb /= BSFailed)
     (_, Just newB) -> verifyBadge srvBadgePublicKey newB
 
 data GroupType

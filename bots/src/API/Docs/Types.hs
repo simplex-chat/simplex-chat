@@ -34,7 +34,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
-import Simplex.Chat.Badges (LocalBadge (..), BadgeStatus (..), SupporterBadge (..), BadgeType (..))
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -306,7 +306,7 @@ chatTypesDocsData =
     (sti @LinkContent, STUnion, "LC", [], "", ""),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
-    (sti @LocalBadge, STRecord, "", [], "", ""),
+    (sti @BadgeInfo, STRecord, "", [], "", ""),
     (sti @LocalProfile, STRecord, "", [], "", ""),
     (sti @MemberCriteria, STEnum1, "MC", [], "", ""),
     (sti @MsgChatLink, STUnion, "MCL", [], "", "Connection link sent in a message - only short links are allowed."),
@@ -364,7 +364,6 @@ chatTypesDocsData =
     (sti @SrvError, STUnion, "SrvErr", [], "", ""),
     (sti @StoreError, STUnion, "SE", [], "", ""),
     (sti @SubscriptionStatus, STUnion, "SS", [], "", ""),
-    (sti @SupporterBadge, STRecord, "", [], "", ""),
     (sti @SupportGroupPreference, STRecord, "", [], "", ""),
     (sti @SwitchPhase, STEnum, "SP", [], "", ""),
     (sti @TimedMessagesGroupPreference, STRecord, "", [], "", ""),
@@ -531,7 +530,7 @@ deriving instance Generic JSONCIStatus
 deriving instance Generic LinkContent
 deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
-deriving instance Generic LocalBadge
+deriving instance Generic BadgeInfo
 deriving instance Generic LocalProfile
 deriving instance Generic MemberCriteria
 deriving instance Generic MsgChatLink
@@ -558,7 +557,6 @@ deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
 deriving instance Generic PublicGroupAccess
 deriving instance Generic PublicGroupData
-deriving instance Generic SupporterBadge
 deriving instance Generic PublicGroupProfile
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType

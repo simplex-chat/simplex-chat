@@ -15,11 +15,15 @@ ALTER TABLE contact_profiles ADD COLUMN badge_expiry TEXT;
 ALTER TABLE contact_profiles ADD COLUMN badge_type TEXT;
 ALTER TABLE contact_profiles ADD COLUMN badge_verified SMALLINT NOT NULL DEFAULT 0;
 ALTER TABLE contact_profiles ADD COLUMN badge_extra TEXT;
+ALTER TABLE contact_profiles ADD COLUMN badge_master_key BYTEA;
+ALTER TABLE contact_profiles ADD COLUMN badge_signature BYTEA;
 |]
 
 down_m20260516_supporter_badges :: Text
 down_m20260516_supporter_badges =
   [r|
+ALTER TABLE contact_profiles DROP COLUMN badge_signature;
+ALTER TABLE contact_profiles DROP COLUMN badge_master_key;
 ALTER TABLE contact_profiles DROP COLUMN badge_extra;
 ALTER TABLE contact_profiles DROP COLUMN badge_verified;
 ALTER TABLE contact_profiles DROP COLUMN badge_type;
