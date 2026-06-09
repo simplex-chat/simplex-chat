@@ -52,9 +52,10 @@
 
           ({ ... }:
             {
-              # Build simplex-chat with -O2 in all nix outputs (desktop, mobile, libs).
+              # Build with -O2 in all nix outputs (desktop, mobile, libs).
               # The optimize flag defaults off (fast local/PR builds); nix always enables it.
               packages.simplex-chat.flags.optimize = true;
+              packages.simplexmq.flags.optimize = true;
             }
           )
 
