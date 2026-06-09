@@ -1143,7 +1143,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         checkSndInlineFTComplete conn msgId
         updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ forwardGroupRoster user gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo [m] -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       SWITCH qd phase cStats -> do
         toView $ CEvtGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -1237,7 +1237,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ forwardGroupRoster user gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo [m] -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
@@ -3214,18 +3214,20 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     xGrpRoster gInfo author GroupRoster {version = newVer, fileInv = InlineFileInvitation {fileSize, fileDigest}} verifiedMsg sharedMsgId_ brokerTs
       -- only an owner may sign a roster; otherwise a relay could route it as a member whose key it controls
       | memberRole' author /= GROwner = messageError "x.grp.roster: not signed by an owner" $> Nothing
-      | otherwise = case (verifiedMsg, sharedMsgId_) of
-          (VMUnsigned _, _) -> Nothing <$ messageWarning "x.grp.roster: unsigned roster"
-          (_, Nothing) -> Nothing <$ messageWarning "x.grp.roster: missing shared message id"
-          (VMSigned _ sm _, Just sharedMsgId) -> do
-            pendingVer_ <- fmap (\(v, _, _, _, _) -> v) <$> withStore' (\db -> getRosterPending db gInfo)
-            -- start only for a version strictly greater than BOTH applied and pending (Nothing < 0):
-            -- a relay's first v0 from NULL applies; a re-receive at Just 0 short-circuits; and an
-            -- unconditional re-serve of a cached older version cannot supersede a newer in-flight one.
-            if newVer `aboveRoster` rosterVersion gInfo && newVer `aboveRoster` pendingVer_
-              then startRosterTransfer sm sharedMsgId
-              -- silent: re-serves of the current version are routine (broadcast / SENT / QCONT)
-              else pure Nothing
+      | otherwise = case verifiedMsg of
+          -- unreachable: XGrpRoster is in requiresSignature, so withVerifiedMsg rejected unsigned
+          VMUnsigned _ -> pure Nothing
+          VMSigned _ sm _ -> case sharedMsgId_ of
+            Nothing -> Nothing <$ messageWarning "x.grp.roster: missing shared message id"
+            Just sharedMsgId -> do
+              pendingVer_ <- fmap (\(v, _, _, _, _) -> v) <$> withStore' (\db -> getRosterPending db gInfo)
+              -- start only for a version strictly greater than BOTH applied and pending (Nothing < 0):
+              -- a relay's first v0 from NULL applies; a re-receive at Just 0 short-circuits; and an
+              -- unconditional re-serve of a cached older version cannot supersede a newer in-flight one.
+              if newVer `aboveRoster` rosterVersion gInfo && newVer `aboveRoster` pendingVer_
+                then startRosterTransfer sm sharedMsgId
+                -- silent: re-serves of the current version are routine (broadcast / SENT / QCONT)
+                else pure Nothing
       where
         startRosterTransfer sm sharedMsgId = do
           -- supersede any in-flight roster file (older version or a restart) before the new transfer
@@ -3278,7 +3280,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         -- ack only while still setting up (own status RSAccepted); a serving relay must not ack broadcasts
                         when (relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck gInfo author pendingVer Nothing
                         -- broadcast on a bump: self-healing, and demotions must reach members.
-                        -- re-serve via forwardGroupRoster (header + blob), not a delivery task: a
+                        -- re-serve via serveRoster (header + blob), not a delivery task: a
                         -- BFileChunk body is not a forwardable JSON message.
                         broadcastRoster gInfo
       where
@@ -3289,12 +3291,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           _ -> throwChatError $ CEInternalError "roster file not in progress"
         readAt fp = lift (toFSFilePath fp) >>= liftIO . B.readFile
 
-    -- Push the freshly applied roster to the relay's member subscribers (header + blob each).
+    -- Push the freshly applied roster to the relay's member subscribers in one batched re-serve.
     broadcastRoster :: GroupInfo -> CM ()
     broadcastRoster gInfo = do
       members <- withStore' $ \db -> getGroupMembers db cxt user gInfo
-      forM_ (filter rosterRecipient members) $ \m ->
-        forwardGroupRoster user gInfo m `catchAllErrors` eToView
+      serveRoster user gInfo (filter rosterRecipient members) `catchAllErrors` eToView
       where
         rosterRecipient m@GroupMember {activeConn} = memberCurrent m && isJust activeConn && not (isRelay m) && memberRole' m /= GROwner
 

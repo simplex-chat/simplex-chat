@@ -1168,10 +1168,11 @@ memberIntroEvt gInfo reMember =
       mRestrictions = memberRestrictions reMember
    in XGrpMemIntro mInfo mRestrictions
 
--- Forward the saved owner-signed roster verbatim, attributed to the owner who
--- sent it, so the recipient verifies the owner signature.
-forwardGroupRoster :: User -> GroupInfo -> GroupMember -> CM ()
-forwardGroupRoster user gInfo subscriber = do
+-- Forwarded verbatim like any group message, so the owner's signed shared_msg_id is reused
+-- (can't change it without breaking the signature); same-id re-serves dedup as usual, and
+-- recovery rides the blob's fresh-id chunks.
+serveRoster :: User -> GroupInfo -> [GroupMember] -> CM ()
+serveRoster user gInfo members = do
   cxt <- chatStoreCxt
   withStore' (\db -> getGroupRoster db gInfo) >>= \case
     Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
@@ -1179,11 +1180,9 @@ forwardGroupRoster user gInfo subscriber = do
         withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
           Right owner -> do
             let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
-            sendFwdMemberMessage subscriber fwd (VMSigned MSSVerified sm chatMsg)
-            -- re-serve the blob under the owner's original shared_msg_id (from the forwarded header)
-            -- so the joiner keys the roster file the same whether it arrived direct or forwarded
+            sendFwdMembersMessage members fwd (VMSigned MSSVerified sm chatMsg)
             forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
-              sendRosterBlobChunks user gInfo [subscriber] sid blob
+              sendInlineBlobChunks user gInfo members sid blob
           Left _ -> pure ()
     Nothing -> pure ()
 
@@ -1201,7 +1200,7 @@ introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   -- owner intros first so the joiner has the owner profile loaded before applying the saved roster (signed by the owner)
   sendIntros owners
-  forwardGroupRoster user gInfo subscriber
+  serveRoster user gInfo [subscriber]
   sendIntros rosterMems
   withStore' $ \db ->
     setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
@@ -2233,10 +2232,11 @@ sendRoster user gInfo members rosterVer roster = do
   let blob = encodeRosterBlob roster
       fileInv = InlineFileInvitation {fileSize = fromIntegral (B.length blob), fileDigest = FD.FileDigest $ LC.sha512Hash $ LB.fromStrict blob}
   SndMessage {sharedMsgId} <- sendGroupMessage' user gInfo members (XGrpRoster GroupRoster {version = rosterVer, fileInv})
-  sendRosterBlobChunks user gInfo members sharedMsgId blob
+  sendInlineBlobChunks user gInfo members sharedMsgId blob
 
-sendRosterBlobChunks :: User -> GroupInfo -> [GroupMember] -> SharedMsgId -> ByteString -> CM ()
-sendRosterBlobChunks user gInfo members sharedMsgId blob = do
+-- Send a binary blob as BFileChunks under a shared_msg_id to the given members (chunked by fileChunkSize).
+sendInlineBlobChunks :: User -> GroupInfo -> [GroupMember] -> SharedMsgId -> ByteString -> CM ()
+sendInlineBlobChunks user gInfo members sharedMsgId blob = do
   chSize <- fromIntegral <$> asks (fileChunkSize . config)
   go chSize 1 blob
   where
@@ -2440,10 +2440,19 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
 
 -- Send pre-encoded forwarded message preserving original signature
 sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
-sendFwdMemberMessage member fwd verifiedMsg =
-  forM_ (readyMemberConn member) $ \(_, conn) -> do
-    let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
+sendFwdMemberMessage member = sendFwdMembersMessage [member]
+
+-- Forward one pre-encoded signed message to several members in a single batched send
+-- (the body is sent once and referenced for the rest).
+sendFwdMembersMessage :: [GroupMember] -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
+sendFwdMembersMessage members fwd verifiedMsg = case mapMaybe (fmap snd . readyMemberConn) members of
+  [] -> pure ()
+  [conn] -> send [req conn (VRValue Nothing body)]
+  conn : conns -> send $ req conn (VRValue (Just 1) body) : map (\c -> req c (VRRef 1)) conns
+  where
+    body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
+    req conn vr = (aConnId conn, PQEncOff, MsgFlags False, vr)
+    send reqs = void $ withAgent $ \a -> sendMessages a reqs
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()
