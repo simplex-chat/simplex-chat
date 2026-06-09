@@ -1173,19 +1173,19 @@ memberIntroEvt gInfo reMember =
 forwardGroupRoster :: User -> GroupInfo -> GroupMember -> CM ()
 forwardGroupRoster user gInfo subscriber = do
   cxt <- chatStoreCxt
-  withStore' (\db -> (,) <$> getGroupRoster db gInfo <*> getRosterBlob db gInfo) >>= \case
-    (Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}), blob_) ->
+  withStore' (\db -> getGroupRoster db gInfo) >>= \case
+    Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
       forM_ (eitherToMaybe (J.eitherDecodeStrict' signedBody) :: Maybe (ChatMessage 'Json)) $ \chatMsg@ChatMessage {msgId} ->
         withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
           Right owner -> do
             let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
             sendFwdMemberMessage subscriber fwd (VMSigned MSSVerified sm chatMsg)
-            -- re-serve the blob under the owner's original shared_msg_id (carried in the forwarded header),
-            -- so the joiner keys the roster file the same way whether it arrived direct or forwarded
+            -- re-serve the blob under the owner's original shared_msg_id (from the forwarded header)
+            -- so the joiner keys the roster file the same whether it arrived direct or forwarded
             forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
               sendRosterBlobChunks user gInfo [subscriber] sid blob
           Left _ -> pure ()
-    _ -> pure ()
+    Nothing -> pure ()
 
 -- Used in groups with relays to introduce moderators and above to a new member,
 -- and to announce the new member to moderators and above.
@@ -1878,10 +1878,7 @@ closeFileHandle fileId files = do
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
 
--- Roster-file cleanup keyed on the group (the roster file has no chat item, so the
--- normal chat-item file enumeration misses it and the on-disk file would leak): evict
--- the cached handle, remove the on-disk file, delete the rows (rcv_files/chunks cascade),
--- and clear the pending columns.
+-- The roster file has no chat item, so chat-item file enumeration misses it; clean it up by group.
 cleanupGroupRosterFile :: User -> GroupInfo -> CM ()
 cleanupGroupRosterFile User {userId} gInfo@GroupInfo {groupId} = do
   info_ <- withStore' $ \db -> getGroupRosterFileInfo db userId groupId
@@ -1892,9 +1889,8 @@ cleanupGroupRosterFile User {userId} gInfo@GroupInfo {groupId} = do
     deleteGroupRosterFile db userId groupId
     clearRosterPending db gInfo
 
--- Discard partial roster chunks so the transfer re-drives from chunk 1 (relay restart /
--- re-subscribe / QCONT). MUST evict the cached AppendMode handle first, or appended bytes
--- land after the stale prefix and corrupt the blob (the digest then fails).
+-- MUST evict the cached AppendMode handle before deleting chunks, else re-driven bytes append
+-- after the stale prefix and corrupt the blob.
 resetRosterPartialChunks :: RcvFileTransfer -> CM ()
 resetRosterPartialChunks ft@RcvFileTransfer {fileId, fileStatus} = do
   lift $ closeFileHandle fileId rcvFiles
@@ -2231,9 +2227,7 @@ sendGroupRosterToRelay user gInfo relayMember =
     mods <- withStore' $ \db -> getGroupRosterMembers db cxt user gInfo
     sendRoster user gInfo [relayMember] rosterVer (buildGroupRoster mods)
 
--- Build the roster blob, send the owner-signed header carrying its size + digest, then
--- send the blob as BFileChunks under the header's shared_msg_id. Row-less: no files/
--- snd_files rows for the send, so there is no send-side cleanup; redelivery is the agent's.
+-- Row-less send (no files/snd_files rows, so no send-side cleanup); redelivery is the agent's.
 sendRoster :: User -> GroupInfo -> [GroupMember] -> VersionRoster -> [RosterMember] -> CM ()
 sendRoster user gInfo members rosterVer roster = do
   let blob = encodeRosterBlob roster
@@ -2241,8 +2235,6 @@ sendRoster user gInfo members rosterVer roster = do
   SndMessage {sharedMsgId} <- sendGroupMessage' user gInfo members (XGrpRoster GroupRoster {version = rosterVer, fileInv})
   sendRosterBlobChunks user gInfo members sharedMsgId blob
 
--- Chunk a roster blob and send each as a BFileChunk under the header's shared_msg_id,
--- to the same recipients. Used by both the owner send and the relay re-serve.
 sendRosterBlobChunks :: User -> GroupInfo -> [GroupMember] -> SharedMsgId -> ByteString -> CM ()
 sendRosterBlobChunks user gInfo members sharedMsgId blob = do
   chSize <- fromIntegral <$> asks (fileChunkSize . config)

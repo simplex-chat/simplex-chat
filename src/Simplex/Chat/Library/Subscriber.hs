@@ -3208,9 +3208,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               toView CEvtMemberRole {user, groupInfo = gInfo'', byMember = m', member = member {memberRole = memRole}, fromRole, toRole = memRole, msgSigned}
               pure $ memberEventDeliveryScope member
 
-    -- The header only STARTS a transfer: it writes roster_pending_* and creates the
-    -- chat-item-free rcv file. It never applies the roster or bumps the version (that
-    -- happens at blob completion, so a withheld/corrupted blob leaves the last roster intact).
+    -- The header only starts the transfer; the roster is applied and the version bumped only at
+    -- blob completion, so a withheld or corrupted blob leaves the last good roster intact.
     xGrpRoster :: GroupInfo -> GroupMember -> GroupRoster -> VerifiedMsg e -> Maybe SharedMsgId -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpRoster gInfo author GroupRoster {version = newVer, fileInv = InlineFileInvitation {fileSize, fileDigest}} verifiedMsg sharedMsgId_ brokerTs
       -- only an owner may sign a roster; otherwise a relay could route it as a member whose key it controls
@@ -3245,9 +3244,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     aboveRoster :: VersionRoster -> Maybe VersionRoster -> Bool
     aboveRoster v = maybe True (v >)
 
-    -- The roster blob has fully arrived: verify the owner-attested digest over the plaintext,
-    -- guard the version (no downgrade), apply, then in one DB transaction promote version + blob
-    -- (and, on a relay, the live header). On a relay also ack the owner and re-serve to members.
+    -- Blob arrived: verify the owner-attested digest over the plaintext and guard against
+    -- downgrade before applying; on a relay, ack the owner and re-serve to members.
     rosterCompletion :: GroupInfo -> RcvFileTransfer -> CM ()
     rosterCompletion gInfo RcvFileTransfer {fileStatus} =
       withStore' (\db -> getRosterPending db gInfo) >>= \case
@@ -3300,8 +3298,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       where
         rosterRecipient m@GroupMember {activeConn} = memberCurrent m && isJust activeConn && not (isRelay m) && memberRole' m /= GROwner
 
-    -- TOFU apply over the parsed roster entries (unchanged logic, lifted from the old header
-    -- handler): create/find members, pin keys, update roles, revert absent privileged members.
+    -- TOFU apply: pin each member's key on first use, then update roles.
     processRosterEntries :: DB.Connection -> GroupInfo -> GroupMemberRole -> [RosterMember] -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole)])
     processRosterEntries db gInfo defaultRole entries = do
       let rosterIds = map (\RosterMember {memberId} -> memberId) entries
