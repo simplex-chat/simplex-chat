@@ -730,6 +730,15 @@ profilesMatch
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
+-- equal for profile-update detection: badge proofs are re-generated for every presentation,
+-- so compare badges by disclosed info (not proof bytes) - a re-presentation of the same badge is a no-op
+sameProfileContent :: Profile -> Profile -> Bool
+sameProfileContent p@Profile {badge = b} p'@Profile {badge = b'} =
+  p {badge = Nothing} == p' {badge = Nothing} && (proofInfo <$> b) == (proofInfo <$> b')
+  where
+    proofInfo :: Badge 'BCProof -> BadgeInfo
+    proofInfo (BadgeProof _ _ info) = info
+
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 fromIncognitoProfile :: IncognitoProfile -> Profile

@@ -2550,7 +2550,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     processContactProfileUpdate :: Contact -> Profile -> Bool -> CM Contact
     processContactProfileUpdate c@Contact {profile = lp} p' createItems
-      | p /= p' = do
+      | not (sameProfileContent p p') = do
           c' <- withStore $ \db ->
             if userTTL == rcvTTL
               then updateContactProfile db cxt user c p'
@@ -2667,7 +2667,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Maybe (RcvMessage, UTCTime) -> CM GroupMember
     processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' msgTs_
-      | redactedMemberProfile allowSimplexLinks (fromLocalProfile p) /= redactedMemberProfile allowSimplexLinks p' = do
+      | not (sameProfileContent (redactedMemberProfile allowSimplexLinks (fromLocalProfile p)) (redactedMemberProfile allowSimplexLinks p')) = do
           updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do

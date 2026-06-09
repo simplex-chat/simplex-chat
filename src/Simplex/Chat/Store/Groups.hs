@@ -196,7 +196,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Badges (BadgeRow, badgeToRow, srvBadgePublicKey, verifyBadge_)
+import Simplex.Chat.Badges (BadgeRow, badgeToRow, verifyBadge_)
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol hiding (Binary)

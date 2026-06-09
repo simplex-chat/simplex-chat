@@ -24,7 +24,7 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Int (Int64)
 import Data.Time.Clock (getCurrentTime)
-import Simplex.Chat.Badges (badgeToRow, srvBadgePublicKey, verifyBadge_)
+import Simplex.Chat.Badges (badgeToRow, verifyBadge_)
 import Simplex.Chat.Protocol (MsgContent, businessChatsVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups

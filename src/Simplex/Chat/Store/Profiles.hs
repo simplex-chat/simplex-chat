@@ -43,6 +43,7 @@ module Simplex.Chat.Store.Profiles
     updateUserGroupReceipts,
     updateUserAutoAcceptMemberContacts,
     updateUserProfile,
+    setUserBadge,
     setUserProfileContactLink,
     getUserContactProfiles,
     createUserContactLink,
@@ -97,6 +98,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Simplex.Chat.Badges (LocalBadge, localBadgeToRow)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
@@ -310,9 +312,9 @@ updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO U
 updateUserProfile db user p'
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
-      updateContactProfile_' db userId profileId p' False currentTs
+      updateUserProfileFields_' db userId profileId p' currentTs
       userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
-      pure user {profile = toLocalProfile profileId p' localAlias currentTs False, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+      pure user {profile = (toLocalProfile profileId p' localAlias currentTs False) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
@@ -322,9 +324,9 @@ updateUserProfile db user p'
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
-        updateContactProfile_' db userId profileId p' False currentTs
+        updateUserProfileFields_' db userId profileId p' currentTs
         updateContactLDN_ db user userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile = toLocalProfile profileId p' localAlias currentTs False, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+        pure user {localDisplayName = newName, profile = (toLocalProfile profileId p' localAlias currentTs False) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateUserMemberProfileUpdatedAt_ currentTs
       | userMemberProfileChanged = do
@@ -332,9 +334,35 @@ updateUserProfile db user p'
           pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
     userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || img' /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, localAlias}, userMemberProfileUpdatedAt} = user
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, localBadge, localAlias}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = fn', shortDescr = d', image = img', preferences} = p'
     fullPreferences = fullPreferences' preferences
+
+-- own profile field update; leaves the badge columns alone (the credential is owned by setUserBadge/addUserBadge)
+updateUserProfileFields_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
+updateUserProfileFields_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} updatedAt =
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
+      WHERE user_id = ? AND contact_profile_id = ?
+    |]
+    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. (userId, profileId))
+
+-- store the user's own badge credential; touches only the badge columns
+setUserBadge :: DB.Connection -> User -> Maybe LocalBadge -> IO User
+setUserBadge db user@User {userId, profile = p@LocalProfile {profileId}} localBadge = do
+  ts <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles
+      SET badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, updated_at = ?
+      WHERE user_id = ? AND contact_profile_id = ?
+    |]
+    (localBadgeToRow localBadge :. (ts, userId, profileId))
+  pure (user :: User) {profile = p {localBadge}}
 
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
 setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do

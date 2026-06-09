@@ -55,6 +55,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
+import Simplex.Chat.Badges (Badge (..), BadgeCrypto (..), BadgeStatus (..), LocalBadge (..), verifyCredential)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -4640,6 +4641,26 @@ createContactsSndFeatureItems user cts =
     getPref ContactUserPreference {userPreference} = case userPreference of
       CUPContact {preference} -> preference
       CUPUser {preference} -> preference
+
+-- attach an issued badge credential to the user's own profile and present it to all current contacts.
+-- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
+addUserBadge :: User -> Badge 'BCCredential -> CM ()
+addUserBadge user cred = do
+  key <- asks $ badgePublicKey . config
+  verified <- liftIO $ verifyCredential key cred
+  unless verified $ throwCmdError "badge credential does not verify against configured key"
+  user' <- withFastStore' $ \db -> setUserBadge db user (Just (LocalBadge cred BSActive))
+  asks currentUser >>= atomically . (`writeTVar` Just user')
+  cxt <- asks $ mkStoreCxt . config
+  contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
+  withChatLock "addUserBadge" $ forM_ contacts $ \ct ->
+    case contactSendConn_ ct of
+      Right conn
+        | not (connIncognito conn) -> do
+            let ct' = updateMergedPreferences user' ct
+            p <- presentUserBadge user' $ userProfileDirect user' Nothing (Just ct') False
+            void (sendDirectContactMessage user' ct' (XInfo p)) `catchAllErrors` eToView
+      _ -> pure ()
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()
 assertDirectAllowed user dir ct event =

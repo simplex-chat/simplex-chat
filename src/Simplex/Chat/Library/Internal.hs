@@ -53,6 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
+import Simplex.Chat.Badges (Badge (..), BadgePresHeader (..), LocalBadge (..), badgeProof)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -1894,6 +1895,17 @@ sendDirectContactMessages' user ct events = do
   (sndMsgs', pqEnc_) <- batchSendConnMessagesB BMJson user conn msgFlags sndMsgs_
   forM_ pqEnc_ $ \pqEnc' -> void $ createContactPQSndItem user ct conn pqEnc'
   pure sndMsgs'
+
+-- present the user's own badge on an outgoing profile: a fresh, single-use proof from the stored credential.
+-- only own credentials present (peers carry proofs, which are not re-presented). callers must not present on incognito sends.
+presentUserBadge :: User -> Profile -> CM Profile
+presentUserBadge User {profile = LocalProfile {localBadge}} p = case localBadge of
+  Just (LocalBadge cred@BadgeCredential {} _) -> do
+    key <- asks $ badgePublicKey . config
+    liftIO (badgeProof key cred PHTest) >>= \case
+      Right proof -> pure p {badge = Just proof}
+      Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
+  _ -> pure p
 
 sendDirectContactMessage :: MsgEncodingI e => User -> Contact -> ChatMsgEvent e -> CM (SndMessage, Int64)
 sendDirectContactMessage user ct chatMsgEvent = do

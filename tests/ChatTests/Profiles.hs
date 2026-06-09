@@ -17,12 +17,19 @@ import Control.Monad
 import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
+import Data.Maybe (listToMaybe)
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeStatus (..), BadgeType (..), generateMasterKey, issueBadge, localBadgeStatus, verifyPayment)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt, withFastStore')
+import Simplex.Chat.Library.Commands (addUserBadge)
+import Simplex.Chat.Library.Internal (chatStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion)
+import Simplex.Chat.Store.Direct (getUserContacts)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
+import Simplex.Chat.Types (ConnStatus (..), Contact (Contact, localDisplayName, profile), LocalProfile (LocalProfile, localBadge), Profile (..), GroupRejectionReason (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite
@@ -40,6 +47,7 @@ chatProfileTests = do
     it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
     it "use multiword profile names" testMultiWordProfileNames
+    it "present supporter badge to contacts" testUserBadgeBroadcast
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "retry connecting via contact link" testRetryConnectingViaContactLink
@@ -184,6 +192,31 @@ testUpdateProfile =
             bob <## "contact cate changed to cat (Cate)"
             bob <## "use @cat <message> to send messages"
         ]
+
+testUserBadgeBroadcast :: HasCallStack => TestParams -> IO ()
+testUserBadgeBroadcast ps = do
+  Right (sk, pk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  where
+    test sk pk alice bob = do
+      connectUsers alice bob
+      cred <- issueSupporterBadge sk pk
+      runCCUser alice (`addUserBadge` cred)
+      -- the badge XInfo is delivered in order before this message, so by the time bob shows it the badge is stored
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      contactBadgeStatus bob "alice" `shouldReturn` Just BSActive
+    issueSupporterBadge sk pk = do
+      drg <- C.newRandom
+      mk <- generateMasterKey drg
+      let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = ""}
+      Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
+      Right cred <- issueBadge sk pk vreq
+      pure cred
+    contactBadgeStatus cc name = runCCUser cc $ \user -> do
+      cxt <- chatStoreCxt
+      cts <- withFastStore' $ \db -> getUserContacts db cxt user
+      pure $ listToMaybe [localBadgeStatus lb | Contact {localDisplayName, profile = LocalProfile {localBadge = Just lb}} <- cts, localDisplayName == name]
 
 testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
 testUpdateProfileImage =

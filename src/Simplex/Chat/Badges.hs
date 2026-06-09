@@ -35,11 +35,11 @@ module Simplex.Chat.Badges
     issueBadge,
     verifyCredential,
     generateBadgeProof,
+    badgeProof,
     verifyBadge,
     verifyBadge_,
     mkBadgeStatus,
     localBadgeVerified,
-    srvBadgePublicKey,
     BadgeRow,
     badgeToRow,
     localBadgeToRow,
@@ -269,6 +269,10 @@ generateBadgeProof :: BBSPublicKey -> Badge 'BCCredential -> BBSPresHeader -> IO
 generateBadgeProof pk (BadgeCredential masterKey signature badgeInfo) ph =
   fmap (\p -> BadgeProof ph p badgeInfo) <$> bbsProofGen pk signature bbsBadgeHeader ph bbsBadgeDisclosedIndexes (badgeMessages masterKey badgeInfo)
 
+-- application-level proof generation with a semantic presentation header
+badgeProof :: BBSPublicKey -> Badge 'BCCredential -> BadgePresHeader -> IO (Either String (Badge 'BCProof))
+badgeProof pk cred ph = generateBadgeProof pk cred (BBSPresHeader $ badgePresHeaderBytes ph)
+
 -- Recipient-side: verify a badge proof
 
 verifyBadge :: BBSPublicKey -> Badge 'BCProof -> IO Bool
@@ -279,11 +283,6 @@ verifyBadge pk (BadgeProof ph@(BBSPresHeader phBytes) proof badgeInfo)
 
 verifyBadge_ :: BBSPublicKey -> Maybe (Badge 'BCProof) -> IO Bool
 verifyBadge_ = maybe (pure False) . verifyBadge
-
--- Server public key (test key - replace with real key when badge service is deployed)
-
-srvBadgePublicKey :: BBSPublicKey
-srvBadgePublicKey = BBSPublicKey "" -- TODO generate real keypair
 
 -- DB
 
