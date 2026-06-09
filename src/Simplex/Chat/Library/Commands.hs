@@ -1306,7 +1306,6 @@ processChatCommand cxt nm = \case
       gInfo <- withFastStore $ \db -> getGroupInfo db cxt user chatId
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       deleteCIFiles user filesInfo
-      cleanupGroupRosterFile user gInfo
       withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
       membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db cxt user gInfo
       forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m
