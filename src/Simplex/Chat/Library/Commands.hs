@@ -2736,34 +2736,45 @@ processChatCommand cxt nm = \case
       -- TODO [relays] possible optimization is to read only required members + relays
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db cxt user groupId
       when (selfSelected gInfo) $ throwCmdError "can't change role for self"
-      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending) = selectMembers members
+      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending, anyPrivilegedTarget, finalPrivilegedCount) = selectMembers members
       when (length invitedMems + length currentMems + length unchangedMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && (anyAdmin || newRole >= GRAdmin)) $
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
+      -- in relay groups the roster has a single signer, so only the owner may change moderator/admin roles
+      when (useRelays' gInfo && (isRosterRole newRole || anyPrivilegedTarget) && memberRole' (membership gInfo) /= GROwner) $
+        throwCmdError "only the group owner can change moderator and admin roles"
+      when (useRelays' gInfo && isRosterRole newRole && finalPrivilegedCount > maxGroupRosterSize) $
+        throwCmdError $ "the number of moderators and admins would exceed the limit of " <> show maxGroupRosterSize
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
       (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g currentMems
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
+      let rosterSetChanged = not (null (changed1 <> changed2)) && (isRosterRole newRole || anyPrivilegedTarget)
+      when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && rosterSetChanged) $
+        bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole, msgSigned} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
-      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False)
+      -- anyPrivilegedTarget: a target currently moderator/admin; finalPrivilegedCount:
+      -- moderators + admins after the change (targets take newRole, others keep their role).
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool, Int)
+      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False, False, 0)
         where
-          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending)
+          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, privCount)
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
                     anyPending' = anyPending || memberPending m
-                 in
-                  if
-                    | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending')
-                    | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending')
-                    | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending')
-            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending)
+                    anyPrivTarget' = anyPrivTarget || isRosterRole memberRole
+                    privCount' = if isRosterRole newRole then privCount + 1 else privCount
+                 in if
+                      | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', privCount')
+                      | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', privCount')
+                      | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', privCount')
+            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, if isRosterRole memberRole then privCount + 1 else privCount)
       changeRoleInvitedMems :: User -> GroupInfo -> [GroupMember] -> CM ([ChatError], [GroupMember])
       changeRoleInvitedMems user gInfo memsToChange = do
         -- not batched, as we need to send different invitations to different connections anyway
@@ -2854,12 +2865,14 @@ processChatCommand cxt nm = \case
     withGroupLock "removeMembers" groupId $ do
       -- TODO [relays] possible optimization is to read only required members + relays
       Group gInfo members <- withFastStore $ \db -> getGroup db cxt user groupId
-      let (count, invitedMems, pendingApprvMems, pendingRvwMems, currentMems, maxRole, anyAdmin) = selectMembers gmIds members
+      let (count, invitedMems, pendingApprvMems, pendingRvwMems, currentMems, maxRole, anyAdmin, anyPrivilegedRemoved) = selectMembers gmIds members
           gmIds = S.fromList $ L.toList groupMemberIds
           memCount = length groupMemberIds
       when (count /= memCount) $ throwChatError CEGroupMemberNotFound
       when (memCount > 1 && anyAdmin) $ throwCmdError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
+      when (useRelays' gInfo && anyPrivilegedRemoved && memberRole' (membership gInfo) /= GROwner) $
+        throwCmdError "only the group owner can remove moderators and admins"
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
       (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing recipients currentMems
@@ -2880,21 +2893,25 @@ processChatCommand cxt nm = \case
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
+      -- refresh the roster so the relay drops a removed privileged member for future joiners
+      when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved) $
+        bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
-      selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
-      selectMembers gmIds = foldl' addMember (0, [], [], [], [], GRObserver, False)
+      selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
+      selectMembers gmIds = foldl' addMember (0, [], [], [], [], GRObserver, False, False)
         where
-          addMember acc@(n, invited, pendingApprv, pendingRvw, current, maxRole, anyAdmin) m@GroupMember {groupMemberId, memberStatus, memberRole}
+          addMember acc@(n, invited, pendingApprv, pendingRvw, current, maxRole, anyAdmin, anyPrivRemoved) m@GroupMember {groupMemberId, memberStatus, memberRole}
             | groupMemberId `S.member` gmIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
+                    anyPrivRemoved' = anyPrivRemoved || isRosterRole memberRole
                     n' = n + 1
                  in case memberStatus of
-                      GSMemInvited -> (n', m : invited, pendingApprv, pendingRvw, current, maxRole', anyAdmin')
-                      GSMemPendingApproval -> (n', invited, m : pendingApprv, pendingRvw, current, maxRole', anyAdmin')
-                      GSMemPendingReview -> (n', invited, pendingApprv, m : pendingRvw, current, maxRole', anyAdmin')
-                      _ -> (n', invited, pendingApprv, pendingRvw, m : current, maxRole', anyAdmin')
+                      GSMemInvited -> (n', m : invited, pendingApprv, pendingRvw, current, maxRole', anyAdmin', anyPrivRemoved')
+                      GSMemPendingApproval -> (n', invited, m : pendingApprv, pendingRvw, current, maxRole', anyAdmin', anyPrivRemoved')
+                      GSMemPendingReview -> (n', invited, pendingApprv, m : pendingRvw, current, maxRole', anyAdmin', anyPrivRemoved')
+                      _ -> (n', invited, pendingApprv, pendingRvw, m : current, maxRole', anyAdmin', anyPrivRemoved')
             | otherwise = acc
       deleteInvitedMems :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
       deleteInvitedMems user memsToDelete = do
@@ -3586,13 +3603,18 @@ processChatCommand cxt nm = \case
       where
         cReqHash1 = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
         cReqHash2 = contactCReqHash $ CRContactUri crData {crScheme = simplexChat}
+        -- relay-group joins (only via connectToRelay) carry the target relay member in preparedEntity_;
+        -- its memberId binds the join signature so a sibling relay can't replay it
+        relayMemberId_ = case preparedEntity_ of
+          Just (PCEGroup gInfo m) | useRelays' gInfo -> Just (memberId' m)
+          _ -> Nothing
         joinPreparedConn' xContactId_ conn@Connection {customUserProfileId} gInfo_ = do
           when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
           -- TODO [relays] member: refactor joinContact and up avoiding parallel ifs, xContactId is not used
           xContactId <- mkXContactId xContactId_
           localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-          conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ PQSupportOn
+          conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ PQSupportOn
           pure $ CVRSentInvitation conn' incognitoProfile
         connect' groupLinkId xContactId_ gInfo_ = do
           let inGroup = isJust groupLinkId
@@ -3607,7 +3629,7 @@ processChatCommand cxt nm = \case
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
           conn <- withFastStore' $ \db -> createConnReqConnection db userId connId preparedEntity_ cReq cReqHash1 sLnk' xContactId incognitoProfile_ groupLinkId subMode chatV pqSup
-          conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ pqSup
+          conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup
           pure $ CVRSentInvitation conn' incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
     connectContactViaAddress user@User {userId} incognito ct@Contact {contactId, activeConn} (CCLink cReq shortLink) =
@@ -3622,7 +3644,7 @@ processChatCommand cxt nm = \case
             subMode <- chatReadVar subscriptionMode
             let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
             conn <- withFastStore' $ \db -> createConnReqConnection db userId connId (Just $ PCEContact ct) cReq cReqHash shortLink newXContactId (NewIncognito <$> incognitoProfile) Nothing subMode chatV pqSup
-            void $ joinContact user conn cReq incognitoProfile newXContactId Nothing Nothing Nothing pqSup
+            void $ joinContact user conn cReq incognitoProfile newXContactId Nothing Nothing Nothing Nothing pqSup
             ct' <- withStore $ \db -> getContact db cxt user contactId
             pure $ CRSentInvitationToContact user ct' incognitoProfile
           Just conn@Connection {connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
@@ -3631,7 +3653,7 @@ processChatCommand cxt nm = \case
               xContactId <- mkXContactId xContactId_
               localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
               let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-              void $ joinContact user conn cReq incognitoProfile xContactId Nothing Nothing Nothing PQSupportOn
+              void $ joinContact user conn cReq incognitoProfile xContactId Nothing Nothing Nothing Nothing PQSupportOn
               ct' <- withStore $ \db -> getContact db cxt user contactId
               pure $ CRSentInvitationToContact user ct' incognitoProfile
             _ -> throwCmdError "contact already has connection"
@@ -3643,13 +3665,14 @@ processChatCommand cxt nm = \case
       r <- tryAllErrors $ do
         (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <- getShortLinkConnReq nm user relayLink
         relayLinkData_ <- liftIO $ decodeLinkUserData cData
-        case (relayLinkData_, linkEntityId) of
-          (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
+        relayMemberId <- case (relayLinkData_, linkEntityId) of
+          (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
             withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
+            pure $ MemberId entityId
           _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
         let cReq = linkConnReq fd
             relayLinkToConnect = CCLink cReq (Just relayLink)
-        void $ connectViaContact user (Just $ PCEGroup gInfo relayMember) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
+        void $ connectViaContact user (Just $ PCEGroup gInfo (relayMember {memberId = relayMemberId})) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
       relayMember' <- withFastStore $ \db -> getGroupMember db cxt user (groupId' gInfo) (groupMemberId' relayMember)
       pure (relayLink, relayMember', r)
     syncSubscriberRelays :: User -> GroupInfo -> [ShortLinkContact] -> CM ()
@@ -3685,23 +3708,19 @@ processChatCommand cxt nm = \case
           pure (connId, chatV)
     mkXContactId :: Maybe XContactId -> CM XContactId
     mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
-    joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfo) -> PQSupport -> CM Connection
-    joinContact user conn@Connection {connChatVersion = chatV} cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ pqSup = do
+    joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfo) -> Maybe MemberId -> PQSupport -> CM Connection
+    joinContact user conn@Connection {connChatVersion = chatV} cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
       -- gInfo_ is Maybe (Maybe GroupInfo), where Just Nothing means "some unknown group", e.g. when joining via link without profile
       let profileToSend = case gInfo_ of
             Just gInfo_' ->
               let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
                in userProfileInGroup' user allowSimplexLinks incognitoProfile
             Nothing -> userProfileDirect user incognitoProfile Nothing True
-      chatEvent <- case gInfo_ of
-        Just (Just gInfo) | useRelays' gInfo -> do
-          let GroupInfo {membership = GroupMember {memberId}} = gInfo
-          memberPubKey <- case groupKeys gInfo of
-            Just GroupKeys {memberPrivKey} -> pure $ C.publicKey memberPrivKey
-            Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
-          pure $ XMember profileToSend memberId (MemberKey memberPubKey)
-        _ -> pure $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
-      dm <- encodeConnInfoPQ pqSup chatV chatEvent
+      dm <- case gInfo_ of
+        Just (Just gInfo) | useRelays' gInfo -> case relayMemberId_ of
+          Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
+          Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
+        _ -> encodeConnInfoPQ pqSup chatV $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined

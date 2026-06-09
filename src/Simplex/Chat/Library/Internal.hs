@@ -58,7 +58,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages, encodeBinaryBatch, encodeFwdElement)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages, encodeBatchElement, encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -927,9 +927,9 @@ acceptContactRequestAsync
       liftIO $ setCommandConnId db user cmdId connId
       getContact db cxt user contactId
 
-acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> CM GroupMember
+acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> Maybe GroupMember -> CM GroupMember
 acceptGroupJoinRequestAsync
-  user
+  user@User {userId}
   uclId
   gInfo@GroupInfo {groupProfile, membership, businessChat}
   cReqInvId
@@ -941,11 +941,18 @@ acceptGroupJoinRequestAsync
   gAccepted
   gLinkMemRole
   incognitoProfile
-  memberKey_ = do
+  memberKey_
+  existingMem_ = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
-    (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
+    -- a roster-established privileged member attaches a connection to its existing record (keeping
+    -- owner-authoritative role + key); everyone else is created fresh with the group-link role
+    (groupMemberId, memberId) <- case existingMem_ of
+      Just m -> do
+        withStore' $ \db -> updateGroupMemberStatus db userId m initialStatus
+        pure (groupMemberId' m, memberId' m)
+      Nothing -> withStore $ \db ->
+        createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
     let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -1160,21 +1167,42 @@ memberIntroEvt gInfo reMember =
       mRestrictions = memberRestrictions reMember
    in XGrpMemIntro mInfo mRestrictions
 
+-- Forward the saved owner-signed roster verbatim, attributed to the owner who
+-- sent it, so the recipient verifies the owner signature.
+forwardGroupRoster :: User -> GroupInfo -> GroupMember -> CM ()
+forwardGroupRoster user gInfo subscriber = do
+  cxt <- chatStoreCxt
+  withStore' (\db -> getGroupRoster db gInfo) >>= \case
+    Nothing -> pure ()
+    Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}) ->
+      forM_ (eitherToMaybe (J.eitherDecodeStrict' signedBody) :: Maybe (ChatMessage 'Json)) $ \chatMsg ->
+        withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
+          Right owner -> do
+            let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
+            sendFwdMemberMessage subscriber fwd (VMSigned MSSVerified sm chatMsg)
+          Left _ -> pure ()
+
 -- Used in groups with relays to introduce moderators and above to a new member,
 -- and to announce the new member to moderators and above.
 -- This doesn't create introduction records in db, compared to above methods.
 introduceInChannel :: StoreCxt -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
-  modMs <- withStore' $ \db -> getGroupModerators db cxt user gInfo
+  (owners, rosterMems) <- withStore' $ \db ->
+    (,) <$> getGroupOwners db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
+  let modMs = owners <> rosterMems
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
   withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
-  let introEvts = map (memberIntroEvt gInfo) modMs
-  forM_ (L.nonEmpty introEvts) $ \introEvts' ->
-    sendGroupMemberMessages user gInfo conn introEvts'
+  -- owner intros first so the joiner has the owner profile loaded before applying the saved roster (signed by the owner)
+  sendIntros owners
+  forwardGroupRoster user gInfo subscriber
+  sendIntros rosterMems
   withStore' $ \db ->
     setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
+  where
+    sendIntros ms = forM_ (L.nonEmpty $ map (memberIntroEvt gInfo) ms) $ \evts ->
+      sendGroupMemberMessages user gInfo conn evts
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1204,6 +1232,28 @@ redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDes
     removeSimplexLink s
       | allowSimplexLinks = Just s
       | otherwise = maybe (Just s) (\fts -> if any ftIsSimplexLink fts then Nothing else Just s) $ parseMaybeMarkdownList s
+
+-- Roles carried by the roster; owners are on the link, not the roster.
+isRosterRole :: GroupMemberRole -> Bool
+isRosterRole r = r == GRModerator || r == GRAdmin
+
+-- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
+validateGroupRoster :: GroupRoster -> GroupRoster
+validateGroupRoster GroupRoster {version = ver, roster = entries} =
+  GroupRoster {version = ver, roster = dedup [] $ filter (\RosterMember {role} -> isRosterRole role) entries}
+  where
+    dedup _ [] = []
+    dedup seen (rm@RosterMember {memberId} : rms)
+      | memberId `elem` seen = dedup seen rms
+      | otherwise = rm : dedup (memberId : seen) rms
+
+-- Privileged members without a known key are skipped (recipients can't verify them).
+buildGroupRoster :: VersionRoster -> [GroupMember] -> GroupRoster
+buildGroupRoster ver mods = GroupRoster {version = ver, roster = mapMaybe rosterMember mods}
+  where
+    rosterMember m@GroupMember {memberId, memberPubKey, memberRole}
+      | isRosterRole memberRole = (\k -> RosterMember {memberId, name = memberShortenedName m, key = MemberKey k, role = memberRole}) <$> memberPubKey
+      | otherwise = Nothing
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
 sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
@@ -1616,13 +1666,16 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
     chSize = fromIntegral chunkSize
 
 parseChatMessage :: Connection -> ByteString -> CM (ChatMessage 'Json)
-parseChatMessage conn s = do
+parseChatMessage conn s = snd <$> parseChatMessage' conn s
+{-# INLINE parseChatMessage #-}
+
+parseChatMessage' :: Connection -> ByteString -> CM (Maybe SignedMsg, ChatMessage 'Json)
+parseChatMessage' conn s =
   case parseChatMessages s of
-    [msg] -> liftEither . first (ChatError . errType) $ (\(APMsg _ (ParsedMsg _ _ m)) -> checkEncoding m) =<< msg
+    [msg] -> liftEither . first (ChatError . errType) $ (\(APMsg _ (ParsedMsg _ sm m)) -> (sm,) <$> checkEncoding m) =<< msg
     _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
-{-# INLINE parseChatMessage #-}
 
 getChatScopeInfo :: StoreCxt -> User -> GroupChatScope -> CM GroupChatScopeInfo
 getChatScopeInfo cxt user = \case
@@ -2024,6 +2077,26 @@ encodeConnInfoPQ pqSup v chatMsgEvent = do
       _ -> pure connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
+-- conn-info wrapped as a signed element, so the receiver can verify the signature over the body
+encodeSignedConnInfo :: MsgEncodingI e => MsgSigning -> ChatMsgEvent e -> CM ByteString
+encodeSignedConnInfo signing chatMsgEvent = do
+  vr <- chatVersionRange
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded body -> pure $ encodeBatchElement (Just $ signChatMsgBody signing body) body
+    ECMLarge -> throwChatError $ CEException "large signed info"
+
+-- signed XMember for a relay-group join: proves the joiner holds the member key it asserts, and carries
+-- viaRelay = the target relay's memberId inside the signed body so a sibling relay can't accept a replay
+encodeXMemberConnInfo :: GroupInfo -> MemberId -> Profile -> CM ByteString
+encodeXMemberConnInfo GroupInfo {membership = GroupMember {memberId}, groupKeys} relayMemberId profileToSend =
+  case groupKeys of
+    Just GroupKeys {publicGroupId, memberPrivKey} ->
+      let xMemberEvt = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey) (Just relayMemberId)
+          signing = MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
+       in encodeSignedConnInfo signing xMemberEvt
+    Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
+
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
@@ -2096,6 +2169,28 @@ sendGroupMessage' user gInfo members chatMsgEvent =
   sendGroupMessages_ user gInfo members (chatMsgEvent :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
+
+-- TODO [relays] improvement: publish roster_version in link data so the owner can recover the latest version
+-- TODO   after restoring from a stale backup (relays accept only strictly-greater versions)
+bumpAndBroadcastRoster :: User -> GroupInfo -> CM ()
+bumpAndBroadcastRoster user gInfo = do
+  cxt <- chatStoreCxt
+  let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
+  (relays, roster) <- withStore' $ \db -> do
+    relays <- getGroupRelayMembers db cxt user gInfo
+    mods <- getGroupRosterMembers db cxt user gInfo
+    setGroupRosterVersion db gInfo rosterVer
+    pure (relays, buildGroupRoster rosterVer mods)
+  forM_ (L.nonEmpty relays) $ \relays' ->
+    void $ sendGroupMessage' user gInfo (L.toList relays') (XGrpRoster roster)
+
+-- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
+sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
+sendGroupRosterToRelay user gInfo relayMember =
+  forM_ (rosterVersion gInfo) $ \rosterVer -> do
+    cxt <- chatStoreCxt
+    mods <- withStore' $ \db -> getGroupRosterMembers db cxt user gInfo
+    void $ sendGroupMessage' user gInfo [relayMember] (XGrpRoster (buildGroupRoster rosterVer mods))
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo scope asGroup members events = do

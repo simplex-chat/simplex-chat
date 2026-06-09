@@ -2267,6 +2267,7 @@ MemberSupport:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
+- rosterVersion: int?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?

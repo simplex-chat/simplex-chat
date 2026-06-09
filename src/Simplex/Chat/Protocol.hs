@@ -367,6 +367,21 @@ data GrpMsgForward = GrpMsgForward
   }
   deriving (Eq, Show)
 
+-- | Owner-signed snapshot of the privileged (moderator/admin) set; owners are
+-- not included, their keys come from the link.
+data GroupRoster = GroupRoster
+  { version :: VersionRoster,
+    roster :: [RosterMember]
+  }
+  deriving (Eq, Show)
+
+data RosterMember = RosterMember
+  { memberId :: MemberId,
+    name :: Text,
+    key :: MemberKey, -- trust-on-first-use pinned per memberId
+    role :: GroupMemberRole
+  }
+  deriving (Eq, Show)
 
 instance Encoding FwdSender where
   smpEncode = \case
@@ -433,6 +448,11 @@ data MsgSigning = MsgSigning
 encodeChatBinding :: ChatBinding -> ByteString -> ByteString
 encodeChatBinding cb bindingData = smpEncode cb <> bindingData
 
+signChatMsgBody :: MsgSigning -> ByteString -> SignedMsg
+signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
+  let sig = C.ASignature C.SEd25519 $ C.sign' privKey (encodeChatBinding bindingTag bindingData <> msgBody)
+   in SignedMsg {chatBinding = bindingTag, signatures = MsgSignature keyRef sig L.:| [], signedBody = msgBody}
+
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
@@ -446,7 +466,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
   XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
-  XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey} -> ChatMsgEvent 'Json
+  XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey, viaRelay :: Maybe MemberId} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
@@ -475,6 +495,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
+  XGrpRoster :: GroupRoster -> ChatMsgEvent 'Json
+  XGrpRosterAck :: VersionRoster -> Maybe Text -> ChatMsgEvent 'Json
   XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
@@ -518,6 +540,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpDel -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
+  XGrpRoster _ -> True
   _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
@@ -786,6 +809,8 @@ data MsgMention = MsgMention {memberId :: MemberId}
 newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
   deriving (Eq, Show)
 
+$(JQ.deriveJSON defaultJSON ''RosterMember)
+
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
 $(JQ.deriveJSON defaultJSON ''LinkOwnerSig)
@@ -885,6 +910,12 @@ maxCompressedMsgLength = 13380
 
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
+
+-- Bound so the signed roster fits maxEncodedMsgLength (15602 B): ~140 B per
+-- RosterMember (memberId + Ed25519 key both base64, role, name capped at 16
+-- chars by memberShortenedName). Fits 64 entries even with 4-byte-UTF-8 names.
+maxGroupRosterSize :: Int
+maxGroupRosterSize = 64
 
 -- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
 -- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
@@ -1022,6 +1053,8 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpInfo_ :: CMEventTag 'Json
   XGrpPrefs_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
+  XGrpRoster_ :: CMEventTag 'Json
+  XGrpRosterAck_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
@@ -1082,6 +1115,8 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpInfo_ -> "x.grp.info"
     XGrpPrefs_ -> "x.grp.prefs"
     XGrpDirectInv_ -> "x.grp.direct.inv"
+    XGrpRoster_ -> "x.grp.roster"
+    XGrpRosterAck_ -> "x.grp.roster.ack"
     XGrpMsgForward_ -> "x.grp.msg.forward"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
@@ -1143,6 +1178,8 @@ instance StrEncoding ACMEventTag where
         "x.grp.info" -> XGrpInfo_
         "x.grp.prefs" -> XGrpPrefs_
         "x.grp.direct.inv" -> XGrpDirectInv_
+        "x.grp.roster" -> XGrpRoster_
+        "x.grp.roster.ack" -> XGrpRosterAck_
         "x.grp.msg.forward" -> XGrpMsgForward_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
@@ -1200,6 +1237,8 @@ toCMEventTag msg = case msg of
   XGrpInfo _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
   XGrpDirectInv {} -> XGrpDirectInv_
+  XGrpRoster _ -> XGrpRoster_
+  XGrpRosterAck {} -> XGrpRosterAck_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
@@ -1258,6 +1297,7 @@ requiresSignature = \case
   XGrpMemRestrict_ -> True
   XGrpLeave_ -> True
   XGrpRelayNew_ -> True
+  XGrpRoster_ -> True
   XInfo_ -> True
   _ -> False
 
@@ -1326,7 +1366,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         reqContent <- opt "content"
         let requestMsg = (,) <$> reqMsgId <*> reqContent
         pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
-      XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey"
+      XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey" <*> opt "viaRelay"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
@@ -1358,6 +1398,8 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
+      XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "roster")
+      XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
@@ -1399,7 +1441,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
-      XMember {profile, newMemberId, newMemberKey} -> o ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
+      XMember {profile, newMemberId, newMemberKey, viaRelay} -> o $ ("viaRelay" .=? viaRelay) ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
@@ -1430,6 +1472,8 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
+      XGrpRoster GroupRoster {version, roster} -> o ["version" .= version, "roster" .= roster]
+      XGrpRosterAck version err -> o $ ("error" .=? err) ["version" .= version]
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where
           encodeFwdSender = \case

@@ -2571,6 +2571,7 @@ export interface GroupInfo {
   uiThemes?: UIThemeEntityOverrides
   customData?: object
   groupSummary: GroupSummary
+  rosterVersion?: number // int
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys

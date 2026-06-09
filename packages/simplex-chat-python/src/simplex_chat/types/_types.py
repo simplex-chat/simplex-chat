@@ -1806,6 +1806,7 @@ class GroupInfo(TypedDict):
     uiThemes: NotRequired["UIThemeEntityOverrides"]
     customData: NotRequired[dict[str, object]]
     groupSummary: "GroupSummary"
+    rosterVersion: NotRequired[int]  # int
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
     groupKeys: NotRequired["GroupKeys"]

@@ -487,6 +487,7 @@ data GroupInfo = GroupInfo
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
+    rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupKeys :: Maybe GroupKeys
@@ -2041,6 +2042,17 @@ newtype StoreCxt = StoreCxt {vr :: VersionRangeChat}
 
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
+
+data RosterVersion
+
+instance VersionScope RosterVersion
+
+type VersionRoster = Version RosterVersion
+
+pattern VersionRoster :: Word16 -> VersionRoster
+pattern VersionRoster v = Version v
+
+{-# COMPLETE VersionRoster #-}
 
 -- this newtype exists to have a concise JSON encoding of version ranges in chat protocol messages in the form of "1-2" or just "1"
 newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)
