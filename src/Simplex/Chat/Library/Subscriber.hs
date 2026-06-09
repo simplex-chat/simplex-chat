@@ -1311,13 +1311,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         r n'' = Just (ci, CIRcvDecryptionError mde n'')
     mdeUpdatedCI _ _ = Nothing
 
-    -- gInfo_ is Just only for the roster blob (no chat item) and selects roster cancel/completion;
-    -- Nothing for every normal file. Inner ack removed: the outer per-MSG withAckMessage is the sole ack.
     receiveFileChunk :: Maybe GroupInfo -> RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> CM ()
-    receiveFileChunk gInfo_ ft@RcvFileTransfer {fileId, chunkSize} conn_ MsgMeta {recipient = (msgId, _), integrity} = \case
-      FileChunkCancel -> case gInfo_ of
-        Just gInfo -> cleanupGroupRosterFile user gInfo
-        Nothing ->
+    receiveFileChunk gInfo_ ft@RcvFileTransfer {fileId, fileType, chunkSize} conn_ MsgMeta {recipient = (msgId, _), integrity} = \case
+      FileChunkCancel -> case fileType of
+        FTRoster -> forM_ gInfo_ $ cleanupGroupRosterFile user
+        FTNormal ->
           unless (rcvFileCompleteOrCancelled ft) $ do
             cancelRcvFileTransfer user ft
             ci <- withStore $ \db -> getChatItemByFileId db cxt user fileId
@@ -1338,9 +1336,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               then badRcvFileChunk ft "incorrect chunk size"
               else do
                 appendFileChunk ft chunkNo chunk True
-                case gInfo_ of
-                  Just gInfo -> rosterCompletion gInfo ft
-                  Nothing -> do
+                case fileType of
+                  FTRoster -> forM_ gInfo_ $ \gInfo -> rosterCompletion gInfo ft
+                  FTNormal -> do
                     ci <- withStore $ \db -> do
                       liftIO $ do
                         updateRcvFileStatus db fileId FSComplete
