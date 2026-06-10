@@ -708,7 +708,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     Modifier.padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight, tappableBadge = true)
     val displayName = contact.profile.displayName.trim()
     val text = buildAnnotatedString {
       if (contact.verified) {

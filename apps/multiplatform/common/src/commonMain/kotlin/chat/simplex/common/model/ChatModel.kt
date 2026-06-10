@@ -2022,7 +2022,8 @@ data class LocalProfile(
   override val localAlias: String,
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
-  val peerType: ChatPeerType? = null
+  val peerType: ChatPeerType? = null,
+  val localBadge: LocalBadge? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
@@ -2045,6 +2046,57 @@ enum class ChatPeerType {
   @SerialName("human") Human,
   @SerialName("bot") Bot
 }
+
+// Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
+// Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
+@Serializable(with = BadgeTypeSerializer::class)
+sealed class BadgeType {
+  @Serializable @SerialName("supporter") object Supporter: BadgeType()
+  @Serializable @SerialName("legend") object Legend: BadgeType()
+  @Serializable @SerialName("investor") object Investor: BadgeType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): BadgeType()
+
+  // the disclosed (signed) type name, shown to the user for verified badges
+  val text: String
+    get() = when (this) {
+      is Supporter -> "supporter"
+      is Legend -> "legend"
+      is Investor -> "investor"
+      is Unknown -> type
+    }
+}
+
+object BadgeTypeSerializer : KSerializer<BadgeType> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeType", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): BadgeType =
+    when (val v = decoder.decodeString()) {
+      "supporter" -> BadgeType.Supporter
+      "legend" -> BadgeType.Legend
+      "investor" -> BadgeType.Investor
+      else -> BadgeType.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: BadgeType) = encoder.encodeString(value.text)
+}
+
+@Serializable
+enum class BadgeStatus {
+  @SerialName("active") Active,
+  @SerialName("expired") Expired,
+  @SerialName("failed") Failed
+}
+
+@Serializable
+data class BadgeInfo(
+  val badgeType: BadgeType,
+  val badgeExpiry: Instant? = null,
+  val badgeExtra: String = ""
+)
+
+@Serializable
+data class LocalBadge(
+  val badge: BadgeInfo,
+  val status: BadgeStatus
+)
 
 @Serializable
 data class UserProfileUpdateSummary(

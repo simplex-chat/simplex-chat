@@ -3,8 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Offline operator tooling for supporter badges, invoked as `simplex-chat badge ...`.
--- `keygen` prints a base64url keypair (the public key is hardcoded into the app config);
--- `sign` mints a credential as one-line JSON to paste into the app via `/badge add`.
+--   keygen     - the issuer keypair (the "secret" signs; the "public" is hardcoded into the app config).
+--   master-key - the user's master secret (their unlinkability secret; generated client-side in the real flow).
+--   sign       - bind a user master secret to a badge with the issuer secret, printed as one-line JSON for `/badge add`.
 module Simplex.Chat.Badges.CLI (runBadgeCommand) where
 
 import qualified Data.Aeson as J
@@ -16,19 +17,26 @@ import Data.Time.Format (defaultTimeLocale, parseTimeM)
 import Options.Applicative
 import Simplex.Chat.Badges
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey (..), BBSSecretKey (..), bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textDecode)
 import System.Exit (die)
 
+-- the issuer keypair is secret (32 bytes) <> public (96 bytes).
+bbsSecretLen, bbsPublicLen :: Int
+bbsSecretLen = 32
+bbsPublicLen = 96
+
 data BadgeCommand
   = Keygen
-  | Sign BBSSecretKey BBSPublicKey BadgeType (Maybe UTCTime)
+  | MasterKey
+  | Sign BBSSecretKey BBSPublicKey BadgeMasterKey BadgeType (Maybe UTCTime)
 
 runBadgeCommand :: [String] -> IO ()
 runBadgeCommand args =
   handleParseResult (execParserPure defaultPrefs badgeInfo args) >>= \case
     Keygen -> keygen
-    Sign sk pk badgeType badgeExpiry -> sign sk pk badgeType badgeExpiry
+    MasterKey -> genMasterKey
+    Sign sk pk ms badgeType badgeExpiry -> sign sk pk ms badgeType badgeExpiry
   where
     badgeInfo = info (helper <*> hsubparser badgeCmd) fullDesc
     badgeCmd = command "badge" (info (helper <*> badgeCommandP) (progDesc "SimpleX supporter badge tooling"))
@@ -36,16 +44,21 @@ runBadgeCommand args =
 badgeCommandP :: Parser BadgeCommand
 badgeCommandP =
   hsubparser $
-    command "keygen" (info (pure Keygen) (progDesc "generate a BBS issuer keypair (base64url)"))
-      <> command "sign" (info signP (progDesc "sign a badge credential, printed as one-line JSON"))
+    command "keygen" (info (pure Keygen) (progDesc "generate an issuer keypair (issuer secret + public, base64url)"))
+      <> command "master-key" (info (pure MasterKey) (progDesc "generate a user master secret (base64url)"))
+      <> command "sign" (info signP (progDesc "sign a badge for a user master secret, printed as one-line JSON"))
   where
     signP =
-      Sign
-        <$> keyOpt "secret" "SK" "issuer secret key (base64url)"
-        <*> keyOpt "key" "PK" "issuer public key (base64url)"
-        <*> option (eitherReader badgeTypeR) (long "type" <> metavar "TYPE" <> help "badge type (supporter, business, ...)")
+      (\(sk, pk) -> Sign sk pk)
+        <$> option (eitherReader issuerKeyR) (long "secret" <> metavar "ISSUER_KEY" <> help "issuer keypair from keygen (base64url)")
+        <*> option (eitherReader (strDecode . B.pack)) (long "master" <> metavar "MASTER" <> help "user master secret from master-key (base64url)")
+        <*> option (eitherReader badgeTypeR) (long "type" <> metavar "TYPE" <> help "badge type (supporter, legend, investor)")
         <*> option (eitherReader expireR) (long "expire" <> metavar "lifetime|YYYY-MM-DD" <> help "expiry date, or 'lifetime'")
-    keyOpt l m h = option (eitherReader $ strDecode . B.pack) (long l <> metavar m <> help h)
+    issuerKeyR s = do
+      kp <- strDecode (B.pack s)
+      if B.length kp == bbsSecretLen + bbsPublicLen
+        then let (sk, pk) = B.splitAt bbsSecretLen kp in Right (BBSSecretKey sk, BBSPublicKey pk)
+        else Left "bad issuer key - use the 'secret' value from keygen"
     badgeTypeR = maybe (Left "invalid badge type") Right . textDecode . T.pack
     expireR = \case
       "lifetime" -> Right Nothing
@@ -55,16 +68,20 @@ keygen :: IO ()
 keygen =
   bbsKeyGen >>= \case
     Left e -> die $ "keygen failed: " <> e
-    Right (sk, pk) -> do
-      B.putStrLn $ "secret " <> strEncode sk
+    Right (BBSSecretKey sk, BBSPublicKey pk) -> do
+      B.putStrLn $ "secret " <> strEncode (sk <> pk)
       B.putStrLn $ "public " <> strEncode pk
 
-sign :: BBSSecretKey -> BBSPublicKey -> BadgeType -> Maybe UTCTime -> IO ()
-sign secretKey publicKey badgeType badgeExpiry = do
+genMasterKey :: IO ()
+genMasterKey = do
   drg <- C.newRandom
-  masterKey <- generateMasterKey drg
-  let req = VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}}
+  mk <- generateMasterKey drg
+  B.putStrLn $ strEncode mk
+
+sign :: BBSSecretKey -> BBSPublicKey -> BadgeMasterKey -> BadgeType -> Maybe UTCTime -> IO ()
+sign secretKey publicKey masterKey' badgeType badgeExpiry = do
+  let req = VerifiedBadgeRequest BadgeRequest {masterKey = masterKey', badgeInfo = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}}
   issueBadge secretKey publicKey req >>= \case
     Left e -> die $ "sign failed: " <> e
-    -- single-line JSON, pasted into the app via `/badge add`
+    -- single-line JSON (master secret + signature + info), pasted into the app via `/badge add`
     Right cred -> LB.putStrLn $ J.encode cred

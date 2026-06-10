@@ -3105,4 +3105,7 @@
   <string name="tray_tooltip_unread">SimpleX — %d unread</string>
   <string name="appearance_minimize_to_tray">Minimize to tray when closing window</string>
   <string name="appearance_minimize_to_tray_desc">Keep SimpleX running in the background to receive messages.</string>
+  <string name="badge_verified_desc">This is a verified badge - its type is signed and cannot be faked.</string>
+  <string name="badge_unverified_title">Unverified badge</string>
+  <string name="badge_unverified_desc">This badge could not be verified and may not be genuine.</string>
 </resources>

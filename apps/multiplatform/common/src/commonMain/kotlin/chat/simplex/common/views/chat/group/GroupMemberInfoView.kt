@@ -733,7 +733,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     Modifier.padding(horizontal = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight, tappableBadge = true)
     val displayName = member.displayName.trim() // alias if set
     val text = buildAnnotatedString {
       if (member.verified) {
@@ -900,16 +900,20 @@ fun MemberProfileImage(
   mem: GroupMember,
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
-  async: Boolean = false
+  async: Boolean = false,
+  tappableBadge: Boolean = false
 ) {
-  ProfileImage(
-    size = size,
-    image = mem.image,
-    color = color,
-    backgroundColor = backgroundColor,
-    blurred = mem.blocked,
-    async = async
-  )
+  val badge = mem.memberProfile.localBadge
+  BadgedProfileImage(size, badge, onBadgeClick = if (tappableBadge) badge?.let { b -> { showBadgeInfoAlert(b) } } else null) {
+    ProfileImage(
+      size = size,
+      image = mem.image,
+      color = color,
+      backgroundColor = backgroundColor,
+      blurred = mem.blocked,
+      async = async
+    )
+  }
 }
 
 fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onFailure: () -> Unit = {}, onSuccess: () -> Unit = {}) {

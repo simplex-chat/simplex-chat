@@ -4650,7 +4650,7 @@ addUserBadge user cred = do
   key <- asks $ badgePublicKey . config
   verified <- liftIO $ verifyCredential key cred
   unless verified $ throwCmdError "badge credential does not verify against configured key"
-  user' <- withFastStore' $ \db -> setUserBadge db user (Just (LocalBadge cred BSActive))
+  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred BSActive))
   asks currentUser >>= atomically . (`writeTVar` Just user')
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'

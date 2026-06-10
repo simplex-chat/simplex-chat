@@ -3,6 +3,7 @@ package chat.simplex.common.views.helpers
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.Icon
@@ -14,10 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import chat.simplex.common.model.BadgeStatus
+import chat.simplex.common.model.BadgeType
 import chat.simplex.common.model.ChatInfo
+import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
@@ -25,7 +30,7 @@ import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false, tappableBadge: Boolean = false) {
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
@@ -33,7 +38,10 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
       is ChatInfo.Direct -> chatInfo.contact.chatIconName
       else -> MR.images.ic_account_circle_filled
     }
-  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
+  val badge = if (chatInfo is ChatInfo.Direct) chatInfo.contact.profile.localBadge else null
+  BadgedProfileImage(size, badge, onBadgeClick = if (tappableBadge) badge?.let { b -> { showBadgeInfoAlert(b) } } else null) {
+    ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
+  }
 }
 
 @Composable
@@ -101,6 +109,71 @@ fun ProfileImage(
       }
     }
   }
+}
+
+// Overlays a supporter badge on an avatar with zero layout impact: a custom Layout measures the badge but
+// reports only the avatar's size, so the badge overflows bottom-right (not clamped) and nothing around it shifts.
+@Composable
+fun BadgedProfileImage(size: Dp, badge: LocalBadge?, onBadgeClick: (() -> Unit)? = null, avatar: @Composable () -> Unit) {
+  if (badge == null) {
+    avatar()
+    return
+  }
+  Layout(content = {
+    avatar()
+    ProfileBadge(size, badge, onBadgeClick)
+  }) { measurables, constraints ->
+    val a = measurables[0].measure(constraints)
+    val b = measurables[1].measure(Constraints())
+    layout(a.width, a.height) {
+      a.place(0, 0)
+      // phone center sits 0.33*S right and down of the avatar center, overflowing the avatar bounds
+      val off = (0.33f * a.width).toInt()
+      b.place(x = a.width / 2 + off - b.width / 2, y = a.height / 2 + off - b.height / 2)
+    }
+  }
+}
+
+// the phone glyph (or warning triangle) scales inversely to the avatar so it stays readable when the avatar is small.
+@Composable
+private fun ProfileBadge(size: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit)?) {
+  val s = size.value
+  val mult = 1f + 0.5f * ((192f - s) / 156f).coerceIn(0f, 1f)
+  val phoneH = 0.28f * size * mult
+  val phoneW = phoneH * 0.7617f
+  val mod = Modifier.size(width = phoneW, height = phoneH).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
+  if (badge.status == BadgeStatus.Failed) {
+    Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
+  } else {
+    Image(
+      painterResource(badgeImage(badge.badge.badgeType)),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      alpha = if (badge.status == BadgeStatus.Expired) 0.4f else 1f,
+      modifier = mod
+    )
+  }
+}
+
+fun showBadgeInfoAlert(badge: LocalBadge) {
+  if (badge.status == BadgeStatus.Failed) {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.badge_unverified_title),
+      text = generalGetString(MR.strings.badge_unverified_desc)
+    )
+  } else {
+    // a verified badge's type is signed and can't be faked, so the real (possibly unknown) type name is shown
+    AlertManager.shared.showAlertMsg(
+      title = badge.badge.badgeType.text.replaceFirstChar { it.uppercase() },
+      text = generalGetString(MR.strings.badge_verified_desc)
+    )
+  }
+}
+
+private fun badgeImage(t: BadgeType): ImageResource = when (t) {
+  is BadgeType.Legend -> MR.images.badge_legend
+  is BadgeType.Investor -> MR.images.badge_investor
+  else -> MR.images.badge_supporter // Supporter + Unknown
 }
 
 @Composable

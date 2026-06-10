@@ -46,13 +46,10 @@ module Simplex.Chat.Badges
     rowToBadge,
   ) where
 
-import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Crypto.Random (ChaChaDRG)
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
-import qualified Data.Aeson as J
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson.TH as JQ
-import Data.Aeson.Types (Parser)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Text (Text)
@@ -138,28 +135,27 @@ deriving instance Eq (Badge 'BCCredential)
 
 deriving instance Eq (Badge 'BCProof)
 
--- Local badge: a stored badge (own credential or peer proof) plus its display status.
--- Existential - the inner Badge constructor is the discriminator.
-data LocalBadge = forall b. LocalBadge (Badge b) BadgeStatus
-
-sameBadgeCrypto :: Badge x -> Badge y -> Bool
-sameBadgeCrypto (BadgeCredential mk1 sg1 i1) (BadgeCredential mk2 sg2 i2) = mk1 == mk2 && sg1 == sg2 && i1 == i2
-sameBadgeCrypto (BadgeProof ph1 p1 i1) (BadgeProof ph2 p2 i2) = ph1 == ph2 && p1 == p2 && i1 == i2
-sameBadgeCrypto _ _ = False
-
-instance Show LocalBadge where
-  show (LocalBadge b st) = "LocalBadge (" <> show b <> ") " <> show st
-
-instance Eq LocalBadge where
-  LocalBadge b1 s1 == LocalBadge b2 s2 = s1 == s2 && sameBadgeCrypto b1 b2
+-- Local badge: a stored badge plus its display status.
+--   OwnBadge   - the user's own credential (loaded from the DB).
+--   PeerBadge  - a verified peer proof (from the DB, or received over the wire).
+--   ShownBadge - decoded from a crypto-free profile JSON for display only: no crypto, so it cannot be sent.
+data LocalBadge
+  = OwnBadge (Badge 'BCCredential) BadgeStatus
+  | PeerBadge (Badge 'BCProof) BadgeStatus
+  | ShownBadge BadgeInfo BadgeStatus
+  deriving (Eq, Show)
 
 localBadgeInfo :: LocalBadge -> BadgeInfo
-localBadgeInfo (LocalBadge b _) = case b of
-  BadgeCredential _ _ i -> i
-  BadgeProof _ _ i -> i
+localBadgeInfo = \case
+  OwnBadge (BadgeCredential _ _ i) _ -> i
+  PeerBadge (BadgeProof _ _ i) _ -> i
+  ShownBadge i _ -> i
 
 localBadgeStatus :: LocalBadge -> BadgeStatus
-localBadgeStatus (LocalBadge _ st) = st
+localBadgeStatus = \case
+  OwnBadge _ st -> st
+  PeerBadge _ st -> st
+  ShownBadge _ st -> st
 
 localBadgeVerified :: Maybe LocalBadge -> Maybe Bool
 localBadgeVerified = fmap $ \lb -> localBadgeStatus lb /= BSFailed
@@ -295,16 +291,18 @@ type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, 
 
 -- receive/store sites have a wire proof + a computed verified flag
 badgeToRow :: Maybe (Badge 'BCProof) -> Bool -> BadgeRow
-badgeToRow badge verified = localBadgeToRow $ (\b -> LocalBadge b (if verified then BSActive else BSFailed)) <$> badge
+badgeToRow badge verified = localBadgeToRow $ (\b -> PeerBadge b (if verified then BSActive else BSFailed)) <$> badge
 
 localBadgeToRow :: Maybe LocalBadge -> BadgeRow
-localBadgeToRow (Just (LocalBadge b st)) = case b of
-  BadgeCredential (BadgeMasterKey mk) (BBSSignature sg) BadgeInfo {badgeType, badgeExpiry, badgeExtra} ->
-    (Nothing, Nothing, badgeExpiry, Just (textEncode badgeType), Just (BI verified), Just badgeExtra, Just mk, Just sg)
-  BadgeProof (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra} ->
-    (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), Just (BI verified), Just badgeExtra, Nothing, Nothing)
+localBadgeToRow (Just lb) = case lb of
+  OwnBadge (BadgeCredential (BadgeMasterKey mk) (BBSSignature sg) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) st ->
+    (Nothing, Nothing, badgeExpiry, Just (textEncode badgeType), Just (BI (active st)), Just badgeExtra, Just mk, Just sg)
+  PeerBadge (BadgeProof (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) st ->
+    (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), Just (BI (active st)), Just badgeExtra, Nothing, Nothing)
+  ShownBadge BadgeInfo {badgeType, badgeExpiry, badgeExtra} st ->
+    (Nothing, Nothing, badgeExpiry, Just (textEncode badgeType), Just (BI (active st)), Just badgeExtra, Nothing, Nothing)
   where
-    verified = st /= BSFailed
+    active st = st /= BSFailed
 localBadgeToRow Nothing = (Nothing, Nothing, Nothing, Nothing, Just (BI False), Nothing, Nothing, Nothing)
 
 rowToBadge :: UTCTime -> BadgeRow -> Maybe LocalBadge
@@ -315,9 +313,9 @@ rowToBadge now (p_, ph_, badgeExpiry, type_, verified_, extra_, mk_, sg_) = do
       verified = maybe False unBI verified_
       st = mkBadgeStatus now verified info
   case (mk_, sg_, p_, ph_) of
-    (Just mk, Just sg, _, _) -> Just $ LocalBadge (BadgeCredential (BadgeMasterKey mk) (BBSSignature sg) info) st
-    (_, _, Just p, Just ph) -> Just $ LocalBadge (BadgeProof (BBSPresHeader ph) (BBSProof p) info) st
-    _ -> Nothing
+    (Just mk, Just sg, _, _) -> Just $ OwnBadge (BadgeCredential (BadgeMasterKey mk) (BBSSignature sg) info) st
+    (_, _, Just p, Just ph) -> Just $ PeerBadge (BadgeProof (BBSPresHeader ph) (BBSProof p) info) st
+    _ -> Just $ ShownBadge info st
 
 -- JSON
 
@@ -357,13 +355,18 @@ instance FromJSON (Badge 'BCCredential) where
       JBadgeCredential mk sg i -> pure (BadgeCredential mk sg i)
       _ -> fail "expected badge credential"
 
--- LocalBadge round-trips (the inner Badge tags which crypto it is).
+-- LocalBadge is sent to the UI/clients WITHOUT crypto - only disclosed info + status. The credential/proof
+-- bytes stay core-side. FromJSON reconstructs a display-only badge (empty proof) for read-only consumers
+-- (remote host, UI echoes); the authoritative badge is loaded from the DB (rowToBadge), never from this JSON.
+data JSONBadge = JSONBadge {badge :: BadgeInfo, status :: BadgeStatus}
+
+$(JQ.deriveJSON defaultJSON ''JSONBadge)
+
 instance ToJSON LocalBadge where
-  toJSON (LocalBadge b st) = J.object ["badge" .= b, "status" .= st]
+  toJSON lb = toJSON $ JSONBadge (localBadgeInfo lb) (localBadgeStatus lb)
+  toEncoding lb = toEncoding $ JSONBadge (localBadgeInfo lb) (localBadgeStatus lb)
 
 instance FromJSON LocalBadge where
-  parseJSON = J.withObject "LocalBadge" $ \o -> do
-    st <- o .: "status"
-    bv <- o .: "badge"
-    (flip LocalBadge st <$> (parseJSON bv :: Parser (Badge 'BCProof)))
-      <|> (flip LocalBadge st <$> (parseJSON bv :: Parser (Badge 'BCCredential)))
+  parseJSON v = do
+    JSONBadge info st <- parseJSON v
+    pure $ ShownBadge info st

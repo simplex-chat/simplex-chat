@@ -782,16 +782,18 @@ toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Bool -> Local
 toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} localAlias now verified =
   LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias}
   where
-    localBadge = (\b@(BadgeProof _ _ info) -> LocalBadge b (mkBadgeStatus now verified info)) <$> badge
+    localBadge = (\b@(BadgeProof _ _ info) -> PeerBadge b (mkBadgeStatus now verified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge} =
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge}
   where
+    -- only a verified peer proof rides the wire; the own credential is presented fresh, and a display-only badge never sends
     wireBadge :: LocalBadge -> Maybe (Badge 'BCProof)
-    wireBadge (LocalBadge b _) = case b of
-      BadgeProof {} -> Just b
-      BadgeCredential {} -> Nothing
+    wireBadge = \case
+      PeerBadge b _ -> Just b
+      OwnBadge _ _ -> Nothing
+      ShownBadge _ _ -> Nothing
 
 profileBadgeVerified :: BBSPublicKey -> LocalProfile -> Profile -> IO Bool
 profileBadgeVerified key LocalProfile {localBadge} Profile {badge = newBadge} =

@@ -1900,7 +1900,7 @@ sendDirectContactMessages' user ct events = do
 -- only own credentials present (peers carry proofs, which are not re-presented). callers must not present on incognito sends.
 presentUserBadge :: User -> Profile -> CM Profile
 presentUserBadge User {profile = LocalProfile {localBadge}} p = case localBadge of
-  Just (LocalBadge cred@BadgeCredential {} _) -> do
+  Just (OwnBadge cred _) -> do
     key <- asks $ badgePublicKey . config
     liftIO (badgeProof key cred PHTest) >>= \case
       Right proof -> pure p {badge = Just proof}
