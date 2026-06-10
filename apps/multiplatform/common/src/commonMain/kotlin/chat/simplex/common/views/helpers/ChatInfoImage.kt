@@ -139,9 +139,9 @@ fun BadgedProfileImage(size: Dp, badge: LocalBadge?, onBadgeClick: (() -> Unit)?
 private fun ProfileBadge(size: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit)?) {
   val s = size.value
   val mult = 1f + 0.5f * ((192f - s) / 156f).coerceIn(0f, 1f)
-  val phoneH = 0.28f * size * mult
-  val phoneW = phoneH * 0.7617f
-  val mod = Modifier.size(width = phoneW, height = phoneH).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
+  // phone height ~0.28*S; set width only (= 0.7617*height) and let the height follow the glyph's aspect ratio
+  val phoneW = 0.28f * 0.7617f * size * mult
+  val mod = Modifier.width(phoneW).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
   if (badge.status == BadgeStatus.Failed) {
     Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
   } else {
@@ -171,9 +171,9 @@ fun showBadgeInfoAlert(badge: LocalBadge) {
 }
 
 private fun badgeImage(t: BadgeType): ImageResource = when (t) {
-  is BadgeType.Legend -> MR.images.`badge-legend`
-  is BadgeType.Investor -> MR.images.`badge-investor`
-  else -> MR.images.`badge-supporter` // Supporter + Unknown
+  is BadgeType.Legend -> MR.images.badge_legend
+  is BadgeType.Investor -> MR.images.badge_investor
+  else -> MR.images.badge_supporter // Supporter + Unknown
 }
 
 @Composable

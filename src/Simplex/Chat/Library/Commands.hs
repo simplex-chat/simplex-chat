@@ -3725,7 +3725,7 @@ processChatCommand cxt nm = \case
           case changedCts_ of
             Nothing -> pure $ UserProfileUpdateSummary 0 0 []
             Just changedCts -> do
-              let idsEvts = L.map ctSndEvent changedCts
+              idsEvts <- mapM ctSndEvent changedCts
               msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
               (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
               unless (null errs) $ toView $ CEvtChatErrors errs
@@ -3749,8 +3749,11 @@ processChatCommand cxt nm = \case
                 mergedProfile = userProfileDirect user Nothing (Just ct) False
                 ct' = updateMergedPreferences user' ct
                 mergedProfile' = userProfileDirect user' Nothing (Just ct') False
-            ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
-            ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, Nothing, XInfo mergedProfile')
+            -- non-incognito (filtered above), so the user's badge is presented; a profile update keeps the badge instead of clearing it
+            ctSndEvent :: ChangedProfileContact -> CM (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
+            ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = do
+              p <- presentUserBadge user' mergedProfile'
+              pure (ConnectionId connId, Nothing, XInfo p)
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
