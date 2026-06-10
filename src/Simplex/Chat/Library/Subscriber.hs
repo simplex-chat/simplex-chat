@@ -3210,6 +3210,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
               messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing
+          -- in channels the owner-signed roster delivers role changes to subscribers; a forwarded
+          -- x.grp.mem.role landing after the roster already applied the role is a no-op, suppress it
+          | useRelays' gInfo && fromRole == memRole = pure $ memberEventDeliveryScope member
           | otherwise = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
               (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m

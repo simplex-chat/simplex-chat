@@ -8889,7 +8889,6 @@ testChannelsSenderDeduplicateOwn ps = do
                    ]
             cath
               <### [ EndsWith "updated to dan",
-                     "#team: member role did not change",
                      "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
@@ -8898,7 +8897,6 @@ testChannelsSenderDeduplicateOwn ps = do
                    ]
             dan
               <### [ EndsWith "updated to cath",
-                     "#team: member role did not change",
                      "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team> 1 [>>]",
                      WithTime "#team> 2 [>>]",
@@ -8909,8 +8907,6 @@ testChannelsSenderDeduplicateOwn ps = do
             eve
               <### [ EndsWith "updated to cath",
                      EndsWith "updated to dan",
-                     "#team: member role did not change",
-                     "#team: member role did not change",
                      "#team: bob introduced cath (Catherine) in the channel",
                      "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team> 1 [>>]",
@@ -9081,21 +9077,17 @@ testChannelMultipleLargeProfiles ps =
                    ]
             cath
               <### [ EndsWith "updated to dan",
-                     "#team: member role did not change",
                      "#team: bob introduced dan (Daniel) in the channel",
                      WithTime "#team dan> from dan [>>]"
                    ]
             dan
               <### [ EndsWith "updated to cath",
-                     "#team: member role did not change",
                      "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team cath> from cath [>>]"
                    ]
             eve
               <### [ EndsWith "updated to cath",
                      EndsWith "updated to dan",
-                     "#team: member role did not change",
-                     "#team: member role did not change",
                      "#team: bob introduced dan (Daniel) in the channel",
                      "#team: bob introduced cath (Catherine) in the channel",
                      WithTime "#team cath> from cath [>>]",
