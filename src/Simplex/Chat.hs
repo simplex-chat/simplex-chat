@@ -21,6 +21,8 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Data.Bifunctor (bimap, second)
+import qualified Data.ByteString.Base64.URL as U
+import Data.Either (fromRight)
 import Data.List (partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -66,7 +68,7 @@ defaultChatConfig =
             tbqSize = 1024
           },
       chatVRange = supportedChatVRange,
-      badgePublicKey = BBSPublicKey "",
+      badgePublicKey = BBSPublicKey $ fromRight (error "bad base64 in badge service key") $ U.decode "ugBHzTr4z1EOgczllk4ohrxhJv4afiDaUpuBQG8PDB9W8gXN0wiDQ5QfeDNt2QqoAtmIaBImMsy5WQrAxwNI-KL7tsN0vlriU2zab6qVjJjOYJ3YB3scYT1s9dGVMAXW",
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options
