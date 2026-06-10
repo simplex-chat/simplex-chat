@@ -56,7 +56,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8)
-import Simplex.Messaging.Agent.Store.DB (BoolInt (..), fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
@@ -286,8 +286,8 @@ instance FromField BadgeType where fromField = fromTextField_ textDecode
 
 instance ToField BadgeType where toField = toField . textEncode
 
--- (proof, pres_header, expiry, type, verified, extra, master_key, signature)
-type BadgeRow = (Maybe ByteString, Maybe ByteString, Maybe UTCTime, Maybe Text, Maybe BoolInt, Maybe Text, Maybe ByteString, Maybe ByteString)
+-- (proof, pres_header, expiry, type, verified, extra, master_key, signature) - binary columns wrapped in Binary (BLOB/bytea)
+type BadgeRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe UTCTime, Maybe Text, Maybe BoolInt, Maybe Text, Maybe (Binary ByteString), Maybe (Binary ByteString))
 
 -- receive/store sites have a wire proof + a computed verified flag
 badgeToRow :: Maybe (Badge 'BCProof) -> Bool -> BadgeRow
@@ -296,9 +296,9 @@ badgeToRow badge verified = localBadgeToRow $ (\b -> PeerBadge b (if verified th
 localBadgeToRow :: Maybe LocalBadge -> BadgeRow
 localBadgeToRow (Just lb) = case lb of
   OwnBadge (BadgeCredential (BadgeMasterKey mk) (BBSSignature sg) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) st ->
-    (Nothing, Nothing, badgeExpiry, Just (textEncode badgeType), Just (BI (active st)), Just badgeExtra, Just mk, Just sg)
+    (Nothing, Nothing, badgeExpiry, Just (textEncode badgeType), Just (BI (active st)), Just badgeExtra, Just (Binary mk), Just (Binary sg))
   PeerBadge (BadgeProof (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) st ->
-    (Just p, Just ph, badgeExpiry, Just (textEncode badgeType), Just (BI (active st)), Just badgeExtra, Nothing, Nothing)
+    (Just (Binary p), Just (Binary ph), badgeExpiry, Just (textEncode badgeType), Just (BI (active st)), Just badgeExtra, Nothing, Nothing)
   ShownBadge BadgeInfo {badgeType, badgeExpiry, badgeExtra} st ->
     (Nothing, Nothing, badgeExpiry, Just (textEncode badgeType), Just (BI (active st)), Just badgeExtra, Nothing, Nothing)
   where
@@ -313,8 +313,8 @@ rowToBadge now (p_, ph_, badgeExpiry, type_, verified_, extra_, mk_, sg_) = do
       verified = maybe False unBI verified_
       st = mkBadgeStatus now verified info
   case (mk_, sg_, p_, ph_) of
-    (Just mk, Just sg, _, _) -> Just $ OwnBadge (BadgeCredential (BadgeMasterKey mk) (BBSSignature sg) info) st
-    (_, _, Just p, Just ph) -> Just $ PeerBadge (BadgeProof (BBSPresHeader ph) (BBSProof p) info) st
+    (Just (Binary mk), Just (Binary sg), _, _) -> Just $ OwnBadge (BadgeCredential (BadgeMasterKey mk) (BBSSignature sg) info) st
+    (_, _, Just (Binary p), Just (Binary ph)) -> Just $ PeerBadge (BadgeProof (BBSPresHeader ph) (BBSProof p) info) st
     _ -> Just $ ShownBadge info st
 
 -- JSON
