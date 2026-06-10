@@ -171,9 +171,9 @@ fun showBadgeInfoAlert(badge: LocalBadge) {
 }
 
 private fun badgeImage(t: BadgeType): ImageResource = when (t) {
-  is BadgeType.Legend -> MR.images.badge_legend
-  is BadgeType.Investor -> MR.images.badge_investor
-  else -> MR.images.badge_supporter // Supporter + Unknown
+  is BadgeType.Legend -> MR.images.`badge-legend`
+  is BadgeType.Investor -> MR.images.`badge-investor`
+  else -> MR.images.`badge-supporter` // Supporter + Unknown
 }
 
 @Composable
