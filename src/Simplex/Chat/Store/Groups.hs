@@ -68,6 +68,7 @@ module Simplex.Chat.Store.Groups
     getSupportScopeMembersByIndexes,
     getGroupModerators,
     getGroupRosterMembers,
+    getGroupOnlyMembers,
     getGroupOwners,
     getGroupRelayMembers,
     getGroupMembersForExpiration,
@@ -1223,6 +1224,14 @@ getGroupRosterMembers db cxt user@User {userId, userContactId} GroupInfo {groupI
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?)")
       (userId, groupId, userContactId, GRModerator, GRAdmin)
+
+getGroupOnlyMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
+getGroupOnlyMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
+  filter memberCurrent . map (toContactMember cxt user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role = ?")
+      (userId, groupId, userContactId, GRMember)
 
 getGroupOwners :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupOwners db cxt user@User {userId, userContactId} GroupInfo {groupId} = do

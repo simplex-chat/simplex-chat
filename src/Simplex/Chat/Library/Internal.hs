@@ -1239,7 +1239,7 @@ redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDes
 
 -- Roles carried by the roster; owners are on the link, not the roster.
 isRosterRole :: GroupMemberRole -> Bool
-isRosterRole r = r == GRModerator || r == GRAdmin
+isRosterRole r = r == GRMember || r == GRModerator || r == GRAdmin
 
 -- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
 -- Runs on the parsed roster blob.
@@ -1256,8 +1256,8 @@ validateGroupRoster entries =
 buildGroupRoster :: [GroupMember] -> [RosterMember]
 buildGroupRoster mods = mapMaybe rosterMember mods
   where
-    rosterMember m@GroupMember {memberId, memberPubKey, memberRole}
-      | isRosterRole memberRole = (\k -> RosterMember {memberId, name = memberShortenedName m, key = MemberKey k, role = memberRole}) <$> memberPubKey
+    rosterMember GroupMember {memberId, memberPubKey, memberRole}
+      | isRosterRole memberRole = (\k -> RosterMember {memberId, key = MemberKey k, role = memberRole, privileges = 0}) <$> memberPubKey
       | otherwise = Nothing
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
@@ -2212,7 +2212,7 @@ bumpAndBroadcastRoster user gInfo = do
   let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
   (relays, mods) <- withStore' $ \db -> do
     relays <- getGroupRelayMembers db cxt user gInfo
-    mods <- getGroupRosterMembers db cxt user gInfo
+    mods <- (++) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo
     setGroupRosterVersion db gInfo rosterVer
     pure (relays, mods)
   forM_ (L.nonEmpty relays) $ \relays' ->
@@ -2223,7 +2223,7 @@ sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
 sendGroupRosterToRelay user gInfo relayMember =
   forM_ (rosterVersion gInfo) $ \rosterVer -> do
     cxt <- chatStoreCxt
-    mods <- withStore' $ \db -> getGroupRosterMembers db cxt user gInfo
+    mods <- withStore' $ \db -> (++) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo
     sendRoster user gInfo [relayMember] rosterVer (buildGroupRoster mods)
 
 -- Row-less send (no files/snd_files rows, so no send-side cleanup); redelivery is the agent's.

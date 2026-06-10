@@ -182,7 +182,7 @@ The low-level protocol supports multiple owners from the initial release. The ap
 
 - **Subscribers** connect to relays and receive content. They cannot send messages by default, but can be given posting rights.
 
-Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol.
+Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol. The owner-signed roster tracks the promoted set - members, moderators, and admins; subscribers are observers until an owner promotes them.
 
 For protocol-level detail - wire formats, message types, signing and verification mechanics, delivery pipeline - see [SimpleX Channels Protocol](./channels-protocol.md).
 
@@ -236,7 +236,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 - Selectively target specific subscribers while delivering correctly to others.
 - Ignore the "message from channel" directive, revealing which owner sent a message. Detectable out-of-band.
 - Fabricate or hide subscriber connections, inflating or deflating counts. Detectable if subscribers are connected to other relays.
-- Replay a previously valid roster - the owner-signed header plus its blob - to a *new* joiner, re-introducing a member whose privileged role was later revoked (or masking a later demotion). The owner signature binds the channel entity ID and the roster version, and the header's digest binds the blob to that header, so cross-channel and cross-version substitution remain blocked; but a same-group replay to a joiner that has not yet seen a newer version is not prevented. Existing members are protected by the monotonic roster version check - they reject any roster not strictly newer than the one already applied, so the replay reaches only members with no prior roster state.
+- Replay a previously valid roster - the owner-signed header plus its blob - to a *new* joiner, re-introducing a member who was later removed or demoted (the roster now carries plain members, not only moderators and admins). The owner signature binds the channel entity ID and the roster version, and the header's digest binds the blob to that header, so cross-channel and cross-version substitution remain blocked; but a same-group replay to a joiner that has not yet seen a newer version is not prevented. Existing members are protected by the monotonic roster version check - they reject any roster not strictly newer than the one already applied, so the replay reaches only a joiner with no prior roster state, and only until that joiner receives the current roster from another relay it connects to.
 
 *cannot:*
 

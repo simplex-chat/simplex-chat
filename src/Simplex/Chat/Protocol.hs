@@ -388,9 +388,9 @@ data InlineFileInvitation = InlineFileInvitation
 
 data RosterMember = RosterMember
   { memberId :: MemberId,
-    name :: Text,
     key :: MemberKey, -- trust-on-first-use pinned per memberId
-    role :: GroupMemberRole
+    role :: GroupMemberRole,
+    privileges :: Word16 -- reserved: serialized as 0, parsed and ignored in v1
   }
   deriving (Eq, Show)
 
@@ -398,7 +398,7 @@ data RosterMember = RosterMember
 -- The blob codec (encodeRosterBlob / rosterBlobP) is defined with maxGroupRosterSize below,
 -- so rosterBlobP and the bound it references sit in one declaration group (past the TH splices).
 instance Encoding RosterMember where
-  smpEncode RosterMember {memberId, name, key, role} = smpEncode (memberId, name, key, role)
+  smpEncode RosterMember {memberId, key, role, privileges} = smpEncode (memberId, key, role, privileges)
   smpP = RosterMember <$> smpP <*> smpP <*> smpP <*> smpP
 
 instance Encoding FwdSender where
@@ -930,10 +930,15 @@ maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
 
 -- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
--- promotion cap over the privileged (moderator/admin) set. The blob rides over the
+-- promotion cap over the promoted (member/moderator/admin) set. The blob rides over the
 -- inline file transfer, so it is no longer bound by maxEncodedMsgLength.
 maxGroupRosterSize :: Int
-maxGroupRosterSize = 64
+maxGroupRosterSize = 256
+
+-- Receive-side byte bound: reject an owner-signed header whose claimed fileSize exceeds what
+-- maxGroupRosterSize entries can occupy (128 B/entry is a generous worst case), before a file is created.
+maxGroupRosterBytes :: Integer
+maxGroupRosterBytes = fromIntegral maxGroupRosterSize * 128
 
 -- The byte sequence the owner-signed digest is computed over and verified against
 -- before parsing. Word16 count (smpEncodeList's 1-byte count is too small for the future cap).

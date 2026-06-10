@@ -3209,7 +3209,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | senderRole < GRAdmin || senderRole < fromRole =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
-              messageError "x.grp.mem.role: only the owner can change moderator/admin roles in relay groups" $> Nothing
+              messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing
           | otherwise = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
               (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
@@ -3224,6 +3224,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     xGrpRoster gInfo author GroupRoster {version = newVer, fileInv = InlineFileInvitation {fileSize, fileDigest}} verifiedMsg sharedMsgId_ brokerTs
       -- only an owner may sign a roster; otherwise a relay could route it as a member whose key it controls
       | memberRole' author /= GROwner = messageError "x.grp.roster: not signed by an owner" $> Nothing
+      | fileSize > maxGroupRosterBytes = messageError "x.grp.roster: roster blob size exceeds limit" $> Nothing
       | otherwise = case verifiedMsg of
           -- unreachable: XGrpRoster is in requiresSignature, so withVerifiedMsg rejected unsigned
           VMUnsigned _ -> pure Nothing
@@ -3307,7 +3308,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       members <- withStore' $ \db -> getGroupMembers db cxt user gInfo
       serveRoster user gInfo (filter rosterRecipient members) `catchAllErrors` eToView
       where
-        rosterRecipient m@GroupMember {activeConn} = memberCurrent m && isJust activeConn && not (isRelay m) && memberRole' m /= GROwner
+        rosterRecipient m = memberCurrent m && not (isRelay m) && memberRole' m /= GROwner && isJust (readyMemberConn m)
 
     -- TOFU apply: pin each member's key on first use, then update roles.
     processRosterEntries :: DB.Connection -> GroupInfo -> GroupMemberRole -> [RosterMember] -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole)])
@@ -3315,18 +3316,18 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       let rosterIds = map (\RosterMember {memberId} -> memberId) entries
       acc <- foldrM applyRosterEntry ([], []) entries
       -- absent privileged members revert to the joiner default
-      currentPriv <- liftIO $ getGroupRosterMembers db cxt user gInfo
+      currentPriv <- liftIO $ (++) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo
       liftIO $ forM_ currentPriv $ \m ->
         when (memberId' m `notElem` rosterIds) $
           updateGroupMemberRole db user m defaultRole
       pure acc
       where
         -- entry-level failure (StoreError or IO exception) is muted; the entry is dropped
-        applyRosterEntry RosterMember {memberId, name, key = MemberKey pubKey, role} (cs, as) =
+        applyRosterEntry RosterMember {memberId, key = MemberKey pubKey, role} (cs, as) =
           apply `catchAllErrors` \_ -> pure (cs, as)
           where
             applied m = (cs, ((m :: GroupMember) {memberRole = role}, memberRole' m) : as)
-            apply = getCreateUnknownGMByMemberId db cxt user gInfo memberId name defaultRole True >>= \case
+            apply = getCreateUnknownGMByMemberId db cxt user gInfo memberId (nameFromMemberId memberId) defaultRole True >>= \case
               Nothing -> pure (cs, as)
               Just (m, _) -> case memberPubKey m of
                 Just k
@@ -3510,9 +3511,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo''' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
         groupMsgToView cInfo ci
         toView $ CEvtLeftMember user gInfo''' m' {memberStatus = GSMemLeft} msgSigned
-      -- a privileged leaver drops out of the roster
-      when (useRelays' gInfo'' && memberRole' (membership gInfo'') == GROwner && isRosterRole (memberRole' m)) $
-        bumpAndBroadcastRoster user gInfo'' `catchAllErrors` eToView
       pure $ memberEventDeliveryScope m
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
