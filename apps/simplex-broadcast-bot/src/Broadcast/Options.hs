@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -87,6 +88,9 @@ mkChatOpts BroadcastBotOpts {coreOptions, botDisplayName} =
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
       chatServerPort = Nothing,
+#if defined(picolisp)
+      evaluatePicolisp = Nothing,
+#endif
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = False,
