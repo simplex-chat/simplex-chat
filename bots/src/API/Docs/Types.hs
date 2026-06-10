@@ -265,6 +265,7 @@ chatTypesDocsData =
     (sti @FileProtocol, STEnum' (consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
+    (sti @FileType, STEnum' (consLower "FT"), "", [], "", ""),
     (sti @Format, STUnion, "", ["Unknown"], "", ""),
     (sti @FormattedText, STRecord, "", [], "", ""),
     (sti @FullGroupPreferences, STRecord, "", [], "", ""),
@@ -480,6 +481,7 @@ deriving instance Generic FileInvitation
 deriving instance Generic FileProtocol
 deriving instance Generic FileStatus
 deriving instance Generic FileTransferMeta
+deriving instance Generic FileType
 deriving instance Generic Format
 deriving instance Generic FormattedText
 deriving instance Generic FullGroupPreferences
