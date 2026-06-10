@@ -3450,6 +3450,7 @@ processChatCommand cxt nm = \case
   -- CustomChatCommand is unsupported, it can be processed in preCmdHook
   -- in a modified CLI app or core - the hook should return Either (Either ChatError ChatResponse) ChatCommand,
   -- where Left means command result, and Right – some other command to be processed by this function.
+  APICallService _userId _cmd -> withUser $ \_ -> throwCmdError "not yet implemented"
   CustomChatCommand _cmd -> withUser $ \_ -> throwCmdError "not supported"
   where
     ok_ = pure $ CRCmdOk Nothing
