@@ -3,7 +3,7 @@ title: Korzystanie z niestandardowych serwerów WebRTC ICE w SimpleX Chat
 revision: 31.01.2023
 ---
 
-| Updated 31.01.2023 | Języki: PL, [EN](/docs/WEBRTC.md), [FR](/docs/lang/fr/WEBRTC.md), [CZ](/docs/lang/cs/WEBRTC.md) |
+| Updated 31.01.2023 | Języki: PL, [EN](/docs/WEBRTC.md), [FR](/docs/lang/fr/WEBRTC.md), [CZ](/docs/lang/cs/WEBRTC.md), [JA](/docs/lang/ja/WEBRTC.md) |
 
 # Korzystanie z niestandardowych serwerów WebRTC ICE w SimpleX Chat
 
