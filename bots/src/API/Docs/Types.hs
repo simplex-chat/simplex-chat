@@ -34,7 +34,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..))
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), JSONBadge (..), JBadge (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -184,6 +184,8 @@ ciQuoteType =
 chatTypesDocsData :: [(SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text)]
 chatTypesDocsData =
   [ ((sti @(Chat 'CTDirect)) {typeName = "AChat"}, STRecord, "", [], "", ""),
+    ((sti @JBadge) {typeName = "Badge"}, STUnion, "JBadge", [], "", ""),
+    ((sti @JSONBadge) {typeName = "LocalBadge"}, STRecord, "", [], "", ""),
     ((sti @JSONChatInfo) {typeName = "ChatInfo"}, STUnion, "JCInfo", ["JCInfoInvalidJSON"], "", ""),
     ((sti @JSONCIContent) {typeName = "CIContent"}, STUnion, "JCI", ["JCIInvalidJSON"], "", ""),
     ((sti @JSONCIDeleted) {typeName = "CIDeleted"}, STUnion, "JCID", [], "", ""),
@@ -521,6 +523,8 @@ deriving instance Generic HandshakeError
 deriving instance Generic InlineFileMode
 deriving instance Generic InvitationLinkPlan
 deriving instance Generic InvitedBy
+deriving instance Generic JBadge
+deriving instance Generic JSONBadge
 deriving instance Generic JSONChatInfo
 deriving instance Generic JSONCIContent
 deriving instance Generic JSONCIDeleted

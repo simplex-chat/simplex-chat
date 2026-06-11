@@ -10,6 +10,8 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AutoAccept](#autoaccept)
+- [Badge](#badge)
+- [BadgeInfo](#badgeinfo)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
@@ -183,7 +185,6 @@ This file is generated automatically.
 - [StoreError](#storeerror)
 - [SubscriptionStatus](#subscriptionstatus)
 - [SupportGroupPreference](#supportgrouppreference)
-- [SupporterBadge](#supporterbadge)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -359,6 +360,35 @@ INACTIVE:
 
 ---
 
+## Badge
+
+**Discriminated union type**:
+
+Credential:
+- type: "credential"
+- masterKey: string
+- signature: string
+- badgeInfo: [BadgeInfo](#badgeinfo)
+
+Proof:
+- type: "proof"
+- presHeader: string
+- proof: string
+- badgeInfo: [BadgeInfo](#badgeinfo)
+
+
+---
+
+## BadgeInfo
+
+**Record type**:
+- badgeType: [BadgeType](#badgetype)
+- badgeExpiry: UTCTime?
+- badgeExtra: string
+
+
+---
+
 ## BadgeStatus
 
 **Enum type**:
@@ -375,7 +405,7 @@ INACTIVE:
 - "supporter"
 - "business"
 - "legend"
-- "cFInvestor"
+- "investor"
 
 
 ---
@@ -1791,6 +1821,7 @@ ContactViaAddress:
 - profile: [Profile](#profile)
 - message: [MsgContent](#msgcontent)?
 - business: bool
+- localBadge: [LocalBadge](#localbadge)?
 
 
 ---
@@ -2702,8 +2733,8 @@ Unknown:
 ## LocalBadge
 
 **Record type**:
-- badgeStatus: [BadgeStatus](#badgestatus)
-- badge: [SupporterBadge](#supporterbadge)
+- badge: [BadgeInfo](#badgeinfo)
+- status: [BadgeStatus](#badgestatus)
 
 
 ---
@@ -3064,7 +3095,7 @@ count=<count>
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
-- badge: [SupporterBadge](#supporterbadge)?
+- badge: [Badge](#badge)?
 
 
 ---
@@ -4063,17 +4094,6 @@ NoSub:
 
 **Record type**:
 - enable: [GroupFeatureEnabled](#groupfeatureenabled)
-
-
----
-
-## SupporterBadge
-
-**Record type**:
-- proof: string
-- presHeader: string
-- badgeExpiry: UTCTime?
-- badgeType: [BadgeType](#badgetype)
 
 
 ---

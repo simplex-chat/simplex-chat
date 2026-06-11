@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -79,8 +80,8 @@ genMasterKey = do
   B.putStrLn $ strEncode mk
 
 sign :: BBSSecretKey -> BBSPublicKey -> BadgeMasterKey -> BadgeType -> Maybe UTCTime -> IO ()
-sign secretKey publicKey masterKey' badgeType badgeExpiry = do
-  let req = VerifiedBadgeRequest BadgeRequest {masterKey = masterKey', badgeInfo = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}}
+sign secretKey publicKey masterKey badgeType badgeExpiry = do
+  let req = VerifiedBadgeRequest (BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}} :: BadgeRequest)
   issueBadge secretKey publicKey req >>= \case
     Left e -> die $ "sign failed: " <> e
     -- single-line JSON (master secret + signature + info), pasted into the app via `/badge add`

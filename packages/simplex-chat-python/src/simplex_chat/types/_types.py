@@ -138,9 +138,30 @@ AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FI
 class AutoAccept(TypedDict):
     acceptIncognito: bool
 
+class Badge_credential(TypedDict):
+    type: Literal["credential"]
+    masterKey: str
+    signature: str
+    badgeInfo: "BadgeInfo"
+
+class Badge_proof(TypedDict):
+    type: Literal["proof"]
+    presHeader: str
+    proof: str
+    badgeInfo: "BadgeInfo"
+
+Badge = Badge_credential | Badge_proof
+
+Badge_Tag = Literal["credential", "proof"]
+
+class BadgeInfo(TypedDict):
+    badgeType: "BadgeType"
+    badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
+    badgeExtra: str
+
 BadgeStatus = Literal["active", "expired", "failed"]
 
-BadgeType = Literal["supporter", "business", "legend", "cFInvestor"]
+BadgeType = Literal["supporter", "business", "legend", "investor"]
 
 class BlockingInfo(TypedDict):
     reason: "BlockingReason"
@@ -1445,6 +1466,7 @@ class ContactShortLinkData(TypedDict):
     profile: "Profile"
     message: NotRequired["MsgContent"]
     business: bool
+    localBadge: NotRequired["LocalBadge"]
 
 ContactStatus = Literal["active", "deleted", "deletedByUser"]
 
@@ -2064,8 +2086,8 @@ class LinkPreview(TypedDict):
     content: NotRequired["LinkContent"]
 
 class LocalBadge(TypedDict):
-    badgeStatus: "BadgeStatus"
-    badge: "SupporterBadge"
+    badge: "BadgeInfo"
+    status: "BadgeStatus"
 
 class LocalProfile(TypedDict):
     profileId: int  # int64
@@ -2327,7 +2349,7 @@ class Profile(TypedDict):
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
-    badge: NotRequired["SupporterBadge"]
+    badge: NotRequired["Badge"]
 
 class ProxyClientError_protocolError(TypedDict):
     type: Literal["protocolError"]
@@ -3322,12 +3344,6 @@ SubscriptionStatus_Tag = Literal["active", "pending", "removed", "noSub"]
 
 class SupportGroupPreference(TypedDict):
     enable: "GroupFeatureEnabled"
-
-class SupporterBadge(TypedDict):
-    proof: str
-    presHeader: str
-    badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
-    badgeType: "BadgeType"
 
 SwitchPhase = Literal["started", "confirmed", "secured", "completed"]
 

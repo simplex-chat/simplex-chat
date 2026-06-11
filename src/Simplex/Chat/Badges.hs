@@ -20,6 +20,8 @@ module Simplex.Chat.Badges
     BadgeCrypto (..),
     Badge (..),
     LocalBadge (..),
+    JSONBadge (..),
+    JBadge (..),
     localBadgeInfo,
     localBadgeStatus,
     BadgePresHeader (..),

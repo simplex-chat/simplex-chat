@@ -186,6 +186,36 @@ export interface AutoAccept {
   acceptIncognito: boolean
 }
 
+export type Badge = Badge.Credential | Badge.Proof
+
+export namespace Badge {
+  export type Tag = "credential" | "proof"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Credential extends Interface {
+    type: "credential"
+    masterKey: string
+    signature: string
+    badgeInfo: BadgeInfo
+  }
+
+  export interface Proof extends Interface {
+    type: "proof"
+    presHeader: string
+    proof: string
+    badgeInfo: BadgeInfo
+  }
+}
+
+export interface BadgeInfo {
+  badgeType: BadgeType
+  badgeExpiry?: string // ISO-8601 timestamp
+  badgeExtra: string
+}
+
 export enum BadgeStatus {
   Active = "active",
   Expired = "expired",
@@ -196,7 +226,7 @@ export enum BadgeType {
   Supporter = "supporter",
   Business = "business",
   Legend = "legend",
-  CFInvestor = "cFInvestor",
+  Investor = "investor",
 }
 
 export interface BlockingInfo {
@@ -2057,6 +2087,7 @@ export interface ContactShortLinkData {
   profile: Profile
   message?: MsgContent
   business: boolean
+  localBadge?: LocalBadge
 }
 
 export enum ContactStatus {
@@ -2954,8 +2985,8 @@ export interface LinkPreview {
 }
 
 export interface LocalBadge {
-  badgeStatus: BadgeStatus
-  badge: SupporterBadge
+  badge: BadgeInfo
+  status: BadgeStatus
 }
 
 export interface LocalProfile {
@@ -3318,7 +3349,7 @@ export interface Profile {
   contactLink?: string
   preferences?: Preferences
   peerType?: ChatPeerType
-  badge?: SupporterBadge
+  badge?: Badge
 }
 
 export type ProxyClientError = 
@@ -4753,13 +4784,6 @@ export namespace SubscriptionStatus {
 
 export interface SupportGroupPreference {
   enable: GroupFeatureEnabled
-}
-
-export interface SupporterBadge {
-  proof: string
-  presHeader: string
-  badgeExpiry?: string // ISO-8601 timestamp
-  badgeType: BadgeType
 }
 
 export enum SwitchPhase {
