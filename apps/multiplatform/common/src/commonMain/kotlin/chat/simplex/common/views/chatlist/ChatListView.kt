@@ -800,7 +800,10 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                 searchChatFilteredBySimplexLink.value = null
                 connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
               }
-              is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
+              is ConnectTarget.Name -> {
+                hideKeyboard(view)
+                connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
+              }
               null -> if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {
                   focusRequester.requestFocus()

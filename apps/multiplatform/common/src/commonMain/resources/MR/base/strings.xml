@@ -199,6 +199,12 @@
   <string name="channel_name_requires_newer_app_version">Connecting via channel name requires a newer app version.</string>
   <string name="contact_name_requires_newer_app_version">Connecting via contact name requires a newer app version.</string>
   <string name="please_upgrade_the_app">Please upgrade the app.</string>
+  <string name="simplex_name_not_found">SimpleX name not found</string>
+  <string name="simplex_name_not_found_desc">There is no contact or group registered with this SimpleX name.</string>
+  <string name="cannot_reconnect_via_simplex_name">Cannot reconnect via name</string>
+  <string name="simplex_name_unprepared_desc">This SimpleX name is known but has no saved link to reconnect via.</string>
+  <string name="simplex_name_resolution_unavailable">Name resolution unavailable</string>
+  <string name="simplex_name_resolver_unavailable_desc">None of your SMP servers support resolving SimpleX names. Add a server that does, or use a connection link.</string>
   <string name="channel_temporarily_unavailable">Channel temporarily unavailable</string>
   <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="app_update_required">App update required</string>

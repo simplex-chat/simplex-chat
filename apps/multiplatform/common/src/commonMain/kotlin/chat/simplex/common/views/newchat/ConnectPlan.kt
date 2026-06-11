@@ -31,11 +31,6 @@ suspend fun planAndConnect(
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
   when (val target = strConnectTarget(shortOrFullLink.trim())) {
-    is ConnectTarget.Name -> {
-      showUnsupportedNameAlert(target.nameInfo)
-      cleanup?.invoke()
-      return CompletableDeferred(false)
-    }
     is ConnectTarget.Link -> {
       if (target.linkType == SimplexLinkType.relay) {
         AlertManager.privacySensitive.showAlertMsg(
@@ -46,7 +41,9 @@ suspend fun planAndConnect(
         return CompletableDeferred(false)
       }
     }
-    null -> {}
+    // A SimplexName falls through to apiConnectPlan, which resolves it on the
+    // core (the /_connect plan command accepts a name target, not only a link).
+    is ConnectTarget.Name, null -> {}
   }
   connectProgressManager.cancelConnectProgress()
   val inProgress = mutableStateOf(true)

@@ -667,8 +667,9 @@ private struct ConnectView: View {
                         case let .link(text, _, _):
                             pastedLink = text
                             connect(pastedLink)
-                        case let .name(nameInfo):
-                            showUnsupportedNameAlert(nameInfo)
+                        case let .name(text, _):
+                            pastedLink = text
+                            connect(pastedLink)
                         case .none:
                             alert = .newChatSomeAlert(alert: SomeAlert(
                                 alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
@@ -867,7 +868,7 @@ func strIsSimplexLink(_ str: String) -> Bool {
 
 enum ConnectTarget {
     case link(text: String, linkType: SimplexLinkType, linkText: String)
-    case name(SimplexNameInfo)
+    case name(text: String, nameInfo: SimplexNameInfo)
 }
 
 func strConnectTarget(_ str: String) -> ConnectTarget? {
@@ -876,25 +877,11 @@ func strConnectTarget(_ str: String) -> ConnectTarget? {
     return if links.count == 1, case let .simplexLink(_, linkType, _, smpHosts) = links[0].format {
         .link(text: links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
     } else if links.isEmpty,
-              case let .simplexName(nameInfo) = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } })?.format {
-        .name(nameInfo)
+              let nameFt = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } }),
+              case let .simplexName(nameInfo) = nameFt.format {
+        .name(text: nameFt.text, nameInfo: nameInfo)
     } else {
         nil
-    }
-}
-
-func showUnsupportedNameAlert(_ nameInfo: SimplexNameInfo) {
-    let upgrade = " " + NSLocalizedString("Please upgrade the app.", comment: "alert message")
-    if nameInfo.nameType == .contact {
-        showAlert(
-            NSLocalizedString("Unsupported contact name", comment: "alert title"),
-            message: NSLocalizedString("Connecting via contact name requires a newer app version.", comment: "alert message") + upgrade
-        )
-    } else {
-        showAlert(
-            NSLocalizedString("Unsupported channel name", comment: "alert title"),
-            message: NSLocalizedString("Connecting via channel name requires a newer app version.", comment: "alert message") + upgrade
-        )
     }
 }
 
@@ -1315,10 +1302,6 @@ func planAndConnect(
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
     switch strConnectTarget(shortOrFullLink) {
-    case let .name(nameInfo):
-        showUnsupportedNameAlert(nameInfo)
-        cleanup?()
-        return
     case let .link(_, linkType, _):
         if linkType == .relay {
             showAlert(
@@ -1328,7 +1311,9 @@ func planAndConnect(
             cleanup?()
             return
         }
-    case .none: break
+    // A SimplexName falls through to apiConnectPlan, which resolves it on the
+    // core (the /_connect plan command accepts a name target, not only a link).
+    case .name, .none: break
     }
     ConnectProgressManager.shared.cancelConnectProgress()
     let inProgress = BoxedValue(true)

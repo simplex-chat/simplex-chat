@@ -677,7 +677,11 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
           showQRCodeScanner.value = false
           withBGApi { connect(rhId, target.text, close) { pastedLink.value = "" } }
         }
-        is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
+        is ConnectTarget.Name -> {
+          pastedLink.value = target.text
+          showQRCodeScanner.value = false
+          withBGApi { connect(rhId, target.text, close) { pastedLink.value = "" } }
+        }
         null -> AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.invalid_contact_link),
           text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
@@ -822,7 +826,7 @@ fun strIsSimplexLink(str: String): Boolean {
 
 sealed class ConnectTarget {
   class Link(val text: String, val linkType: SimplexLinkType, val linkText: String) : ConnectTarget()
-  class Name(val nameInfo: SimplexNameInfo) : ConnectTarget()
+  class Name(val text: String, val nameInfo: SimplexNameInfo) : ConnectTarget()
 }
 
 fun strConnectTarget(str: String): ConnectTarget? {
@@ -833,19 +837,11 @@ fun strConnectTarget(str: String): ConnectTarget? {
     return ConnectTarget.Link(links[0].text, fmt.linkType, fmt.simplexLinkText)
   }
   if (links.isEmpty()) {
-    val nameInfo = parsedMd.firstNotNullOfOrNull { (it.format as? Format.SimplexName)?.nameInfo }
-    if (nameInfo != null) return ConnectTarget.Name(nameInfo)
+    val nameFt = parsedMd.firstOrNull { it.format is Format.SimplexName }
+    val nameInfo = (nameFt?.format as? Format.SimplexName)?.nameInfo
+    if (nameFt != null && nameInfo != null) return ConnectTarget.Name(nameFt.text, nameInfo)
   }
   return null
-}
-
-fun showUnsupportedNameAlert(nameInfo: SimplexNameInfo) {
-  val (title, msg) = if (nameInfo.nameType == SimplexNameType.contact) {
-    generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
-  } else {
-    generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
-  }
-  AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
 }
 
 @Composable
