@@ -503,7 +503,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json
-  XGrpMemRole :: MemberId -> GroupMemberRole -> ChatMsgEvent 'Json
+  XGrpMemRole :: MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> ChatMsgEvent 'Json
   XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
@@ -1261,7 +1261,7 @@ toCMEventTag msg = case msg of
   XGrpMemInv _ _ -> XGrpMemInv_
   XGrpMemFwd _ _ -> XGrpMemFwd_
   XGrpMemInfo _ _ -> XGrpMemInfo_
-  XGrpMemRole _ _ -> XGrpMemRole_
+  XGrpMemRole {} -> XGrpMemRole_
   XGrpMemRestrict _ _ -> XGrpMemRestrict_
   XGrpMemCon _ -> XGrpMemCon_
   XGrpMemConAll _ -> XGrpMemConAll_
@@ -1422,7 +1422,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
       XGrpMemFwd_ -> XGrpMemFwd <$> p "memberInfo" <*> p "memberIntro"
       XGrpMemInfo_ -> XGrpMemInfo <$> p "memberId" <*> p "profile"
-      XGrpMemRole_ -> XGrpMemRole <$> p "memberId" <*> p "role"
+      XGrpMemRole_ -> XGrpMemRole <$> p "memberId" <*> p "role" <*> opt "memberKey" <*> opt "rosterVersion"
       XGrpMemRestrict_ -> XGrpMemRestrict <$> p "memberId" <*> p "memberRestrictions"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
@@ -1496,7 +1496,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
       XGrpMemFwd memInfo memIntro -> o ["memberInfo" .= memInfo, "memberIntro" .= memIntro]
       XGrpMemInfo memId profile -> o ["memberId" .= memId, "profile" .= profile]
-      XGrpMemRole memId role -> o ["memberId" .= memId, "role" .= role]
+      XGrpMemRole memId role memberKey rosterVersion -> o $ ("memberKey" .=? memberKey) $ ("rosterVersion" .=? rosterVersion) ["memberId" .= memId, "role" .= role]
       XGrpMemRestrict memId memRestrictions -> o ["memberId" .= memId, "memberRestrictions" .= memRestrictions]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]

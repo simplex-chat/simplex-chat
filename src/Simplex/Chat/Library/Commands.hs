@@ -2024,9 +2024,9 @@ processChatCommand cxt nm = \case
             gVar <- asks random
             (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
-            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
-                createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
+                createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
             aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
@@ -2036,9 +2036,9 @@ processChatCommand cxt nm = \case
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
         ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId
-        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
-            createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing
+            createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
@@ -2055,11 +2055,11 @@ processChatCommand cxt nm = \case
     subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
     (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_
-    void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+    void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-    aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing
+    aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing Nothing
     let chat = case aci of
           Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
           _ -> Chat cInfo [] emptyChatStats
@@ -2127,7 +2127,7 @@ processChatCommand cxt nm = \case
             -- create changed feature items (connecting incognito sends default preferences, instead of user preferences)
             lift . when incognito $ createContactChangedFeatureItems user ct ct'
             forM_ msg_ $ \(sharedMsgId, mc) -> do
-              ci <- createChatItem user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              ci <- createChatItem user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing Nothing
               toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           CVRConnectedContact ct' -> pure $ CRContactAlreadyExists user ct'
@@ -2220,7 +2220,7 @@ processChatCommand cxt nm = \case
               liftIO $ setPreparedGroupStartedConnection db groupId
               getGroupInfo db cxt user groupId
             forM_ msg_ $ \(sharedMsgId, mc) -> do
-              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing Nothing
               toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile []
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
@@ -2741,13 +2741,11 @@ processChatCommand cxt nm = \case
       when (useRelays' gInfo && isRosterRole newRole && finalPrivilegedCount > maxGroupRosterSize) $
         throwCmdError $ "the number of members, moderators and admins would exceed the limit of " <> show maxGroupRosterSize
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
-      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g currentMems
+      let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && (isRosterRole newRole || anyPrivilegedTarget)
+      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g doBumpRoster currentMems
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
-      let rosterSetChanged = not (null (changed1 <> changed2)) && (isRosterRole newRole || anyPrivilegedTarget)
-      when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && rosterSetChanged) $
-        bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole, msgSigned} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
@@ -2782,18 +2780,21 @@ processChatCommand cxt nm = \case
                 withFastStore' $ \db -> updateGroupMemberRole db user m newRole
                 pure (m :: GroupMember) {memberRole = newRole}
               _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
-      changeRoleCurrentMems :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
-      changeRoleCurrentMems user (Group gInfo members) memsToChange = case L.nonEmpty memsToChange of
+      changeRoleCurrentMems :: User -> Group -> Bool -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      changeRoleCurrentMems user (Group gInfo members) doBumpRoster memsToChange = case L.nonEmpty memsToChange of
         Nothing -> pure ([], [], [], False)
         Just memsToChange' -> do
-          let events = L.map (\GroupMember {memberId} -> XGrpMemRole memberId newRole) memsToChange'
+          (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
+          eventRosterVer <- if doBumpRoster then Just <$> bumpAndBroadcastRoster user gInfo else pure Nothing
+          -- channels always carry the member's key; the receiver verifies it (re-key rejected) and creates only roster members
+          let eventKey m = if useRelays' gInfo then MemberKey <$> memberPubKey m else Nothing
+              events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (eventKey m) eventRosterVer) memsToChange'
               recipients = filter memberCurrent members
           (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
-          (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
           pure (errs, changed, acis, signed)
           where
@@ -2888,7 +2889,7 @@ processChatCommand cxt nm = \case
       unless (null errs) $ toView $ CEvtChatErrors errs
       -- refresh the roster so the relay drops a removed privileged member for future joiners
       when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved) $
-        bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
+        void (bumpAndBroadcastRoster user gInfo) `catchAllErrors` eToView
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
@@ -3118,7 +3119,7 @@ processChatCommand cxt nm = \case
         (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
         -- [incognito] reuse membership incognito profile
         ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
-        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         -- TODO not sure it is correct to set connections status here?
         pure $ CRNewMemberContact user ct g m
       _ -> throwChatError CEGroupMemberNotActive

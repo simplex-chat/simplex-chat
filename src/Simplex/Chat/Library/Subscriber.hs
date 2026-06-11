@@ -584,7 +584,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               (gInfo, host) <- withStore $ \db -> do
                 liftIO $ deleteContactCardKeepConn db connId ct
                 createGroupInvitedViaLink db cxt user conn'' glInv
-              void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+              void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
               let profileToSend = userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
@@ -1071,7 +1071,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> Nothing <$ xGrpMemInv gInfo' m'' memId introInv
               XGrpMemFwd memInfo introInv -> Nothing <$ xGrpMemFwd gInfo' m'' memInfo introInv
-              XGrpMemRole memId memRole -> fmap ctx <$> xGrpMemRole gInfo' m'' memId memRole msg brokerTs
+              XGrpMemRole memId memRole memberKey rosterVer -> fmap ctx <$> xGrpMemRole gInfo' m'' memId memRole memberKey rosterVer msg brokerTs
               XGrpMemRestrict memId memRestrictions -> fmap ctx <$> xGrpMemRestrict gInfo' m'' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> Nothing <$ xGrpMemCon gInfo' m'' memId
               XGrpMemDel memId withMessages -> case encoding @e of
@@ -1453,12 +1453,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         -- they will be updated after connection is accepted.
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
-                        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+                        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
                         let e2eContent = CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just $ CR.pqSupportToEnc $ reqPQSup
-                        void $ createChatItem user cd False e2eContent Nothing Nothing
+                        void $ createChatItem user cd False e2eContent Nothing Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \mc -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
-                          createChatItem user (CDDirectSnd ct) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+                          createChatItem user (CDDirectSnd ct) False (CISndMsgContent mc) (Just sharedMsgId) Nothing Nothing
                         mapM (createRequestItem cd) requestMsg_
                     case autoAccept of
                       Nothing -> do
@@ -1483,13 +1483,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         -- they will be updated after connection is accepted.
                         upsertBusinessRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
-                        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+                        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
                         -- TODO [short links] possibly, we can just keep them created where they are created on the business side due to auto-accept
                         -- let e2eContent = CIRcvGroupE2EEInfo $ E2EInfo $ Just False -- no PQ encryption in groups
-                        -- void $ createChatItem user cd False e2eContent Nothing Nothing
+                        -- void $ createChatItem user cd False e2eContent Nothing Nothing Nothing
                         -- void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \arMC -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
-                          createChatItem user (CDGroupSnd gInfo Nothing) False (CISndMsgContent arMC) (Just sharedMsgId) Nothing
+                          createChatItem user (CDGroupSnd gInfo Nothing) False (CISndMsgContent arMC) (Just sharedMsgId) Nothing Nothing
                         mapM (createRequestItem cd) requestMsg_
                     toView $ CEvtAcceptingBusinessRequest user gInfo
               where
@@ -1553,7 +1553,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 upsertBusinessRequestItem (CDChannelRcv _ _) = const $ pure Nothing
                 createRequestItem :: ChatTypeI c => ChatDirection c 'MDRcv -> (SharedMsgId, MsgContent) -> CM AChatItem
                 createRequestItem cd (sharedMsgId, mc) = do
-                  aci <- createChatItem user cd False (CIRcvMsgContent mc) (Just sharedMsgId) Nothing
+                  aci <- createChatItem user cd False (CIRcvMsgContent mc) (Just sharedMsgId) Nothing Nothing
                   toView $ CEvtNewChatItems user [aci]
                   pure aci
                 upsertRequestItem :: ChatTypeI c => ChatDirection c 'MDRcv -> ((SharedMsgId, MsgContent) -> CM (Maybe AChatItem)) -> (SharedMsgId -> CM ()) -> (Maybe (SharedMsgId, MsgContent), Maybe SharedMsgId) -> CM (Maybe AChatItem)
@@ -2563,7 +2563,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
             -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
             (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db cxt user ct inv customUserProfileId
-            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let GroupMember {groupMemberId, memberId = membershipMemId} = membership
             if sameGroupLinkId groupLinkId groupLinkId'
               then do
@@ -3191,30 +3191,57 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           chatV = vr cxt `peerConnChatVersion` mcvr
       withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
 
-    xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg@RcvMessage {msgSigned} brokerTs
-      | membershipMemId == memId =
-          let gInfo' = gInfo {membership = membership {memberRole = memRole}}
-           in changeMemberRole gInfo' membership $ RGEUserRole memRole
-      | otherwise =
-          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
-            Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-            -- in relay groups the roster delivers the chat item for previously-unknown privileged members
-            Left _
-              | useRelays' gInfo -> pure Nothing
-              | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
+    xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
+      -- rollback defense: a relay can replay/reorder owner-signed role events, so in channels apply
+      -- only at a non-decreasing roster version (>= keeps a multi-member /mr that shares one version
+      -- idempotent), then advance it. A strictly lower version is a rollback attempt and is ignored.
+      | useRelays' gInfo && maybe False staleVersion rosterVer_ =
+          messageWarning "x.grp.mem.role: roster version not newer than current, ignoring" $> Nothing
+      | otherwise = do
+          r <- applyRole
+          when (useRelays' gInfo) $ forM_ rosterVer_ $ \v ->
+            withStore' $ \db -> setGroupRosterVersion db gInfo (maybe v (max v) (rosterVersion gInfo))
+          pure r
       where
         GroupMember {memberId = membershipMemId} = membership
-        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
+        staleVersion v = not $ maybe True (v >=) (rosterVersion gInfo)
+        applyRole
+          | membershipMemId == memId =
+              let gInfo' = gInfo {membership = membership {memberRole = memRole}}
+               in changeMemberRole gInfo' membership Nothing $ RGEUserRole memRole
+          | otherwise = do
+              defaultRole <- unknownMemberRole gInfo
+              -- an owner-signed event with a key TOFU-creates an unknown member only for a roster role; else a plain lookup
+              let allowCreate = useRelays' gInfo && senderRole == GROwner && isRosterRole memRole && isJust memberKey_
+              withStore' (\db -> runExceptT $ getCreateUnknownGMByMemberId db cxt user gInfo memId (nameFromMemberId memId) defaultRole allowCreate) >>= \case
+                Right (Just (member, _)) -> changeMemberRole gInfo member memberKey_ $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+                -- unknown id we did not create (non-owner or keyless in channels; absent in normal groups)
+                _ | useRelays' gInfo -> pure Nothing
+                  | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
+        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} memberKey gEvent
           | senderRole < GRAdmin || senderRole < fromRole =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
               messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing
-          -- in channels the owner-signed roster delivers role changes to subscribers; a forwarded
-          -- x.grp.mem.role landing after the roster already applied the role is a no-op, suppress it
-          | useRelays' gInfo && fromRole == memRole = pure $ memberEventDeliveryScope member
-          | otherwise = do
+          | useRelays' gInfo = case memberKey of
+              -- verify/pin the owner-signed key against the established one (re-key rejected in any
+              -- direction); applyMemberKeyRole reports Right Nothing when the role is already current
+              Just (MemberKey pubKey) ->
+                withStore' (\db -> applyMemberKeyRole db member pubKey memRole) >>= \case
+                  Left _ -> messageWarning "x.grp.mem.role: key differs from established key, ignoring" $> Nothing
+                  Right Nothing -> pure $ memberEventDeliveryScope member
+                  Right (Just _) -> emitMemberRole
+              -- self role change (key omitted) or a member with no pinned key; an already-current role is a no-op
+              Nothing
+                | fromRole == memRole -> pure $ memberEventDeliveryScope member
+                | otherwise -> updateMemberRole
+          | otherwise = updateMemberRole
+          where
+            updateMemberRole = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
+              emitMemberRole
+            emitMemberRole = do
               (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
               (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
               groupMsgToView cInfo ci
@@ -3290,13 +3317,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         pure res
                       cleanupGroupRosterFile user gInfo
                       emitRosterResults gInfo author rosterBrokerTs results
-                      when isRelay $ do
-                        -- ack only while still setting up (own status RSAccepted); a serving relay must not ack broadcasts
-                        when (relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck gInfo author pendingVer Nothing
-                        -- broadcast on a bump: self-healing, and demotions must reach members.
-                        -- re-serve via serveRoster (header + blob), not a delivery task: a
-                        -- BFileChunk body is not a forwardable JSON message.
-                        broadcastRoster gInfo
+                      -- ack only while still setting up (own status RSAccepted); a serving relay must not ack broadcasts.
+                      when (isRelay && relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck gInfo author pendingVer Nothing
       where
         readAssembledRoster = case fileStatus of
           RFSAccepted fp -> readAt fp
@@ -3305,51 +3327,53 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           _ -> throwChatError $ CEInternalError "roster file not in progress"
         readAt fp = lift (toFSFilePath fp) >>= liftIO . B.readFile
 
-    -- Push the freshly applied roster to the relay's member subscribers in one batched re-serve.
-    broadcastRoster :: GroupInfo -> CM ()
-    broadcastRoster gInfo = do
-      members <- withStore' $ \db -> getGroupMembers db cxt user gInfo
-      serveRoster user gInfo (filter rosterRecipient members) `catchAllErrors` eToView
-      where
-        rosterRecipient m = memberCurrent m && not (isRelay m) && memberRole' m /= GROwner && isJust (readyMemberConn m)
+    -- TOFU-apply an owner-signed (key, role) to a resolved member: pin the key if absent; for a keyed
+    -- member keep the trusted key (Left = reject a different one), else update the role. Right
+    -- (Just (member-at-new-role, fromRole)) when the role changed, Right Nothing when already current.
+    applyMemberKeyRole :: DB.Connection -> GroupMember -> C.PublicKeyEd25519 -> GroupMemberRole -> IO (Either MemberId (Maybe (GroupMember, GroupMemberRole)))
+    applyMemberKeyRole db m pubKey role = case memberPubKey m of
+      Just k
+        | k /= pubKey -> pure (Left (memberId' m))
+        | memberRole' m == role -> pure (Right Nothing)
+        | otherwise -> updateGroupMemberRole db user m role $> Right (Just (m {memberRole = role}, memberRole' m))
+      Nothing -> setGroupMemberKeyRole db m pubKey role $> Right (Just (m {memberRole = role}, memberRole' m))
 
     -- TOFU apply: pin each member's key on first use, then update roles.
-    processRosterEntries :: DB.Connection -> GroupInfo -> GroupMemberRole -> [RosterMember] -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole)])
+    processRosterEntries :: DB.Connection -> GroupInfo -> GroupMemberRole -> [RosterMember] -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole, Bool)])
     processRosterEntries db gInfo defaultRole entries = do
       let rosterIds = map (\RosterMember {memberId} -> memberId) entries
-      acc <- foldrM applyRosterEntry ([], []) entries
-      -- absent privileged members revert to the joiner default
-      currentPriv <- liftIO $ (++) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo
-      liftIO $ forM_ currentPriv $ \m ->
-        when (memberId' m `notElem` rosterIds) $
-          updateGroupMemberRole db user m defaultRole
-      pure acc
+      (cs, as) <- foldrM applyRosterEntry ([], []) entries
+      currentPriv <- liftIO $ (<>) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo
+      reverted <- liftIO $ fmap catMaybes $ forM currentPriv $ \m ->
+        if memberId' m `notElem` rosterIds
+          then updateGroupMemberRole db user m defaultRole $> Just ((m :: GroupMember) {memberRole = defaultRole}, memberRole' m, False)
+          else pure Nothing
+      pure (cs, as <> reverted)
       where
         -- entry-level failure (StoreError or IO exception) is muted; the entry is dropped
         applyRosterEntry RosterMember {memberId, key = MemberKey pubKey, role} (cs, as) =
-          apply `catchAllErrors` \_ -> pure (cs, as)
-          where
-            applied m = (cs, ((m :: GroupMember) {memberRole = role}, memberRole' m) : as)
-            apply = getCreateUnknownGMByMemberId db cxt user gInfo memberId (nameFromMemberId memberId) defaultRole True >>= \case
+          ( getCreateUnknownGMByMemberId db cxt user gInfo memberId (nameFromMemberId memberId) defaultRole True >>= \case
               Nothing -> pure (cs, as)
-              Just (m, _) -> case memberPubKey m of
-                Just k
-                  | k /= pubKey -> pure (memberId : cs, as)
-                  | memberRole' m == role -> pure (cs, as)
-                  | otherwise -> liftIO (updateGroupMemberRole db user m role) $> applied m
-                Nothing -> liftIO (setGroupMemberKeyRole db m pubKey role) $> applied m
+              Just (m, created) -> liftIO (applyMemberKeyRole db m pubKey role) >>= \case
+                Left mid -> pure (mid : cs, as)
+                Right Nothing -> pure (cs, as)
+                Right (Just (rm, fromR)) -> pure (cs, (rm, fromR, created) : as)
+          )
+            `catchAllErrors` \_ -> pure (cs, as)
 
-    emitRosterResults :: GroupInfo -> GroupMember -> UTCTime -> ([MemberId], [(GroupMember, GroupMemberRole)]) -> CM ()
+    emitRosterResults :: GroupInfo -> GroupMember -> UTCTime -> ([MemberId], [(GroupMember, GroupMemberRole, Bool)]) -> CM ()
     emitRosterResults gInfo author rosterBrokerTs (conflicts, applied) = do
       forM_ conflicts $ \mid' ->
         messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode mid')
-      forM_ applied $ \(member, fromRole) -> createItems member fromRole
+      forM_ applied $ \(member, fromRole, created) ->
+        unless created $ createItems member fromRole
       where
         createItems member fromRole = do
           let toRole = memberRole' member
               gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) toRole
           (gInfo', author', scopeInfo) <- mkGroupChatScope gInfo author
-          createInternalChatItem user (CDGroupRcv gInfo' scopeInfo author') (CIRcvGroupEvent gEvent) (Just rosterBrokerTs)
+          ci <- createChatItem user (CDGroupRcv gInfo' scopeInfo author') False (CIRcvGroupEvent gEvent) Nothing (Just MSSVerified) (Just rosterBrokerTs)
+          toView $ CEvtNewChatItems user [ci]
           toView CEvtMemberRole {user, groupInfo = gInfo', byMember = author', member, fromRole, toRole, msgSigned = Just MSSVerified}
 
     sendRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
@@ -3699,7 +3723,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
             XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \author -> void $ xGrpRelayNew gInfo author rl
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
-            XGrpMemRole memId memRole -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
+            XGrpMemRole memId memRole memberKey rosterVer -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole memberKey rosterVer rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
             XGrpMemDel memId withMessages -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel gInfo author memId withMessages verifiedMsg rcvMsg msgTs True
             XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave gInfo author rcvMsg msgTs

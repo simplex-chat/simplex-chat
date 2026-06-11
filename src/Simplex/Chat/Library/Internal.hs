@@ -2206,7 +2206,7 @@ sendGroupMessage' user gInfo members chatMsgEvent =
 
 -- TODO [relays] improvement: publish roster_version in link data so the owner can recover the latest version
 -- TODO   after restoring from a stale backup (relays accept only strictly-greater versions)
-bumpAndBroadcastRoster :: User -> GroupInfo -> CM ()
+bumpAndBroadcastRoster :: User -> GroupInfo -> CM VersionRoster
 bumpAndBroadcastRoster user gInfo = do
   cxt <- chatStoreCxt
   let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
@@ -2217,6 +2217,7 @@ bumpAndBroadcastRoster user gInfo = do
     pure (relays, mods)
   forM_ (L.nonEmpty relays) $ \relays' ->
     sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster mods)
+  pure rosterVer
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
@@ -2618,11 +2619,11 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
       _ -> Nothing
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing
-mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
-mkChatItem cd showGroupAsSender ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
+mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgSigStatus -> UTCTime -> ChatItem c d
+mkChatItem cd showGroupAsSender ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember msgSigned currentTs =
   let ts@(_, ft_) = ciContentTexts content
       hasLink_ = ciContentHasLink content ft_
-   in mkChatItem_ cd showGroupAsSender ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember Nothing currentTs
+   in mkChatItem_ cd showGroupAsSender ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgSigned currentTs
 
 mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> (Text, Maybe MarkdownList) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgSigStatus -> UTCTime -> ChatItem c d
 mkChatItem_ cd showGroupAsSender ciId content (itemText, formattedText) file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgSigned currentTs =
@@ -2784,7 +2785,7 @@ createFeatureEnabledItems_ :: User -> Contact -> CM [AChatItem]
 createFeatureEnabledItems_ user ct@Contact {mergedPreferences} =
   forM allChatFeatures $ \(ACF f) -> do
     let state = featureState $ getContactUserPreference f mergedPreferences
-    createChatItem user (CDDirectRcv ct) False (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing Nothing
+    createChatItem user (CDDirectRcv ct) False (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing Nothing Nothing
 
 createFeatureItems ::
   MsgDirectionI d =>
@@ -2814,15 +2815,15 @@ createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
   unless (null errs) $ toView' $ CEvtChatErrors errs
   toView' $ CEvtNewChatItems user acis
   where
-    contactChangedFeatures :: (Contact, Contact) -> (ChatDirection 'CTDirect d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)])
+    contactChangedFeatures :: (Contact, Contact) -> (ChatDirection 'CTDirect d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)])
     contactChangedFeatures (Contact {mergedPreferences = cups}, ct'@Contact {mergedPreferences = cups'}) = do
       let contents = mapMaybe (\(ACF f) -> featureCIContent_ f) allChatFeatures
       (chatDir ct', False, contents)
       where
-        featureCIContent_ :: forall f. FeatureI f => SChatFeature f -> Maybe (CIContent d, Maybe SharedMsgId)
+        featureCIContent_ :: forall f. FeatureI f => SChatFeature f -> Maybe (CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)
         featureCIContent_ f
-          | state /= state' = Just (fContent ciFeature state', Nothing)
-          | prefState /= prefState' = Just (fContent ciOffer prefState', Nothing)
+          | state /= state' = Just (fContent ciFeature state', Nothing, Nothing)
+          | prefState /= prefState' = Just (fContent ciOffer prefState', Nothing, Nothing)
           | otherwise = Nothing
           where
             fContent :: FeatureContent a d -> (a, Maybe Int) -> CIContent d
@@ -2855,16 +2856,16 @@ createGroupFeatureItems_ user cd showGroupAsSender ciContent GroupInfo {fullGrou
   forM allGroupFeatures $ \(AGF f) -> do
     let p = getGroupPreference f fullGroupPreferences
         (_, param, role) = groupFeatureState p
-    createChatItem user cd showGroupAsSender (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing Nothing
+    createChatItem user cd showGroupAsSender (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing Nothing Nothing
 
 createInternalChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> CM ()
 createInternalChatItem user cd content itemTs_ = do
-  ci <- createChatItem user cd False content Nothing itemTs_
+  ci <- createChatItem user cd False content Nothing Nothing itemTs_
   toView $ CEvtNewChatItems user [ci]
 
-createChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Maybe UTCTime -> CM AChatItem
-createChatItem user cd showGroupAsSender content sharedMsgId itemTs_ =
-  lift (createChatItems user itemTs_ [(cd, showGroupAsSender, [(content, sharedMsgId)])]) >>= \case
+createChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Maybe MsgSigStatus -> Maybe UTCTime -> CM AChatItem
+createChatItem user cd showGroupAsSender content sharedMsgId msgSigned itemTs_ =
+  lift (createChatItems user itemTs_ [(cd, showGroupAsSender, [(content, sharedMsgId, msgSigned)])]) >>= \case
     [Right ci] -> pure ci
     [Left e] -> throwError e
     rs -> throwChatError $ CEInternalError $ "createInternalChatItem: expected 1 result, got " <> show (length rs)
@@ -2876,7 +2877,7 @@ createChatItems ::
   (ChatTypeI c, MsgDirectionI d) =>
   User ->
   Maybe UTCTime ->
-  [(ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)])] ->
+  [(ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)])] ->
   CM' [Either ChatError AChatItem]
 createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
@@ -2885,24 +2886,24 @@ createChatItems user itemTs_ dirsCIContents = do
   void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
   withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
   where
-    updateChat :: DB.Connection -> StoreCxt -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)]) -> IO ()
+    updateChat :: DB.Connection -> StoreCxt -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)]) -> IO ()
     updateChat db cxt createdAt (cd, _, contents)
-      | any (ciRequiresAttention . fst) contents || contactChatDeleted cd = void $ updateChatTsStats db cxt user cd createdAt memberChatStats
+      | any (\(content, _, _) -> ciRequiresAttention content) contents || contactChatDeleted cd = void $ updateChatTsStats db cxt user cd createdAt memberChatStats
       | otherwise = pure ()
       where
         memberChatStats :: Maybe (Int, MemberAttention, Int)
         memberChatStats = case cd of
           CDGroupRcv _g (Just scope) m -> do
-            let unread = length $ filter (ciRequiresAttention . fst) contents
+            let unread = length $ filter (\(content, _, _) -> ciRequiresAttention content) contents
              in Just (unread, memberAttentionChange unread itemTs_ (Just m) scope, 0)
           _ -> Nothing
-    createACIs :: DB.Connection -> UTCTime -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)]) -> [IO AChatItem]
+    createACIs :: DB.Connection -> UTCTime -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)]) -> [IO AChatItem]
     createACIs db itemTs createdAt (cd, showGroupAsSender, contents) = map createACI contents
       where
-        createACI (content, sharedMsgId) = do
+        createACI (content, sharedMsgId, msgSigned) = do
           let hasLink_ = ciContentHasLink content Nothing
-          ciId <- createNewChatItemNoMsg db user cd showGroupAsSender content sharedMsgId hasLink_ itemTs createdAt
-          let ci = mkChatItem cd showGroupAsSender ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
+          ciId <- createNewChatItemNoMsg db user cd showGroupAsSender content sharedMsgId hasLink_ msgSigned itemTs createdAt
+          let ci = mkChatItem cd showGroupAsSender ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing msgSigned createdAt
           pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
 -- rcvMem_ Nothing means message from channel - treated same as message from moderator,

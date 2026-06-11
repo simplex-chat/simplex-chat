@@ -9653,12 +9653,9 @@ testChannelModeratorActionViaRoster ps =
               -- profile may not be loaded yet, so the actor renders by memberId hash)
               threadDelay 1000000
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
-              -- cached roster carries cath (moderator) and dan (member); both emit a role-change item
-              frank
-                <### [ EndsWith "to moderator (signed)",
-                       EndsWith "to member (signed)"
-                     ]
-              threadDelay 500000
+              -- the late joiner learns the roster from the served snapshot (verified below); under the
+              -- no-broadcast model the apply finds no role change to surface, so no item here
+              threadDelay 1000000 -- the served roster arrives async
               checkMemberRole frank "cath" "moderator"
   where
     checkMemberRole :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
@@ -9721,11 +9718,11 @@ testChannelRoleTransitionsUpdateRoster ps =
                 [ bob <## "#team: alice changed the role of cath from observer to moderator (signed)",
                   cath <## "#team: alice changed your role from observer to moderator (signed)"
                 ]
-              -- dan joins; cached roster has cath as moderator
+              -- dan joins; cached roster has cath as moderator (learned from the served snapshot,
+              -- no separate role-change item under the no-broadcast model)
               threadDelay 100000
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
-              dan <### [EndsWith "to moderator (signed)"]
-              threadDelay 100000
+              threadDelay 1000000 -- the served roster arrives async; wait before reading the applied state
               checkMemberRow dan "cath" (Just "moderator")
               -- moderator -> admin: dan now knows cath, role event lands cleanly
               threadDelay 100000
@@ -9736,11 +9733,10 @@ testChannelRoleTransitionsUpdateRoster ps =
                   cath <## "#team: alice changed your role from moderator to admin (signed)",
                   dan <## "#team: alice changed the role of cath from moderator to admin (signed)"
                 ]
-              -- eve joins; cached roster has cath as admin
+              -- eve joins; cached roster has cath as admin (learned from the served snapshot)
               threadDelay 100000
               memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink eve
-              eve <### [EndsWith "to admin (signed)"]
-              threadDelay 100000
+              threadDelay 1000000 -- the served roster arrives async; wait before reading the applied state
               checkMemberRow eve "cath" (Just "admin")
               -- admin -> observer (crossing out of roster, since member is now in-roster): roster drops cath
               threadDelay 100000
@@ -10457,14 +10453,14 @@ testChannelAddRelayWithRoster ps =
               ]
 
             -- cath (an existing member) connects to the new relay and is attached to her roster
-            -- record, kept as moderator
+            -- record, kept as moderator (the relay learned cath from the cached roster snapshot, so
+            -- it surfaces no role-change item for her)
             concurrentlyN_
               [ do
                   cath <## "#team: joining the group (connecting to relay dan)..."
                   cath <## "#team: you joined the group (connected to relay dan)",
                 dan
-                  <### [ EndsWith "to moderator (signed)",
-                         EndsWith "accepting request to join group #team...",
+                  <### [ EndsWith "accepting request to join group #team...",
                          EndsWith "is connected"
                        ]
               ]
@@ -10494,8 +10490,8 @@ testChannelRosterMultipartReassembly ps =
             ]
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink dan
-          dan <### [EndsWith "to moderator (signed)"]
-          threadDelay 100000
+          -- dan reassembles the multi-chunk roster from the served snapshot (arrives async)
+          threadDelay 1000000
           checkMemberRow dan "cath" (Just "moderator")
   where
     cfg = testCfg {fileChunkSize = 30}
@@ -10621,8 +10617,7 @@ testChannelPromotedMemberRejoinViaRelay ps =
                 cath <## "#team: joining the group (connecting to relay dan)..."
                 cath <## "#team: you joined the group (connected to relay dan)",
               dan
-                <### [ EndsWith "to member (signed)",
-                       EndsWith "accepting request to join group #team...",
+                <### [ EndsWith "accepting request to join group #team...",
                        EndsWith "is connected"
                      ]
             ]
