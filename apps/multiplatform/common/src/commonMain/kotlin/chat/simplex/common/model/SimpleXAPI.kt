@@ -1555,6 +1555,27 @@ object ChatController {
           generalGetString(MR.strings.link_requires_newer_app_version_please_upgrade)
         )
       }
+      r is API.Error && r.err is ChatError.ChatErrorChat
+          && r.err.errorType is ChatErrorType.SimplexNameNotFound -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.simplex_name_not_found),
+          generalGetString(MR.strings.simplex_name_not_found_desc)
+        )
+      }
+      r is API.Error && r.err is ChatError.ChatErrorChat
+          && r.err.errorType is ChatErrorType.SimplexNameUnprepared -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.cannot_reconnect_via_simplex_name),
+          generalGetString(MR.strings.simplex_name_unprepared_desc)
+        )
+      }
+      r is API.Error && r.err is ChatError.ChatErrorChat
+          && r.err.errorType is ChatErrorType.SimplexNameResolverUnavailable -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.simplex_name_resolution_unavailable),
+          generalGetString(MR.strings.simplex_name_resolver_unavailable_desc)
+        )
+      }
       r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.SMP
           && r.err.agentError.smpErr is SMPErrorType.AUTH -> {
@@ -1592,6 +1613,12 @@ object ChatController {
       generalGetString(MR.strings.invalid_connection_link)
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.UnsupportedConnReq ->
       generalGetString(MR.strings.unsupported_connection_link)
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexNameNotFound ->
+      generalGetString(MR.strings.simplex_name_not_found)
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexNameUnprepared ->
+      generalGetString(MR.strings.cannot_reconnect_via_simplex_name)
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexNameResolverUnavailable ->
+      generalGetString(MR.strings.simplex_name_resolution_unavailable)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH ->
       generalGetString(MR.strings.connection_error_auth)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.BLOCKED ->
@@ -7297,6 +7324,9 @@ sealed class ChatErrorType {
       is ChatStoreChanged -> "chatStoreChanged"
       is ConnectionPlanChatError -> "connectionPlan"
       is InvalidConnReq -> "invalidConnReq"
+      is SimplexNameNotFound -> "simplexNameNotFound"
+      is SimplexNameUnprepared -> "simplexNameUnprepared"
+      is SimplexNameResolverUnavailable -> "simplexNameResolverUnavailable"
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
@@ -7379,6 +7409,9 @@ sealed class ChatErrorType {
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
   @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
+  @Serializable @SerialName("simplexNameNotFound") class SimplexNameNotFound(val simplexName: SimplexNameInfo): ChatErrorType()
+  @Serializable @SerialName("simplexNameUnprepared") class SimplexNameUnprepared(val simplexName: SimplexNameInfo): ChatErrorType()
+  @Serializable @SerialName("simplexNameResolverUnavailable") class SimplexNameResolverUnavailable(val simplexName: SimplexNameInfo): ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()

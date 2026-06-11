@@ -536,7 +536,15 @@ private fun ContactsSearchBar(
                 cleanup = { searchText.value = TextFieldValue() }
               )
             }
-            is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
+            is ConnectTarget.Name -> {
+              hideKeyboard(view)
+              connect(
+                link = target.text,
+                searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+                close = close,
+                cleanup = { searchText.value = TextFieldValue() }
+              )
+            }
             null -> if (!searchShowingSimplexLink.value || it.isEmpty()) {
               if (it.isNotEmpty()) {
                 focusRequester.requestFocus()
