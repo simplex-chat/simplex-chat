@@ -139,11 +139,28 @@ fun BadgedProfileImage(size: Dp, badge: LocalBadge?, onBadgeClick: (() -> Unit)?
   }
 }
 
+// tones the glyph down: slightly desaturated and dimmed, so the gradient is less bright against the avatar
+private val badgeColorFilter = ColorFilter.colorMatrix(
+  ColorMatrix().apply {
+    setToSaturation(0.85f)
+    timesAssign(
+      ColorMatrix(
+        floatArrayOf(
+          0.92f, 0f, 0f, 0f, 0f,
+          0f, 0.92f, 0f, 0f, 0f,
+          0f, 0f, 0.92f, 0f, 0f,
+          0f, 0f, 0f, 1f, 0f
+        )
+      )
+    )
+  }
+)
+
 // the phone glyph (or warning triangle) scales inversely to the avatar so it stays readable when the avatar is small.
 @Composable
 private fun ProfileBadge(size: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit)?) {
   val s = size.value
-  val mult = 1f + 0.5f * ((192f - s) / 156f).coerceIn(0f, 1f)
+  val mult = 1f + 0.3f * ((192f - s) / 156f).coerceIn(0f, 1f)
   // phone height ~0.28*S; set width only (= 0.7617*height) and let the height follow the glyph's aspect ratio
   val phoneW = 0.28f * 0.7617f * size * mult
   val mod = Modifier.width(phoneW).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
@@ -155,6 +172,7 @@ private fun ProfileBadge(size: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit)
       contentDescription = null,
       contentScale = ContentScale.Fit,
       alpha = if (badge.status == BadgeStatus.Expired) 0.4f else 1f,
+      colorFilter = badgeColorFilter,
       modifier = mod
     )
   }
