@@ -2742,8 +2742,8 @@ processChatCommand cxt nm = \case
         throwCmdError $ "the number of members, moderators and admins would exceed the limit of " <> show maxGroupRosterSize
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && (isRosterRole newRole || anyPrivilegedTarget)
-      eventRosterVer <- if doBumpRoster then Just <$> bumpAndBroadcastRoster user gInfo else pure Nothing
-      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g currentMems eventRosterVer
+      rosterVer <- if doBumpRoster then Just <$> bumpAndBroadcastRoster user gInfo else pure Nothing
+      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g currentMems rosterVer
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
