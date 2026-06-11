@@ -158,9 +158,9 @@ private val badgeColorFilter = ColorFilter.colorMatrix(
     timesAssign(
       ColorMatrix(
         floatArrayOf(
-          0.92f, 0f, 0f, 0f, 0f,
-          0f, 0.92f, 0f, 0f, 0f,
-          0f, 0f, 0.92f, 0f, 0f,
+          0.99f, 0f, 0f, 0f, 0f,
+          0f, 0.99f, 0f, 0f, 0f,
+          0f, 0f, 0.99f, 0f, 0f,
           0f, 0f, 0f, 1f, 0f
         )
       )
@@ -171,19 +171,24 @@ private val badgeColorFilter = ColorFilter.colorMatrix(
 // Badge width as a fraction of the avatar design size, one entry per size in use - tune each placement here.
 // Values match the original inverse-scaling formula 0.2133 * (1 + 0.5 * clamp((192 - s) / 156, 0, 1)):
 // the smaller the avatar, the bigger the badge relative to it, so it stays readable at small sizes.
-private fun badgeWidthRatio(size: Dp): Float = when (size.value.roundToInt()) {
-  36 -> 0.32f // AddGroupMembersView (contact rows when adding members), ChatItemInfoView (member row in message info)
-  37 -> 0.3192f // MEMBER_IMAGE_SIZE - member avatar next to group message bubbles
-  38 -> 0.3185f // ChannelMembersView, ChannelRelaysView (member rows)
-  40 -> 0.3172f // ChatInfoToolbarTitle (chat header), MemberSupportChatToolbarTitle (member support chat header)
-  42 -> 0.3158f // ContactPreviewView (contacts list), ShareListNavLinkView (share-to list), MEMBER_ROW_AVATAR_SIZE (group info / member support member rows)
-  54 -> 0.3076f // UserPicker (user switcher)
-  57 -> 0.3056f // ChatItemInfoView (forwarded-from chat)
-  60 -> 0.3035f // AddGroupMembersView toolbar (group avatar - shows no badge currently)
-  72 -> 0.2953f // ChatPreviewView (chat list), ContactRequestView (contact request in chat list)
-  138 -> 0.2502f // alertProfileImageSize - open-chat and scan-link alerts
-  192 -> 0.2133f // ChatInfoView (contact info), GroupMemberInfoView (member info)
-  else -> 0.2133f
+private fun badgeWidthRatio(size: Dp): Float {
+  val s = size.value.roundToInt()
+  return when {
+    // 36: AddGroupMembersView (contact rows when adding members), ChatItemInfoView (member row in message info)
+    // 37: MEMBER_IMAGE_SIZE - member avatar next to group message bubbles
+    // 38: ChannelMembersView, ChannelRelaysView (member rows)
+    // 40: ChatInfoToolbarTitle (chat header), MemberSupportChatToolbarTitle (member support chat header)
+    // 42: ContactPreviewView (contacts list), ShareListNavLinkView (share-to list), MEMBER_ROW_AVATAR_SIZE (group info / member support member rows)
+    s <= 42 -> 0.32f
+    // 54: UserPicker (user switcher)
+    // 57: ChatItemInfoView (forwarded-from chat)
+    // 60: AddGroupMembersView toolbar (group avatar - shows no badge currently)
+    s <= 60 -> 0.3f
+    s <= 72 -> 0.25f // ChatPreviewView (chat list), ContactRequestView (contact request in chat list)
+    s <= 138 -> 0.225f // alertProfileImageSize - open-chat and scan-link alerts
+    s <= 192 -> 0.2f // ChatInfoView (contact info), GroupMemberInfoView (member info)
+    else -> 0.20f
+  }
 }
 
 @Composable
@@ -198,7 +203,7 @@ private fun ProfileBadge(width: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit
       contentDescription = null,
       contentScale = ContentScale.Fit,
       alpha = if (badge.status == BadgeStatus.Expired) 0.4f else 1f,
-      colorFilter = badgeColorFilter,
+      // colorFilter = badgeColorFilter,
       modifier = mod
     )
   }

@@ -2,8 +2,9 @@
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#29f5ff"/>
-      <stop offset="50%" stop-color="#3e519f"/>
-      <stop offset="100%" stop-color="#000210"/>
+      <stop offset="5%" stop-color="#29f5ff"/>
+      <stop offset="50%" stop-color="#3064ea"/>
+      <stop offset="100%" stop-color="#001064"/>
     </linearGradient>
   </defs>
   <path fill="url(#g)" d="M98.25,8.25h120a90,90,0,0,1,90,90v219a90,90,0,0,1-90,90h-120a90,90,0,0,1-90-90v-219a90,90,0,0,1,90-90Z"/>
