@@ -55,7 +55,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (Badge (..), BadgeCrypto (..), BadgeStatus (..), LocalBadge (..), verifyCredential)
+import Simplex.Chat.Badges (Badge (..), BadgeCrypto (..), LocalBadge (..), mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -3144,7 +3144,7 @@ processChatCommand cxt nm = \case
             joinPreparedConn subMode conn
           joinPreparedConn subMode conn = do
             -- [incognito] send membership incognito profile
-            let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
+            p <- presentUserBadge' (incognitoMembershipProfile gInfo) user $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
             dm <- encodeConnInfo $ XInfo p
             (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
             let newStatus = if sqSecured then ConnSndReady else ConnJoined
@@ -3522,7 +3522,7 @@ processChatCommand cxt nm = \case
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
                 joinPreparedConn conn incognitoProfile chatV
               joinPreparedConn conn incognitoProfile chatV = do
-                let profileToSend = userProfileDirect user incognitoProfile Nothing True
+                profileToSend <- presentUserBadge' incognitoProfile user $ userProfileDirect user incognitoProfile Nothing True
                 dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
                 (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
@@ -3669,11 +3669,12 @@ processChatCommand cxt nm = \case
     joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfo) -> PQSupport -> CM Connection
     joinContact user conn@Connection {connChatVersion = chatV} cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ pqSup = do
       -- gInfo_ is Maybe (Maybe GroupInfo), where Just Nothing means "some unknown group", e.g. when joining via link without profile
-      let profileToSend = case gInfo_ of
-            Just gInfo_' ->
-              let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
-               in userProfileInGroup' user allowSimplexLinks incognitoProfile
-            Nothing -> userProfileDirect user incognitoProfile Nothing True
+      profileToSend <-
+        presentUserBadge' incognitoProfile user $ case gInfo_ of
+          Just gInfo_' ->
+            let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
+             in userProfileInGroup' user allowSimplexLinks incognitoProfile
+          Nothing -> userProfileDirect user incognitoProfile Nothing True
       chatEvent <- case gInfo_ of
         Just (Just gInfo) | useRelays' gInfo -> do
           let GroupInfo {membership = GroupMember {memberId}} = gInfo
@@ -3784,7 +3785,8 @@ processChatCommand cxt nm = \case
               mergedProfile' = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') False
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
-              void (sendDirectContactMessage user ct' $ XInfo mergedProfile') `catchAllErrors` eToView
+              p <- presentUserBadge' incognitoProfile user mergedProfile'
+              void (sendDirectContactMessage user ct' $ XInfo p) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> CM ChatResponse
@@ -4649,11 +4651,12 @@ createContactsSndFeatureItems user cts =
 -- attach an issued badge credential to the user's own profile and present it to all current contacts.
 -- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
 addUserBadge :: User -> Badge 'BCCredential -> CM ()
-addUserBadge user cred = do
+addUserBadge user cred@(BadgeCredential _ _ info) = do
   key <- asks $ badgePublicKey . config
   verified <- liftIO $ verifyCredential key cred
   unless verified $ throwCmdError "badge credential does not verify against configured key"
-  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred BSActive))
+  now <- liftIO getCurrentTime
+  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now True info)))
   asks currentUser >>= atomically . (`writeTVar` Just user')
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'

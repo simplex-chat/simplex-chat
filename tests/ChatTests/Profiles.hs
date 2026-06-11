@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -18,14 +19,16 @@ import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Simplex.Chat.Badges (BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
+import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Simplex.Chat.Badges (Badge, BadgeCrypto (..), BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite
@@ -44,6 +47,10 @@ chatProfileTests = do
     it "update user profile with image" testUpdateProfileImage
     it "use multiword profile names" testMultiWordProfileNames
     it "present supporter badge to contacts" testUserBadgeBroadcast
+    it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
+    it "supporter badge sent to member joining via group link" testUserBadgeGroupLink
+    it "expired supporter badge shows as expired" testUserBadgeExpired
+    it "incognito connection does not carry supporter badge" testUserBadgeIncognito
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "retry connecting via contact link" testRetryConnectingViaContactLink
@@ -189,6 +196,22 @@ testUpdateProfile =
             bob <## "use @cat <message> to send messages"
         ]
 
+-- issue a supporter badge credential with the given expiry (test issuer)
+issueTestBadge :: BBSSecretKey -> BBSPublicKey -> Maybe UTCTime -> IO (Badge 'BCCredential)
+issueTestBadge sk pk badgeExpiry = do
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}
+  Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
+  Right cred <- issueBadge sk pk vreq
+  pure cred
+
+-- the same single-line JSON `simplex-chat badge sign` prints, pasted into the app
+addTestBadge :: HasCallStack => TestCC -> Badge 'BCCredential -> IO ()
+addTestBadge cc cred = do
+  cc ##> ("/badge add " <> T.unpack (encodeJSON cred))
+  cc <## "ok"
+
 testUserBadgeBroadcast :: HasCallStack => TestParams -> IO ()
 testUserBadgeBroadcast ps = do
   Right (sk, pk) <- bbsKeyGen
@@ -196,10 +219,7 @@ testUserBadgeBroadcast ps = do
   where
     test sk pk alice bob = do
       connectUsers alice bob
-      cred <- issueSupporterBadge sk pk
-      -- the same single-line JSON `simplex-chat badge sign` prints, pasted into the app
-      alice ##> ("/badge add " <> T.unpack (encodeJSON cred))
-      alice <## "ok"
+      addTestBadge alice =<< issueTestBadge sk pk Nothing
       -- own badge is shown (add succeeded)
       alice ##> "/p"
       alice <## "user profile: alice (Alice, * supporter)"
@@ -207,13 +227,120 @@ testUserBadgeBroadcast ps = do
       -- the badge XInfo is delivered in order before this message, so the contact has stored it
       alice #> "@bob hi"
       bob <# "alice *> hi"
-    issueSupporterBadge sk pk = do
-      drg <- C.newRandom
-      mk <- generateMasterKey drg
-      let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = ""}
-      Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
-      Right cred <- issueBadge sk pk vreq
-      pure cred
+
+testUserBadgeOnConnect :: HasCallStack => TestParams -> IO ()
+testUserBadgeOnConnect ps = do
+  Right (sk, pk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  where
+    test sk pk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk pk Nothing
+      -- a contact connecting after the badge is attached receives it in the connection handshake
+      alice ##> "/c"
+      inv <- getInvitation alice
+      bob ##> ("/c " <> inv)
+      bob <## "confirmation sent!"
+      concurrently_
+        (bob <## "alice (Alice, * supporter): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "supporter badge - active"
+      bob <## "no expiry"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      bob <## currentChatVRangeInfo
+
+testUserBadgeGroupLink :: HasCallStack => TestParams -> IO ()
+testUserBadgeGroupLink ps = do
+  Right (sk, pk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  where
+    test sk pk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk pk Nothing
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+      -- the host's profile (x.grp.link.mem) is sent over the same connection as group messages,
+      -- so receiving a message guarantees the badge arrived
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      -- no prior contact: the host's badge arrives via the group link handshake
+      bob ##> "/i #team alice"
+      bob <## "group ID: 1"
+      bob <##. "member ID: "
+      bob <## "supporter badge - active"
+      bob <## "no expiry"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## currentChatVRangeInfo
+
+testUserBadgeExpired :: HasCallStack => TestParams -> IO ()
+testUserBadgeExpired ps = do
+  Right (sk, pk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  where
+    test sk pk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk pk (Just pastDate)
+      -- expired badge: no star
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice)"
+      alice <## "use /p <name> [<bio>] to change it"
+      connectUsers alice bob
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "supporter badge - expired"
+      bob <## "expires 2020-01-01"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      bob <## currentChatVRangeInfo
+    pastDate = posixSecondsToUTCTime 1577836800 -- 2020-01-01
+
+testUserBadgeIncognito :: HasCallStack => TestParams -> IO ()
+testUserBadgeIncognito ps = do
+  Right (sk, pk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  where
+    test sk pk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk pk Nothing
+      -- an incognito identity must not carry the badge
+      bob ##> "/connect"
+      inv <- getInvitation bob
+      alice ##> ("/connect incognito " <> inv)
+      alice <## "confirmation sent!"
+      aliceIncognito <- getTermLine alice
+      concurrentlyN_
+        [ bob <## (aliceIncognito <> ": contact is connected"),
+          do
+            alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+            alice <## "use /i bob to print out this incognito profile again"
+        ]
+      bob ##> ("/i " <> aliceIncognito)
+      bob <## "contact ID: 2"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      bob <## currentChatVRangeInfo
 
 testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
 testUpdateProfileImage =

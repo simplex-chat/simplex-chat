@@ -907,7 +907,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
-  let profileToSend = userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
+  profileToSend <- presentUserBadge' incognitoProfile user $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   -- TODO [certs rcv]
   (ct,conn,) . fst <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
@@ -920,7 +920,7 @@ acceptContactRequestAsync
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId, pqSupport = cReqPQSup}
   incognitoProfile = do
     subMode <- chatReadVar subscriptionMode
-    let profileToSend = userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
+    profileToSend <- presentUserBadge' incognitoProfile user $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
     cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
     (cmdId, acId) <- agentAcceptContactAsync user True cReqInvId (XInfo profileToSend) subMode cReqPQSup chatV
@@ -1907,6 +1907,12 @@ presentUserBadge User {profile = LocalProfile {localBadge}} p = case localBadge 
       Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p
 
+-- gated on the send's incognito profile: an incognito identity must never carry the user's badge
+presentUserBadge' :: Maybe a -> User -> Profile -> CM Profile
+presentUserBadge' incognitoProfile user p = case incognitoProfile of
+  Just _ -> pure p
+  Nothing -> presentUserBadge user p
+
 sendDirectContactMessage :: MsgEncodingI e => User -> Contact -> ChatMsgEvent e -> CM (SndMessage, Int64)
 sendDirectContactMessage user ct chatMsgEvent = do
   conn@Connection {connId} <- liftEither $ contactSendConn_ ct
@@ -2114,8 +2120,9 @@ sendGroupMessages user gInfo scope asGroup members events = do
     sendProfileUpdate = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
           allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
-          profileUpdateEvent = XInfo $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
-      void $ sendGroupMessage' user gInfo members' profileUpdateEvent
+      -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
+      profileUpdate <- presentUserBadge user $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
+      void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 

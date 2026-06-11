@@ -943,8 +943,9 @@ getContact_ db cxt user@User {userId} contactId deleted = do
       (userId, contactId, BI deleted)
 
 getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO User
-getUserByContactRequestId db contactRequestId =
-  ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
+getUserByContactRequestId db contactRequestId = do
+  now <- liftIO getCurrentTime
+  ExceptT . firstRow (toUser now) (SEUserNotFoundByContactRequestId contactRequestId) $
     DB.query db (userQuery <> " JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?") (Only contactRequestId)
 
 getContactConnections :: DB.Connection -> StoreCxt -> UserId -> Contact -> IO [Connection]

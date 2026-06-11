@@ -437,9 +437,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- [incognito] send saved profile
               (conn'', gInfo_) <- saveConnInfo conn' connInfo
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-              let profileToSend = case gInfo_ of
-                    Just gInfo -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-                    Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
+              profileToSend <-
+                presentUserBadge' incognitoProfile user $ case gInfo_ of
+                  Just gInfo -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+                  Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
         INFO pqSupport connInfo -> do
@@ -555,7 +556,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               ct' <- processContactProfileUpdate ct profile False `catchAllErrors` const (pure ct)
               -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-              let p = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
+              p <- presentUserBadge' incognitoProfile user $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
               allowAgentConnectionAsync user conn'' confId $ XInfo p
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
@@ -566,7 +567,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
-              let profileToSend = userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+              profileToSend <- presentUserBadge' incognitoProfile user $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
               allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
               toView $ CEvtBusinessLinkConnecting user gInfo host ct
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
@@ -798,7 +799,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db cxt user gInfo m glInv
                     -- [incognito] send saved profile
                     incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
-                    let profileToSend = userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+                    profileToSend <- presentUserBadge' incognitoProfile user $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
                     allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
                     toView $ CEvtGroupLinkConnecting user gInfo' m'
                 | otherwise -> messageError "x.grp.link.inv: publicGroupId mismatch"
@@ -813,7 +814,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 | sameMemberId memId m -> do
                     let GroupMember {memberId = membershipMemId} = membership
                         allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
-                        membershipProfile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
+                    membershipProfile <- presentUserBadge' (incognitoMembershipProfile gInfo) user $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId membershipProfile
@@ -921,7 +922,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             where
               sendXGrpLinkMem gInfo'' = do
                 let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
-                    profileToSend = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
+                profileToSend <- presentUserBadge' incognitoProfile user $ userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
@@ -3085,8 +3086,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         pure toMember
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      let membershipProfile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
-          allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+      let allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+      membershipProfile <- presentUserBadge' (incognitoMembershipProfile gInfo) user $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user Nothing (chatHasNtfs chatSettings) groupConnReq dm subMode
