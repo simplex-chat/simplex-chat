@@ -23,22 +23,30 @@ import Test.Hspec
 resolveNameTests :: Spec
 resolveNameTests = do
   -- iterateResolvers is the testable core of resolveOnUserServers: it walks
-  -- a list of candidate SMP servers, querying a resolver per server. Only
-  -- transport-level failures (NETWORK / TIMEOUT / host-unreachable) fall through
-  -- to the next server. Any "the server answered" outcome — hit, AUTH, CMD
-  -- PROHIBITED, or any other definite error — stops iteration so the candidate
-  -- name is not broadcast to every operator the user has configured.
+  -- a list of candidate SMP servers, querying a resolver per server. Transport
+  -- failures (NETWORK / TIMEOUT / host-unreachable) and unsupported servers
+  -- (CMD UNKNOWN / PROHIBITED — relays that don't speak RSLV) both fall through
+  -- to the next server; an unsupported relay never received the name (the client
+  -- degrades RSLV below namesSMPVersion), so skipping it discloses nothing. A
+  -- definitive answer from a name-capable relay — hit, AUTH, or any other definite
+  -- error — stops iteration so the name is not broadcast to every operator.
   describe "iterateResolvers" $ do
     it "returns the first server's NameRecord on hit" $ do
       let r = runIdentity $ iterateResolvers [srv1, srv2] $ \_ -> pure $ Right sampleRecord
       r `shouldBe` Right sampleRecord
-    it "stops on CMD PROHIBITED and returns ResolverUnavailable" $ do
+    it "skips an unsupported (CMD PROHIBITED) server and uses the next server's hit" $ do
+      callsRef <- newIORef []
+      r <- iterateResolvers [srv1, srv2] (recording callsRef stubProhibitedThenHit)
+      r `shouldBe` Right sampleRecord
+      -- both servers consulted: srv1 doesn't speak RSLV, so we fall through to
+      -- srv2. srv1 never received the name (RSLV degrades below namesSMPVersion).
+      readIORef callsRef `shouldReturn` [srv1, srv2]
+    it "returns ResolverUnavailable when every server is unsupported" $ do
       callsRef <- newIORef []
       r <- iterateResolvers [srv1, srv2] (recording callsRef (\_ -> pure $ Left prohibitedErr))
       r `shouldBe` Left ResolverUnavailable
-      -- second server must NOT be consulted: PROHIBITED is a server response,
-      -- iterating would broadcast the queried name to every operator.
-      readIORef callsRef `shouldReturn` [srv1]
+      -- all servers consulted, none could resolve.
+      readIORef callsRef `shouldReturn` [srv1, srv2]
     it "treats AUTH as definitive NameNotRegistered and stops iteration" $ do
       callsRef <- newIORef []
       r <- iterateResolvers [srv1, srv2] (recording callsRef stubAuthThenHit)
@@ -90,26 +98,33 @@ resolveNameTests = do
   -- identical to a local-store miss.
   describe "firstNameLink" $ do
     it "NTContact path picks simplexContact" $
-      case firstNameLink NTContact channelLink contactLink aliceNi of
+      case firstNameLink NTContact [channelLink] [contactLink] aliceNi of
         Right lnk -> lnk `shouldBe` contactLink
         Left e -> expectationFailure $ "expected Right, got " <> show e
     it "NTPublicGroup path picks simplexChannel" $
-      case firstNameLink NTPublicGroup channelLink contactLink groupNi of
+      case firstNameLink NTPublicGroup [channelLink] [contactLink] groupNi of
         Right lnk -> lnk `shouldBe` channelLink
         Left e -> expectationFailure $ "expected Right, got " <> show e
-    it "empty Text returns NotFound" $
-      case firstNameLink NTContact "" "" aliceNi of
+    -- Each per-type field is a list of links (primary first); the first non-empty
+    -- entry is used. firstNameLink filters out empty strings, so a list of only
+    -- empty links collapses to NotFound — same UX as a local-store miss.
+    it "picks the first non-empty link, skipping empty entries" $
+      case firstNameLink NTContact [] ["", contactLink] aliceNi of
+        Right lnk -> lnk `shouldBe` contactLink
+        Left e -> expectationFailure $ "expected Right, got " <> show e
+    it "empty link list returns NotFound" $
+      case firstNameLink NTContact [] [] aliceNi of
         Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` aliceNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
     -- Each name advertises a per-type link; cross-type fallback would silently
     -- connect to the wrong target, so a populated off-type slot must not satisfy
     -- the queried type.
     it "cross-type contact link with NTPublicGroup returns NotFound" $
-      case firstNameLink NTPublicGroup "" contactLink groupNi of
+      case firstNameLink NTPublicGroup [] [contactLink] groupNi of
         Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` groupNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
     it "cross-type channel link with NTContact returns NotFound" $
-      case firstNameLink NTContact channelLink "" aliceNi of
+      case firstNameLink NTContact [channelLink] [] aliceNi of
         Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` aliceNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
   -- linksMatch is the byte-equal-after-normalize comparator that gates
@@ -166,6 +181,9 @@ recording ref f srv = modifyIORef' ref (<> [srv]) >> f srv
 stubAuthThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
 stubAuthThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left authErr)]
 
+stubProhibitedThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
+stubProhibitedThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left prohibitedErr)]
+
 stubTransportThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
 stubTransportThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left networkErr)]
 
@@ -196,8 +214,8 @@ sampleRecord =
       nrNickname = "",
       nrWebsite = "",
       nrLocation = "",
-      nrSimplexContact = "",
-      nrSimplexChannel = "",
+      nrSimplexContact = [],
+      nrSimplexChannel = [],
       nrEth = Nothing,
       nrBtc = Nothing,
       nrXmr = Nothing,

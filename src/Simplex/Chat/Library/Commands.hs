@@ -4633,10 +4633,11 @@ processChatCommand cxt nm = \case
 
 -- | Failure modes for 'resolveOnUserServers' / 'iterateResolvers'.
 data ResolveError
-  = -- | First server returned CMD UNKNOWN / PROHIBITED (does not speak RSLV), or no servers configured.
-    -- We do not try further servers: each candidate-name query broadcasts the name
-    -- to the chosen relay, so iterating across operators on a definite "answered but
-    -- can't help" response would leak the queried name to every operator.
+  = -- | No enabled server can resolve: every candidate answered CMD UNKNOWN /
+    -- PROHIBITED (does not speak RSLV), or none were configured / reachable.
+    -- Iterating across unsupported servers is privacy-safe -- the client degrades
+    -- RSLV to a no-op for relays below namesSMPVersion (see Protocol.hs), so an
+    -- unsupported relay never receives the queried name.
     ResolverUnavailable
   | -- | AUTH from a name-capable server. Every name server reads the same on-chain state, so we trust the first one's no.
     NameNotRegistered
@@ -4656,13 +4657,15 @@ enabledSMPServersForUser user =
       | otherwise = Nothing
 
 -- | Resolve a SimpleX name by trying the user's enabled SMP servers in order.
--- Only transport-level failures (NETWORK, TIMEOUT, host-unreachable) fall
--- through to the next server. Any server that actually answered the request
--- terminates iteration: AUTH is definitive NotFound (every name server reads
--- the same on-chain state); CMD UNKNOWN / PROHIBITED means the server doesn't
--- speak RSLV; any other definite error surfaces as ResolverTransport.
--- Privacy: each query reveals the candidate name to the relay, so we must
--- not broadcast misses to every operator the user has configured.
+-- Transport-level failures (NETWORK, TIMEOUT, host-unreachable) and unsupported
+-- servers (CMD UNKNOWN / PROHIBITED, i.e. relays that don't speak RSLV) both fall
+-- through to the next server. Skipping an unsupported relay discloses nothing:
+-- the client degrades RSLV to a no-op below namesSMPVersion, so the name is never
+-- sent to it. A definitive answer from a name-capable relay terminates iteration:
+-- AUTH is definitive NotFound (every name server reads the same on-chain state);
+-- any other definite error surfaces as ResolverTransport.
+-- Privacy: a name-capable relay does see the queried name, so once one has
+-- answered we do not broadcast the miss to every other operator the user has.
 resolveOnUserServers :: User -> SimplexNameDomain -> CM (Either ResolveError NameRecord)
 resolveOnUserServers user@User {userId} domain = do
   srvs <- enabledSMPServersForUser user
@@ -4842,7 +4845,7 @@ iterateResolvers servers resolve = go servers
         Right nr -> pure $ Right nr
         Left e
           | isNotRegistered e -> pure $ Left NameNotRegistered
-          | isUnsupported e -> pure $ Left ResolverUnavailable
+          | isUnsupported e -> go rest
           | temporaryOrHostError e -> go rest
           | otherwise -> pure $ Left $ ResolverTransport e
     isNotRegistered = \case
@@ -4850,8 +4853,10 @@ iterateResolvers servers resolve = go servers
       _ -> False
     -- A server that doesn't speak RSLV answers CMD UNKNOWN (predates the
     -- command, e.g. the official servers) or CMD PROHIBITED (knows it but gates
-    -- on namesSMPVersion) -- directly, or wrapped by a proxy. All mean "can't
-    -- resolve here", surfaced to the user as CESimplexNameResolverUnavailable.
+    -- on namesSMPVersion) -- directly, or wrapped by a proxy. We skip it and try
+    -- the next server: the client degrades RSLV to a no-op below namesSMPVersion
+    -- (Protocol.hs), so an unsupported relay never received the queried name.
+    -- ResolverUnavailable is returned only when no server can resolve.
     isUnsupported = \case
       SMP _ (SMP.CMD SMP.UNKNOWN) -> True
       SMP _ (SMP.CMD SMP.PROHIBITED) -> True
