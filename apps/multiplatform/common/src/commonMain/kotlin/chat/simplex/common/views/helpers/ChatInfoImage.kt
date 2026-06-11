@@ -95,9 +95,11 @@ fun ProfileImage(
       val bdg = measurables[1].measure(Constraints())
       layout(avatar.width, avatar.height) {
         avatar.place(0, 0)
-        // badge center sits 0.33 * size right and down of the avatar center
-        val off = (0.33f * avatar.width).toInt()
-        bdg.place(x = avatar.width / 2 + off - bdg.width / 2, y = avatar.height / 2 + off - bdg.height / 2)
+        // badgeInsideShare of the badge is inside the avatar, the rest overhangs its bottom-right corner
+        bdg.place(
+          x = avatar.width - (badgeInsideShare * bdg.width).roundToInt(),
+          y = avatar.height - (badgeInsideShare * bdg.height).roundToInt()
+        )
       }
     }
   }
@@ -191,10 +193,17 @@ private fun badgeWidthRatio(size: Dp): Float {
   }
 }
 
+// share of the badge (width and height) inside the avatar; the rest overhangs the bottom-right corner
+private const val badgeInsideShare = 0.618f
+
+// the badge glyph's width / height (from the SVG: 316.5 x 415.5)
+private const val badgeAspectRatio = 316.5f / 415.5f
+
 @Composable
 private fun ProfileBadge(width: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit)?) {
-  // width only - the height follows the glyph's intrinsic aspect ratio
-  val mod = Modifier.width(width).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
+  // aspectRatio makes the measured height the glyph's height - otherwise Image measures at the
+  // SVG's intrinsic height, and placement relies on the measured edges
+  val mod = Modifier.width(width).aspectRatio(badgeAspectRatio).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
   if (badge.status == BadgeStatus.Failed) {
     Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
   } else {
