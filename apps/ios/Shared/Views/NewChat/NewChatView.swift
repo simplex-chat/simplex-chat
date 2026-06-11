@@ -1459,6 +1459,12 @@ func planAndConnect(
                     case let .known(contact):
                         logger.debug("planAndConnect, .contactAddress, .known")
                         await MainActor.run {
+                            // A name-resolved contact is prepared in the store but not yet in the
+                            // chat list (link-prepared chats arrive via NewPreparedChat). Surface it
+                            // so it's visible and openable; no-op if already present.
+                            if ChatModel.shared.getContactChat(contact.contactId) == nil {
+                                ChatModel.shared.addChat(Chat(chatInfo: .direct(contact: contact)))
+                            }
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
@@ -1538,6 +1544,11 @@ func planAndConnect(
                     case let .known(groupInfo):
                         logger.debug("planAndConnect, .groupLink, .known")
                         await MainActor.run {
+                            // Same as .contactAddress .known: surface a name-resolved (prepared)
+                            // group in the chat list so it's visible and openable.
+                            if ChatModel.shared.getGroupChat(groupInfo.groupId) == nil {
+                                ChatModel.shared.addChat(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)))
+                            }
                             if let f = filterKnownGroup {
                                 f(groupInfo)
                             } else {

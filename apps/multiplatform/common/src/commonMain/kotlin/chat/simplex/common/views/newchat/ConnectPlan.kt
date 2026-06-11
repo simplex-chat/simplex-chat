@@ -201,6 +201,12 @@ private suspend fun planAndConnectTask(
         is ContactAddressPlan.Known -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .Known")
           val contact = connectionPlan.contactAddressPlan.contact
+          // A name-resolved contact is prepared in the store but not yet in the
+          // chat list (link-prepared chats arrive via NewPreparedChat). Surface it
+          // so it's visible and openable; no-op if already present.
+          if (chatModel.getContactChat(contact.contactId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
+          }
           if (filterKnownContact != null) {
             filterKnownContact(contact)
           } else {
@@ -285,6 +291,11 @@ private suspend fun planAndConnectTask(
         is GroupLinkPlan.Known -> {
           Log.d(TAG, "planAndConnect, .GroupLink, .Known")
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo
+          // Same as ContactAddress.Known: surface a name-resolved (prepared)
+          // group in the chat list so it's visible and openable.
+          if (chatModel.getGroupChat(groupInfo.groupId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = emptyList()))
+          }
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)
           } else {
