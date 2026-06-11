@@ -748,6 +748,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     let FD.ValidFileDescription FD.FileDescription {size = FD.FileSize encSize, redirect} = rd
         redirectSize = maybe 0 (\FD.RedirectFileInfo {size = FD.FileSize s} -> toInteger s) redirect
         rcvSize = max (toInteger encSize) redirectSize
+        -- 10 MB margin: encryption and chunk-size rounding make the transfer larger than the advertised size
         maxRcvSize = min expectedFileSize (toInteger FD.maxFileSizeHard) + toInteger (FD.mb 10 :: Int64)
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
