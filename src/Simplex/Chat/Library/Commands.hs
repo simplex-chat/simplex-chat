@@ -2742,7 +2742,8 @@ processChatCommand cxt nm = \case
         throwCmdError $ "the number of members, moderators and admins would exceed the limit of " <> show maxGroupRosterSize
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && (isRosterRole newRole || anyPrivilegedTarget)
-      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g doBumpRoster currentMems
+      eventRosterVer <- if doBumpRoster then Just <$> bumpAndBroadcastRoster user gInfo else pure Nothing
+      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g currentMems eventRosterVer
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
@@ -2780,21 +2781,20 @@ processChatCommand cxt nm = \case
                 withFastStore' $ \db -> updateGroupMemberRole db user m newRole
                 pure (m :: GroupMember) {memberRole = newRole}
               _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
-      changeRoleCurrentMems :: User -> Group -> Bool -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
-      changeRoleCurrentMems user (Group gInfo members) doBumpRoster memsToChange = case L.nonEmpty memsToChange of
+      changeRoleCurrentMems :: User -> Group -> [GroupMember] -> Maybe VersionRoster -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      changeRoleCurrentMems user (Group gInfo members) memsToChange rosterVer = case L.nonEmpty memsToChange of
         Nothing -> pure ([], [], [], False)
         Just memsToChange' -> do
-          (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
-          eventRosterVer <- if doBumpRoster then Just <$> bumpAndBroadcastRoster user gInfo else pure Nothing
           -- channels always carry the member's key; the receiver verifies it (re-key rejected) and creates only roster members
           let eventKey m = if useRelays' gInfo then MemberKey <$> memberPubKey m else Nothing
-              events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (eventKey m) eventRosterVer) memsToChange'
+              events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (eventKey m) rosterVer) memsToChange'
               recipients = filter memberCurrent members
           (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
+          (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
           pure (errs, changed, acis, signed)
           where
