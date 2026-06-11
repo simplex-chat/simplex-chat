@@ -801,8 +801,18 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                 connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
               }
               is ConnectTarget.Name -> {
+                // A name lookup means "take me to this contact": open the chat if
+                // it's already known (visible prompt), unlike a pasted link which
+                // filters the list. So no filterKnownContact here.
                 hideKeyboard(view)
-                connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
+                withBGApi {
+                  planAndConnect(
+                    chatModel.remoteHostId(),
+                    target.text,
+                    close = null,
+                    cleanup = { searchText.value = TextFieldValue() },
+                  )
+                }
               }
               null -> if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {
