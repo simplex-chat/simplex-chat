@@ -1942,7 +1942,8 @@ processChatCommand cxt nm = \case
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    let userData = contactShortLinkData (userProfileDirect user incognitoProfile Nothing True) Nothing
+    linkProfile <- presentUserBadge' incognitoProfile user $ userProfileDirect user incognitoProfile Nothing True
+    let userData = contactShortLinkData linkProfile Nothing
         userLinkData = UserInvLinkData userData
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation (Just userLinkData) Nothing IKPQOn subMode
@@ -1964,7 +1965,7 @@ processChatCommand cxt nm = \case
           updatePCCIncognito db user conn (Just pId) sLnk
         pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
       (ConnNew, Just pId, False) -> do
-        sLnk <- updatePCCShortLinkData conn $ userProfileDirect user Nothing Nothing True
+        sLnk <- updatePCCShortLinkData conn =<< presentUserBadge user (userProfileDirect user Nothing Nothing True)
         conn' <- withFastStore' $ \db -> do
           deletePCCIncognitoProfile db user pId
           updatePCCIncognito db user conn Nothing sLnk
@@ -1983,9 +1984,10 @@ processChatCommand cxt nm = \case
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
         let short = isJust $ connShortLink' =<< connLinkInv
-            userLinkData_
-              | short = Just $ UserInvLinkData $ contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
-              | otherwise = Nothing
+        userLinkData_ <-
+          if short
+            then Just . UserInvLinkData . (`contactShortLinkData` Nothing) <$> presentUserBadge newUser (userProfileDirect newUser Nothing Nothing True)
+            else pure Nothing
         -- TODO [certs rcv]
         (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation userLinkData_ Nothing IKPQOn subMode
         ccLink' <- shortenCreatedLink ccLink
@@ -2260,10 +2262,11 @@ processChatCommand cxt nm = \case
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
     -- TODO [relays] relay: add identity, key to link data?
-    let userData
-          | isTrue userChatRelay = relayShortLinkData (userProfileDirect user Nothing Nothing True)
-          | otherwise = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
-        userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+    userData <-
+      if isTrue userChatRelay
+        then pure $ relayShortLinkData (userProfileDirect user Nothing Nothing True)
+        else (`contactShortLinkData` Nothing) <$> presentUserBadge user (userProfileDirect user Nothing Nothing True)
+    let userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
@@ -3762,9 +3765,9 @@ processChatCommand cxt nm = \case
     setMyAddressData :: User -> UserContactLink -> CM UserContactLink
     setMyAddressData user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
-      let shortLinkProfile = userProfileDirect user Nothing Nothing True
-          -- TODO [short links] do not save address to server if data did not change, spinners, error handling
-          userData
+      shortLinkProfile <- presentUserBadge user $ userProfileDirect user Nothing Nothing True
+      -- TODO [short links] do not save address to server if data did not change, spinners, error handling
+      let userData
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
             | otherwise = contactShortLinkData shortLinkProfile $ Just addressSettings
           userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
@@ -4072,7 +4075,7 @@ processChatCommand cxt nm = \case
           Just r -> pure r
           Nothing -> do
             (FixedLinkData {linkConnReq = cReq, rootKey}, cData) <- getShortLinkConnReq nm user l'
-            contactSLinkData_ <- liftIO $ decodeLinkUserData cData
+            contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
             let ov = verifyLinkOwner rootKey [] l sig_
             invitationReqAndPlan cReq (Just l') contactSLinkData_ ov
       where
@@ -4099,7 +4102,7 @@ processChatCommand cxt nm = \case
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
                   _ -> do
-                    contactSLinkData_ <- liftIO $ decodeLinkUserData cData
+                    contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
                     let ContactLinkData _ UserContactData {owners} = cData
                         ov = verifyLinkOwner rootKey owners l' sig_
                     plan <- contactRequestPlan user cReq contactSLinkData_ ov
@@ -4268,7 +4271,7 @@ processChatCommand cxt nm = \case
     contactShortLinkData p settings =
       let msg = autoReply =<< settings
           business = maybe False businessAddress settings
-          contactData = ContactShortLinkData p msg business
+          contactData = ContactShortLinkData p msg business Nothing
        in encodeShortLinkData contactData
     relayShortLinkData :: Profile -> UserLinkData
     relayShortLinkData Profile {displayName, fullName, shortDescr, image} =

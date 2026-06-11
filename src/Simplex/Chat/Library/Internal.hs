@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (Badge (..), BadgePresHeader (..), LocalBadge (..), badgeProof)
+import Simplex.Chat.Badges (Badge (..), BadgePresHeader (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -1912,6 +1912,17 @@ presentUserBadge' :: Maybe a -> User -> Profile -> CM Profile
 presentUserBadge' incognitoProfile user p = case incognitoProfile of
   Just _ -> pure p
   Nothing -> presentUserBadge user p
+
+-- receiving side of contact/invitation link data: verify the badge proof from the link profile
+-- and set the crypto-free display badge for the UI (the raw proof stays in profile for APIPrepareContact)
+linkDataBadge :: ContactShortLinkData -> CM ContactShortLinkData
+linkDataBadge cld@ContactShortLinkData {profile = Profile {badge}} = case badge of
+  Nothing -> pure cld
+  Just b@(BadgeProof _ _ info) -> do
+    key <- asks $ badgePublicKey . config
+    verified <- liftIO $ verifyBadge key b
+    now <- liftIO getCurrentTime
+    pure (cld :: ContactShortLinkData) {localBadge = Just $ ShownBadge info (mkBadgeStatus now verified info)}
 
 sendDirectContactMessage :: MsgEncodingI e => User -> Contact -> ChatMsgEvent e -> CM (SndMessage, Int64)
 sendDirectContactMessage user ct chatMsgEvent = do

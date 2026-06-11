@@ -1994,7 +1994,10 @@ data class Profile(
   override val localAlias : String = "",
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
-  val peerType: ChatPeerType? = null
+  val peerType: ChatPeerType? = null,
+  // opaque badge proof from the wire profile: not interpreted by the UI (display uses crypto-free LocalBadge),
+  // but preserved so passing a link profile back to the core (apiPrepareContact) keeps the proof
+  val badge: JsonElement? = null
 ): NamedChat {
   val profileViewName: String
     get() {
@@ -2330,7 +2333,9 @@ enum class MemberCriteria {
 data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
-  val business: Boolean
+  val business: Boolean,
+  // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
+  val localBadge: LocalBadge? = null
 )
 
 @Serializable
@@ -2779,7 +2784,7 @@ class UserContactRequest (
   val contactRequestId: Long,
   val cReqChatVRange: VersionRange,
   override val localDisplayName: String,
-  val profile: Profile,
+  val profile: LocalProfile,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -2805,7 +2810,7 @@ class UserContactRequest (
       contactRequestId = 1,
       cReqChatVRange = VersionRange(1, 1),
       localDisplayName = "alice",
-      profile = Profile.sampleData,
+      profile = LocalProfile.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )

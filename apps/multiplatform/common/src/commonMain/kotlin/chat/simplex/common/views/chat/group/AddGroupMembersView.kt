@@ -352,7 +352,9 @@ fun ContactCheckRow(
       }
     } else null
   ) {
-    ProfileImage(size = 36.dp, contact.image)
+    BadgedProfileImage(36.dp, if (contact.active) contact.profile.localBadge else null) {
+      ProfileImage(size = 36.dp, contact.image)
+    }
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     Text(
       contact.chatViewName,

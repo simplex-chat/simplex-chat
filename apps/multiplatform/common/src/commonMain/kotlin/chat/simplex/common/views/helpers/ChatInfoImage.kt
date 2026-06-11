@@ -38,7 +38,12 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
       is ChatInfo.Direct -> chatInfo.contact.chatIconName
       else -> MR.images.ic_account_circle_filled
     }
-  val badge = if (chatInfo is ChatInfo.Direct) chatInfo.contact.profile.localBadge else null
+  // a deleted (inactive) contact shows the inactive icon instead of the badge
+  val badge = when {
+    chatInfo is ChatInfo.Direct && chatInfo.contact.active -> chatInfo.contact.profile.localBadge
+    chatInfo is ChatInfo.ContactRequest -> chatInfo.contactRequest.profile.localBadge
+    else -> null
+  }
   BadgedProfileImage(size, badge, onBadgeClick = if (tappableBadge) badge?.let { b -> { showBadgeInfoAlert(b) } } else null) {
     ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
   }

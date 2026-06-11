@@ -2051,7 +2051,8 @@ fun BoxScope.ChatItemsList(
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
-                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                        // zIndex draws the avatar (and its badge overflow) above the message bubble tail
+                        Box(Modifier.zIndex(1f).clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {

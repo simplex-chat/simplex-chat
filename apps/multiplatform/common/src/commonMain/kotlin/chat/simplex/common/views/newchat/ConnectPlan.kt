@@ -468,11 +468,13 @@ private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: 
     profileName = contact.profile.displayName,
     profileFullName = contact.profile.fullName,
     profileImage = {
-      ProfileImage(
-        size = alertProfileImageSize,
-        image = contact.profile.image,
-        icon = contact.chatIconName
-      )
+      BadgedProfileImage(alertProfileImageSize, if (contact.active) contact.profile.localBadge else null) {
+        ProfileImage(
+          size = alertProfileImageSize,
+          image = contact.profile.image,
+          icon = contact.chatIconName
+        )
+      }
     },
     confirmText = generalGetString(if (contact.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat),
     onConfirm = {
@@ -624,14 +626,16 @@ fun showPrepareContactAlert(
     profileName = contactShortLinkData.profile.displayName,
     profileFullName = contactShortLinkData.profile.fullName,
     profileImage = {
-      ProfileImage(
-        size = alertProfileImageSize,
-        image = contactShortLinkData.profile.image,
-        icon =
-          if (contactShortLinkData.business) MR.images.ic_work_filled_padded
-          else if (contactShortLinkData.profile.peerType == ChatPeerType.Bot) MR.images.ic_cube
-          else MR.images.ic_account_circle_filled
-      )
+      BadgedProfileImage(alertProfileImageSize, contactShortLinkData.localBadge) {
+        ProfileImage(
+          size = alertProfileImageSize,
+          image = contactShortLinkData.profile.image,
+          icon =
+            if (contactShortLinkData.business) MR.images.ic_work_filled_padded
+            else if (contactShortLinkData.profile.peerType == ChatPeerType.Bot) MR.images.ic_cube
+            else MR.images.ic_account_circle_filled
+        )
+      }
     },
     information = ownerVerificationMessage(ownerVerification),
     confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),

@@ -389,7 +389,7 @@ fun ChatPreviewView(
   Box(contentAlignment = Alignment.Center) {
     Row {
       Box(contentAlignment = Alignment.BottomEnd) {
-        ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
+        ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier, tappableBadge = true)
         Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
           chatPreviewImageOverlayIcon()
         }

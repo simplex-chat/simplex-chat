@@ -51,6 +51,7 @@ chatProfileTests = do
     it "supporter badge sent to member joining via group link" testUserBadgeGroupLink
     it "expired supporter badge shows as expired" testUserBadgeExpired
     it "incognito connection does not carry supporter badge" testUserBadgeIncognito
+    it "supporter badge sent to contact connecting via address" testUserBadgeContactAddress
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "retry connecting via contact link" testRetryConnectingViaContactLink
@@ -288,6 +289,40 @@ testUserBadgeGroupLink ps = do
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
       bob <## "connection not verified, use /code command to see security code"
+      bob <## currentChatVRangeInfo
+
+testUserBadgeContactAddress :: HasCallStack => TestParams -> IO ()
+testUserBadgeContactAddress ps = do
+  Right (sk, pk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  where
+    test sk pk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk pk Nothing
+      alice ##> "/ad"
+      (shortLink, cLink) <- getContactLinks alice True
+      -- the address link data carries the badge proof; the connect plan returns it verified, without crypto
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      sLinkData <- getTermLine bob
+      sLinkData `shouldContain` "\"proof\":"
+      sLinkData `shouldContain` "\"localBadge\":{\"badge\":{\"badgeType\":\"supporter\""
+      sLinkData `shouldContain` "\"status\":\"active\""
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice, * supporter): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "supporter badge - active"
+      bob <## "no expiry"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
       bob <## currentChatVRangeInfo
 
 testUserBadgeExpired :: HasCallStack => TestParams -> IO ()
