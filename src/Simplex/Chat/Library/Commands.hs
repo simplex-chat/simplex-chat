@@ -4728,16 +4728,18 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
 
--- | Pick the link from the @NameRecord@ matching the queried name type.
--- A missing per-type field (record exists but advertises no link of this kind)
--- is treated as "not found" — same UX as a local-store miss. The text fields
--- on 'NameRecord' use the empty string as the absent sentinel.
-firstNameLink :: SimplexNameType -> Text -> Text -> SimplexNameInfo -> Either ChatError Text
-firstNameLink nameType simplexChannel simplexContact ni
-  | T.null link = Left $ ChatError $ CESimplexNameNotFound ni
-  | otherwise = Right link
+-- | Pick the primary link from the @NameRecord@ matching the queried name type.
+-- Each per-type field is a list of links (primary first, fallbacks after); the
+-- prepare flow uses the first non-empty entry. An empty list (record exists but
+-- advertises no link of this kind) is treated as "not found" — same UX as a
+-- local-store miss.
+firstNameLink :: SimplexNameType -> [Text] -> [Text] -> SimplexNameInfo -> Either ChatError Text
+firstNameLink nameType simplexChannel simplexContact ni =
+  case filter (not . T.null) links of
+    lnk : _ -> Right lnk
+    [] -> Left $ ChatError $ CESimplexNameNotFound ni
   where
-    link = case nameType of
+    links = case nameType of
       NTPublicGroup -> simplexChannel
       NTContact -> simplexContact
 
@@ -4785,10 +4787,12 @@ apiVerifySimplexName user chatRef = do
       nameType' = (\SimplexNameInfo {nameType} -> nameType) claim
   resolveOnUserServers user domain >>= \case
     Right NameRecord {nrSimplexContact, nrSimplexChannel} -> do
-      let resolvedLink = case nameType' of
+      let resolvedLinks = case nameType' of
             NTContact -> nrSimplexContact
             NTPublicGroup -> nrSimplexChannel
-      if not (T.null resolvedLink) && linksMatch resolvedLink storedLink
+      -- The peer's stored link verifies if it matches ANY advertised link
+      -- (primary or fallback); an empty list never matches.
+      if any (`linksMatch` storedLink) resolvedLinks
         then do
           ts <- liftIO getCurrentTime
           withStore' $ \db -> persistVerified db ts
