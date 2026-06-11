@@ -2786,8 +2786,8 @@ processChatCommand cxt nm = \case
         Nothing -> pure ([], [], [], False)
         Just memsToChange' -> do
           -- channels always carry the member's key; the receiver verifies it (re-key rejected) and creates only roster members
-          let eventKey m = if useRelays' gInfo then MemberKey <$> memberPubKey m else Nothing
-              events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (eventKey m) rosterVer) memsToChange'
+          let memKey m = if isJust rosterVer then MemberKey <$> memberPubKey m else Nothing
+              events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (memKey m) rosterVer) memsToChange'
               recipients = filter memberCurrent members
           (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
