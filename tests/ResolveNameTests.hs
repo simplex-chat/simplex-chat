@@ -62,6 +62,15 @@ resolveNameTests = do
       -- second server must NOT be consulted: definite error means the server
       -- answered, so iterating would leak the queried name.
       readIORef callsRef `shouldReturn` [srv1]
+    it "surfaces a resolver-backend INTERNAL as ResolverTransport, not NotFound" $ do
+      callsRef <- newIORef []
+      r <- iterateResolvers [srv1, srv2] (recording callsRef (\_ -> pure $ Left backendErr))
+      case r of
+        Left (ResolverTransport e) -> e `shouldBe` backendErr
+        other -> expectationFailure $ "expected ResolverTransport, got " <> show other
+      -- a backend failure on srv1 stops iteration (the name reached a capable
+      -- relay); it must not be reported as the authoritative NameNotRegistered.
+      readIORef callsRef `shouldReturn` [srv1]
     it "iterates on transport-level errors and uses the next server's success" $ do
       callsRef <- newIORef []
       r <- iterateResolvers [srv1, srv2] (recording callsRef stubTransportThenHit)
@@ -230,7 +239,9 @@ sampleRecord =
 authErr :: AgentErrorType
 authErr = SMP "smp1.example" SMP.AUTH
 
--- CMD PROHIBITED on the PFWD path: surfaces as PROXY ... (ProxyProtocolError ...).
+-- A relay with no resolver configured (names role off) answers CMD PROHIBITED
+-- (Server.hs). A relay error is transparent over the proxy (SMP host ...); the
+-- PROXY-wrapped form here exercises a proxy-level rejection. Both -> skip.
 prohibitedErr :: AgentErrorType
 prohibitedErr = PROXY "proxy.example" "smp1.example" (ProxyProtocolError (SMP.CMD SMP.PROHIBITED))
 
@@ -245,3 +256,10 @@ networkErr = BROKER "smp1.example" (NETWORK (NEConnectError "simulated network f
 -- as ResolverTransport without iterating, to avoid broadcasting the name.
 otherDefiniteErr :: AgentErrorType
 otherDefiniteErr = INTERNAL "simulated definite error"
+
+-- A resolver-backed relay whose backing store failed (resolver 5xx, timeout,
+-- decode error) answers ERR INTERNAL (Server.hs), surfacing as SMP host INTERNAL.
+-- This is transient -- it must surface as ResolverTransport, NOT collapse to the
+-- authoritative NameNotRegistered the way the old ERR-AUTH-for-everything did.
+backendErr :: AgentErrorType
+backendErr = SMP "smp1.example" SMP.INTERNAL
