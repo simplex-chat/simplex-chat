@@ -4633,7 +4633,7 @@ processChatCommand cxt nm = \case
 
 -- | Failure modes for 'resolveOnUserServers' / 'iterateResolvers'.
 data ResolveError
-  = -- | First server returned CMD PROHIBITED (does not speak RSLV), or no servers configured.
+  = -- | First server returned CMD UNKNOWN / PROHIBITED (does not speak RSLV), or no servers configured.
     -- We do not try further servers: each candidate-name query broadcasts the name
     -- to the chosen relay, so iterating across operators on a definite "answered but
     -- can't help" response would leak the queried name to every operator.
@@ -4659,8 +4659,8 @@ enabledSMPServersForUser user =
 -- Only transport-level failures (NETWORK, TIMEOUT, host-unreachable) fall
 -- through to the next server. Any server that actually answered the request
 -- terminates iteration: AUTH is definitive NotFound (every name server reads
--- the same on-chain state); CMD PROHIBITED means the server doesn't speak
--- namesSMPVersion; any other definite error surfaces as ResolverTransport.
+-- the same on-chain state); CMD UNKNOWN / PROHIBITED means the server doesn't
+-- speak RSLV; any other definite error surfaces as ResolverTransport.
 -- Privacy: each query reveals the candidate name to the relay, so we must
 -- not broadcast misses to every operator the user has configured.
 resolveOnUserServers :: User -> SimplexNameDomain -> CM (Either ResolveError NameRecord)
@@ -4848,7 +4848,14 @@ iterateResolvers servers resolve = go servers
     isNotRegistered = \case
       SMP _ SMP.AUTH -> True
       _ -> False
+    -- A server that doesn't speak RSLV answers CMD UNKNOWN (predates the
+    -- command, e.g. the official servers) or CMD PROHIBITED (knows it but gates
+    -- on namesSMPVersion) -- directly, or wrapped by a proxy. All mean "can't
+    -- resolve here", surfaced to the user as CESimplexNameResolverUnavailable.
     isUnsupported = \case
+      SMP _ (SMP.CMD SMP.UNKNOWN) -> True
+      SMP _ (SMP.CMD SMP.PROHIBITED) -> True
+      PROXY _ _ (ProxyProtocolError (SMP.CMD SMP.UNKNOWN)) -> True
       PROXY _ _ (ProxyProtocolError (SMP.CMD SMP.PROHIBITED)) -> True
       _ -> False
 
