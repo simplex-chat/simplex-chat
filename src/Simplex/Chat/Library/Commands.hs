@@ -4647,13 +4647,20 @@ data ResolveError
   deriving (Eq, Show)
 
 -- | Return the user's enabled SMP servers (preset and custom, excluding deleted).
--- Mirrors the filter applied by 'useServers' before configuring the agent.
+-- Applies the same operator-aware filter the agent uses ('agentServerCfgs'): a
+-- server is included only if it is enabled, not deleted, and either custom (no
+-- operator) or owned by an enabled operator. Disabling an operator thus removes
+-- its servers from name resolution, matching the rest of the app.
 enabledSMPServersForUser :: User -> CM [SMPServer]
-enabledSMPServersForUser user =
-  mapMaybe enabledSrv <$> withFastStore' (\db -> getProtocolServers db SPSMP user)
+enabledSMPServersForUser user = do
+  ops <- serverOperators <$> withFastStore getServerOperators
+  smpSrvs <- withFastStore' $ \db -> getProtocolServers db SPSMP user
+  let opDomains = operatorDomains ops
+      cfgs = agentServerCfgs SPSMP opDomains $ filter (\UserServer {deleted} -> not deleted) smpSrvs
+  pure $ mapMaybe enabledSrv cfgs
   where
-    enabledSrv UserServer {server = ProtoServerWithAuth srv _, enabled, deleted}
-      | enabled && not deleted = Just srv
+    enabledSrv ServerCfg {server = ProtoServerWithAuth srv _, enabled}
+      | enabled = Just srv
       | otherwise = Nothing
 
 -- | Resolve a SimpleX name by trying the user's enabled SMP servers in order.
