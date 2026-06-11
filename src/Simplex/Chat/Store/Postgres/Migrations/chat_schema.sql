@@ -534,10 +534,12 @@ CREATE TABLE test_chat_schema.contact_profiles (
     chat_peer_type text,
     badge_proof bytea,
     badge_pres_header bytea,
-    badge_expiry text,
+    badge_expiry timestamp with time zone,
     badge_type text,
     badge_verified smallint DEFAULT 0 NOT NULL,
-    badge_extra text
+    badge_extra text,
+    badge_master_key bytea,
+    badge_signature bytea
 );
 
 
