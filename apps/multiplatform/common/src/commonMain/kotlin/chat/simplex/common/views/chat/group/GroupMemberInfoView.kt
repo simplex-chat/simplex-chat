@@ -901,19 +901,21 @@ fun MemberProfileImage(
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   async: Boolean = false,
-  tappableBadge: Boolean = false
+  tappableBadge: Boolean = false,
+  scaled: Boolean = false
 ) {
   val badge = mem.memberProfile.localBadge
-  BadgedProfileImage(size, badge, onBadgeClick = if (tappableBadge) badge?.let { b -> { showBadgeInfoAlert(b) } } else null) {
-    ProfileImage(
-      size = size,
-      image = mem.image,
-      color = color,
-      backgroundColor = backgroundColor,
-      blurred = mem.blocked,
-      async = async
-    )
-  }
+  ProfileImage(
+    size = size,
+    image = mem.image,
+    color = color,
+    backgroundColor = backgroundColor,
+    blurred = mem.blocked,
+    async = async,
+    badge = badge,
+    onBadgeClick = if (tappableBadge) badge?.let { b -> { showBadgeInfoAlert(b) } } else null,
+    scaled = scaled
+  )
 }
 
 fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onFailure: () -> Unit = {}, onSuccess: () -> Unit = {}) {

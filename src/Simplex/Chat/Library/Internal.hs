@@ -907,7 +907,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
-  profileToSend <- presentUserBadge' incognitoProfile user $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
+  profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   -- TODO [certs rcv]
   (ct,conn,) . fst <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
@@ -920,7 +920,7 @@ acceptContactRequestAsync
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId, pqSupport = cReqPQSup}
   incognitoProfile = do
     subMode <- chatReadVar subscriptionMode
-    profileToSend <- presentUserBadge' incognitoProfile user $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
+    profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
     cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
     (cmdId, acId) <- agentAcceptContactAsync user True cReqInvId (XInfo profileToSend) subMode cReqPQSup chatV
@@ -1897,21 +1897,15 @@ sendDirectContactMessages' user ct events = do
   pure sndMsgs'
 
 -- present the user's own badge on an outgoing profile: a fresh, single-use proof from the stored credential.
--- only own credentials present (peers carry proofs, which are not re-presented). callers must not present on incognito sends.
-presentUserBadge :: User -> Profile -> CM Profile
-presentUserBadge User {profile = LocalProfile {localBadge}} p = case localBadge of
-  Just (OwnBadge cred _) -> do
+-- the send's incognito profile (when set) suppresses it - an incognito identity must never carry the badge.
+presentUserBadge :: User -> Maybe i -> Profile -> CM Profile
+presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p = case (incognitoProfile, localBadge) of
+  (Nothing, Just (OwnBadge cred _)) -> do
     key <- asks $ badgePublicKey . config
     liftIO (badgeProof key cred PHTest) >>= \case
       Right proof -> pure p {badge = Just proof}
       Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p
-
--- gated on the send's incognito profile: an incognito identity must never carry the user's badge
-presentUserBadge' :: Maybe a -> User -> Profile -> CM Profile
-presentUserBadge' incognitoProfile user p = case incognitoProfile of
-  Just _ -> pure p
-  Nothing -> presentUserBadge user p
 
 -- receiving side of contact/invitation link data: verify the badge proof from the link profile
 -- and set the crypto-free display badge for the UI (the raw proof stays in profile for APIPrepareContact)
@@ -2132,7 +2126,7 @@ sendGroupMessages user gInfo scope asGroup members events = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
           allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
-      profileUpdate <- presentUserBadge user $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
+      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs

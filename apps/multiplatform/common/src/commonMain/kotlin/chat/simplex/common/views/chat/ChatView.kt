@@ -1555,7 +1555,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
     if (cInfo.incognito) {
       IncognitoImage(size = 36.dp * fontSizeSqrtMultiplier, Indigo)
     }
-    ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor)
+    ChatInfoImage(cInfo, size = imageSize, iconColor, scaled = true)
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
@@ -2793,7 +2793,7 @@ val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
+  MemberProfileImage(MEMBER_IMAGE_SIZE, member, backgroundColor = MaterialTheme.colors.background, scaled = true)
 }
 
 @Composable

@@ -464,10 +464,7 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
       .padding(vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    val avatarSize = 54.dp * fontSizeSqrtMultiplier
-    BadgedProfileImage(avatarSize, u.profile.localBadge) {
-      ProfileImage(image = u.image, size = avatarSize)
-    }
+    ProfileImage(image = u.image, size = 54.dp, badge = u.profile.localBadge, scaled = true)
     Text(
       u.displayName,
       modifier = Modifier

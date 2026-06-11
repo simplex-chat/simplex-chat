@@ -28,9 +28,10 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false, tappableBadge: Boolean = false) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false, tappableBadge: Boolean = false, scaled: Boolean = false) {
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
@@ -44,9 +45,15 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
     chatInfo is ChatInfo.ContactRequest -> chatInfo.contactRequest.profile.localBadge
     else -> null
   }
-  BadgedProfileImage(size, badge, onBadgeClick = if (tappableBadge) badge?.let { b -> { showBadgeInfoAlert(b) } } else null) {
-    ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
-  }
+  ProfileImage(
+    size,
+    chatInfo.image,
+    icon,
+    if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor,
+    badge = badge,
+    onBadgeClick = if (tappableBadge) badge?.let { b -> { showBadgeInfoAlert(b) } } else null,
+    scaled = scaled
+  )
 }
 
 @Composable
@@ -60,6 +67,9 @@ fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVa
   }
 }
 
+// `size` is the design size; `scaled = true` renders the avatar (and badge) at size * fontSizeSqrtMultiplier.
+// The badge is measured but only the avatar's size is reported, so it overflows bottom-right
+// and has no effect on the avatar's own layout or anything around it.
 @Composable
 fun ProfileImage(
   size: Dp,
@@ -68,8 +78,33 @@ fun ProfileImage(
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   blurred: Boolean = false,
-  async: Boolean = false
+  async: Boolean = false,
+  badge: LocalBadge? = null,
+  onBadgeClick: (() -> Unit)? = null,
+  scaled: Boolean = false
 ) {
+  val sz = if (scaled) size * fontSizeSqrtMultiplier else size
+  if (badge == null) {
+    ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
+  } else {
+    Layout(content = {
+      ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
+      ProfileBadge(badgeWidthRatio(size) * sz, badge, onBadgeClick)
+    }) { measurables, constraints ->
+      val avatar = measurables[0].measure(constraints)
+      val bdg = measurables[1].measure(Constraints())
+      layout(avatar.width, avatar.height) {
+        avatar.place(0, 0)
+        // badge center sits 0.33 * size right and down of the avatar center
+        val off = (0.33f * avatar.width).toInt()
+        bdg.place(x = avatar.width / 2 + off - bdg.width / 2, y = avatar.height / 2 + off - bdg.height / 2)
+      }
+    }
+  }
+}
+
+@Composable
+private fun ProfileImageBox(size: Dp, image: String?, icon: ImageResource, color: Color, backgroundColor: Color?, blurred: Boolean, async: Boolean) {
   Box(Modifier.size(size)) {
     if (image == null) {
       val iconToReplace = when (icon) {
@@ -116,29 +151,6 @@ fun ProfileImage(
   }
 }
 
-// Overlays a supporter badge on an avatar with zero layout impact: a custom Layout measures the badge but
-// reports only the avatar's size, so the badge overflows bottom-right (not clamped) and nothing around it shifts.
-@Composable
-fun BadgedProfileImage(size: Dp, badge: LocalBadge?, onBadgeClick: (() -> Unit)? = null, avatar: @Composable () -> Unit) {
-  if (badge == null) {
-    avatar()
-    return
-  }
-  Layout(content = {
-    avatar()
-    ProfileBadge(size, badge, onBadgeClick)
-  }) { measurables, constraints ->
-    val a = measurables[0].measure(constraints)
-    val b = measurables[1].measure(Constraints())
-    layout(a.width, a.height) {
-      a.place(0, 0)
-      // phone center sits 0.33*S right and down of the avatar center, overflowing the avatar bounds
-      val off = (0.33f * a.width).toInt()
-      b.place(x = a.width / 2 + off - b.width / 2, y = a.height / 2 + off - b.height / 2)
-    }
-  }
-}
-
 // tones the glyph down: slightly desaturated and dimmed, so the gradient is less bright against the avatar
 private val badgeColorFilter = ColorFilter.colorMatrix(
   ColorMatrix().apply {
@@ -156,14 +168,28 @@ private val badgeColorFilter = ColorFilter.colorMatrix(
   }
 )
 
-// the phone glyph (or warning triangle) scales inversely to the avatar so it stays readable when the avatar is small.
+// Badge width as a fraction of the avatar design size, one entry per size in use - tune each placement here.
+// Values match the original inverse-scaling formula 0.2133 * (1 + 0.5 * clamp((192 - s) / 156, 0, 1)):
+// the smaller the avatar, the bigger the badge relative to it, so it stays readable at small sizes.
+private fun badgeWidthRatio(size: Dp): Float = when (size.value.roundToInt()) {
+  36 -> 0.32f // AddGroupMembersView (contact rows when adding members), ChatItemInfoView (member row in message info)
+  37 -> 0.3192f // MEMBER_IMAGE_SIZE - member avatar next to group message bubbles
+  38 -> 0.3185f // ChannelMembersView, ChannelRelaysView (member rows)
+  40 -> 0.3172f // ChatInfoToolbarTitle (chat header), MemberSupportChatToolbarTitle (member support chat header)
+  42 -> 0.3158f // ContactPreviewView (contacts list), ShareListNavLinkView (share-to list), MEMBER_ROW_AVATAR_SIZE (group info / member support member rows)
+  54 -> 0.3076f // UserPicker (user switcher)
+  57 -> 0.3056f // ChatItemInfoView (forwarded-from chat)
+  60 -> 0.3035f // AddGroupMembersView toolbar (group avatar - shows no badge currently)
+  72 -> 0.2953f // ChatPreviewView (chat list), ContactRequestView (contact request in chat list)
+  138 -> 0.2502f // alertProfileImageSize - open-chat and scan-link alerts
+  192 -> 0.2133f // ChatInfoView (contact info), GroupMemberInfoView (member info)
+  else -> 0.2133f
+}
+
 @Composable
-private fun ProfileBadge(size: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit)?) {
-  val s = size.value
-  val mult = 1f + 0.5f * ((192f - s) / 156f).coerceIn(0f, 1f)
-  // phone height ~0.28*S; set width only (= 0.7617*height) and let the height follow the glyph's aspect ratio
-  val phoneW = 0.28f * 0.7617f * size * mult
-  val mod = Modifier.width(phoneW).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
+private fun ProfileBadge(width: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit)?) {
+  // width only - the height follows the glyph's intrinsic aspect ratio
+  val mod = Modifier.width(width).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
   if (badge.status == BadgeStatus.Failed) {
     Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
   } else {

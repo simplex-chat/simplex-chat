@@ -27,7 +27,7 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (CM, ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options
@@ -453,13 +453,6 @@ getTermLine' expected cc@TestCC {printOutput} =
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _ _) =
   maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
-
--- run an internal CM action against a test client's controller and active user (for functions with no command surface)
-runCCUser :: HasCallStack => TestCC -> (User -> CM a) -> IO a
-runCCUser TestCC {chatController = cc@ChatController {currentUser}} action =
-  readTVarIO currentUser >>= \case
-    Just user -> runReaderT (runExceptT (action user)) cc >>= either (error . show) pure
-    Nothing -> error "withCCUser: no current user"
 
 testChat :: HasCallStack => Profile -> (HasCallStack => TestCC -> IO ()) -> TestParams -> IO ()
 testChat = testChatCfgOpts testCfg testOpts

@@ -128,7 +128,7 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    MemberProfileImage(size = imageSize * fontSizeSqrtMultiplier, member, iconColor)
+    MemberProfileImage(size = imageSize, member, iconColor, scaled = true)
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally

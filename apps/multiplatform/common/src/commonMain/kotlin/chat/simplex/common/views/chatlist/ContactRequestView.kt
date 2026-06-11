@@ -21,7 +21,7 @@ import chat.simplex.res.MR
 @Composable
 fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
   Row {
-    ChatInfoImage(contactRequest, size = 72.dp * fontSizeSqrtMultiplier)
+    ChatInfoImage(contactRequest, size = 72.dp, scaled = true)
     Column(
       modifier = Modifier
         .padding(start = 8.dp, end = 8.sp.toDp())
