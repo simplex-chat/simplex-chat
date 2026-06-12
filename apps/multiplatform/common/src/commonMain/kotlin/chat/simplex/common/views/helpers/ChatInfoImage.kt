@@ -242,6 +242,7 @@ private const val fontCapHeightRatio = 2048f / 2816f
 fun RowScope.NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.current.fontSize, onBadgeClick: (() -> Unit)? = null) {
   if (badge == null) return
   val height = with(LocalDensity.current) { (if (fontSize.isSpecified) fontSize else 14.sp).toDp() } * fontCapHeightRatio
+  Log.d("BADGE", "row fontSize=$fontSize specified=${fontSize.isSpecified} height=$height")
   BadgeGlyph(
     badge,
     // the badge's bottom edge is its alignment line, aligned with the text baseline
@@ -254,6 +255,7 @@ fun RowScope.NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.c
 // precede with append(" ") for the space between the name and the badge.
 fun nameBadgeInline(badge: LocalBadge, fontSize: TextUnit, onBadgeClick: (() -> Unit)? = null): InlineTextContent {
   val height = fontSize * fontCapHeightRatio
+  Log.d("BADGE", "inline fontSize=$fontSize height=$height")
   return InlineTextContent(
     Placeholder(height * badgeAspectRatio, height, PlaceholderVerticalAlign.AboveBaseline)
   ) {
