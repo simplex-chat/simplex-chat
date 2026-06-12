@@ -198,23 +198,6 @@ fun nameBadgeInline(badge: LocalBadge, fontSize: TextUnit, onBadgeClick: (() -> 
   }
 }
 
-// tones the glyph down: slightly desaturated and dimmed, so the gradient is less bright next to the name
-private val badgeColorFilter = ColorFilter.colorMatrix(
-  ColorMatrix().apply {
-    setToSaturation(0.85f)
-    timesAssign(
-      ColorMatrix(
-        floatArrayOf(
-          0.985f, 0f, 0f, 0f, 0f,
-          0f, 0.985f, 0f, 0f, 0f,
-          0f, 0f, 0.985f, 0f, 0f,
-          0f, 0f, 0f, 1f, 0f
-        )
-      )
-    )
-  }
-)
-
 @Composable
 private fun BadgeGlyph(badge: LocalBadge, modifier: Modifier, onBadgeClick: (() -> Unit)? = null) {
   val mod = modifier.let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
@@ -226,7 +209,6 @@ private fun BadgeGlyph(badge: LocalBadge, modifier: Modifier, onBadgeClick: (() 
       contentDescription = null,
       contentScale = ContentScale.Fit,
       alpha = if (badge.status == BadgeStatus.Expired) 0.4f else 1f,
-      colorFilter = badgeColorFilter,
       modifier = mod
     )
   }
