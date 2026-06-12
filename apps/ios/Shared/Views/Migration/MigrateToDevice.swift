@@ -201,7 +201,7 @@ struct MigrateToDevice: View {
         ZStack {
             List {
                 Section(header: Text("Scan QR code").foregroundColor(theme.colors.secondary)) {
-                    ScannerInView(showQRCodeScanner: $showQRCodeScanner) { resp in
+                    ScannerInView(showQRCodeScanner: $showQRCodeScanner, scanMode: .oncePerCode) { resp in
                         switch resp {
                         case let .success(r):
                             handleScan(r.string, expected: .migrationLink, theme: theme) { qr in

@@ -206,7 +206,7 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
       if (appPlatform.isAndroid) {
         SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ')) {
           QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
-            handleScan(null, text, QRCodeType.MigrationLink::class, close = {}) { checkUserLink(it.text) }
+            handleScan(null, text, QRCodeType.MigrationLink::class, close) { checkUserLink(it.text) }
           }
         }
         SectionSpacer()

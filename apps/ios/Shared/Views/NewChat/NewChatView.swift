@@ -650,7 +650,7 @@ private struct ConnectView: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
 
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
-                ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused, processQRCode: processQRCode)
+                ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused, processQRCode: processQRCode, scanMode: .oncePerCode)
             }
         }
         .onDisappear {
@@ -844,16 +844,6 @@ struct InfoSheetButton<Content: View>: View {
         .sheet(isPresented: $showInfoSheet) {
             content
         }
-    }
-}
-
-func strIsSimplexLink(_ str: String) -> Bool {
-    if let parsedMd = parseSimpleXMarkdown(str),
-       parsedMd.count == 1,
-       case .simplexLink = parsedMd[0].format {
-        return true
-    } else {
-        return false
     }
 }
 

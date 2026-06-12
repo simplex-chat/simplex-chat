@@ -799,11 +799,6 @@ private fun createInvitation(
   }
 }
 
-fun strIsSimplexLink(str: String): Boolean {
-  val parsedMd = parseToMarkdown(str)
-  return parsedMd != null && parsedMd.size == 1 && parsedMd[0].format is Format.SimplexLink
-}
-
 sealed class ConnectTarget {
   class Link(val text: String, val linkType: SimplexLinkType, val linkText: String) : ConnectTarget()
   class Name(val nameInfo: SimplexNameInfo) : ConnectTarget()
