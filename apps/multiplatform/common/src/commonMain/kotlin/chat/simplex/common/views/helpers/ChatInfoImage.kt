@@ -97,11 +97,12 @@ fun ProfileImage(
       val insetPx = inset.roundToPx()
       layout(avatar.width, avatar.height) {
         avatar.place(0, 0)
-        // badgeInsideShare of the badge is inside the visible avatar (the box minus its inset),
-        // the rest overhangs the avatar's bottom-right edge
+        // badgeInsideShare of the badge width is inside the visible avatar (the box minus its inset);
+        // the badge overhangs the avatar's bottom-right edge by the same amount on both axes
+        val overhang = ((1 - badgeInsideShare) * bdg.width).roundToInt()
         bdg.place(
-          x = avatar.width - insetPx - (badgeInsideShare * bdg.width).roundToInt(),
-          y = avatar.height - insetPx - (badgeInsideShare * bdg.height).roundToInt()
+          x = avatar.width - insetPx - bdg.width + overhang,
+          y = avatar.height - insetPx - bdg.height + overhang
         )
       }
     }
