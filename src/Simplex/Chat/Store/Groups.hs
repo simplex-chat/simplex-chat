@@ -3278,11 +3278,11 @@ createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupI
   where
     VersionRange minV maxV = vr cxt
 
--- member_pub_key is not updated here — introduced members are owners
--- whose keys are loaded from link data (trusted out-of-band).
--- Updating from an in-band message would allow a compromised relay to substitute keys.
+-- Intro refreshes only profile / status / peer version. Role and key stay owner-authoritative
+-- (the owner-signed roster for members/moderators/admins, link data for owners), so taking either from
+-- an in-band relayed intro would let a compromised relay substitute them.
 updatePreparedChannelMember :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberInfo -> ExceptT StoreError IO GroupMember
-updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile} = do
+updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} = do
   _ <- updateMemberProfile db user member profile
   currentTs <- liftIO getCurrentTime
   liftIO $
@@ -3290,14 +3290,13 @@ updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupM
       db
       [sql|
         UPDATE group_members
-        SET member_role = ?,
-            member_status = ?,
+        SET member_status = ?,
             peer_chat_min_version = ?,
             peer_chat_max_version = ?,
             updated_at = ?
         WHERE user_id = ? AND group_member_id = ?
       |]
-      (memberRole, GSMemIntroduced, minV, maxV, currentTs, userId, groupMemberId)
+      (GSMemIntroduced, minV, maxV, currentTs, userId, groupMemberId)
   getGroupMemberById db cxt user groupMemberId
   where
     VersionRange minV maxV = maybe memberChatVRange fromChatVRange v

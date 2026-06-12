@@ -9584,16 +9584,6 @@ checkMemberRow cc name expectedRole = do
     DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
   map (\(Only r) -> r) roles `shouldBe` maybeToList expectedRole
 
--- a roster-learned member (e.g. on a relay that only cached the roster) is stored under the
--- placeholder hash name; resolve it from a peer that knows the member by name
-memberHashName :: HasCallStack => TestCC -> T.Text -> IO T.Text
-memberHashName cc name = do
-  rows <- withCCTransaction cc $ \db ->
-    DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only (Binary ByteString)]
-  case rows of
-    [Only (Binary mid)] -> pure $ nameFromMemberId (MemberId mid)
-    _ -> fail $ "memberHashName: expected one row for " <> T.unpack name
-
 testChannelModeratorActionViaRoster :: HasCallStack => TestParams -> IO ()
 testChannelModeratorActionViaRoster ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -10466,9 +10456,8 @@ testChannelAddRelayWithRoster ps =
               ]
 
             threadDelay 100000
-            -- the new relay holds the roster (cath is moderator, by id hash) before it serves joiners
-            cathHash <- memberHashName bob "cath"
-            checkMemberRow dan cathHash (Just "moderator")
+            -- the new relay holds the roster (cath is moderator) and learns her name when she connects
+            checkMemberRow dan "cath" (Just "moderator")
 
 testChannelRosterMultipartReassembly :: HasCallStack => TestParams -> IO ()
 testChannelRosterMultipartReassembly ps =
@@ -10519,17 +10508,18 @@ testChannelRosterDigestMismatchRejected ps =
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
           threadDelay 100000
+          -- the rejected roster never elevates cath: the intro caps her to the channel default, so she
+          -- stays observer (not moderator), and the version must not advance to the corrupted roster's version 1
+          checkMemberRow frank "cath" (Just "observer")
           checkRosterNotApplied frank
   where
-    -- frank learns cath via the moderator introduction (XGrpMemIntro) regardless of the roster,
-    -- so checkMemberRow cannot distinguish applied vs rejected. The roster's authoritative effect
-    -- is its version: it must NOT advance to the corrupted roster's version 1, and frank must
-    -- actually hold the group (non-vacuous) so a NULL roster_version cannot pass by emptiness.
+    -- the version is the second guarantee (the role is asserted above): frank holds exactly the team
+    -- group with no roster applied, so roster_version is NULL - it never advanced to the corrupted version 1
     checkRosterNotApplied :: HasCallStack => TestCC -> IO ()
     checkRosterNotApplied cc = do
       vs <- withCCTransaction cc $ \db ->
         DB.query_ db "SELECT roster_version FROM groups" :: IO [Only (Maybe Int64)]
-      map (\(Only v) -> v) vs `shouldSatisfy` (\versions -> not (null versions) && Just 1 `notElem` versions)
+      map (\(Only v) -> v) vs `shouldBe` [Nothing]
 
 testChannelPromotedMemberCanPost :: HasCallStack => TestParams -> IO ()
 testChannelPromotedMemberCanPost ps =
@@ -10616,8 +10606,7 @@ testChannelPromotedMemberRejoinViaRelay ps =
                      ]
             ]
           threadDelay 100000
-          cathHash <- memberHashName bob "cath"
-          checkMemberRow dan cathHash (Just "member")
+          checkMemberRow dan "cath" (Just "member")
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =

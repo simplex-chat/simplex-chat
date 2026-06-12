@@ -950,7 +950,10 @@ acceptGroupJoinRequestAsync
     -- owner-authoritative role + key); everyone else is created fresh with the group-link role
     (groupMemberId, memberId) <- case existingMem_ of
       Just m -> do
-        withStore' $ \db -> updateGroupMemberStatus db userId m initialStatus
+        -- refresh the hash placeholder name from the authenticated join profile; role + key stay roster-authoritative
+        withStore $ \db -> do
+          liftIO $ updateGroupMemberStatus db userId m initialStatus
+          void $ updateMemberProfile db user m cReqProfile
         pure (groupMemberId' m, memberId' m)
       Nothing -> withStore $ \db ->
         createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_

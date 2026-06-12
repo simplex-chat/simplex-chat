@@ -3118,10 +3118,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   messageError "x.grp.mem.intro ignored: member already exists"
             Left _
               | useRelays' gInfo -> do
-                  -- drop the relay-asserted key for privileged roles; their keys come from the roster, not intros
+                  -- role + key are owner-authoritative (roster); an intro establishes neither - a privileged
+                  -- claim is created at the channel default with no key until the owner-signed roster confirms it
+                  defaultRole <- unknownMemberRole gInfo
                   let memInfo' = case memInfo of
                         MemberInfo mId mRole v p _
-                          | mRole > GRMember -> MemberInfo mId mRole v p Nothing
+                          | mRole >= GRMember -> MemberInfo mId defaultRole v p Nothing
                         _ -> memInfo
                   void $ withStore $ \db -> createIntroReMember db user gInfo memInfo' memRestrictions
               | otherwise -> do
