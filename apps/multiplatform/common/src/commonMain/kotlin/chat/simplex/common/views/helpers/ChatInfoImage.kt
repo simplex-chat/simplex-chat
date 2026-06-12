@@ -231,9 +231,13 @@ val ChatInfo.nameBadge: LocalBadge? get() = when {
   else -> null
 }
 
-// cap height of the shipped Inter (OS/2 sCapHeight 2048 / unitsPerEm 2816, same in all weights):
-// the badge spans exactly from the baseline to the top of capital letters
-private const val fontCapHeightRatio = 2048f / 2816f
+// badge height in em: calibrated visually so the badge top matches capital letters and digits.
+// Inter's declared cap height is 2048/2816 = 0.727em (round glyphs reach 0.737em), but the
+// rendered text is taller than these metrics predict, and 0.85 is what matches on screen.
+private const val fontCapHeightRatio = 0.85f
+
+// fraction of the badge height pushed below the text baseline (like the undershoot of round letters)
+private const val badgeBaselineOffsetRatio = 0.05f
 
 // Badge next to the contact name in a Row: top aligned with capital letters, bottom with the text baseline.
 // The name Text must use Modifier.alignByBaseline(), and weight(1f, fill = false) when it can ellipsize,
@@ -245,8 +249,9 @@ fun RowScope.NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.c
   Log.d("BADGE", "row fontSize=$fontSize specified=${fontSize.isSpecified} height=$height")
   BadgeGlyph(
     badge,
-    // the badge's bottom edge is its alignment line, aligned with the text baseline
-    Modifier.alignBy { it.measuredHeight }.padding(start = 4.dp).height(height).aspectRatio(badgeAspectRatio),
+    // the alignment line sits badgeBaselineOffsetRatio above the badge's bottom edge,
+    // so the Row places the badge that much below the text baseline
+    Modifier.alignBy { (it.measuredHeight * (1 - badgeBaselineOffsetRatio)).roundToInt() }.padding(start = 4.dp).height(height).aspectRatio(badgeAspectRatio),
     onBadgeClick
   )
 }
@@ -259,7 +264,9 @@ fun nameBadgeInline(badge: LocalBadge, fontSize: TextUnit, onBadgeClick: (() -> 
   return InlineTextContent(
     Placeholder(height * badgeAspectRatio, height, PlaceholderVerticalAlign.AboveBaseline)
   ) {
-    BadgeGlyph(badge, Modifier.fillMaxSize(), onBadgeClick)
+    // the placeholder bottom sits on the baseline and can't extend below it,
+    // so the badge is drawn shifted down by badgeBaselineOffsetRatio instead
+    BadgeGlyph(badge, Modifier.fillMaxSize().graphicsLayer { translationY = size.height * badgeBaselineOffsetRatio }, onBadgeClick)
   }
 }
 
