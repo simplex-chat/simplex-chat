@@ -65,10 +65,10 @@ func parseQRCode(_ raw: String) -> QRCodeType {
     let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     if strHasSimplexFileLink(t) { return .migrationLink(text: t) }
     if t.hasPrefix(desktopAddressScheme) { return .desktopAddress(text: t) }
-    // Match only when the WHOLE string is exactly one SimpleX link — same as `strIsSimplexLink`
-    // and the master connect scanner — not a link embedded among other text. A SimpleX *name*
-    // (Format.simplexName) is therefore not a connectionLink here; it falls through to .unknown,
-    // exactly as the master scanner treats it (names are handled only by the paste path).
+    // Match only when the WHOLE string is exactly one SimpleX link — not a link embedded among
+    // other text. A SimpleX *name* (Format.simplexName) is therefore not a connectionLink here; it
+    // falls through to .unknown, the same "not a SimpleX link" the connect scanner showed before
+    // this change (names are handled only by the paste path, via strConnectTarget).
     if let md = parseSimpleXMarkdown(t), md.count == 1,
        case let .simplexLink(_, linkType, _, _) = md[0].format {
         return .connectionLink(text: t, linkType: linkType)

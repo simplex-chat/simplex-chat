@@ -14,21 +14,25 @@ import SimpleXChat
 // The shared gate every scanner routes through. If the scan is the accepted kind, run the
 // screen's onMatch; otherwise show the one wrong-type alert. iOS has no Bool return / de-dup
 // (the scanner controls re-scanning via scanMode / scannerPaused).
-func handleScan(_ raw: String, expected: QRCodeKind, theme: AppTheme, onMatch: (QRCodeType) -> Void) {
+func handleScan(_ raw: String, expected: QRCodeKind, theme: AppTheme, scannerPaused: Binding<Bool>? = nil, onMatch: (QRCodeType) -> Void) {
     let qr = parseQRCode(raw)
     if qr.kind == expected {
         onMatch(qr)
     } else {
-        showWrongQRCodeAlert(qr, expected: expected, theme: theme)
+        // Pause a continuous scanner while the wrong-type alert is up so it doesn't re-fire the
+        // alert every scanInterval; resume on dismissal. oncePerCode scanners pass nil (no-op).
+        scannerPaused?.wrappedValue = true
+        showWrongQRCodeAlert(qr, expected: expected, theme: theme) { scannerPaused?.wrappedValue = false }
     }
 }
 
-private func showWrongQRCodeAlert(_ scanned: QRCodeType, expected: QRCodeKind, theme: AppTheme) {
+private func showWrongQRCodeAlert(_ scanned: QRCodeType, expected: QRCodeKind, theme: AppTheme, onDismiss: @escaping () -> Void) {
     // Relay link: it cannot be used to connect — reuse the existing relay alert (title + message).
     if case .connectionLink(_, .relay) = scanned {
-        AlertManager.shared.showAlert(mkAlert(
-            title: "Relay address",
-            message: "This is a chat relay address, it cannot be used to connect."
+        AlertManager.shared.showAlert(Alert(
+            title: Text("Relay address"),
+            message: Text("This is a chat relay address, it cannot be used to connect."),
+            dismissButton: .default(Text("Ok"), action: onDismiss)
         ))
         return
     }
@@ -36,14 +40,18 @@ private func showWrongQRCodeAlert(_ scanned: QRCodeType, expected: QRCodeKind, t
     // the server screen says "Invalid server address!", the verify screen says "Incorrect security
     // code!" (it scans a code, not a link), everything else the generic "not a SimpleX link".
     if case .unknown = scanned {
+        let title: LocalizedStringKey
+        let message: LocalizedStringKey?
         switch expected {
-        case .serverAddress:
-            AlertManager.shared.showAlert(mkAlert(title: "Invalid server address!", message: "Check server address and try again."))
-        case .securityCode:
-            AlertManager.shared.showAlert(mkAlert(title: "Incorrect security code!"))
-        default:
-            AlertManager.shared.showAlert(mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."))
+        case .serverAddress: title = "Invalid server address!"; message = "Check server address and try again."
+        case .securityCode:  title = "Incorrect security code!"; message = nil
+        default:             title = "Invalid QR code";          message = "The code you scanned is not a SimpleX link QR code."
         }
+        AlertManager.shared.showAlert(Alert(
+            title: Text(title),
+            message: message.map { Text($0) },
+            dismissButton: .default(Text("Ok"), action: onDismiss)
+        ))
         return
     }
     // Recognised wrong kind: "<what it is>\n\n<where to scan it>".
@@ -58,14 +66,16 @@ private func showWrongQRCodeAlert(_ scanned: QRCodeType, expected: QRCodeKind, t
             title: Text("Wrong QR code"),
             message: Text(verbatim: message),
             primaryButton: .default(Text("Connect")) {
+                onDismiss()
                 planAndConnect(text, theme: theme, dismiss: true)
             },
-            secondaryButton: .cancel()
+            secondaryButton: .cancel(onDismiss)
         ))
     } else {
         AlertManager.shared.showAlert(Alert(
             title: Text("Wrong QR code"),
-            message: Text(verbatim: message)
+            message: Text(verbatim: message),
+            dismissButton: .default(Text("Ok"), action: onDismiss)
         ))
     }
 }
@@ -91,7 +101,7 @@ private extension QRCodeType {
         case let .connectionLink(_, linkType):
             return linkType == .relay ? nil : NSLocalizedString("Open New chat, then scan or paste the link.", comment: "qr where to scan")
         case .serverAddress:
-            return NSLocalizedString("Open Settings, Network & servers, your servers, then Scan server QR code.", comment: "qr where to scan")
+            return NSLocalizedString("Open Settings, Network & servers, Your servers, then Scan server QR code.", comment: "qr where to scan")
         case .migrationLink:
             return NSLocalizedString("On the new device, when first setting up the app, choose Migrate from another device.", comment: "qr where to scan")
         case .desktopAddress:

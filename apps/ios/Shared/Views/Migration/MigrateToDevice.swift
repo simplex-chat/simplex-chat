@@ -103,6 +103,7 @@ struct MigrateToDevice: View {
     // Prevent from hiding the view until migration is finished or app deleted
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
+    @State private var scannerPaused: Bool = false
     @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
     @State private var importingArchiveFromFileProgressIndicator = false
@@ -201,10 +202,10 @@ struct MigrateToDevice: View {
         ZStack {
             List {
                 Section(header: Text("Scan QR code").foregroundColor(theme.colors.secondary)) {
-                    ScannerInView(showQRCodeScanner: $showQRCodeScanner) { resp in
+                    ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused) { resp in
                         switch resp {
                         case let .success(r):
-                            handleScan(r.string, expected: .migrationLink, theme: theme) { qr in
+                            handleScan(r.string, expected: .migrationLink, theme: theme, scannerPaused: $scannerPaused) { qr in
                                 migrationState = .linkDownloading(link: qr.text)
                             }
                         case let .failure(e):

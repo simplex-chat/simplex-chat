@@ -778,7 +778,7 @@
   <string name="qr_type_desktop_address">This is an address for linking a mobile to a SimpleX desktop app.</string>
   <string name="qr_type_security_code">This is a contact\'s security code.</string>
   <string name="qr_where_connection">Tap New chat, then Paste link / Scan.</string>
-  <string name="qr_where_server">Tap your profile image, then Settings, Network &amp; servers, your servers, Scan server QR code.</string>
+  <string name="qr_where_server">Tap your profile image, then Settings, Network &amp; servers, Your servers, Scan server QR code.</string>
   <string name="qr_where_desktop">Tap your profile image, then Use from desktop, Scan QR code from desktop.</string>
   <string name="qr_where_migration">On the new device, when first setting up the app, choose Migrate from another device.</string>
   <string name="qr_where_security_code">Open the chat, tap the contact\'s name, then Verify security code.</string>
