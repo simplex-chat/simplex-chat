@@ -2018,19 +2018,23 @@ fun BoxScope.ChatItemsList(
                         } else {
                           null to 1
                         }
-                      Text(
-                        memberNames(member, prevMember, memCount),
+                      // the name and the badge are one element, so SpaceBetween separates them from the role, not from each other
+                      Row(
                         Modifier
                           .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
-                          .alignByBaseline()
-                          .weight(1f, false),
-                        fontSize = 13.5.sp,
-                        color = MaterialTheme.colors.secondary,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
-                      )
-                      if (prevMember == null && memCount == 1) {
-                        NameBadge(member.memberProfile.localBadge, 13.5.sp)
+                          .weight(1f, false)
+                      ) {
+                        Text(
+                          memberNames(member, prevMember, memCount),
+                          Modifier.alignByBaseline().weight(1f, false),
+                          fontSize = 13.5.sp,
+                          color = MaterialTheme.colors.secondary,
+                          overflow = TextOverflow.Ellipsis,
+                          maxLines = 1
+                        )
+                        if (prevMember == null && memCount == 1) {
+                          NameBadge(member.memberProfile.localBadge, 13.5.sp)
+                        }
                       }
                       if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                         val chatItemTail = remember { appPreferences.chatItemTail.state }
