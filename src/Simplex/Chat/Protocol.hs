@@ -48,12 +48,13 @@ import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Data.Word (Word32)
+import Data.Word (Word16, Word32)
 import Simplex.Chat.Call
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
@@ -367,21 +368,36 @@ data GrpMsgForward = GrpMsgForward
   }
   deriving (Eq, Show)
 
--- | Owner-signed snapshot of the privileged (moderator/admin) set; owners are
--- not included, their keys come from the link.
+-- | Owner-signed roster header for the privileged (moderator/admin/member) set; owners
+-- are not included, their keys come from the link. The member list itself is not
+-- here: it is sent as a binary blob over the inline file transfer, and this header
+-- carries only its inline-file invitation (size + owner-attested digest).
 data GroupRoster = GroupRoster
   { version :: VersionRoster,
-    roster :: [RosterMember]
+    fileInv :: InlineFileInvitation
+  }
+  deriving (Eq, Show)
+
+-- | Lean always-inline file invitation for the roster blob, carried in the signed
+-- header. The digest authenticates the unsigned blob; integrity is entirely the digest.
+data InlineFileInvitation = InlineFileInvitation
+  { fileSize :: Integer,
+    fileDigest :: FD.FileDigest
   }
   deriving (Eq, Show)
 
 data RosterMember = RosterMember
   { memberId :: MemberId,
-    name :: Text,
     key :: MemberKey, -- trust-on-first-use pinned per memberId
-    role :: GroupMemberRole
+    role :: GroupMemberRole,
+    privileges :: Word16 -- reserved: serialized as 0, parsed and ignored in v1
   }
   deriving (Eq, Show)
+
+-- RosterMember is binary-only: it rides in the roster blob, never in a JSON message.
+instance Encoding RosterMember where
+  smpEncode RosterMember {memberId, key, role, privileges} = smpEncode (memberId, key, role, privileges)
+  smpP = RosterMember <$> smpP <*> smpP <*> smpP <*> smpP
 
 instance Encoding FwdSender where
   smpEncode = \case
@@ -485,11 +501,11 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json
-  XGrpMemRole :: MemberId -> GroupMemberRole -> ChatMsgEvent 'Json
+  XGrpMemRole :: MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> ChatMsgEvent 'Json
   XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
-  XGrpMemDel :: MemberId -> Bool -> ChatMsgEvent 'Json
+  XGrpMemDel :: MemberId -> Bool -> Maybe VersionRoster -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
@@ -809,7 +825,7 @@ data MsgMention = MsgMention {memberId :: MemberId}
 newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
   deriving (Eq, Show)
 
-$(JQ.deriveJSON defaultJSON ''RosterMember)
+$(JQ.deriveJSON defaultJSON ''InlineFileInvitation)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
@@ -911,11 +927,27 @@ maxCompressedMsgLength = 13380
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
 
--- Bound so the signed roster fits maxEncodedMsgLength (15602 B): ~140 B per
--- RosterMember (memberId + Ed25519 key both base64, role, name capped at 16
--- chars by memberShortenedName). Fits 64 entries even with 4-byte-UTF-8 names.
+-- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
+-- promotion cap over the promoted (member/moderator/admin) set.
 maxGroupRosterSize :: Int
-maxGroupRosterSize = 64
+maxGroupRosterSize = 256
+
+-- Receive-side byte bound: reject an owner-signed header whose claimed fileSize exceeds what
+-- maxGroupRosterSize entries can occupy (128 B/entry is a generous worst case), before a file is created.
+-- 128 B/entry ~ memberId + X.509 Ed25519 key (44 B) + role + privileges + 1-byte length prefixes (~2x the ~65 B typical).
+maxGroupRosterBytes :: Integer
+maxGroupRosterBytes = fromIntegral maxGroupRosterSize * 128
+
+-- The byte sequence the owner-signed digest is computed over and verified against
+-- before parsing. Word16 count (smpEncodeList's 1-byte count is too small for the future cap).
+encodeRosterBlob :: [RosterMember] -> ByteString
+encodeRosterBlob ms = smpEncode (fromIntegral (length ms) :: Word16) <> B.concat (map smpEncode ms)
+
+rosterBlobP :: A.Parser [RosterMember]
+rosterBlobP = do
+  n <- fromIntegral <$> smpP @Word16
+  when (n > maxGroupRosterSize) $ fail "roster: too many entries"
+  A.count n smpP
 
 -- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
 -- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
@@ -1227,7 +1259,7 @@ toCMEventTag msg = case msg of
   XGrpMemInv _ _ -> XGrpMemInv_
   XGrpMemFwd _ _ -> XGrpMemFwd_
   XGrpMemInfo _ _ -> XGrpMemInfo_
-  XGrpMemRole _ _ -> XGrpMemRole_
+  XGrpMemRole {} -> XGrpMemRole_
   XGrpMemRestrict _ _ -> XGrpMemRestrict_
   XGrpMemCon _ -> XGrpMemCon_
   XGrpMemConAll _ -> XGrpMemConAll_
@@ -1388,17 +1420,17 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
       XGrpMemFwd_ -> XGrpMemFwd <$> p "memberInfo" <*> p "memberIntro"
       XGrpMemInfo_ -> XGrpMemInfo <$> p "memberId" <*> p "profile"
-      XGrpMemRole_ -> XGrpMemRole <$> p "memberId" <*> p "role"
+      XGrpMemRole_ -> XGrpMemRole <$> p "memberId" <*> p "role" <*> opt "memberKey" <*> opt "rosterVersion"
       XGrpMemRestrict_ -> XGrpMemRestrict <$> p "memberId" <*> p "memberRestrictions"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
-      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages")
+      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion"
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
-      XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "roster")
+      XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "fileInv")
       XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
@@ -1462,17 +1494,17 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
       XGrpMemFwd memInfo memIntro -> o ["memberInfo" .= memInfo, "memberIntro" .= memIntro]
       XGrpMemInfo memId profile -> o ["memberId" .= memId, "profile" .= profile]
-      XGrpMemRole memId role -> o ["memberId" .= memId, "role" .= role]
+      XGrpMemRole memId role memberKey rosterVersion -> o $ ("memberKey" .=? memberKey) $ ("rosterVersion" .=? rosterVersion) ["memberId" .= memId, "role" .= role]
       XGrpMemRestrict memId memRestrictions -> o ["memberId" .= memId, "memberRestrictions" .= memRestrictions]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
-      XGrpMemDel memId messages -> o $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
+      XGrpMemDel memId messages rosterVersion -> o $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpRoster GroupRoster {version, roster} -> o ["version" .= version, "roster" .= roster]
+      XGrpRoster GroupRoster {version, fileInv} -> o ["version" .= version, "fileInv" .= fileInv]
       XGrpRosterAck version err -> o $ ("error" .=? err) ["version" .= version]
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where

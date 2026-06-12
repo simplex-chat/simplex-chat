@@ -1270,6 +1270,8 @@ processChatCommand cxt nm = \case
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId $ do
         deleteCIFiles user filesInfo
+        -- the roster blob file has no chat item, so it is missed by getGroupFileInfo above
+        cleanupGroupRosterFile user gInfo
         (members, recipients) <- getRecipients gInfo
         let doSendDel = memberActive membership && isOwner
         msgSigned <-
@@ -2022,9 +2024,9 @@ processChatCommand cxt nm = \case
             gVar <- asks random
             (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
-            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
-                createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
+                createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
             aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
@@ -2034,9 +2036,9 @@ processChatCommand cxt nm = \case
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
         ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId
-        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
-            createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing
+            createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
@@ -2053,11 +2055,11 @@ processChatCommand cxt nm = \case
     subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
     (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_
-    void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+    void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-    aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing
+    aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing Nothing
     let chat = case aci of
           Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
           _ -> Chat cInfo [] emptyChatStats
@@ -2125,7 +2127,7 @@ processChatCommand cxt nm = \case
             -- create changed feature items (connecting incognito sends default preferences, instead of user preferences)
             lift . when incognito $ createContactChangedFeatureItems user ct ct'
             forM_ msg_ $ \(sharedMsgId, mc) -> do
-              ci <- createChatItem user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              ci <- createChatItem user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing Nothing
               toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           CVRConnectedContact ct' -> pure $ CRContactAlreadyExists user ct'
@@ -2218,7 +2220,7 @@ processChatCommand cxt nm = \case
               liftIO $ setPreparedGroupStartedConnection db groupId
               getGroupInfo db cxt user groupId
             forM_ msg_ $ \(sharedMsgId, mc) -> do
-              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing Nothing
               toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile []
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
@@ -2737,15 +2739,15 @@ processChatCommand cxt nm = \case
       when (useRelays' gInfo && (isRosterRole newRole || anyPrivilegedTarget) && memberRole' (membership gInfo) /= GROwner) $
         throwCmdError "only the group owner can change moderator and admin roles"
       when (useRelays' gInfo && isRosterRole newRole && finalPrivilegedCount > maxGroupRosterSize) $
-        throwCmdError $ "the number of moderators and admins would exceed the limit of " <> show maxGroupRosterSize
+        throwCmdError $ "the number of members, moderators and admins would exceed the limit of " <> show maxGroupRosterSize
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
-      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g currentMems
+      let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && (isRosterRole newRole || anyPrivilegedTarget)
+      rosterVer <- if doBumpRoster then Just <$> reserveRosterVersion gInfo else pure Nothing
+      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g rosterVer currentMems
+      forM_ rosterVer $ \v -> broadcastRoster user gInfo v `catchAllErrors` eToView
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
-      let rosterSetChanged = not (null (changed1 <> changed2)) && (isRosterRole newRole || anyPrivilegedTarget)
-      when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && rosterSetChanged) $
-        bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole, msgSigned} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
@@ -2780,19 +2782,20 @@ processChatCommand cxt nm = \case
                 withFastStore' $ \db -> updateGroupMemberRole db user m newRole
                 pure (m :: GroupMember) {memberRole = newRole}
               _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
-      changeRoleCurrentMems :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
-      changeRoleCurrentMems user (Group gInfo members) memsToChange = case L.nonEmpty memsToChange of
+      changeRoleCurrentMems :: User -> Group -> Maybe VersionRoster -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      changeRoleCurrentMems user (Group gInfo members) rosterVer memsToChange = case L.nonEmpty memsToChange of
         Nothing -> pure ([], [], [], False)
         Just memsToChange' -> do
-          let events = L.map (\GroupMember {memberId} -> XGrpMemRole memberId newRole) memsToChange'
+          let mKey m = if isJust rosterVer then MemberKey <$> memberPubKey m else Nothing
+              events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (mKey m) rosterVer) memsToChange'
               recipients = filter memberCurrent members
           (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
-          (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
+          (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
           pure (errs, changed, acis, signed)
           where
             sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
@@ -2863,15 +2866,18 @@ processChatCommand cxt nm = \case
       when (memCount > 1 && anyAdmin) $ throwCmdError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       when (useRelays' gInfo && anyPrivilegedRemoved && memberRole' (membership gInfo) /= GROwner) $
-        throwCmdError "only the group owner can remove moderators and admins"
+        throwCmdError "only the group owner can remove members, moderators and admins"
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
-      (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing recipients currentMems
+      let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved
+      rosterVer <- if doBumpRoster then Just <$> reserveRosterVersion gInfo else pure Nothing
+      (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing rosterVer recipients currentMems
       (errs3, deleted3, acis3, signed3) <-
         foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], [], False) pendingApprvMems
       let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
       (errs4, deleted4, acis4, signed4) <-
         foldM (\acc m -> deletePendingMember acc user gInfo (m : moderators) m) ([], [], [], False) pendingRvwMems
+      forM_ rosterVer $ \v -> broadcastRoster user gInfo v `catchAllErrors` eToView
       let acis = acis2 <> acis3 <> acis4
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
@@ -2884,9 +2890,6 @@ processChatCommand cxt nm = \case
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
-      -- refresh the roster so the relay drops a removed privileged member for future joiners
-      when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved) $
-        bumpAndBroadcastRoster user gInfo `catchAllErrors` eToView
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
@@ -2915,14 +2918,14 @@ processChatCommand cxt nm = \case
       deletePendingMember :: ([ChatError], [GroupMember], [AChatItem], Bool) -> User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
       deletePendingMember (accErrs, accDeleted, accACIs, accSigned) user gInfo recipients m = do
         (m', scopeInfo) <- mkMemberSupportChatInfo m
-        (errs, deleted, acis, signed) <- deleteMemsSend user gInfo (Just scopeInfo) recipients [m']
+        (errs, deleted, acis, signed) <- deleteMemsSend user gInfo (Just scopeInfo) Nothing recipients [m']
         pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs, accSigned || signed)
-      deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
-      deleteMemsSend user gInfo chatScopeInfo recipients memsToDelete = case L.nonEmpty memsToDelete of
+      deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe VersionRoster -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      deleteMemsSend user gInfo chatScopeInfo rosterVer recipients memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [], False)
         Just memsToDelete' -> do
           let chatScope = toChatScope <$> chatScopeInfo
-              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
+              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages rosterVer) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
@@ -3116,7 +3119,7 @@ processChatCommand cxt nm = \case
         (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
         -- [incognito] reuse membership incognito profile
         ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
-        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         -- TODO not sure it is correct to set connections status here?
         pure $ CRNewMemberContact user ct g m
       _ -> throwChatError CEGroupMemberNotActive

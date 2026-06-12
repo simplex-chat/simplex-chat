@@ -68,6 +68,8 @@ module Simplex.Chat.Store.Groups
     getSupportScopeMembersByIndexes,
     getGroupModerators,
     getGroupRosterMembers,
+    getGroupAdminsMods,
+    getGroupOnlyMembers,
     getGroupOwners,
     getGroupRelayMembers,
     getGroupMembersForExpiration,
@@ -87,8 +89,12 @@ module Simplex.Chat.Store.Groups
     getGroupRelays,
     getConnectedGroupRelays,
     setGroupRosterVersion,
-    setGroupRoster,
+    getGroupRosterVersion,
     getGroupRoster,
+    setRosterPending,
+    getRosterPending,
+    promoteRosterPending,
+    clearRosterPending,
     setGroupMemberKeyRole,
     createRelayForOwner,
     getCreateRelayForMember,
@@ -218,6 +224,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConfirmationId, ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
+import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Encoding (smpDecode, smpEncode)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import Simplex.Messaging.Agent.Store.Entity (DBEntityId)
@@ -1209,16 +1216,34 @@ getGroupModerators db cxt user@User {userId, userContactId} GroupInfo {groupId} 
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
       (userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
 
--- Moderators and admins only, excluding owners and non-current members.
--- Used for roster-related paths where owners must not be touched (owners are
--- link-anchored), and left/removed members must not appear in the saved roster.
+-- The full roster set - members, moderators and admins - excluding owners (link-anchored) and
+-- left/removed members. For the privileged subset only use getGroupAdminsMods; for plain members
+-- only use getGroupOnlyMembers.
 getGroupRosterMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupRosterMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
   filter memberCurrent . map (toContactMember cxt user)
     <$> DB.query
       db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
+      (userId, groupId, userContactId, GRMember, GRModerator, GRAdmin)
+
+-- Moderators and admins only (excluding owners and plain members) - the set introduced to a
+-- joiner; plain members are learned from the roster blob, not via introductions.
+getGroupAdminsMods :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
+getGroupAdminsMods db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
+  filter memberCurrent . map (toContactMember cxt user)
+    <$> DB.query
+      db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?)")
       (userId, groupId, userContactId, GRModerator, GRAdmin)
+
+getGroupOnlyMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
+getGroupOnlyMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
+  filter memberCurrent . map (toContactMember cxt user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role = ?")
+      (userId, groupId, userContactId, GRMember)
 
 getGroupOwners :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupOwners db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -1411,34 +1436,113 @@ setGroupRosterVersion db GroupInfo {groupId} v = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?" (v, currentTs, groupId)
 
--- Relay saves the verbatim signed roster (parts + sending owner + broker ts) to re-forward to joiners.
-setGroupRoster :: DB.Connection -> GroupInfo -> VersionRoster -> GroupMemberId -> UTCTime -> SignedMsg -> IO ()
-setGroupRoster db GroupInfo {groupId} v ownerGMId brokerTs SignedMsg {chatBinding, signatures, signedBody} = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE groups
-      SET roster_version = ?, roster_sending_owner_gm_id = ?, roster_broker_ts = ?,
-          roster_msg_chat_binding = ?, roster_msg_signatures = ?, roster_msg_body = ?, updated_at = ?
-      WHERE group_id = ?
-    |]
-    ((v, ownerGMId, brokerTs, chatBinding) :. (Binary (smpEncode signatures), Binary signedBody, currentTs, groupId))
+-- Persisted roster version (the gate baseline; the in-memory gInfo copy is batch-constant and stale on reorder).
+getGroupRosterVersion :: DB.Connection -> GroupInfo -> IO (Maybe VersionRoster)
+getGroupRosterVersion db GroupInfo {groupId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT roster_version FROM groups WHERE group_id = ?" (Only groupId)
 
-getGroupRoster :: DB.Connection -> GroupInfo -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg))
+-- The live roster header a relay re-serves to joiners, with the completed blob served alongside it
+-- (both are written together at completion, so the blob is present whenever the header is).
+getGroupRoster :: DB.Connection -> GroupInfo -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg, Maybe ByteString))
 getGroupRoster db GroupInfo {groupId} =
   (>>= toRoster)
     <$> maybeFirstRow
       id
       ( DB.query
           db
-          "SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_binding, roster_msg_signatures, roster_msg_body FROM groups WHERE group_id = ?"
+          "SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_binding, roster_msg_signatures, roster_msg_body, roster_blob FROM groups WHERE group_id = ?"
           (Only groupId)
       )
   where
-    toRoster (Just ownerGMId, Just brokerTs, Just cb, Just (Binary sigsBs), Just (Binary body)) =
-      (\sigs -> (ownerGMId, brokerTs, SignedMsg cb sigs body)) <$> eitherToMaybe (smpDecode sigsBs)
+    toRoster (Just ownerGMId, Just brokerTs, Just cb, Just (Binary sigsBs), Just (Binary body), blob_) =
+      (\sigs -> (ownerGMId, brokerTs, SignedMsg cb sigs body, (\(Binary b) -> b) <$> blob_)) <$> eitherToMaybe (smpDecode sigsBs)
     toRoster _ = Nothing
+
+-- The signed-header columns are relay-only (Nothing on a member); promoted to the live header at
+-- completion so the relay can re-forward the roster.
+setRosterPending :: DB.Connection -> GroupInfo -> VersionRoster -> FD.FileDigest -> GroupMemberId -> UTCTime -> Maybe SignedMsg -> IO ()
+setRosterPending db GroupInfo {groupId} v digest ownerGMId brokerTs sm_ = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET roster_pending_version = ?, roster_pending_digest = ?,
+          roster_pending_sending_owner_gm_id = ?, roster_pending_broker_ts = ?,
+          roster_pending_msg_chat_binding = ?, roster_pending_msg_signatures = ?, roster_pending_msg_body = ?,
+          updated_at = ?
+      WHERE group_id = ?
+    |]
+    ((v, Binary (FD.unFileDigest digest), ownerGMId, brokerTs)
+       :. ((\SignedMsg {chatBinding} -> chatBinding) <$> sm_, (\SignedMsg {signatures} -> Binary (smpEncode signatures)) <$> sm_, (\SignedMsg {signedBody} -> Binary signedBody) <$> sm_, currentTs, groupId))
+
+getRosterPending :: DB.Connection -> GroupInfo -> IO (Maybe (VersionRoster, FD.FileDigest, GroupMemberId, UTCTime, Maybe SignedMsg))
+getRosterPending db GroupInfo {groupId} =
+  (>>= toPending)
+    <$> maybeFirstRow
+      id
+      ( DB.query
+          db
+          [sql|
+            SELECT roster_pending_version, roster_pending_digest,
+                   roster_pending_sending_owner_gm_id, roster_pending_broker_ts,
+                   roster_pending_msg_chat_binding, roster_pending_msg_signatures, roster_pending_msg_body
+            FROM groups WHERE group_id = ?
+          |]
+          (Only groupId)
+      )
+  where
+    toPending (Just v, Just (Binary d), Just ownerGMId, Just brokerTs, cb_, sigs_, body_) =
+      Just (v, FD.FileDigest d, ownerGMId, brokerTs, sm_)
+      where
+        sm_ = case (cb_, sigs_, body_) of
+          (Just cb, Just (Binary sigsBs), Just (Binary body)) ->
+            (\sigs -> SignedMsg cb sigs body) <$> eitherToMaybe (smpDecode sigsBs)
+          _ -> Nothing
+    toPending _ = Nothing
+
+-- Promote pending -> live (header + blob + version) and clear pending, in one statement.
+promoteRosterPending :: DB.Connection -> GroupInfo -> ByteString -> IO ()
+promoteRosterPending db GroupInfo {groupId} blob = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE groups SET
+        roster_version = roster_pending_version,
+        roster_blob = ?,
+        roster_sending_owner_gm_id = roster_pending_sending_owner_gm_id,
+        roster_broker_ts = roster_pending_broker_ts,
+        roster_msg_chat_binding = roster_pending_msg_chat_binding,
+        roster_msg_signatures = roster_pending_msg_signatures,
+        roster_msg_body = roster_pending_msg_body,
+        roster_pending_version = NULL,
+        roster_pending_digest = NULL,
+        roster_pending_sending_owner_gm_id = NULL,
+        roster_pending_broker_ts = NULL,
+        roster_pending_msg_chat_binding = NULL,
+        roster_pending_msg_signatures = NULL,
+        roster_pending_msg_body = NULL,
+        updated_at = ?
+      WHERE group_id = ?
+    |]
+    (Binary blob, currentTs, groupId)
+
+clearRosterPending :: DB.Connection -> GroupInfo -> IO ()
+clearRosterPending db GroupInfo {groupId} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE groups SET
+        roster_pending_version = NULL, roster_pending_digest = NULL,
+        roster_pending_sending_owner_gm_id = NULL, roster_pending_broker_ts = NULL,
+        roster_pending_msg_chat_binding = NULL, roster_pending_msg_signatures = NULL, roster_pending_msg_body = NULL,
+        updated_at = ?
+      WHERE group_id = ?
+    |]
+    (currentTs, groupId)
 
 setGroupMemberKeyRole :: DB.Connection -> GroupMember -> C.PublicKeyEd25519 -> GroupMemberRole -> IO ()
 setGroupMemberKeyRole db GroupMember {groupMemberId} pubKey role = do
@@ -3174,11 +3278,11 @@ createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupI
   where
     VersionRange minV maxV = vr cxt
 
--- member_pub_key is not updated here — introduced members are owners
--- whose keys are loaded from link data (trusted out-of-band).
--- Updating from an in-band message would allow a compromised relay to substitute keys.
+-- Intro refreshes only profile / status / peer version. Role and key stay owner-authoritative
+-- (the owner-signed roster for members/moderators/admins, link data for owners), so taking either from
+-- an in-band relayed intro would let a compromised relay substitute them.
 updatePreparedChannelMember :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberInfo -> ExceptT StoreError IO GroupMember
-updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile} = do
+updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} = do
   _ <- updateMemberProfile db user member profile
   currentTs <- liftIO getCurrentTime
   liftIO $
@@ -3186,14 +3290,13 @@ updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupM
       db
       [sql|
         UPDATE group_members
-        SET member_role = ?,
-            member_status = ?,
+        SET member_status = ?,
             peer_chat_min_version = ?,
             peer_chat_max_version = ?,
             updated_at = ?
         WHERE user_id = ? AND group_member_id = ?
       |]
-      (memberRole, GSMemIntroduced, minV, maxV, currentTs, userId, groupMemberId)
+      (GSMemIntroduced, minV, maxV, currentTs, userId, groupMemberId)
   getGroupMemberById db cxt user groupMemberId
   where
     VersionRange minV maxV = maybe memberChatVRange fromChatVRange v
