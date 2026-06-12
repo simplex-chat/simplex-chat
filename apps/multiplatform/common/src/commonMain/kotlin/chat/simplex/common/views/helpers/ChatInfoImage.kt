@@ -99,7 +99,7 @@ fun ProfileImage(
         avatar.place(0, 0)
         // badgeInsideShare of the badge width is inside the visible avatar (the box minus its inset);
         // the badge overhangs the avatar's bottom-right edge by the same amount on both axes
-        val overhang = ((1 - badgeInsideShare) * bdg.width).roundToInt()
+        val overhang = (badgeOverhang * bdg.width).roundToInt()
         bdg.place(
           x = avatar.width - insetPx - bdg.width + overhang,
           y = avatar.height - insetPx - bdg.height + overhang
@@ -164,9 +164,9 @@ private val badgeColorFilter = ColorFilter.colorMatrix(
     timesAssign(
       ColorMatrix(
         floatArrayOf(
-          0.99f, 0f, 0f, 0f, 0f,
-          0f, 0.99f, 0f, 0f, 0f,
-          0f, 0f, 0.99f, 0f, 0f,
+          0.985f, 0f, 0f, 0f, 0f,
+          0f, 0.985f, 0f, 0f, 0f,
+          0f, 0f, 0.985f, 0f, 0f,
           0f, 0f, 0f, 1f, 0f
         )
       )
@@ -197,8 +197,8 @@ private fun badgeWidthRatio(size: Dp): Float {
   }
 }
 
-// share of the badge (width and height) inside the avatar; the rest overhangs the bottom-right corner
-private const val badgeInsideShare = 0.618f
+// share of the badge width outside the avatar overhanging the corner
+private const val badgeOverhang = 0.3f
 
 // the badge glyph's width / height (from the SVG: 316.5 x 415.5)
 private const val badgeAspectRatio = 316.5f / 415.5f
@@ -216,7 +216,7 @@ private fun ProfileBadge(width: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit
       contentDescription = null,
       contentScale = ContentScale.Fit,
       alpha = if (badge.status == BadgeStatus.Expired) 0.4f else 1f,
-      // colorFilter = badgeColorFilter,
+      colorFilter = badgeColorFilter,
       modifier = mod
     )
   }
