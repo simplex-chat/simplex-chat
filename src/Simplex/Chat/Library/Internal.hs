@@ -1389,21 +1389,25 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
-groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}, membership = GroupMember {memberId}, groupKeys} GroupLink {groupLinkId} groupRelays =
+groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}, membership = GroupMember {memberId, memberRole}, groupKeys} GroupLink {groupLinkId} groupRelays =
   let direct = not $ useRelays' gInfo
       relays = mapMaybe (\GroupRelay {relayLink} -> relayLink) groupRelays
       publicGroupData_ = PublicGroupData <$> publicMemberCount
       userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_}
       owners = case groupKeys of
-        Just GroupKeys {groupRootKey = GRKPrivate rootPrivKey, memberPrivKey} ->
-          let ownerId = unMemberId memberId
-              ownerKey = C.publicKey memberPrivKey
-              authOwnerSig = C.sign' rootPrivKey (ownerId <> C.encodePubKey ownerKey)
-           in [OwnerAuth {ownerId, ownerKey, authOwnerSig}]
+        Just GroupKeys {groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+          | groupLinkOwnerAuthAllowed memberRole ->
+              let ownerId = unMemberId memberId
+                  ownerKey = C.publicKey memberPrivKey
+                  authOwnerSig = C.sign' rootPrivKey (ownerId <> C.encodePubKey ownerKey)
+               in [OwnerAuth {ownerId, ownerKey, authOwnerSig}]
         _ -> []
       userLinkData = UserContactLinkData UserContactData {direct, owners, relays, userData}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
    in (userLinkData, crClientData)
+
+groupLinkOwnerAuthAllowed :: GroupMemberRole -> Bool
+groupLinkOwnerAuthAllowed = (== GROwner)
 
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
