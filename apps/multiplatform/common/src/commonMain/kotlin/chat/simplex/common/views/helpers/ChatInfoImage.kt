@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalTextStyle
@@ -18,6 +19,8 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -228,13 +231,38 @@ val ChatInfo.nameBadge: LocalBadge? get() = when {
   else -> null
 }
 
-// badge next to the contact name, sized to match the adjacent text
+// Inter's cap height as a share of the font size: the badge spans exactly from the baseline to the top of capital letters
+private const val fontCapHeightRatio = 0.7275f
+
+// Badge next to the contact name in a Row: top aligned with capital letters, bottom with the text baseline.
+// The name Text must use Modifier.alignByBaseline(), and weight(1f, fill = false) when it can ellipsize,
+// so a long name truncates and the badge stays visible right after it.
 @Composable
-fun NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.current.fontSize, onBadgeClick: (() -> Unit)? = null) {
+fun RowScope.NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.current.fontSize, onBadgeClick: (() -> Unit)? = null) {
   if (badge == null) return
-  val height = with(LocalDensity.current) { if (fontSize.isSpecified) fontSize.toDp() else 14.dp }
-  val mod = Modifier.padding(start = 4.dp).height(height).aspectRatio(badgeAspectRatio)
-    .let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
+  val height = with(LocalDensity.current) { (if (fontSize.isSpecified) fontSize else 14.sp).toDp() } * fontCapHeightRatio
+  BadgeGlyph(
+    badge,
+    // the badge's bottom edge is its alignment line, aligned with the text baseline
+    Modifier.alignBy { it.measuredHeight }.padding(start = 4.dp).height(height).aspectRatio(badgeAspectRatio),
+    onBadgeClick
+  )
+}
+
+// badge inside a Text via appendInlineContent(id): bottom on the baseline, cap-height tall.
+// precede with append(" ") for the space between the name and the badge.
+fun nameBadgeInline(badge: LocalBadge, fontSize: TextUnit, onBadgeClick: (() -> Unit)? = null): InlineTextContent {
+  val height = fontSize * fontCapHeightRatio
+  return InlineTextContent(
+    Placeholder(height * badgeAspectRatio, height, PlaceholderVerticalAlign.AboveBaseline)
+  ) {
+    BadgeGlyph(badge, Modifier.fillMaxSize(), onBadgeClick)
+  }
+}
+
+@Composable
+private fun BadgeGlyph(badge: LocalBadge, modifier: Modifier, onBadgeClick: (() -> Unit)? = null) {
+  val mod = modifier.let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
   if (badge.status == BadgeStatus.Failed) {
     Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
   } else {

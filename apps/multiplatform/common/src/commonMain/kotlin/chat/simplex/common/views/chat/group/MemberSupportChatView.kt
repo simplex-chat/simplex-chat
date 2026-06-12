@@ -138,7 +138,7 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
           MemberVerifiedShield()
         }
         Text(
-          member.displayName, fontWeight = FontWeight.SemiBold,
+          member.displayName, Modifier.alignByBaseline().weight(1f, fill = false), fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
         NameBadge(member.memberProfile.localBadge)

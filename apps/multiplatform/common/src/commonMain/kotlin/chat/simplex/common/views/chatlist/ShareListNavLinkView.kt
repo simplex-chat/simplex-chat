@@ -106,7 +106,7 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
         ProfileImage(size = 42.dp, chat.chatInfo.image, badge = if (ct?.active == true) ct.profile.localBadge else null)
       }
       Text(
-        chat.chatInfo.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        chat.chatInfo.chatViewName, Modifier.alignByBaseline().weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis,
         color = if (disabled) MaterialTheme.colors.secondary else if (chat.chatInfo.incognito) Indigo else Color.Unspecified
       )
       NameBadge(chat.chatInfo.nameBadge)

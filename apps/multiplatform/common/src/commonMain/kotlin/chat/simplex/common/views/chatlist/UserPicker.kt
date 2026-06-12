@@ -468,7 +468,9 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
     Text(
       u.displayName,
       modifier = Modifier
-        .padding(start = 10.dp, end = 8.dp),
+        .padding(start = 10.dp, end = 8.dp)
+        .alignByBaseline()
+        .weight(1f, fill = false),
       color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )

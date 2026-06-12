@@ -742,22 +742,24 @@ fun GroupMemberInfoHeader(member: GroupMember) {
       }
       append(displayName)
       if (badge != null) {
+        append(" ")
         appendInlineContent(id = "nameBadge")
       }
     }
     val nameFontSize = MaterialTheme.typography.h1.fontSize
-    val inlineContent: Map<String, InlineTextContent> = mapOf(
-      "shieldIcon" to InlineTextContent(
-        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
-      ) {
-        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
-      },
-      "nameBadge" to InlineTextContent(
-        Placeholder(nameFontSize, nameFontSize, PlaceholderVerticalAlign.TextCenter)
-      ) {
-        NameBadge(badge, nameFontSize, onBadgeClick = badge?.let { b -> { showBadgeInfoAlert(b) } })
+    val inlineContent: Map<String, InlineTextContent> = buildMap {
+      put(
+        "shieldIcon",
+        InlineTextContent(
+          Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+        ) {
+          Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+        }
+      )
+      if (badge != null) {
+        put("nameBadge", nameBadgeInline(badge, nameFontSize) { showBadgeInfoAlert(badge) })
       }
-    )
+    }
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = fun(name: String) {
       clipboard.setText(AnnotatedString(name))

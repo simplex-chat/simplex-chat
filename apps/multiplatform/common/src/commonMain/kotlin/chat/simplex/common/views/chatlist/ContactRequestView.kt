@@ -31,6 +31,7 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
           contactRequest.chatViewName,
+          modifier = Modifier.alignByBaseline().weight(1f, fill = false),
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           style = MaterialTheme.typography.h3,

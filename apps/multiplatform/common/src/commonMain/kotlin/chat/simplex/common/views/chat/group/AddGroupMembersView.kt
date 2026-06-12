@@ -357,6 +357,7 @@ fun ContactCheckRow(
     Row(Modifier.weight(10f, fill = true), verticalAlignment = Alignment.CenterVertically) {
       Text(
         contact.chatViewName,
+        modifier = Modifier.alignByBaseline().weight(1f, fill = false),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified

@@ -21,6 +21,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
@@ -1565,7 +1566,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
           ContactVerifiedShield()
         }
         Text(
-          cInfo.displayName, fontWeight = FontWeight.SemiBold,
+          cInfo.displayName, Modifier.alignByBaseline().weight(1f, fill = false), fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
         NameBadge(cInfo.nameBadge)
@@ -2021,6 +2022,7 @@ fun BoxScope.ChatItemsList(
                         memberNames(member, prevMember, memCount),
                         Modifier
                           .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .alignByBaseline()
                           .weight(1f, false),
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,
@@ -2289,8 +2291,17 @@ fun BoxScope.ChatItemsList(
           .background(MaterialTheme.appColors.receivedMessage)
       ) {
         ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
+        val bannerBadge = chatInfo.nameBadge
         Text(
-          chatInfo.displayName,
+          buildAnnotatedString {
+            append(chatInfo.displayName)
+            if (bannerBadge != null) {
+              append(" ")
+              appendInlineContent(id = "nameBadge")
+            }
+          },
+          inlineContent =
+            if (bannerBadge != null) mapOf("nameBadge" to nameBadgeInline(bannerBadge, MaterialTheme.typography.h3.fontSize)) else emptyMap(),
           style = MaterialTheme.typography.h3,
           color = MaterialTheme.colors.onBackground,
           textAlign = TextAlign.Center,

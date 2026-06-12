@@ -82,9 +82,10 @@ fun ChatPreviewView(
   }
 
   @Composable
-  fun chatPreviewTitleText(color: Color = Color.Unspecified) {
+  fun chatPreviewTitleText(color: Color = Color.Unspecified, modifier: Modifier = Modifier) {
     Text(
       cInfo.chatViewName,
+      modifier = modifier,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
       style = MaterialTheme.typography.h3,
@@ -152,7 +153,7 @@ fun ChatPreviewView(
           } else {
             Color.Unspecified
           }
-          chatPreviewTitleText(color = color)
+          chatPreviewTitleText(color = color, modifier = Modifier.alignByBaseline().weight(1f, fill = false))
           NameBadge(cInfo.nameBadge, MaterialTheme.typography.h3.fontSize, onBadgeClick = cInfo.nameBadge?.let { b -> { showBadgeInfoAlert(b) } })
         }
       }

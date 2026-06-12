@@ -56,6 +56,7 @@ fun ContactPreviewView(
                     }
                     Text(
                         cInfo.chatViewName,
+                        modifier = Modifier.alignByBaseline().weight(1f, fill = false),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = textColor

@@ -1079,7 +1079,9 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
             MemberVerifiedShield()
           }
           Text(
-            if (showlocalAliasAndFullName) member.localAliasAndFullName else member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            if (showlocalAliasAndFullName) member.localAliasAndFullName else member.chatViewName,
+            Modifier.alignByBaseline().weight(1f, fill = false),
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
           NameBadge(member.memberProfile.localBadge)
