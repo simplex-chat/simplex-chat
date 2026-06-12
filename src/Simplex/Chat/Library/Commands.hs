@@ -2785,7 +2785,7 @@ processChatCommand cxt nm = \case
         Nothing -> pure ([], [], [], False)
         Just memsToChange' -> do
           (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
-          rosterVer <- if doBumpRoster then Just <$> bumpAndBroadcastRoster user gInfo else pure Nothing
+          rosterVer <- if doBumpRoster then Just <$> bumpAndBroadcastRoster user gInfo [] else pure Nothing
           let mKey m = if isJust rosterVer then MemberKey <$> memberPubKey m else Nothing
               events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (mKey m) rosterVer) memsToChange'
               recipients = filter memberCurrent members
@@ -2868,7 +2868,13 @@ processChatCommand cxt nm = \case
         throwCmdError "only the group owner can remove members, moderators and admins"
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
-      (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing recipients currentMems
+      -- channel privileged removal: persist + serve the roster (excluding the to-be-removed members, not
+      -- yet deleted) before the send, so the XGrpMemDel events carry the bumped version and advance recipients
+      rosterVer <-
+        if useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved
+          then Just <$> bumpAndBroadcastRoster user gInfo (map memberId' currentMems)
+          else pure Nothing
+      (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing rosterVer recipients currentMems
       (errs3, deleted3, acis3, signed3) <-
         foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], [], False) pendingApprvMems
       let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
@@ -2886,9 +2892,6 @@ processChatCommand cxt nm = \case
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
-      -- refresh the roster so the relay drops a removed privileged member for future joiners
-      when (useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved) $
-        void (bumpAndBroadcastRoster user gInfo) `catchAllErrors` eToView
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
@@ -2917,14 +2920,14 @@ processChatCommand cxt nm = \case
       deletePendingMember :: ([ChatError], [GroupMember], [AChatItem], Bool) -> User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
       deletePendingMember (accErrs, accDeleted, accACIs, accSigned) user gInfo recipients m = do
         (m', scopeInfo) <- mkMemberSupportChatInfo m
-        (errs, deleted, acis, signed) <- deleteMemsSend user gInfo (Just scopeInfo) recipients [m']
+        (errs, deleted, acis, signed) <- deleteMemsSend user gInfo (Just scopeInfo) Nothing recipients [m']
         pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs, accSigned || signed)
-      deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
-      deleteMemsSend user gInfo chatScopeInfo recipients memsToDelete = case L.nonEmpty memsToDelete of
+      deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe VersionRoster -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      deleteMemsSend user gInfo chatScopeInfo rosterVer recipients memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [], False)
         Just memsToDelete' -> do
           let chatScope = toChatScope <$> chatScopeInfo
-              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
+              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages rosterVer) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)

@@ -278,7 +278,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpMemConAll (MemberId "\1\2\3\4")
   it "x.grp.mem.del" $
     "{\"v\":\"1\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
-      #==# XGrpMemDel (MemberId "\1\2\3\4") False
+      #==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing
   it "x.grp.leave" $
     "{\"v\":\"1\",\"event\":\"x.grp.leave\",\"params\":{}}"
       ==# XGrpLeave

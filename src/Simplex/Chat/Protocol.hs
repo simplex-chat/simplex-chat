@@ -507,7 +507,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
-  XGrpMemDel :: MemberId -> Bool -> ChatMsgEvent 'Json
+  XGrpMemDel :: MemberId -> Bool -> Maybe VersionRoster -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
@@ -1426,7 +1426,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpMemRestrict_ -> XGrpMemRestrict <$> p "memberId" <*> p "memberRestrictions"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
-      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages")
+      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion"
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
@@ -1500,7 +1500,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpMemRestrict memId memRestrictions -> o ["memberId" .= memId, "memberRestrictions" .= memRestrictions]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
-      XGrpMemDel memId messages -> o $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
+      XGrpMemDel memId messages rosterVersion -> o $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
