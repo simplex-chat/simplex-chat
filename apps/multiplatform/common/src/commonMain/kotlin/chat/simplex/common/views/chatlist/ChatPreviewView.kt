@@ -154,7 +154,7 @@ fun ChatPreviewView(
             Color.Unspecified
           }
           chatPreviewTitleText(color = color, modifier = Modifier.alignByBaseline().weight(1f, fill = false))
-          NameBadge(cInfo.nameBadge, MaterialTheme.typography.h3.fontSize, onBadgeClick = cInfo.nameBadge?.let { b -> { showBadgeInfoAlert(b) } })
+          NameBadge(cInfo.nameBadge, MaterialTheme.typography.h3.fontSize)
         }
       }
       is ChatInfo.Group -> {

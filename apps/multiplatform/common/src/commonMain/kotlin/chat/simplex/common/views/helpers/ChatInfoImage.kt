@@ -251,7 +251,9 @@ fun RowScope.NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.c
     badge,
     // the alignment line sits badgeBaselineOffsetRatio above the badge's bottom edge,
     // so the Row places the badge that much below the text baseline
-    Modifier.alignBy { (it.measuredHeight * (1 - badgeBaselineOffsetRatio)).roundToInt() }.padding(start = 4.dp).height(height).aspectRatio(badgeAspectRatio),
+    // 6.dp matches the visible gap between the name and the verification shield:
+    // the shield has 3.dp end padding plus ~17% internal glyph margin, the badge artwork has none
+    Modifier.alignBy { (it.measuredHeight * (1 - badgeBaselineOffsetRatio)).roundToInt() }.padding(start = 6.dp).height(height).aspectRatio(badgeAspectRatio),
     onBadgeClick
   )
 }

@@ -2305,7 +2305,7 @@ fun BoxScope.ChatItemsList(
             }
           },
           inlineContent =
-            if (bannerBadge != null) mapOf("nameBadge" to nameBadgeInline(bannerBadge, MaterialTheme.typography.h3.fontSize)) else emptyMap(),
+            if (bannerBadge != null) mapOf("nameBadge" to nameBadgeInline(bannerBadge, MaterialTheme.typography.h3.fontSize) { showBadgeInfoAlert(bannerBadge) }) else emptyMap(),
           style = MaterialTheme.typography.h3,
           color = MaterialTheme.colors.onBackground,
           textAlign = TextAlign.Center,
