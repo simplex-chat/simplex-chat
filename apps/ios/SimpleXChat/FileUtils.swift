@@ -29,6 +29,10 @@ public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 1_047_552 // 1023KB
 // Spec: spec/services/files.md#MAX_FILE_SIZE_XFTP
 public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824 // 1GB
 
+// Hard limit for standalone XFTP uploads (device migration archive);
+// mirrors maxFileSizeHard (gb 5) in simplexmq Simplex/FileTransfer/Description.hs
+public let MAX_FILE_SIZE_XFTP_HARD: Int64 = 5_368_709_120 // 5GB
+
 public let MAX_FILE_SIZE_LOCAL: Int64 = Int64.max
 
 public let MAX_FILE_SIZE_SMP: Int64 = 8000000

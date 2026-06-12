@@ -126,6 +126,10 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
+// Hard limit for standalone XFTP uploads (e.g. device migration archive);
+// mirrors maxFileSizeHard (gb 5) in simplexmq Simplex/FileTransfer/Description.hs
+const val MAX_FILE_SIZE_XFTP_HARD: Long = 5_368_709_120 // 5GB
+
 const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI

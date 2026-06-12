@@ -2831,6 +2831,10 @@
   <string name="migrate_from_device_to_another_device">Migrate to another device</string>
   <string name="migrate_from_device_error_saving_settings">Error saving settings</string>
   <string name="migrate_from_device_exported_file_doesnt_exist">Exported file doesn\'t exist</string>
+  <string name="migrate_from_device_database_too_large_title">Database is too large</string>
+  <string name="migrate_from_device_database_too_large_desc">The exported archive (%1$s) is larger than the maximum size supported for migration (%2$s).</string>
+  <string name="not_enough_storage_title">You may not have enough storage</string>
+  <string name="not_enough_storage_desc">Exporting the database may need about %1$s of free space, but only %2$s is available. Continue anyway?</string>
   <string name="migrate_from_device_error_exporting_archive">Error exporting chat database</string>
   <string name="migrate_from_device_database_init">Preparing upload</string>
   <string name="migrate_from_device_error_uploading_archive">Error uploading the archive</string>

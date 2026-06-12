@@ -274,7 +274,7 @@ private fun MutableState<MigrationFromState>.ArchivingView() {
     ProgressView()
   }
   LaunchedEffect(Unit) {
-    exportArchive()
+    exportArchiveCheckingStorage()
   }
 }
 
@@ -480,6 +480,13 @@ private suspend fun MutableState<MigrationFromState>.verifyDatabasePassphrase(db
   }
 }
 
+private fun MutableState<MigrationFromState>.exportArchiveCheckingStorage() {
+  withBGApi {
+    if (confirmExportStorage()) exportArchive()
+    else state = MigrationFromState.UploadConfirmation
+  }
+}
+
 private fun MutableState<MigrationFromState>.exportArchive() {
   withLongRunningApi {
     try {
@@ -506,7 +513,15 @@ private fun MutableState<MigrationFromState>.exportArchive() {
 private fun MutableState<MigrationFromState>.uploadArchive(archivePath: String) {
   val totalBytes = File(archivePath).length()
   if (totalBytes > 0L) {
-    state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
+    if (totalBytes > MAX_FILE_SIZE_XFTP_HARD) {
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.migrate_from_device_database_too_large_title),
+        String.format(generalGetString(MR.strings.migrate_from_device_database_too_large_desc), formatBytes(totalBytes), formatBytes(MAX_FILE_SIZE_XFTP_HARD))
+      )
+      state = MigrationFromState.UploadConfirmation
+    } else {
+      state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
+    }
   } else {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_from_device_exported_file_doesnt_exist))
     state = MigrationFromState.UploadConfirmation

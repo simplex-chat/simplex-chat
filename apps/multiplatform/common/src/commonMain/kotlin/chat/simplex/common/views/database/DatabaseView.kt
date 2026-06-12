@@ -594,12 +594,36 @@ fun deleteChatDatabaseFilesAndState() {
   ntfManager.cancelAllNotifications()
 }
 
+// Advisory check before exporting the database — export transiently uses ~2x the data on disk.
+suspend fun confirmExportStorage(): Boolean {
+  databaseExportDir.mkdirs()
+  val requiredBytes = 2L * (
+    directoryFileCountAndSize(appFilesDir.absolutePath).second +
+      directoryFileCountAndSize(wallpapersDir.absolutePath).second +
+      File(dataDir, chatDatabaseFileName).length() +
+      File(dataDir, agentDatabaseFileName).length()
+  )
+  val availableBytes = databaseExportDir.usableSpace
+  if (availableBytes >= requiredBytes) return true
+  val proceed = CompletableDeferred<Boolean>()
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.not_enough_storage_title),
+    text = String.format(generalGetString(MR.strings.not_enough_storage_desc), formatBytes(requiredBytes), formatBytes(availableBytes)),
+    confirmText = generalGetString(MR.strings.chat_database_exported_continue),
+    onConfirm = { proceed.complete(true) },
+    onDismiss = { proceed.complete(false) },
+    onDismissRequest = { proceed.complete(false) },
+  )
+  return proceed.await()
+}
+
 private suspend fun exportArchive(
   m: ChatModel,
   progressIndicator: MutableState<Boolean>,
   chatArchiveFile: MutableState<String?>,
   saveArchiveLauncher: FileChooserLauncher
 ): Boolean {
+  if (!confirmExportStorage()) return false
   progressIndicator.value = true
   try {
     val (archiveFile, archiveErrors) = exportChatArchive(m, null, chatArchiveFile)

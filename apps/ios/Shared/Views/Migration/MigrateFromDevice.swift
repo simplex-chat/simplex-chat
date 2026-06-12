@@ -262,7 +262,7 @@ struct MigrateFromDevice: View {
             progressView()
         }
         .onAppear {
-            exportArchive()
+            exportArchiveCheckingStorage()
         }
     }
 
@@ -463,6 +463,13 @@ struct MigrateFromDevice: View {
         }
     }
 
+    private func exportArchiveCheckingStorage() {
+        Task {
+            if await confirmExportStorage() { await MainActor.run { exportArchive() } }
+            else { await MainActor.run { migrationState = .uploadConfirmation } }
+        }
+    }
+
     private func exportArchive() {
         Task {
             do {
@@ -488,6 +495,20 @@ struct MigrateFromDevice: View {
     private func uploadArchive(path archivePath: URL) async {
         if let attrs = try? FileManager.default.attributesOfItem(atPath: archivePath.path),
             let totalBytes = attrs[.size] as? Int64 {
+            if totalBytes > MAX_FILE_SIZE_XFTP_HARD {
+                await MainActor.run {
+                    alert = .error(
+                        title: "Database is too large",
+                        error: String.localizedStringWithFormat(
+                            NSLocalizedString("The exported archive (%@) is larger than the maximum size supported for migration (%@).", comment: "migration alert"),
+                            ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .binary),
+                            ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP_HARD, countStyle: .binary)
+                        )
+                    )
+                    migrationState = .uploadConfirmation
+                }
+                return
+            }
             await MainActor.run {
                 migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
             }
@@ -781,4 +802,41 @@ struct MigrateFromDevice_Previews: PreviewProvider {
     static var previews: some View {
         MigrateFromDevice(showProgressOnSettings: Binding.constant(false))
     }
+}
+
+// Advisory check before exporting the database — export transiently uses ~2x the data on disk.
+func confirmExportStorage() async -> Bool {
+    let dataBytes = await Task.detached { estimatedExportBytes() }.value
+    let required = dataBytes * 2
+    guard let available = availableImportantBytes(at: getDocumentsDirectory()), available < required else { return true }
+    return await withCheckedContinuation { cont in
+        DispatchQueue.main.async {
+            showAlert(
+                NSLocalizedString("You may not have enough storage", comment: "alert title"),
+                message: String.localizedStringWithFormat(
+                    NSLocalizedString("Exporting the database may need about %@ of free space, but only %@ is available. Continue anyway?", comment: "alert message"),
+                    ByteCountFormatter.string(fromByteCount: required, countStyle: .binary),
+                    ByteCountFormatter.string(fromByteCount: available, countStyle: .binary)
+                ),
+                actions: {
+                    [ UIAlertAction(title: NSLocalizedString("Continue", comment: ""), style: .default) { _ in cont.resume(returning: true) },
+                      UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel) { _ in cont.resume(returning: false) } ]
+                }
+            )
+        }
+    }
+}
+
+private func estimatedExportBytes() -> Int64 {
+    let files = Int64(directoryFileCountAndSize(getAppFilesDirectory())?.1 ?? 0)
+    let wallpapers = Int64(directoryFileCountAndSize(getWallpaperDirectory())?.1 ?? 0)
+    let dbPrefix = getAppDatabasePath().path
+    let chatDb = Int64(fileSize(URL(fileURLWithPath: dbPrefix + "_chat.db")) ?? 0)
+    let agentDb = Int64(fileSize(URL(fileURLWithPath: dbPrefix + "_agent.db")) ?? 0)
+    return files + wallpapers + chatDb + agentDb
+}
+
+private func availableImportantBytes(at url: URL) -> Int64? {
+    (try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
+        .volumeAvailableCapacityForImportantUsage
 }
