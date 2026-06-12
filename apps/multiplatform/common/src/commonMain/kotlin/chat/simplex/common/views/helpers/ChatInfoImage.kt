@@ -202,8 +202,8 @@ private fun badgeWidthRatio(size: Dp): Float {
 // share of the badge width outside the avatar overhanging the corner
 private const val badgeOverhang = 0.3f
 
-// the badge glyph's width / height (from the SVG: 316.5 x 415.5)
-private const val badgeAspectRatio = 316.5f / 415.5f
+// the badge glyph's width / height (the SVGs are cropped to the glyph: 300 x 399)
+private const val badgeAspectRatio = 300f / 399f
 
 @Composable
 private fun ProfileBadge(width: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit)?) {
@@ -231,8 +231,9 @@ val ChatInfo.nameBadge: LocalBadge? get() = when {
   else -> null
 }
 
-// Inter's cap height as a share of the font size: the badge spans exactly from the baseline to the top of capital letters
-private const val fontCapHeightRatio = 0.7275f
+// cap height of the shipped Inter (OS/2 sCapHeight 2048 / unitsPerEm 2816, same in all weights):
+// the badge spans exactly from the baseline to the top of capital letters
+private const val fontCapHeightRatio = 2048f / 2816f
 
 // Badge next to the contact name in a Row: top aligned with capital letters, bottom with the text baseline.
 // The name Text must use Modifier.alignByBaseline(), and weight(1f, fill = false) when it can ellipsize,
