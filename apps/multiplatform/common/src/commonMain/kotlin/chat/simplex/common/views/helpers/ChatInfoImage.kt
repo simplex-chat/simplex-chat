@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextStyle
@@ -33,6 +34,7 @@ import chat.simplex.common.model.BadgeType
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.GroupMember
 import chat.simplex.common.model.LocalBadge
+import chat.simplex.common.model.localDate
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
@@ -214,18 +216,36 @@ private fun BadgeGlyph(badge: LocalBadge, modifier: Modifier, onBadgeClick: (() 
   }
 }
 
-fun showBadgeInfoAlert(badge: LocalBadge) {
-  if (badge.status == BadgeStatus.Failed) {
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(MR.strings.badge_unverified_title),
-      text = generalGetString(MR.strings.badge_unverified_desc)
-    )
-  } else {
-    // a verified badge's type is signed and can't be faked, so the real (possibly unknown) type name is shown
-    AlertManager.shared.showAlertMsg(
-      title = badge.badge.badgeType.text.replaceFirstChar { it.uppercase() },
-      text = generalGetString(MR.strings.badge_verified_desc)
-    )
+fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) {
+  // a verified badge's type is signed and can't be faked, so the real (possibly unknown) type name is the title
+  val title = badge.badge.badgeType.text.replaceFirstChar { it.uppercase() }
+  when {
+    badge.status == BadgeStatus.Failed ->
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.badge_unverified_title),
+        text = generalGetString(MR.strings.badge_unverified_desc)
+      )
+    badge.badge.badgeType is BadgeType.Investor ->
+      AlertManager.shared.showAlertDialog(
+        title = title,
+        text = String.format(generalGetString(MR.strings.badge_invested), name),
+        confirmText = generalGetString(MR.strings.ok),
+        dismissText = generalGetString(MR.strings.learn_more),
+        onDismiss = { uriHandler.openUriCatching("https://simplex.chat/crowdfunding") }
+      )
+    else -> {
+      // Supporter, Legend and unknown types use the supporter wording
+      val expiry = badge.badge.badgeExpiry
+      val supports =
+        if (badge.status == BadgeStatus.Expired && expiry != null)
+          String.format(generalGetString(MR.strings.badge_supported_simplex), name, localDate(expiry))
+        else
+          String.format(generalGetString(MR.strings.badge_supports_simplex), name)
+      AlertManager.shared.showAlertMsg(
+        title = title,
+        text = supports + "\n\n" + generalGetString(MR.strings.badge_support_from_v7)
+      )
+    }
   }
 }
 
