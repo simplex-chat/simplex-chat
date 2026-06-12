@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -22,24 +21,21 @@ import chat.simplex.res.MR
 @Composable
 fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
   Row {
-    ChatInfoImage(contactRequest, size = 72.dp, scaled = true)
+    ChatInfoImage(contactRequest, size = 72.dp * fontSizeSqrtMultiplier)
     Column(
       modifier = Modifier
         .padding(start = 8.dp, end = 8.sp.toDp())
         .weight(1F)
     ) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-          contactRequest.chatViewName,
-          modifier = Modifier.alignByBaseline().weight(1f, fill = false),
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.h3,
-          fontWeight = FontWeight.Bold,
-          color = MaterialTheme.colors.primary,
-        )
-        NameBadge(contactRequest.nameBadge, MaterialTheme.typography.h3.fontSize)
-      }
+      NameWithBadge(
+        contactRequest.chatViewName,
+        contactRequest.nameBadge,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.h3,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colors.primary,
+      )
       Text(
         stringResource(MR.strings.contact_wants_to_connect_with_you),
         Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp()),

@@ -95,17 +95,13 @@ fun UserPickerUserBox(
       }
     }
     val user = userInfo.user
-    // the name and the badge are one Row child, so the outer Row's spacedBy doesn't separate them
-    Row {
-      Text(
-        user.displayName,
-        Modifier.alignByBaseline().weight(1f, fill = false),
-        fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-      )
-      NameBadge(user.profile.localBadge)
-    }
+    NameWithBadge(
+      user.displayName,
+      user.profile.localBadge,
+      fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+    )
   }
 }
 

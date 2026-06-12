@@ -313,18 +313,15 @@ fun AppVersionItem(showVersion: () -> Unit) {
   ProfileImage(size = size, image = profileOf.image, color = iconColor)
   Spacer(Modifier.padding(horizontal = 8.dp))
   Column(Modifier.height(size), verticalArrangement = Arrangement.Center) {
-    Row {
-      Text(
-        profileOf.displayName,
-        Modifier.alignByBaseline().weight(1f, fill = false),
-        style = MaterialTheme.typography.caption,
-        fontWeight = FontWeight.Bold,
-        color = if (stopped) MaterialTheme.colors.secondary else textColor,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
-      NameBadge(badge, MaterialTheme.typography.caption.fontSize)
-    }
+    NameWithBadge(
+      profileOf.displayName,
+      badge,
+      style = MaterialTheme.typography.caption,
+      fontWeight = FontWeight.Bold,
+      color = if (stopped) MaterialTheme.colors.secondary else textColor,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
     if (profileOf.fullName.isNotEmpty() && profileOf.fullName != profileOf.displayName) {
       Text(
         profileOf.fullName,

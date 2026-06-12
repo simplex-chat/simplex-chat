@@ -82,10 +82,9 @@ fun ChatPreviewView(
   }
 
   @Composable
-  fun chatPreviewTitleText(color: Color = Color.Unspecified, modifier: Modifier = Modifier) {
+  fun chatPreviewTitleText(color: Color = Color.Unspecified) {
     Text(
       cInfo.chatViewName,
-      modifier = modifier,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
       style = MaterialTheme.typography.h3,
@@ -153,8 +152,15 @@ fun ChatPreviewView(
           } else {
             Color.Unspecified
           }
-          chatPreviewTitleText(color = color, modifier = Modifier.alignByBaseline().weight(1f, fill = false))
-          NameBadge(cInfo.nameBadge, MaterialTheme.typography.h3.fontSize)
+          NameWithBadge(
+            cInfo.chatViewName,
+            cInfo.nameBadge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.h3,
+            fontWeight = FontWeight.Bold,
+            color = color
+          )
         }
       }
       is ChatInfo.Group -> {
@@ -391,7 +397,7 @@ fun ChatPreviewView(
   Box(contentAlignment = Alignment.Center) {
     Row {
       Box(contentAlignment = Alignment.BottomEnd) {
-        ChatInfoImage(cInfo, size = 72.dp, tappableBadge = true, scaled = true)
+        ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
         Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
           chatPreviewImageOverlayIcon()
         }

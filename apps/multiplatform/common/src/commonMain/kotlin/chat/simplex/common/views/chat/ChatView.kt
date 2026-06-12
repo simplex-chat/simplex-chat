@@ -1556,7 +1556,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
     if (cInfo.incognito) {
       IncognitoImage(size = 36.dp * fontSizeSqrtMultiplier, Indigo)
     }
-    ChatInfoImage(cInfo, size = imageSize, iconColor, scaled = true)
+    ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
@@ -1565,11 +1565,10 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
         if ((cInfo as? ChatInfo.Direct)?.contact?.verified == true) {
           ContactVerifiedShield()
         }
-        Text(
-          cInfo.displayName, Modifier.alignByBaseline().weight(1f, fill = false), fontWeight = FontWeight.SemiBold,
+        NameWithBadge(
+          cInfo.displayName, cInfo.nameBadge, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
-        NameBadge(cInfo.nameBadge)
       }
       if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.localAlias.isEmpty()) {
         Text(
@@ -2019,23 +2018,17 @@ fun BoxScope.ChatItemsList(
                           null to 1
                         }
                       // the name and the badge are one element, so SpaceBetween separates them from the role, not from each other
-                      Row(
+                      NameWithBadge(
+                        memberNames(member, prevMember, memCount),
+                        if (prevMember == null && memCount == 1) member.nameBadge else null,
                         Modifier
                           .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
-                          .weight(1f, false)
-                      ) {
-                        Text(
-                          memberNames(member, prevMember, memCount),
-                          Modifier.alignByBaseline().weight(1f, false),
-                          fontSize = 13.5.sp,
-                          color = MaterialTheme.colors.secondary,
-                          overflow = TextOverflow.Ellipsis,
-                          maxLines = 1
-                        )
-                        if (prevMember == null && memCount == 1) {
-                          NameBadge(member.memberProfile.localBadge, 13.5.sp)
-                        }
-                      }
+                          .weight(1f, false),
+                        fontSize = 13.5.sp,
+                        color = MaterialTheme.colors.secondary,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                      )
                       if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                         val chatItemTail = remember { appPreferences.chatItemTail.state }
                         val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
@@ -2061,8 +2054,7 @@ fun BoxScope.ChatItemsList(
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
-                        // zIndex draws the avatar (and its badge overflow) above the message bubble tail
-                        Box(Modifier.zIndex(1f).clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
@@ -2812,7 +2804,7 @@ val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  MemberProfileImage(MEMBER_IMAGE_SIZE, member, backgroundColor = MaterialTheme.colors.background, scaled = true)
+  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable

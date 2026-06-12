@@ -171,18 +171,15 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   fun ForwardedFromSender(forwardedFromItem: AChatItem) {
     @Composable
     fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground, badge: LocalBadge? = null) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-          text,
-          modifier = Modifier.alignByBaseline().weight(1f, fill = false),
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.body1,
-          fontStyle = fontStyle,
-          color = color,
-        )
-        NameBadge(badge)
-      }
+      NameWithBadge(
+        text,
+        badge,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.body1,
+        fontStyle = fontStyle,
+        color = color,
+      )
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -197,7 +194,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           Spacer(Modifier.height(7.dp))
           ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary, badge = forwardedFromItem.chatInfo.nameBadge)
         } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
-          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName, badge = forwardedFromItem.chatItem.chatDir.groupMember.memberProfile.localBadge)
+          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName, badge = forwardedFromItem.chatItem.chatDir.groupMember.nameBadge)
           Spacer(Modifier.height(7.dp))
           ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary, badge = forwardedFromItem.chatInfo.nameBadge)
         } else {
@@ -348,15 +345,13 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     ) {
       MemberProfileImage(size = 36.dp, member)
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-      Row(Modifier.weight(10f, fill = true), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-          member.chatViewName,
-          modifier = Modifier.alignByBaseline().weight(1f, fill = false),
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis
-        )
-        NameBadge(member.memberProfile.localBadge)
-      }
+      NameWithBadge(
+        member.chatViewName,
+        member.nameBadge,
+        Modifier.weight(10f, fill = true),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
       Spacer(Modifier.fillMaxWidth().weight(1f))
       if (sentViaProxy == true) {
         Box(

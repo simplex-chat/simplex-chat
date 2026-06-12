@@ -471,8 +471,7 @@ private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: 
       ProfileImage(
         size = alertProfileImageSize,
         image = contact.profile.image,
-        icon = contact.chatIconName,
-        badge = if (contact.active) contact.profile.localBadge else null
+        icon = contact.chatIconName
       )
     },
     profileBadge = if (contact.active) contact.profile.localBadge else null,
@@ -632,8 +631,7 @@ fun showPrepareContactAlert(
         icon =
           if (contactShortLinkData.business) MR.images.ic_work_filled_padded
           else if (contactShortLinkData.profile.peerType == ChatPeerType.Bot) MR.images.ic_cube
-          else MR.images.ic_account_circle_filled,
-        badge = contactShortLinkData.localBadge
+          else MR.images.ic_account_circle_filled
       )
     },
     profileBadge = contactShortLinkData.localBadge,

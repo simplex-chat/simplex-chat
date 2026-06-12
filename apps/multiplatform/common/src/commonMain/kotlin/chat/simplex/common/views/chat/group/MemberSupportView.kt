@@ -234,11 +234,10 @@ fun SupportChatRow(member: GroupMember) {
           if (member.verified) {
             MemberVerifiedShield()
           }
-          Text(
-            member.chatViewName, Modifier.alignByBaseline().weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis,
+          NameWithBadge(
+            member.chatViewName, member.nameBadge, maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
-          NameBadge(member.memberProfile.localBadge)
         }
 
         Text(

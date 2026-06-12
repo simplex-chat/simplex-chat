@@ -733,9 +733,9 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     Modifier.padding(horizontal = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight, tappableBadge = true)
+    MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val displayName = member.displayName.trim() // alias if set
-    val badge = member.memberProfile.localBadge
+    val badge = member.nameBadge
     val text = buildAnnotatedString {
       if (member.verified) {
         appendInlineContent(id = "shieldIcon")
@@ -912,21 +912,15 @@ fun MemberProfileImage(
   mem: GroupMember,
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
-  async: Boolean = false,
-  tappableBadge: Boolean = false,
-  scaled: Boolean = false
+  async: Boolean = false
 ) {
-  val badge = mem.memberProfile.localBadge
   ProfileImage(
     size = size,
     image = mem.image,
     color = color,
     backgroundColor = backgroundColor,
     blurred = mem.blocked,
-    async = async,
-    badge = badge,
-    onBadgeClick = if (tappableBadge) badge?.let { b -> { showBadgeInfoAlert(b) } } else null,
-    scaled = scaled
+    async = async
   )
 }
 

@@ -102,14 +102,12 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
       } else if (chat.chatInfo is ChatInfo.Group) {
         ProfileImage(size = 42.dp, chat.chatInfo.image, icon = MR.images.ic_supervised_user_circle_filled)
       } else {
-        val ct = (chat.chatInfo as? ChatInfo.Direct)?.contact
-        ProfileImage(size = 42.dp, chat.chatInfo.image, badge = if (ct?.active == true) ct.profile.localBadge else null)
+        ProfileImage(size = 42.dp, chat.chatInfo.image)
       }
-      Text(
-        chat.chatInfo.chatViewName, Modifier.alignByBaseline().weight(1f, fill = false), maxLines = 1, overflow = TextOverflow.Ellipsis,
+      NameWithBadge(
+        chat.chatInfo.chatViewName, chat.chatInfo.nameBadge, maxLines = 1, overflow = TextOverflow.Ellipsis,
         color = if (disabled) MaterialTheme.colors.secondary else if (chat.chatInfo.incognito) Indigo else Color.Unspecified
       )
-      NameBadge(chat.chatInfo.nameBadge)
     }
   }
 }

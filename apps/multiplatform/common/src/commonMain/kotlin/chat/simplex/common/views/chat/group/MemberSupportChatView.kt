@@ -128,7 +128,7 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    MemberProfileImage(size = imageSize, member, iconColor, scaled = true)
+    MemberProfileImage(size = imageSize * fontSizeSqrtMultiplier, member, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
@@ -137,11 +137,10 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
         if (member.verified) {
           MemberVerifiedShield()
         }
-        Text(
-          member.displayName, Modifier.alignByBaseline().weight(1f, fill = false), fontWeight = FontWeight.SemiBold,
+        NameWithBadge(
+          member.displayName, member.nameBadge, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
-        NameBadge(member.memberProfile.localBadge)
       }
       if (member.fullName != "" && member.fullName != member.displayName && member.localAlias.isEmpty()) {
         Text(

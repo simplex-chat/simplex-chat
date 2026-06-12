@@ -464,17 +464,18 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
       .padding(vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    ProfileImage(image = u.image, size = 54.dp, badge = u.profile.localBadge, scaled = true)
-    Text(
+    ProfileImage(
+      image = u.image,
+      size = 54.dp * fontSizeSqrtMultiplier
+    )
+    // the end padding is on the row, not the name, so the badge stays right after the name
+    NameWithBadge(
       u.displayName,
-      modifier = Modifier
-        .padding(start = 10.dp, end = 8.dp)
-        .alignByBaseline()
-        .weight(1f, fill = false),
+      u.profile.localBadge,
+      Modifier.padding(start = 10.dp, end = 8.dp),
       color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
-    NameBadge(u.profile.localBadge)
   }
 }
 

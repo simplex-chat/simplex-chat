@@ -244,10 +244,7 @@ private fun ProfilePickerOption(
   ) {
     image()
     TextIconSpaced(false)
-    Row(Modifier.align(Alignment.CenterVertically)) {
-      Text(title, modifier = Modifier.alignByBaseline().weight(1f, fill = false))
-      NameBadge(badge)
-    }
+    NameWithBadge(title, badge, Modifier.align(Alignment.CenterVertically))
     if (onInfo != null) {
       Spacer(Modifier.padding(6.dp))
       Column(Modifier
