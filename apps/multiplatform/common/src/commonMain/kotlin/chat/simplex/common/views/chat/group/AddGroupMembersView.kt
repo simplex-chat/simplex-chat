@@ -354,13 +354,15 @@ fun ContactCheckRow(
   ) {
     ProfileImage(size = 36.dp, contact.image, badge = if (contact.active) contact.profile.localBadge else null)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-    Text(
-      contact.chatViewName,
-      modifier = Modifier.weight(10f, fill = true),
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis,
-      color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
-    )
+    Row(Modifier.weight(10f, fill = true), verticalAlignment = Alignment.CenterVertically) {
+      Text(
+        contact.chatViewName,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
+      )
+      NameBadge(if (contact.active) contact.profile.localBadge else null)
+    }
     Spacer(Modifier.fillMaxWidth().weight(1f))
     Icon(
       icon,

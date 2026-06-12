@@ -238,6 +238,7 @@ fun SupportChatRow(member: GroupMember) {
             member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
+          NameBadge(member.memberProfile.localBadge)
         }
 
         Text(

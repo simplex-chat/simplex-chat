@@ -475,6 +475,7 @@ private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: 
         badge = if (contact.active) contact.profile.localBadge else null
       )
     },
+    profileBadge = if (contact.active) contact.profile.localBadge else null,
     confirmText = generalGetString(if (contact.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat),
     onConfirm = {
       openKnownContact(chatModel, rhId, close, contact)
@@ -635,6 +636,7 @@ fun showPrepareContactAlert(
         badge = contactShortLinkData.localBadge
       )
     },
+    profileBadge = contactShortLinkData.localBadge,
     information = ownerVerificationMessage(ownerVerification),
     confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),
     onConfirm = {

@@ -472,6 +472,7 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
       color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
+    NameBadge(u.profile.localBadge)
   }
 }
 

@@ -1568,6 +1568,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
           cInfo.displayName, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
+        NameBadge(cInfo.nameBadge)
       }
       if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.localAlias.isEmpty()) {
         Text(
@@ -2026,6 +2027,9 @@ fun BoxScope.ChatItemsList(
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 1
                       )
+                      if (prevMember == null && memCount == 1) {
+                        NameBadge(member.memberProfile.localBadge, 13.5.sp)
+                      }
                       if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
                         val chatItemTail = remember { appPreferences.chatItemTail.state }
                         val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)

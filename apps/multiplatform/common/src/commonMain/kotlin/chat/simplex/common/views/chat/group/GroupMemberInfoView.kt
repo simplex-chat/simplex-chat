@@ -735,17 +735,27 @@ fun GroupMemberInfoHeader(member: GroupMember) {
   ) {
     MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight, tappableBadge = true)
     val displayName = member.displayName.trim() // alias if set
+    val badge = member.memberProfile.localBadge
     val text = buildAnnotatedString {
       if (member.verified) {
         appendInlineContent(id = "shieldIcon")
       }
       append(displayName)
+      if (badge != null) {
+        appendInlineContent(id = "nameBadge")
+      }
     }
+    val nameFontSize = MaterialTheme.typography.h1.fontSize
     val inlineContent: Map<String, InlineTextContent> = mapOf(
       "shieldIcon" to InlineTextContent(
         Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
         Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      },
+      "nameBadge" to InlineTextContent(
+        Placeholder(nameFontSize, nameFontSize, PlaceholderVerticalAlign.TextCenter)
+      ) {
+        NameBadge(badge, nameFontSize, onBadgeClick = badge?.let { b -> { showBadgeInfoAlert(b) } })
       }
     )
     val clipboard = LocalClipboardManager.current

@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -16,6 +17,7 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -39,12 +41,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
       is ChatInfo.Direct -> chatInfo.contact.chatIconName
       else -> MR.images.ic_account_circle_filled
     }
-  // a deleted (inactive) contact shows the inactive icon instead of the badge
-  val badge = when {
-    chatInfo is ChatInfo.Direct && chatInfo.contact.active -> chatInfo.contact.profile.localBadge
-    chatInfo is ChatInfo.ContactRequest -> chatInfo.contactRequest.profile.localBadge
-    else -> null
-  }
+  val badge = chatInfo.nameBadge
   ProfileImage(
     size,
     chatInfo.image,
@@ -84,29 +81,31 @@ fun ProfileImage(
   scaled: Boolean = false
 ) {
   val sz = if (scaled) size * fontSizeSqrtMultiplier else size
-  if (badge == null) {
-    ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
-  } else {
-    val inset = profileImageInset(sz)
-    Layout(content = {
-      ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
-      ProfileBadge(badgeWidthRatio(size) * sz, badge, onBadgeClick)
-    }) { measurables, constraints ->
-      val avatar = measurables[0].measure(constraints)
-      val bdg = measurables[1].measure(Constraints())
-      val insetPx = inset.roundToPx()
-      layout(avatar.width, avatar.height) {
-        avatar.place(0, 0)
-        // badgeInsideShare of the badge width is inside the visible avatar (the box minus its inset);
-        // the badge overhangs the avatar's bottom-right edge by the same amount on both axes
-        val overhang = (badgeOverhang * bdg.width).roundToInt()
-        bdg.place(
-          x = avatar.width - insetPx - bdg.width + overhang,
-          y = avatar.height - insetPx - bdg.height + overhang
-        )
-      }
-    }
-  }
+  ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
+  // the badge on the avatar is replaced by NameBadge next to the contact name; kept to allow reverting:
+  // if (badge == null) {
+  //   ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
+  // } else {
+  //   val inset = profileImageInset(sz)
+  //   Layout(content = {
+  //     ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
+  //     ProfileBadge(badgeWidthRatio(size) * sz, badge, onBadgeClick)
+  //   }) { measurables, constraints ->
+  //     val avatar = measurables[0].measure(constraints)
+  //     val bdg = measurables[1].measure(Constraints())
+  //     val insetPx = inset.roundToPx()
+  //     layout(avatar.width, avatar.height) {
+  //       avatar.place(0, 0)
+  //       // badgeInsideShare of the badge width is inside the visible avatar (the box minus its inset);
+  //       // the badge overhangs the avatar's bottom-right edge by the same amount on both axes
+  //       val overhang = (badgeOverhang * bdg.width).roundToInt()
+  //       bdg.place(
+  //         x = avatar.width - insetPx - bdg.width + overhang,
+  //         y = avatar.height - insetPx - bdg.height + overhang
+  //       )
+  //     }
+  //   }
+  // }
 }
 
 @Composable
@@ -208,6 +207,34 @@ private fun ProfileBadge(width: Dp, badge: LocalBadge, onBadgeClick: (() -> Unit
   // aspectRatio makes the measured height the glyph's height - otherwise Image measures at the
   // SVG's intrinsic height, and placement relies on the measured edges
   val mod = Modifier.width(width).aspectRatio(badgeAspectRatio).let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
+  if (badge.status == BadgeStatus.Failed) {
+    Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
+  } else {
+    Image(
+      painterResource(badgeImage(badge.badge.badgeType)),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      alpha = if (badge.status == BadgeStatus.Expired) 0.4f else 1f,
+      colorFilter = badgeColorFilter,
+      modifier = mod
+    )
+  }
+}
+
+// the badge shown for a chat: an active contact's or a contact request's (groups have none)
+val ChatInfo.nameBadge: LocalBadge? get() = when {
+  this is ChatInfo.Direct && contact.active -> contact.profile.localBadge
+  this is ChatInfo.ContactRequest -> contactRequest.profile.localBadge
+  else -> null
+}
+
+// badge next to the contact name, sized to match the adjacent text
+@Composable
+fun NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.current.fontSize, onBadgeClick: (() -> Unit)? = null) {
+  if (badge == null) return
+  val height = with(LocalDensity.current) { if (fontSize.isSpecified) fontSize.toDp() else 14.dp }
+  val mod = Modifier.padding(start = 4.dp).height(height).aspectRatio(badgeAspectRatio)
+    .let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
   if (badge.status == BadgeStatus.Failed) {
     Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
   } else {

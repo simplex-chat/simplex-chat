@@ -60,6 +60,7 @@ fun ContactPreviewView(
                         overflow = TextOverflow.Ellipsis,
                         color = textColor
                     )
+                    NameBadge(cInfo.nameBadge)
                 }
             is ChatInfo.ContactRequest ->
                 Row(verticalAlignment = Alignment.CenterVertically) {

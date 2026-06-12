@@ -141,6 +141,7 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
           member.displayName, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
+        NameBadge(member.memberProfile.localBadge)
       }
       if (member.fullName != "" && member.fullName != member.displayName && member.localAlias.isEmpty()) {
         Text(

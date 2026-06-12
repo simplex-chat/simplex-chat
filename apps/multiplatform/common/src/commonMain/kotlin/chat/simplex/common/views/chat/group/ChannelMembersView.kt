@@ -100,6 +100,7 @@ private fun ChannelMemberRow(member: GroupMember, user: Boolean, showRole: Boole
           overflow = TextOverflow.Ellipsis,
           color = if (member.memberIncognito) Indigo else Color.Unspecified
         )
+        NameBadge(member.memberProfile.localBadge)
       }
       if (user) {
         Text(

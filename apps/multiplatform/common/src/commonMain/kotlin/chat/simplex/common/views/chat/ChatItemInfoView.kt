@@ -344,12 +344,14 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     ) {
       MemberProfileImage(size = 36.dp, member)
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-      Text(
-        member.chatViewName,
-        modifier = Modifier.weight(10f, fill = true),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
+      Row(Modifier.weight(10f, fill = true), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+          member.chatViewName,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+        NameBadge(member.memberProfile.localBadge)
+      }
       Spacer(Modifier.fillMaxWidth().weight(1f))
       if (sentViaProxy == true) {
         Box(

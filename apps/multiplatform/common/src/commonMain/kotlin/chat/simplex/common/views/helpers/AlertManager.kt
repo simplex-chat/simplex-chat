@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
@@ -15,10 +17,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
@@ -272,6 +278,7 @@ class AlertManager {
     profileName: String,
     profileFullName: String,
     profileImage: @Composable () -> Unit,
+    profileBadge: LocalBadge? = null,
     subtitle: String? = null,
     information: String? = null,
     confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
@@ -299,8 +306,21 @@ class AlertManager {
               ) {
                 profileImage()
                 Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                val nameFontSize = MaterialTheme.typography.h4.fontSize
                 Text(
-                  profileName,
+                  buildAnnotatedString {
+                    append(profileName)
+                    if (profileBadge != null) {
+                      appendInlineContent(id = "nameBadge")
+                    }
+                  },
+                  inlineContent = mapOf(
+                    "nameBadge" to InlineTextContent(
+                      Placeholder(nameFontSize, nameFontSize, PlaceholderVerticalAlign.TextCenter)
+                    ) {
+                      NameBadge(profileBadge, nameFontSize)
+                    }
+                  ),
                   textAlign = TextAlign.Center,
                   style = MaterialTheme.typography.h4,
                   lineHeight = 20.sp,

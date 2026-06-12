@@ -109,6 +109,7 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
         chat.chatInfo.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
         color = if (disabled) MaterialTheme.colors.secondary else if (chat.chatInfo.incognito) Indigo else Color.Unspecified
       )
+      NameBadge(chat.chatInfo.nameBadge)
     }
   }
 }
