@@ -413,12 +413,12 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
         }
       ) {}
     }
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     if (chatDeletion) {
       ProgressView()
     }
   }
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
 }
 
 @Composable
