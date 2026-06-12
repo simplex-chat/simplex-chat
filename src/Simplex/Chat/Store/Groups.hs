@@ -88,6 +88,7 @@ module Simplex.Chat.Store.Groups
     getGroupRelays,
     getConnectedGroupRelays,
     setGroupRosterVersion,
+    getGroupRosterVersion,
     getGroupRoster,
     setRosterPending,
     getRosterPending,
@@ -1423,6 +1424,12 @@ setGroupRosterVersion :: DB.Connection -> GroupInfo -> VersionRoster -> IO ()
 setGroupRosterVersion db GroupInfo {groupId} v = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?" (v, currentTs, groupId)
+
+-- Persisted roster version (the gate baseline; the in-memory gInfo copy is batch-constant and stale on reorder).
+getGroupRosterVersion :: DB.Connection -> GroupInfo -> IO (Maybe VersionRoster)
+getGroupRosterVersion db GroupInfo {groupId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT roster_version FROM groups WHERE group_id = ?" (Only groupId)
 
 -- The live roster header a relay re-serves to joiners, with the completed blob served alongside it
 -- (both are written together at completion, so the blob is present whenever the header is).

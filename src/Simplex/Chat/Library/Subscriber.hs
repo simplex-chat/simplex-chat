@@ -3191,21 +3191,27 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           chatV = vr cxt `peerConnChatVersion` mcvr
       withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
 
-    -- rollback defense (channels): a relay can replay/reorder owner-signed roster events, so apply the
-    -- action only at a non-decreasing version (>= keeps a multi-member change sharing one version
-    -- idempotent), then advance to it; a strictly lower version is a rollback attempt and is ignored.
-    -- Shared by x.grp.mem.role and x.grp.mem.del so the version stays contiguous across roster changes.
+    -- rollback defense (channels): a relay can replay or reorder owner-signed roster events, including
+    -- packing reordered events into one MSG batch where the in-memory gInfo version is stale for all but
+    -- the first. So the gate compares against the persisted roster_version, not gInfo, and reads it and
+    -- advances it in one committed transaction so the next event in the batch sees the advance. Apply only
+    -- at a version not below the persisted one (>= keeps a multi-member change sharing one version
+    -- idempotent), advancing before the action; a strictly lower version is a rollback attempt and is
+    -- ignored. Shared by x.grp.mem.role and x.grp.mem.del so the version stays contiguous across changes.
     applyAtRosterVersion :: GroupInfo -> Maybe VersionRoster -> CM (Maybe DeliveryJobScope) -> CM (Maybe DeliveryJobScope)
     applyAtRosterVersion gInfo rosterVer_ action
-      | useRelays' gInfo && maybe False stale rosterVer_ =
-          messageWarning "x.grp.mem: roster version not newer than current, ignoring" $> Nothing
-      | otherwise = do
-          r <- action
-          when (useRelays' gInfo) $ forM_ rosterVer_ $ \v ->
-            withStore' $ \db -> setGroupRosterVersion db gInfo (maybe v (max v) (rosterVersion gInfo))
-          pure r
-      where
-        stale v = not $ maybe True (v >=) (rosterVersion gInfo)
+      | not (useRelays' gInfo) = action
+      | otherwise = case rosterVer_ of
+          Nothing -> action
+          Just v -> do
+            accept <- withStore' $ \db -> do
+              cur <- getGroupRosterVersion db gInfo
+              let fresh = maybe True (v >=) cur
+              when fresh $ setGroupRosterVersion db gInfo v
+              pure fresh
+            if accept
+              then action
+              else messageWarning "x.grp.mem: roster version not newer than current, ignoring" $> Nothing
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
@@ -3307,21 +3313,25 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             then ackErr "relay could not verify the roster blob"
             else case parseAll rosterBlobP blob of
               Left _ -> ackErr "relay could not parse the roster blob"
-              Right entries
-                -- stale/out-of-order completion: reject, never downgrade
-                | not (pendingVer `aboveRoster` rosterVersion gInfo) -> cleanupGroupRosterFile user gInfo
-                | otherwise -> case owner_ of
-                    Nothing -> cleanupGroupRosterFile user gInfo
-                    Just author -> do
-                      defaultRole <- unknownMemberRole gInfo
-                      results <- withStore $ \db -> do
+              Right entries -> case owner_ of
+                Nothing -> cleanupGroupRosterFile user gInfo
+                Just author -> do
+                  defaultRole <- unknownMemberRole gInfo
+                  -- gate against the persisted roster_version inside the apply transaction, so a reordered
+                  -- same-batch event cannot make this completion downgrade it; stale completion is rejected.
+                  results_ <- withStore $ \db -> do
+                    cur <- liftIO $ getGroupRosterVersion db gInfo
+                    if maybe False (pendingVer <) cur
+                      then pure Nothing
+                      else do
                         res <- processRosterEntries db gInfo defaultRole (validateGroupRoster entries)
                         liftIO $ promoteRosterPending db gInfo blob
-                        pure res
-                      cleanupGroupRosterFile user gInfo
-                      emitRosterResults gInfo author rosterBrokerTs results
-                      -- ack only while still setting up (own status RSAccepted); a serving relay must not ack broadcasts.
-                      when (isRelay && relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck gInfo author pendingVer Nothing
+                        pure (Just res)
+                  cleanupGroupRosterFile user gInfo
+                  forM_ results_ $ \results -> do
+                    emitRosterResults gInfo author rosterBrokerTs results
+                    -- ack only while still setting up (own status RSAccepted); a serving relay must not ack broadcasts.
+                    when (isRelay && relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck gInfo author pendingVer Nothing
       where
         readAssembledRoster = case fileStatus of
           RFSAccepted fp -> readAt fp

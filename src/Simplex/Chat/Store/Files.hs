@@ -339,15 +339,14 @@ getGroupRcvFileIdBySharedMsgId db userId groupId sharedMsgId =
       |]
       (userId, groupId, sharedMsgId)
 
--- For roster-file cleanup keyed on the group (not a chat item): the file_id and its
--- on-disk path, so the caller can evict the cached handle and remove the file.
-getGroupRosterFileInfo :: DB.Connection -> UserId -> Int64 -> IO (Maybe (Int64, Maybe FilePath))
+-- For roster-file cleanup keyed on the group (not a chat item): every matching file_id and its on-disk
+-- path, so the caller evicts the handle and removes the file for each — delete-all like deleteGroupRosterFile.
+getGroupRosterFileInfo :: DB.Connection -> UserId -> Int64 -> IO [(Int64, Maybe FilePath)]
 getGroupRosterFileInfo db userId groupId =
-  maybeFirstRow id $
-    DB.query
-      db
-      "SELECT file_id, file_path FROM files WHERE user_id = ? AND group_id = ? AND file_type = ?"
-      (userId, groupId, FTRoster)
+  DB.query
+    db
+    "SELECT file_id, file_path FROM files WHERE user_id = ? AND group_id = ? AND file_type = ?"
+    (userId, groupId, FTRoster)
 
 -- Deletes the roster files row; rcv_files and rcv_file_chunks cascade on the FK.
 deleteGroupRosterFile :: DB.Connection -> UserId -> Int64 -> IO ()

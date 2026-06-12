@@ -1880,8 +1880,8 @@ closeFileHandle fileId files = do
 -- The roster file has no chat item, so chat-item file enumeration misses it; clean it up by group.
 cleanupGroupRosterFile :: User -> GroupInfo -> CM ()
 cleanupGroupRosterFile User {userId} gInfo@GroupInfo {groupId} = do
-  info_ <- withStore' $ \db -> getGroupRosterFileInfo db userId groupId
-  forM_ info_ $ \(fileId, filePath_) -> do
+  infos <- withStore' $ \db -> getGroupRosterFileInfo db userId groupId
+  forM_ infos $ \(fileId, filePath_) -> do
     lift $ closeFileHandle fileId rcvFiles
     forM_ filePath_ removeFsFile
   withStore' $ \db -> do
