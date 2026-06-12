@@ -262,9 +262,13 @@ private const val radiusFactor = (1 - squareToCircleRatio) / 50
 @Composable
 fun profileImageInset(size: Dp, padding: Boolean = true): Dp {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
-  val r = percent.value.coerceIn(0f, 50f)
+  val r = max(0f, percent.value)
   val pad = if (padding) size / 12 else 0.dp
-  return (size - (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)) / 2
+  return if (r >= 50) {
+    pad
+  } else {
+    (size - (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)) / 2
+  }
 }
 
 @Composable
