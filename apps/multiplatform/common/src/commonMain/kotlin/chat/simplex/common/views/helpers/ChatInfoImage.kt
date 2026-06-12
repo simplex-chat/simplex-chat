@@ -234,7 +234,7 @@ val ChatInfo.nameBadge: LocalBadge? get() = when {
 // badge height in em: calibrated visually so the badge top matches capital letters and digits.
 // Inter's declared cap height is 2048/2816 = 0.727em (round glyphs reach 0.737em), but the
 // rendered text is taller than these metrics predict, and 0.85 is what matches on screen.
-private const val fontCapHeightRatio = 0.85f
+private const val fontCapHeightRatio = 0.95f
 
 // fraction of the badge height pushed below the text baseline (like the undershoot of round letters)
 private const val badgeBaselineOffsetRatio = 0.05f
