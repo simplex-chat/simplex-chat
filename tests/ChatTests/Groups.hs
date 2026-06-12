@@ -10470,9 +10470,6 @@ testChannelAddRelayWithRoster ps =
             cathHash <- memberHashName bob "cath"
             checkMemberRow dan cathHash (Just "moderator")
 
--- With a tiny file chunk size the owner-signed roster blob spans several chunks, exercising
--- split + reassembly both owner->relay and relay->joiner. dan getting cath as moderator means
--- the chunks were reassembled in order and the digest verified over the reassembled blob.
 testChannelRosterMultipartReassembly :: HasCallStack => TestParams -> IO ()
 testChannelRosterMultipartReassembly ps =
   withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
@@ -10496,9 +10493,6 @@ testChannelRosterMultipartReassembly ps =
   where
     cfg = testCfg {fileChunkSize = 30}
 
--- A malicious/garbled relay blob is rejected at the receiver: the owner-signed header carries
--- the digest, so a blob that does not hash to it is discarded and the roster is not applied
--- (the receiver's roster version does not advance to the corrupted roster's version).
 testChannelRosterDigestMismatchRejected :: HasCallStack => TestParams -> IO ()
 testChannelRosterDigestMismatchRejected ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
