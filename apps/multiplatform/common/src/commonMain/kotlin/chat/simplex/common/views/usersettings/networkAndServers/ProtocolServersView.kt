@@ -284,7 +284,7 @@ fun showAddServerDialog(
           SectionItemView({
             AlertManager.shared.hideAlert()
             ModalManager.start.showModalCloseable { close ->
-              ScanProtocolServer(rhId) { server ->
+              ScanProtocolServer(rhId, close) { server ->
                 addServer(
                   scope,
                   server,

@@ -770,6 +770,20 @@
   <string name="enable_camera_access">Enable camera access</string>
   <string name="tap_to_scan">Tap to scan</string>
   <string name="camera_not_available">Camera not available</string>
+  <!-- unified QR scan: wrong-type alert -->
+  <string name="wrong_qr_code">Wrong QR code</string>
+  <string name="qr_type_connection">This is a %s.</string>
+  <string name="qr_type_server_address">This is a SimpleX server address.</string>
+  <string name="qr_type_migration_link">This is a link to migrate to another device.</string>
+  <string name="qr_type_desktop_address">This is an address for linking a mobile to a SimpleX desktop app.</string>
+  <string name="qr_type_security_code">This is a contact\'s security code.</string>
+  <string name="qr_where_connection">Tap New chat, then Paste link / Scan.</string>
+  <string name="qr_where_server">Tap your profile image, then Settings, Network &amp; servers, your servers, Scan server QR code.</string>
+  <string name="qr_where_desktop">Tap your profile image, then Use from desktop, Scan QR code from desktop.</string>
+  <string name="qr_where_migration">On the new device, when first setting up the app, choose Migrate from another device.</string>
+  <string name="qr_where_security_code">Open the chat, tap the contact\'s name, then Verify security code.</string>
+  <string name="qr_where_no_user">Finish setting up SimpleX first, then scan this in the app.</string>
+  <string name="qr_action_connect">Connect</string>
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>

@@ -201,14 +201,11 @@ struct MigrateToDevice: View {
         ZStack {
             List {
                 Section(header: Text("Scan QR code").foregroundColor(theme.colors.secondary)) {
-                    ScannerInView(showQRCodeScanner: $showQRCodeScanner) { resp in
+                    ScannerInView(showQRCodeScanner: $showQRCodeScanner, scanMode: .oncePerCode) { resp in
                         switch resp {
                         case let .success(r):
-                            let link = r.string
-                            if strHasSimplexFileLink(link.trimmingCharacters(in: .whitespaces)) {
-                                migrationState = .linkDownloading(link: link.trimmingCharacters(in: .whitespaces))
-                            } else {
-                                alert = .error(title: "Invalid link", error: "The text you pasted is not a SimpleX link.")
+                            handleScan(r.string, expected: .migrationLink, theme: theme) { qr in
+                                migrationState = .linkDownloading(link: qr.text)
                             }
                         case let .failure(e):
                             logger.error("processQRCode QR code error: \(e.localizedDescription)")
@@ -640,9 +637,7 @@ struct MigrateToDevice: View {
         dismiss()
     }
 
-    private func strHasSimplexFileLink(_ text: String) -> Bool {
-        text.starts(with: "simplex:/file") || text.starts(with: "https://simplex.chat/file")
-    }
+    // strHasSimplexFileLink moved to a free function in QRCodeType.swift (reused by parseQRCode).
 
     private static func urlForTemporaryDatabase() -> URL {
         URL(fileURLWithPath: generateNewFileName(getMigrationTempFilesDirectory().path + "/" + "migration", "db", fullPath: true))
