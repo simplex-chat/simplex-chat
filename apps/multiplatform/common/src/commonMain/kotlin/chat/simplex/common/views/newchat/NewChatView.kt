@@ -230,7 +230,8 @@ private fun ProfilePickerOption(
   disabled: Boolean,
   onSelected: () -> Unit,
   image: @Composable () -> Unit,
-  onInfo: (() -> Unit)? = null
+  onInfo: (() -> Unit)? = null,
+  badge: LocalBadge? = null
 ) {
   Row(
     Modifier
@@ -243,7 +244,10 @@ private fun ProfilePickerOption(
   ) {
     image()
     TextIconSpaced(false)
-    Text(title, modifier = Modifier.align(Alignment.CenterVertically))
+    Row(Modifier.align(Alignment.CenterVertically)) {
+      Text(title, modifier = Modifier.alignByBaseline().weight(1f, fill = false))
+      NameBadge(badge)
+    }
     if (onInfo != null) {
       Spacer(Modifier.padding(6.dp))
       Column(Modifier
@@ -365,7 +369,8 @@ fun ActiveProfilePicker(
           }
         }
       },
-        image = { ProfileImage(size = 42.dp, image = user.image) }
+        image = { ProfileImage(size = 42.dp, image = user.image) },
+        badge = user.profile.localBadge
     )
   }
 
