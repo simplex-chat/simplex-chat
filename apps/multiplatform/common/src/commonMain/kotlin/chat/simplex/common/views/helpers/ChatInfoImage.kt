@@ -87,18 +87,21 @@ fun ProfileImage(
   if (badge == null) {
     ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
   } else {
+    val inset = profileImageInset(sz)
     Layout(content = {
       ProfileImageBox(sz, image, icon, color, backgroundColor, blurred, async)
       ProfileBadge(badgeWidthRatio(size) * sz, badge, onBadgeClick)
     }) { measurables, constraints ->
       val avatar = measurables[0].measure(constraints)
       val bdg = measurables[1].measure(Constraints())
+      val insetPx = inset.roundToPx()
       layout(avatar.width, avatar.height) {
         avatar.place(0, 0)
-        // badgeInsideShare of the badge is inside the avatar, the rest overhangs its bottom-right corner
+        // badgeInsideShare of the badge is inside the visible avatar (the box minus its inset),
+        // the rest overhangs the avatar's bottom-right edge
         bdg.place(
-          x = avatar.width - (badgeInsideShare * bdg.width).roundToInt(),
-          y = avatar.height - (badgeInsideShare * bdg.height).roundToInt()
+          x = avatar.width - insetPx - (badgeInsideShare * bdg.width).roundToInt(),
+          y = avatar.height - insetPx - (badgeInsideShare * bdg.height).roundToInt()
         )
       }
     }
@@ -253,23 +256,28 @@ private const val squareToCircleRatio = 0.935f
 
 private const val radiusFactor = (1 - squareToCircleRatio) / 50
 
+// the inset of the visible avatar inside its box, depending on the corner radius preference:
+// size / 12 for a circle (the factor is exactly 1 at r = 50), larger for square shapes.
+// single definition - used by ProfileIconModifier and to anchor the badge in ProfileImage
+@Composable
+fun profileImageInset(size: Dp, padding: Boolean = true): Dp {
+  val percent = remember { appPreferences.profileImageCornerRadius.state }
+  val r = percent.value.coerceIn(0f, 50f)
+  val pad = if (padding) size / 12 else 0.dp
+  return (size - (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)) / 2
+}
+
 @Composable
 fun ProfileIconModifier(size: Dp, padding: Boolean = true, blurred: Boolean = false): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
   val r = max(0f, percent.value)
-  val pad = if (padding) size / 12 else 0.dp
-  val m = Modifier.size(size)
+  val inset = profileImageInset(size, padding)
+  val visible = size - 2 * inset
+  val m = Modifier.size(size).padding(inset)
   val m1 = when {
-    r >= 50 ->
-      m.padding(pad).clip(CircleShape)
-    r <= 0 -> {
-      val sz = (size - 2 * pad) * squareToCircleRatio
-      m.padding((size - sz) / 2)
-    }
-    else -> {
-      val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
-      m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
-    }
+    r >= 50 -> m.clip(CircleShape)
+    r <= 0 -> m
+    else -> m.clip(RoundedCornerShape(size = visible * r / 100))
   }
   return if (blurred) m1.blur(size / 4) else m1
 }
