@@ -2206,20 +2206,22 @@ sendGroupMessage' user gInfo members chatMsgEvent =
 
 -- TODO [relays] improvement: publish roster_version in link data so the owner can recover the latest version
 -- TODO   after restoring from a stale backup (relays accept only strictly-greater versions)
--- excludeMems drops members being removed in the same operation (not yet deleted) from the served blob
-bumpAndBroadcastRoster :: User -> GroupInfo -> [MemberId] -> CM VersionRoster
-bumpAndBroadcastRoster user gInfo excludeMems = do
-  cxt <- chatStoreCxt
+-- Persist the next roster version before sending the events that carry it (so a recipient never advances
+-- past a version the owner hasn't recorded). The matching blob is broadcast separately, by broadcastRoster,
+-- after the change is applied to the owner's members - so the served roster excludes demoted/removed members.
+reserveRosterVersion :: GroupInfo -> CM VersionRoster
+reserveRosterVersion gInfo = do
   let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
-  (relays, mods) <- withStore' $ \db -> do
-    relays <- getGroupRelayMembers db cxt user gInfo
-    mods <- (++) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo
-    setGroupRosterVersion db gInfo rosterVer
-    pure (relays, mods)
-  let mods' = filter (\m -> memberId' m `notElem` excludeMems) mods
-  forM_ (L.nonEmpty relays) $ \relays' ->
-    sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster mods')
+  withStore' $ \db -> setGroupRosterVersion db gInfo rosterVer
   pure rosterVer
+
+broadcastRoster :: User -> GroupInfo -> VersionRoster -> CM ()
+broadcastRoster user gInfo rosterVer = do
+  cxt <- chatStoreCxt
+  (relays, mods) <- withStore' $ \db ->
+    (,) <$> getGroupRelayMembers db cxt user gInfo <*> ((++) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo)
+  forM_ (L.nonEmpty relays) $ \relays' ->
+    sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster mods)
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()

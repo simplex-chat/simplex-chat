@@ -3263,12 +3263,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             Nothing -> Nothing <$ messageWarning "x.grp.roster: missing shared message id"
             Just sharedMsgId -> do
               pendingVer_ <- fmap (\(v, _, _, _, _) -> v) <$> withStore' (\db -> getRosterPending db gInfo)
-              -- start only for a version strictly greater than BOTH applied and pending (Nothing < 0):
-              -- a relay's first v0 from NULL applies; a re-receive at Just 0 short-circuits; and an
-              -- unconditional re-serve of a cached older version cannot supersede a newer in-flight one.
+              -- accept a version not below BOTH applied and pending (Nothing treated as below 0; >= not >):
+              -- the relay also takes the blob at the version a preceding owner-signed event already advanced
+              -- rosterVersion to (reserve version -> events -> broadcast share one version). A strictly lower
+              -- version is a downgrade and rejected; a same-version re-serve (routine on broadcast/SENT/QCONT)
+              -- re-applies idempotently.
               if newVer `aboveRoster` rosterVersion gInfo && newVer `aboveRoster` pendingVer_
                 then startRosterTransfer sm sharedMsgId
-                -- silent: re-serves of the current version are routine (broadcast / SENT / QCONT)
                 else pure Nothing
       where
         startRosterTransfer sm sharedMsgId = do
@@ -3284,9 +3285,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           withStore' $ \db -> startRcvInlineFT db user rft filePath (Just IFMSent)
           pure Nothing
 
-    -- Roster version comparison treating Nothing (un-materialized) as below 0.
+    -- Roster version comparison treating Nothing (un-materialized) as below 0. Non-strict (>=) so a relay
+    -- accepts the owner's blob at the version a preceding signed event already advanced rosterVersion to.
     aboveRoster :: VersionRoster -> Maybe VersionRoster -> Bool
-    aboveRoster v = maybe True (v >)
+    aboveRoster v = maybe True (v >=)
 
     -- Blob arrived: verify the owner-attested digest over the plaintext and guard against
     -- downgrade before applying; on a relay, ack the owner and re-serve to members.
