@@ -368,7 +368,7 @@ data GrpMsgForward = GrpMsgForward
   }
   deriving (Eq, Show)
 
--- | Owner-signed roster header for the privileged (moderator/admin) set; owners
+-- | Owner-signed roster header for the privileged (moderator/admin/member) set; owners
 -- are not included, their keys come from the link. The member list itself is not
 -- here: it is sent as a binary blob over the inline file transfer, and this header
 -- carries only its inline-file invitation (size + owner-attested digest).
@@ -395,8 +395,6 @@ data RosterMember = RosterMember
   deriving (Eq, Show)
 
 -- RosterMember is binary-only: it rides in the roster blob, never in a JSON message.
--- The blob codec (encodeRosterBlob / rosterBlobP) is defined with maxGroupRosterSize below,
--- so rosterBlobP and the bound it references sit in one declaration group (past the TH splices).
 instance Encoding RosterMember where
   smpEncode RosterMember {memberId, key, role, privileges} = smpEncode (memberId, key, role, privileges)
   smpP = RosterMember <$> smpP <*> smpP <*> smpP <*> smpP
@@ -930,13 +928,13 @@ maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
 
 -- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
--- promotion cap over the promoted (member/moderator/admin) set. The blob rides over the
--- inline file transfer, so it is no longer bound by maxEncodedMsgLength.
+-- promotion cap over the promoted (member/moderator/admin) set.
 maxGroupRosterSize :: Int
 maxGroupRosterSize = 256
 
 -- Receive-side byte bound: reject an owner-signed header whose claimed fileSize exceeds what
 -- maxGroupRosterSize entries can occupy (128 B/entry is a generous worst case), before a file is created.
+-- 128 B/entry ~ memberId + X.509 Ed25519 key (44 B) + role + privileges + 1-byte length prefixes (~2x the ~65 B typical).
 maxGroupRosterBytes :: Integer
 maxGroupRosterBytes = fromIntegral maxGroupRosterSize * 128
 

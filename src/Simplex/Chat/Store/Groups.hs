@@ -68,6 +68,7 @@ module Simplex.Chat.Store.Groups
     getSupportScopeMembersByIndexes,
     getGroupModerators,
     getGroupRosterMembers,
+    getGroupAdminsMods,
     getGroupOnlyMembers,
     getGroupOwners,
     getGroupRelayMembers,
@@ -1215,11 +1216,21 @@ getGroupModerators db cxt user@User {userId, userContactId} GroupInfo {groupId} 
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
       (userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
 
--- Moderators and admins only, excluding owners and non-current members.
--- Used for roster-related paths where owners must not be touched (owners are
--- link-anchored), and left/removed members must not appear in the saved roster.
+-- The full roster set - members, moderators and admins - excluding owners (link-anchored) and
+-- left/removed members. For the privileged subset only use getGroupAdminsMods; for plain members
+-- only use getGroupOnlyMembers.
 getGroupRosterMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupRosterMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
+  filter memberCurrent . map (toContactMember cxt user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
+      (userId, groupId, userContactId, GRMember, GRModerator, GRAdmin)
+
+-- Moderators and admins only (excluding owners and plain members) - the set introduced to a
+-- joiner; plain members are learned from the roster blob, not via introductions.
+getGroupAdminsMods :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
+getGroupAdminsMods db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
   filter memberCurrent . map (toContactMember cxt user)
     <$> DB.query
       db

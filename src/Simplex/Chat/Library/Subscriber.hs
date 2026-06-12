@@ -1143,7 +1143,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         checkSndInlineFTComplete conn msgId
         updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo [m] -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       SWITCH qd phase cStats -> do
         toView $ CEvtGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -1237,7 +1237,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo [m] -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
@@ -3191,13 +3191,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           chatV = vr cxt `peerConnChatVersion` mcvr
       withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
 
-    -- rollback defense (channels): a relay can replay or reorder owner-signed roster events, including
-    -- packing reordered events into one MSG batch where the in-memory gInfo version is stale for all but
-    -- the first. So the gate compares against the persisted roster_version, not gInfo, and reads it and
-    -- advances it in one committed transaction so the next event in the batch sees the advance. Apply only
-    -- at a version not below the persisted one (>= keeps a multi-member change sharing one version
-    -- idempotent), advancing before the action; a strictly lower version is a rollback attempt and is
-    -- ignored. Shared by x.grp.mem.role and x.grp.mem.del so the version stays contiguous across changes.
+    -- rollback defense (channels): apply an owner-signed role/removal only at a version >= the persisted
+    -- roster_version (not the batch-constant gInfo, which a relay can stale by reordering events in one
+    -- batch), then advance it in the same transaction; a strictly lower version is a replay and is ignored.
     applyAtRosterVersion :: GroupInfo -> Maybe VersionRoster -> CM (Maybe DeliveryJobScope) -> CM (Maybe DeliveryJobScope)
     applyAtRosterVersion gInfo rosterVer_ action
       | not (useRelays' gInfo) = action
@@ -3269,11 +3265,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             Nothing -> Nothing <$ messageWarning "x.grp.roster: missing shared message id"
             Just sharedMsgId -> do
               pendingVer_ <- fmap (\(v, _, _, _, _) -> v) <$> withStore' (\db -> getRosterPending db gInfo)
-              -- accept a version not below BOTH applied and pending (Nothing treated as below 0; >= not >):
-              -- the relay also takes the blob at the version a preceding owner-signed event already advanced
-              -- rosterVersion to (reserve version -> events -> broadcast share one version). A strictly lower
-              -- version is a downgrade and rejected; a same-version re-serve (routine on broadcast/SENT/QCONT)
-              -- re-applies idempotently.
+              -- accept a version not below BOTH applied and pending (>=, Nothing below 0): a preceding signed
+              -- event may have already advanced rosterVersion to this blob's version; a lower one is a downgrade.
               if newVer `aboveRoster` rosterVersion gInfo && newVer `aboveRoster` pendingVer_
                 then startRosterTransfer sm sharedMsgId
                 else pure Nothing
@@ -3356,7 +3349,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     processRosterEntries db gInfo defaultRole entries = do
       let rosterIds = map (\RosterMember {memberId} -> memberId) entries
       (cs, as) <- foldrM applyRosterEntry ([], []) entries
-      currentPriv <- liftIO $ (<>) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo
+      currentPriv <- liftIO $ getGroupRosterMembers db cxt user gInfo
       reverted <- liftIO $ fmap catMaybes $ forM currentPriv $ \m ->
         if memberId' m `notElem` rosterIds
           then updateGroupMemberRole db user m defaultRole $> Just ((m :: GroupMember) {memberRole = defaultRole}, memberRole' m, False)

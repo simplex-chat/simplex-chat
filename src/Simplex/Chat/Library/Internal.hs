@@ -1168,11 +1168,10 @@ memberIntroEvt gInfo reMember =
       mRestrictions = memberRestrictions reMember
    in XGrpMemIntro mInfo mRestrictions
 
--- Forwarded verbatim like any group message, so the owner's signed shared_msg_id is reused
--- (can't change it without breaking the signature); same-id re-serves dedup as usual, and
--- recovery rides the blob's fresh-id chunks.
-serveRoster :: User -> GroupInfo -> [GroupMember] -> CM ()
-serveRoster user gInfo members = do
+-- Forward the saved owner-signed roster verbatim (reusing its signed shared_msg_id), then the
+-- blob chunks, so the recipient verifies the owner signature.
+serveRoster :: User -> GroupInfo -> GroupMember -> CM ()
+serveRoster user gInfo member = do
   cxt <- chatStoreCxt
   withStore' (\db -> getGroupRoster db gInfo) >>= \case
     Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
@@ -1180,9 +1179,9 @@ serveRoster user gInfo members = do
         withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
           Right owner -> do
             let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
-            sendFwdMembersMessage members fwd (VMSigned MSSVerified sm chatMsg)
+            sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
             forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
-              sendInlineBlobChunks user gInfo members sid blob
+              sendInlineBlobChunks user gInfo [member] sid blob
           Left _ -> pure ()
     Nothing -> pure ()
 
@@ -1192,16 +1191,16 @@ serveRoster user gInfo members = do
 introduceInChannel :: StoreCxt -> User -> GroupInfo -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
-  (owners, rosterMems) <- withStore' $ \db ->
-    (,) <$> getGroupOwners db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
-  let modMs = owners <> rosterMems
+  (owners, adminsMods) <- withStore' $ \db ->
+    (,) <$> getGroupOwners db cxt user gInfo <*> getGroupAdminsMods db cxt user gInfo
+  let modMs = owners <> adminsMods
   void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
   withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   -- owner intros first so the joiner has the owner profile loaded before applying the saved roster (signed by the owner)
   sendIntros owners
-  serveRoster user gInfo [subscriber]
-  sendIntros rosterMems
+  serveRoster user gInfo subscriber
+  sendIntros adminsMods
   withStore' $ \db ->
     setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
   where
@@ -2218,18 +2217,18 @@ reserveRosterVersion gInfo = do
 broadcastRoster :: User -> GroupInfo -> VersionRoster -> CM ()
 broadcastRoster user gInfo rosterVer = do
   cxt <- chatStoreCxt
-  (relays, mods) <- withStore' $ \db ->
-    (,) <$> getGroupRelayMembers db cxt user gInfo <*> ((++) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo)
+  (relays, rosterMems) <- withStore' $ \db ->
+    (,) <$> getGroupRelayMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
   forM_ (L.nonEmpty relays) $ \relays' ->
-    sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster mods)
+    sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster rosterMems)
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
 sendGroupRosterToRelay user gInfo relayMember =
   forM_ (rosterVersion gInfo) $ \rosterVer -> do
     cxt <- chatStoreCxt
-    mods <- withStore' $ \db -> (++) <$> getGroupRosterMembers db cxt user gInfo <*> getGroupOnlyMembers db cxt user gInfo
-    sendRoster user gInfo [relayMember] rosterVer (buildGroupRoster mods)
+    rosterMems <- withStore' $ \db -> getGroupRosterMembers db cxt user gInfo
+    sendRoster user gInfo [relayMember] rosterVer (buildGroupRoster rosterMems)
 
 -- Row-less send (no files/snd_files rows, so no send-side cleanup); redelivery is the agent's.
 sendRoster :: User -> GroupInfo -> [GroupMember] -> VersionRoster -> [RosterMember] -> CM ()
@@ -2445,19 +2444,10 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
 
 -- Send pre-encoded forwarded message preserving original signature
 sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
-sendFwdMemberMessage member = sendFwdMembersMessage [member]
-
--- Forward one pre-encoded signed message to several members in a single batched send
--- (the body is sent once and referenced for the rest).
-sendFwdMembersMessage :: [GroupMember] -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
-sendFwdMembersMessage members fwd verifiedMsg = case mapMaybe (fmap snd . readyMemberConn) members of
-  [] -> pure ()
-  [conn] -> send [req conn (VRValue Nothing body)]
-  conn : conns -> send $ req conn (VRValue (Just 1) body) : map (\c -> req c (VRRef 1)) conns
-  where
-    body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-    req conn vr = (aConnId conn, PQEncOff, MsgFlags False, vr)
-    send reqs = void $ withAgent $ \a -> sendMessages a reqs
+sendFwdMemberMessage member fwd verifiedMsg =
+  forM_ (readyMemberConn member) $ \(_, conn) -> do
+    let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
+    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()

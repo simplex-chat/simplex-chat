@@ -9144,7 +9144,7 @@ testChannelMultiSendersIndependent ps =
             promoteChannelMember "team" alice bob cath [dan, eve]
             promoteChannelMember "team" alice bob dan [cath, eve]
 
-            -- cath posts: dan and eve resolve cath (roster-known by id hash) on the prepended XGrpMemNew
+            -- cath posts: dan and eve resolve cath on the prepended XGrpMemNew
             cath #> "#team from cath"
             bob <# "#team cath> from cath"
             alice <# "#team cath> from cath [>>]"
@@ -9183,7 +9183,7 @@ testChannels2RelaysDeliver ps =
             withNewTestChat ps "frank" frankProfile $ \frank -> do
               createChannel2Relays "team" alice bob cath dan eve frank
 
-              -- promote dan (observer default) so it can send; eve/frank learn dan via the roster (id hash)
+              -- promote dan (observer default) so it can send; eve/frank learn dan via the roster
               alice ##> "/mr #team dan member"
               alice <## "#team: you changed the role of dan to member (signed)"
               concurrentlyN_
@@ -9228,7 +9228,7 @@ testChannels2RelaysIncognito ps =
               forM_ [eve, frank] $ \member ->
                 memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink member
 
-              -- promote dan (observer default) so it can send; eve/frank learn dan via the roster (id hash)
+              -- promote dan (observer default) so it can send; eve/frank learn dan via the roster
               alice ##> ("/mr #team " <> danIncognito <> " member")
               alice <## ("#team: you changed the role of " <> danIncognito <> " to member (signed)")
               concurrentlyN_
