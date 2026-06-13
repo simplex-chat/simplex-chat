@@ -19,8 +19,10 @@ import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
+import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (Badge, BadgeCrypto (..), BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
@@ -50,6 +52,7 @@ chatProfileTests = do
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
     it "supporter badge sent to member joining via group link" testUserBadgeGroupLink
     it "expired supporter badge shows as expired" testUserBadgeExpired
+    it "long-expired supporter badge is not presented" testUserBadgeExpiredOld
     it "incognito connection does not carry supporter badge" testUserBadgeIncognito
     it "supporter badge sent to contact connecting via address" testUserBadgeContactAddress
   describe "user contact link" $ do
@@ -197,6 +200,10 @@ testUpdateProfile =
             bob <## "use @cat <message> to send messages"
         ]
 
+-- the test issuer key under index 1 in the test config
+testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
+testBadgeKeys = M.singleton 1
+
 -- issue a supporter badge credential with the given expiry (test issuer)
 issueTestBadge :: BBSSecretKey -> BBSPublicKey -> Maybe UTCTime -> IO (Badge 'BCCredential)
 issueTestBadge sk pk badgeExpiry = do
@@ -204,7 +211,7 @@ issueTestBadge sk pk badgeExpiry = do
   mk <- generateMasterKey drg
   let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}
   Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
-  Right cred <- issueBadge sk pk vreq
+  Right cred <- issueBadge 1 sk pk vreq
   pure cred
 
 -- the same single-line JSON `simplex-chat badge sign` prints, pasted into the app
@@ -216,7 +223,7 @@ addTestBadge cc cred = do
 testUserBadgeBroadcast :: HasCallStack => TestParams -> IO ()
 testUserBadgeBroadcast ps = do
   Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
   where
     test sk pk alice bob = do
       connectUsers alice bob
@@ -232,7 +239,7 @@ testUserBadgeBroadcast ps = do
 testUserBadgeOnConnect :: HasCallStack => TestParams -> IO ()
 testUserBadgeOnConnect ps = do
   Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
   where
     test sk pk alice bob = do
       addTestBadge alice =<< issueTestBadge sk pk Nothing
@@ -258,7 +265,7 @@ testUserBadgeOnConnect ps = do
 testUserBadgeGroupLink :: HasCallStack => TestParams -> IO ()
 testUserBadgeGroupLink ps = do
   Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
   where
     test sk pk alice bob = do
       addTestBadge alice =<< issueTestBadge sk pk Nothing
@@ -294,7 +301,7 @@ testUserBadgeGroupLink ps = do
 testUserBadgeContactAddress :: HasCallStack => TestParams -> IO ()
 testUserBadgeContactAddress ps = do
   Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
   where
     test sk pk alice bob = do
       addTestBadge alice =<< issueTestBadge sk pk Nothing
@@ -328,10 +335,12 @@ testUserBadgeContactAddress ps = do
 testUserBadgeExpired :: HasCallStack => TestParams -> IO ()
 testUserBadgeExpired ps = do
   Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  -- expired recently (within 31 days), so the badge is still presented and shown as expired
+  expiry <- addUTCTime (-2 * nominalDay) <$> getCurrentTime
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk expiry) ps
   where
-    test sk pk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk pk (Just pastDate)
+    test sk pk expiry alice bob = do
+      addTestBadge alice =<< issueTestBadge sk pk (Just expiry)
       -- expired badge: no star
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
@@ -340,7 +349,25 @@ testUserBadgeExpired ps = do
       bob ##> "/i alice"
       bob <## "contact ID: 2"
       bob <## "supporter badge - expired"
-      bob <## "expires 2020-01-01"
+      bob <## ("expires " <> formatTime defaultTimeLocale "%Y-%m-%d" expiry)
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      bob <## currentChatVRangeInfo
+
+testUserBadgeExpiredOld :: HasCallStack => TestParams -> IO ()
+testUserBadgeExpiredOld ps = do
+  Right (sk, pk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
+  where
+    test sk pk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk pk (Just pastDate)
+      -- a badge that expired over a month ago is not presented to contacts at all
+      connectUsers alice bob
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
       bob <## "you've shared main profile with this contact"
@@ -352,7 +379,7 @@ testUserBadgeExpired ps = do
 testUserBadgeIncognito :: HasCallStack => TestParams -> IO ()
 testUserBadgeIncognito ps = do
   Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKey = pk}) aliceProfile bobProfile (test sk pk) ps
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
   where
     test sk pk alice bob = do
       addTestBadge alice =<< issueTestBadge sk pk Nothing

@@ -33,7 +33,8 @@ data BBSKeyPair = BBSKeyPair
   }
 
 data BadgeIssueReq = BadgeIssueReq
-  { keyPair :: BBSKeyPair,
+  { badgeKeyIdx :: Int,
+    keyPair :: BBSKeyPair,
     request :: BadgeRequest
   }
 
@@ -65,8 +66,8 @@ cChatBadgeIssue cReq = do
   bs <- B.packCString cReq
   encodeResult @(Badge 'BCCredential) =<< case J.eitherDecodeStrict' bs of
     Left e -> pure $ BadgeError (T.pack e)
-    Right BadgeIssueReq {keyPair = BBSKeyPair {secretKey, publicKey}, request} ->
-      either (BadgeError . T.pack) BadgeResult <$> issueBadge secretKey publicKey (VerifiedBadgeRequest request)
+    Right BadgeIssueReq {badgeKeyIdx, keyPair = BBSKeyPair {secretKey, publicKey}, request} ->
+      either (BadgeError . T.pack) BadgeResult <$> issueBadge badgeKeyIdx secretKey publicKey (VerifiedBadgeRequest request)
 
 encodeResult :: ToJSON r => BadgeResult r -> IO CJSONString
 encodeResult = newCStringFromLazyBS . J.encode

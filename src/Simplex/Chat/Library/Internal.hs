@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (Badge (..), BadgePresHeader (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (Badge (..), BadgePresHeader (..), BadgeStatus (..), LocalBadge (..), badgeKeyIndex, badgeProof, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -1898,13 +1898,17 @@ sendDirectContactMessages' user ct events = do
 
 -- present the user's own badge on an outgoing profile: a fresh, single-use proof from the stored credential.
 -- the send's incognito profile (when set) suppresses it - an incognito identity must never carry the badge.
+-- a long-expired badge is not presented at all (receivers would hide it anyway).
 presentUserBadge :: User -> Maybe i -> Profile -> CM Profile
 presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p = case (incognitoProfile, localBadge) of
-  (Nothing, Just (OwnBadge cred _)) -> do
-    key <- asks $ badgePublicKey . config
-    liftIO (badgeProof key cred PHTest) >>= \case
-      Right proof -> pure p {badge = Just proof}
-      Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
+  (Nothing, Just (OwnBadge cred st)) | st == BSActive || st == BSExpired -> do
+    keys <- asks $ badgePublicKeys . config
+    case M.lookup (badgeKeyIndex cred) keys of
+      Nothing -> p <$ logError "presentUserBadge: badge key index not in config"
+      Just key ->
+        liftIO (badgeProof key cred PHTest) >>= \case
+          Right proof -> pure p {badge = Just proof}
+          Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p
 
 -- receiving side of contact/invitation link data: verify the badge proof from the link profile
@@ -1912,9 +1916,9 @@ presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p =
 linkDataBadge :: ContactShortLinkData -> CM ContactShortLinkData
 linkDataBadge cld@ContactShortLinkData {profile = Profile {badge}} = case badge of
   Nothing -> pure cld
-  Just b@(BadgeProof _ _ info) -> do
-    key <- asks $ badgePublicKey . config
-    verified <- liftIO $ verifyBadge key b
+  Just b@(BadgeProof _ _ _ info) -> do
+    keys <- asks $ badgePublicKeys . config
+    verified <- liftIO $ verifyBadge keys b
     now <- liftIO getCurrentTime
     pure (cld :: ContactShortLinkData) {localBadge = Just $ ShownBadge info (mkBadgeStatus now verified info)}
 

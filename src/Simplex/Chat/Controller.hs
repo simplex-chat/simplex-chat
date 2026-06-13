@@ -139,7 +139,8 @@ coreVersionInfo simplexmqCommit =
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     chatVRange :: VersionRangeChat,
-    badgePublicKey :: BBSPublicKey,
+    -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
+    badgePublicKeys :: Map Int BBSPublicKey,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -175,7 +176,7 @@ data ChatConfig = ChatConfig
 -- | Builds the read-only context threaded through store functions from chat config.
 -- The single construction point, so new store-wide config (e.g. server keys) is added in one place.
 mkStoreCxt :: ChatConfig -> StoreCxt
-mkStoreCxt ChatConfig {chatVRange, badgePublicKey} = StoreCxt chatVRange badgePublicKey
+mkStoreCxt ChatConfig {chatVRange, badgePublicKeys} = StoreCxt chatVRange badgePublicKeys
 {-# INLINE mkStoreCxt #-}
 
 data RandomAgentServers = RandomAgentServers

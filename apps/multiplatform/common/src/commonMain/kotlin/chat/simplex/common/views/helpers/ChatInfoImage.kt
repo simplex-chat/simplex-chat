@@ -121,14 +121,17 @@ fun ProfileImage(
   }
 }
 
+// a badge that expired over a month ago is not shown at all
+val LocalBadge?.shown: LocalBadge? get() = this?.takeIf { it.status != BadgeStatus.ExpiredOld }
+
 // the badge shown for a chat: an active contact's or a contact request's (groups have none)
 val ChatInfo.nameBadge: LocalBadge? get() = when {
-  this is ChatInfo.Direct && contact.active -> contact.profile.localBadge
-  this is ChatInfo.ContactRequest -> contactRequest.profile.localBadge
+  this is ChatInfo.Direct && contact.active -> contact.profile.localBadge.shown
+  this is ChatInfo.ContactRequest -> contactRequest.profile.localBadge.shown
   else -> null
 }
 
-val GroupMember.nameBadge: LocalBadge? get() = memberProfile.localBadge
+val GroupMember.nameBadge: LocalBadge? get() = memberProfile.localBadge.shown
 
 // badge height in em: calibrated visually so the badge top matches capital letters and digits
 // (Inter's declared cap height is 2048/2816 = 0.727em, but the rendered text is taller than the metrics predict)
@@ -203,7 +206,7 @@ fun nameBadgeInline(badge: LocalBadge, fontSize: TextUnit, onBadgeClick: (() -> 
 @Composable
 private fun BadgeGlyph(badge: LocalBadge, modifier: Modifier, onBadgeClick: (() -> Unit)? = null) {
   val mod = modifier.let { if (onBadgeClick != null) it.clickable(onClick = onBadgeClick) else it }
-  if (badge.status == BadgeStatus.Failed) {
+  if (badge.status == BadgeStatus.Failed || badge.status == BadgeStatus.UnknownKey) {
     Icon(painterResource(MR.images.ic_warning_filled), contentDescription = null, tint = WarningOrange, modifier = mod)
   } else {
     Image(
@@ -224,6 +227,11 @@ fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) 
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.badge_unverified_title),
         text = generalGetString(MR.strings.badge_unverified_desc)
+      )
+    badge.status == BadgeStatus.UnknownKey ->
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.badge_unknown_key_title),
+        text = generalGetString(MR.strings.badge_unknown_key_desc)
       )
     badge.badge.badgeType is BadgeType.Investor ->
       AlertManager.shared.showAlertDialog(

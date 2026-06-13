@@ -2085,7 +2085,11 @@ object BadgeTypeSerializer : KSerializer<BadgeType> {
 enum class BadgeStatus {
   @SerialName("active") Active,
   @SerialName("expired") Expired,
-  @SerialName("failed") Failed
+  // expired over a month ago - the badge is not shown at all
+  @SerialName("expiredOld") ExpiredOld,
+  @SerialName("failed") Failed,
+  // signed with a key index this app version does not know - shown as a warning
+  @SerialName("unknownKey") UnknownKey
 }
 
 @Serializable

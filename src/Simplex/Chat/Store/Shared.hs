@@ -415,10 +415,10 @@ createContact db cxt user profile = do
 createContact_ :: DB.Connection -> StoreCxt -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
 createContact_ db cxt User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-    badgeVerified <- verifyBadge_ (badgeKey cxt) badge
+    badgeVerified <- verifyBadge_ (badgeKeys cxt) badge
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, chat_peer_type, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, chat_peer_type, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
       ((displayName, fullName, shortDescr, image, contactLink, peerType) :. (userId, localAlias, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
     profileId <- insertedRowId db
     DB.execute
@@ -525,7 +525,7 @@ getProfileById db userId profileId = do
       db
       [sql|
         SELECT cp.contact_profile_id, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, cp.preferences,
-          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature
+          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx
         FROM contact_profiles cp
         WHERE cp.user_id = ? AND cp.contact_profile_id = ?
       |]
@@ -544,7 +544,7 @@ userQuery =
   [sql|
     SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
       u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.ui_themes, u.is_user_chat_relay,
-      ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature
+      ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
@@ -750,7 +750,7 @@ groupMemberQuery =
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
-      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature,
+      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
@@ -795,7 +795,7 @@ groupInfoQueryFields =
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link
   |]

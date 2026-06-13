@@ -1730,12 +1730,12 @@ createJoiningMember
   memberStatus
   memberKey_ = do
     currentTs <- liftIO getCurrentTime
-    badgeVerified <- liftIO $ verifyBadge_ (badgeKey cxt) badge
+    badgeVerified <- liftIO $ verifyBadge_ (badgeKeys cxt) badge
     ExceptT . withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
       liftIO $
         DB.execute
           db
-          "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
           ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
       profileId <- liftIO $ insertedRowId db
       case cReqMemberId_ of
@@ -2090,18 +2090,18 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
           }
   createNewMember_ db user gInfo newMember badgeVerified currentTs
 
-createNewMemberProfile_ :: DB.Connection -> StoreCxt -> User -> Profile -> UTCTime -> ExceptT StoreError IO (Text, ProfileId, Bool)
+createNewMemberProfile_ :: DB.Connection -> StoreCxt -> User -> Profile -> UTCTime -> ExceptT StoreError IO (Text, ProfileId, Maybe Bool)
 createNewMemberProfile_ db cxt User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, badge, preferences} createdAt =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-    badgeVerified <- verifyBadge_ (badgeKey cxt) badge
+    badgeVerified <- verifyBadge_ (badgeKeys cxt) badge
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
       ((displayName, fullName, shortDescr, image, contactLink, userId, preferences, createdAt, createdAt) :. badgeToRow badge badgeVerified)
     profileId <- insertedRowId db
     pure $ Right (ldn, profileId, badgeVerified)
 
-createNewMember_ :: DB.Connection -> User -> GroupInfo -> NewGroupMember -> Bool -> UTCTime -> ExceptT StoreError IO GroupMember
+createNewMember_ :: DB.Connection -> User -> GroupInfo -> NewGroupMember -> Maybe Bool -> UTCTime -> ExceptT StoreError IO GroupMember
 createNewMember_
   db
   User {userId, userContactId}
@@ -3008,7 +3008,7 @@ setMemberContactStartedConnection db Contact {contactId} = do
 updateMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
 updateMemberProfile db cxt user@User {userId} m p' = do
   currentTs <- liftIO getCurrentTime
-  badgeVerified <- liftIO $ profileBadgeVerified (badgeKey cxt) (memberProfile m) p'
+  badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) (memberProfile m) p'
   let memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified
   updateMemberProfile' currentTs badgeVerified memberProfile
   where
@@ -3031,7 +3031,7 @@ updateMemberProfile db cxt user@User {userId} m p' = do
 updateContactMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
 updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} p' = do
   currentTs <- liftIO getCurrentTime
-  badgeVerified <- liftIO $ profileBadgeVerified (badgeKey cxt) (memberProfile m) p'
+  badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) (memberProfile m) p'
   let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified
   updateContactMemberProfile' currentTs badgeVerified profile
   where

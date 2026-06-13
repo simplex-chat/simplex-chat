@@ -536,10 +536,11 @@ CREATE TABLE test_chat_schema.contact_profiles (
     badge_pres_header bytea,
     badge_expiry timestamp with time zone,
     badge_type text,
-    badge_verified smallint DEFAULT 0 NOT NULL,
+    badge_verified smallint,
     badge_extra text,
     badge_master_key bytea,
-    badge_signature bytea
+    badge_signature bytea,
+    badge_key_idx bigint
 );
 
 

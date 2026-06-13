@@ -3111,4 +3111,6 @@
   <string name="badge_invested">%s invested in SimpleX Chat crowdfunding.</string>
   <string name="badge_unverified_title">Unverified badge</string>
   <string name="badge_unverified_desc">This badge could not be verified and may not be genuine.</string>
+  <string name="badge_unknown_key_title">Badge cannot be verified</string>
+  <string name="badge_unknown_key_desc">The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge.</string>
 </resources>

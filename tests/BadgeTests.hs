@@ -6,7 +6,9 @@
 
 module BadgeTests (badgeTests) where
 
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
+import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Data.Aeson as J
 import qualified Simplex.Messaging.Crypto as C
@@ -20,16 +22,23 @@ badgeTests = do
   it "should reject badge with tampered type" testTamperedType
   it "should reject badge with tampered expiry" testTamperedExpiry
   it "should reject badge with wrong server key" testWrongKey
+  it "should report a key index missing from configured keys" testUnknownKeyIdx
   it "should compute badge status correctly" testExpiryCheck
   it "should treat lifetime badges as always active" testLifetimeBadge
   it "should accept unknown badge types" testUnknownBadgeType
   it "credential serializes to a paste-able token and back" testCredentialSerialization
 
 proofOf :: Badge 'BCProof -> BBSProof
-proofOf (BadgeProof _ p _) = p
+proofOf (BadgeProof _ _ p _) = p
 
 proofInfo :: Badge 'BCProof -> BadgeInfo
-proofInfo (BadgeProof _ _ i) = i
+proofInfo (BadgeProof _ _ _ i) = i
+
+testKeyIdx :: Int
+testKeyIdx = 1
+
+keysFor :: BBSPublicKey -> Map Int BBSPublicKey
+keysFor = M.singleton testKeyIdx
 
 testFullWorkflow :: IO ()
 testFullWorkflow = do
@@ -38,52 +47,63 @@ testFullWorkflow = do
   mk <- generateMasterKey drg
   let req = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Just futureTime, badgeExtra = ""}}
   Just vreq <- verifyPayment (BPRedeemCode "TEST") req
-  Right cred <- issueBadge sk pk vreq
-  let BadgeCredential mk' _ _ = cred
+  Right cred <- issueBadge testKeyIdx sk pk vreq
+  let BadgeCredential idx mk' _ _ = cred
+  idx `shouldBe` testKeyIdx
   mk' `shouldBe` mk
   verifyCredential pk cred >>= (`shouldBe` True)
   Right badge <- generateBadgeProof pk cred (BBSPresHeader "nonce-1")
-  verifyBadge pk badge >>= (`shouldBe` True)
+  -- the proof inherits the credential's key index, so receivers find the right key
+  badgeKeyIndex badge `shouldBe` testKeyIdx
+  verifyBadge (keysFor pk) badge >>= (`shouldBe` Just True)
   Right badge2 <- generateBadgeProof pk cred (BBSPresHeader "nonce-2")
-  verifyBadge pk badge2 >>= (`shouldBe` True)
+  verifyBadge (keysFor pk) badge2 >>= (`shouldBe` Just True)
   proofOf badge `shouldNotBe` proofOf badge2
 
 testTamperedType :: IO ()
 testTamperedType = do
-  (pk, BadgeProof ph p info) <- issueBadgeProof BTSupporter (Just futureTime)
-  verifyBadge pk (BadgeProof ph p info {badgeType = BTBusiness}) >>= (`shouldBe` False)
+  (pk, BadgeProof idx ph p info) <- issueBadgeProof BTSupporter (Just futureTime)
+  verifyBadge (keysFor pk) (BadgeProof idx ph p info {badgeType = BTBusiness}) >>= (`shouldBe` Just False)
 
 testTamperedExpiry :: IO ()
 testTamperedExpiry = do
-  (pk, BadgeProof ph p info) <- issueBadgeProof BTSupporter (Just futureTime)
-  verifyBadge pk (BadgeProof ph p info {badgeExpiry = Just pastTime}) >>= (`shouldBe` False)
+  (pk, BadgeProof idx ph p info) <- issueBadgeProof BTSupporter (Just futureTime)
+  verifyBadge (keysFor pk) (BadgeProof idx ph p info {badgeExpiry = Just pastTime}) >>= (`shouldBe` Just False)
 
 testWrongKey :: IO ()
 testWrongKey = do
   (_, badge) <- issueBadgeProof BTSupporter (Just futureTime)
   Right (_, pk2) <- bbsKeyGen
-  verifyBadge pk2 badge >>= (`shouldBe` False)
+  verifyBadge (keysFor pk2) badge >>= (`shouldBe` Just False)
+
+testUnknownKeyIdx :: IO ()
+testUnknownKeyIdx = do
+  (pk, badge) <- issueBadgeProof BTSupporter (Just futureTime)
+  -- a key index not in the configured keys cannot be verified at all (Nothing)
+  verifyBadge (M.singleton (testKeyIdx + 1) pk) badge >>= (`shouldBe` Nothing)
 
 testExpiryCheck :: IO ()
 testExpiryCheck = do
   now <- getCurrentTime
-  let pastInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Just pastTime, badgeExtra = ""}
-      futureInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Just futureTime, badgeExtra = ""}
-  mkBadgeStatus now True pastInfo `shouldBe` BSExpired
-  mkBadgeStatus now True futureInfo `shouldBe` BSActive
-  mkBadgeStatus now False futureInfo `shouldBe` BSFailed
+  let info expiry = BadgeInfo {badgeType = BTSupporter, badgeExpiry = expiry, badgeExtra = ""}
+      futureInfo = info (Just futureTime)
+  mkBadgeStatus now (Just True) futureInfo `shouldBe` BSActive
+  mkBadgeStatus now (Just True) (info (Just (addUTCTime (-nominalDay) now))) `shouldBe` BSExpired
+  mkBadgeStatus now (Just True) (info (Just pastTime)) `shouldBe` BSExpiredOld
+  mkBadgeStatus now (Just False) futureInfo `shouldBe` BSFailed
+  mkBadgeStatus now Nothing futureInfo `shouldBe` BSUnknownKey
 
 testLifetimeBadge :: IO ()
 testLifetimeBadge = do
   now <- getCurrentTime
   (pk, badge) <- issueBadgeProof BTInvestor Nothing
-  verifyBadge pk badge >>= (`shouldBe` True)
-  mkBadgeStatus now True (proofInfo badge) `shouldBe` BSActive
+  verifyBadge (keysFor pk) badge >>= (`shouldBe` Just True)
+  mkBadgeStatus now (Just True) (proofInfo badge) `shouldBe` BSActive
 
 testUnknownBadgeType :: IO ()
 testUnknownBadgeType = do
   (pk, badge) <- issueBadgeProof (BTUnknown "future_type") (Just futureTime)
-  verifyBadge pk badge >>= (`shouldBe` True)
+  verifyBadge (keysFor pk) badge >>= (`shouldBe` Just True)
 
 testCredentialSerialization :: IO ()
 testCredentialSerialization = do
@@ -91,7 +111,7 @@ testCredentialSerialization = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
   let mkCred expiry = do
-        Right cred <- issueBadge sk pk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = expiry, badgeExtra = ""}})
+        Right cred <- issueBadge testKeyIdx sk pk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = expiry, badgeExtra = ""}})
         pure cred
   dated <- mkCred (Just futureTime)
   lifetime <- mkCred Nothing
@@ -116,6 +136,6 @@ issueBadgeProof bt expiry = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
   let vreq = VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = bt, badgeExpiry = expiry, badgeExtra = ""}}
-  Right cred <- issueBadge sk pk vreq
+  Right cred <- issueBadge testKeyIdx sk pk vreq
   Right badge <- generateBadgeProof pk cred (BBSPresHeader "test-nonce")
   pure (pk, badge)

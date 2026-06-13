@@ -356,7 +356,7 @@ fun ContactCheckRow(
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     NameWithBadge(
       contact.chatViewName,
-      if (contact.active) contact.profile.localBadge else null,
+      if (contact.active) contact.profile.localBadge.shown else null,
       Modifier.weight(10f, fill = true),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,

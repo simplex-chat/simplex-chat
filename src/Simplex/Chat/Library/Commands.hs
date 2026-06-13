@@ -4654,12 +4654,13 @@ createContactsSndFeatureItems user cts =
 -- attach an issued badge credential to the user's own profile and present it to all current contacts.
 -- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
 addUserBadge :: User -> Badge 'BCCredential -> CM ()
-addUserBadge user cred@(BadgeCredential _ _ info) = do
-  key <- asks $ badgePublicKey . config
+addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
+  keys <- asks $ badgePublicKeys . config
+  key <- maybe (throwCmdError "unknown badge key index") pure $ M.lookup keyIdx keys
   verified <- liftIO $ verifyCredential key cred
   unless verified $ throwCmdError "badge credential does not verify against configured key"
   now <- liftIO getCurrentTime
-  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now True info)))
+  user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
   asks currentUser >>= atomically . (`writeTVar` Just user')
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'

@@ -30,14 +30,14 @@ bbsPublicLen = 96
 data BadgeCommand
   = Keygen
   | MasterKey
-  | Sign BBSSecretKey BBSPublicKey BadgeMasterKey BadgeType (Maybe UTCTime)
+  | Sign Int BBSSecretKey BBSPublicKey BadgeMasterKey BadgeType (Maybe UTCTime)
 
 runBadgeCommand :: [String] -> IO ()
 runBadgeCommand args =
   handleParseResult (execParserPure defaultPrefs badgeInfo args) >>= \case
     Keygen -> keygen
     MasterKey -> genMasterKey
-    Sign sk pk ms badgeType badgeExpiry -> sign sk pk ms badgeType badgeExpiry
+    Sign keyIdx sk pk ms badgeType badgeExpiry -> sign keyIdx sk pk ms badgeType badgeExpiry
   where
     badgeInfo = info (helper <*> hsubparser badgeCmd) fullDesc
     badgeCmd = command "badge" (info (helper <*> badgeCommandP) (progDesc "SimpleX supporter badge tooling"))
@@ -50,8 +50,9 @@ badgeCommandP =
       <> command "sign" (info signP (progDesc "sign a badge for a user master secret, printed as one-line JSON"))
   where
     signP =
-      (\(sk, pk) -> Sign sk pk)
-        <$> option (eitherReader issuerKeyR) (long "secret" <> metavar "ISSUER_KEY" <> help "issuer keypair from keygen (base64url)")
+      (\keyIdx (sk, pk) -> Sign keyIdx sk pk)
+        <$> option auto (long "key-idx" <> metavar "KEY_IDX" <> help "index of the issuer key in the app config")
+        <*> option (eitherReader issuerKeyR) (long "secret" <> metavar "ISSUER_KEY" <> help "issuer keypair from keygen (base64url)")
         <*> option (eitherReader (strDecode . B.pack)) (long "master" <> metavar "MASTER" <> help "user master secret from master-key (base64url)")
         <*> option (eitherReader badgeTypeR) (long "type" <> metavar "TYPE" <> help "badge type (supporter, legend, investor)")
         <*> option (eitherReader expireR) (long "expire" <> metavar "lifetime|YYYY-MM-DD" <> help "expiry date, or 'lifetime'")
@@ -79,10 +80,10 @@ genMasterKey = do
   mk <- generateMasterKey drg
   B.putStrLn $ strEncode mk
 
-sign :: BBSSecretKey -> BBSPublicKey -> BadgeMasterKey -> BadgeType -> Maybe UTCTime -> IO ()
-sign secretKey publicKey masterKey badgeType badgeExpiry = do
+sign :: Int -> BBSSecretKey -> BBSPublicKey -> BadgeMasterKey -> BadgeType -> Maybe UTCTime -> IO ()
+sign keyIdx secretKey publicKey masterKey badgeType badgeExpiry = do
   let req = VerifiedBadgeRequest (BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}} :: BadgeRequest)
-  issueBadge secretKey publicKey req >>= \case
+  issueBadge keyIdx secretKey publicKey req >>= \case
     Left e -> die $ "sign failed: " <> e
     -- single-line JSON (master secret + signature + info), pasted into the app via `/badge add`
     Right cred -> LB.putStrLn $ J.encode cred

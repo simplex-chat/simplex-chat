@@ -40,6 +40,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -737,7 +738,7 @@ sameProfileContent p@Profile {badge = b} p'@Profile {badge = b'} =
   p {badge = Nothing} == p' {badge = Nothing} && (proofInfo <$> b) == (proofInfo <$> b')
   where
     proofInfo :: Badge 'BCProof -> BadgeInfo
-    proofInfo (BadgeProof _ _ info) = info
+    proofInfo (BadgeProof _ _ _ info) = info
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
@@ -778,11 +779,11 @@ data LocalProfile = LocalProfile
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Bool -> LocalProfile
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} localAlias now verified =
   LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias}
   where
-    localBadge = (\b@(BadgeProof _ _ info) -> PeerBadge b (mkBadgeStatus now verified info)) <$> badge
+    localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now verified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge} =
@@ -795,13 +796,15 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contact
       OwnBadge _ _ -> Nothing
       ShownBadge _ _ -> Nothing
 
-profileBadgeVerified :: BBSPublicKey -> LocalProfile -> Profile -> IO Bool
-profileBadgeVerified key LocalProfile {localBadge} Profile {badge = newBadge} =
+profileBadgeVerified :: Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
+profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
   case (localBadge, newBadge) of
-    (_, Nothing) -> pure False
-    (Just lb, Just (BadgeProof _ _ newInfo))
-      | localBadgeInfo lb == newInfo -> pure (localBadgeStatus lb /= BSFailed)
-    (_, Just newB) -> verifyBadge key newB
+    (_, Nothing) -> pure (Just False)
+    -- an unchanged badge that verified before stays verified; failed or unknown-key badges
+    -- are re-verified, so an unknown key heals once an app update adds it
+    (Just lb, Just (BadgeProof _ _ _ newInfo))
+      | localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (Just True)
+    (_, Just newB) -> verifyBadge keys newB
 
 data GroupType
   = GTChannel
@@ -2065,7 +2068,7 @@ type VersionRangeChat = VersionRange ChatVersion
 
 -- | Store-wide context passed to store functions in place of the bare `vr`
 -- parameter. Built from config by mkStoreCxt; more fields are added here over time.
-data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKey :: BBSPublicKey}
+data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey}
 
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v

@@ -1759,7 +1759,9 @@ viewContactBadge = maybe [] $ \lb ->
       st = case localBadgeStatus lb of
         BSActive -> "active"
         BSExpired -> "expired"
+        BSExpiredOld -> "expired (old)"
         BSFailed -> "verification failed"
+        BSUnknownKey -> "unknown key"
       expiry = maybe "no expiry" (("expires " <>) . T.pack . formatTime defaultTimeLocale "%Y-%m-%d") badgeExpiry
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 

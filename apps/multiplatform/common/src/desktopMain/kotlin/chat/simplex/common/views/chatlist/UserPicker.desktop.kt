@@ -75,7 +75,7 @@ actual fun UserPickerUsersSection(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.alignByBaseline().weight(1f, fill = false)
                   )
-                  NameBadge(user.profile.localBadge, 12.sp)
+                  NameBadge(user.profile.localBadge.shown, 12.sp)
                 }
               }
             }

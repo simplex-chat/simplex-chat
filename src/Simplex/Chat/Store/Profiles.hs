@@ -324,7 +324,7 @@ updateUserProfile db user p'
       currentTs <- getCurrentTime
       updateUserProfileFields_' db userId profileId p' currentTs
       userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
-      pure user {profile = (toLocalProfile profileId p' localAlias currentTs False) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+      pure user {profile = (toLocalProfile profileId p' localAlias currentTs (Just False)) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
@@ -336,7 +336,7 @@ updateUserProfile db user p'
           (newName, newName, userId, currentTs, currentTs)
         updateUserProfileFields_' db userId profileId p' currentTs
         updateContactLDN_ db user userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile = (toLocalProfile profileId p' localAlias currentTs False) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
+        pure user {localDisplayName = newName, profile = (toLocalProfile profileId p' localAlias currentTs (Just False)) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateUserMemberProfileUpdatedAt_ currentTs
       | userMemberProfileChanged = do
@@ -369,7 +369,7 @@ setUserBadge db user@User {userId, profile = p@LocalProfile {profileId}} localBa
     db
     [sql|
       UPDATE contact_profiles
-      SET badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, updated_at = ?
+      SET badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
     (localBadgeToRow localBadge :. (ts, userId, profileId))

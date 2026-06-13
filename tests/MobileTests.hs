@@ -321,7 +321,7 @@ testBadgeKeygenIssueCApi _ = do
   keyPair <- ffiResult =<< (peekCString =<< cChatBadgeKeygen)
   let BBSKeyPair {publicKey} = keyPair
   mk <- generateMasterKey g
-  let req = BadgeIssueReq {keyPair, request = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = ""}}}
+  let req = BadgeIssueReq {badgeKeyIdx = 1, keyPair, request = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = ""}}}
   cred <- ffiResult =<< (peekCString =<< cChatBadgeIssue =<< newCString (LB.unpack (J.encode req)))
   verifyCredential publicKey cred `shouldReturn` True
 

@@ -367,7 +367,7 @@ fun ActiveProfilePicker(
         }
       },
         image = { ProfileImage(size = 42.dp, image = user.image) },
-        badge = user.profile.localBadge
+        badge = user.profile.localBadge.shown
     )
   }
 
