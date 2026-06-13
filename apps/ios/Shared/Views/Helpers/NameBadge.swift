@@ -11,11 +11,11 @@ import SimpleXChat
 // The badge is sized to a fraction of the font size (em), NOT the font's cap-height metric: the metric
 // underestimates the rendered capital letters, so a cap-height-tall badge looks too small. These ratios
 // are calibrated visually to match caps - the same constants as the Compose (Android/desktop) app.
-private let fontCapHeightRatio: CGFloat = 0.95
+private let fontCapHeightRatio: CGFloat = 0.85
 // fraction of the badge height pushed below the text baseline (like the undershoot of round letters)
 private let badgeBaselineOffsetRatio: CGFloat = 0.05
 // the gap between the name and the badge (matching the visible gap to the verification shield)
-private let badgeGap: CGFloat = 6
+private let badgeGap: CGFloat = 8
 
 // A contact/member name with the supporter badge right after it. The name keeps its own styling
 // (font, weight, color, even a verification shield concatenated into the Text); the badge is sized to
