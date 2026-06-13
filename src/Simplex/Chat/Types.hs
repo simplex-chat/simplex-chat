@@ -789,7 +789,7 @@ fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge} =
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge}
   where
-    -- only a verified peer proof rides the wire; the own credential is presented fresh, and a display-only badge never sends
+    -- any stored peer proof rides the wire (receivers verify independently); the own credential is presented fresh, and a display-only badge never sends
     wireBadge :: LocalBadge -> Maybe BadgeProof
     wireBadge = \case
       PeerBadge b _ -> Just b
@@ -805,6 +805,11 @@ profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
     (Just lb, Just (BadgeProof _ _ _ newInfo))
       | localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (Just True)
     (_, Just newB) -> verifyBadge keys newB
+
+-- a failed or unknown-key badge is re-verified on the next profile update even when its disclosed content
+-- is unchanged, so it heals once an app update adds the issuer key
+badgeNeedsReverify :: LocalProfile -> Bool
+badgeNeedsReverify LocalProfile {localBadge} = maybe False ((`elem` [BSFailed, BSUnknownKey]) . localBadgeStatus) localBadge
 
 data GroupType
   = GTChannel

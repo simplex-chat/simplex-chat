@@ -1185,8 +1185,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                       -- Update connection with data derived from cReq, now available after getConnShortLinkAsync
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
                       let GroupMember {memberId = membershipMemId} = membership
-                          incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
-                          profileToSend = userProfileInGroup user gInfo incognitoProfile
+                          incognitoProfile = incognitoMembershipProfile gInfo
+                      profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
                       memberPubKey <- case groupKeys gInfo of
                         Just GroupKeys {memberPrivKey} -> pure $ C.publicKey memberPrivKey
                         Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
@@ -2551,14 +2551,15 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     processContactProfileUpdate :: Contact -> Profile -> Bool -> CM Contact
     processContactProfileUpdate c@Contact {profile = lp} p' createItems
-      | not (sameProfileContent p p') = do
+      -- a failed/unknown-key badge is re-verified even when content is unchanged, so it heals after an app update adds the key
+      | contentChanged || badgeNeedsReverify lp = do
           c' <- withStore $ \db ->
             if userTTL == rcvTTL
               then updateContactProfile db cxt user c p'
               else do
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
                 updateContactProfile db cxt user c' p'
-          when (directOrUsed c' && createItems) $ do
+          when (contentChanged && directOrUsed c' && createItems) $ do
             createProfileUpdatedItem c'
             lift $ createRcvFeatureItems user c c'
           toView $ CEvtContactUpdated user c c'
@@ -2566,6 +2567,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise =
           pure c
       where
+        contentChanged = not (sameProfileContent p p')
         p = fromLocalProfile lp
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
@@ -2668,13 +2670,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Maybe (RcvMessage, UTCTime) -> CM GroupMember
     processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' msgTs_
-      | not (sameProfileContent (redactedMemberProfile allowSimplexLinks (fromLocalProfile p)) (redactedMemberProfile allowSimplexLinks p')) = do
-          updateBusinessChatProfile gInfo
+      -- a failed/unknown-key badge is re-verified even when content is unchanged, so it heals after an app update adds the key
+      | contentChanged || badgeNeedsReverify p = do
+          when contentChanged $ updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
               m' <- withStore $ \db -> updateMemberProfile db cxt user m p'
               unless (muteEventInChannel gInfo m') $ do
-                forM_ msgTs_ $ createProfileUpdatedItem m'
+                when contentChanged $ forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
               pure m'
             Just mContactId -> do
@@ -2683,7 +2686,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 then do
                   (m', ct') <- withStore $ \db -> updateContactMemberProfile db cxt user m mCt p'
                   unless (muteEventInChannel gInfo m') $ do
-                    forM_ msgTs_ $ createProfileUpdatedItem m'
+                    when contentChanged $ forM_ msgTs_ $ createProfileUpdatedItem m'
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
                     toView $ CEvtContactUpdated user mCt ct'
                   pure m'
@@ -2697,6 +2700,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise =
           pure m
       where
+        contentChanged = not (sameProfileContent (redactedMemberProfile allowSimplexLinks (fromLocalProfile p)) (redactedMemberProfile allowSimplexLinks p'))
         allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
@@ -3386,7 +3390,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               createItems mCt m'
         joinConn subMode = do
           -- [incognito] send membership incognito profile
-          let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True
+          p <- presentUserBadge user (incognitoMembershipProfile g) $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True
           -- TODO PQ should negotitate contact connection with PQSupportOn? (use encodeConnInfoPQ)
           dm <- encodeConnInfo $ XInfo p
           joinAgentConnectionAsync user Nothing True connReq dm subMode
