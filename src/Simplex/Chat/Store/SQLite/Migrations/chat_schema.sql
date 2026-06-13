@@ -19,7 +19,8 @@ CREATE TABLE contact_profiles(
   preferences TEXT,
   contact_link BLOB,
   short_descr TEXT,
-  chat_peer_type TEXT
+  chat_peer_type TEXT,
+  simplex_name TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -92,6 +93,8 @@ CREATE TABLE contacts(
   grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
+  simplex_name TEXT,
+  simplex_name_verified_at TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -130,7 +133,8 @@ CREATE TABLE group_profiles(
   group_web_page TEXT,
   group_domain TEXT,
   domain_web_page INTEGER,
-  allow_embedding INTEGER
+  allow_embedding INTEGER,
+  simplex_name TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -182,7 +186,9 @@ CREATE TABLE groups(
   relay_request_retries INTEGER NOT NULL DEFAULT 0,
   relay_request_delay INTEGER NOT NULL DEFAULT 0,
   relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-  relay_inactive_at TEXT, -- received
+  relay_inactive_at TEXT,
+  simplex_name TEXT,
+  simplex_name_verified_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -351,6 +357,7 @@ CREATE TABLE connections(
   via_short_link_contact BLOB,
   via_contact_uri BLOB,
   relay_test INTEGER NOT NULL DEFAULT 0,
+  simplex_name TEXT,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -680,6 +687,8 @@ CREATE TABLE server_operators(
   xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  smp_role_names INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE usage_conditions(
   usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1307,6 +1316,31 @@ ON groups(
   relay_request_group_link
 )
 WHERE relay_request_group_link IS NOT NULL;
+CREATE UNIQUE INDEX idx_contacts_simplex_name
+ON contacts(
+  user_id,
+  simplex_name
+)
+WHERE simplex_name IS NOT NULL 
+    AND deleted = 0;
+CREATE UNIQUE INDEX idx_groups_simplex_name
+ON groups(
+  user_id,
+  simplex_name
+)
+WHERE simplex_name IS NOT NULL;
+CREATE UNIQUE INDEX idx_contact_profiles_simplex_name
+ON contact_profiles(
+  user_id,
+  simplex_name
+)
+WHERE simplex_name IS NOT NULL;
+CREATE UNIQUE INDEX idx_group_profiles_simplex_name
+ON group_profiles(
+  user_id,
+  simplex_name
+)
+WHERE simplex_name IS NOT NULL;
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

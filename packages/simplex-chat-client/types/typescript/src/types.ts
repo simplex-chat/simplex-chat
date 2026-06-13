@@ -66,6 +66,7 @@ export type AgentErrorType =
   | AgentErrorType.NTF
   | AgentErrorType.XFTP
   | AgentErrorType.FILE
+  | AgentErrorType.NAME
   | AgentErrorType.PROXY
   | AgentErrorType.RCP
   | AgentErrorType.BROKER
@@ -84,6 +85,7 @@ export namespace AgentErrorType {
     | "NTF"
     | "XFTP"
     | "FILE"
+    | "NAME"
     | "PROXY"
     | "RCP"
     | "BROKER"
@@ -134,6 +136,11 @@ export namespace AgentErrorType {
   export interface FILE extends Interface {
     type: "FILE"
     fileErr: FileErrorType
+  }
+
+  export interface NAME extends Interface {
+    type: "NAME"
+    nameErr: NameErrorType
   }
 
   export interface PROXY extends Interface {
@@ -1009,6 +1016,8 @@ export type ChatErrorType =
   | ChatErrorType.ChatNotStopped
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
+  | ChatErrorType.SimplexNameNotFound
+  | ChatErrorType.SimplexNameUnprepared
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1086,6 +1095,8 @@ export namespace ChatErrorType {
     | "chatNotStopped"
     | "chatStoreChanged"
     | "invalidConnReq"
+    | "simplexNameNotFound"
+    | "simplexNameUnprepared"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1238,6 +1249,16 @@ export namespace ChatErrorType {
 
   export interface InvalidConnReq extends Interface {
     type: "invalidConnReq"
+  }
+
+  export interface SimplexNameNotFound extends Interface {
+    type: "simplexNameNotFound"
+    simplexName: SimplexNameInfo
+  }
+
+  export interface SimplexNameUnprepared extends Interface {
+    type: "simplexNameUnprepared"
+    simplexName: SimplexNameInfo
   }
 
   export interface UnsupportedConnReq extends Interface {
@@ -1824,6 +1845,27 @@ export enum ConnType {
   Member = "member",
   User_contact = "user_contact",
 }
+// Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
+
+export type ConnectTarget = ConnectTarget.Link | ConnectTarget.Name
+
+export namespace ConnectTarget {
+  export type Tag = "link" | "name"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Link extends Interface {
+    type: "link"
+    : string
+  }
+
+  export interface Name extends Interface {
+    type: "name"
+    : SimplexNameInfo
+  }
+}
 
 export interface Connection {
   connId: number // int64
@@ -1850,6 +1892,7 @@ export interface Connection {
   authErrCounter: number // int
   quotaErrCounter: number // int
   createdAt: string // ISO-8601 timestamp
+  simplexName?: SimplexNameInfo
 }
 
 export type ConnectionEntity = 
@@ -1981,6 +2024,8 @@ export interface Contact {
   uiThemes?: UIThemeEntityOverrides
   chatDeleted: boolean
   customData?: object
+  simplexName?: SimplexNameInfo
+  simplexNameVerifiedAt?: string // ISO-8601 timestamp
 }
 
 export type ContactAddressPlan = 
@@ -2129,6 +2174,7 @@ export type ErrorType =
   | ErrorType.LARGE_MSG
   | ErrorType.EXPIRED
   | ErrorType.INTERNAL
+  | ErrorType.NAME
   | ErrorType.DUPLICATE_
 
 export namespace ErrorType {
@@ -2147,6 +2193,7 @@ export namespace ErrorType {
     | "LARGE_MSG"
     | "EXPIRED"
     | "INTERNAL"
+    | "NAME"
     | "DUPLICATE_"
 
   interface Interface {
@@ -2211,6 +2258,11 @@ export namespace ErrorType {
 
   export interface INTERNAL extends Interface {
     type: "INTERNAL"
+  }
+
+  export interface NAME extends Interface {
+    type: "NAME"
+    nameErr: NameErrorType
   }
 
   export interface DUPLICATE_ extends Interface {
@@ -2574,6 +2626,8 @@ export interface GroupInfo {
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
+  simplexName?: SimplexNameInfo
+  simplexNameVerifiedAt?: string // ISO-8601 timestamp
 }
 
 export interface GroupKeys {
@@ -2760,6 +2814,7 @@ export interface GroupProfile {
   description?: string
   image?: string
   publicGroup?: PublicGroupProfile
+  simplexName?: SimplexNameInfo
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
 }
@@ -2941,6 +2996,7 @@ export interface LocalProfile {
   shortDescr?: string
   image?: string
   contactLink?: string
+  simplexName?: SimplexNameInfo
   preferences?: Preferences
   peerType?: ChatPeerType
   localAlias: string
@@ -3137,6 +3193,37 @@ export enum MsgSigStatus {
   SignedNoKey = "signedNoKey",
 }
 
+export type NameErrorType = 
+  | NameErrorType.NO_RESOLVER
+  | NameErrorType.NO_NAME
+  | NameErrorType.NO_SERVERS
+  | NameErrorType.RESOLVER
+
+export namespace NameErrorType {
+  export type Tag = "NO_RESOLVER" | "NO_NAME" | "NO_SERVERS" | "RESOLVER"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NO_RESOLVER extends Interface {
+    type: "NO_RESOLVER"
+  }
+
+  export interface NO_NAME extends Interface {
+    type: "NO_NAME"
+  }
+
+  export interface NO_SERVERS extends Interface {
+    type: "NO_SERVERS"
+  }
+
+  export interface RESOLVER extends Interface {
+    type: "RESOLVER"
+    resolverErr: string
+  }
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3292,6 +3379,7 @@ export interface Profile {
   shortDescr?: string
   image?: string
   contactLink?: string
+  simplexName?: SimplexNameInfo
   preferences?: Preferences
   peerType?: ChatPeerType
 }

@@ -159,7 +159,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -317,7 +317,7 @@ updateUserAutoAcceptMemberContacts db User {userId} autoAccept =
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
   | displayName == newName = liftIO $ do
-      updateContactProfile_ db userId profileId p'
+      updateContactProfile_ db userId profileId pNoSimplexName
       currentTs <- getCurrentTime
       userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
       pure user {profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
@@ -330,7 +330,7 @@ updateUserProfile db user p'
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
-        updateContactProfile_' db userId profileId p' currentTs
+        updateContactProfile_' db userId profileId pNoSimplexName currentTs
         updateContactLDN_ db user userContactId localDisplayName newName currentTs
         pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
@@ -342,6 +342,12 @@ updateUserProfile db user p'
     userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || img' /= image
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, localAlias}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = fn', shortDescr = d', image = img', preferences} = p'
+    -- contact_profiles.simplex_name is reserved for peer claims received via XInfo.
+    -- The user's own broadcastable simplex_name lives on contacts.simplex_name
+    -- (loaded by toUser into User.profile.simplexName via uct.simplex_name);
+    -- writing it here would (a) collide with peer claims on the partial UNIQUE
+    -- index, and (b) make a subsequent peer claim displace the user's own row.
+    pNoSimplexName = (p' :: Profile) {simplexName = Nothing}
     profile = toLocalProfile profileId p' localAlias
     fullPreferences = fullPreferences' preferences
 
@@ -367,14 +373,14 @@ getUserContactProfiles db User {userId} =
     <$> DB.query
       db
       [sql|
-        SELECT display_name, full_name, short_descr, image, contact_link, chat_peer_type, preferences
+        SELECT display_name, full_name, short_descr, image, contact_link, chat_peer_type, simplex_name, preferences
         FROM contact_profiles
         WHERE user_id = ?
       |]
       (Only userId)
   where
-    toContactProfile :: (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe Preferences) -> Profile
-    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, peerType, preferences}
+    toContactProfile :: (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe Text, Maybe Preferences) -> Profile
+    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, simplexNameRaw, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, simplexName = decodeSimplexName simplexNameRaw, peerType, preferences}
 
 createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> ExceptT StoreError IO ()
 createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode =
@@ -386,7 +392,7 @@ createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMo
       "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
       (userId, cReq, shortLink, slDataSet, slDataSet, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff Nothing
 
 getUserAddressConnection :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO Connection
 getUserAddressConnection db cxt User {userId} = do
@@ -397,7 +403,7 @@ getUserAddressConnection db cxt User {userId} = do
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
           c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version, c.simplex_name
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
         WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
@@ -713,10 +719,10 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
     db
     [sql|
       UPDATE server_operators
-      SET enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?, updated_at = ?
+      SET enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, smp_role_names = ?, xftp_role_storage = ?, xftp_role_proxy = ?, updated_at = ?
       WHERE server_operator_id = ?
     |]
-    (BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), currentTs, operatorId)
+    (BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (names smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), currentTs, operatorId)
 
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, Maybe ServerOperator)]
 getUpdateServerOperators db presetOps newUser = do
@@ -751,20 +757,20 @@ getUpdateServerOperators db presetOps newUser = do
         db
         [sql|
           UPDATE server_operators
-          SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?
+          SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, smp_role_names = ?, xftp_role_storage = ?, xftp_role_proxy = ?
           WHERE server_operator_id = ?
         |]
-        (tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), operatorId)
+        (tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (names smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), operatorId)
     insertOperator :: NewServerOperator -> IO ServerOperator
     insertOperator op@ServerOperator {operatorTag, tradeName, legalName, serverDomains, enabled, smpRoles, xftpRoles} = do
       DB.execute
         db
         [sql|
           INSERT INTO server_operators
-            (server_operator_tag, trade_name, legal_name, server_domains, enabled, smp_role_storage, smp_role_proxy, xftp_role_storage, xftp_role_proxy)
-          VALUES (?,?,?,?,?,?,?,?,?)
+            (server_operator_tag, trade_name, legal_name, server_domains, enabled, smp_role_storage, smp_role_proxy, smp_role_names, xftp_role_storage, xftp_role_proxy)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles))
+        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (names smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles))
       opId <- insertedRowId db
       pure op {operatorId = DBEntityId opId}
     autoAcceptConditions op UsageConditions {conditionsCommit} now =
@@ -775,14 +781,14 @@ serverOperatorQuery :: Query
 serverOperatorQuery =
   [sql|
     SELECT server_operator_id, server_operator_tag, trade_name, legal_name,
-      server_domains, enabled, smp_role_storage, smp_role_proxy, xftp_role_storage, xftp_role_proxy
+      server_domains, enabled, smp_role_storage, smp_role_proxy, smp_role_names, xftp_role_storage, xftp_role_proxy
     FROM server_operators
   |]
 
 getServerOperators_ :: DB.Connection -> IO [ServerOperator]
 getServerOperators_ db = map toServerOperator <$> DB.query_ db serverOperatorQuery
 
-toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, BoolInt) :. (BoolInt, BoolInt) :. (BoolInt, BoolInt) -> ServerOperator
+toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, BoolInt) :. (BoolInt, BoolInt, BoolInt) :. (BoolInt, BoolInt) -> ServerOperator
 toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, BI enabled) :. smpRoles' :. xftpRoles') =
   ServerOperator
     { operatorId,
@@ -792,11 +798,13 @@ toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, BI en
       serverDomains = T.splitOn "," domains,
       conditionsAcceptance = CARequired Nothing,
       enabled,
-      smpRoles = serverRoles smpRoles',
-      xftpRoles = serverRoles xftpRoles'
+      smpRoles = serverRolesSMP smpRoles',
+      xftpRoles = serverRolesXFTP xftpRoles'
     }
   where
-    serverRoles (BI storage, BI proxy) = ServerRoles {storage, proxy}
+    serverRolesSMP (BI storage, BI proxy, BI names) = ServerRoles {storage, proxy, names}
+    -- XFTP has no names role; the column is SMP-only.
+    serverRolesXFTP (BI storage, BI proxy) = ServerRoles {storage, proxy, names = False}
 
 getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance
 getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt} latestAcceptedConds_ now = do

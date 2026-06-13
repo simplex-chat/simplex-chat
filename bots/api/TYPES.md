@@ -57,6 +57,7 @@ This file is generated automatically.
 - [ComposedMessage](#composedmessage)
 - [ConnStatus](#connstatus)
 - [ConnType](#conntype)
+- [ConnectTarget](#connecttarget)
 - [Connection](#connection)
 - [ConnectionEntity](#connectionentity)
 - [ConnectionErrorType](#connectionerrortype)
@@ -133,6 +134,7 @@ This file is generated automatically.
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
+- [NameErrorType](#nameerrortype)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -306,6 +308,10 @@ XFTP:
 FILE:
 - type: "FILE"
 - fileErr: [FileErrorType](#fileerrortype)
+
+NAME:
+- type: "NAME"
+- nameErr: [NameErrorType](#nameerrortype)
 
 PROXY:
 - type: "PROXY"
@@ -1055,6 +1061,14 @@ ChatStoreChanged:
 InvalidConnReq:
 - type: "invalidConnReq"
 
+SimplexNameNotFound:
+- type: "simplexNameNotFound"
+- simplexName: [SimplexNameInfo](#simplexnameinfo)
+
+SimplexNameUnprepared:
+- type: "simplexNameUnprepared"
+- simplexName: [SimplexNameInfo](#simplexnameinfo)
+
 UnsupportedConnReq:
 - type: "unsupportedConnReq"
 
@@ -1590,6 +1604,23 @@ Failed:
 
 ---
 
+## ConnectTarget
+
+Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
+
+**Discriminated union type**:
+
+Link:
+- type: "link"
+- : string
+
+Name:
+- type: "name"
+- : [SimplexNameInfo](#simplexnameinfo)
+
+
+---
+
 ## Connection
 
 **Record type**:
@@ -1617,6 +1648,7 @@ Failed:
 - authErrCounter: int
 - quotaErrCounter: int
 - createdAt: UTCTime
+- simplexName: [SimplexNameInfo](#simplexnameinfo)?
 
 
 ---
@@ -1723,6 +1755,8 @@ Error:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatDeleted: bool
 - customData: JSONObject?
+- simplexName: [SimplexNameInfo](#simplexnameinfo)?
+- simplexNameVerifiedAt: UTCTime?
 
 
 ---
@@ -1925,6 +1959,10 @@ EXPIRED:
 
 INTERNAL:
 - type: "INTERNAL"
+
+NAME:
+- type: "NAME"
+- nameErr: [NameErrorType](#nameerrortype)
 
 DUPLICATE_:
 - type: "DUPLICATE_"
@@ -2270,6 +2308,8 @@ MemberSupport:
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?
+- simplexName: [SimplexNameInfo](#simplexnameinfo)?
+- simplexNameVerifiedAt: UTCTime?
 
 
 ---
@@ -2484,6 +2524,7 @@ UpdateRequired:
 - description: string?
 - image: string?
 - publicGroup: [PublicGroupProfile](#publicgroupprofile)?
+- simplexName: [SimplexNameInfo](#simplexnameinfo)?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
 
@@ -2680,6 +2721,7 @@ Unknown:
 - shortDescr: string?
 - image: string?
 - contactLink: string?
+- simplexName: [SimplexNameInfo](#simplexnameinfo)?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
 - localAlias: string
@@ -2860,6 +2902,26 @@ Unknown:
 
 ---
 
+## NameErrorType
+
+**Discriminated union type**:
+
+NO_RESOLVER:
+- type: "NO_RESOLVER"
+
+NO_NAME:
+- type: "NO_NAME"
+
+NO_SERVERS:
+- type: "NO_SERVERS"
+
+RESOLVER:
+- type: "RESOLVER"
+- resolverErr: string
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3025,6 +3087,7 @@ count=<count>
 - shortDescr: string?
 - image: string?
 - contactLink: string?
+- simplexName: [SimplexNameInfo](#simplexnameinfo)?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
 

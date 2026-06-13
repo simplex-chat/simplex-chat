@@ -483,7 +483,7 @@ data ChatCommand
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink, resolveKnown :: Bool, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectionLink is used to report link parsing failure as special error
+  | APIConnectPlan {userId :: UserId, connectTarget :: Maybe ConnectTarget, resolveKnown :: Bool, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe ConnectTarget is used to report parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
   | APIPrepareGroup UserId CreatedLinkContact DirectLink GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
@@ -491,7 +491,12 @@ data ChatCommand
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
-  | Connect {incognito :: IncognitoEnabled, connLink_ :: Maybe AConnectionLink}
+  | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe ConnectTarget}
+  | -- Resolves the simplex_name claim on the chat row (contact or group) via
+    -- RSLV and compares the resolved link to the peer's stored connection link.
+    -- Returns CRSimplexNameVerified with the boolean result (a match writes
+    -- simplex_name_verified_at); resolver / agent failures surface as ChatErrorAgent.
+    APIVerifySimplexName {chatRef :: ChatRef}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
@@ -728,6 +733,7 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
+  | CRSimplexNameVerified {user :: User, chatRef :: ChatRef, simplexName :: SimplexNameInfo, verified :: Bool}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
@@ -1374,6 +1380,8 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
+  | CESimplexNameNotFound {simplexName :: SimplexNameInfo}
+  | CESimplexNameUnprepared {simplexName :: SimplexNameInfo}
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited

@@ -135,10 +135,10 @@ chatCommandsDocsData =
     ( "Connection commands",
       "These commands may be used to create connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.",
       [ ("APIAddContact", [], "Create 1-time invitation link.", ["CRInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)),
-        -- `Maybe` in `connectionLink :: Maybe AConnectionLink` is used to signal link parsing error to the runtime (the handler returns CEInvalidConnReq on Nothing); it is NOT API-level optionality. The parameter is required from callers.
-        ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link.", ["CRConnectionPlan", "CRChatCmdError"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectionLink"),
+        -- `Maybe` in `connectTarget :: Maybe ConnectTarget` is used to signal parse failure to the runtime (the handler returns CEInvalidConnReq on Nothing); it is NOT API-level optionality. The parameter is required from callers.
+        ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link or name.", ["CRConnectionPlan", "CRChatCmdError"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectTarget"),
         ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
-        ("Connect", [], "Connect via SimpleX link as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connLink_"),
+        ("Connect", [], "Connect via SimpleX link or name as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connTarget_"),
         ("APIAcceptContact", ["incognito"], "Accept contact request.", ["CRAcceptingContactRequest", "CRChatCmdError"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"),
         ("APIRejectContact", [], "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected", "CRChatCmdError"], [], Nothing, "/_reject " <> Param "contactReqId")
       ]
@@ -151,7 +151,8 @@ chatCommandsDocsData =
         ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode"),
         ("APISetGroupCustomData", [], "Set group custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom #" <> Param "groupId" <> Optional "" (" " <> Json "$0") "customData"),
         ("APISetContactCustomData", [], "Set contact custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom @" <> Param "contactId" <> Optional "" (" " <> Json "$0") "customData"),
-        ("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "onOff")
+        ("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "onOff"),
+        ("APIVerifySimplexName", [], "Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.", ["CRSimplexNameVerified", "CRChatCmdError"], [], Just UNInteractive, "/_verify simplex name " <> Param "chatRef")
         -- ("APIChatItemsRead", [], "Mark items as read.", ["CRItemsReadForChat"], [], Nothing, ""),
         -- ("APIChatRead", [], "Mark chat as read.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIChatUnread", [], "Mark chat as unread.", ["CRCmdOk"], [], Nothing, ""),

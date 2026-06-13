@@ -368,8 +368,9 @@ processAgentMessageConn :: StoreCxt -> User -> ACorrId -> ConnId -> AEvent 'AECo
 processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage = do
   -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
   -- as in this case no need to ACK message - we can't process messages for this connection anyway.
-  -- SEDBException will be re-trown as CRITICAL as it is likely to indicate a temporary database condition
-  -- that will be resolved with app restart.
+  -- SEDBBusyError will be re-thrown as CRITICAL (via `critical`) as it indicates a transient lock/IO
+  -- condition that usually resolves after app restart. Other SEDBException flavours surface as
+  -- non-CRITICAL store errors.
   entity <- critical agentConnId $ withStore (\db -> getConnectionEntity db cxt user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of
     END -> case entity of
@@ -2945,7 +2946,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
-          ct <- withStore $ \db -> createDirectContact db cxt user conn' p
+          -- Consume the transient simplex_name carrier from the connection row
+          -- (set in createConnection_ on the connect-via-plan path) and pass it
+          -- to createDirectContact; after this point contacts.simplex_name is
+          -- the source of truth.
+          let Connection {simplexName} = conn'
+          ct <- withStore $ \db -> createDirectContact db cxt user conn' p simplexName
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do

@@ -89,6 +89,7 @@ chatResponsesDocsData =
     ("CRSentConfirmation", "Confirmation sent to one-time invitation"),
     ("CRSentGroupInvitation", "Group invitation sent"),
     ("CRSentInvitation", "Invitation sent to contact address"),
+    ("CRSimplexNameVerified", "Result of SimpleX name verification (`verified`: whether the RSLV-resolved link matches the peer's stored link)"),
     ("CRSndFileCancelled", "Cancelled sending file"),
     ("CRUserAcceptedGroupSent", "User accepted group invitation"),
     ("CRUserContactLink", "User contact address"),

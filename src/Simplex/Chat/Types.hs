@@ -52,7 +52,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -209,7 +209,13 @@ data Contact = Contact
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
-    customData :: Maybe CustomData
+    customData :: Maybe CustomData,
+    simplexName :: Maybe SimplexNameInfo,
+    -- | Timestamp of the most recent successful RSLV verification of the peer's
+    -- simplex_name claim against this contact's connection link. NULL means the
+    -- claim is unverified (UI should surface an indicator). Cleared back to NULL
+    -- whenever simplex_name changes in updateContactProfile.
+    simplexNameVerifiedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -489,7 +495,11 @@ data GroupInfo = GroupInfo
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupKeys :: Maybe GroupKeys
+    groupKeys :: Maybe GroupKeys,
+    simplexName :: Maybe SimplexNameInfo,
+    -- | See 'Contact.simplexNameVerifiedAt'. Verified against the channel link
+    -- stored for the group; cleared by updateGroupProfile.
+    simplexNameVerifiedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -686,6 +696,7 @@ data Profile = Profile
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
+    simplexName :: Maybe SimplexNameInfo,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
@@ -720,7 +731,7 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, simplexName = Nothing, preferences = Nothing, peerType = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -758,6 +769,7 @@ data LocalProfile = LocalProfile
     shortDescr :: Maybe Text,
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
+    simplexName :: Maybe SimplexNameInfo,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
     localAlias :: LocalAlias
@@ -768,12 +780,12 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} localAlias =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType} localAlias =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType} =
+  Profile {displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType}
 
 data GroupType
   = GTChannel
@@ -818,6 +830,7 @@ data GroupProfile = GroupProfile
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
     publicGroup :: Maybe PublicGroupProfile,
+    simplexName :: Maybe SimplexNameInfo,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission
   }
@@ -1734,7 +1747,8 @@ data Connection = Connection
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
     quotaErrCounter :: Int, -- if exceeds limit messages to group members are created as pending; sending to contacts is unaffected by this
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    simplexName :: Maybe SimplexNameInfo
   }
   deriving (Eq, Show)
 

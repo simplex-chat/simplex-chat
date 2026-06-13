@@ -434,17 +434,17 @@ def APIAddContact_cmd_string(self: APIAddContact) -> str:
 APIAddContact_Response = CR.Invitation | CR.ChatCmdError
 
 
-# Determine SimpleX link type and if the bot is already connected via this link.
+# Determine SimpleX link type and if the bot is already connected via this link or name.
 # Network usage: interactive.
 class APIConnectPlan(TypedDict):
     userId: int  # int64
-    connectionLink: NotRequired[str]
+    connectTarget: NotRequired["T.ConnectTarget"]
     resolveKnown: bool
     linkOwnerSig: NotRequired["T.LinkOwnerSig"]
 
 
 def APIConnectPlan_cmd_string(self: APIConnectPlan) -> str:
-    return '/_connect plan ' + str(self['userId']) + ' ' + self.get('connectionLink')
+    return '/_connect plan ' + str(self['userId']) + ' ' + str(self.get('connectTarget'))
 
 APIConnectPlan_Response = CR.ConnectionPlan | CR.ChatCmdError
 
@@ -463,15 +463,15 @@ def APIConnect_cmd_string(self: APIConnect) -> str:
 APIConnect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
 
-# Connect via SimpleX link as string in the active user profile.
+# Connect via SimpleX link or name as string in the active user profile.
 # Network usage: interactive.
 class Connect(TypedDict):
     incognito: bool
-    connLink_: NotRequired[str]
+    connTarget_: NotRequired["T.ConnectTarget"]
 
 
 def Connect_cmd_string(self: Connect) -> str:
-    return '/connect' + ((' ' + self.get('connLink_')) if self.get('connLink_') is not None else '')
+    return '/connect' + ((' ' + str(self.get('connTarget_'))) if self.get('connTarget_') is not None else '')
 
 Connect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
@@ -594,6 +594,18 @@ def APISetUserAutoAcceptMemberContacts_cmd_string(self: APISetUserAutoAcceptMemb
     return '/_set accept member contacts ' + str(self['userId']) + ' ' + ('on' if self['onOff'] else 'off')
 
 APISetUserAutoAcceptMemberContacts_Response = CR.CmdOk | CR.ChatCmdError
+
+
+# Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
+# Network usage: interactive.
+class APIVerifySimplexName(TypedDict):
+    chatRef: "T.ChatRef"
+
+
+def APIVerifySimplexName_cmd_string(self: APIVerifySimplexName) -> str:
+    return '/_verify simplex name ' + T.ChatRef_cmd_string(self['chatRef'])
+
+APIVerifySimplexName_Response = CR.SimplexNameVerified | CR.ChatCmdError
 
 
 # User profile commands

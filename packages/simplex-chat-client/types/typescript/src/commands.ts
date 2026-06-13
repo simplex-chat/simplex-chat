@@ -495,11 +495,11 @@ export namespace APIAddContact {
   }
 }
 
-// Determine SimpleX link type and if the bot is already connected via this link.
+// Determine SimpleX link type and if the bot is already connected via this link or name.
 // Network usage: interactive.
 export interface APIConnectPlan {
   userId: number // int64
-  connectionLink?: string
+  connectTarget?: T.ConnectTarget
   resolveKnown: boolean
   linkOwnerSig?: T.LinkOwnerSig
 }
@@ -508,7 +508,7 @@ export namespace APIConnectPlan {
   export type Response = CR.ConnectionPlan | CR.ChatCmdError
 
   export function cmdString(self: APIConnectPlan): string {
-    return '/_connect plan ' + self.userId + ' ' + self.connectionLink
+    return '/_connect plan ' + self.userId + ' ' + self.connectTarget
   }
 }
 
@@ -528,18 +528,18 @@ export namespace APIConnect {
   }
 }
 
-// Connect via SimpleX link as string in the active user profile.
+// Connect via SimpleX link or name as string in the active user profile.
 // Network usage: interactive.
 export interface Connect {
   incognito: boolean
-  connLink_?: string
+  connTarget_?: T.ConnectTarget
 }
 
 export namespace Connect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: Connect): string {
-    return '/connect' + (self.connLink_ ? ' ' + self.connLink_ : '')
+    return '/connect' + (self.connTarget_ ? ' ' + self.connTarget_ : '')
   }
 }
 
@@ -678,6 +678,20 @@ export namespace APISetUserAutoAcceptMemberContacts {
 
   export function cmdString(self: APISetUserAutoAcceptMemberContacts): string {
     return '/_set accept member contacts ' + self.userId + ' ' + (self.onOff ? 'on' : 'off')
+  }
+}
+
+// Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
+// Network usage: interactive.
+export interface APIVerifySimplexName {
+  chatRef: T.ChatRef
+}
+
+export namespace APIVerifySimplexName {
+  export type Response = CR.SimplexNameVerified | CR.ChatCmdError
+
+  export function cmdString(self: APIVerifySimplexName): string {
+    return '/_verify simplex name ' + T.ChatRef.cmdString(self.chatRef)
   }
 }
 

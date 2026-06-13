@@ -88,7 +88,7 @@ serviceProfile :: Profile
 serviceProfile = mkProfile "service_user" "Service user" Nothing
 
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
-mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
+mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, simplexName = Nothing, peerType = Nothing, preferences = defaultPrefs}
 
 it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 it name test =
