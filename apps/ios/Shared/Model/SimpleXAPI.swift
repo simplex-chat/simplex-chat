@@ -1093,7 +1093,7 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             title: "Cannot reconnect via name",
             message: "This SimpleX name is known but has no saved link to reconnect via."
         )
-    case .error(.simplexNameResolverUnavailable):
+    case .errorAgent(.NAME(.NO_SERVERS)):
         mkAlert(
             title: "Name resolution unavailable",
             message: "None of your SMP servers support resolving SimpleX names. Add a server that does, or use a connection link."
