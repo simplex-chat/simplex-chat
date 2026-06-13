@@ -201,15 +201,6 @@ toggleNtf m ntfOn =
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
 
--- | Emit CEvtSimplexNameConflict when an incoming claim displaced an older
--- simplex_name binding. No-op when either piece of context is absent:
--- claim Nothing = peer did not assert a simplex_name; displaced Nothing =
--- no prior holder for the claim, so nothing was displaced.
-surfaceSimplexNameConflict :: User -> Maybe SimplexNameInfo -> Maybe ContactName -> SimplexNameConflictEntity -> ContactName -> CM ()
-surfaceSimplexNameConflict user claim_ displaced_ entity claimedBy =
-  forM_ ((,) <$> claim_ <*> displaced_) $ \(ni, displaced) ->
-    toView $ CEvtSimplexNameConflict user ni entity claimedBy displaced
-
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
   (mc', quotedItem_) <- case (quotedItemId_, itemForwarded) of

@@ -35,34 +35,6 @@ class NewMemberContactReceivedInv(TypedDict):
     groupInfo: "T.GroupInfo"
     member: "T.GroupMember"
 
-class SimplexNameConflict(TypedDict):
-    type: Literal["simplexNameConflict"]
-    user: "T.User"
-    simplexName: "T.SimplexNameInfo"
-    entity: "T.SimplexNameConflictEntity"
-    claimedBy: str
-    displacedFrom: str
-
-class SimplexNameVerified(TypedDict):
-    type: Literal["simplexNameVerified"]
-    user: "T.User"
-    chatRef: "T.ChatRef"
-    simplexName: "T.SimplexNameInfo"
-    verifiedAt: str  # ISO-8601 timestamp
-
-class SimplexNameVerifyFailed(TypedDict):
-    type: Literal["simplexNameVerifyFailed"]
-    user: "T.User"
-    chatRef: "T.ChatRef"
-    simplexName: "T.SimplexNameInfo"
-    reason: "T.SimplexNameVerifyFailReason"
-
-class SimplexNameUnverified(TypedDict):
-    type: Literal["simplexNameUnverified"]
-    user: "T.User"
-    chatRef: "T.ChatRef"
-    simplexName: "T.SimplexNameInfo"
-
 class ContactSndReady(TypedDict):
     type: Literal["contactSndReady"]
     user: "T.User"
@@ -358,10 +330,6 @@ ChatEvent = (
     | ContactDeletedByContact
     | ReceivedContactRequest
     | NewMemberContactReceivedInv
-    | SimplexNameConflict
-    | SimplexNameVerified
-    | SimplexNameVerifyFailed
-    | SimplexNameUnverified
     | ContactSndReady
     | NewChatItems
     | ChatItemReaction
@@ -409,7 +377,7 @@ ChatEvent = (
     | ChatErrors
 )
 
-ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "simplexNameConflict", "simplexNameVerified", "simplexNameVerifyFailed", "simplexNameUnverified", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "sentGroupInvitation", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "messageError", "chatError", "chatErrors"]
+ChatEvent_Tag = Literal["contactConnected", "contactUpdated", "contactDeletedByContact", "receivedContactRequest", "newMemberContactReceivedInv", "contactSndReady", "newChatItems", "chatItemReaction", "chatItemsDeleted", "chatItemUpdated", "groupChatItemsDeleted", "chatItemsStatusesUpdated", "receivedGroupInvitation", "userJoinedGroup", "groupUpdated", "joinedGroupMember", "memberRole", "deletedMember", "leftMember", "deletedMemberUser", "groupDeleted", "connectedToGroupMember", "memberAcceptedByOther", "memberBlockedForAll", "groupMemberUpdated", "groupLinkDataUpdated", "groupRelayUpdated", "rcvFileDescrReady", "rcvFileComplete", "sndFileCompleteXFTP", "rcvFileStart", "rcvFileSndCancelled", "rcvFileAccepted", "rcvFileError", "rcvFileWarning", "sndFileError", "sndFileWarning", "acceptingContactRequest", "acceptingBusinessRequest", "contactConnecting", "businessLinkConnecting", "joinedGroupMemberConnecting", "sentGroupInvitation", "groupLinkConnecting", "hostConnected", "hostDisconnected", "subscriptionStatus", "messageError", "chatError", "chatErrors"]
 
 
 class OnEventDecorator(Protocol):
@@ -448,30 +416,6 @@ class OnEventDecorator(Protocol):
     def __call__(self, event: Literal["newMemberContactReceivedInv"], /) -> Callable[
         [Callable[["NewMemberContactReceivedInv"], Awaitable[None]]],
         Callable[["NewMemberContactReceivedInv"], Awaitable[None]],
-    ]: ...
-
-    @overload
-    def __call__(self, event: Literal["simplexNameConflict"], /) -> Callable[
-        [Callable[["SimplexNameConflict"], Awaitable[None]]],
-        Callable[["SimplexNameConflict"], Awaitable[None]],
-    ]: ...
-
-    @overload
-    def __call__(self, event: Literal["simplexNameVerified"], /) -> Callable[
-        [Callable[["SimplexNameVerified"], Awaitable[None]]],
-        Callable[["SimplexNameVerified"], Awaitable[None]],
-    ]: ...
-
-    @overload
-    def __call__(self, event: Literal["simplexNameVerifyFailed"], /) -> Callable[
-        [Callable[["SimplexNameVerifyFailed"], Awaitable[None]]],
-        Callable[["SimplexNameVerifyFailed"], Awaitable[None]],
-    ]: ...
-
-    @overload
-    def __call__(self, event: Literal["simplexNameUnverified"], /) -> Callable[
-        [Callable[["SimplexNameUnverified"], Awaitable[None]]],
-        Callable[["SimplexNameUnverified"], Awaitable[None]],
     ]: ...
 
     @overload

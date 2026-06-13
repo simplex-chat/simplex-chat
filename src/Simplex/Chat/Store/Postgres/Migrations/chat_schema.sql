@@ -1334,7 +1334,8 @@ CREATE TABLE test_chat_schema.server_operators (
     xftp_role_storage smallint DEFAULT 1 NOT NULL,
     xftp_role_proxy smallint DEFAULT 1 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    smp_role_names smallint DEFAULT 0 NOT NULL
 );
 
 

@@ -98,7 +98,7 @@ import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
-import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), ProxyClientError (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
+import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -107,8 +107,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), patt
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SMPServer, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
-import qualified Simplex.Messaging.Protocol as SMP
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
@@ -2034,10 +2033,7 @@ processChatCommand cxt nm = \case
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
-        (ct, displaced_) <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId Nothing
-        let Profile {simplexName = pSimplexName} = profile
-            Contact {localDisplayName = newLDN} = ct
-        surfaceSimplexNameConflict user pSimplexName displaced_ SNCEContact newLDN
+        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId Nothing
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing
@@ -2239,16 +2235,15 @@ processChatCommand cxt nm = \case
         CVRConnectedContact ct -> pure $ CRContactAlreadyExists user ct
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
-  Connect incognito (Just (CTLink cLink@(ACL m cLink'))) -> withUser $ \user -> do
+  Connect incognito (Just ct) -> withUser $ \user -> do
     -- TODO [relays] member: /c api to support groups with relays
     -- TODO   - possibly by going through APIPrepareGroup -> APIConnectPreparedGroup
-    (ccLink, plan) <- connectPlanLink user cLink False Nothing `catchAllErrors` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing)); _ -> throwError e
-    connectWithPlan user incognito ccLink plan
-  Connect incognito (Just (CTName ni)) -> withUser $ \user -> do
-    (ccLink, plan) <- connectPlanName user ni
+    (ccLink, plan) <- connectPlan user ct False Nothing `catchAllErrors` \e -> case ct of
+      CTLink (ACL m (CLFull cReq)) -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing))
+      _ -> throwError e
     connectWithPlan user incognito ccLink plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
-  APIVerifySimplexName chatRef -> withUser $ \user -> apiVerifySimplexName user chatRef
+  APIVerifySimplexName chatRef -> withUser $ \user -> apiVerifySimplexName user nm chatRef
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db cxt user contactId
     ccLink <- case contactLink of
@@ -4203,10 +4198,12 @@ processChatCommand cxt nm = \case
           Nothing -> resolveAndDispatch
       where
         resolveAndDispatch :: CM (ACreatedConnLink, ConnectionPlan)
-        resolveAndDispatch =
-          resolveOnUserServers user nameDomain >>= \case
+        resolveAndDispatch = do
+          a <- asks smpAgent
+          let User {userId} = user
+          liftIO (runExceptT $ resolveSimplexName a nm userId nameDomain) >>= \case
             Right nr -> dispatchResolvedRecord cxt nm user ni nr
-            Left re -> throwError $ resolveErrorToChatError ni re
+            Left e -> throwError $ chatErrorAgent e
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
@@ -4631,58 +4628,6 @@ processChatCommand cxt nm = \case
       gVar <- asks random
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
 
--- | Failure modes for 'resolveOnUserServers' / 'iterateResolvers'.
-data ResolveError
-  = -- | No enabled server can resolve: every candidate answered CMD UNKNOWN
-    -- (predates RSLV) or CMD PROHIBITED (speaks RSLV but has no resolver
-    -- configured), or none were configured / reachable. Iterating across these is
-    -- safe: a CMD UNKNOWN relay never received the name (the client degrades RSLV
-    -- to a no-op below namesSMPVersion, see Protocol.hs); a CMD PROHIBITED relay
-    -- did receive it but is one the user already trusts as an SMP server.
-    ResolverUnavailable
-  | -- | AUTH from a name-capable server. Every name server reads the same on-chain state, so we trust the first one's no.
-    NameNotRegistered
-  | -- | First server returned a definite non-transport error (proxy, protocol, etc).
-    -- Surface to user so they can retry; do not iterate, for the same privacy reason.
-    ResolverTransport AgentErrorType
-  deriving (Eq, Show)
-
--- | Return the user's enabled SMP servers (preset and custom, excluding deleted).
--- Applies the same operator-aware filter the agent uses ('agentServerCfgs'): a
--- server is included only if it is enabled, not deleted, and either custom (no
--- operator) or owned by an enabled operator. Disabling an operator thus removes
--- its servers from name resolution, matching the rest of the app.
-enabledSMPServersForUser :: User -> CM [SMPServer]
-enabledSMPServersForUser user = do
-  ops <- serverOperators <$> withFastStore getServerOperators
-  smpSrvs <- withFastStore' $ \db -> getProtocolServers db SPSMP user
-  let opDomains = operatorDomains ops
-      cfgs = agentServerCfgs SPSMP opDomains $ filter (\UserServer {deleted} -> not deleted) smpSrvs
-  pure $ mapMaybe enabledSrv cfgs
-  where
-    enabledSrv ServerCfg {server = ProtoServerWithAuth srv _, enabled}
-      | enabled = Just srv
-      | otherwise = Nothing
-
--- | Resolve a SimpleX name by trying the user's enabled SMP servers in order.
--- Transport-level failures (NETWORK, TIMEOUT, host-unreachable) and servers that
--- cannot resolve (CMD UNKNOWN -- predates RSLV; or CMD PROHIBITED -- speaks RSLV
--- but has no resolver configured) all fall through to the next server. A CMD
--- UNKNOWN relay never received the name (the client degrades RSLV below
--- namesSMPVersion); a CMD PROHIBITED relay did, but it is one the user already
--- trusts as an SMP server. A definitive answer from a name-capable relay
--- terminates iteration: AUTH is definitive NotFound (every name server reads the
--- same on-chain state); any other definite error (e.g. INTERNAL on a resolver
--- backend failure) surfaces as ResolverTransport.
--- Privacy: a name-capable relay does see the queried name, so once one has
--- answered we do not broadcast the miss to every other operator the user has.
-resolveOnUserServers :: User -> SimplexNameDomain -> CM (Either ResolveError NameRecord)
-resolveOnUserServers user@User {userId} domain = do
-  srvs <- enabledSMPServersForUser user
-  a <- asks smpAgent
-  iterateResolvers srvs $ \srv ->
-    liftIO . runExceptT $ resolveSimplexName a NRMInteractive userId srv domain
-
 -- | Dispatch a resolved NameRecord by eagerly preparing a contact/group row
 -- with @simplex_name@ set, then returning the same plan shape ('CAPKnown' /
 -- 'GLPKnown') the local-store-hit branch of 'connectPlanName' returns. The
@@ -4714,10 +4659,7 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
         liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode contact profile from RSLV link") pure
       let ccLink = CCLink cReq (Just l')
           accLink = ACCL SCMContact ccLink
-      (ct, displaced_) <- withStore $ \db -> createPreparedContact db cxt user profile accLink Nothing (Just ni)
-      let Profile {simplexName = pSimplexName} = profile
-          Contact {localDisplayName = newLDN} = ct
-      surfaceSimplexNameConflict user pSimplexName displaced_ SNCEContact newLDN
+      ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink Nothing (Just ni)
       pure (accLink, CPContactAddress (CAPKnown ct))
     prepareGroup :: ConnShortLink 'CMContact -> CM (ACreatedConnLink, ConnectionPlan)
     prepareGroup l = do
@@ -4756,17 +4698,6 @@ firstNameLink nameType simplexChannel simplexContact ni =
       NTPublicGroup -> simplexChannel
       NTContact -> simplexContact
 
--- | Map a resolver failure to the corresponding ChatError surfaced to the user.
--- AUTH (NameNotRegistered) collapses to the same UX as a local-store miss, so
--- the user can't tell from the error whether their device knew the name.
--- Transport failures are forwarded through 'chatErrorAgent' so they reuse the
--- existing agent-error reporting in the UI.
-resolveErrorToChatError :: SimplexNameInfo -> ResolveError -> ChatError
-resolveErrorToChatError ni = \case
-  NameNotRegistered -> ChatError $ CESimplexNameNotFound ni
-  ResolverUnavailable -> ChatError $ CESimplexNameResolverUnavailable ni
-  ResolverTransport e -> chatErrorAgent e
-
 -- | Best-effort comparison between an RSLV-resolved link (a 'Text' from the
 -- name record) and the peer's stored connection link. Both are normalized via
 -- 'strDecode' + 'strEncode' so scheme drift (simplex:/ vs https://simplex.chat)
@@ -4787,37 +4718,31 @@ linksMatch resolved stored = case strDecode (encodeUtf8 resolved) :: Either Stri
       CLShort (CSLContact _ ct srv linkKey) ->
         strEncode (CSLContact SLSServer ct srv linkKey :: ConnShortLink 'CMContact)
 
--- | Resolves the chat row's simplex_name claim via RSLV and compares the
--- resolved per-type link to the peer's stored connection link. On match,
--- timestamps the contact/group row and emits CEvtSimplexNameVerified.
--- On mismatch / RSLV failure, emits CEvtSimplexNameVerifyFailed.
--- Throws CESimplexNameNotFound when the row has no claim to verify.
-apiVerifySimplexName :: User -> ChatRef -> CM ChatResponse
-apiVerifySimplexName user chatRef = do
+-- | Resolves the chat row's simplex_name claim via RSLV (the agent picks a
+-- names server) and compares the resolved per-type link to the peer's stored
+-- connection link. On match, timestamps the contact/group row. Returns
+-- CRSimplexNameVerified with the boolean result (mirrors CRConnectionVerified);
+-- resolver / agent failures propagate as the usual ChatErrorAgent.
+-- Throws a command error when the row has no claim to verify.
+apiVerifySimplexName :: User -> NetworkRequestMode -> ChatRef -> CM ChatResponse
+apiVerifySimplexName user nm chatRef = do
   cxt <- chatStoreCxt
   (claim, storedLink, persistVerified) <- loadClaimAndLink cxt
-  let domain = (\SimplexNameInfo {nameDomain} -> nameDomain) claim
-      nameType' = (\SimplexNameInfo {nameType} -> nameType) claim
-  resolveOnUserServers user domain >>= \case
-    Right NameRecord {nrSimplexContact, nrSimplexChannel} -> do
-      let resolvedLinks = case nameType' of
-            NTContact -> nrSimplexContact
-            NTPublicGroup -> nrSimplexChannel
+  let SimplexNameInfo {nameType = nameType', nameDomain = domain} = claim
+      User {userId} = user
+  a <- asks smpAgent
+  NameRecord {nrSimplexContact, nrSimplexChannel} <-
+    liftIO (runExceptT $ resolveSimplexName a nm userId domain) >>= either (throwError . chatErrorAgent) pure
+  let resolvedLinks = case nameType' of
+        NTContact -> nrSimplexContact
+        NTPublicGroup -> nrSimplexChannel
       -- The peer's stored link verifies if it matches ANY advertised link
       -- (primary or fallback); an empty list never matches.
-      if any (`linksMatch` storedLink) resolvedLinks
-        then do
-          ts <- liftIO getCurrentTime
-          withStore' $ \db -> persistVerified db ts
-          toView $ CEvtSimplexNameVerified user chatRef claim ts
-        else toView $ CEvtSimplexNameVerifyFailed user chatRef claim SNVFLinkMismatch
-    Left NameNotRegistered ->
-      toView $ CEvtSimplexNameVerifyFailed user chatRef claim SNVFNameNotRegistered
-    Left ResolverUnavailable ->
-      throwChatError $ CESimplexNameResolverUnavailable claim
-    Left (ResolverTransport e) ->
-      toView $ CEvtSimplexNameVerifyFailed user chatRef claim (SNVFResolverError e)
-  pure $ CRCmdOk (Just user)
+      verified = any (`linksMatch` storedLink) resolvedLinks
+  when verified $ do
+    ts <- liftIO getCurrentTime
+    withStore' $ \db -> persistVerified db ts
+  pure $ CRSimplexNameVerified user chatRef claim verified
   where
     -- Returns the claim to verify, the peer's stored link, and a callback that
     -- persists the verified_at timestamp to the appropriate table. Throws a
@@ -4839,42 +4764,6 @@ apiVerifySimplexName user chatRef = do
         let lnk = maybe (CLFull cReq) CLShort shortLink_
         pure (claim, lnk, \db ts -> setGroupSimplexNameVerifiedAt db user groupId ts)
       _ -> throwCmdError "APIVerifySimplexName supports only direct and group chat refs"
-
--- | Pure iteration logic for 'resolveOnUserServers'. Extracted so tests can
--- supply a stub resolver without standing up a real agent / proxy.
-iterateResolvers ::
-  Monad m =>
-  [SMPServer] ->
-  (SMPServer -> m (Either AgentErrorType NameRecord)) ->
-  m (Either ResolveError NameRecord)
-iterateResolvers servers resolve = go servers
-  where
-    go [] = pure $ Left ResolverUnavailable
-    go (srv : rest) =
-      resolve srv >>= \case
-        Right nr -> pure $ Right nr
-        Left e
-          | isNotRegistered e -> pure $ Left NameNotRegistered
-          | isUnsupported e -> go rest
-          | temporaryOrHostError e -> go rest
-          | otherwise -> pure $ Left $ ResolverTransport e
-    isNotRegistered = \case
-      SMP _ SMP.AUTH -> True
-      _ -> False
-    -- A server that cannot resolve answers CMD UNKNOWN -- it predates RSLV (e.g.
-    -- an old official server), and the client degraded RSLV to a no-op below
-    -- namesSMPVersion so it never received the name -- or CMD PROHIBITED -- it
-    -- speaks RSLV but has no resolver configured (names role off), so it did
-    -- receive the name but cannot help. Either form may arrive directly or wrapped
-    -- by a proxy. We skip it and try the next server; ResolverUnavailable is
-    -- returned only when no server can resolve. A resolver-backed server's
-    -- transient failure is INTERNAL (-> ResolverTransport), not handled here.
-    isUnsupported = \case
-      SMP _ (SMP.CMD SMP.UNKNOWN) -> True
-      SMP _ (SMP.CMD SMP.PROHIBITED) -> True
-      PROXY _ _ (ProxyProtocolError (SMP.CMD SMP.UNKNOWN)) -> True
-      PROXY _ _ (ProxyProtocolError (SMP.CMD SMP.PROHIBITED)) -> True
-      _ -> False
 
 data ConnectViaContactResult
   = CVRConnectedContact Contact
@@ -5811,9 +5700,9 @@ chatCommandP =
     srvRolesP = srvRoles <$?> A.takeTill (\c -> c == ':' || c == ',')
       where
         srvRoles = \case
-          "off" -> Right $ ServerRoles False False
-          "proxy" -> Right ServerRoles {storage = False, proxy = True}
-          "storage" -> Right ServerRoles {storage = True, proxy = False}
+          "off" -> Right $ ServerRoles False False False
+          "proxy" -> Right ServerRoles {storage = False, proxy = True, names = False}
+          "storage" -> Right ServerRoles {storage = True, proxy = False, names = False}
           "on" -> Right allRoles
           _ -> Left "bad ServerRoles"
     netCfgP = do

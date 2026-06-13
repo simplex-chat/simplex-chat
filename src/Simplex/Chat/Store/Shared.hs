@@ -433,52 +433,47 @@ createContact db user profile = do
 -- | Clears simplex_name on any other contact_profiles row that holds the same
 -- (user_id, simplex_name) so a subsequent UPDATE/INSERT setting that value
 -- won't trip the partial UNIQUE index. Pass the profileId being updated to
--- exclude self; pass Nothing for the pre-INSERT case. Returns the displaced
--- row's display_name when a conflict was resolved, for the caller to surface
--- as CEvtSimplexNameConflict. Newer-claim-wins matches RSLV semantics: the
--- latest broadcast is the canonical assignment.
+-- exclude self; pass Nothing for the pre-INSERT case. Newer-claim-wins matches
+-- RSLV semantics: the latest broadcast is the canonical assignment. The partial
+-- UNIQUE index on (user_id, simplex_name) requires the prior holder be cleared
+-- before the new row can set the name.
 --
 -- Cross-table collision with group_profiles.simplex_name is structurally
 -- impossible: strEncode SimplexNameInfo prefixes contact names with '@' and
 -- group names with '#', so the encoded bytes stored in the column never
 -- overlap between the two tables.
-clearConflictingContactProfileSimplexName_ :: DB.Connection -> UserId -> Maybe ProfileId -> Maybe SimplexNameInfo -> IO (Maybe ContactName)
-clearConflictingContactProfileSimplexName_ _ _ _ Nothing = pure Nothing
+clearConflictingContactProfileSimplexName_ :: DB.Connection -> UserId -> Maybe ProfileId -> Maybe SimplexNameInfo -> IO ()
+clearConflictingContactProfileSimplexName_ _ _ _ Nothing = pure ()
 clearConflictingContactProfileSimplexName_ db userId Nothing (Just simplexName) =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        UPDATE contact_profiles
-        SET simplex_name = NULL
-        WHERE user_id = ? AND simplex_name = ?
-        RETURNING display_name
-      |]
-      (userId, simplexName)
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles
+      SET simplex_name = NULL
+      WHERE user_id = ? AND simplex_name = ?
+    |]
+    (userId, simplexName)
 clearConflictingContactProfileSimplexName_ db userId (Just profileId) (Just simplexName) =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        UPDATE contact_profiles
-        SET simplex_name = NULL
-        WHERE user_id = ? AND simplex_name = ? AND contact_profile_id <> ?
-        RETURNING display_name
-      |]
-      (userId, simplexName, profileId)
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles
+      SET simplex_name = NULL
+      WHERE user_id = ? AND simplex_name = ? AND contact_profile_id <> ?
+    |]
+    (userId, simplexName, profileId)
 
--- | Inserts a new contact and its profile. Returns the new contactId and,
--- if the peer-claimed Profile.simplexName collided with an existing row
--- (the partial UNIQUE index on contact_profiles.(user_id, simplex_name)),
--- the display_name of the displaced row — newer-claim-wins. The caller
--- is responsible for emitting CEvtSimplexNameConflict on displacement.
-createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> Maybe SimplexNameInfo -> ExceptT StoreError IO (ContactId, Maybe ContactName)
+-- | Inserts a new contact and its profile, returning the new contactId. A
+-- peer-claimed Profile.simplexName that collides with an existing row (the
+-- partial UNIQUE index on contact_profiles.(user_id, simplex_name)) displaces
+-- the prior holder's name — newer-claim-wins.
+createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> Maybe SimplexNameInfo -> ExceptT StoreError IO ContactId
 createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, simplexName = profileSimplexName, peerType, preferences} ctUserPreferences prepared localAlias currentTs simplexName =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     -- Clear any existing peer claim on the same simplex_name before INSERT
     -- so the partial UNIQUE index doesn't reject the new row. Pass Nothing
     -- as the excluded profileId — there's no self-row yet.
-    displaced <- clearConflictingContactProfileSimplexName_ db userId Nothing profileSimplexName
+    clearConflictingContactProfileSimplexName_ db userId Nothing profileSimplexName
     DB.execute
       db
       "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, chat_peer_type, user_id, local_alias, preferences, simplex_name, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -489,7 +484,7 @@ createContact_ db User {userId} Profile {displayName, fullName, shortDescr, imag
       "INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id, simplex_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
       ((profileId, ctUserPreferences, ldn, userId, currentTs, currentTs, currentTs, BI True) :. toPreparedContactRow prepared :. Only simplexName)
     contactId <- insertedRowId db
-    pure $ Right (contactId, displaced)
+    pure $ Right contactId
 
 newContactUserPrefs :: User -> Profile -> Preferences
 newContactUserPrefs User {fullPreferences = FullPreferences {timedMessages = userTM}} Profile {preferences} =

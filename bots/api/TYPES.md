@@ -134,6 +134,7 @@ This file is generated automatically.
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
+- [NameErrorType](#nameerrortype)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -168,11 +169,9 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
-- [SimplexNameConflictEntity](#simplexnameconflictentity)
 - [SimplexNameDomain](#simplexnamedomain)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
-- [SimplexNameVerifyFailReason](#simplexnameverifyfailreason)
 - [SimplexTLD](#simplextld)
 - [SndCIStatusProgress](#sndcistatusprogress)
 - [SndConnEvent](#sndconnevent)
@@ -309,6 +308,10 @@ XFTP:
 FILE:
 - type: "FILE"
 - fileErr: [FileErrorType](#fileerrortype)
+
+NAME:
+- type: "NAME"
+- nameErr: [NameErrorType](#nameerrortype)
 
 PROXY:
 - type: "PROXY"
@@ -1064,10 +1067,6 @@ SimplexNameNotFound:
 
 SimplexNameUnprepared:
 - type: "simplexNameUnprepared"
-- simplexName: [SimplexNameInfo](#simplexnameinfo)
-
-SimplexNameResolverUnavailable:
-- type: "simplexNameResolverUnavailable"
 - simplexName: [SimplexNameInfo](#simplexnameinfo)
 
 UnsupportedConnReq:
@@ -1960,6 +1959,10 @@ EXPIRED:
 
 INTERNAL:
 - type: "INTERNAL"
+
+NAME:
+- type: "NAME"
+- nameErr: [NameErrorType](#nameerrortype)
 
 DUPLICATE_:
 - type: "DUPLICATE_"
@@ -2899,6 +2902,26 @@ Unknown:
 
 ---
 
+## NameErrorType
+
+**Discriminated union type**:
+
+NO_RESOLVER:
+- type: "NO_RESOLVER"
+
+NO_NAME:
+- type: "NO_NAME"
+
+NO_SERVERS:
+- type: "NO_SERVERS"
+
+RESOLVER:
+- type: "RESOLVER"
+- resolverErr: string
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3511,15 +3534,6 @@ A_QUEUE:
 
 ---
 
-## SimplexNameConflictEntity
-
-**Enum type**:
-- "contact"
-- "group"
-
-
----
-
 ## SimplexNameDomain
 
 **Record type**:
@@ -3544,23 +3558,6 @@ A_QUEUE:
 **Enum type**:
 - "publicGroup"
 - "contact"
-
-
----
-
-## SimplexNameVerifyFailReason
-
-**Discriminated union type**:
-
-LinkMismatch:
-- type: "linkMismatch"
-
-NameNotRegistered:
-- type: "nameNotRegistered"
-
-ResolverError:
-- type: "resolverError"
-- agentError: [AgentErrorType](#agenterrortype)
 
 
 ---

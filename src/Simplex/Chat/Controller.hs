@@ -494,8 +494,8 @@ data ChatCommand
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe ConnectTarget}
   | -- Resolves the simplex_name claim on the chat row (contact or group) via
     -- RSLV and compares the resolved link to the peer's stored connection link.
-    -- On match: writes simplex_name_verified_at and emits CEvtSimplexNameVerified.
-    -- On link mismatch or resolver failure: emits CEvtSimplexNameVerifyFailed.
+    -- Returns CRSimplexNameVerified with the boolean result (a match writes
+    -- simplex_name_verified_at); resolver / agent failures surface as ChatErrorAgent.
     APIVerifySimplexName {chatRef :: ChatRef}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -733,6 +733,7 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
+  | CRSimplexNameVerified {user :: User, chatRef :: ChatRef, simplexName :: SimplexNameInfo, verified :: Bool}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
@@ -957,45 +958,7 @@ data ChatEvent
   | CEvtTimedAction {action :: String, durationMilliseconds :: Int64}
   | CEvtTerminalEvent TerminalEvent
   | CEvtCustomChatEvent {user_ :: Maybe User, response :: Text}
-  | -- Emitted when an incoming peer Profile / GroupProfile carrying a
-    -- simplexName collides with another row in the same user's DB that
-    -- already holds that name. The older row's simplex_name is NULLed
-    -- (newer-claim-wins per RSLV); displacedFrom is the old row's local
-    -- display_name, claimedBy is the peer / group whose claim won.
-    CEvtSimplexNameConflict {user :: User, simplexName :: SimplexNameInfo, entity :: SimplexNameConflictEntity, claimedBy :: ContactName, displacedFrom :: ContactName}
-  | -- Emitted by APIVerifySimplexName when the RSLV-resolved link for the
-    -- claimed name matches the peer's stored connection link. simplex_name_verified_at
-    -- has been written; UI should clear the unverified indicator.
-    CEvtSimplexNameVerified {user :: User, chatRef :: ChatRef, simplexName :: SimplexNameInfo, verifiedAt :: UTCTime}
-  | -- Emitted by APIVerifySimplexName when verification did not succeed.
-    -- The simplex_name claim is NOT cleared; the user may still wish to keep
-    -- the contact/group. UI should surface the failure reason.
-    CEvtSimplexNameVerifyFailed {user :: User, chatRef :: ChatRef, simplexName :: SimplexNameInfo, reason :: SimplexNameVerifyFailReason}
-  | -- Passive warning emitted when an incoming XInfo / XGrpInfo carries a
-    -- simplex_name claim that the user has not (yet) verified — i.e.
-    -- simplex_name_verified_at is NULL. The UI is expected to show an
-    -- unverified indicator; the user can invoke APIVerifySimplexName to clear it.
-    CEvtSimplexNameUnverified {user :: User, chatRef :: ChatRef, simplexName :: SimplexNameInfo}
   deriving (Show)
-
-data SimplexNameConflictEntity = SNCEContact | SNCEGroup
-  deriving (Show)
-
--- | Why APIVerifySimplexName failed. The resolved record is not stashed: we
--- intentionally do not allow a "verified to point at a DIFFERENT contact"
--- state; the user must decide whether to keep the existing contact or start
--- a fresh connection with the resolved link.
-data SimplexNameVerifyFailReason
-  = -- | Resolver returned a NameRecord but its link for this entity's type
-    -- (nrSimplexContact for contacts, nrSimplexChannel for groups) differs
-    -- from the link stored locally for the peer.
-    SNVFLinkMismatch
-  | -- | RSLV returned AUTH (NameNotRegistered): no on-chain record exists.
-    SNVFNameNotRegistered
-  | -- | Transport / proxy / other resolver-side failure. The agent error is
-    -- surfaced verbatim so the UI can reuse existing agent-error rendering.
-    SNVFResolverError {agentError :: AgentErrorType}
-  deriving (Eq, Show)
 
 data TerminalEvent
   = TEGroupLinkRejected {user :: User, groupInfo :: GroupInfo, groupRejectionReason :: GroupRejectionReason}
@@ -1419,7 +1382,6 @@ data ChatErrorType
   | CEInvalidConnReq
   | CESimplexNameNotFound {simplexName :: SimplexNameInfo}
   | CESimplexNameUnprepared {simplexName :: SimplexNameInfo}
-  | CESimplexNameResolverUnavailable {simplexName :: SimplexNameInfo}
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited
@@ -1820,10 +1782,6 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "RTS") ''RelayTestStep)
 $(JQ.deriveJSON defaultJSON ''RelayTestFailure)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "SNCE") ''SimplexNameConflictEntity)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SNVF") ''SimplexNameVerifyFailReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CEvt") ''ChatEvent)
 

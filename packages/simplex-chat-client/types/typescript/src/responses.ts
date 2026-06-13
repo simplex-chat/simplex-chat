@@ -48,6 +48,7 @@ export type ChatResponse =
   | CR.SentConfirmation
   | CR.SentGroupInvitation
   | CR.SentInvitation
+  | CR.SimplexNameVerified
   | CR.SndFileCancelled
   | CR.UserAcceptedGroupSent
   | CR.UserContactLink
@@ -106,6 +107,7 @@ export namespace CR {
     | "sentConfirmation"
     | "sentGroupInvitation"
     | "sentInvitation"
+    | "simplexNameVerified"
     | "sndFileCancelled"
     | "userAcceptedGroupSent"
     | "userContactLink"
@@ -405,6 +407,14 @@ export namespace CR {
     user: T.User
     connection: T.PendingContactConnection
     customUserProfile?: T.Profile
+  }
+
+  export interface SimplexNameVerified extends Interface {
+    type: "simplexNameVerified"
+    user: T.User
+    chatRef: T.ChatRef
+    simplexName: T.SimplexNameInfo
+    verified: boolean
   }
 
   export interface SndFileCancelled extends Interface {

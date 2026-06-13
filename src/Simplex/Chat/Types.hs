@@ -214,7 +214,7 @@ data Contact = Contact
     -- | Timestamp of the most recent successful RSLV verification of the peer's
     -- simplex_name claim against this contact's connection link. NULL means the
     -- claim is unverified (UI should surface an indicator). Cleared back to NULL
-    -- whenever simplex_name changes in updateContactProfileWithConflict.
+    -- whenever simplex_name changes in updateContactProfile.
     simplexNameVerifiedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
@@ -498,7 +498,7 @@ data GroupInfo = GroupInfo
     groupKeys :: Maybe GroupKeys,
     simplexName :: Maybe SimplexNameInfo,
     -- | See 'Contact.simplexNameVerifiedAt'. Verified against the channel link
-    -- stored for the group; cleared by updateGroupProfileWithConflict.
+    -- stored for the group; cleared by updateGroupProfile.
     simplexNameVerifiedAt :: Maybe UTCTime
   }
   deriving (Eq, Show)

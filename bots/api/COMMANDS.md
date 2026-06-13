@@ -1862,7 +1862,7 @@ ChatCmdError: Command error (only used in WebSockets API).
 
 ### APIVerifySimplexName
 
-Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Synchronously returns `CRCmdOk`; the verification outcome is delivered asynchronously via [CEvtSimplexNameVerified](./EVENTS.md#cevtsimplexnameverified) or [CEvtSimplexNameVerifyFailed](./EVENTS.md#cevtsimplexnameverifyfailed).
+Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
 
 *Network usage*: interactive.
 
@@ -1885,9 +1885,12 @@ Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim a
 
 **Responses**:
 
-CmdOk: Ok.
-- type: "cmdOk"
-- user_: [User](./TYPES.md#user)?
+SimplexNameVerified: Result of SimpleX name verification (`verified`: whether the RSLV-resolved link matches the peer's stored link).
+- type: "simplexNameVerified"
+- user: [User](./TYPES.md#user)
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- simplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)
+- verified: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

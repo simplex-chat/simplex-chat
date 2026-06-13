@@ -146,6 +146,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
+  CRSimplexNameVerified u _chatRef ni verified -> ttyUser u ["simplex name " <> plain (shortNameInfoStr ni) <> if verified then " verified" else " not verified"]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
   CRNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz testView
@@ -555,28 +556,6 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
     TEContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
     TEGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
   CEvtCustomChatEvent u r -> ttyUser' u $ map plain $ T.lines r
-  CEvtSimplexNameConflict u ni entity claimedBy displacedFrom ->
-    ttyUser u
-      [ "simplex name "
-          <> plain (shortNameInfoStr ni)
-          <> " now claimed by "
-          <> plain (entityLabel entity claimedBy)
-          <> ", was "
-          <> plain (entityLabel entity displacedFrom)
-      ]
-    where
-      entityLabel SNCEContact n = "@" <> n
-      entityLabel SNCEGroup n = "#" <> n
-  CEvtSimplexNameVerified u _chatRef ni _ts ->
-    ttyUser u ["simplex name " <> plain (shortNameInfoStr ni) <> " verified"]
-  CEvtSimplexNameVerifyFailed u _chatRef ni r ->
-    ttyUser u ["simplex name " <> plain (shortNameInfoStr ni) <> " verification failed: " <> reason r]
-    where
-      reason SNVFLinkMismatch = "link mismatch"
-      reason SNVFNameNotRegistered = "name not registered"
-      reason (SNVFResolverError e) = "resolver error: " <> sShow e
-  CEvtSimplexNameUnverified u _chatRef ni ->
-    ttyUser u ["simplex name " <> plain (shortNameInfoStr ni) <> " is unverified"]
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss
@@ -2649,7 +2628,6 @@ viewChatError isCmd logLevel testView = \case
     CEInvalidConnReq -> viewInvalidConnReq
     CESimplexNameNotFound ni -> ["no contact or group with simplex name " <> plain (shortNameInfoStr ni)]
     CESimplexNameUnprepared ni -> [plain (shortNameInfoStr ni) <> " is a known contact/group but has no link to reconnect via"]
-    CESimplexNameResolverUnavailable ni -> ["no SMP server in your list supports name resolution for " <> plain (shortNameInfoStr ni)]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $

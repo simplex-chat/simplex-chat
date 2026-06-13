@@ -44,7 +44,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
-import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NetworkError (..), ProxyError (..))
+import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
 import Simplex.RemoteControl.Types
@@ -315,6 +315,7 @@ chatTypesDocsData =
     (sti @MsgReaction, STUnion, "MR", [], "", ""),
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
+    (sti @NameErrorType, STUnion, "", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
@@ -348,11 +349,9 @@ chatTypesDocsData =
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
-    (sti @SimplexNameConflictEntity, STEnum, "SNCE", [], "", ""),
     (sti @SimplexNameDomain, STRecord, "", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
-    (sti @SimplexNameVerifyFailReason, STUnion, "SNVF", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
     (sti @SMPAgentError, STUnion, "", [], "", ""),
     (sti @SndCIStatusProgress, STEnum, "SSP", [], "", ""),
@@ -539,6 +538,7 @@ deriving instance Generic MsgFilter
 deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
+deriving instance Generic NameErrorType
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
@@ -570,11 +570,9 @@ deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexLinkType
-deriving instance Generic SimplexNameConflictEntity
 deriving instance Generic SimplexNameDomain
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
-deriving instance Generic SimplexNameVerifyFailReason
 deriving instance Generic SimplexTLD
 deriving instance Generic SMPAgentError
 deriving instance Generic SndCIStatusProgress

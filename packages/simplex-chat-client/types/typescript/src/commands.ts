@@ -681,14 +681,14 @@ export namespace APISetUserAutoAcceptMemberContacts {
   }
 }
 
-// Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Synchronously returns `CRCmdOk`; the verification outcome is delivered asynchronously via [CEvtSimplexNameVerified](./EVENTS.md#cevtsimplexnameverified) or [CEvtSimplexNameVerifyFailed](./EVENTS.md#cevtsimplexnameverifyfailed).
+// Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
 // Network usage: interactive.
 export interface APIVerifySimplexName {
   chatRef: T.ChatRef
 }
 
 export namespace APIVerifySimplexName {
-  export type Response = CR.CmdOk | CR.ChatCmdError
+  export type Response = CR.SimplexNameVerified | CR.ChatCmdError
 
   export function cmdString(self: APIVerifySimplexName): string {
     return '/_verify simplex name ' + T.ChatRef.cmdString(self.chatRef)

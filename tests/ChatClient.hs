@@ -582,6 +582,7 @@ smpServerCfg =
       allowSMPProxy = True,
       serverClientConcurrency = 16,
       namesConfig = Nothing,
+      namesResolverCall_ = Nothing,
       information = Nothing,
       startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}
     }

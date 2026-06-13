@@ -10,7 +10,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- resolves (via RSLV) to the link stored locally for the contact/group.
 -- NULL means the claim is unverified and the UI should show an indicator.
 -- The column is cleared back to NULL whenever the simplex_name claim changes
--- (updateContactProfileWithConflict / updateGroupProfileWithConflict).
+-- (updateContactProfile / updateGroupProfile).
 m20260606_simplex_name_verified :: Query
 m20260606_simplex_name_verified =
   [sql|

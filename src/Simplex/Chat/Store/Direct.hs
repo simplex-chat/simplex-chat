@@ -53,7 +53,6 @@ module Simplex.Chat.Store.Direct
     getContactIdByName,
     getContactIdBySimplexName,
     updateContactProfile,
-    updateContactProfileWithConflict,
     setContactSimplexNameVerifiedAt,
     updateContactUserPreferences,
     updateContactAlias,
@@ -401,18 +400,13 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
--- | Returns (contact, displaced) — displaced is Just the display_name of a
--- contact_profiles row whose peer-claimed simplex_name was cleared to make
--- room for the new contact's claim, so the caller can emit
--- CEvtSimplexNameConflict.
-createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe SimplexNameInfo -> ExceptT StoreError IO (Contact, Maybe ContactName)
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe SimplexNameInfo -> ExceptT StoreError IO Contact
 createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId simplexName = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  (contactId, displaced) <- createContact_ db user p ctUserPreferences prepared "" currentTs simplexName
-  ct <- getContact db cxt user contactId
-  pure (ct, displaced)
+  contactId <- createContact_ db user p ctUserPreferences prepared "" currentTs simplexName
+  getContact db cxt user contactId
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
@@ -452,15 +446,13 @@ updatePreparedContactUser
         safeDeleteLDN db user oldLDN
       getContact db cxt newUser contactId
 
--- | Returns (contact, displaced) — see createPreparedContact for displaced.
-createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Profile -> Maybe SimplexNameInfo -> ExceptT StoreError IO (Contact, Maybe ContactName)
+createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Profile -> Maybe SimplexNameInfo -> ExceptT StoreError IO Contact
 createDirectContact db cxt user Connection {connId, localAlias} p simplexName = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
-  (contactId, displaced) <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs simplexName
+  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs simplexName
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
-  ct <- getContact db cxt user contactId
-  pure (ct, displaced)
+  getContact db cxt user contactId
 
 deleteContactConnections :: DB.Connection -> User -> Contact -> IO ()
 deleteContactConnections db User {userId} Contact {contactId} = do
@@ -566,33 +558,29 @@ deleteUnusedProfile_ db userId profileId =
         :. (userId, profileId, userId, profileId, profileId)
     )
 
-updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
-updateContactProfile db user c p' = fst <$> updateContactProfileWithConflict db user c p'
-
--- | Like updateContactProfile but additionally clears the simplex_name on any
--- other contact_profiles row in the same user that already holds the same
--- (user_id, simplex_name) — returning that row's display_name so the caller
--- can emit CEvtSimplexNameConflict. Used by the incoming-XInfo path; local
--- updates that don't expect conflicts can continue to use updateContactProfile.
+-- | Updates the contact profile, also clearing the simplex_name on any other
+-- contact_profiles row in the same user that already holds the same
+-- (user_id, simplex_name) — newer-claim-wins, required by the partial UNIQUE
+-- index.
 --
 -- Also clears contacts.simplex_name_verified_at when the peer's simplex_name
 -- claim changes (any value transition, including Nothing<->Just): the prior
 -- verification was tied to the prior claim and must be re-issued by the user.
-updateContactProfileWithConflict :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO (Contact, Maybe ContactName)
-updateContactProfileWithConflict db user@User {userId} c p'
+updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
+updateContactProfile db user@User {userId} c p'
   | displayName == newName = do
-      displaced <- liftIO $ clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
+      liftIO $ clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
       liftIO $ updateContactProfile_ db userId profileId p'
       liftIO clearVerifiedAtIfClaimChanged
-      pure (c' {profile, mergedPreferences}, displaced)
+      pure $ c' {profile, mergedPreferences}
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
-        displaced <- clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
+        clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
         updateContactProfile_' db userId profileId p' currentTs
         updateContactLDN_ db user contactId localDisplayName ldn currentTs
         clearVerifiedAtIfClaimChanged
-        pure $ Right (c' {localDisplayName = ldn, profile, mergedPreferences}, displaced)
+        pure $ Right c' {localDisplayName = ldn, profile, mergedPreferences}
   where
     Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias, simplexName = prevClaim}, userPreferences} = c
     Profile {displayName = newName, simplexName = profileSimplexName, preferences} = p'
@@ -606,7 +594,7 @@ updateContactProfileWithConflict db user@User {userId} c p'
 
 -- | Records that the user successfully RSLV-verified the peer's simplex_name
 -- claim against the contact's stored connection link. Cleared back to NULL by
--- updateContactProfileWithConflict whenever the peer's claim transitions.
+-- updateContactProfile whenever the peer's claim transitions.
 setContactSimplexNameVerifiedAt :: DB.Connection -> User -> ContactId -> UTCTime -> IO ()
 setContactSimplexNameVerifiedAt db User {userId} contactId ts =
   DB.execute

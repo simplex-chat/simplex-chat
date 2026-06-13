@@ -687,6 +687,8 @@ CREATE TABLE server_operators(
   xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  smp_role_names INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE usage_conditions(
   usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,

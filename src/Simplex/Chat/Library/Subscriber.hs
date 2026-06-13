@@ -2560,21 +2560,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     processContactProfileUpdate :: Contact -> Profile -> Bool -> CM Contact
     processContactProfileUpdate c@Contact {profile = lp} p' createItems
       | p /= p' = do
-          (c', displaced_) <- withStore $ \db ->
+          c' <- withStore $ \db ->
             if userTTL == rcvTTL
-              then updateContactProfileWithConflict db user c p'
+              then updateContactProfile db user c p'
               else do
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
-                updateContactProfileWithConflict db user c' p'
-          let Contact {contactId = ctId, localDisplayName = newLDN, simplexNameVerifiedAt = vAt} = c'
-          surfaceSimplexNameConflict user p'SimplexName displaced_ SNCEContact newLDN
-          -- Passive unverified warning: a non-empty incoming claim that the user
-          -- has not verified (or whose prior verification was cleared by the
-          -- claim transition in updateContactProfileWithConflict) should be
-          -- surfaced so the UI can prompt the user to invoke APIVerifySimplexName.
-          forM_ p'SimplexName $ \ni ->
-            when (isNothing vAt) $
-              toView $ CEvtSimplexNameUnverified user (ChatRef CTDirect ctId Nothing) ni
+                updateContactProfile db user c' p'
           when (directOrUsed c' && createItems) $ do
             createProfileUpdatedItem c'
             lift $ createRcvFeatureItems user c c'
@@ -2586,7 +2577,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         p = fromLocalProfile lp
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
-        Profile {preferences = rcvPrefs_, simplexName = p'SimplexName} = p'
+        Profile {preferences = rcvPrefs_} = p'
         rcvTTL = prefParam $ getPreference SCFTimedMessages rcvPrefs_
         ctUserPrefs' =
           let userDefault = getPreference SCFTimedMessages (fullPreferences user)
@@ -2689,9 +2680,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
-              (m', displaced_) <- withStore $ \db -> updateMemberProfileWithConflict db user m p'
-              let GroupMember {localDisplayName = newLDN} = m'
-              surfaceSimplexNameConflict user p'SimplexName displaced_ SNCEContact newLDN
+              m' <- withStore $ \db -> updateMemberProfile db user m p'
               unless (muteEventInChannel gInfo m') $ do
                 forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2700,9 +2689,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               mCt <- withStore $ \db -> getContact db cxt user mContactId
               if canUpdateProfile mCt
                 then do
-                  (m', ct', displaced_) <- withStore $ \db -> updateContactMemberProfileWithConflict db user m mCt p'
-                  let Contact {localDisplayName = newLDN} = ct'
-                  surfaceSimplexNameConflict user p'SimplexName displaced_ SNCEContact newLDN
+                  (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
                   unless (muteEventInChannel gInfo m') $ do
                     forM_ msgTs_ $ createProfileUpdatedItem m'
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2719,7 +2706,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           pure m
       where
         allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo
-        Profile {simplexName = p'SimplexName} = p'
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -2965,10 +2951,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           -- to createDirectContact; after this point contacts.simplex_name is
           -- the source of truth.
           let Connection {simplexName} = conn'
-              Profile {simplexName = pSimplexName} = p
-          (ct, displaced_) <- withStore $ \db -> createDirectContact db cxt user conn' p simplexName
-          let Contact {localDisplayName = newLDN} = ct
-          surfaceSimplexNameConflict user pSimplexName displaced_ SNCEContact newLDN
+          ct <- withStore $ \db -> createDirectContact db cxt user conn' p simplexName
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
@@ -3305,7 +3288,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       toView $ CEvtGroupDeleted user gInfo'' {membership = membership {memberStatus = GSMemGroupDeleted}} m' msgSigned
 
     xGrpInfo :: GroupInfo -> GroupMember -> GroupProfile -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpInfo g@GroupInfo {groupProfile = p@GroupProfile {publicGroup = pg}, businessChat} m@GroupMember {memberRole} p'@GroupProfile {publicGroup = pg', simplexName = p'GroupSimplexName} msg@RcvMessage {msgSigned} brokerTs
+    xGrpInfo g@GroupInfo {groupProfile = p@GroupProfile {publicGroup = pg}, businessChat} m@GroupMember {memberRole} p'@GroupProfile {publicGroup = pg'} msg@RcvMessage {msgSigned} brokerTs
       | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions" $> Nothing
       | let pgId = fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId),
         useRelays' g && (isNothing pg' || pgId pg' /= pgId pg) = messageError "x.grp.info: publicGroupId mismatch for channel" $> Nothing
@@ -3313,13 +3296,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise = do
           case businessChat of
             Nothing -> unless (p == p') $ do
-              (g', displaced_) <- withStore $ \db -> updateGroupProfileWithConflict db user g p'
-              let GroupInfo {groupId = gId, localDisplayName = newLDN, simplexNameVerifiedAt = vAt} = g'
-              surfaceSimplexNameConflict user p'GroupSimplexName displaced_ SNCEGroup newLDN
-              -- Passive unverified warning, mirrors processContactProfileUpdate.
-              forM_ p'GroupSimplexName $ \ni ->
-                when (isNothing vAt) $
-                  toView $ CEvtSimplexNameUnverified user (ChatRef CTGroup gId Nothing) ni
+              g' <- withStore $ \db -> updateGroupProfile db user g p'
               (g'', m', scopeInfo) <- mkGroupChatScope g' m
               toView $ CEvtGroupUpdated user g g'' (Just m') msgSigned
               let cd = CDGroupRcv g'' scopeInfo m'

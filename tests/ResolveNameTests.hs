@@ -5,106 +5,25 @@
 
 module ResolveNameTests (resolveNameTests) where
 
-import Data.Functor.Identity (Identity (..))
-import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
-import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
-import Simplex.Chat.Library.Commands (ResolveError (..), firstNameLink, iterateResolvers, linksMatch, resolveErrorToChatError)
-import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), AgentErrorType (..), ConnShortLink, ConnectionLink (..), ConnectionMode (..), SConnectionMode (..), SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
-import Simplex.Messaging.Client (ProxyClientError (..))
+import Simplex.Chat.Library.Commands (firstNameLink, linksMatch)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnShortLink, ConnectionLink (..), ConnectionMode (..), SConnectionMode (..), SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Encoding.String (strDecode)
-import Simplex.Messaging.Protocol (BrokerErrorType (..), NameRecord (..), NetworkError (..), SMPServer, mkNameOwner, pattern SMPServer)
-import qualified Simplex.Messaging.Protocol as SMP
 import Test.Hspec
 
+-- Name resolution and verification are owned by the agent (resolveSimplexName),
+-- and failures flow through ChatErrorAgent — there is no chat-side iteration or
+-- error-translation layer to test. These specs cover the two pure helpers that
+-- remain in the chat layer: firstNameLink (link selection) and linksMatch
+-- (verification comparison).
 resolveNameTests :: Spec
 resolveNameTests = do
-  -- iterateResolvers is the testable core of resolveOnUserServers: it walks
-  -- a list of candidate SMP servers, querying a resolver per server. Transport
-  -- failures (NETWORK / TIMEOUT / host-unreachable) and unsupported servers
-  -- (CMD UNKNOWN / PROHIBITED — relays that don't speak RSLV) both fall through
-  -- to the next server; an unsupported relay never received the name (the client
-  -- degrades RSLV below namesSMPVersion), so skipping it discloses nothing. A
-  -- definitive answer from a name-capable relay — hit, AUTH, or any other definite
-  -- error — stops iteration so the name is not broadcast to every operator.
-  describe "iterateResolvers" $ do
-    it "returns the first server's NameRecord on hit" $ do
-      let r = runIdentity $ iterateResolvers [srv1, srv2] $ \_ -> pure $ Right sampleRecord
-      r `shouldBe` Right sampleRecord
-    it "skips an unsupported (CMD PROHIBITED) server and uses the next server's hit" $ do
-      callsRef <- newIORef []
-      r <- iterateResolvers [srv1, srv2] (recording callsRef stubProhibitedThenHit)
-      r `shouldBe` Right sampleRecord
-      -- both servers consulted: srv1 doesn't speak RSLV, so we fall through to
-      -- srv2. srv1 never received the name (RSLV degrades below namesSMPVersion).
-      readIORef callsRef `shouldReturn` [srv1, srv2]
-    it "returns ResolverUnavailable when every server is unsupported" $ do
-      callsRef <- newIORef []
-      r <- iterateResolvers [srv1, srv2] (recording callsRef (\_ -> pure $ Left prohibitedErr))
-      r `shouldBe` Left ResolverUnavailable
-      -- all servers consulted, none could resolve.
-      readIORef callsRef `shouldReturn` [srv1, srv2]
-    it "treats AUTH as definitive NameNotRegistered and stops iteration" $ do
-      callsRef <- newIORef []
-      r <- iterateResolvers [srv1, srv2] (recording callsRef stubAuthThenHit)
-      r `shouldBe` Left NameNotRegistered
-      -- second server must NOT be consulted: AUTH is authoritative
-      readIORef callsRef `shouldReturn` [srv1]
-    it "stops on a definite non-transport error and returns ResolverTransport" $ do
-      callsRef <- newIORef []
-      r <- iterateResolvers [srv1, srv2] (recording callsRef (\_ -> pure $ Left otherDefiniteErr))
-      case r of
-        Left (ResolverTransport e) -> e `shouldBe` otherDefiniteErr
-        other -> expectationFailure $ "expected ResolverTransport, got " <> show other
-      -- second server must NOT be consulted: definite error means the server
-      -- answered, so iterating would leak the queried name.
-      readIORef callsRef `shouldReturn` [srv1]
-    it "surfaces a resolver-backend INTERNAL as ResolverTransport, not NotFound" $ do
-      callsRef <- newIORef []
-      r <- iterateResolvers [srv1, srv2] (recording callsRef (\_ -> pure $ Left backendErr))
-      case r of
-        Left (ResolverTransport e) -> e `shouldBe` backendErr
-        other -> expectationFailure $ "expected ResolverTransport, got " <> show other
-      -- a backend failure on srv1 stops iteration (the name reached a capable
-      -- relay); it must not be reported as the authoritative NameNotRegistered.
-      readIORef callsRef `shouldReturn` [srv1]
-    it "iterates on transport-level errors and uses the next server's success" $ do
-      callsRef <- newIORef []
-      r <- iterateResolvers [srv1, srv2] (recording callsRef stubTransportThenHit)
-      r `shouldBe` Right sampleRecord
-      -- both servers must be consulted, in order: first server was unreachable.
-      readIORef callsRef `shouldReturn` [srv1, srv2]
-    it "returns ResolverUnavailable when every server is unreachable (all transport)" $ do
-      let r = runIdentity $ iterateResolvers [srv1, srv2] (\_ -> pure $ Left networkErr)
-      r `shouldBe` Left ResolverUnavailable
-    it "returns ResolverUnavailable on an empty server list" $ do
-      let r = runIdentity $ iterateResolvers [] (\_ -> pure $ Right sampleRecord)
-      r `shouldBe` Left ResolverUnavailable
-  -- resolveErrorToChatError is the pure mapping used by connectPlanName's
-  -- resolveAndDispatch: it converts the resolver outcome (when not a hit) to
-  -- the user-visible ChatError. The success path (Right NameRecord) is dispatched
-  -- via dispatchResolvedRecord (Task 6); we only exercise the failure mapping here.
-  describe "resolveErrorToChatError" $ do
-    it "maps NameNotRegistered to CESimplexNameNotFound (local-miss UX)" $
-      case resolveErrorToChatError aliceNi NameNotRegistered of
-        ChatError (CESimplexNameNotFound ni) -> ni `shouldBe` aliceNi
-        other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
-    it "maps ResolverUnavailable to CESimplexNameResolverUnavailable" $
-      case resolveErrorToChatError aliceNi ResolverUnavailable of
-        ChatError (CESimplexNameResolverUnavailable ni) -> ni `shouldBe` aliceNi
-        other -> expectationFailure $ "expected CESimplexNameResolverUnavailable, got " <> show other
-    it "wraps ResolverTransport via chatErrorAgent so the UI reuses agent-error rendering" $
-      case resolveErrorToChatError aliceNi (ResolverTransport otherDefiniteErr) of
-        ChatErrorAgent e _ _ -> e `shouldBe` otherDefiniteErr
-        other -> expectationFailure $ "expected ChatErrorAgent, got " <> show other
   -- firstNameLink is the pure link-picker used by dispatchResolvedRecord:
   -- it selects nrSimplexContact for NTContact, nrSimplexChannel for NTPublicGroup.
-  -- The text fields use the empty string as the "absent" sentinel; an empty
-  -- link for the queried type collapses to CESimplexNameNotFound so the UX is
-  -- identical to a local-store miss.
+  -- An empty link for the queried type collapses to CESimplexNameNotFound so the
+  -- UX is identical to a local-store miss.
   describe "firstNameLink" $ do
     it "NTContact path picks simplexContact" $
       case firstNameLink NTContact [channelLink] [contactLink] aliceNi of
@@ -183,19 +102,6 @@ sampleShortLinkServer = case strDecode (T.encodeUtf8 sampleShortLinkServerText) 
   Right (ACL SCMContact (CLShort l)) -> l
   other -> error $ "ResolveNameTests fixture failed to parse: " <> show other
 
--- | Wrap a resolver to record which servers it was called for.
-recording :: IORef [SMPServer] -> (SMPServer -> IO (Either AgentErrorType NameRecord)) -> SMPServer -> IO (Either AgentErrorType NameRecord)
-recording ref f srv = modifyIORef' ref (<> [srv]) >> f srv
-
-stubAuthThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
-stubAuthThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left authErr)]
-
-stubProhibitedThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
-stubProhibitedThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left prohibitedErr)]
-
-stubTransportThenHit :: SMPServer -> IO (Either AgentErrorType NameRecord)
-stubTransportThenHit srv = pure $ M.findWithDefault (Right sampleRecord) srv $ M.fromList [(srv1, Left networkErr)]
-
 aliceNi :: SimplexNameInfo
 aliceNi = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])
 
@@ -209,57 +115,3 @@ groupNi = SimplexNameInfo NTPublicGroup (SimplexNameDomain TLDSimplex "team" [])
 channelLink, contactLink :: Text
 channelLink = "simplex:/channel-team"
 contactLink = "simplex:/contact-alice"
-
-srv1 :: SMPServer
-srv1 = SMPServer "smp1.example" "5223" (C.KeyHash "\1\2\3\4")
-
-srv2 :: SMPServer
-srv2 = SMPServer "smp2.example" "5223" (C.KeyHash "\5\6\7\8")
-
-sampleRecord :: NameRecord
-sampleRecord =
-  NameRecord
-    { nrName = "alice",
-      nrNickname = "",
-      nrWebsite = "",
-      nrLocation = "",
-      nrSimplexContact = [],
-      nrSimplexChannel = [],
-      nrEth = Nothing,
-      nrBtc = Nothing,
-      nrXmr = Nothing,
-      nrDot = Nothing,
-      -- mkNameOwner enforces the 20-byte invariant; these strings are intentionally 20 ASCII bytes.
-      nrOwner = either error id $ mkNameOwner "owner-bytes-1234567x",
-      nrResolver = either error id $ mkNameOwner "resolver-bytes12345x"
-    }
-
--- AUTH from a name-capable destination relay: surfaces as SMP host AUTH
--- (see Simplex.Messaging.Agent.Client.protocolClientError).
-authErr :: AgentErrorType
-authErr = SMP "smp1.example" SMP.AUTH
-
--- A relay with no resolver configured (names role off) answers CMD PROHIBITED
--- (Server.hs). A relay error is transparent over the proxy (SMP host ...); the
--- PROXY-wrapped form here exercises a proxy-level rejection. Both -> skip.
-prohibitedErr :: AgentErrorType
-prohibitedErr = PROXY "proxy.example" "smp1.example" (ProxyProtocolError (SMP.CMD SMP.PROHIBITED))
-
--- BROKER NETWORK: the server is unreachable. This is the kind of failure
--- that should cause iteration to fall through to the next configured server,
--- because no information about the queried name has been disclosed.
-networkErr :: AgentErrorType
-networkErr = BROKER "smp1.example" (NETWORK (NEConnectError "simulated network failure"))
-
--- A definite, non-transport agent error: the server responded but in a way
--- that doesn't match NAME / AUTH / CMD PROHIBITED. Should surface to the user
--- as ResolverTransport without iterating, to avoid broadcasting the name.
-otherDefiniteErr :: AgentErrorType
-otherDefiniteErr = INTERNAL "simulated definite error"
-
--- A resolver-backed relay whose backing store failed (resolver 5xx, timeout,
--- decode error) answers ERR INTERNAL (Server.hs), surfacing as SMP host INTERNAL.
--- This is transient -- it must surface as ResolverTransport, NOT collapse to the
--- authoritative NameNotRegistered the way the old ERR-AUTH-for-everything did.
-backendErr :: AgentErrorType
-backendErr = SMP "smp1.example" SMP.INTERNAL

@@ -66,6 +66,7 @@ export type AgentErrorType =
   | AgentErrorType.NTF
   | AgentErrorType.XFTP
   | AgentErrorType.FILE
+  | AgentErrorType.NAME
   | AgentErrorType.PROXY
   | AgentErrorType.RCP
   | AgentErrorType.BROKER
@@ -84,6 +85,7 @@ export namespace AgentErrorType {
     | "NTF"
     | "XFTP"
     | "FILE"
+    | "NAME"
     | "PROXY"
     | "RCP"
     | "BROKER"
@@ -134,6 +136,11 @@ export namespace AgentErrorType {
   export interface FILE extends Interface {
     type: "FILE"
     fileErr: FileErrorType
+  }
+
+  export interface NAME extends Interface {
+    type: "NAME"
+    nameErr: NameErrorType
   }
 
   export interface PROXY extends Interface {
@@ -1011,7 +1018,6 @@ export type ChatErrorType =
   | ChatErrorType.InvalidConnReq
   | ChatErrorType.SimplexNameNotFound
   | ChatErrorType.SimplexNameUnprepared
-  | ChatErrorType.SimplexNameResolverUnavailable
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1091,7 +1097,6 @@ export namespace ChatErrorType {
     | "invalidConnReq"
     | "simplexNameNotFound"
     | "simplexNameUnprepared"
-    | "simplexNameResolverUnavailable"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1253,11 +1258,6 @@ export namespace ChatErrorType {
 
   export interface SimplexNameUnprepared extends Interface {
     type: "simplexNameUnprepared"
-    simplexName: SimplexNameInfo
-  }
-
-  export interface SimplexNameResolverUnavailable extends Interface {
-    type: "simplexNameResolverUnavailable"
     simplexName: SimplexNameInfo
   }
 
@@ -2174,6 +2174,7 @@ export type ErrorType =
   | ErrorType.LARGE_MSG
   | ErrorType.EXPIRED
   | ErrorType.INTERNAL
+  | ErrorType.NAME
   | ErrorType.DUPLICATE_
 
 export namespace ErrorType {
@@ -2192,6 +2193,7 @@ export namespace ErrorType {
     | "LARGE_MSG"
     | "EXPIRED"
     | "INTERNAL"
+    | "NAME"
     | "DUPLICATE_"
 
   interface Interface {
@@ -2256,6 +2258,11 @@ export namespace ErrorType {
 
   export interface INTERNAL extends Interface {
     type: "INTERNAL"
+  }
+
+  export interface NAME extends Interface {
+    type: "NAME"
+    nameErr: NameErrorType
   }
 
   export interface DUPLICATE_ extends Interface {
@@ -3186,6 +3193,37 @@ export enum MsgSigStatus {
   SignedNoKey = "signedNoKey",
 }
 
+export type NameErrorType = 
+  | NameErrorType.NO_RESOLVER
+  | NameErrorType.NO_NAME
+  | NameErrorType.NO_SERVERS
+  | NameErrorType.RESOLVER
+
+export namespace NameErrorType {
+  export type Tag = "NO_RESOLVER" | "NO_NAME" | "NO_SERVERS" | "RESOLVER"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NO_RESOLVER extends Interface {
+    type: "NO_RESOLVER"
+  }
+
+  export interface NO_NAME extends Interface {
+    type: "NO_NAME"
+  }
+
+  export interface NO_SERVERS extends Interface {
+    type: "NO_SERVERS"
+  }
+
+  export interface RESOLVER extends Interface {
+    type: "RESOLVER"
+    resolverErr: string
+  }
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3913,11 +3951,6 @@ export enum SimplexLinkType {
   Relay = "relay",
 }
 
-export enum SimplexNameConflictEntity {
-  Contact = "contact",
-  Group = "group",
-}
-
 export interface SimplexNameDomain {
   nameTLD: SimplexTLD
   domain: string
@@ -3932,32 +3965,6 @@ export interface SimplexNameInfo {
 export enum SimplexNameType {
   PublicGroup = "publicGroup",
   Contact = "contact",
-}
-
-export type SimplexNameVerifyFailReason = 
-  | SimplexNameVerifyFailReason.LinkMismatch
-  | SimplexNameVerifyFailReason.NameNotRegistered
-  | SimplexNameVerifyFailReason.ResolverError
-
-export namespace SimplexNameVerifyFailReason {
-  export type Tag = "linkMismatch" | "nameNotRegistered" | "resolverError"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface LinkMismatch extends Interface {
-    type: "linkMismatch"
-  }
-
-  export interface NameNotRegistered extends Interface {
-    type: "nameNotRegistered"
-  }
-
-  export interface ResolverError extends Interface {
-    type: "resolverError"
-    agentError: AgentErrorType
-  }
 }
 
 export enum SimplexTLD {

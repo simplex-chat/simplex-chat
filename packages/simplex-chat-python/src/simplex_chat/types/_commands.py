@@ -596,7 +596,7 @@ def APISetUserAutoAcceptMemberContacts_cmd_string(self: APISetUserAutoAcceptMemb
 APISetUserAutoAcceptMemberContacts_Response = CR.CmdOk | CR.ChatCmdError
 
 
-# Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Synchronously returns `CRCmdOk`; the verification outcome is delivered asynchronously via [CEvtSimplexNameVerified](./EVENTS.md#cevtsimplexnameverified) or [CEvtSimplexNameVerifyFailed](./EVENTS.md#cevtsimplexnameverifyfailed).
+# Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
 # Network usage: interactive.
 class APIVerifySimplexName(TypedDict):
     chatRef: "T.ChatRef"
@@ -605,7 +605,7 @@ class APIVerifySimplexName(TypedDict):
 def APIVerifySimplexName_cmd_string(self: APIVerifySimplexName) -> str:
     return '/_verify simplex name ' + T.ChatRef_cmd_string(self['chatRef'])
 
-APIVerifySimplexName_Response = CR.CmdOk | CR.ChatCmdError
+APIVerifySimplexName_Response = CR.SimplexNameVerified | CR.ChatCmdError
 
 
 # User profile commands
