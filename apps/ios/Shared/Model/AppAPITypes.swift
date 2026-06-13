@@ -1825,6 +1825,7 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
 
 public enum UserServersWarning: Decodable {
     case noChatRelays(user: UserRef?)
+    case noNamesServers(user: UserRef?)
 }
 
 enum UserServersError: Decodable {

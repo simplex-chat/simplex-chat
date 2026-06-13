@@ -4642,11 +4642,18 @@ sealed class UserServersError {
 @Serializable
 sealed class UserServersWarning {
   @Serializable @SerialName("noChatRelays") data class NoChatRelays(val user: UserRef? = null): UserServersWarning()
+  @Serializable @SerialName("noNamesServers") data class NoNamesServers(val user: UserRef? = null): UserServersWarning()
 
   val globalWarning: String?
     get() = when (this) {
       is NoChatRelays -> {
         val text = generalGetString(MR.strings.no_chat_relays_enabled)
+        if (user != null) {
+          String.format(generalGetString(MR.strings.for_chat_profile), user.localDisplayName) + " " + text
+        } else text
+      }
+      is NoNamesServers -> {
+        val text = generalGetString(MR.strings.no_names_servers_enabled)
         if (user != null) {
           String.format(generalGetString(MR.strings.for_chat_profile), user.localDisplayName) + " " + text
         } else text

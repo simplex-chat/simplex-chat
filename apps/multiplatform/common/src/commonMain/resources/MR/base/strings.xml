@@ -146,6 +146,7 @@
   <string name="for_chat_profile">For chat profile %s:</string>
   <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
   <string name="no_chat_relays_enabled">No chat relays enabled.</string>
+  <string name="no_names_servers_enabled">No servers to resolve names.</string>
   <string name="server_warning">Server warning</string>
   <string name="error_accepting_operator_conditions">Error accepting conditions</string>
   <string name="blocking_reason_spam">Spam</string>
