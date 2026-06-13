@@ -417,6 +417,14 @@ func globalServersWarning(_ serverWarnings: [UserServersWarning]) -> String? {
                     user.localDisplayName
                 ) + " " + text
             } else { return text }
+        case let .noNamesServers(user):
+            let text = NSLocalizedString("No servers to resolve names.", comment: "servers warning")
+            if let user = user {
+                return String.localizedStringWithFormat(
+                    NSLocalizedString("For chat profile %@:", comment: "servers warning"),
+                    user.localDisplayName
+                ) + " " + text
+            } else { return text }
         }
     }
     return nil
