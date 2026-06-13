@@ -14,8 +14,6 @@ import SimpleXChat
 private let fontCapHeightRatio: CGFloat = 0.85
 // fraction of the badge height pushed below the text baseline (like the undershoot of round letters)
 private let badgeBaselineOffsetRatio: CGFloat = 0.05
-// the gap between the name and the badge (matching the visible gap to the verification shield)
-private let badgeGap: CGFloat = 8
 
 // A contact/member name with the supporter badge right after it. The name keeps its own styling
 // (font, weight, color, even a verification shield concatenated into the Text); the badge is sized to
@@ -75,6 +73,12 @@ struct NameBadge: View {
 
     private var badgeHeight: CGFloat {
         UIFont.preferredFont(forTextStyle: uiTextStyle(textStyle)).pointSize * fontCapHeightRatio
+    }
+
+    // the gap to the name, matching the verification shield's gap (textSpace - one space in the name's font)
+    private var badgeGap: CGFloat {
+        let font = UIFont.preferredFont(forTextStyle: uiTextStyle(textStyle))
+        return (" " as NSString).size(withAttributes: [.font: font]).width
     }
 
     @ViewBuilder private func glyph(_ badge: LocalBadge) -> some View {
