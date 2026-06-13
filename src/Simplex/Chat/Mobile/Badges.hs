@@ -11,7 +11,7 @@ module Simplex.Chat.Mobile.Badges
     cChatBadgeIssue,
     BadgeResult (..),
     BadgeIssueReq (..),
-    BBSKeyPair (..),
+    IssuerKeyPair (..),
   )
 where
 
@@ -27,14 +27,15 @@ import Simplex.Chat.Mobile.Shared (CJSONString, newCStringFromLazyBS)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Parsers (defaultJSON)
 
-data BBSKeyPair = BBSKeyPair
-  { secretKey :: BBSSecretKey,
-    publicKey :: BBSPublicKey
+-- FFI envelope for a generated issuer keypair (the BBS keypair tuple serialized with named fields)
+data IssuerKeyPair = IssuerKeyPair
+  { publicKey :: BBSPublicKey,
+    secretKey :: BBSSecretKey
   }
 
 data BadgeIssueReq = BadgeIssueReq
   { badgeKeyIdx :: Int,
-    keyPair :: BBSKeyPair,
+    secretKey :: BBSSecretKey,
     request :: BadgeRequest
   }
 
@@ -42,7 +43,7 @@ data BadgeResult r
   = BadgeResult {result :: r}
   | BadgeError {error :: Text}
 
-$(JQ.deriveJSON defaultJSON ''BBSKeyPair)
+$(JQ.deriveJSON defaultJSON ''IssuerKeyPair)
 
 $(JQ.deriveJSON defaultJSON ''BadgeIssueReq)
 
@@ -58,16 +59,16 @@ instance FromJSON r => FromJSON (BadgeResult r) where
 cChatBadgeKeygen :: IO CJSONString
 cChatBadgeKeygen =
   bbsKeyGen >>= \case
-    Right (sk, pk) -> encodeResult $ BadgeResult (BBSKeyPair sk pk)
-    Left e -> encodeResult @BBSKeyPair $ BadgeError (T.pack e)
+    Right (pk, sk) -> encodeResult $ BadgeResult (IssuerKeyPair pk sk)
+    Left e -> encodeResult @IssuerKeyPair $ BadgeError (T.pack e)
 
 cChatBadgeIssue :: CString -> IO CJSONString
 cChatBadgeIssue cReq = do
   bs <- B.packCString cReq
   encodeResult @(Badge 'BCCredential) =<< case J.eitherDecodeStrict' bs of
     Left e -> pure $ BadgeError (T.pack e)
-    Right BadgeIssueReq {badgeKeyIdx, keyPair = BBSKeyPair {secretKey, publicKey}, request} ->
-      either (BadgeError . T.pack) BadgeResult <$> issueBadge badgeKeyIdx secretKey publicKey (VerifiedBadgeRequest request)
+    Right BadgeIssueReq {badgeKeyIdx, secretKey, request} ->
+      either (BadgeError . T.pack) BadgeResult <$> issueBadge badgeKeyIdx secretKey (VerifiedBadgeRequest request)
 
 encodeResult :: ToJSON r => BadgeResult r -> IO CJSONString
 encodeResult = newCStringFromLazyBS . J.encode

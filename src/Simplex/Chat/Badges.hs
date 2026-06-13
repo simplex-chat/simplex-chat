@@ -265,10 +265,10 @@ verifyPayment _payment req = pure $ Just (VerifiedBadgeRequest req)
 
 -- Server-side: issue a badge credential, recording which issuer key signed it
 
-issueBadge :: Int -> BBSSecretKey -> BBSPublicKey -> VerifiedBadgeRequest -> IO (Either String (Badge 'BCCredential))
-issueBadge keyIdx sk pk (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
+issueBadge :: Int -> BBSSecretKey -> VerifiedBadgeRequest -> IO (Either String (Badge 'BCCredential))
+issueBadge keyIdx sk (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
   | badgeExtra badgeInfo /= "" = pure $ Left "badgeExtra must be empty (reserved)"
-  | otherwise = fmap (\sig -> BadgeCredential keyIdx masterKey sig badgeInfo) <$> bbsSign sk pk bbsBadgeHeader (badgeMessages masterKey badgeInfo)
+  | otherwise = fmap (\sig -> BadgeCredential keyIdx masterKey sig badgeInfo) <$> bbsSign sk bbsBadgeHeader (badgeMessages masterKey badgeInfo)
 
 -- Client-side: verify the credential received from server
 

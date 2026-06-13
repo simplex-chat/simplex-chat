@@ -42,12 +42,12 @@ keysFor = M.singleton testKeyIdx
 
 testFullWorkflow :: IO ()
 testFullWorkflow = do
-  Right (sk, pk) <- bbsKeyGen
+  Right (pk, sk) <- bbsKeyGen
   drg <- C.newRandom
   mk <- generateMasterKey drg
   let req = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Just futureTime, badgeExtra = ""}}
   Just vreq <- verifyPayment (BPRedeemCode "TEST") req
-  Right cred <- issueBadge testKeyIdx sk pk vreq
+  Right cred <- issueBadge testKeyIdx sk vreq
   let BadgeCredential idx mk' _ _ = cred
   idx `shouldBe` testKeyIdx
   mk' `shouldBe` mk
@@ -73,7 +73,7 @@ testTamperedExpiry = do
 testWrongKey :: IO ()
 testWrongKey = do
   (_, badge) <- issueBadgeProof BTSupporter (Just futureTime)
-  Right (_, pk2) <- bbsKeyGen
+  Right (pk2, _) <- bbsKeyGen
   verifyBadge (keysFor pk2) badge >>= (`shouldBe` Just False)
 
 testUnknownKeyIdx :: IO ()
@@ -107,11 +107,11 @@ testUnknownBadgeType = do
 
 testCredentialSerialization :: IO ()
 testCredentialSerialization = do
-  Right (sk, pk) <- bbsKeyGen
+  Right (pk, sk) <- bbsKeyGen
   drg <- C.newRandom
   mk <- generateMasterKey drg
   let mkCred expiry = do
-        Right cred <- issueBadge testKeyIdx sk pk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = expiry, badgeExtra = ""}})
+        Right cred <- issueBadge testKeyIdx sk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = expiry, badgeExtra = ""}})
         pure cred
   dated <- mkCred (Just futureTime)
   lifetime <- mkCred Nothing
@@ -132,10 +132,10 @@ pastTime = posixSecondsToUTCTime 1577836800 -- 2020-01-01
 
 issueBadgeProof :: BadgeType -> Maybe UTCTime -> IO (BBSPublicKey, Badge 'BCProof)
 issueBadgeProof bt expiry = do
-  Right (sk, pk) <- bbsKeyGen
+  Right (pk, sk) <- bbsKeyGen
   drg <- C.newRandom
   mk <- generateMasterKey drg
   let vreq = VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = bt, badgeExpiry = expiry, badgeExtra = ""}}
-  Right cred <- issueBadge testKeyIdx sk pk vreq
+  Right cred <- issueBadge testKeyIdx sk vreq
   Right badge <- generateBadgeProof pk cred (BBSPresHeader "test-nonce")
   pure (pk, badge)

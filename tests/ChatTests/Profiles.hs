@@ -205,13 +205,13 @@ testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
 testBadgeKeys = M.singleton 1
 
 -- issue a supporter badge credential with the given expiry (test issuer)
-issueTestBadge :: BBSSecretKey -> BBSPublicKey -> Maybe UTCTime -> IO (Badge 'BCCredential)
-issueTestBadge sk pk badgeExpiry = do
+issueTestBadge :: BBSSecretKey -> Maybe UTCTime -> IO (Badge 'BCCredential)
+issueTestBadge sk badgeExpiry = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
   let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}
   Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
-  Right cred <- issueBadge 1 sk pk vreq
+  Right cred <- issueBadge 1 sk vreq
   pure cred
 
 -- the same single-line JSON `simplex-chat badge sign` prints, pasted into the app
@@ -222,12 +222,12 @@ addTestBadge cc cred = do
 
 testUserBadgeBroadcast :: HasCallStack => TestParams -> IO ()
 testUserBadgeBroadcast ps = do
-  Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
-    test sk pk alice bob = do
+    test sk alice bob = do
       connectUsers alice bob
-      addTestBadge alice =<< issueTestBadge sk pk Nothing
+      addTestBadge alice =<< issueTestBadge sk Nothing
       -- own badge is shown (add succeeded)
       alice ##> "/p"
       alice <## "user profile: alice (Alice, * supporter)"
@@ -238,11 +238,11 @@ testUserBadgeBroadcast ps = do
 
 testUserBadgeOnConnect :: HasCallStack => TestParams -> IO ()
 testUserBadgeOnConnect ps = do
-  Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
-    test sk pk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk pk Nothing
+    test sk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk Nothing
       -- a contact connecting after the badge is attached receives it in the connection handshake
       alice ##> "/c"
       inv <- getInvitation alice
@@ -264,11 +264,11 @@ testUserBadgeOnConnect ps = do
 
 testUserBadgeGroupLink :: HasCallStack => TestParams -> IO ()
 testUserBadgeGroupLink ps = do
-  Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
-    test sk pk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk pk Nothing
+    test sk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk Nothing
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -300,11 +300,11 @@ testUserBadgeGroupLink ps = do
 
 testUserBadgeContactAddress :: HasCallStack => TestParams -> IO ()
 testUserBadgeContactAddress ps = do
-  Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
-    test sk pk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk pk Nothing
+    test sk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk Nothing
       alice ##> "/ad"
       (shortLink, cLink) <- getContactLinks alice True
       -- the address link data carries the badge proof; the connect plan returns it verified, without crypto
@@ -334,13 +334,13 @@ testUserBadgeContactAddress ps = do
 
 testUserBadgeExpired :: HasCallStack => TestParams -> IO ()
 testUserBadgeExpired ps = do
-  Right (sk, pk) <- bbsKeyGen
+  Right (pk, sk) <- bbsKeyGen
   -- expired recently (within 31 days), so the badge is still presented and shown as expired
   expiry <- addUTCTime (-2 * nominalDay) <$> getCurrentTime
-  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk expiry) ps
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk expiry) ps
   where
-    test sk pk expiry alice bob = do
-      addTestBadge alice =<< issueTestBadge sk pk (Just expiry)
+    test sk expiry alice bob = do
+      addTestBadge alice =<< issueTestBadge sk (Just expiry)
       -- expired badge: no star
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
@@ -359,11 +359,11 @@ testUserBadgeExpired ps = do
 
 testUserBadgeExpiredOld :: HasCallStack => TestParams -> IO ()
 testUserBadgeExpiredOld ps = do
-  Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
-    test sk pk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk pk (Just pastDate)
+    test sk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk (Just pastDate)
       -- a badge that expired over a month ago is not presented to contacts at all
       connectUsers alice bob
       bob ##> "/i alice"
@@ -378,11 +378,11 @@ testUserBadgeExpiredOld ps = do
 
 testUserBadgeIncognito :: HasCallStack => TestParams -> IO ()
 testUserBadgeIncognito ps = do
-  Right (sk, pk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk pk) ps
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
   where
-    test sk pk alice bob = do
-      addTestBadge alice =<< issueTestBadge sk pk Nothing
+    test sk alice bob = do
+      addTestBadge alice =<< issueTestBadge sk Nothing
       -- an incognito identity must not carry the badge
       bob ##> "/connect"
       inv <- getInvitation bob
