@@ -267,7 +267,7 @@ fun OperatorViewLayout(
                 userServers.value = userServers.value.toMutableList().apply {
                   this[operatorIndex] = this[operatorIndex].copy(
                     operator = this[operatorIndex].operator?.copy(
-                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false)
+                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false, names = false)
                     )
                   )
                 }
@@ -287,7 +287,27 @@ fun OperatorViewLayout(
                 userServers.value = userServers.value.toMutableList().apply {
                   this[operatorIndex] = this[operatorIndex].copy(
                     operator = this[operatorIndex].operator?.copy(
-                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(proxy = enabled) ?: ServerRoles(storage = false, proxy = enabled)
+                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(proxy = enabled) ?: ServerRoles(storage = false, proxy = enabled, names = false)
+                    )
+                  )
+                }
+              }
+            )
+          }
+          SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+            Text(
+              stringResource(MR.strings.operator_use_for_names),
+              Modifier.padding(end = 24.dp),
+              color = Color.Unspecified
+            )
+            Spacer(Modifier.fillMaxWidth().weight(1f))
+            DefaultSwitch(
+              checked = userServers.value[operatorIndex].operator_.smpRoles.names,
+              onCheckedChange = { enabled ->
+                userServers.value = userServers.value.toMutableList().apply {
+                  this[operatorIndex] = this[operatorIndex].copy(
+                    operator = this[operatorIndex].operator?.copy(
+                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(names = enabled) ?: ServerRoles(storage = false, proxy = false, names = enabled)
                     )
                   )
                 }
@@ -371,7 +391,7 @@ fun OperatorViewLayout(
                 userServers.value = userServers.value.toMutableList().apply {
                   this[operatorIndex] = this[operatorIndex].copy(
                     operator = this[operatorIndex].operator?.copy(
-                      xftpRoles = this[operatorIndex].operator?.xftpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false)
+                      xftpRoles = this[operatorIndex].operator?.xftpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false, names = false)
                     )
                   )
                 }

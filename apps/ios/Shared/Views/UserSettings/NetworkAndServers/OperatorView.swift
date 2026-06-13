@@ -105,6 +105,10 @@ struct OperatorView: View {
                                 .onChange(of: userServers[operatorIndex].operator_.smpRoles.proxy) { _ in
                                     validateServers_($userServers, $serverErrors, $serverWarnings)
                                 }
+                            Toggle("To resolve names", isOn: $userServers[operatorIndex].operator_.smpRoles.names)
+                                .onChange(of: userServers[operatorIndex].operator_.smpRoles.names) { _ in
+                                    validateServers_($userServers, $serverErrors, $serverWarnings)
+                                }
                         } header: {
                             Text("Use for messages")
                                 .foregroundColor(theme.colors.secondary)

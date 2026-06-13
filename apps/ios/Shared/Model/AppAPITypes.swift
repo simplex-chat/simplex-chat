@@ -1766,14 +1766,15 @@ struct ServerOperator: Identifiable, Equatable, Codable {
         serverDomains: ["simplex.im"],
         conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
         enabled: true,
-        smpRoles: ServerRoles(storage: true, proxy: true),
-        xftpRoles: ServerRoles(storage: true, proxy: true)
+        smpRoles: ServerRoles(storage: true, proxy: true, names: true),
+        xftpRoles: ServerRoles(storage: true, proxy: true, names: false)
     )
 }
 
 struct ServerRoles: Equatable, Codable {
     var storage: Bool
     var proxy: Bool
+    var names: Bool
 }
 
 struct UserOperatorServers: Identifiable, Equatable, Codable {
@@ -1800,8 +1801,8 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
                 serverDomains: [],
                 conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
-                smpRoles: ServerRoles(storage: true, proxy: true),
-                xftpRoles: ServerRoles(storage: true, proxy: true)
+                smpRoles: ServerRoles(storage: true, proxy: true, names: true),
+                xftpRoles: ServerRoles(storage: true, proxy: true, names: false)
             )
         }
         set { `operator` = newValue }

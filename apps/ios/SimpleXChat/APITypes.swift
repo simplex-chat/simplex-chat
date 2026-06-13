@@ -743,7 +743,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case invalidConnReq
     case simplexNameNotFound(simplexName: SimplexNameInfo)
     case simplexNameUnprepared(simplexName: SimplexNameInfo)
-    case simplexNameResolverUnavailable(simplexName: SimplexNameInfo)
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case connReqMessageProhibited
@@ -899,6 +898,14 @@ public enum AgentErrorType: Decodable, Hashable {
     case INTERNAL(internalErr: String)
     case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
+    case NAME(nameErr: NameErrorType)
+}
+
+public enum NameErrorType: Decodable, Hashable {
+    case NO_RESOLVER
+    case NO_NAME
+    case NO_SERVERS
+    case RESOLVER(resolverErr: String)
 }
 
 public enum CommandErrorType: Decodable, Hashable {
@@ -940,6 +947,7 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case LARGE_MSG
     case EXPIRED
     case INTERNAL
+    case NAME(nameErr: NameErrorType)
 }
 
 public enum ProxyError: Decodable, Hashable {

@@ -1569,8 +1569,9 @@ object ChatController {
           generalGetString(MR.strings.simplex_name_unprepared_desc)
         )
       }
-      r is API.Error && r.err is ChatError.ChatErrorChat
-          && r.err.errorType is ChatErrorType.SimplexNameResolverUnavailable -> {
+      r is API.Error && r.err is ChatError.ChatErrorAgent
+          && r.err.agentError is AgentErrorType.NAME
+          && r.err.agentError.nameErr is NameErrorType.NO_SERVERS -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.simplex_name_resolution_unavailable),
           generalGetString(MR.strings.simplex_name_resolver_unavailable_desc)
@@ -1617,7 +1618,7 @@ object ChatController {
       generalGetString(MR.strings.simplex_name_not_found)
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexNameUnprepared ->
       generalGetString(MR.strings.cannot_reconnect_via_simplex_name)
-    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexNameResolverUnavailable ->
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.NAME && e.agentError.nameErr is NameErrorType.NO_SERVERS ->
       generalGetString(MR.strings.simplex_name_resolution_unavailable)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH ->
       generalGetString(MR.strings.connection_error_auth)
@@ -4470,8 +4471,8 @@ data class ServerOperator(
       serverDomains = listOf("simplex.im"),
       conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null, autoAccepted = false),
       enabled = true,
-      smpRoles = ServerRoles(storage = true, proxy = true),
-      xftpRoles = ServerRoles(storage = true, proxy = true)
+      smpRoles = ServerRoles(storage = true, proxy = true, names = true),
+      xftpRoles = ServerRoles(storage = true, proxy = true, names = false)
     )
   }
 
@@ -4531,7 +4532,8 @@ data class ServerOperator(
 @Serializable
 data class ServerRoles(
   val storage: Boolean,
-  val proxy: Boolean
+  val proxy: Boolean,
+  val names: Boolean
 )
 
 @Serializable
@@ -4553,8 +4555,8 @@ data class UserOperatorServers(
       serverDomains = emptyList(),
       conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
-      smpRoles = ServerRoles(storage = true, proxy = true),
-      xftpRoles = ServerRoles(storage = true, proxy = true)
+      smpRoles = ServerRoles(storage = true, proxy = true, names = true),
+      xftpRoles = ServerRoles(storage = true, proxy = true, names = false)
     )
 
   companion object {
@@ -7326,7 +7328,6 @@ sealed class ChatErrorType {
       is InvalidConnReq -> "invalidConnReq"
       is SimplexNameNotFound -> "simplexNameNotFound"
       is SimplexNameUnprepared -> "simplexNameUnprepared"
-      is SimplexNameResolverUnavailable -> "simplexNameResolverUnavailable"
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
@@ -7411,7 +7412,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("simplexNameNotFound") class SimplexNameNotFound(val simplexName: SimplexNameInfo): ChatErrorType()
   @Serializable @SerialName("simplexNameUnprepared") class SimplexNameUnprepared(val simplexName: SimplexNameInfo): ChatErrorType()
-  @Serializable @SerialName("simplexNameResolverUnavailable") class SimplexNameResolverUnavailable(val simplexName: SimplexNameInfo): ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()
@@ -7680,6 +7680,7 @@ sealed class AgentErrorType {
     is INTERNAL -> "INTERNAL $internalErr"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
     is INACTIVE -> "INACTIVE"
+    is NAME -> "NAME ${nameErr.string}"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType, val errContext: String): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType, val errContext: String): AgentErrorType()
@@ -7694,6 +7695,21 @@ sealed class AgentErrorType {
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
   @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
+  @Serializable @SerialName("NAME") class NAME(val nameErr: NameErrorType): AgentErrorType()
+}
+
+@Serializable
+sealed class NameErrorType {
+  val string: String get() = when (this) {
+    is NO_RESOLVER -> "NO_RESOLVER"
+    is NO_NAME -> "NO_NAME"
+    is NO_SERVERS -> "NO_SERVERS"
+    is RESOLVER -> "RESOLVER $resolverErr"
+  }
+  @Serializable @SerialName("NO_RESOLVER") object NO_RESOLVER: NameErrorType()
+  @Serializable @SerialName("NO_NAME") object NO_NAME: NameErrorType()
+  @Serializable @SerialName("NO_SERVERS") object NO_SERVERS: NameErrorType()
+  @Serializable @SerialName("RESOLVER") class RESOLVER(val resolverErr: String): NameErrorType()
 }
 
 @Serializable
@@ -7763,6 +7779,7 @@ sealed class SMPErrorType {
     is LARGE_MSG -> "LARGE_MSG"
     is EXPIRED -> "EXPIRED"
     is INTERNAL -> "INTERNAL"
+    is NAME -> "NAME ${nameErr.string}"
   }
   @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
   @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
@@ -7777,6 +7794,7 @@ sealed class SMPErrorType {
   @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
   @Serializable @SerialName("EXPIRED") class EXPIRED: SMPErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL: SMPErrorType()
+  @Serializable @SerialName("NAME") class NAME(val nameErr: NameErrorType): SMPErrorType()
 }
 
 @Serializable
