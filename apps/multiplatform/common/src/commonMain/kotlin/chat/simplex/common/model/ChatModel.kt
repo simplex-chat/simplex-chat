@@ -1995,9 +1995,9 @@ data class Profile(
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
   val peerType: ChatPeerType? = null,
-  // opaque badge proof from the wire profile: not interpreted by the UI (display uses crypto-free LocalBadge),
+  // the badge proof from the wire profile: not interpreted by the UI (display uses crypto-free LocalBadge),
   // but preserved so passing a link profile back to the core (apiPrepareContact) keeps the proof
-  val badge: JsonElement? = null
+  val badge: BadgeProof? = null
 ): NamedChat {
   val profileViewName: String
     get() {
@@ -2103,6 +2103,15 @@ data class BadgeInfo(
 data class LocalBadge(
   val badge: BadgeInfo,
   val status: BadgeStatus
+)
+
+// the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
+@Serializable
+data class BadgeProof(
+  val badgeKeyIdx: Int,
+  val presHeader: String,
+  val proof: String,
+  val badgeInfo: BadgeInfo
 )
 
 @Serializable

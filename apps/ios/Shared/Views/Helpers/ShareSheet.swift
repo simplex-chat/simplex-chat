@@ -134,6 +134,7 @@ class OpenChatAlertViewController: UIViewController {
     private let profileName: String
     private let profileFullName: String
     private let profileImage: UIView
+    private let profileBadge: LocalBadge?
     private let subtitle: String?
     private let information: String?
     private let cancelTitle: String
@@ -145,6 +146,7 @@ class OpenChatAlertViewController: UIViewController {
         profileName: String,
         profileFullName: String,
         profileImage: UIView,
+        profileBadge: LocalBadge? = nil,
         subtitle: String? = nil,
         information: String? = nil,
         cancelTitle: String = "Cancel",
@@ -155,6 +157,7 @@ class OpenChatAlertViewController: UIViewController {
         self.profileName = profileName
         self.profileFullName = profileFullName
         self.profileImage = profileImage
+        self.profileBadge = profileBadge
         self.subtitle = subtitle
         self.information = information
         self.cancelTitle = cancelTitle
@@ -190,12 +193,18 @@ class OpenChatAlertViewController: UIViewController {
 
         // Name label
         let nameLabel = UILabel()
-        nameLabel.text = profileName
         nameLabel.font = UIFont.preferredFont(forTextStyle: .headline)
         nameLabel.textColor = .label
         nameLabel.numberOfLines = 2
         nameLabel.textAlignment = .center
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        if let badge = nameBadgeAttachment(profileBadge, font: nameLabel.font) {
+            let s = NSMutableAttributedString(string: profileName)
+            s.append(badge)
+            nameLabel.attributedText = s
+        } else {
+            nameLabel.text = profileName
+        }
 
         var profileViews = [profileImage, nameLabel]
 
@@ -365,6 +374,7 @@ func showOpenChatAlert<Content: View>(
     profileName: String,
     profileFullName: String,
     profileImage: Content,
+    profileBadge: LocalBadge? = nil,
     theme: AppTheme,
     subtitle: String? = nil,
     information: String? = nil,
@@ -383,6 +393,7 @@ func showOpenChatAlert<Content: View>(
             profileName: profileName,
             profileFullName: profileFullName,
             profileImage: hostedView,
+            profileBadge: profileBadge,
             subtitle: subtitle,
             information: information,
             cancelTitle: cancelTitle,

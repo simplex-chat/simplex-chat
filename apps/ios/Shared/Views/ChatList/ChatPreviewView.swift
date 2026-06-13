@@ -173,7 +173,9 @@ struct ChatPreviewView: View {
                 : !contact.sndReady
                 ? theme.colors.secondary
                 : nil
-            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(color)
+            NameWithBadge((contact.verified == true ? verifiedIcon + t : t).foregroundColor(color), chat.chatInfo.nameBadge, .title3)
+                .lineLimit(1)
+                .frame(alignment: .topLeading)
         case let .group(groupInfo, _):
             let color = if deleting {
                 theme.colors.secondary
