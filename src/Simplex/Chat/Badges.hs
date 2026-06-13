@@ -17,15 +17,13 @@ module Simplex.Chat.Badges
   ( BadgeType (..),
     BadgeStatus (..),
     BadgeInfo (..),
-    BadgeCrypto (..),
-    Badge (..),
+    BadgeCredential (..),
+    BadgeProof (..),
     LocalBadge (..),
     JSONBadge (..),
-    JBadge (..),
     BBSPublicKeyStr (..),
     localBadgeInfo,
     localBadgeStatus,
-    badgeKeyIndex,
     BadgePresHeaderTag (..),
     BadgePresHeader (..),
     BadgePurchase (..),
@@ -134,41 +132,41 @@ mkBadgeStatus now verified BadgeInfo {badgeExpiry} = case verified of
       | e < now -> BSExpired
     _ -> BSActive
 
--- Badge crypto: a credential (own, secret) or a proof (wire, a presentation).
--- Positional GADT - a record field cannot be shared across constructors with different result types.
--- The leading Int is the issuer key index: it tells verifiers which configured key to use (see BadgeKey).
+-- A badge credential (own, secret) and a proof (a presentation) are independent records.
+-- badgeKeyIdx is the issuer key index: it tells verifiers which configured key to use.
+-- Only proofs ride the wire (in a profile); credentials come from the badge service. Neither is
+-- ever serialized as a sum - each travels as its own record, so the JSON carries no credential/proof tag.
 
-data BadgeCrypto = BCCredential | BCProof
+data BadgeCredential = BadgeCredential
+  { badgeKeyIdx :: Int,
+    masterKey :: BadgeMasterKey,
+    signature :: BBSSignature,
+    badgeInfo :: BadgeInfo
+  }
+  deriving (Eq, Show)
 
-data Badge (b :: BadgeCrypto) where
-  BadgeCredential :: Int -> BadgeMasterKey -> BBSSignature -> BadgeInfo -> Badge 'BCCredential
-  BadgeProof :: Int -> BBSPresHeader -> BBSProof -> BadgeInfo -> Badge 'BCProof
+data BadgeProof = BadgeProof
+  { badgeKeyIdx :: Int,
+    presHeader :: BBSPresHeader,
+    proof :: BBSProof,
+    badgeInfo :: BadgeInfo
+  }
+  deriving (Eq, Show)
 
-deriving instance Show (Badge b)
-
-deriving instance Eq (Badge 'BCCredential)
-
-deriving instance Eq (Badge 'BCProof)
-
-badgeKeyIndex :: Badge b -> Int
-badgeKeyIndex = \case
-  BadgeCredential idx _ _ _ -> idx
-  BadgeProof idx _ _ _ -> idx
-
--- Local badge: a stored badge plus its display status.
+-- Local badge: a stored badge plus its display status (the in-memory sum; never serialized as a sum).
 --   OwnBadge   - the user's own credential (loaded from the DB).
 --   PeerBadge  - a verified peer proof (from the DB, or received over the wire).
 --   ShownBadge - decoded from a crypto-free profile JSON for display only: no crypto, so it cannot be sent.
 data LocalBadge
-  = OwnBadge (Badge 'BCCredential) BadgeStatus
-  | PeerBadge (Badge 'BCProof) BadgeStatus
+  = OwnBadge BadgeCredential BadgeStatus
+  | PeerBadge BadgeProof BadgeStatus
   | ShownBadge BadgeInfo BadgeStatus
   deriving (Eq, Show)
 
 localBadgeInfo :: LocalBadge -> BadgeInfo
 localBadgeInfo = \case
-  OwnBadge (BadgeCredential _ _ _ i) _ -> i
-  PeerBadge (BadgeProof _ _ _ i) _ -> i
+  OwnBadge BadgeCredential {badgeInfo} _ -> badgeInfo
+  PeerBadge BadgeProof {badgeInfo} _ -> badgeInfo
   ShownBadge i _ -> i
 
 localBadgeStatus :: LocalBadge -> BadgeStatus
@@ -277,42 +275,42 @@ verifyPayment _payment req = pure $ Just (VerifiedBadgeRequest req)
 
 -- Server-side: issue a badge credential, recording which issuer key signed it
 
-issueBadge :: Int -> BBSSecretKey -> VerifiedBadgeRequest -> IO (Either String (Badge 'BCCredential))
+issueBadge :: Int -> BBSSecretKey -> VerifiedBadgeRequest -> IO (Either String BadgeCredential)
 issueBadge keyIdx sk (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
   | badgeExtra badgeInfo /= "" = pure $ Left "badgeExtra must be empty (reserved)"
   | otherwise = fmap (\sig -> BadgeCredential keyIdx masterKey sig badgeInfo) <$> bbsSign sk bbsBadgeHeader (badgeMessages masterKey badgeInfo)
 
 -- Client-side: verify the credential received from server
 
-verifyCredential :: BBSPublicKey -> Badge 'BCCredential -> IO Bool
+verifyCredential :: BBSPublicKey -> BadgeCredential -> IO Bool
 verifyCredential pk (BadgeCredential _ masterKey signature badgeInfo) =
   bbsVerify pk signature bbsBadgeHeader (badgeMessages masterKey badgeInfo)
 
 -- Client-side: generate a proof for a contact/group; the proof carries the credential's key index
 
-generateBadgeProof :: BBSPublicKey -> Badge 'BCCredential -> BBSPresHeader -> IO (Either String (Badge 'BCProof))
+generateBadgeProof :: BBSPublicKey -> BadgeCredential -> BBSPresHeader -> IO (Either String BadgeProof)
 generateBadgeProof pk (BadgeCredential keyIdx masterKey signature badgeInfo) ph =
   fmap (\p -> BadgeProof keyIdx ph p badgeInfo) <$> bbsProofGen pk signature bbsBadgeHeader ph bbsBadgeDisclosedIndexes (badgeMessages masterKey badgeInfo)
 
 -- application-level proof generation with a semantic presentation header
-badgeProof :: BBSPublicKey -> Badge 'BCCredential -> BadgePresHeader -> IO (Either String (Badge 'BCProof))
+badgeProof :: BBSPublicKey -> BadgeCredential -> BadgePresHeader -> IO (Either String BadgeProof)
 badgeProof pk cred ph = generateBadgeProof pk cred (BBSPresHeader $ strEncode ph)
 
 -- Recipient-side: verify a badge proof with the configured key its index points to.
 -- Nothing means the key index is not in the configured keys (this app version can't verify it).
 
-verifyBadge :: Map Int BBSPublicKey -> Badge 'BCProof -> IO (Maybe Bool)
+verifyBadge :: Map Int BBSPublicKey -> BadgeProof -> IO (Maybe Bool)
 verifyBadge keys b@(BadgeProof keyIdx _ _ _) = case M.lookup keyIdx keys of
   Nothing -> pure Nothing
   Just pk -> Just <$> verifyBadgeWith pk b
 
-verifyBadgeWith :: BBSPublicKey -> Badge 'BCProof -> IO Bool
+verifyBadgeWith :: BBSPublicKey -> BadgeProof -> IO Bool
 verifyBadgeWith pk (BadgeProof _ ph@(BBSPresHeader phBytes) proof badgeInfo)
   | either (const False) badgePresHeaderAccepted (strDecode phBytes) =
       bbsProofVerify pk proof bbsBadgeHeader ph bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeInfoMessages badgeInfo)
   | otherwise = pure False
 
-verifyBadge_ :: Map Int BBSPublicKey -> Maybe (Badge 'BCProof) -> IO (Maybe Bool)
+verifyBadge_ :: Map Int BBSPublicKey -> Maybe BadgeProof -> IO (Maybe Bool)
 verifyBadge_ keys = maybe (pure (Just False)) (verifyBadge keys)
 
 -- DB
@@ -326,7 +324,7 @@ type BadgeRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe UTC
 
 -- receive/store sites have a wire proof + a computed verification outcome;
 -- the status here only drives the stored verified flag, the display status is recomputed on load
-badgeToRow :: Maybe (Badge 'BCProof) -> Maybe Bool -> BadgeRow
+badgeToRow :: Maybe BadgeProof -> Maybe Bool -> BadgeRow
 badgeToRow badge verified = localBadgeToRow $ (`PeerBadge` st) <$> badge
   where
     st = case verified of
@@ -369,35 +367,12 @@ $(JQ.deriveJSON defaultJSON ''BadgeInfo)
 
 $(JQ.deriveJSON defaultJSON ''BadgeRequest)
 
--- The Badge GADT (multi-constructor, different result types) is JSON-encoded via a plain mirror,
--- the codebase pattern for GADTs (see Messages/CIContent CIDeleted/CIStatus). deriveJSON does the work.
+-- Each record is a plain JSON object (defaultJSON), platform-independent and with no credential/proof
+-- tag - the context (a proof in a profile, a credential from the service) determines which it is.
 
-data JBadge
-  = JBadgeCredential {badgeKeyIdx :: Int, masterKey :: BadgeMasterKey, signature :: BBSSignature, badgeInfo :: BadgeInfo}
-  | JBadgeProof {badgeKeyIdx :: Int, presHeader :: BBSPresHeader, proof :: BBSProof, badgeInfo :: BadgeInfo}
+$(JQ.deriveJSON defaultJSON ''BadgeCredential)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JBadge") ''JBadge)
-
-jBadge :: Badge b -> JBadge
-jBadge = \case
-  BadgeCredential idx mk sg i -> JBadgeCredential idx mk sg i
-  BadgeProof idx ph p i -> JBadgeProof idx ph p i
-
-instance ToJSON (Badge b) where
-  toJSON = toJSON . jBadge
-  toEncoding = toEncoding . jBadge
-
-instance FromJSON (Badge 'BCProof) where
-  parseJSON v =
-    parseJSON v >>= \case
-      JBadgeProof idx ph p i -> pure (BadgeProof idx ph p i)
-      _ -> fail "expected badge proof"
-
-instance FromJSON (Badge 'BCCredential) where
-  parseJSON v =
-    parseJSON v >>= \case
-      JBadgeCredential idx mk sg i -> pure (BadgeCredential idx mk sg i)
-      _ -> fail "expected badge credential"
+$(JQ.deriveJSON defaultJSON ''BadgeProof)
 
 -- LocalBadge is sent to the UI/clients WITHOUT crypto - only disclosed info + status. The credential/proof
 -- bytes stay core-side. FromJSON reconstructs a display-only badge (empty proof) for read-only consumers

@@ -28,10 +28,10 @@ badgeTests = do
   it "should accept unknown badge types" testUnknownBadgeType
   it "credential serializes to a paste-able token and back" testCredentialSerialization
 
-proofOf :: Badge 'BCProof -> BBSProof
+proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
 
-proofInfo :: Badge 'BCProof -> BadgeInfo
+proofInfo :: BadgeProof -> BadgeInfo
 proofInfo (BadgeProof _ _ _ i) = i
 
 testKeyIdx :: Int
@@ -54,7 +54,8 @@ testFullWorkflow = do
   verifyCredential pk cred >>= (`shouldBe` True)
   Right badge <- generateBadgeProof pk cred (BBSPresHeader "nonce-1")
   -- the proof inherits the credential's key index, so receivers find the right key
-  badgeKeyIndex badge `shouldBe` testKeyIdx
+  let BadgeProof {badgeKeyIdx} = badge
+  badgeKeyIdx `shouldBe` testKeyIdx
   verifyBadge (keysFor pk) badge >>= (`shouldBe` Just True)
   Right badge2 <- generateBadgeProof pk cred (BBSPresHeader "nonce-2")
   verifyBadge (keysFor pk) badge2 >>= (`shouldBe` Just True)
@@ -130,7 +131,7 @@ futureTime = posixSecondsToUTCTime 4102444800 -- 2099-12-31
 pastTime :: UTCTime
 pastTime = posixSecondsToUTCTime 1577836800 -- 2020-01-01
 
-issueBadgeProof :: BadgeType -> Maybe UTCTime -> IO (BBSPublicKey, Badge 'BCProof)
+issueBadgeProof :: BadgeType -> Maybe UTCTime -> IO (BBSPublicKey, BadgeProof)
 issueBadgeProof bt expiry = do
   Right (pk, sk) <- bbsKeyGen
   drg <- C.newRandom

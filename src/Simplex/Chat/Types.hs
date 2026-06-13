@@ -48,7 +48,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (Badge (..), BadgeCrypto (..), BadgeInfo (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -689,7 +689,7 @@ data Profile = Profile
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
-    badge :: Maybe (Badge 'BCProof)
+    badge :: Maybe BadgeProof
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -737,7 +737,7 @@ sameProfileContent :: Profile -> Profile -> Bool
 sameProfileContent p@Profile {badge = b} p'@Profile {badge = b'} =
   p {badge = Nothing} == p' {badge = Nothing} && (proofInfo <$> b) == (proofInfo <$> b')
   where
-    proofInfo :: Badge 'BCProof -> BadgeInfo
+    proofInfo :: BadgeProof -> BadgeInfo
     proofInfo (BadgeProof _ _ _ info) = info
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
@@ -790,7 +790,7 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contact
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge}
   where
     -- only a verified peer proof rides the wire; the own credential is presented fresh, and a display-only badge never sends
-    wireBadge :: LocalBadge -> Maybe (Badge 'BCProof)
+    wireBadge :: LocalBadge -> Maybe BadgeProof
     wireBadge = \case
       PeerBadge b _ -> Just b
       OwnBadge _ _ -> Nothing

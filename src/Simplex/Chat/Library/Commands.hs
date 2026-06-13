@@ -55,7 +55,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (Badge (..), BadgeCrypto (..), LocalBadge (..), mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -4653,7 +4653,7 @@ createContactsSndFeatureItems user cts =
 
 -- attach an issued badge credential to the user's own profile and present it to all current contacts.
 -- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
-addUserBadge :: User -> Badge 'BCCredential -> CM ()
+addUserBadge :: User -> BadgeCredential -> CM ()
 addUserBadge user cred@(BadgeCredential keyIdx _ _ info) = do
   keys <- asks $ badgePublicKeys . config
   key <- maybe (throwCmdError "unknown badge key index") pure $ M.lookup keyIdx keys

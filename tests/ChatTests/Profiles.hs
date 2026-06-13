@@ -23,7 +23,7 @@ import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
-import Simplex.Chat.Badges (Badge, BadgeCrypto (..), BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
+import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion)
@@ -205,7 +205,7 @@ testBadgeKeys :: BBSPublicKey -> M.Map Int BBSPublicKey
 testBadgeKeys = M.singleton 1
 
 -- issue a supporter badge credential with the given expiry (test issuer)
-issueTestBadge :: BBSSecretKey -> Maybe UTCTime -> IO (Badge 'BCCredential)
+issueTestBadge :: BBSSecretKey -> Maybe UTCTime -> IO BadgeCredential
 issueTestBadge sk badgeExpiry = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
@@ -215,7 +215,7 @@ issueTestBadge sk badgeExpiry = do
   pure cred
 
 -- the same single-line JSON `simplex-chat badge sign` prints, pasted into the app
-addTestBadge :: HasCallStack => TestCC -> Badge 'BCCredential -> IO ()
+addTestBadge :: HasCallStack => TestCC -> BadgeCredential -> IO ()
 addTestBadge cc cred = do
   cc ##> ("/badge add " <> T.unpack (encodeJSON cred))
   cc <## "ok"

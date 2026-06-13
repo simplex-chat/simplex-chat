@@ -65,7 +65,7 @@ cChatBadgeKeygen =
 cChatBadgeIssue :: CString -> IO CJSONString
 cChatBadgeIssue cReq = do
   bs <- B.packCString cReq
-  encodeResult @(Badge 'BCCredential) =<< case J.eitherDecodeStrict' bs of
+  encodeResult @BadgeCredential =<< case J.eitherDecodeStrict' bs of
     Left e -> pure $ BadgeError (T.pack e)
     Right BadgeIssueReq {badgeKeyIdx, secretKey, request} ->
       either (BadgeError . T.pack) BadgeResult <$> issueBadge badgeKeyIdx secretKey (VerifiedBadgeRequest request)

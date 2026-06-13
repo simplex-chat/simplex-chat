@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (Badge (..), BadgePresHeader (..), BadgeStatus (..), LocalBadge (..), badgeKeyIndex, badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgePresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -1901,9 +1901,9 @@ sendDirectContactMessages' user ct events = do
 -- a long-expired badge is not presented at all (receivers would hide it anyway).
 presentUserBadge :: User -> Maybe i -> Profile -> CM Profile
 presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p = case (incognitoProfile, localBadge) of
-  (Nothing, Just (OwnBadge cred st)) | st == BSActive || st == BSExpired -> do
+  (Nothing, Just (OwnBadge cred@(BadgeCredential keyIdx _ _ _) st)) | st == BSActive || st == BSExpired -> do
     keys <- asks $ badgePublicKeys . config
-    case M.lookup (badgeKeyIndex cred) keys of
+    case M.lookup keyIdx keys of
       Nothing -> p <$ logError "presentUserBadge: badge key index not in config"
       Just key -> do
         nonce <- drgRandomBytes 16
