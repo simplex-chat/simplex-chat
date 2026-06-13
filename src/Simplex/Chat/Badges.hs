@@ -184,13 +184,14 @@ localBadgeStatus = \case
 data BadgePresHeaderTag = PHTestTag | PHUnknownTag Char
 
 instance StrEncoding BadgePresHeaderTag where
-  strEncode = \case
-    PHTestTag -> B.singleton 'T'
-    PHUnknownTag c -> B.singleton c
-  strP =
-    A.anyChar >>= \case
-      'T' -> pure PHTestTag
-      c -> pure (PHUnknownTag c)
+  strEncode = B.singleton . \case
+    PHTestTag -> 'T'
+    PHUnknownTag c -> c
+  strP = tag <$> A.anyChar
+    where
+      tag = \case
+        'T' -> PHTestTag
+        c -> PHUnknownTag c
 
 data BadgePresHeader
   = PHTest ByteString
