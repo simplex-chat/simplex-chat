@@ -210,7 +210,7 @@ fun UserPicker(
         }
       } else if (currentUser != null) {
         SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped, badge = currentUser.profile.localBadge.shown)
+          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped, badge = currentUser.profile.localBadge)
         }
       }
     }
@@ -471,7 +471,7 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
     // the end padding is on the row, not the name, so the badge stays right after the name
     NameWithBadge(
       u.displayName,
-      u.profile.localBadge.shown,
+      u.profile.localBadge,
       Modifier.padding(start = 10.dp, end = 8.dp),
       color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal

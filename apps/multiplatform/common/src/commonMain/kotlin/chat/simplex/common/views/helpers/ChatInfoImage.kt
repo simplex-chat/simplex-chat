@@ -121,17 +121,21 @@ fun ProfileImage(
   }
 }
 
-// a badge that expired over a month ago is not shown at all
-val LocalBadge?.shown: LocalBadge? get() = this?.takeIf { it.status != BadgeStatus.ExpiredOld }
-
-// the badge shown for a chat: an active contact's or a contact request's (groups have none)
-val ChatInfo.nameBadge: LocalBadge? get() = when {
-  this is ChatInfo.Direct && contact.active -> contact.profile.localBadge.shown
-  this is ChatInfo.ContactRequest -> contactRequest.profile.localBadge.shown
-  else -> null
+// the badge shown for a chat: an active contact's or a contact request's (groups have none).
+// a badge that expired over a month ago (ExpiredOld) is not shown at all.
+val ChatInfo.nameBadge: LocalBadge? get() {
+  val badge = when {
+    this is ChatInfo.Direct && contact.active -> contact.profile.localBadge
+    this is ChatInfo.ContactRequest -> contactRequest.profile.localBadge
+    else -> null
+  }
+  return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
 }
 
-val GroupMember.nameBadge: LocalBadge? get() = memberProfile.localBadge.shown
+val GroupMember.nameBadge: LocalBadge? get() {
+  val badge = memberProfile.localBadge
+  return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
+}
 
 // badge height in em: calibrated visually so the badge top matches capital letters and digits
 // (Inter's declared cap height is 2048/2816 = 0.727em, but the rendered text is taller than the metrics predict)
@@ -178,7 +182,8 @@ fun NameWithBadge(
 // Use NameWithBadge unless the row needs special arrangement; then the name Text must use Modifier.alignByBaseline().
 @Composable
 fun RowScope.NameBadge(badge: LocalBadge?, fontSize: TextUnit = LocalTextStyle.current.fontSize) {
-  if (badge == null) return
+  // a badge that expired over a month ago (ExpiredOld) is not shown
+  if (badge == null || badge.status == BadgeStatus.ExpiredOld) return
   val height = with(LocalDensity.current) { (if (fontSize.isSpecified) fontSize else 14.sp).toDp() } * fontCapHeightRatio
   BadgeGlyph(
     badge,

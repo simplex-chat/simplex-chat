@@ -97,7 +97,7 @@ fun UserPickerUserBox(
     val user = userInfo.user
     NameWithBadge(
       user.displayName,
-      user.profile.localBadge.shown,
+      user.profile.localBadge,
       fontWeight = if (user.activeUser) FontWeight.Bold else FontWeight.Normal,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,

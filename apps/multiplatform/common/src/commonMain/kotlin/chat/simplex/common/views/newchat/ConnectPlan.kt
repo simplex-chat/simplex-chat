@@ -474,7 +474,8 @@ private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: 
         icon = contact.chatIconName
       )
     },
-    profileBadge = if (contact.active) contact.profile.localBadge.shown else null,
+    // the alert shows the badge inline, so it skips the long-expired (ExpiredOld) badge here too
+    profileBadge = if (contact.active && contact.profile.localBadge?.status != BadgeStatus.ExpiredOld) contact.profile.localBadge else null,
     confirmText = generalGetString(if (contact.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat),
     onConfirm = {
       openKnownContact(chatModel, rhId, close, contact)
@@ -634,7 +635,7 @@ fun showPrepareContactAlert(
           else MR.images.ic_account_circle_filled
       )
     },
-    profileBadge = contactShortLinkData.localBadge.shown,
+    profileBadge = if (contactShortLinkData.localBadge?.status == BadgeStatus.ExpiredOld) null else contactShortLinkData.localBadge,
     information = ownerVerificationMessage(ownerVerification),
     confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),
     onConfirm = {
