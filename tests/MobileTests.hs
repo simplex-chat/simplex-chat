@@ -32,8 +32,10 @@ import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import JSONFixtures
 import Simplex.Chat
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeRequest (..), BadgeType (..), generateMasterKey, verifyCredential)
 import Simplex.Chat.Controller (ChatController (..), ChatDatabase (..))
 import Simplex.Chat.Mobile hiding (error)
+import Simplex.Chat.Mobile.Badges hiding (error)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
@@ -81,6 +83,8 @@ mobileTests = do
     describe "Parsers" $ do
       it "should parse server address" testChatParseServer
       it "should parse and sanitize URI" testChatParseUri
+    describe "Badges" $ do
+      it "should generate key and issue badge via C API, verify credential" testBadgeKeygenIssueCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -307,6 +311,25 @@ testChatParseServer _ = do
 testChatParseUri :: TestParams -> IO ()
 testChatParseUri _ = do
   pure ()
+
+-- Generate a server keypair and issue a badge credential via the C FFI,
+-- constructing the request from the typed records, then verify the issued
+-- credential's BBS signature on the Haskell side.
+testBadgeKeygenIssueCApi :: TestParams -> IO ()
+testBadgeKeygenIssueCApi _ = do
+  g <- C.newRandom
+  IssuerKeyPair {publicKey, secretKey} <- ffiResult =<< (peekCString =<< cChatBadgeKeygen)
+  mk <- generateMasterKey g
+  let req = BadgeIssueReq {badgeKeyIdx = 1, secretKey, request = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = Nothing, badgeExtra = ""}}}
+  cred <- ffiResult =<< (peekCString =<< cChatBadgeIssue =<< newCString (LB.unpack (J.encode req)))
+  verifyCredential publicKey cred `shouldReturn` True
+
+-- Decode an FFI `BadgeResult` envelope, returning the result or failing on error.
+ffiResult :: FromJSON r => String -> IO r
+ffiResult s = case J.eitherDecode (LB.pack s) of
+  Right (BadgeResult r) -> pure r
+  Right (BadgeError e) -> error $ "badge FFI error: " <> show e
+  Left e -> error $ "badge FFI decode failed: " <> e <> " in " <> s
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack

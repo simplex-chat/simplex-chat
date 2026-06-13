@@ -94,8 +94,9 @@ private fun ChannelMemberRow(member: GroupMember, user: Boolean, showRole: Boole
         if (member.verified) {
           MemberVerifiedShield()
         }
-        Text(
+        NameWithBadge(
           member.chatViewName,
+          member.nameBadge,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           color = if (member.memberIncognito) Indigo else Color.Unspecified

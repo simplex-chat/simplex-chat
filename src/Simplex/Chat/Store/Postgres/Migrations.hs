@@ -32,6 +32,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260429_relay_request_retries
 import Simplex.Chat.Store.Postgres.Migrations.M20260507_relay_inactive_at
 import Simplex.Chat.Store.Postgres.Migrations.M20260514_relay_request_group_link_index
 import Simplex.Chat.Store.Postgres.Migrations.M20260515_public_group_access
+import Simplex.Chat.Store.Postgres.Migrations.M20260516_supporter_badges
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -63,7 +64,8 @@ schemaMigrations =
     ("20260429_relay_request_retries", m20260429_relay_request_retries, Just down_m20260429_relay_request_retries),
     ("20260507_relay_inactive_at", m20260507_relay_inactive_at, Just down_m20260507_relay_inactive_at),
     ("20260514_relay_request_group_link_index", m20260514_relay_request_group_link_index, Just down_m20260514_relay_request_group_link_index),
-    ("20260515_public_group_access", m20260515_public_group_access, Just down_m20260515_public_group_access)
+    ("20260515_public_group_access", m20260515_public_group_access, Just down_m20260515_public_group_access),
+    ("20260516_supporter_badges", m20260516_supporter_badges, Just down_m20260516_supporter_badges)
   ]
 
 -- | The list of migrations in ascending order by date

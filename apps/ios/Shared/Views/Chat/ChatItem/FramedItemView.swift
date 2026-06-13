@@ -127,7 +127,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, _):
-                CIImageView(chatItem: chatItem, scrollToItem: scrollToItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
+                CIImageView(chatItem: chatItem, senderProfile: ciSenderProfile(chatItem, chat.chatInfo), scrollToItem: scrollToItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -142,7 +142,7 @@ struct FramedItemView: View {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, _, duration):
-                CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
+                CIVideoView(chatItem: chatItem, senderProfile: ciSenderProfile(chatItem, chat.chatInfo), preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -349,7 +349,7 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
-        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited, senderProfile: ciSenderProfile(chatItem, chat.chatInfo))
             .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem)
