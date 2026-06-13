@@ -536,7 +536,20 @@ private fun ContactsSearchBar(
                 cleanup = { searchText.value = TextFieldValue() }
               )
             }
-            is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
+            is ConnectTarget.Name -> {
+              // A name lookup means "take me to this contact": open the chat if
+              // it's already known (visible prompt), unlike a pasted link which
+              // filters the list. So no filterKnownContact here.
+              hideKeyboard(view)
+              withBGApi {
+                planAndConnect(
+                  chatModel.remoteHostId(),
+                  target.text,
+                  close = close,
+                  cleanup = { searchText.value = TextFieldValue() },
+                )
+              }
+            }
             null -> if (!searchShowingSimplexLink.value || it.isEmpty()) {
               if (it.isNotEmpty()) {
                 focusRequester.requestFocus()
