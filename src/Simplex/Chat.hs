@@ -68,14 +68,14 @@ defaultChatConfig =
       chatVRange = supportedChatVRange,
       badgePublicKeys =
         M.fromList
-          [ (1, toBBSPublicKey "kaqF84nTBwd-GGFfQly_rQkTxWaKTaAqC3aM_LoHVrc8rlhvYdyLP-y2kUvDqW1PFRrxR9jkWlEIJSh3BwFAuQS0NbAWMnNZfOp4-vkUE1olJJ_wwsNKroyzw7evduNL"),
-            (2, toBBSPublicKey "h0VEdr4uJsXD-9a3z-yZ4vM3pX1ov7Xn7PAMxqRNTr-s3YustG7HD2VsAQ7iRLahABMIGGQT_lHF3cTdtszlAKT_pRXTjFwjSkielhetDTUDJykBJp7cO2fxz6saVI7H"),
-            (3, toBBSPublicKey "kElK0w0uPKcswvtw57UeZeikkwFwamg5wDJB3OosxykQmiAkzTgy_7b353WRk3-XDFABroFDFvUmMdNKWgh01S1VxpLODmSDhHfdqSOHW1vWHc4iCyzF69lWYUF6KOVP"),
-            (4, toBBSPublicKey "j20BfWldtoZB4yTGA7JEF3L-OySR0r2SSg_RRjAO97TBvYPI00uhakdRRE6yAIkiBaCDIWWBlgE6IANQm5Or_zEoDEzPYPbTUXbGmylZFvBN65NABbTiA0DeaAAGL9FU"),
-            (5, toBBSPublicKey "oIyMRWHosw_3c9DZImHn0hNEGmfm5nW7O3KbsZ68H2OR2VkdxDnbnqiJ_2QSwgKOFspj_SMhoemUsktWdalwHb1FCikz5TNz8lxNqxfpigEhE_xNgolaebG_Sw9tzYDp"),
-            (6, toBBSPublicKey "qn7zJFHLWMg6jVv8Rpusk9LYPgpeS696gCaUwFVsT74CclTwGrlQwKf8Z0byjtrOF07s5WCBFCs28wgXSf3GBSntDnmYWDWmNLsghOcw0MYtXCOrDy27kCj9Ox_qJEig"),
-            (7, toBBSPublicKey "qSlZGgZ92s9jY1IrN_JhNRZDzrLlzQ7vfFQ2Qh-HqVQ8mHzsTnMJ3Y6lgFyCMHMZFQU55qg3lCyOox0xog_bdyiwxg_u3imm6YzZAP4mvN8gyRd3hmc_clnZ_ySHDgXp"),
-            (8, toBBSPublicKey "tl7fIXPgaAuqfqB6knGAh2TyQ8ieAUhE1OxcBxrdaC5ParRIxpehO7JnnbluEqjGFTxwr3JGvFQJSsa9vHAl9WC1MeEPqRh4a0-fl9esk0osSVqzEI0AQsZR-q2d5P5X")
+          [ (1, toBBSPublicKey "mW_5Zp1wHnXDF56wOZwFcRjGrf0GLLsfyymIQDqYoWfjfvS7oQWSfi7hH65N8JhuE9x8wbKXHidnQLO4GnOSMP_bRKUMH1qIzv5SQKFHNM8G4PaWcTcri8iZLc-3xhSI"),
+            (2, toBBSPublicKey "odGCB7uVDXTURsHgSvSciByV4Q3-3ZvEB8myDsDJqm-PwOYc5-At36uc7n_pyUDxEQEHr9i4RJgFih2FSArPW-EQBXNPNf4wTtA0znn74qLEGc4fh9pVYPEIm_ZGbnsJ"),
+            (3, toBBSPublicKey "txkT2003WMjc43KvYvPKEcR970NLmw5UZY51eUqgk91sgp53idt1HTlKYvnrEttJDFMlctYf1-bpri0e9DhBQ-xk1J4WoLN2uif_1OcA1pGCobpk9lwtsq1Idek4biy0"),
+            (4, toBBSPublicKey "q_YzegihaLYrEm9z3cAghsfDGNZfXuEpQGMJERJQS4M0Szl4gvSC_fV_muKc3NIMA_8iYuBN8qyvb5U55RctCRn3kleFQ4sqf-WBgoydX6UVo7BsYcUbXWWEFZXlOGIH"),
+            (5, toBBSPublicKey "oqymHASH_okefShrnz4HnTooUNlE1WoDRnSrgd0bTCpOacgJWBsMpwZpdmYlX-vQAKAC_zmI4VdKoOznnhW-sdUXZw6bthCi5JYjGxCR1Co27i1tix5UXCTbR5Jp901-"),
+            (6, toBBSPublicKey "kDqaB6zKSRp_97QPFj5JPDlo0vzfSTLSp9goFx1qajv4q4H6dR6BbkmWZ4xx_9Q2AxmcpqcV0ethz1OH-Jk_Sz2J1mIz1PUVM9LkdLhi_PNtqhezzO5dbVs-HJ1fNqe6"),
+            (7, toBBSPublicKey "rl36D5mg2N3NmmEybxE_RBeU9YZ_zeXNPfp7ZMLtUEuf2Mo4OQM_Up1v5rX_IqICD-AIJcuyptEBsELx_PJQzpmiNuG5I4cWO6HkRKtc6fVFvgZMrDJjaascPd1CIyxX"),
+            (8, toBBSPublicKey "joM3Bnt7JPt5JiwQwERHGjro2iVZ0mPD_clUh4hzkhxvbjuFrWuTmfSNA8PWBqGKEGNl13aRi1pMf6yY14E27c5C71JxWm7T-rZaBrGPEUWifhD-qidWuf3PU7KJCCWd")
           ],
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
