@@ -1905,8 +1905,9 @@ presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p =
     keys <- asks $ badgePublicKeys . config
     case M.lookup (badgeKeyIndex cred) keys of
       Nothing -> p <$ logError "presentUserBadge: badge key index not in config"
-      Just key ->
-        liftIO (badgeProof key cred PHTest) >>= \case
+      Just key -> do
+        nonce <- drgRandomBytes 16
+        liftIO (badgeProof key cred (PHTest nonce)) >>= \case
           Right proof -> pure p {badge = Just proof}
           Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p

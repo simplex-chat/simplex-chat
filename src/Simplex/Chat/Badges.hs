@@ -26,9 +26,8 @@ module Simplex.Chat.Badges
     localBadgeInfo,
     localBadgeStatus,
     badgeKeyIndex,
+    BadgePresHeaderTag (..),
     BadgePresHeader (..),
-    badgePresHeaderBytes,
-    toBadgePresHeader,
     BadgePurchase (..),
     BadgeMasterKey (..),
     BadgeRequest (..),
@@ -53,10 +52,10 @@ import Control.Concurrent.STM
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson.TH as JQ
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
+import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as U
-import qualified Data.ByteString.Char8 as BC
+import qualified Data.ByteString.Char8 as B
 import Data.Either (fromRight)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -64,7 +63,6 @@ import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
-import Data.Word (Word8)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
@@ -179,27 +177,38 @@ localBadgeStatus = \case
   PeerBadge _ st -> st
   ShownBadge _ st -> st
 
--- Presentation header: unbound test marker (stable) or forward-compat catch-all (master variants)
+-- Presentation header: a tag char + payload. PHTest is unbound - a fresh random nonce per
+-- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
+-- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
+
+data BadgePresHeaderTag = PHTestTag | PHUnknownTag Char
+
+instance StrEncoding BadgePresHeaderTag where
+  strEncode = \case
+    PHTestTag -> B.singleton 'T'
+    PHUnknownTag c -> B.singleton c
+  strP =
+    A.anyChar >>= \case
+      'T' -> pure PHTestTag
+      c -> pure (PHUnknownTag c)
 
 data BadgePresHeader
-  = PHTest
-  | PHUnknown Word8 ByteString
+  = PHTest ByteString
+  | PHUnknown Char ByteString
 
-badgePresHeaderBytes :: BadgePresHeader -> ByteString
-badgePresHeaderBytes = \case
-  PHTest -> B.singleton 0
-  PHUnknown t b -> B.cons t b
-
-toBadgePresHeader :: ByteString -> BadgePresHeader
-toBadgePresHeader bs = case B.uncons bs of
-  Just (0, _) -> PHTest
-  Just (t, b) -> PHUnknown t b
-  Nothing -> PHUnknown 0 ""
+instance StrEncoding BadgePresHeader where
+  strEncode = \case
+    PHTest nonce -> strEncode PHTestTag <> nonce
+    PHUnknown c b -> strEncode (PHUnknownTag c) <> b
+  strP =
+    strP >>= \case
+      PHTestTag -> PHTest <$> A.takeByteString
+      PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
 -- stable accepts both; master rejects PHTest
 badgePresHeaderAccepted :: BadgePresHeader -> Bool
 badgePresHeaderAccepted = \case
-  PHTest -> True
+  PHTest _ -> True
   PHUnknown _ _ -> True
 
 -- Payment proof
@@ -286,7 +295,7 @@ generateBadgeProof pk (BadgeCredential keyIdx masterKey signature badgeInfo) ph 
 
 -- application-level proof generation with a semantic presentation header
 badgeProof :: BBSPublicKey -> Badge 'BCCredential -> BadgePresHeader -> IO (Either String (Badge 'BCProof))
-badgeProof pk cred ph = generateBadgeProof pk cred (BBSPresHeader $ badgePresHeaderBytes ph)
+badgeProof pk cred ph = generateBadgeProof pk cred (BBSPresHeader $ strEncode ph)
 
 -- Recipient-side: verify a badge proof with the configured key its index points to.
 -- Nothing means the key index is not in the configured keys (this app version can't verify it).
@@ -298,7 +307,7 @@ verifyBadge keys b@(BadgeProof keyIdx _ _ _) = case M.lookup keyIdx keys of
 
 verifyBadgeWith :: BBSPublicKey -> Badge 'BCProof -> IO Bool
 verifyBadgeWith pk (BadgeProof _ ph@(BBSPresHeader phBytes) proof badgeInfo)
-  | badgePresHeaderAccepted (toBadgePresHeader phBytes) =
+  | either (const False) badgePresHeaderAccepted (strDecode phBytes) =
       bbsProofVerify pk proof bbsBadgeHeader ph bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeInfoMessages badgeInfo)
   | otherwise = pure False
 
@@ -408,4 +417,4 @@ instance FromJSON LocalBadge where
 newtype BBSPublicKeyStr = BBSPublicKeyStr {toBBSPublicKey :: BBSPublicKey}
 
 instance IsString BBSPublicKeyStr where
-  fromString = BBSPublicKeyStr . BBSPublicKey . fromRight (error "bad base64 in BBSPublicKey") . U.decode . BC.pack
+  fromString = BBSPublicKeyStr . BBSPublicKey . fromRight (error "bad base64 in BBSPublicKey") . U.decode . B.pack
