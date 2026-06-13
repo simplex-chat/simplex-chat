@@ -10,8 +10,8 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AutoAccept](#autoaccept)
-- [Badge](#badge)
 - [BadgeInfo](#badgeinfo)
+- [BadgeProof](#badgeproof)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
@@ -360,33 +360,23 @@ INACTIVE:
 
 ---
 
-## Badge
-
-**Discriminated union type**:
-
-Credential:
-- type: "credential"
-- badgeKeyIdx: int
-- masterKey: string
-- signature: string
-- badgeInfo: [BadgeInfo](#badgeinfo)
-
-Proof:
-- type: "proof"
-- badgeKeyIdx: int
-- presHeader: string
-- proof: string
-- badgeInfo: [BadgeInfo](#badgeinfo)
-
-
----
-
 ## BadgeInfo
 
 **Record type**:
 - badgeType: [BadgeType](#badgetype)
 - badgeExpiry: UTCTime?
 - badgeExtra: string
+
+
+---
+
+## BadgeProof
+
+**Record type**:
+- badgeKeyIdx: int
+- presHeader: string
+- proof: string
+- badgeInfo: [BadgeInfo](#badgeinfo)
 
 
 ---
@@ -3098,7 +3088,7 @@ count=<count>
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
-- badge: [Badge](#badge)?
+- badge: [BadgeProof](#badgeproof)?
 
 
 ---

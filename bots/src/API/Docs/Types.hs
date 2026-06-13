@@ -34,7 +34,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), JSONBadge (..), JBadge (..))
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), BadgeType (..), JSONBadge (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -184,7 +184,6 @@ ciQuoteType =
 chatTypesDocsData :: [(SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text)]
 chatTypesDocsData =
   [ ((sti @(Chat 'CTDirect)) {typeName = "AChat"}, STRecord, "", [], "", ""),
-    ((sti @JBadge) {typeName = "Badge"}, STUnion, "JBadge", [], "", ""),
     ((sti @JSONBadge) {typeName = "LocalBadge"}, STRecord, "", [], "", ""),
     ((sti @JSONChatInfo) {typeName = "ChatInfo"}, STUnion, "JCInfo", ["JCInfoInvalidJSON"], "", ""),
     ((sti @JSONCIContent) {typeName = "CIContent"}, STUnion, "JCI", ["JCIInvalidJSON"], "", ""),
@@ -210,6 +209,7 @@ chatTypesDocsData =
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
     (sti @AutoAccept, STRecord, "", [], "", ""),
+    (sti @BadgeProof, STRecord, "", [], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
@@ -428,6 +428,7 @@ deriving instance Generic AddressSettings
 deriving instance Generic AgentCryptoError
 deriving instance Generic AgentErrorType
 deriving instance Generic AutoAccept
+deriving instance Generic BadgeProof
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
 deriving instance Generic BrokerErrorType
@@ -523,7 +524,6 @@ deriving instance Generic HandshakeError
 deriving instance Generic InlineFileMode
 deriving instance Generic InvitationLinkPlan
 deriving instance Generic InvitedBy
-deriving instance Generic JBadge
 deriving instance Generic JSONBadge
 deriving instance Generic JSONChatInfo
 deriving instance Generic JSONCIContent

@@ -186,36 +186,17 @@ export interface AutoAccept {
   acceptIncognito: boolean
 }
 
-export type Badge = Badge.Credential | Badge.Proof
-
-export namespace Badge {
-  export type Tag = "credential" | "proof"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Credential extends Interface {
-    type: "credential"
-    badgeKeyIdx: number // int
-    masterKey: string
-    signature: string
-    badgeInfo: BadgeInfo
-  }
-
-  export interface Proof extends Interface {
-    type: "proof"
-    badgeKeyIdx: number // int
-    presHeader: string
-    proof: string
-    badgeInfo: BadgeInfo
-  }
-}
-
 export interface BadgeInfo {
   badgeType: BadgeType
   badgeExpiry?: string // ISO-8601 timestamp
   badgeExtra: string
+}
+
+export interface BadgeProof {
+  badgeKeyIdx: number // int
+  presHeader: string
+  proof: string
+  badgeInfo: BadgeInfo
 }
 
 export enum BadgeStatus {
@@ -3352,7 +3333,7 @@ export interface Profile {
   contactLink?: string
   preferences?: Preferences
   peerType?: ChatPeerType
-  badge?: Badge
+  badge?: BadgeProof
 }
 
 export type ProxyClientError = 

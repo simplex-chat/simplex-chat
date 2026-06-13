@@ -138,28 +138,16 @@ AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FI
 class AutoAccept(TypedDict):
     acceptIncognito: bool
 
-class Badge_credential(TypedDict):
-    type: Literal["credential"]
-    badgeKeyIdx: int  # int
-    masterKey: str
-    signature: str
-    badgeInfo: "BadgeInfo"
-
-class Badge_proof(TypedDict):
-    type: Literal["proof"]
-    badgeKeyIdx: int  # int
-    presHeader: str
-    proof: str
-    badgeInfo: "BadgeInfo"
-
-Badge = Badge_credential | Badge_proof
-
-Badge_Tag = Literal["credential", "proof"]
-
 class BadgeInfo(TypedDict):
     badgeType: "BadgeType"
     badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
     badgeExtra: str
+
+class BadgeProof(TypedDict):
+    badgeKeyIdx: int  # int
+    presHeader: str
+    proof: str
+    badgeInfo: "BadgeInfo"
 
 BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
@@ -2351,7 +2339,7 @@ class Profile(TypedDict):
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
-    badge: NotRequired["Badge"]
+    badge: NotRequired["BadgeProof"]
 
 class ProxyClientError_protocolError(TypedDict):
     type: Literal["protocolError"]
