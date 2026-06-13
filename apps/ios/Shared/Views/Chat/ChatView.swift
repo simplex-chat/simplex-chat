@@ -2003,7 +2003,7 @@ struct ChatView: View {
                                     Group {
                                         if #available(iOS 16.0, *) {
                                             MemberLayout(spacing: 16, msgWidth: msgWidth) {
-                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2012,7 +2012,7 @@ struct ChatView: View {
                                             }
                                         } else {
                                             HStack(spacing: 16) {
-                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2026,7 +2026,7 @@ struct ChatView: View {
                                         alignment: chatItem.chatDir.sent ? .trailing : .leading
                                     )
                                 } else {
-                                    NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption)
+                                    NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption1)
                                         .lineLimit(2)
                                 }
                             }

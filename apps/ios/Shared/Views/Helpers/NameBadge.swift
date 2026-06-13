@@ -22,10 +22,10 @@ private let badgeBaselineOffsetRatio: CGFloat = 0.05
 struct NameWithBadge: View {
     let name: Text
     var badge: LocalBadge?
-    var textStyle: Font.TextStyle = .body
+    var textStyle: UIFont.TextStyle = .body
     var onTap: (() -> Void)? = nil
 
-    init(_ name: Text, _ badge: LocalBadge?, _ textStyle: Font.TextStyle = .body, onTap: (() -> Void)? = nil) {
+    init(_ name: Text, _ badge: LocalBadge?, _ textStyle: UIFont.TextStyle = .body, onTap: (() -> Void)? = nil) {
         self.name = name
         self.badge = badge
         self.textStyle = textStyle
@@ -46,10 +46,10 @@ struct NameWithBadge: View {
 // directly only where the name is not a single Text. Pass onTap to open the badge info alert.
 struct NameBadge: View {
     var badge: LocalBadge?
-    var textStyle: Font.TextStyle = .body
+    var textStyle: UIFont.TextStyle = .body
     var onTap: (() -> Void)? = nil
 
-    init(_ badge: LocalBadge?, _ textStyle: Font.TextStyle = .body, onTap: (() -> Void)? = nil) {
+    init(_ badge: LocalBadge?, _ textStyle: UIFont.TextStyle = .body, onTap: (() -> Void)? = nil) {
         self.badge = badge
         self.textStyle = textStyle
         self.onTap = onTap
@@ -72,12 +72,12 @@ struct NameBadge: View {
     }
 
     private var badgeHeight: CGFloat {
-        UIFont.preferredFont(forTextStyle: uiTextStyle(textStyle)).pointSize * fontCapHeightRatio
+        UIFont.preferredFont(forTextStyle: textStyle).pointSize * fontCapHeightRatio
     }
 
     // the gap to the name, matching the verification shield's gap (textSpace - one space in the name's font)
     private var badgeGap: CGFloat {
-        let font = UIFont.preferredFont(forTextStyle: uiTextStyle(textStyle))
+        let font = UIFont.preferredFont(forTextStyle: textStyle)
         return (" " as NSString).size(withAttributes: [.font: font]).width
     }
 
@@ -131,24 +131,6 @@ func nameBadgeAttachment(_ badge: LocalBadge?, font: UIFont) -> NSAttributedStri
     let s = NSMutableAttributedString(string: " ") // the gap to the name
     s.append(NSAttributedString(attachment: attachment))
     return s
-}
-
-// SwiftUI Font.TextStyle -> UIFont.TextStyle, to read the resolved (Dynamic-Type-aware) cap height
-private func uiTextStyle(_ s: Font.TextStyle) -> UIFont.TextStyle {
-    switch s {
-    case .largeTitle: .largeTitle
-    case .title: .title1
-    case .title2: .title2
-    case .title3: .title3
-    case .headline: .headline
-    case .subheadline: .subheadline
-    case .body: .body
-    case .callout: .callout
-    case .footnote: .footnote
-    case .caption: .caption1
-    case .caption2: .caption2
-    @unknown default: .body
-    }
 }
 
 func showBadgeInfoAlert(_ name: String, _ badge: LocalBadge) {
