@@ -596,6 +596,7 @@ const processCommand = (function () {
               setupLocalVideoRatio(videos.local)
               videos.local.srcObject = localStream
               videos.local.play().catch((e) => console.log(e))
+              updateLocalVideoMirroring(videos.local, VideoCamera.User)
             }
           } catch (e) {
             console.log(e)
@@ -929,6 +930,7 @@ const processCommand = (function () {
     }
     // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
     videos.local.play().catch((e) => console.log(e))
+    updateLocalVideoMirroring(videos.local, call.localCamera)
   }
 
   function setupLocalVideoRatio(local: HTMLVideoElement) {
@@ -1162,6 +1164,10 @@ const processCommand = (function () {
     }
     call.localCamera = camera
 
+    if (source == CallMediaSource.Camera) {
+      updateLocalVideoMirroring(videos.local, camera)
+    }
+
     const audioTracks = call.localStream.getAudioTracks()
     const videoTracks = call.localStream.getVideoTracks()
 
@@ -1226,6 +1232,7 @@ const processCommand = (function () {
       videos.local.srcObject = localStream
     }
     videos.local.play().catch((e) => console.log(e))
+    updateLocalVideoMirroring(videos.local, newCamera)
   }
 
   function mediaSourceFromTransceiverMid(mid: string | null) {
@@ -1577,14 +1584,16 @@ function changeLayout(layout: LayoutType) {
   if (!videos || !localSources || !peerSources) return
   switch (layout) {
     case LayoutType.Default:
-      videos.local.className = "inline"
+      videos.local.classList.add("inline")
+      videos.local.classList.remove("fullscreen")
       videos.remote.className = peerSources.screenVideo ? "collapsed" : "inline"
       videos.local.style.visibility = "visible"
       videos.remote.style.visibility = peerSources.camera ? "visible" : "hidden"
       videos.remoteScreen.style.visibility = peerSources.screenVideo ? "visible" : "hidden"
       break
     case LayoutType.LocalVideo:
-      videos.local.className = "fullscreen"
+      videos.local.classList.add("fullscreen")
+      videos.local.classList.remove("inline")
       videos.local.style.visibility = "visible"
       videos.remote.style.visibility = "hidden"
       videos.remoteScreen.style.visibility = "hidden"
@@ -1642,6 +1651,16 @@ function getVideoElements(): VideoElements | undefined {
 // without dropping override will cause the view to have not normal proportion while no video is present
 function resetLocalVideoElementHeight(local: HTMLVideoElement) {
   local.style.height = ""
+}
+
+function updateLocalVideoMirroring(localVideo: HTMLVideoElement, camera: VideoCamera) {
+  if (camera === VideoCamera.User) {
+    // Front camera - add mirroring
+    localVideo.classList.add("mirror")
+  } else {
+    // Rear camera - remove mirroring
+    localVideo.classList.remove("mirror")
+  }
 }
 
 function desktopShowPermissionsAlert(mediaType: CallMediaType) {
