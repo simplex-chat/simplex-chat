@@ -95,21 +95,6 @@ struct NameBadge: View {
     }
 }
 
-// the badge shown for a chat: an active contact's or a contact request's (groups have none)
-extension ChatInfo {
-    var nameBadge: LocalBadge? {
-        switch self {
-        case let .direct(contact): contact.active ? contact.profile.localBadge : nil
-        case let .contactRequest(contactRequest): contactRequest.profile.localBadge
-        default: nil
-        }
-    }
-}
-
-extension GroupMember {
-    var nameBadge: LocalBadge? { memberProfile.localBadge }
-}
-
 private func badgeImageName(_ t: BadgeType) -> String {
     switch t {
     case .legend: "badge-legend"

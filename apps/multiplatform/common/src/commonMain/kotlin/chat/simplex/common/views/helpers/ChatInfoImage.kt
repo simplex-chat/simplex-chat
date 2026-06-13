@@ -32,7 +32,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.BadgeStatus
 import chat.simplex.common.model.BadgeType
 import chat.simplex.common.model.ChatInfo
-import chat.simplex.common.model.GroupMember
 import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.model.localDate
 import chat.simplex.common.platform.*
@@ -119,22 +118,6 @@ fun ProfileImage(
       }
     }
   }
-}
-
-// the badge shown for a chat: an active contact's or a contact request's (groups have none).
-// a badge that expired over a month ago (ExpiredOld) is not shown at all.
-val ChatInfo.nameBadge: LocalBadge? get() {
-  val badge = when {
-    this is ChatInfo.Direct && contact.active -> contact.profile.localBadge
-    this is ChatInfo.ContactRequest -> contactRequest.profile.localBadge
-    else -> null
-  }
-  return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
-}
-
-val GroupMember.nameBadge: LocalBadge? get() {
-  val badge = memberProfile.localBadge
-  return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
 }
 
 // badge height in em: calibrated visually so the badge top matches capital letters and digits

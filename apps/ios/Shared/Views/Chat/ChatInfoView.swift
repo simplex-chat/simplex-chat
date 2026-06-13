@@ -375,8 +375,11 @@ struct ChatInfoView: View {
             let displayName = contact.profile.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             let badge = cInfo.nameBadge
+            // the shield is smaller (.title2) than the name (.largeTitle), so on the shared baseline it
+            // sits low; raise it by half the cap-height difference to center it with the capitals
+            let shieldRaise = (UIFont.preferredFont(forTextStyle: .largeTitle).capHeight - UIFont.preferredFont(forTextStyle: .title2).capHeight) / 2
             let nameText = contact.verified
-                ? Text(Image(systemName: "checkmark.shield")).foregroundColor(theme.colors.secondary).font(.title2) + textSpace + Text(displayName).font(.largeTitle)
+                ? Text(Image(systemName: "checkmark.shield")).foregroundColor(theme.colors.secondary).font(.title2).baselineOffset(shieldRaise) + textSpace + Text(displayName).font(.largeTitle)
                 : Text(displayName).font(.largeTitle)
             NameWithBadge(nameText, badge, .largeTitle) { if let badge { showBadgeInfoAlert(displayName, badge) } }
                 .multilineTextAlignment(.center)

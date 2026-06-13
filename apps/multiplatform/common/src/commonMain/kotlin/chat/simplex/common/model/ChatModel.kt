@@ -1430,6 +1430,17 @@ data class Chat(
 @Serializable
 sealed class ChatInfo: SomeChat, NamedChat {
 
+  // the badge shown for a chat's name: an active contact's or a contact request's (groups have none).
+  // a badge that expired over a month ago (ExpiredOld) is not shown at all.
+  val nameBadge: LocalBadge? get() {
+    val badge = when {
+      this is Direct && contact.active -> contact.profile.localBadge
+      this is ContactRequest -> contactRequest.profile.localBadge
+      else -> null
+    }
+    return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
+  }
+
   @Serializable @SerialName("direct")
   data class Direct(val contact: Contact): ChatInfo() {
     override val chatType get() = ChatType.Direct
@@ -2479,6 +2490,11 @@ data class GroupMember (
   override val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
+  // the badge shown for a member's name; a badge that expired over a month ago (ExpiredOld) is not shown
+  val nameBadge: LocalBadge? get() {
+    val badge = memberProfile.localBadge
+    return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
+  }
   val blocked get() = blockedByAdmin || !memberSettings.showMessages
 
   override val localAlias: String = memberProfile.localAlias

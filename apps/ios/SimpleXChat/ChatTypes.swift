@@ -1526,6 +1526,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    // the badge shown for a chat's name: an active contact's or a contact request's (groups have none)
+    public var nameBadge: LocalBadge? {
+        get {
+            switch self {
+            case let .direct(contact): return contact.active ? contact.profile.localBadge : nil
+            case let .contactRequest(contactRequest): return contactRequest.profile.localBadge
+            default: return nil
+            }
+        }
+    }
+
     public var displayName: String {
         get {
             switch self {
@@ -2852,6 +2863,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
+    public var nameBadge: LocalBadge? { memberProfile.localBadge }
     public var verified: Bool { activeConn?.connectionCode != nil }
     public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
