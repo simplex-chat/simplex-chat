@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 func getTopViewController() -> UIViewController? {
     let keyWindowScene = UIApplication.shared.connectedScenes.first { $0.activationState == .foregroundActive } as? UIWindowScene

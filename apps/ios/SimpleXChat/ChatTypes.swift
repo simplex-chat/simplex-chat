@@ -2332,7 +2332,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public var userContactLinkId_: Int64?
     public var cReqChatVRange: VersionRange
     var localDisplayName: ContactName
-    var profile: LocalProfile
+    public var profile: LocalProfile
     var createdAt: Date
     public var updatedAt: Date
 
