@@ -185,16 +185,14 @@ fun YourServersViewLayout(
         iconColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
-    val serversErr = globalServersError(serverErrors.value)
-    if (serversErr != null) {
+    globalServersErrors(serverErrors.value).forEach { err ->
       SectionCustomFooter {
-        ServersErrorFooter(serversErr)
+        ServersErrorFooter(err)
       }
     }
-    val serversWarn = globalServersWarning(serverWarnings.value)
-    if (serversWarn != null) {
+    globalServersWarnings(serverWarnings.value).forEach { warn ->
       SectionCustomFooter {
-        ServersWarningFooter(serversWarn)
+        ServersWarningFooter(warn)
       }
     }
     SectionDividerSpaced()

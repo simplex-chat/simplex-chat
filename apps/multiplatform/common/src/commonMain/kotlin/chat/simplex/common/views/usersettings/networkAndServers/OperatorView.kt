@@ -211,15 +211,19 @@ fun OperatorViewLayout(
         rhId = rhId
       )
     }
-    val serversErr = globalServersError(serverErrors.value)
-    val serversWarn = globalServersWarning(serverWarnings.value)
-    if (serversErr != null) {
-      SectionCustomFooter {
-        ServersErrorFooter(serversErr)
+    val serversErrs = globalServersErrors(serverErrors.value)
+    val serversWarns = globalServersWarnings(serverWarnings.value)
+    if (serversErrs.isNotEmpty()) {
+      serversErrs.forEach { err ->
+        SectionCustomFooter {
+          ServersErrorFooter(err)
+        }
       }
-    } else if (serversWarn != null) {
-      SectionCustomFooter {
-        ServersWarningFooter(serversWarn)
+    } else if (serversWarns.isNotEmpty()) {
+      serversWarns.forEach { warn ->
+        SectionCustomFooter {
+          ServersWarningFooter(warn)
+        }
       }
     } else {
       val footerText = when (val c = operator.conditionsAcceptance) {

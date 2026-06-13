@@ -52,10 +52,16 @@ struct OperatorView: View {
                     Text("Operator")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
-                    if let errStr = globalServersError(serverErrors) {
-                        ServersErrorView(errStr: errStr)
-                    } else if let warnStr = globalServersWarning(serverWarnings) {
-                        ServersWarningView(warnStr: warnStr)
+                    let errs = globalServersErrors(serverErrors)
+                    let warns = globalServersWarnings(serverWarnings)
+                    if !errs.isEmpty {
+                        ForEach(errs, id: \.self) { err in
+                            ServersErrorView(errStr: err)
+                        }
+                    } else if !warns.isEmpty {
+                        ForEach(warns, id: \.self) { warn in
+                            ServersWarningView(warnStr: warn)
+                        }
                     } else {
                         switch (userServers[operatorIndex].operator_.conditionsAcceptance) {
                         case let .accepted(acceptedAt, _):
