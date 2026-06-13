@@ -22,6 +22,7 @@ module Simplex.Chat.Badges
     LocalBadge (..),
     JSONBadge (..),
     JBadge (..),
+    BBSPublicKeyStr (..),
     localBadgeInfo,
     localBadgeStatus,
     badgeKeyIndex,
@@ -54,8 +55,12 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Base64.URL as U
+import qualified Data.ByteString.Char8 as BC
+import Data.Either (fromRight)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
@@ -77,7 +82,6 @@ import Database.SQLite.Simple.ToField (ToField (..))
 
 data BadgeType
   = BTSupporter
-  | BTBusiness
   | BTLegend
   | BTInvestor
   | BTUnknown Text
@@ -86,13 +90,11 @@ data BadgeType
 instance TextEncoding BadgeType where
   textEncode = \case
     BTSupporter -> "supporter"
-    BTBusiness -> "business"
     BTLegend -> "legend"
     BTInvestor -> "investor"
     BTUnknown tag -> tag
   textDecode s = Just $ case s of
     "supporter" -> BTSupporter
-    "business" -> BTBusiness
     "legend" -> BTLegend
     "investor" -> BTInvestor
     tag -> BTUnknown tag
@@ -402,3 +404,8 @@ instance FromJSON LocalBadge where
   parseJSON v = do
     JSONBadge info st <- parseJSON v
     pure $ ShownBadge info st
+
+newtype BBSPublicKeyStr = BBSPublicKeyStr {toBBSPublicKey :: BBSPublicKey}
+
+instance IsString BBSPublicKeyStr where
+  fromString = BBSPublicKeyStr . BBSPublicKey . fromRight (error "bad base64 in BBSPublicKey") . U.decode . BC.pack

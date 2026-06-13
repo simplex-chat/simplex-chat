@@ -366,12 +366,14 @@ INACTIVE:
 
 Credential:
 - type: "credential"
+- badgeKeyIdx: int
 - masterKey: string
 - signature: string
 - badgeInfo: [BadgeInfo](#badgeinfo)
 
 Proof:
 - type: "proof"
+- badgeKeyIdx: int
 - presHeader: string
 - proof: string
 - badgeInfo: [BadgeInfo](#badgeinfo)
@@ -394,7 +396,9 @@ Proof:
 **Enum type**:
 - "active"
 - "expired"
+- "expiredOld"
 - "failed"
+- "unknownKey"
 
 
 ---
@@ -403,7 +407,6 @@ Proof:
 
 **Enum type**:
 - "supporter"
-- "business"
 - "legend"
 - "investor"
 

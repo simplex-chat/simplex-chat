@@ -197,6 +197,7 @@ export namespace Badge {
 
   export interface Credential extends Interface {
     type: "credential"
+    badgeKeyIdx: number // int
     masterKey: string
     signature: string
     badgeInfo: BadgeInfo
@@ -204,6 +205,7 @@ export namespace Badge {
 
   export interface Proof extends Interface {
     type: "proof"
+    badgeKeyIdx: number // int
     presHeader: string
     proof: string
     badgeInfo: BadgeInfo
@@ -219,12 +221,13 @@ export interface BadgeInfo {
 export enum BadgeStatus {
   Active = "active",
   Expired = "expired",
+  ExpiredOld = "expiredOld",
   Failed = "failed",
+  UnknownKey = "unknownKey",
 }
 
 export enum BadgeType {
   Supporter = "supporter",
-  Business = "business",
   Legend = "legend",
   Investor = "investor",
 }

@@ -140,12 +140,14 @@ class AutoAccept(TypedDict):
 
 class Badge_credential(TypedDict):
     type: Literal["credential"]
+    badgeKeyIdx: int  # int
     masterKey: str
     signature: str
     badgeInfo: "BadgeInfo"
 
 class Badge_proof(TypedDict):
     type: Literal["proof"]
+    badgeKeyIdx: int  # int
     presHeader: str
     proof: str
     badgeInfo: "BadgeInfo"
@@ -159,9 +161,9 @@ class BadgeInfo(TypedDict):
     badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
     badgeExtra: str
 
-BadgeStatus = Literal["active", "expired", "failed"]
+BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
-BadgeType = Literal["supporter", "business", "legend", "investor"]
+BadgeType = Literal["supporter", "legend", "investor"]
 
 class BlockingInfo(TypedDict):
     reason: "BlockingReason"

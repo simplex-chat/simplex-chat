@@ -21,8 +21,6 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Data.Bifunctor (bimap, second)
-import qualified Data.ByteString.Base64.URL as U
-import Data.Either (fromRight)
 import Data.List (partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -31,7 +29,7 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
 import Simplex.Chat.Controller
-import Simplex.Messaging.Crypto.BBS (BBSPublicKey (..))
+import Simplex.Chat.Badges (BBSPublicKeyStr (..))
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Operators.Presets
@@ -70,7 +68,14 @@ defaultChatConfig =
       chatVRange = supportedChatVRange,
       badgePublicKeys =
         M.fromList
-          [ (1, BBSPublicKey $ fromRight (error "bad base64 in badge service key") $ U.decode "ugBHzTr4z1EOgczllk4ohrxhJv4afiDaUpuBQG8PDB9W8gXN0wiDQ5QfeDNt2QqoAtmIaBImMsy5WQrAxwNI-KL7tsN0vlriU2zab6qVjJjOYJ3YB3scYT1s9dGVMAXW")
+          [ (1, toBBSPublicKey "kaqF84nTBwd-GGFfQly_rQkTxWaKTaAqC3aM_LoHVrc8rlhvYdyLP-y2kUvDqW1PFRrxR9jkWlEIJSh3BwFAuQS0NbAWMnNZfOp4-vkUE1olJJ_wwsNKroyzw7evduNL"),
+            (2, toBBSPublicKey "h0VEdr4uJsXD-9a3z-yZ4vM3pX1ov7Xn7PAMxqRNTr-s3YustG7HD2VsAQ7iRLahABMIGGQT_lHF3cTdtszlAKT_pRXTjFwjSkielhetDTUDJykBJp7cO2fxz6saVI7H"),
+            (3, toBBSPublicKey "kElK0w0uPKcswvtw57UeZeikkwFwamg5wDJB3OosxykQmiAkzTgy_7b353WRk3-XDFABroFDFvUmMdNKWgh01S1VxpLODmSDhHfdqSOHW1vWHc4iCyzF69lWYUF6KOVP"),
+            (4, toBBSPublicKey "j20BfWldtoZB4yTGA7JEF3L-OySR0r2SSg_RRjAO97TBvYPI00uhakdRRE6yAIkiBaCDIWWBlgE6IANQm5Or_zEoDEzPYPbTUXbGmylZFvBN65NABbTiA0DeaAAGL9FU"),
+            (5, toBBSPublicKey "oIyMRWHosw_3c9DZImHn0hNEGmfm5nW7O3KbsZ68H2OR2VkdxDnbnqiJ_2QSwgKOFspj_SMhoemUsktWdalwHb1FCikz5TNz8lxNqxfpigEhE_xNgolaebG_Sw9tzYDp"),
+            (6, toBBSPublicKey "qn7zJFHLWMg6jVv8Rpusk9LYPgpeS696gCaUwFVsT74CclTwGrlQwKf8Z0byjtrOF07s5WCBFCs28wgXSf3GBSntDnmYWDWmNLsghOcw0MYtXCOrDy27kCj9Ox_qJEig"),
+            (7, toBBSPublicKey "qSlZGgZ92s9jY1IrN_JhNRZDzrLlzQ7vfFQ2Qh-HqVQ8mHzsTnMJ3Y6lgFyCMHMZFQU55qg3lCyOox0xog_bdyiwxg_u3imm6YzZAP4mvN8gyRd3hmc_clnZ_ySHDgXp"),
+            (8, toBBSPublicKey "tl7fIXPgaAuqfqB6knGAh2TyQ8ieAUhE1OxcBxrdaC5ParRIxpehO7JnnbluEqjGFTxwr3JGvFQJSsa9vHAl9WC1MeEPqRh4a0-fl9esk0osSVqzEI0AQsZR-q2d5P5X")
           ],
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing

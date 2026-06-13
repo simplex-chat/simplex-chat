@@ -2808,7 +2808,6 @@ badgeStarColor = \case
   BTLegend -> Just Blue
   BTInvestor -> Just Yellow
   BTUnknown _ -> Just Cyan
-  BTBusiness -> Nothing
 
 -- (star color, type word) for an active, colorable badge
 activeBadge :: Maybe LocalBadge -> Maybe (Color, Text)

@@ -63,7 +63,7 @@ testFullWorkflow = do
 testTamperedType :: IO ()
 testTamperedType = do
   (pk, BadgeProof idx ph p info) <- issueBadgeProof BTSupporter (Just futureTime)
-  verifyBadge (keysFor pk) (BadgeProof idx ph p info {badgeType = BTBusiness}) >>= (`shouldBe` Just False)
+  verifyBadge (keysFor pk) (BadgeProof idx ph p info {badgeType = BTLegend}) >>= (`shouldBe` Just False)
 
 testTamperedExpiry :: IO ()
 testTamperedExpiry = do
