@@ -1,32 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 316.5 415.5">
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="399" viewBox="8.25 8.25 300 399">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#29f5ff"/>
-      <stop offset="4%" stop-color="#2af2fe"/>
-      <stop offset="8%" stop-color="#2aeefe"/>
-      <stop offset="12%" stop-color="#2ae9fd"/>
-      <stop offset="16%" stop-color="#2ae4fc"/>
-      <stop offset="20%" stop-color="#2adffb"/>
-      <stop offset="24%" stop-color="#2ad9fb"/>
-      <stop offset="28%" stop-color="#2ad3fa"/>
-      <stop offset="32%" stop-color="#2bcdf9"/>
-      <stop offset="36%" stop-color="#2bc5f8"/>
-      <stop offset="40%" stop-color="#2cbff7"/>
-      <stop offset="44%" stop-color="#2bb7f6"/>
-      <stop offset="48%" stop-color="#2db1f5"/>
-      <stop offset="52%" stop-color="#2da9f4"/>
-      <stop offset="56%" stop-color="#2da2f3"/>
-      <stop offset="60%" stop-color="#2d9bf2"/>
-      <stop offset="64%" stop-color="#2e93f1"/>
-      <stop offset="68%" stop-color="#2e8df0"/>
-      <stop offset="72%" stop-color="#2f87ef"/>
-      <stop offset="76%" stop-color="#2f80ee"/>
-      <stop offset="80%" stop-color="#2f7aed"/>
-      <stop offset="84%" stop-color="#2f75ec"/>
-      <stop offset="88%" stop-color="#306feb"/>
-      <stop offset="92%" stop-color="#2f6beb"/>
-      <stop offset="96%" stop-color="#3068ea"/>
-      <stop offset="100%" stop-color="#3064ea"/>
+      <stop offset="5%" stop-color="#29f5ff"/>
+      <stop offset="95%" stop-color="#527eed"/>
+      <stop offset="100%" stop-color="#3669e9"/>
     </linearGradient>
   </defs>
   <path fill="url(#g)" d="M98.25,8.25h120a90,90,0,0,1,90,90v219a90,90,0,0,1-90,90h-120a90,90,0,0,1-90-90v-219a90,90,0,0,1,90-90Z"/>
