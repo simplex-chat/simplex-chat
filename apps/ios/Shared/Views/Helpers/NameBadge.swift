@@ -8,6 +8,15 @@
 import SwiftUI
 import SimpleXChat
 
+// The badge is sized to a fraction of the font size (em), NOT the font's cap-height metric: the metric
+// underestimates the rendered capital letters, so a cap-height-tall badge looks too small. These ratios
+// are calibrated visually to match caps - the same constants as the Compose (Android/desktop) app.
+private let fontCapHeightRatio: CGFloat = 0.95
+// fraction of the badge height pushed below the text baseline (like the undershoot of round letters)
+private let badgeBaselineOffsetRatio: CGFloat = 0.05
+// the gap between the name and the badge (matching the visible gap to the verification shield)
+private let badgeGap: CGFloat = 6
+
 // A contact/member name with the supporter badge right after it. The name keeps its own styling
 // (font, weight, color, even a verification shield concatenated into the Text); the badge is sized to
 // the given text style and sits on the name's baseline. Use this everywhere a name may carry a badge.
@@ -50,8 +59,12 @@ struct NameBadge: View {
 
     var body: some View {
         if let badge, badge.status != .expiredOld {
-            // the leading padding is the gap to the name; it lives here so an absent badge adds no gap
-            let v = glyph(badge).frame(height: capHeight).padding(.leading, 4)
+            // the leading padding is the gap to the name; it lives here so an absent badge adds no gap.
+            // the alignment guide pushes the badge bottom slightly below the baseline (round-letter undershoot)
+            let v = glyph(badge)
+                .frame(height: badgeHeight)
+                .alignmentGuide(.firstTextBaseline) { $0.height * (1 - badgeBaselineOffsetRatio) }
+                .padding(.leading, badgeGap)
             if let onTap {
                 v.onTapGesture(perform: onTap)
             } else {
@@ -60,8 +73,8 @@ struct NameBadge: View {
         }
     }
 
-    private var capHeight: CGFloat {
-        UIFont.preferredFont(forTextStyle: uiTextStyle(textStyle)).capHeight
+    private var badgeHeight: CGFloat {
+        UIFont.preferredFont(forTextStyle: uiTextStyle(textStyle)).pointSize * fontCapHeightRatio
     }
 
     @ViewBuilder private func glyph(_ badge: LocalBadge) -> some View {
@@ -123,9 +136,9 @@ func nameBadgeAttachment(_ badge: LocalBadge?, font: UIFont) -> NSAttributedStri
     guard let image else { return nil }
     let attachment = NSTextAttachment()
     attachment.image = image
-    let h = font.capHeight
-    // text coordinates: y = 0 puts the image bottom on the baseline, height = capHeight aligns its top with caps
-    attachment.bounds = CGRect(x: 0, y: 0, width: h * image.size.width / image.size.height, height: h)
+    let h = font.pointSize * fontCapHeightRatio
+    // text coordinates: a negative y drops the image below the baseline by badgeBaselineOffsetRatio of its height
+    attachment.bounds = CGRect(x: 0, y: -h * badgeBaselineOffsetRatio, width: h * image.size.width / image.size.height, height: h)
     let s = NSMutableAttributedString(string: " ") // the gap to the name
     s.append(NSAttributedString(attachment: attachment))
     return s
