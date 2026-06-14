@@ -24,6 +24,9 @@ module Simplex.Chat.Badges
     BBSPublicKeyStr (..),
     localBadgeInfo,
     localBadgeStatus,
+    maxXFTPFileSize,
+    maxFileSizeSupporter,
+    maxFileSizeLegend,
     BadgePresHeaderTag (..),
     BadgePresHeader (..),
     BadgePurchase (..),
@@ -55,12 +58,14 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as U
 import qualified Data.ByteString.Char8 as B
 import Data.Either (fromRight)
+import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
+import Simplex.FileTransfer.Description (gb, maxFileSize)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
@@ -174,6 +179,20 @@ localBadgeStatus = \case
   OwnBadge _ st -> st
   PeerBadge _ st -> st
   ShownBadge _ st -> st
+
+-- XFTP file size limit raised by an active badge: a legend badge to 5GB, any other to 2GB, otherwise the default.
+maxFileSizeSupporter :: Int64
+maxFileSizeSupporter = gb 2
+
+maxFileSizeLegend :: Int64
+maxFileSizeLegend = gb 5
+
+maxXFTPFileSize :: Maybe LocalBadge -> Int64
+maxXFTPFileSize = \case
+  Just b | localBadgeStatus b == BSActive -> case badgeType (localBadgeInfo b) of
+    BTLegend -> maxFileSizeLegend
+    _ -> maxFileSizeSupporter
+  _ -> maxFileSize
 
 -- Presentation header: a tag char + payload. PHTest is unbound - a fresh random nonce per
 -- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
