@@ -568,6 +568,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
             painter = painterResource(MR.images.ic_arrow_forward_ios),
             contentDescription = stringResource(MR.strings.new_chat_share_profile),
             tint = MaterialTheme.colors.secondary,
+            modifier = Modifier.mirrorIfRtl(),
           )
         }
       }
