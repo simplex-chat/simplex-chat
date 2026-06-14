@@ -279,12 +279,15 @@ public func cleanupFile(_ aChatItem: AChatItem) {
 
 public func getMaxFileSize(_ fileProtocol: FileProtocol, _ senderProfile: LocalProfile? = nil) -> Int64 {
     switch fileProtocol {
-    case .smp: return MAX_FILE_SIZE_SMP
-    case .local: return MAX_FILE_SIZE_LOCAL
+    case .smp: MAX_FILE_SIZE_SMP
+    case .local: MAX_FILE_SIZE_LOCAL
     // a sender's active badge raises the XFTP limit: legend to 5GB, any other (supporter/investor) to 2GB
     case .xftp:
-        guard let badge = senderProfile?.localBadge, badge.status == .active else { return MAX_FILE_SIZE_XFTP }
-        return badge.badge.badgeType == .legend ? MAX_FILE_SIZE_XFTP_LEGEND : MAX_FILE_SIZE_XFTP_SUPPORTER
+        if let badge = senderProfile?.localBadge, badge.status == .active {
+            badge.badge.badgeType == .legend ? MAX_FILE_SIZE_XFTP_LEGEND : MAX_FILE_SIZE_XFTP_SUPPORTER
+        } else {
+            MAX_FILE_SIZE_XFTP
+        }
     }
 }
 
