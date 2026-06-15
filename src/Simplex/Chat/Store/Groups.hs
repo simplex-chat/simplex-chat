@@ -72,6 +72,7 @@ module Simplex.Chat.Store.Groups
     getGroupOnlyMembers,
     getGroupOwners,
     getGroupRelayMembers,
+    getGroupRelaySendMembers,
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
     deleteGroupChatItems,
@@ -1261,6 +1262,24 @@ getGroupRelayMembers db cxt user@User {userId, userContactId} GroupInfo {groupId
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?")
       (userId, groupId, userContactId, GRRelay)
 
+-- Relays eligible to receive sends (accepted the invitation onward) - excludes still-invited,
+-- inactive and rejected relays. Unfiltered getGroupRelayMembers is for non-send callers
+-- (relay-set reconciliation, connection cleanup, connected-relay counts).
+getGroupRelaySendMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
+getGroupRelaySendMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember cxt user)
+    <$> DB.query
+      db
+      ( groupMemberQuery
+          <> " "
+          <> [sql|
+               JOIN group_relays gr ON gr.group_member_id = m.group_member_id
+               WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ?
+                 AND m.member_role = ? AND gr.relay_status IN (?,?,?)
+             |]
+      )
+      (userId, groupId, userContactId, GRRelay, RSAccepted, RSAcknowledgedRoster, RSActive)
+
 getGroupMembersForExpiration :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
   map (toContactMember cxt user)
@@ -1413,7 +1432,7 @@ getConnectedGroupRelays db GroupInfo {groupId} =
                  AND gr.relay_status IN (?,?)
              |]
       )
-      (groupId, GSMemConnected, RSAccepted, RSActive)
+      (groupId, GSMemConnected, RSAcknowledgedRoster, RSActive)
 
 groupRelayQuery :: Query
 groupRelayQuery =
@@ -1656,6 +1675,14 @@ setRelayKey db cxt user m (MemberKey relayKey) profile = do
       WHERE group_member_id = ?
     |]
     (relayKey, currentTs, gmId)
+  liftIO $ DB.execute
+    db
+    [sql|
+      UPDATE group_relays
+      SET relay_status = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (RSAccepted, currentTs, gmId)
   void $ updateMemberProfile db user m profile
   (,) <$> getGroupMemberById db cxt user gmId <*> getGroupRelayByGMId db gmId
 
@@ -1839,9 +1866,9 @@ getRelayServedGroups db cxt User {userId, userContactId} = do
     <$> DB.query
       db
       ( groupInfoQuery
-          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?)"
+          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)"
       )
-      (userId, userContactId, RSAccepted, RSActive)
+      (userId, userContactId, RSAccepted, RSAcknowledgedRoster, RSActive)
 
 getRelayInactiveGroups :: DB.Connection -> StoreCxt -> User -> NominalDiffTime -> IO [GroupInfo]
 getRelayInactiveGroups db cxt User {userId, userContactId} ttl = do

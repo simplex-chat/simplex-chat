@@ -252,7 +252,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       toView $ CEvtSndFileCompleteXFTP user ci' ft
                       where
                         getRecipients
-                          | useRelays' g = withStore' $ \db -> getGroupRelayMembers db cxt user g
+                          | useRelays' g = withStore' $ \db -> getGroupRelaySendMembers db cxt user g
                           | otherwise = withStore' $ \db -> getGroupMembers db cxt user g
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -1384,7 +1384,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   -- dedicated subscriber count).
                   when (fromMaybe 0 publicMemberCount > 1) $
                     forM_ (L.nonEmpty newlyActiveLinks) $ \newlyActive -> do
-                      allRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
+                      allRelayMembers <- withFastStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo
                       let recipients =
                             filter
                               (\GroupMember {memberStatus, relayLink} ->
@@ -1398,7 +1398,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks, newlyActiveGMIds) =
                       case relayLink of
                         Just rLink
-                          | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
+                          | rLink `elem` relayLinks && relayStatus == RSAcknowledgedRoster -> do
                               relay' <- updateRelayStatus db relay RSActive
                               pure (relay' : acc, True, rLink : newlyActiveLinks, groupMemberId : newlyActiveGMIds)
                           | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActiveLinks, newlyActiveGMIds)
@@ -3331,8 +3331,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   cleanupGroupRosterFile user gInfo
                   forM_ results_ $ \results -> do
                     emitRosterResults gInfo author rosterBrokerTs results
-                    -- ack only while still setting up (own status RSAccepted); a serving relay must not ack broadcasts.
-                    when (isRelay && relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck gInfo author pendingVer Nothing
+                    -- ack while setting up (own status accepted/acknowledged); a serving (active) relay must not ack broadcasts.
+                    when (isRelay && relayOwnStatus gInfo `elem` [Just RSAccepted, Just RSAcknowledgedRoster]) $ do
+                      sendRosterAck gInfo author pendingVer Nothing
+                      withStore' $ \db -> void $ updateRelayOwnStatusFromTo db gInfo RSAccepted RSAcknowledgedRoster
       where
         readAssembledRoster = case fileStatus of
           RFSAccepted fp -> readAt fp
@@ -3397,18 +3399,18 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     xGrpRosterAck gInfo m ackVer err = do
       relay_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupRelayByGMId db (groupMemberId' m))
       case relay_ of
-        Just relay@GroupRelay {relayStatus = RSInvited} -> case err of
+        Just relay@GroupRelay {relayStatus = RSAccepted} -> case err of
           Nothing
             | rosterVersion gInfo == Just ackVer -> do
                 (relay', gLink) <- withStore $ \db -> do
-                  relay' <- liftIO $ updateRelayStatus db relay RSAccepted
+                  relay' <- liftIO $ updateRelayStatus db relay RSAcknowledgedRoster
                   gLink <- getGroupLink db user gInfo
                   pure (relay', gLink)
                 setGroupLinkDataAsync user gInfo gLink
                 toView $ CEvtGroupRelayUpdated user gInfo m relay'
             | otherwise -> messageWarning "x.grp.roster.ack: stale version, awaiting ack for the current roster"
           Just e -> do
-            relay' <- withStore' $ \db -> updateRelayStatusFromTo db relay RSInvited RSRejected
+            relay' <- withStore' $ \db -> updateRelayStatusFromTo db relay RSAccepted RSRejected
             toView $ CEvtGroupRelayUpdated user gInfo m relay'
             messageError $ "x.grp.roster.ack: relay could not save roster, marked rejected: " <> e
         _ -> pure ()

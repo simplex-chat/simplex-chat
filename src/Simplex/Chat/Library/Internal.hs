@@ -1697,7 +1697,7 @@ getGroupRecipients :: StoreCxt -> User -> GroupInfo -> Maybe GroupChatScopeInfo 
 getGroupRecipients cxt user gInfo@GroupInfo {membership} scopeInfo modsCompatVersion
   | useRelays' gInfo && not (isRelay membership) = do
       unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
-      withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
+      withFastStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo
   | otherwise = case scopeInfo of
       Nothing -> do
         unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
@@ -2223,7 +2223,7 @@ broadcastRoster :: User -> GroupInfo -> VersionRoster -> CM ()
 broadcastRoster user gInfo rosterVer = do
   cxt <- chatStoreCxt
   (relays, rosterMems) <- withStore' $ \db ->
-    (,) <$> getGroupRelayMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
+    (,) <$> getGroupRelaySendMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
   forM_ (L.nonEmpty relays) $ \relays' ->
     sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster rosterMems)
 

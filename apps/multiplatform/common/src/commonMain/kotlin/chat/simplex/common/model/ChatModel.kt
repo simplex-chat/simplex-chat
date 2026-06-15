@@ -2334,6 +2334,7 @@ enum class RelayStatus {
   @SerialName("new") New,
   @SerialName("invited") Invited,
   @SerialName("accepted") Accepted,
+  @SerialName("acknowledged_roster") AcknowledgedRoster,
   @SerialName("active") Active,
   @SerialName("inactive") Inactive,
   @SerialName("rejected") Rejected;
@@ -2342,6 +2343,7 @@ enum class RelayStatus {
     New -> generalGetString(MR.strings.relay_status_new)
     Invited -> generalGetString(MR.strings.relay_status_invited)
     Accepted -> generalGetString(MR.strings.relay_status_accepted)
+    AcknowledgedRoster -> generalGetString(MR.strings.relay_status_acknowledged_roster)
     Active -> generalGetString(MR.strings.relay_status_active)
     Inactive -> generalGetString(MR.strings.relay_status_inactive)
     Rejected -> generalGetString(MR.strings.relay_status_rejected)

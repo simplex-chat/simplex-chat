@@ -1291,7 +1291,7 @@ processChatCommand cxt nm = \case
         where
           getRecipients gInfo
             | useRelays' gInfo = do
-                relays <- withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
+                relays <- withFastStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo
                 pure (relays, relays)
             | otherwise = do
                 ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo
@@ -2797,7 +2797,10 @@ processChatCommand cxt nm = \case
         Just memsToChange' -> do
           let mKey m = if isJust rosterVer then MemberKey <$> memberPubKey m else Nothing
               events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (mKey m) rosterVer) memsToChange'
-              recipients = filter memberCurrent members
+          recipients <-
+            if useRelays' gInfo
+              then withStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo
+              else pure (filter memberCurrent members)
           (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
@@ -2845,7 +2848,10 @@ processChatCommand cxt nm = \case
         Just blockMems' -> do
           let mrs = if blockFlag then MRSBlocked else MRSUnrestricted
               events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId MemberRestrictions {restriction = mrs}) blockMems'
-              recipients = filter memberCurrent remainingMems
+          recipients <-
+            if useRelays' gInfo
+              then withStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo
+              else pure (filter memberCurrent remainingMems)
           (msgs_, _gsr) <- sendGroupMessages_ user gInfo recipients events
           let msgSigned = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
@@ -2877,7 +2883,10 @@ processChatCommand cxt nm = \case
       when (useRelays' gInfo && anyPrivilegedRemoved && memberRole' (membership gInfo) /= GROwner) $
         throwCmdError "only the group owner can remove members, moderators and admins"
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
-      let recipients = filter memberCurrent members
+      recipients <-
+        if useRelays' gInfo
+          then withStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo
+          else pure (filter memberCurrent members)
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved
       rosterVer <- if doBumpRoster then Just <$> reserveRosterVersion gInfo else pure Nothing
       (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing rosterVer recipients currentMems
@@ -3011,7 +3020,7 @@ processChatCommand cxt nm = \case
         pure msg
       getRecipients user gInfo
         | useRelays' gInfo = do
-            relays <- withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
+            relays <- withFastStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo
             pure (relays, relays)
         | otherwise = do
             ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo
@@ -3850,7 +3859,7 @@ processChatCommand cxt nm = \case
           sendGroupMessage user gInfo' Nothing recipients (XGrpInfo p')
           where
             getRecipients
-              | useRelays' gInfo' = withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo'
+              | useRelays' gInfo' = withFastStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo'
               | otherwise = do
                   ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo'
                   pure $ filter memberCurrentOrPending ms
@@ -4880,7 +4889,7 @@ runRelayGroupLinkChecks user = do
                   then do
                     -- TODO [relays] emit event to UI when relay own status promoted to RSActive
                     -- CEvtGroupRelayUpdated requires GroupRelay (owner-side), not available on relay side
-                    void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAccepted RSActive
+                    void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAcknowledgedRoster RSActive
                   else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
               _ -> pure ()
           _ -> pure ()
