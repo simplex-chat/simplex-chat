@@ -55,7 +55,6 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Base64.URL as U
 import qualified Data.ByteString.Char8 as B
 import Data.Either (fromRight)
 import Data.Int (Int64)
@@ -70,7 +69,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextFiel
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.ToField (ToField (..))
@@ -223,7 +222,7 @@ instance StrEncoding BadgePresHeader where
       PHTestTag -> PHTest <$> A.takeByteString
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
--- stable accepts both; master rejects PHTest
+-- v6.5.x accepts both; v7 will reject PHTest/PHUnknown
 badgePresHeaderAccepted :: BadgePresHeader -> Bool
 badgePresHeaderAccepted = \case
   PHTest _ -> True
@@ -412,4 +411,4 @@ instance FromJSON LocalBadge where
 newtype BBSPublicKeyStr = BBSPublicKeyStr {toBBSPublicKey :: BBSPublicKey}
 
 instance IsString BBSPublicKeyStr where
-  fromString = BBSPublicKeyStr . BBSPublicKey . fromRight (error "bad base64 in BBSPublicKey") . U.decode . B.pack
+  fromString = BBSPublicKeyStr . fromRight (error "bad base64 in BBSPublicKey") . strDecode . B.pack
