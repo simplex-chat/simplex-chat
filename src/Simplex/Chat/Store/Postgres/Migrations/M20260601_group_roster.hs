@@ -9,14 +9,14 @@ import Text.RawString.QQ (r)
 m20260601_group_roster :: Text
 m20260601_group_roster =
   [r|
-ALTER TABLE groups ADD COLUMN roster_version INTEGER;
+ALTER TABLE groups ADD COLUMN roster_version BIGINT;
 ALTER TABLE groups ADD COLUMN roster_msg_body BYTEA;
 ALTER TABLE groups ADD COLUMN roster_msg_chat_binding TEXT;
 ALTER TABLE groups ADD COLUMN roster_msg_signatures BYTEA;
 ALTER TABLE groups ADD COLUMN roster_sending_owner_gm_id BIGINT;
 ALTER TABLE groups ADD COLUMN roster_broker_ts TIMESTAMPTZ;
 ALTER TABLE groups ADD COLUMN roster_blob BYTEA;
-ALTER TABLE groups ADD COLUMN roster_pending_version INTEGER;
+ALTER TABLE groups ADD COLUMN roster_pending_version BIGINT;
 ALTER TABLE groups ADD COLUMN roster_pending_digest BYTEA;
 ALTER TABLE groups ADD COLUMN roster_pending_msg_body BYTEA;
 ALTER TABLE groups ADD COLUMN roster_pending_msg_chat_binding TEXT;

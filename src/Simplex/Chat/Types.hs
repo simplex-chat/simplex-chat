@@ -2075,16 +2075,11 @@ newtype StoreCxt = StoreCxt {vr :: VersionRangeChat}
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
 
-data RosterVersion
-
-instance VersionScope RosterVersion
-
-type VersionRoster = Version RosterVersion
-
-pattern VersionRoster :: Word16 -> VersionRoster
-pattern VersionRoster v = Version v
-
-{-# COMPLETE VersionRoster #-}
+-- A monotonic per-change counter, not a negotiated protocol version: Int64 rather than the Word16 of
+-- Version, so a long-lived high-churn channel cannot wrap and be permanently rejected by relays (v >= cur).
+newtype VersionRoster = VersionRoster Int64
+  deriving (Eq, Ord, Show)
+  deriving newtype (FromJSON, ToJSON, FromField, ToField)
 
 -- this newtype exists to have a concise JSON encoding of version ranges in chat protocol messages in the form of "1-2" or just "1"
 newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)
