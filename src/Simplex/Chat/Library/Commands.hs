@@ -652,12 +652,14 @@ processChatCommand cxt nm = \case
     _ <- createChatTag db user emoji text
     CRChatTags user <$> getUserChatTags db user
   APISetChatTags (ChatRef cType chatId scope) tagIds -> withUser $ \user -> case cType of
-    CTDirect -> withFastStore' $ \db -> do
-      updateDirectChatTags db chatId (maybe [] L.toList tagIds)
-      CRTagsUpdated user <$> getUserChatTags db user <*> getDirectChatTags db chatId
-    CTGroup | isNothing scope -> withFastStore' $ \db -> do
-      updateGroupChatTags db chatId (maybe [] L.toList tagIds)
-      CRTagsUpdated user <$> getUserChatTags db user <*> getGroupChatTags db chatId
+    CTDirect -> withFastStore $ \db -> do
+      Contact {contactId} <- getContact db cxt user chatId
+      liftIO $ updateDirectChatTags db contactId (maybe [] L.toList tagIds)
+      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db contactId)
+    CTGroup | isNothing scope -> withFastStore $ \db -> do
+      GroupInfo {groupId} <- getGroupInfo db cxt user chatId
+      liftIO $ updateGroupChatTags db groupId (maybe [] L.toList tagIds)
+      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db groupId)
     _ -> throwCmdError "not supported"
   APIDeleteChatTag tagId -> withUser $ \user -> do
     withFastStore' $ \db -> deleteChatTag db user tagId
@@ -1694,8 +1696,11 @@ processChatCommand cxt nm = \case
     CRServerOperatorConditions <$> getServerOperators db
   APISetChatTTL userId (ChatRef cType chatId scope) newTTL_ ->
     withUserId userId $ \user -> checkStoreNotChanged $ withChatLock "setChatTTL" $ do
-      (oldTTL_, globalTTL, ttlCount) <- withStore' $ \db ->
-        (,,) <$> getSetChatTTL db <*> getChatItemTTL db user <*> getChatTTLCount db user
+      (oldTTL_, globalTTL, ttlCount) <- withStore $ \db -> do
+        oldTTL <- getSetChatTTL db user
+        globalTTL <- liftIO $ getChatItemTTL db user
+        ttlCount <- liftIO $ getChatTTLCount db user
+        pure (oldTTL, globalTTL, ttlCount)
       let newTTL = fromMaybe globalTTL newTTL_
           oldTTL = fromMaybe globalTTL oldTTL_
       when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
@@ -1704,9 +1709,13 @@ processChatCommand cxt nm = \case
       lift $ setChatItemsExpiration user globalTTL ttlCount
       ok user
     where
-      getSetChatTTL db = case cType of
-        CTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
-        CTGroup | isNothing scope -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
+      getSetChatTTL db currentUser = case cType of
+        CTDirect -> do
+          Contact {contactId} <- getContact db cxt currentUser chatId
+          liftIO $ getDirectChatTTL db contactId <* setDirectChatTTL db contactId newTTL_
+        CTGroup | isNothing scope -> do
+          GroupInfo {groupId} <- getGroupInfo db cxt currentUser chatId
+          liftIO $ getGroupChatTTL db groupId <* setGroupChatTTL db groupId newTTL_
         _ -> pure Nothing
       expireChat user globalTTL = do
         currentTs <- liftIO getCurrentTime

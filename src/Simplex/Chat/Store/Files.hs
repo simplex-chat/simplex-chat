@@ -83,6 +83,7 @@ import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Type.Equality
@@ -462,7 +463,7 @@ createRcvStandaloneFileTransfer db userId (CryptoFile filePath cfArgs_) fileSize
 
 createRcvFD_ :: DB.Connection -> UserId -> UTCTime -> FileDescr -> ExceptT StoreError IO RcvFileDescr
 createRcvFD_ db userId currentTs FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
-  when (fileDescrPartNo /= 0) $ throwError SERcvFileInvalidDescrPart
+  when (fileDescrPartNo /= 0 || not (rcvFileDescrWithinLimits fileDescrPartNo fileDescrText)) $ throwError SERcvFileInvalidDescrPart
   fileDescrId <- liftIO $ do
     DB.execute
       db
@@ -490,8 +491,8 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
           fileDescrPartNo = rfdPNo,
           fileDescrComplete = rfdComplete
         } -> do
-        when (fileDescrPartNo /= rfdPNo + 1 || rfdComplete) $ throwError SERcvFileInvalidDescrPart
         let fileDescrText' = rfdText <> fileDescrText
+        when (fileDescrPartNo /= rfdPNo + 1 || rfdComplete || not (rcvFileDescrWithinLimits fileDescrPartNo fileDescrText')) $ throwError SERcvFileInvalidDescrPart
         liftIO $
           DB.execute
             db
@@ -502,6 +503,23 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
             |]
             (fileDescrText', fileDescrPartNo, BI fileDescrComplete, fileDescrId)
         pure RcvFileDescr {fileDescrId, fileDescrText = fileDescrText', fileDescrPartNo, fileDescrComplete}
+
+-- Upper bounds sized above the largest legitimate received description; derived from simplexmq's
+-- chunk tiers and redundancy, so a change there must revisit them.
+-- ~1280 chunks max = maxFileSizeHard (5gb) / largest chunk tier (4mb).
+-- ~150 chars per chunk in the description YAML = replicaId 24 + Ed25519 key 64 + SHA-256 digest 44 + chunkNo/colons.
+-- Total ~0.18 MB at 1 replica/chunk (~0.42 MB at 3x), under the 1mb text and 1024 part caps.
+maxRcvFileDescrParts :: Int
+maxRcvFileDescrParts = 1024
+
+maxRcvFileDescrTextLength :: Int
+maxRcvFileDescrTextLength = 1024 * 1024
+
+rcvFileDescrWithinLimits :: Int -> Text -> Bool
+rcvFileDescrWithinLimits partNo descrText =
+  partNo >= 0
+    && partNo <= maxRcvFileDescrParts
+    && T.length descrText <= maxRcvFileDescrTextLength
 
 getRcvFileDescrByRcvFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
 getRcvFileDescrByRcvFileId db fileId = do
