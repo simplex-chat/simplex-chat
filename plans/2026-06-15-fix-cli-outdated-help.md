@@ -4,7 +4,7 @@ Branch: `nd/fix-cli-outdated-help` · file `src/Simplex/Chat/Help.hs`.
 
 ## 1. Problem statement
 
-Typing `/get stats` in the terminal CLI does nothing useful — it is documented in `/help` but no parser accepts it, so it fails to parse (or, as `//get stats`, resolves to `CustomChatCommand` → "not supported"). Investigation found this is not isolated: four documented commands no longer exist in the parser.
+Typing `/get stats` in the terminal CLI does nothing useful — it is documented in `/help` but no parser accepts it, so it fails to parse. Investigation found this is not isolated: four documented commands no longer exist in the parser.
 
 ## 2. Solution summary
 
