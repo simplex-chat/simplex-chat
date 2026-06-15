@@ -1393,9 +1393,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                           events = XGrpRelayNew <$> newlyActive
                       unless (null recipients) $
                         void $ sendGroupMessages user gInfo Nothing False recipients events
-                  -- send the current roster to relays that just became active so they can serve joiners
-                  forM_ newlyActiveGMIds $ \gmId ->
-                    (withStore (\db -> getGroupMemberById db cxt user gmId) >>= sendGroupRosterToRelay user gInfo) `catchAllErrors` eToView
                   where
                     updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId]) -> IO ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId])
                     updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks, newlyActiveGMIds) =

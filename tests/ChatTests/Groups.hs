@@ -11188,42 +11188,48 @@ testChannelMessageFile ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
             createChannel1Relay "team" alice bob cath dan eve
-
+            -- the roster arrives as a file before this one; Postgres assigns it a new id and does not
+            -- reuse it on delete (SQLite does), so the received message file is id 2 here, 1 on SQLite.
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
             alice <## "completed uploading file 1 (test.jpg) for #team"
             bob <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
             concurrentlyN_
               [ do
                   cath <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   dan <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- all members receive the file concurrently
             src <- B.readFile "./tests/fixtures/test.jpg"
             concurrentlyN_
-              [ receiveFile bob "bob" src,
-                receiveFile cath "cath" src,
-                receiveFile dan "dan" src,
-                receiveFile eve "eve" src
+              [ receiveFile bob "bob" rcvFileId src,
+                receiveFile cath "cath" rcvFileId src,
+                receiveFile dan "dan" rcvFileId src,
+                receiveFile eve "eve" rcvFileId src
               ]
   where
-    receiveFile cc name src = do
+    receiveFile cc name fileId src = do
       let path = "./tests/tmp/test_" <> name <> ".jpg"
-      cc ##> ("/fr 1 " <> path)
+      cc ##> ("/fr " <> show fileId <> " " <> path)
       cc
-        <### [ ConsoleString ("saving file 1 from #team to " <> path),
-               "started receiving file 1 (test.jpg) from #team"
+        <### [ ConsoleString ("saving file " <> show fileId <> " from #team to " <> path),
+               ConsoleString ("started receiving file " <> show fileId <> " (test.jpg) from #team")
              ]
-      cc <## "completed receiving file 1 (test.jpg) from #team"
+      cc <## ("completed receiving file " <> show fileId <> " (test.jpg) from #team")
       B.readFile path >>= (`shouldBe` src)
 
 testChannelMessageFileCancel :: HasCallStack => TestParams -> IO ()
@@ -11234,33 +11240,37 @@ testChannelMessageFileCancel ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
             createChannel1Relay "team" alice bob cath dan eve
-
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
             alice <## "completed uploading file 1 (test.jpg) for #team"
             bob <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
             concurrentlyN_
               [ do
                   cath <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   dan <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- owner cancels file
             alice ##> "/fc 1"
             alice <## "cancelled sending file 1 (test.jpg) to bob"
-            bob <## "team cancelled sending file 1 (test.jpg)"
+            bob <## ("team cancelled sending file " <> show rcvFileId <> " (test.jpg)")
             concurrentlyN_
-              [ cath <## "team cancelled sending file 1 (test.jpg)",
-                dan <## "team cancelled sending file 1 (test.jpg)",
-                eve <## "team cancelled sending file 1 (test.jpg)"
+              [ cath <## ("team cancelled sending file " <> show rcvFileId <> " (test.jpg)"),
+                dan <## ("team cancelled sending file " <> show rcvFileId <> " (test.jpg)"),
+                eve <## ("team cancelled sending file " <> show rcvFileId <> " (test.jpg)")
               ]
 
 testChannelMessageQuote :: HasCallStack => TestParams -> IO ()
@@ -11410,43 +11420,47 @@ testChannelOwnerFileTransferAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
             createChannel1Relay "team" alice bob cath dan eve
-
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
             alice <## "completed uploading file 1 (test.jpg) for #team"
             bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
             concurrentlyN_
               [ do
                   cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   dan <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   eve <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- all members receive the file
             src <- B.readFile "./tests/fixtures/test.jpg"
             concurrentlyN_
-              [ receiveFile bob "bob" src,
-                receiveFile cath "cath" src,
-                receiveFile dan "dan" src,
-                receiveFile eve "eve" src
+              [ receiveFile bob "bob" rcvFileId src,
+                receiveFile cath "cath" rcvFileId src,
+                receiveFile dan "dan" rcvFileId src,
+                receiveFile eve "eve" rcvFileId src
               ]
   where
-    receiveFile cc name src = do
+    receiveFile cc name fileId src = do
       let path = "./tests/tmp/test_" <> name <> ".jpg"
-      cc ##> ("/fr 1 " <> path)
+      cc ##> ("/fr " <> show fileId <> " " <> path)
       cc
-        <### [ ConsoleString ("saving file 1 from alice to " <> path),
-               "started receiving file 1 (test.jpg) from alice"
+        <### [ ConsoleString ("saving file " <> show fileId <> " from alice to " <> path),
+               ConsoleString ("started receiving file " <> show fileId <> " (test.jpg) from alice")
              ]
-      cc <## "completed receiving file 1 (test.jpg) from alice"
+      cc <## ("completed receiving file " <> show fileId <> " (test.jpg) from alice")
       B.readFile path >>= (`shouldBe` src)
 
 testChannelOwnerFileCancelAsMember :: HasCallStack => TestParams -> IO ()
@@ -11457,34 +11471,38 @@ testChannelOwnerFileCancelAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
             createChannel1Relay "team" alice bob cath dan eve
-
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
             alice <## "completed uploading file 1 (test.jpg) for #team"
             bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
             concurrentlyN_
               [ do
                   cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   dan <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
                 do
                   eve <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
-                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
               ]
 
             -- owner cancels file
             alice ##> "/fc 1"
             alice <## "cancelled sending file 1 (test.jpg) to bob"
-            bob <## "alice cancelled sending file 1 (test.jpg)"
+            bob <## ("alice cancelled sending file " <> show rcvFileId <> " (test.jpg)")
             concurrentlyN_
-              [ cath <## "alice cancelled sending file 1 (test.jpg)",
-                dan <## "alice cancelled sending file 1 (test.jpg)",
-                eve <## "alice cancelled sending file 1 (test.jpg)"
+              [ cath <## ("alice cancelled sending file " <> show rcvFileId <> " (test.jpg)"),
+                dan <## ("alice cancelled sending file " <> show rcvFileId <> " (test.jpg)"),
+                eve <## ("alice cancelled sending file " <> show rcvFileId <> " (test.jpg)")
               ]
 
 testChannelReactionAttribution :: HasCallStack => TestParams -> IO ()
