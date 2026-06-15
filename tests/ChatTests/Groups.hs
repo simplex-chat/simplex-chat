@@ -83,6 +83,7 @@ chatGroupTests = do
     it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
+    it "reject inbound admin owner role change" testRejectInboundAdminOwnerRoleChange
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate own message (should process as deletion)" testGroupModerateOwn
@@ -1627,6 +1628,37 @@ testUpdateMemberRole =
         ]
       alice ##> "/mr team alice admin"
       alice <## "bad chat command: can't change role for self"
+
+testRejectInboundAdminOwnerRoleChange :: HasCallStack => TestParams -> IO ()
+testRejectInboundAdminOwnerRoleChange =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      void $ withCCTransaction cath $ \db ->
+        DB.execute_
+          db
+          [sql|
+            UPDATE group_members
+            SET member_role = 'owner'
+            WHERE member_category = 'user'
+              AND group_id IN (
+                SELECT group_id FROM groups WHERE local_display_name = 'team'
+              )
+          |]
+
+      cath ##> "/mr #team bob owner"
+      cath <## "#team: you changed the role of bob to owner"
+      concurrentlyN_
+        [ alice <## "error: x.grp.mem.role with insufficient member permissions",
+          bob <## "error: x.grp.mem.role with insufficient member permissions"
+        ]
+
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               "cath (Catherine): admin, connected"
+             ]
 
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do

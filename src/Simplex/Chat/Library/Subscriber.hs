@@ -3238,7 +3238,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} applyMember gEvent
-          | senderRole < GRAdmin || senderRole < fromRole =
+          | senderRole < GRAdmin
+              || senderRole < fromRole
+              || senderRole < memRole =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
               messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing
