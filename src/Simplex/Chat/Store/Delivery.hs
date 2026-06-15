@@ -332,8 +332,8 @@ updateDeliveryJobStatus_ db jobId status errReason_ = do
     (status, errReason_, currentTs, jobId)
 
 -- TODO [relays] possible improvement is to prioritize owners and "active" members
-getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
-getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
+getGroupMembersByCursor :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
+getGroupMembersByCursor db cxt user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
   gmIds :: [Int64] <-
     map fromOnly <$> case cursorGMId_ of
       Nothing ->
@@ -351,13 +351,14 @@ getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} curs
               :. (cursorGMId, count)
           )
 #if defined(dbPostgres)
-  map (toContactMember vr user) <$>
+  currentTs <- getCurrentTime
+  map (toContactMember currentTs cxt user) <$>
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_member_id IN ?")
       (Only (In gmIds))
 #else
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) gmIds
+  rights <$> mapM (runExceptT . getGroupMemberById db cxt user) gmIds
 #endif
   where
     query =

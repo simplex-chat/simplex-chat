@@ -113,7 +113,9 @@ data class ComposeState(
   val inProgress: Boolean = false,
   val progressByTimeout: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: MentionedMembers = emptyMap()
+  val mentions: MentionedMembers = emptyMap(),
+  // the max file size the user may attach, raised by their active badge unless the chat is incognito; kept in sync on chat switch
+  val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP)
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     ComposeMessage(
@@ -251,8 +253,6 @@ data class ComposeState(
   }
 }
 
-private val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
-
 sealed class RecordingState {
   object NotStarted: RecordingState()
   class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
@@ -300,6 +300,7 @@ fun MutableState<ComposeState>.onFilesAttached(uris: List<URI>) {
 
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
+    val maxFileSize = value.maxFileSize
     val fileSize = getFileSize(uri)
     if (fileSize != null && fileSize <= maxFileSize) {
       val fileName = getFileName(uri)
@@ -318,6 +319,7 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
 }
 
 suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?) {
+  val maxFileSize = value.maxFileSize
   val content = ArrayList<UploadContent>()
   val imagesPreview = ArrayList<String>()
   uris.forEach { uri ->
@@ -487,7 +489,7 @@ fun ComposeView(
     if (live) {
       composeState.value = composeState.value.copy(inProgress = false, progressByTimeout = false)
     } else {
-      composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+      composeState.value = ComposeState(useLinkPreviews = useLinkPreviews, maxFileSize = composeState.value.maxFileSize)
       resetLinkPreview()
     }
     recState.value = RecordingState.NotStarted
@@ -1094,7 +1096,7 @@ fun ComposeView(
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
     val lastEditable = chatsCtx.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
-      composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
+      composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews).copy(maxFileSize = composeState.value.maxFileSize)
     }
   }
 
@@ -1321,6 +1323,11 @@ fun ComposeView(
     }
     chatModel.removeLiveDummy()
     CIFile.cachedRemoteFileRequests.clear()
+  }
+  // keep the attach size limit in sync with the chat: the user's active badge raises it, but not in incognito chats where no badge is presented
+  LaunchedEffect(chat.chatInfo) {
+    val incognito = if (chat.chatInfo.profileChangeProhibited) chat.chatInfo.incognito else chatModel.controller.appPrefs.incognito.get()
+    composeState.value = composeState.value.copy(maxFileSize = getMaxFileSize(FileProtocol.XFTP, if (incognito) null else chatModel.currentUser.value?.profile))
   }
   if (appPlatform.isDesktop) {
     // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`

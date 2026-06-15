@@ -447,7 +447,7 @@ fun ChatItemView(
                     }
                     if (cItem.file != null && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded))) {
                       SaveContentItemAction(cItem, saveFileLauncher, showMenu)
-                    } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file)) {
+                    } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file, ciSenderProfile(cItem, chat.chatInfo))) {
                       ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), onClick = {
                         withBGApi {
                           Log.d(TAG, "ChatItemView downloadFileAction")

@@ -570,19 +570,19 @@ getRcvFileTransfer_ db userId fileId = do
           Just fp -> pure fp
         cancelled = maybe False unBI cancelled_
 
-acceptRcvInlineFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
-acceptRcvInlineFT db vr user fileId filePath = do
+acceptRcvInlineFT :: DB.Connection -> StoreCxt -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+acceptRcvInlineFT db cxt user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath False (Just IFMOffer) =<< getCurrentTime
-  getChatItemByFileId db vr user fileId
+  getChatItemByFileId db cxt user fileId
 
 startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Maybe InlineFileMode -> IO ()
 startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
   acceptRcvFT_ db user fileId filePath False rcvFileInline =<< getCurrentTime
 
-xftpAcceptRcvFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> Bool -> ExceptT StoreError IO AChatItem
-xftpAcceptRcvFT db vr user fileId filePath userApprovedRelays = do
+xftpAcceptRcvFT :: DB.Connection -> StoreCxt -> User -> FileTransferId -> FilePath -> Bool -> ExceptT StoreError IO AChatItem
+xftpAcceptRcvFT db cxt user fileId filePath userApprovedRelays = do
   liftIO $ acceptRcvFT_ db user fileId filePath userApprovedRelays Nothing =<< getCurrentTime
-  getChatItemByFileId db vr user fileId
+  getChatItemByFileId db cxt user fileId
 
 acceptRcvFT_ :: DB.Connection -> User -> FileTransferId -> FilePath -> Bool -> Maybe InlineFileMode -> UTCTime -> IO ()
 acceptRcvFT_ db User {userId} fileId filePath userApprovedRelays rcvFileInline currentTs = do
@@ -860,9 +860,9 @@ getLocalCryptoFile db userId fileId sent =
       pure $ CryptoFile filePath fileCryptoArgs
     _ -> throwError $ SEFileNotFound fileId
 
-updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> VersionRangeChat -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
-updateDirectCIFileStatus db vr user fileId fileStatus = do
-  aci@(AChatItem cType d cInfo ci) <- getChatItemByFileId db vr user fileId
+updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> StoreCxt -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
+updateDirectCIFileStatus db cxt user fileId fileStatus = do
+  aci@(AChatItem cType d cInfo ci) <- getChatItemByFileId db cxt user fileId
   case (cType, testEquality d $ msgDirection @d) of
     (SCTDirect, Just Refl) -> do
       liftIO $ updateCIFileStatus db user fileId fileStatus
