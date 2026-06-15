@@ -3195,11 +3195,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     -- rollback defense (channels): apply an owner-signed role/removal only at a version >= the persisted
     -- roster_version (not the batch-constant gInfo, which a relay can stale by reordering events in one
     -- batch), then advance it in the same transaction; a strictly lower version is a replay and is ignored.
-    applyAtRosterVersion :: GroupInfo -> Maybe VersionRoster -> CM (Maybe DeliveryJobScope) -> CM (Maybe DeliveryJobScope)
-    applyAtRosterVersion gInfo rosterVer_ action
+    -- Only an owner sender may advance it: a non-owner signed event is rejected by the action that follows,
+    -- but must not bump roster_version first, or every later owner roster at a lower version is dropped.
+    applyAtRosterVersion :: GroupInfo -> GroupMember -> Maybe VersionRoster -> CM (Maybe DeliveryJobScope) -> CM (Maybe DeliveryJobScope)
+    applyAtRosterVersion gInfo sender rosterVer_ action
       | not (useRelays' gInfo) = action
       | otherwise = case rosterVer_ of
           Nothing -> action
+          Just _ | memberRole' sender /= GROwner -> action
           Just v -> do
             accept <- withStore' $ \db -> do
               cur <- getGroupRosterVersion db gInfo
@@ -3213,10 +3216,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
       | membershipMemId == memId =
-          applyAtRosterVersion gInfo rosterVer_ $
+          applyAtRosterVersion gInfo m rosterVer_ $
             let gInfo' = gInfo {membership = membership {memberRole = memRole}}
              in changeMemberRole gInfo' membership (\db -> updateGroupMemberRole db user membership memRole) $ RGEUserRole memRole
-      | otherwise = applyAtRosterVersion gInfo rosterVer_ $ do
+      | otherwise = applyAtRosterVersion gInfo m rosterVer_ $ do
           defaultRole <- unknownMemberRole gInfo
           -- an owner-signed event with a key TOFU-creates an unknown member only for a roster role; else a plain lookup
           let allowCreate = useRelays' gInfo && senderRole == GROwner && isRosterRole memRole && isJust memberKey_
@@ -3461,7 +3464,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages rosterVer_ verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
       let GroupMember {memberId = membershipMemId} = membership
       if membershipMemId == memId
-        then checkRole membership $ do
+        then applyAtRosterVersion gInfo m rosterVer_ $ checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
           -- TODO [relays] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
           unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
@@ -3473,7 +3476,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           deleteMemberItem msg gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
           pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
-        else applyAtRosterVersion gInfo rosterVer_ $
+        else applyAtRosterVersion gInfo m rosterVer_ $
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
             Left _ -> do
               messageError "x.grp.mem.del with unknown member ID"
