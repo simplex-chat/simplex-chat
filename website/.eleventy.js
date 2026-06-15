@@ -95,6 +95,12 @@ module.exports = function (ty) {
   const catPills = Object.keys(catCounts).sort()
   ty.addGlobalData("linkPills", mediaPills.concat(catPills))
 
+  // Home first-section variant: "default" | "testing-water" | "crowdfunding-full".
+  // Selects which hero index.html renders; "default" = the current site, untouched.
+  ty.addGlobalData("homeHero", "default")
+  // TODO: replace with the live SimpleX campaign URL once the Wefunder page exists.
+  ty.addGlobalData("wefunderUrl", "https://wefunder.com/")
+
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
   ty.addFilter("getlang", (path) => {
