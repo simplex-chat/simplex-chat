@@ -1178,14 +1178,16 @@ serveRoster user gInfo member = do
   cxt <- chatStoreCxt
   withStore' (\db -> getGroupRoster db gInfo) >>= \case
     Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
-      forM_ (eitherToMaybe (J.eitherDecodeStrict' signedBody) :: Maybe (ChatMessage 'Json)) $ \chatMsg@ChatMessage {msgId} ->
-        withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
-          Right owner -> do
-            let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
-            sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
-            forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
-              sendInlineBlobChunks user gInfo [member] sid blob
-          Left _ -> pure ()
+      case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
+        Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
+        Right chatMsg@ChatMessage {msgId} ->
+          withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
+            Right owner -> do
+              let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
+              sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
+              forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
+                sendInlineBlobChunks user gInfo [member] sid blob
+            Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
     Nothing -> pure ()
 
 -- Used in groups with relays to introduce moderators and above to a new member,
@@ -1247,16 +1249,16 @@ isRosterRole r = r == GRMember || r == GRModerator || r == GRAdmin
 -- Runs on the parsed roster blob.
 validateGroupRoster :: [RosterMember] -> [RosterMember]
 validateGroupRoster entries =
-  dedup [] $ filter (\RosterMember {role} -> isRosterRole role) entries
+  dedup S.empty $ filter (\RosterMember {role} -> isRosterRole role) entries
   where
     dedup _ [] = []
     dedup seen (rm@RosterMember {memberId} : rms)
-      | memberId `elem` seen = dedup seen rms
-      | otherwise = rm : dedup (memberId : seen) rms
+      | memberId `S.member` seen = dedup seen rms
+      | otherwise = rm : dedup (S.insert memberId seen) rms
 
 -- Privileged members without a known key are skipped (recipients can't verify them).
 buildGroupRoster :: [GroupMember] -> [RosterMember]
-buildGroupRoster mods = mapMaybe rosterMember mods
+buildGroupRoster mods = take maxGroupRosterSize $ mapMaybe rosterMember mods
   where
     rosterMember GroupMember {memberId, memberPubKey, memberRole}
       | isRosterRole memberRole = (\k -> RosterMember {memberId, key = MemberKey k, role = memberRole, privileges = 0}) <$> memberPubKey
