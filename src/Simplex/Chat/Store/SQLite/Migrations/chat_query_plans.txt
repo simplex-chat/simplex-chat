@@ -1052,6 +1052,15 @@ Plan:
 SEARCH display_names USING COVERING INDEX sqlite_autoindex_display_names_2 (user_id=? AND ldn_base=?)
 
 Query: 
+            SELECT roster_pending_version, roster_pending_digest,
+                   roster_pending_sending_owner_gm_id, roster_pending_broker_ts,
+                   roster_pending_msg_chat_binding, roster_pending_msg_signatures, roster_pending_msg_body
+            FROM groups WHERE group_id = ?
+          
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
             SELECT s.contact_id, g.group_id, s.group_member_id
             FROM sent_probes s
             LEFT JOIN contacts c ON s.contact_id = c.contact_id AND c.deleted = 0
@@ -1238,8 +1247,8 @@ Query:
           INSERT INTO groups
             (use_relays, creating_in_progress, local_display_name, user_id, group_profile_id, enable_ntfs,
              created_at, updated_at, chat_ts, user_member_profile_sent_at,
-             root_priv_key, root_pub_key, member_priv_key, public_member_count)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             root_priv_key, root_pub_key, member_priv_key, public_member_count, roster_version)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -1625,7 +1634,7 @@ Query:
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline,
-            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays, g.local_display_name
+            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays, g.local_display_name, f.file_type
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
@@ -3660,6 +3669,15 @@ SEARCH i USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND 
 SEARCH f USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
+        SELECT f.file_id FROM files f
+        JOIN rcv_files r ON r.file_id = f.file_id
+        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ?
+      
+Plan:
+SEARCH f USING INDEX idx_files_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
+SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT file_id, contact_id, group_id, note_folder_id
         FROM files
         WHERE agent_snd_file_id = ?
@@ -5141,14 +5159,6 @@ Plan:
 SEARCH group_relays USING INDEX idx_group_relays_group_member_id (group_member_id=?)
 
 Query: 
-      UPDATE group_relays
-      SET relay_status = ?, updated_at = ?
-      WHERE group_member_id = ?
-    
-Plan:
-SEARCH group_relays USING INDEX idx_group_relays_group_member_id (group_member_id=?)
-
-Query: 
       UPDATE group_snd_item_statuses
       SET group_snd_item_status = ?, updated_at = ?
       WHERE chat_item_id = ? AND group_member_id  = ?
@@ -5192,8 +5202,43 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE groups
-      SET roster_version = ?, roster_sending_owner_gm_id = ?, roster_broker_ts = ?,
-          roster_msg_chat_binding = ?, roster_msg_signatures = ?, roster_msg_body = ?, updated_at = ?
+      SET roster_pending_version = ?, roster_pending_digest = ?,
+          roster_pending_sending_owner_gm_id = ?, roster_pending_broker_ts = ?,
+          roster_pending_msg_chat_binding = ?, roster_pending_msg_signatures = ?, roster_pending_msg_body = ?,
+          updated_at = ?
+      WHERE group_id = ?
+    
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE groups SET
+        roster_pending_version = NULL, roster_pending_digest = NULL,
+        roster_pending_sending_owner_gm_id = NULL, roster_pending_broker_ts = NULL,
+        roster_pending_msg_chat_binding = NULL, roster_pending_msg_signatures = NULL, roster_pending_msg_body = NULL,
+        updated_at = ?
+      WHERE group_id = ?
+    
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE groups SET
+        roster_version = roster_pending_version,
+        roster_blob = ?,
+        roster_sending_owner_gm_id = roster_pending_sending_owner_gm_id,
+        roster_broker_ts = roster_pending_broker_ts,
+        roster_msg_chat_binding = roster_pending_msg_chat_binding,
+        roster_msg_signatures = roster_pending_msg_signatures,
+        roster_msg_body = roster_pending_msg_body,
+        roster_pending_version = NULL,
+        roster_pending_digest = NULL,
+        roster_pending_sending_owner_gm_id = NULL,
+        roster_pending_broker_ts = NULL,
+        roster_pending_msg_chat_binding = NULL,
+        roster_pending_msg_signatures = NULL,
+        roster_pending_msg_body = NULL,
+        updated_at = ?
       WHERE group_id = ?
     
 Plan:
@@ -5215,6 +5260,14 @@ Query:
     
 Plan:
 SEARCH protocol_servers USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE rcv_file_chunks
+      SET chunk_stored = 1, updated_at = ?
+      WHERE file_id = ? AND chunk_number = ?
+    
+Plan:
+SEARCH rcv_file_chunks USING PRIMARY KEY (file_id=? AND chunk_number=?)
 
 Query: 
       UPDATE rcv_files
@@ -6429,6 +6482,14 @@ SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
 SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?)
 
+Query: DELETE FROM files WHERE user_id = ? AND group_id = ? AND file_type = ?
+Plan:
+SEARCH files USING INDEX idx_files_group_id (group_id=?)
+SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
+SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
+SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?)
+
 Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
@@ -6681,7 +6742,7 @@ Plan:
 Query: INSERT INTO files (user_id, file_name, file_path, file_size, chunk_size, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO group_profiles (display_name, full_name, short_descr, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
@@ -6734,6 +6795,9 @@ Query: INSERT INTO users (agent_user_id, local_display_name, active_user, is_use
 Plan:
 
 Query: INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)
+Plan:
+
+Query: INSERT OR REPLACE INTO rcv_file_chunks (file_id, chunk_number, chunk_agent_msg_id, created_at, updated_at) VALUES (?,?,?,?,?)
 Plan:
 
 Query: SELECT 1 FROM settings WHERE user_id = ? LIMIT 1
@@ -6871,6 +6935,10 @@ Query: SELECT chat_tag_id FROM chat_tags_chats WHERE group_id = ?
 Plan:
 SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_group_id (group_id=?)
 
+Query: SELECT chunk_number FROM rcv_file_chunks WHERE file_id = ? ORDER BY chunk_number DESC LIMIT 1
+Plan:
+SEARCH rcv_file_chunks USING COVERING INDEX idx_rcv_file_chunks_file_id (file_id=?)
+
 Query: SELECT conn_req_inv FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -6934,6 +7002,10 @@ SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_grou
 Query: SELECT file_id FROM files WHERE user_id = ? AND redirect_file_id = ?
 Plan:
 SEARCH files USING INDEX idx_files_redirect_file_id (redirect_file_id=?)
+
+Query: SELECT file_id, file_path FROM files WHERE user_id = ? AND group_id = ? AND file_type = ?
+Plan:
+SEARCH files USING INDEX idx_files_group_id (group_id=?)
 
 Query: SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?
 Plan:
@@ -7003,6 +7075,14 @@ Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
 
+Query: SELECT member_id FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
+Query: SELECT member_pub_key FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
 Query: SELECT member_relations_vector FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -7055,9 +7135,17 @@ Query: SELECT relay_status FROM group_relays WHERE group_relay_id = ?
 Plan:
 SEARCH group_relays USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_binding, roster_msg_signatures, roster_msg_body FROM groups WHERE group_id = ?
+Query: SELECT roster_blob FROM groups WHERE roster_blob IS NOT NULL
+Plan:
+SCAN groups
+
+Query: SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_binding, roster_msg_signatures, roster_msg_body, roster_blob FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT roster_version FROM groups
+Plan:
+SCAN groups
 
 Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?
 Plan:
@@ -7303,6 +7391,10 @@ Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_memb
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE group_members SET member_role = ?, member_pub_key = NULL WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
 Query: UPDATE group_members SET support_chat_items_member_attention = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -7382,6 +7474,10 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE groups SET root_pub_key = ?, member_priv_key = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET roster_blob = ? WHERE roster_blob IS NOT NULL
+Plan:
+SCAN groups
 
 Query: UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?
 Plan:

@@ -24,6 +24,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
@@ -40,12 +41,14 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
+import Simplex.Chat.Files (getChatTempDirectory)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
@@ -86,8 +89,10 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import qualified Simplex.Messaging.Crypto.Lazy as LC
 import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..), ServiceSub (..), ServiceSubError (..), ServiceSubResult (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
@@ -581,7 +586,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               (gInfo, host) <- withStore $ \db -> do
                 liftIO $ deleteContactCardKeepConn db connId ct
                 createGroupInvitedViaLink db cxt user conn'' glInv
-              void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+              void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
               let profileToSend = userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
@@ -1029,7 +1034,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               pure newDeliveryTasks
           processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> VerifiedMsg e -> CM (Maybe NewMessageDeliveryTask)
           processEvent gInfo' m' verifiedMsg = do
-            (m'', conn', msg@RcvMessage {msgId, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta verifiedMsg
+            (m'', conn', msg@RcvMessage {msgId, sharedMsgId_, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta verifiedMsg
             let ctx js = DeliveryTaskContext js False
                 checkSendAsGroup :: Maybe Bool -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
                 checkSendAsGroup asGroup_ a
@@ -1068,17 +1073,17 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> Nothing <$ xGrpMemInv gInfo' m'' memId introInv
               XGrpMemFwd memInfo introInv -> Nothing <$ xGrpMemFwd gInfo' m'' memInfo introInv
-              XGrpMemRole memId memRole -> fmap ctx <$> xGrpMemRole gInfo' m'' memId memRole msg brokerTs
+              XGrpMemRole memId memRole memberKey rosterVer -> fmap ctx <$> xGrpMemRole gInfo' m'' memId memRole memberKey rosterVer msg brokerTs
               XGrpMemRestrict memId memRestrictions -> fmap ctx <$> xGrpMemRestrict gInfo' m'' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> Nothing <$ xGrpMemCon gInfo' m'' memId
-              XGrpMemDel memId withMessages -> case encoding @e of
-                SJson -> fmap ctx <$> xGrpMemDel gInfo' m'' memId withMessages verifiedMsg msg brokerTs False
+              XGrpMemDel memId withMessages rosterVer -> case encoding @e of
+                SJson -> fmap ctx <$> xGrpMemDel gInfo' m'' memId withMessages rosterVer verifiedMsg msg brokerTs False
                 SBinary -> pure Nothing
               XGrpLeave -> fmap ctx <$> xGrpLeave gInfo' m'' msg brokerTs
               XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> fmap ctx <$> xGrpInfo gInfo' m'' p' msg brokerTs
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps' msg
-              XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' gr verifiedMsg brokerTs
+              XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' gr verifiedMsg sharedMsgId_ brokerTs
               XGrpRosterAck ackVer ackErr -> Nothing <$ xGrpRosterAck gInfo' m'' ackVer ackErr
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
@@ -1140,7 +1145,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         checkSndInlineFTComplete conn msgId
         updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ forwardGroupRoster user gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       SWITCH qd phase cStats -> do
         toView $ CEvtGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -1234,7 +1239,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ do
-          when (isUserGrpFwdRelay gInfo) $ forwardGroupRoster user gInfo m -- roster ahead of the resumed backlog
+          when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
       MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
@@ -1308,13 +1313,15 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         r n'' = Just (ci, CIRcvDecryptionError mde n'')
     mdeUpdatedCI _ _ = Nothing
 
-    receiveFileChunk :: RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> CM ()
-    receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
-      FileChunkCancel ->
-        unless (rcvFileCompleteOrCancelled ft) $ do
-          cancelRcvFileTransfer user ft
-          ci <- withStore $ \db -> getChatItemByFileId db cxt user fileId
-          toView $ CEvtRcvFileSndCancelled user ci ft
+    receiveFileChunk :: Maybe GroupInfo -> RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> CM ()
+    receiveFileChunk gInfo_ ft@RcvFileTransfer {fileId, fileType, chunkSize} conn_ MsgMeta {recipient = (msgId, _), integrity} = \case
+      FileChunkCancel -> case fileType of
+        FTRoster -> forM_ gInfo_ $ cleanupGroupRosterFile user
+        FTNormal ->
+          unless (rcvFileCompleteOrCancelled ft) $ do
+            cancelRcvFileTransfer user ft
+            ci <- withStore $ \db -> getChatItemByFileId db cxt user fileId
+            toView $ CEvtRcvFileSndCancelled user ci ft
       FileChunk {chunkNo, chunkBytes = chunk} -> do
         case integrity of
           MsgOk -> pure ()
@@ -1325,21 +1332,24 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           RcvChunkOk ->
             if B.length chunk /= fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
-              else withAckMessage' "file msg" agentConnId meta $ appendFileChunk ft chunkNo chunk False
+              else appendFileChunk ft chunkNo chunk False
           RcvChunkFinal ->
             if B.length chunk > fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
               else do
                 appendFileChunk ft chunkNo chunk True
-                ci <- withStore $ \db -> do
-                  liftIO $ do
-                    updateRcvFileStatus db fileId FSComplete
-                    updateCIFileStatus db user fileId CIFSRcvComplete
-                    deleteRcvFileChunks db ft
-                  getChatItemByFileId db cxt user fileId
-                toView $ CEvtRcvFileComplete user ci
-                mapM_ (deleteAgentConnectionAsync . aConnId) conn_
-          RcvChunkDuplicate -> withAckMessage' "file msg" agentConnId meta $ pure ()
+                case fileType of
+                  FTRoster -> forM_ gInfo_ $ \gInfo -> rosterCompletion gInfo ft
+                  FTNormal -> do
+                    ci <- withStore $ \db -> do
+                      liftIO $ do
+                        updateRcvFileStatus db fileId FSComplete
+                        updateCIFileStatus db user fileId CIFSRcvComplete
+                        deleteRcvFileChunks db ft
+                      getChatItemByFileId db cxt user fileId
+                    toView $ CEvtRcvFileComplete user ci
+                    mapM_ (deleteAgentConnectionAsync . aConnId) conn_
+          RcvChunkDuplicate -> pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
@@ -1383,9 +1393,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                           events = XGrpRelayNew <$> newlyActive
                       unless (null recipients) $
                         void $ sendGroupMessages user gInfo Nothing False recipients events
-                  -- send the current roster to relays that just became active so they can serve joiners
-                  forM_ newlyActiveGMIds $ \gmId ->
-                    (withStore (\db -> getGroupMemberById db cxt user gmId) >>= sendGroupRosterToRelay user gInfo) `catchAllErrors` eToView
                   where
                     updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId]) -> IO ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId])
                     updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks, newlyActiveGMIds) =
@@ -1445,12 +1452,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         -- they will be updated after connection is accepted.
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
-                        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+                        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
                         let e2eContent = CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just $ CR.pqSupportToEnc $ reqPQSup
-                        void $ createChatItem user cd False e2eContent Nothing Nothing
+                        void $ createChatItem user cd False e2eContent Nothing Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \mc -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
-                          createChatItem user (CDDirectSnd ct) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+                          createChatItem user (CDDirectSnd ct) False (CISndMsgContent mc) (Just sharedMsgId) Nothing Nothing
                         mapM (createRequestItem cd) requestMsg_
                     case autoAccept of
                       Nothing -> do
@@ -1475,13 +1482,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         -- they will be updated after connection is accepted.
                         upsertBusinessRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
-                        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+                        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
                         -- TODO [short links] possibly, we can just keep them created where they are created on the business side due to auto-accept
                         -- let e2eContent = CIRcvGroupE2EEInfo $ E2EInfo $ Just False -- no PQ encryption in groups
-                        -- void $ createChatItem user cd False e2eContent Nothing Nothing
+                        -- void $ createChatItem user cd False e2eContent Nothing Nothing Nothing
                         -- void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \arMC -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
-                          createChatItem user (CDGroupSnd gInfo Nothing) False (CISndMsgContent arMC) (Just sharedMsgId) Nothing
+                          createChatItem user (CDGroupSnd gInfo Nothing) False (CISndMsgContent arMC) (Just sharedMsgId) Nothing Nothing
                         mapM (createRequestItem cd) requestMsg_
                     toView $ CEvtAcceptingBusinessRequest user gInfo
               where
@@ -1545,7 +1552,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 upsertBusinessRequestItem (CDChannelRcv _ _) = const $ pure Nothing
                 createRequestItem :: ChatTypeI c => ChatDirection c 'MDRcv -> (SharedMsgId, MsgContent) -> CM AChatItem
                 createRequestItem cd (sharedMsgId, mc) = do
-                  aci <- createChatItem user cd False (CIRcvMsgContent mc) (Just sharedMsgId) Nothing
+                  aci <- createChatItem user cd False (CIRcvMsgContent mc) (Just sharedMsgId) Nothing Nothing
                   toView $ CEvtNewChatItems user [aci]
                   pure aci
                 upsertRequestItem :: ChatTypeI c => ChatDirection c 'MDRcv -> ((SharedMsgId, MsgContent) -> CM (Maybe AChatItem)) -> (SharedMsgId -> CM ()) -> (Maybe (SharedMsgId, MsgContent), Maybe SharedMsgId) -> CM (Maybe AChatItem)
@@ -2163,7 +2170,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           unless (maybe False memberBlocked m') $ autoAcceptFile file_
         processFileInv gInfo' m' =
           let fileMember_ = if sentAsGroup then Nothing else m'
-           in processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_
+           in processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_ FTNormal sharedMsgId_
         newChatItem gInfo' m' scopeInfo ciContent ciFile_ timed live = do
           let mentions' = if maybe False memberBlocked m' then M.empty else mentions
           (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo ciContent ciFile_ timed live mentions'
@@ -2370,7 +2377,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     processGroupFileInvitation' gInfo m fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} brokerTs = do
       ChatConfig {fileChunkSize} <- asks config
       inline <- receiveInlineMode fInv Nothing fileChunkSize
-      RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvGroupFileTransfer db userId gInfo (Just m) fInv inline fileChunkSize
+      RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvGroupFileTransfer db userId gInfo (Just m) FTNormal sharedMsgId_ fInv inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
           ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
           content = ciContentNoParse $ CIRcvMsgContent $ MCFile ""
@@ -2466,10 +2473,17 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       ft <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId >>= getRcvFileTransfer db user
       receiveInlineChunk ft chunk meta
 
+    -- A group BFileChunk is a normal inline file chunk or a roster blob chunk, both located by
+    -- (group_id, shared_msg_id). A chunk matching no in-flight transfer (an orphaned re-served roster
+    -- chunk, or a missing normal file) is ignored; the outer withAckMessage acks it.
     bFileChunkGroup :: GroupInfo -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
-    bFileChunkGroup GroupInfo {groupId} sharedMsgId chunk meta = do
-      ft <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId >>= getRcvFileTransfer db user
-      receiveInlineChunk ft chunk meta
+    bFileChunkGroup gInfo@GroupInfo {groupId} sharedMsgId chunk meta = do
+      fileId_ <- withStore' $ \db -> getGroupRcvFileIdBySharedMsgId db userId groupId sharedMsgId
+      forM_ fileId_ $ \fileId -> do
+        ft <- withStore $ \db -> getRcvFileTransfer db user fileId
+        case fileType ft of
+          FTRoster -> receiveRosterChunk gInfo ft meta chunk
+          FTNormal -> receiveInlineChunk ft chunk meta
 
     receiveInlineChunk :: RcvFileTransfer -> FileChunk -> MsgMeta -> CM ()
     receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
@@ -2479,7 +2493,18 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       case chunk of
         FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile user fileId
         _ -> pure ()
-      receiveFileChunk ft Nothing meta chunk
+      receiveFileChunk Nothing ft Nothing meta chunk
+
+    -- A roster re-serve re-sends the blob from chunk 1; discard any partial first, else chunk 1 over a
+    -- partial is out-of-order (RcvChunkError) and appending after the stale prefix corrupts the blob.
+    receiveRosterChunk :: GroupInfo -> RcvFileTransfer -> MsgMeta -> FileChunk -> CM ()
+    receiveRosterChunk gInfo ft meta chunk = do
+      case chunk of
+        FileChunk {chunkNo} | chunkNo == 1 -> do
+          last_ <- withStore' $ \db -> getRcvFileLastChunkNo db ft
+          when (isJust last_) $ resetRosterPartialChunks ft
+        _ -> pure ()
+      receiveFileChunk (Just gInfo) ft Nothing meta chunk
 
     xFileCancelGroup :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> CM (Maybe DeliveryTaskContext)
     xFileCancelGroup g@GroupInfo {groupId} m_ sharedMsgId = do
@@ -2537,7 +2562,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
             -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
             (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db cxt user ct inv customUserProfileId
-            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let GroupMember {groupMemberId, memberId = membershipMemId} = membership
             if sameGroupLinkId groupLinkId groupLinkId'
               then do
@@ -3092,10 +3117,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   messageError "x.grp.mem.intro ignored: member already exists"
             Left _
               | useRelays' gInfo -> do
-                  -- drop the relay-asserted key for privileged roles; their keys come from the roster, not intros
+                  -- role + key are owner-authoritative (roster); an intro establishes neither - a privileged
+                  -- claim is created at the channel default with no key until the owner-signed roster confirms it
+                  defaultRole <- unknownMemberRole gInfo
                   let memInfo' = case memInfo of
                         MemberInfo mId mRole v p _
-                          | mRole > GRMember -> MemberInfo mId mRole v p Nothing
+                          | mRole >= GRMember -> MemberInfo mId defaultRole v p Nothing
                         _ -> memInfo
                   void $ withStore $ \db -> createIntroReMember db user gInfo memInfo' memRestrictions
               | otherwise -> do
@@ -3165,116 +3192,204 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           chatV = vr cxt `peerConnChatVersion` mcvr
       withStore' $ \db -> createIntroToMemberContact db user m toMember chatV mcvr groupConnIds directConnIds customUserProfileId subMode
 
-    xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg@RcvMessage {msgSigned} brokerTs
+    -- rollback defense (channels): apply an owner-signed role/removal only at a version >= the persisted
+    -- roster_version (not the batch-constant gInfo, which a relay can stale by reordering events in one
+    -- batch), then advance it in the same transaction; a strictly lower version is a replay and is ignored.
+    applyAtRosterVersion :: GroupInfo -> Maybe VersionRoster -> CM (Maybe DeliveryJobScope) -> CM (Maybe DeliveryJobScope)
+    applyAtRosterVersion gInfo rosterVer_ action
+      | not (useRelays' gInfo) = action
+      | otherwise = case rosterVer_ of
+          Nothing -> action
+          Just v -> do
+            accept <- withStore' $ \db -> do
+              cur <- getGroupRosterVersion db gInfo
+              let fresh = maybe True (v >=) cur
+              when fresh $ setGroupRosterVersion db gInfo v
+              pure fresh
+            if accept
+              then action
+              else messageWarning "x.grp.mem: roster version not newer than current, ignoring" $> Nothing
+
+    xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
       | membershipMemId == memId =
-          let gInfo' = gInfo {membership = membership {memberRole = memRole}}
-           in changeMemberRole gInfo' membership $ RGEUserRole memRole
-      | otherwise =
-          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
-            Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-            -- in relay groups the roster delivers the chat item for previously-unknown privileged members
-            Left _
-              | useRelays' gInfo -> pure Nothing
+          applyAtRosterVersion gInfo rosterVer_ $
+            let gInfo' = gInfo {membership = membership {memberRole = memRole}}
+             in changeMemberRole gInfo' membership (\db -> updateGroupMemberRole db user membership memRole) $ RGEUserRole memRole
+      | otherwise = applyAtRosterVersion gInfo rosterVer_ $ do
+          defaultRole <- unknownMemberRole gInfo
+          -- an owner-signed event with a key TOFU-creates an unknown member only for a roster role; else a plain lookup
+          let allowCreate = useRelays' gInfo && senderRole == GROwner && isRosterRole memRole && isJust memberKey_
+          withStore' (\db -> runExceptT $ getCreateUnknownGMByMemberId db cxt user gInfo memId (nameFromMemberId memId) defaultRole allowCreate) >>= \case
+            Right (Just (member, created))
+              -- just created (keyless, and allowCreate ensured the event carries its key): pin key + role
+              | created, Just (MemberKey pubKey) <- memberKey_ ->
+                  let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+                   in changeMemberRole gInfo member (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent
+              -- known member: apply the role (its key is established via roster/intro; the event's key is ignored)
+              | otherwise ->
+                  let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+                   in changeMemberRole gInfo member (\db -> updateGroupMemberRole db user member memRole) gEvent
+            -- in relay groups the roster may deliver role update for previously-unknown privileged members
+            _ | useRelays' gInfo -> pure Nothing
               | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
       where
         GroupMember {memberId = membershipMemId} = membership
-        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
+        -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
+        -- the delivery scope (relay forwarding) is computed on the pre-change role
+        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} applyMember gEvent
           | senderRole < GRAdmin || senderRole < fromRole =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
-              messageError "x.grp.mem.role: only the owner can change moderator/admin roles in relay groups" $> Nothing
+              messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing
+          -- in channels a forwarded role event that the roster already applied is a no-op; suppress it
+          | useRelays' gInfo && fromRole == memRole = pure $ memberEventDeliveryScope member
           | otherwise = do
-              withStore' $ \db -> updateGroupMemberRole db user member memRole
+              withStore' applyMember
               (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
               (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
               groupMsgToView cInfo ci
               toView CEvtMemberRole {user, groupInfo = gInfo'', byMember = m', member = member {memberRole = memRole}, fromRole, toRole = memRole, msgSigned}
               pure $ memberEventDeliveryScope member
 
-    xGrpRoster :: MsgEncodingI e => GroupInfo -> GroupMember -> GroupRoster -> VerifiedMsg e -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpRoster gInfo author roster verifiedMsg brokerTs
+    -- The header only starts the transfer; the roster is applied and the version bumped only at
+    -- blob completion, so a withheld or corrupted blob leaves the last good roster intact.
+    xGrpRoster :: GroupInfo -> GroupMember -> GroupRoster -> VerifiedMsg e -> Maybe SharedMsgId -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xGrpRoster gInfo author GroupRoster {version = newVer, fileInv = InlineFileInvitation {fileSize, fileDigest}} verifiedMsg sharedMsgId_ brokerTs
       -- only an owner may sign a roster; otherwise a relay could route it as a member whose key it controls
       | memberRole' author /= GROwner = messageError "x.grp.roster: not signed by an owner" $> Nothing
-      | length entries > maxGroupRosterSize = messageError ("x.grp.roster: too many entries, max " <> tshow maxGroupRosterSize) $> Nothing
-      | isUserGrpFwdRelay gInfo = relayApplyRoster
-      | otherwise = Nothing <$ memberApplyRoster
+      | fileSize > maxGroupRosterBytes = messageError "x.grp.roster: roster blob size exceeds limit" $> Nothing
+      | otherwise = case verifiedMsg of
+          -- unreachable: XGrpRoster is in requiresSignature, so withVerifiedMsg rejected unsigned
+          VMUnsigned _ -> pure Nothing
+          VMSigned _ sm _ -> case sharedMsgId_ of
+            Nothing -> Nothing <$ messageWarning "x.grp.roster: missing shared message id"
+            Just sharedMsgId -> do
+              pendingVer_ <- fmap (\(v, _, _, _, _) -> v) <$> withStore' (\db -> getRosterPending db gInfo)
+              -- accept a version not below BOTH applied and pending (>=, Nothing below 0): a preceding signed
+              -- event may have already advanced rosterVersion to this blob's version; a lower one is a downgrade.
+              if newVer `aboveRoster` rosterVersion gInfo && newVer `aboveRoster` pendingVer_
+                then startRosterTransfer sm sharedMsgId
+                else pure Nothing
       where
-        GroupRoster {version = newVer, roster = entries} = validRoster
-        validRoster = validateGroupRoster roster
-        relayApplyRoster :: CM (Maybe DeliveryJobScope)
-        relayApplyRoster
-          | maybe False (newVer <=) (rosterVersion gInfo) = Nothing <$ messageWarning "x.grp.roster: not newer than saved version"
-          | otherwise = case verifiedMsg of
-              VMSigned _ sm _ ->
-                tryAllErrors (setRoster sm) >>= \case
-                  Right results -> do
-                    emitRosterResults results
-                    -- ack only while still setting up (own status RSAccepted); a serving relay (RSActive) must not ack roster broadcasts
-                    when (relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck author newVer Nothing
-                    -- always broadcast on a bump: self-healing, and demotions must reach members
-                    pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
-                  Left e -> do
-                    eToView e
-                    when (relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck author newVer (Just "relay could not save the roster")
-                    pure Nothing
-              VMUnsigned _ -> Nothing <$ messageWarning "x.grp.roster: unsigned roster"
-        setRoster :: SignedMsg -> CM ([MemberId], [(GroupMember, GroupMemberRole)])
-        setRoster sm = do
-          defaultRole <- unknownMemberRole gInfo
-          withStore $ \db -> do
-            res <- processRoster db defaultRole
-            liftIO $ setGroupRoster db gInfo newVer (groupMemberId' author) brokerTs sm
-            pure res
-        memberApplyRoster :: CM ()
-        memberApplyRoster
-          | maybe False (newVer <) (rosterVersion gInfo) = messageWarning "x.grp.roster: older than accepted version"
-          | maybe False (newVer ==) (rosterVersion gInfo) = pure ()
-          | otherwise = do
-              defaultRole <- unknownMemberRole gInfo
-              results <- withStore $ \db -> do
-                res <- processRoster db defaultRole
-                liftIO $ setGroupRosterVersion db gInfo newVer
-                pure res
-              emitRosterResults results
-        processRoster :: DB.Connection -> GroupMemberRole -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole)])
-        processRoster db defaultRole = do
-          let rosterIds = map (\RosterMember {memberId} -> memberId) entries
-          acc <- foldrM applyRosterEntry ([], []) entries
-          -- absent privileged members revert to the joiner default
-          currentPriv <- liftIO $ getGroupRosterMembers db cxt user gInfo
-          liftIO $ forM_ currentPriv $ \m ->
-            when (memberId' m `notElem` rosterIds) $
-              updateGroupMemberRole db user m defaultRole
-          pure acc
-          where
-            -- entry-level failure (StoreError or IO exception) is muted; the entry is dropped
-            applyRosterEntry RosterMember {memberId, name, key = MemberKey pubKey, role} (cs, as) =
-              apply `catchAllErrors` \_ -> pure (cs, as)
-              where
-                applied m = (cs, ((m :: GroupMember) {memberRole = role}, memberRole' m) : as)
-                apply = getCreateUnknownGMByMemberId db cxt user gInfo memberId name defaultRole True >>= \case
-                  Nothing -> pure (cs, as)
-                  Just (m, _) -> case memberPubKey m of
-                    Just k
-                      | k /= pubKey -> pure (memberId : cs, as)
-                      | memberRole' m == role -> pure (cs, as)
-                      | otherwise -> liftIO (updateGroupMemberRole db user m role) $> applied m
-                    Nothing -> liftIO (setGroupMemberKeyRole db m pubKey role) $> applied m
-        emitRosterResults :: ([MemberId], [(GroupMember, GroupMemberRole)]) -> CM ()
-        emitRosterResults (conflicts, applied) = do
-          forM_ conflicts $ \mid' ->
-            messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode mid')
-          forM_ applied $ \(member, fromRole) -> createItems member fromRole
-        createItems :: GroupMember -> GroupMemberRole -> CM ()
+        startRosterTransfer sm sharedMsgId = do
+          -- supersede any in-flight roster file (older version or a restart) before the new transfer
+          cleanupGroupRosterFile user gInfo
+          let relayHdr = if isUserGrpFwdRelay gInfo then Just sm else Nothing
+          withStore' $ \db -> setRosterPending db gInfo newVer fileDigest (groupMemberId' author) brokerTs relayHdr
+          chSize <- asks $ fileChunkSize . config
+          let rosterFInv = FileInvitation {fileName = "roster", fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Just IFMSent, fileDescr = Nothing}
+          rft@RcvFileTransfer {fileId} <- withStore $ \db -> createRcvGroupFileTransfer db userId gInfo Nothing FTRoster (Just sharedMsgId) rosterFInv (Just IFMSent) (fromIntegral chSize)
+          -- accept the chat-item-free file before chunk 1 (FIFO before it) so chunk 1 isn't rejected on RFSNew
+          -- transient scratch file (consumed into roster_blob, then deleted): temp folder, not the user's files folder / Downloads
+          tmpDir <- lift getChatTempDirectory
+          rosterTs <- liftIO getCurrentTime
+          let GroupInfo {groupId = gId} = gInfo
+              rosterFile = "roster_" <> show gId <> "_" <> formatTime defaultTimeLocale "%Y%m%d_%H%M%S" rosterTs
+          filePath <- getRcvFilePath fileId (Just tmpDir) rosterFile False
+          withStore' $ \db -> startRcvInlineFT db user rft filePath (Just IFMSent)
+          pure Nothing
+
+    -- Roster version comparison treating Nothing (un-materialized) as below 0. Non-strict (>=) so a relay
+    -- accepts the owner's blob at the version a preceding signed event already advanced rosterVersion to.
+    aboveRoster :: VersionRoster -> Maybe VersionRoster -> Bool
+    aboveRoster v = maybe True (v >=)
+
+    -- Blob arrived: verify the owner-attested digest over the plaintext and guard against
+    -- downgrade before applying; on a relay, ack the owner and re-serve to members.
+    rosterCompletion :: GroupInfo -> RcvFileTransfer -> CM ()
+    rosterCompletion gInfo RcvFileTransfer {fileStatus} =
+      withStore' (\db -> getRosterPending db gInfo) >>= \case
+        Nothing -> cleanupGroupRosterFile user gInfo
+        Just (pendingVer, pendingDigest, ownerGMId, rosterBrokerTs, _) -> do
+          owner_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberById db cxt user ownerGMId)
+          blob <- readAssembledRoster
+          let isRelay = isUserGrpFwdRelay gInfo
+              ackErr err = do
+                cleanupGroupRosterFile user gInfo
+                when isRelay $ forM_ owner_ $ \owner -> sendRosterAck gInfo owner pendingVer (Just err)
+          if FD.FileDigest (LC.sha512Hash (LB.fromStrict blob)) /= pendingDigest
+            then ackErr "relay could not verify the roster blob"
+            else case parseAll rosterBlobP blob of
+              Left _ -> ackErr "relay could not parse the roster blob"
+              Right entries -> case owner_ of
+                Nothing -> cleanupGroupRosterFile user gInfo
+                Just author -> do
+                  defaultRole <- unknownMemberRole gInfo
+                  -- gate against the persisted roster_version inside the apply transaction, so a reordered
+                  -- same-batch event cannot make this completion downgrade it; stale completion is rejected.
+                  results_ <- withStore $ \db -> do
+                    cur <- liftIO $ getGroupRosterVersion db gInfo
+                    if maybe False (pendingVer <) cur
+                      then pure Nothing
+                      else do
+                        res <- processRosterEntries db gInfo defaultRole (validateGroupRoster entries)
+                        liftIO $ promoteRosterPending db gInfo blob
+                        pure (Just res)
+                  cleanupGroupRosterFile user gInfo
+                  forM_ results_ $ \results -> do
+                    emitRosterResults gInfo author rosterBrokerTs results
+                    -- ack only while still setting up (own status RSAccepted); a serving relay must not ack broadcasts.
+                    when (isRelay && relayOwnStatus gInfo == Just RSAccepted) $ sendRosterAck gInfo author pendingVer Nothing
+      where
+        readAssembledRoster = case fileStatus of
+          RFSAccepted fp -> readAt fp
+          RFSConnected fp -> readAt fp
+          RFSComplete fp -> readAt fp
+          _ -> throwChatError $ CEInternalError "roster file not in progress"
+        readAt fp = lift (toFSFilePath fp) >>= liftIO . B.readFile
+
+    -- TOFU-apply an owner-signed (key, role) to a resolved member: pin the key if absent; for a keyed
+    -- member keep the trusted key (Left = reject a different one), else update the role. Right
+    -- (Just (member-at-new-role, fromRole)) when the role changed, Right Nothing when already current.
+    applyMemberKeyRole :: DB.Connection -> GroupMember -> C.PublicKeyEd25519 -> GroupMemberRole -> IO (Either MemberId (Maybe (GroupMember, GroupMemberRole)))
+    applyMemberKeyRole db m pubKey role = case memberPubKey m of
+      Just k
+        | k /= pubKey -> pure (Left (memberId' m))
+        | memberRole' m == role -> pure (Right Nothing)
+        | otherwise -> updateGroupMemberRole db user m role $> Right (Just (m {memberRole = role}, memberRole' m))
+      Nothing -> setGroupMemberKeyRole db m pubKey role $> Right (Just (m {memberRole = role}, memberRole' m))
+
+    -- TOFU apply: pin each member's key on first use, then update roles.
+    processRosterEntries :: DB.Connection -> GroupInfo -> GroupMemberRole -> [RosterMember] -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole, Bool)])
+    processRosterEntries db gInfo defaultRole entries = do
+      let rosterIds = map (\RosterMember {memberId} -> memberId) entries
+      (cs, as) <- foldrM applyRosterEntry ([], []) entries
+      currentPriv <- liftIO $ getGroupRosterMembers db cxt user gInfo
+      reverted <- liftIO $ fmap catMaybes $ forM currentPriv $ \m ->
+        if memberId' m `notElem` rosterIds
+          then updateGroupMemberRole db user m defaultRole $> Just ((m :: GroupMember) {memberRole = defaultRole}, memberRole' m, False)
+          else pure Nothing
+      pure (cs, as <> reverted)
+      where
+        -- entry-level failure (StoreError or IO exception) is muted; the entry is dropped
+        applyRosterEntry RosterMember {memberId, key = MemberKey pubKey, role} (cs, as) =
+          ( getCreateUnknownGMByMemberId db cxt user gInfo memberId (nameFromMemberId memberId) defaultRole True >>= \case
+              Nothing -> pure (cs, as)
+              Just (m, created) -> liftIO (applyMemberKeyRole db m pubKey role) >>= \case
+                Left mid -> pure (mid : cs, as)
+                Right Nothing -> pure (cs, as)
+                Right (Just (rm, fromR)) -> pure (cs, (rm, fromR, created) : as)
+          )
+            `catchAllErrors` \_ -> pure (cs, as)
+
+    emitRosterResults :: GroupInfo -> GroupMember -> UTCTime -> ([MemberId], [(GroupMember, GroupMemberRole, Bool)]) -> CM ()
+    emitRosterResults gInfo author rosterBrokerTs (conflicts, applied) = do
+      forM_ conflicts $ \mid' ->
+        messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode mid')
+      forM_ applied $ \(member, fromRole, created) ->
+        unless created $ createItems member fromRole
+      where
         createItems member fromRole = do
           let toRole = memberRole' member
               gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) toRole
           (gInfo', author', scopeInfo) <- mkGroupChatScope gInfo author
-          createInternalChatItem user (CDGroupRcv gInfo' scopeInfo author') (CIRcvGroupEvent gEvent) (Just brokerTs)
+          ci <- createChatItem user (CDGroupRcv gInfo' scopeInfo author') False (CIRcvGroupEvent gEvent) Nothing (Just MSSVerified) (Just rosterBrokerTs)
+          toView $ CEvtNewChatItems user [ci]
           toView CEvtMemberRole {user, groupInfo = gInfo', byMember = author', member, fromRole, toRole, msgSigned = Just MSSVerified}
-        sendRosterAck :: GroupMember -> VersionRoster -> Maybe Text -> CM ()
-        sendRosterAck owner ackVer err = void $ sendGroupMessage' user gInfo [owner] (XGrpRosterAck ackVer err)
+
+    sendRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
+    sendRosterAck gInfo owner ackVer err = void $ sendGroupMessage' user gInfo [owner] (XGrpRosterAck ackVer err)
 
     xGrpRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
     xGrpRosterAck gInfo m ackVer err = do
@@ -3340,8 +3455,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       withStore $ \db -> setMemberVectorRelationConnected db sendingMem refMem MRSubjectConnected
       withStore $ \db -> setMemberVectorRelationConnected db refMem sendingMem MRReferencedConnected
 
-    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
-    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
+    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> Maybe VersionRoster -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
+    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages rosterVer_ verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
       let GroupMember {memberId = membershipMemId} = membership
       if membershipMemId == memId
         then checkRole membership $ do
@@ -3356,7 +3471,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           deleteMemberItem msg gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
           pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
-        else
+        else applyAtRosterVersion gInfo rosterVer_ $
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
             Left _ -> do
               messageError "x.grp.mem.del with unknown member ID"
@@ -3435,9 +3550,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo''' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
         groupMsgToView cInfo ci
         toView $ CEvtLeftMember user gInfo''' m' {memberStatus = GSMemLeft} msgSigned
-      -- a privileged leaver drops out of the roster
-      when (useRelays' gInfo'' && memberRole' (membership gInfo'') == GROwner && isRosterRole (memberRole' m)) $
-        bumpAndBroadcastRoster user gInfo'' `catchAllErrors` eToView
       pure $ memberEventDeliveryScope m
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
@@ -3608,7 +3720,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         processForwardedMsg :: VerifiedMsg 'Json -> Maybe GroupMember -> CM ()
         processForwardedMsg verifiedMsg author_ = do
           rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ verifiedMsg brokerTs
-          forM_ rcvMsg_ $ \rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} -> case event of
+          forM_ rcvMsg_ $ \rcvMsg@RcvMessage {sharedMsgId_, chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
               void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
               where
@@ -3623,14 +3735,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
             XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \author -> void $ xGrpRelayNew gInfo author rl
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
-            XGrpMemRole memId memRole -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
+            XGrpMemRole memId memRole memberKey rosterVer -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole memberKey rosterVer rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
-            XGrpMemDel memId withMessages -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel gInfo author memId withMessages verifiedMsg rcvMsg msgTs True
+            XGrpMemDel memId withMessages rosterVer -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel gInfo author memId withMessages rosterVer verifiedMsg rcvMsg msgTs True
             XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs gInfo author ps' rcvMsg
-            XGrpRoster gr -> withAuthor XGrpRoster_ $ \author -> void $ xGrpRoster gInfo author gr verifiedMsg msgTs
+            XGrpRoster gr -> withAuthor XGrpRoster_ $ \author -> void $ xGrpRoster gInfo author gr verifiedMsg sharedMsgId_ msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
           where
             withAuthor :: CMEventTag e -> (GroupMember -> CM ()) -> CM ()

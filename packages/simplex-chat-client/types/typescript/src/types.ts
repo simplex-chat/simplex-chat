@@ -2341,6 +2341,11 @@ export interface FileTransferMeta {
   cancelled: boolean
 }
 
+export enum FileType {
+  Normal = "normal",
+  Roster = "roster",
+}
+
 export type Format = 
   | Format.Bold
   | Format.Italic
@@ -3601,6 +3606,7 @@ export interface RcvFileTransfer {
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
   fileStatus: RcvFileStatus
+  fileType: FileType
   rcvFileInline?: InlineFileMode
   senderDisplayName: string
   chunkSize: number // int64

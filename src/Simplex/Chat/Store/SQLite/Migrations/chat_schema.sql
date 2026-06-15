@@ -188,7 +188,15 @@ CREATE TABLE groups(
   roster_msg_chat_binding TEXT,
   roster_msg_signatures BLOB,
   roster_sending_owner_gm_id INTEGER,
-  roster_broker_ts TEXT, -- received
+  roster_broker_ts TEXT,
+  roster_blob BLOB,
+  roster_pending_version INTEGER,
+  roster_pending_digest BLOB,
+  roster_pending_msg_body BLOB,
+  roster_pending_msg_chat_binding TEXT,
+  roster_pending_msg_signatures BLOB,
+  roster_pending_sending_owner_gm_id INTEGER,
+  roster_pending_broker_ts TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -274,7 +282,9 @@ CREATE TABLE files(
   file_crypto_key BLOB,
   file_crypto_nonce BLOB,
   note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
-  redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE
+  redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE,
+  shared_msg_id BLOB,
+  file_type TEXT NOT NULL DEFAULT 'normal'
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -1313,6 +1323,10 @@ ON groups(
   relay_request_group_link
 )
 WHERE relay_request_group_link IS NOT NULL;
+CREATE INDEX idx_files_group_id_shared_msg_id ON files(
+  group_id,
+  shared_msg_id
+);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

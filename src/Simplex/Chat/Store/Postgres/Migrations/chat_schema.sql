@@ -743,7 +743,9 @@ CREATE TABLE test_chat_schema.files (
     file_crypto_key bytea,
     file_crypto_nonce bytea,
     note_folder_id bigint,
-    redirect_file_id bigint
+    redirect_file_id bigint,
+    shared_msg_id bytea,
+    file_type text DEFAULT 'normal'::text NOT NULL
 );
 
 
@@ -968,14 +970,22 @@ CREATE TABLE test_chat_schema.groups (
     public_member_count bigint,
     relay_request_retries bigint DEFAULT 0 NOT NULL,
     relay_request_delay bigint DEFAULT 0 NOT NULL,
-    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 01:00:00+01'::timestamp with time zone NOT NULL,
+    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 04:00:00+04'::timestamp with time zone NOT NULL,
     relay_inactive_at timestamp with time zone,
     roster_version integer,
     roster_msg_body bytea,
     roster_msg_chat_binding text,
     roster_msg_signatures bytea,
     roster_sending_owner_gm_id bigint,
-    roster_broker_ts timestamp with time zone
+    roster_broker_ts timestamp with time zone,
+    roster_blob bytea,
+    roster_pending_version integer,
+    roster_pending_digest bytea,
+    roster_pending_msg_body bytea,
+    roster_pending_msg_chat_binding text,
+    roster_pending_msg_signatures bytea,
+    roster_pending_sending_owner_gm_id bigint,
+    roster_pending_broker_ts timestamp with time zone
 );
 
 
@@ -2265,6 +2275,10 @@ CREATE INDEX idx_files_contact_id ON test_chat_schema.files USING btree (contact
 
 
 CREATE INDEX idx_files_group_id ON test_chat_schema.files USING btree (group_id);
+
+
+
+CREATE INDEX idx_files_group_id_shared_msg_id ON test_chat_schema.files USING btree (group_id, shared_msg_id);
 
 
 

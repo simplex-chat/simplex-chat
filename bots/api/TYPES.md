@@ -83,6 +83,7 @@ This file is generated automatically.
 - [FileProtocol](#fileprotocol)
 - [FileStatus](#filestatus)
 - [FileTransferMeta](#filetransfermeta)
+- [FileType](#filetype)
 - [Format](#format)
 - [FormattedText](#formattedtext)
 - [FullGroupPreferences](#fullgrouppreferences)
@@ -2053,6 +2054,15 @@ NO_FILE:
 
 ---
 
+## FileType
+
+**Enum type**:
+- "normal"
+- "roster"
+
+
+---
+
 ## Format
 
 **Discriminated union type**:
@@ -3258,6 +3268,7 @@ Cancelled:
 - xftpRcvFile: [XFTPRcvFile](#xftprcvfile)?
 - fileInvitation: [FileInvitation](#fileinvitation)
 - fileStatus: [RcvFileStatus](#rcvfilestatus)
+- fileType: [FileType](#filetype)
 - rcvFileInline: [InlineFileMode](#inlinefilemode)?
 - senderDisplayName: string
 - chunkSize: int64

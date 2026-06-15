@@ -11,6 +11,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
 import Simplex.Messaging.Util ((<$?>))
@@ -56,6 +57,12 @@ instance FromJSON GroupMemberRole where
 instance ToJSON GroupMemberRole where
   toJSON = textToJSON
   toEncoding = textToEncoding
+
+-- Binary encoding for the roster blob; delegates to the canonical TextEncoding
+-- (same member/moderator/admin form JSON and the DB use). GRUnknown round-trips.
+instance Encoding GroupMemberRole where
+  smpEncode = smpEncode . textEncode
+  smpP = maybe (fail "bad GroupMemberRole") pure . textDecode =<< smpP
 
 data GroupAcceptance = GAAccepted | GAPendingApproval | GAPendingReview  deriving (Eq, Show)
 
