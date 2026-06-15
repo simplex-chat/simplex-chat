@@ -1583,3 +1583,147 @@ section.page.footer {
         max-width: 1320px;
     }
 }
+
+/* ===== Crowdfunding home hero (.cf-hero) — desktop. Additive; does not touch section.cover.
+   Sits inside <main> over the shared sticky gradient, so no own gradient is needed —
+   only the desktop-only decorative illustration on top, plus text and the campaign blocks.
+   Mobile + RTL follow in the next commit. ===== */
+
+/* Centered content stack — mirrors section.cover div.content */
+.cf-hero .content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: calc(var(--sec-vhu) * 3.5);
+    width: var(--sec-w);
+    height: var(--sec-h);
+}
+
+.cf-hero .content h1 {
+    font-family: "GT-Walsheim", sans-serif;
+    font-weight: 700;
+    font-size: calc(var(--sec-vwu) * 12);
+    line-height: 0.9;
+    letter-spacing: -0.025em;
+    color: #023789;
+}
+
+.dark .cf-hero .content h1 {
+    color: #ffffff;
+}
+
+.cf-hero .content h2 {
+    font-family: "GT-Walsheim", sans-serif;
+    font-weight: 400;
+    font-size: calc(var(--sec-vwu) * 4.36);
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+}
+
+.cf-hero .content > p {
+    font-family: "Manrope", sans-serif;
+    font-weight: 200;
+    font-size: calc(var(--sec-vwu) * 1.5625);
+    max-width: calc(var(--sec-vwu) * 53);
+    color: #000000;
+}
+
+.dark .cf-hero .content > p {
+    color: #ffffff;
+}
+
+/* Desktop-only decorative illustration, per version (mirrors .page-2 background mechanics) */
+.cf-hero--testing-water {
+    background-image: url("/img/design_3/section-1-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .cf-hero--testing-water {
+    background-image: url("/img/design_3/section-1-desktop.webp");
+}
+
+.cf-hero--crowdfunding-full {
+    background-image: url("/img/design_3/section-1-desktop-wefunder-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .cf-hero--crowdfunding-full {
+    background-image: url("/img/design_3/section-1-desktop-wefunder.webp");
+}
+
+/* Full: the flag phone is baked into the desktop background, so hide the standalone image
+   (it reappears on mobile, where the decorative background is hidden — handled in C5). */
+.cf-hero--crowdfunding-full .cf-flag {
+    display: none;
+}
+
+/* crowdfunding-full CTA — stays in the centered flow under the paragraph */
+.cf-invest {
+    font-family: "GT-Walsheim", sans-serif;
+    font-weight: 400;
+    font-size: calc(var(--sec-vwu) * 2.3);
+}
+
+/* testing-water: standalone flag phone + reserve block, bottom-right (matches the baked-in
+   flag position of the full background). FIRST PASS — positions to calibrate visually. */
+.cf-hero--testing-water .cf-flag {
+    position: absolute;
+    bottom: calc(var(--sec-vhu) * 8);
+    height: calc(var(--sec-vhu) * 37.38);
+    width: auto;
+}
+
+[dir="ltr"] .cf-hero--testing-water .cf-flag {
+    right: calc(var(--sec-vwu) * 22);
+}
+
+[dir="rtl"] .cf-hero--testing-water .cf-flag {
+    left: calc(var(--sec-vwu) * 22);
+}
+
+.cf-reserve {
+    position: absolute;
+    bottom: calc(var(--sec-vhu) * 10);
+    width: calc(var(--sec-vwu) * 20);
+    text-align: left;
+}
+
+[dir="ltr"] .cf-reserve {
+    right: calc(var(--sec-vwu) * 2);
+}
+
+[dir="rtl"] .cf-reserve {
+    left: calc(var(--sec-vwu) * 2);
+    text-align: right;
+}
+
+.cf-reserve-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 200;
+    font-size: calc(var(--sec-vwu) * 1.5625);
+    line-height: 1.25;
+    color: #023789;
+}
+
+.cf-reserve-h a {
+    font-weight: 500;
+}
+
+.dark .cf-reserve-h {
+    color: #ffffff;
+}
+
+.cf-disclaimer {
+    font-family: "Manrope", sans-serif;
+    font-weight: 300;
+    font-size: calc(var(--sec-vwu) * 0.52);
+    line-height: 1.35;
+    margin-top: calc(var(--sec-vhu) * 1.5);
+    color: #405585;
+}
