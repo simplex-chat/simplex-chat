@@ -20,7 +20,7 @@ struct MemberSupportChatToolbar: View {
             MemberProfileImage(groupMember, size: imageSize)
                 .padding(.trailing, 4)
             let t = Text(groupMember.chatViewName).font(.headline)
-            (groupMember.verified ? memberVerifiedShield + t : t)
+            NameWithBadge((groupMember.verified ? memberVerifiedShield + t : t), groupMember.nameBadge, .headline)
                 .lineLimit(1)
         }
         .foregroundColor(theme.colors.onBackground)

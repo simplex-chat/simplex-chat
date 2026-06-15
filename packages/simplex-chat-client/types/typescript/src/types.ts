@@ -186,6 +186,33 @@ export interface AutoAccept {
   acceptIncognito: boolean
 }
 
+export interface BadgeInfo {
+  badgeType: BadgeType
+  badgeExpiry?: string // ISO-8601 timestamp
+  badgeExtra: string
+}
+
+export interface BadgeProof {
+  badgeKeyIdx: number // int
+  presHeader: string
+  proof: string
+  badgeInfo: BadgeInfo
+}
+
+export enum BadgeStatus {
+  Active = "active",
+  Expired = "expired",
+  ExpiredOld = "expiredOld",
+  Failed = "failed",
+  UnknownKey = "unknownKey",
+}
+
+export enum BadgeType {
+  Supporter = "supporter",
+  Legend = "legend",
+  Investor = "investor",
+}
+
 export interface BlockingInfo {
   reason: BlockingReason
   notice?: ClientNotice
@@ -2044,6 +2071,7 @@ export interface ContactShortLinkData {
   profile: Profile
   message?: MsgContent
   business: boolean
+  localBadge?: LocalBadge
 }
 
 export enum ContactStatus {
@@ -2940,6 +2968,11 @@ export interface LinkPreview {
   content?: LinkContent
 }
 
+export interface LocalBadge {
+  badge: BadgeInfo
+  status: BadgeStatus
+}
+
 export interface LocalProfile {
   profileId: number // int64
   displayName: string
@@ -2949,6 +2982,7 @@ export interface LocalProfile {
   contactLink?: string
   preferences?: Preferences
   peerType?: ChatPeerType
+  localBadge?: LocalBadge
   localAlias: string
 }
 
@@ -3299,6 +3333,7 @@ export interface Profile {
   contactLink?: string
   preferences?: Preferences
   peerType?: ChatPeerType
+  badge?: BadgeProof
 }
 
 export type ProxyClientError = 
@@ -4882,7 +4917,7 @@ export interface UserContactRequest {
   cReqChatVRange: VersionRange
   localDisplayName: string
   profileId: number // int64
-  profile: Profile
+  profile: LocalProfile
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
   xContactId?: string

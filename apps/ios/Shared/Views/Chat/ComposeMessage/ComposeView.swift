@@ -1247,7 +1247,9 @@ struct ComposeView: View {
     }
 
     private var maxFileSize: Int64 {
-        getMaxFileSize(.xftp)
+        // the user's active badge raises the limit, but not in incognito chats where no badge is presented
+        let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+        return getMaxFileSize(.xftp, incognito ? nil : chatModel.currentUser?.profile)
     }
 
     // Spec: spec/client/compose.md#sendLiveMessage
