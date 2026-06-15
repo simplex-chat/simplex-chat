@@ -41,12 +41,14 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
+import Simplex.Chat.Files (getChatTempDirectory)
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
@@ -3282,7 +3284,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           let rosterFInv = FileInvitation {fileName = "roster", fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Just IFMSent, fileDescr = Nothing}
           rft@RcvFileTransfer {fileId} <- withStore $ \db -> createRcvGroupFileTransfer db userId gInfo Nothing FTRoster (Just sharedMsgId) rosterFInv (Just IFMSent) (fromIntegral chSize)
           -- accept the chat-item-free file before chunk 1 (FIFO before it) so chunk 1 isn't rejected on RFSNew
-          filePath <- getRcvFilePath fileId Nothing "roster" False
+          -- transient scratch file (consumed into roster_blob, then deleted): temp folder, not the user's files folder / Downloads
+          tmpDir <- lift getChatTempDirectory
+          rosterTs <- liftIO getCurrentTime
+          let GroupInfo {groupId = gId} = gInfo
+              rosterFile = "roster_" <> show gId <> "_" <> formatTime defaultTimeLocale "%Y%m%d_%H%M%S" rosterTs
+          filePath <- getRcvFilePath fileId (Just tmpDir) rosterFile False
           withStore' $ \db -> startRcvInlineFT db user rft filePath (Just IFMSent)
           pure Nothing
 

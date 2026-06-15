@@ -700,7 +700,15 @@ createRcvFileChunk db RcvFileTransfer {fileId, fileInvitation = FileInvitation {
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT OR REPLACE INTO rcv_file_chunks (file_id, chunk_number, chunk_agent_msg_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+      [sql|
+        INSERT INTO rcv_file_chunks (file_id, chunk_number, chunk_agent_msg_id, created_at, updated_at)
+        VALUES (?,?,?,?,?)
+        ON CONFLICT (file_id, chunk_number) DO UPDATE SET
+          chunk_agent_msg_id = excluded.chunk_agent_msg_id,
+          chunk_stored = 0,
+          created_at = excluded.created_at,
+          updated_at = excluded.updated_at
+      |]
       (fileId, chunkNo, msgId, currentTs, currentTs)
   pure status
   where
