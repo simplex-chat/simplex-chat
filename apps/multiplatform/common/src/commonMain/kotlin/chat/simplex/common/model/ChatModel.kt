@@ -2334,7 +2334,7 @@ enum class RelayStatus {
   @SerialName("new") New,
   @SerialName("invited") Invited,
   @SerialName("accepted") Accepted,
-  @SerialName("acknowledged_roster") AcknowledgedRoster,
+  @SerialName("acknowledgedRoster") AcknowledgedRoster,
   @SerialName("active") Active,
   @SerialName("inactive") Inactive,
   @SerialName("rejected") Rejected;

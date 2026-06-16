@@ -2652,7 +2652,7 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case new
     case invited
     case accepted
-    case acknowledgedRoster = "acknowledged_roster"
+    case acknowledgedRoster
     case active
     case inactive
     case rejected
