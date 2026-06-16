@@ -10,6 +10,7 @@ import SwiftUI
 
 struct MarkdownHelp: View {
     @EnvironmentObject var theme: AppTheme
+    @State private var secretRevealed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -19,13 +20,15 @@ struct MarkdownHelp: View {
             mdFormat("_italic_", Text("italic").italic())
             mdFormat("~strike~", Text("strike").strikethrough())
             mdFormat("`a + b`", Text("`a + b`").font(.body.monospaced()))
+            mdFormat("!- small!", Text("small").font(.footnote).foregroundColor(.secondary))
             mdFormat("!1 colored!", Text("colored").foregroundColor(.red) + Text(verbatim: " (") + color("1", .red) + color("2", .green) + color("3", .blue) + color("4", .yellow) + color("5", .cyan) + Text("6").foregroundColor(.purple) + Text(verbatim: ")"))
-            (
-                mdFormat("#secret#", Text("secret")
-                    .foregroundColor(.clear)
-                    .underline(color: theme.colors.onBackground) + Text(" (can be copied)"))
-            )
-            .textSelection(.enabled)
+            // matches how secret text works in chat: tap to reveal/hide
+            mdFormat("#secret#", secretRevealed
+                ? Text("secret")
+                : Text("secret").foregroundColor(.clear).underline(color: theme.colors.onBackground))
+                .onTapGesture { secretRevealed.toggle() }
+            mdFormat("[link](https://simplex.chat)", Text("link").foregroundColor(theme.colors.primary).underline())
+                .onTapGesture { if let url = URL(string: "https://simplex.chat") { openExternalLink(url) } }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
