@@ -309,12 +309,13 @@ fun AppVersionItem(showVersion: () -> Unit) {
   Text(appVersionInfo.first + (if (appVersionInfo.second != null) " (" + appVersionInfo.second + ")" else ""))
 }
 
-@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, textColor: Color = MaterialTheme.colors.onBackground, stopped: Boolean = false) {
+@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, textColor: Color = MaterialTheme.colors.onBackground, stopped: Boolean = false, badge: LocalBadge? = null) {
   ProfileImage(size = size, image = profileOf.image, color = iconColor)
   Spacer(Modifier.padding(horizontal = 8.dp))
   Column(Modifier.height(size), verticalArrangement = Arrangement.Center) {
-    Text(
+    NameWithBadge(
       profileOf.displayName,
+      badge,
       style = MaterialTheme.typography.caption,
       fontWeight = FontWeight.Bold,
       color = if (stopped) MaterialTheme.colors.secondary else textColor,

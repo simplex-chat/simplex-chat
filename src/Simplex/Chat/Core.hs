@@ -138,7 +138,7 @@ createActiveUser cc CoreChatOpts {chatRelay} = \case
     loop = do
       displayName <- T.pack <$> withPrompt "display name: " getLine
       createUser loop $ mkProfile displayName
-    mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
+    mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing}
     createUser onError p =
       execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, userChatRelay = chatRelay}) 0 `runReaderT` cc >>= \case
         Right (CRActiveUser user) -> pure user

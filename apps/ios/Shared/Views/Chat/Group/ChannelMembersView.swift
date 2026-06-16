@@ -56,7 +56,7 @@ struct ChannelMembersView: View {
             MemberProfileImage(member, size: 38)
                 .padding(.trailing, 2)
             VStack(alignment: .leading) {
-                displayName
+                NameWithBadge(displayName, member.nameBadge)
                     .lineLimit(1)
                 if user {
                     Text("you")
