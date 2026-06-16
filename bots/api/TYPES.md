@@ -3393,6 +3393,7 @@ ParseError:
 - "new"
 - "invited"
 - "accepted"
+- "acknowledgedRoster"
 - "active"
 - "inactive"
 - "rejected"

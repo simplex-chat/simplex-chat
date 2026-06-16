@@ -3778,7 +3778,7 @@ export enum RelayStatus {
   New = "new",
   Invited = "invited",
   Accepted = "accepted",
-  AcknowledgedRoster = "acknowledged_roster",
+  AcknowledgedRoster = "acknowledgedRoster",
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",
