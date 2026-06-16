@@ -367,7 +367,8 @@ getGroupMembersByCursor db cxt user@User {userContactId} GroupInfo {groupId} cur
               :. (cursorGMId, count)
           )
 #if defined(dbPostgres)
-  map (toContactMember cxt user) <$>
+  currentTs <- getCurrentTime
+  map (toContactMember currentTs cxt user) <$>
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_member_id IN ? ORDER BY m.group_member_id ASC")
