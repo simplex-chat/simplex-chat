@@ -1226,12 +1226,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
                     Just RelayShortLinkData {relayProfile = p} -> pure p
                     Nothing -> throwChatError $ CEException "relay link: no relay link data"
-                  confId <- withStore $ \db -> do
+                  (confId, m', relay)  <- withStore $ \db -> do
                     confId <- getRelayConfId db m
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                    void $ setRelayKey db cxt user m (MemberKey relayKey) relayProfile
-                    pure confId
+                    (m', relay) <- setRelayLinkAccepted db cxt user m (MemberKey relayKey) relayProfile
+                    pure (confId, m', relay)
                   allowAgentConnectionAsync user conn confId XOk
+                  toView $ CEvtGroupRelayUpdated user gInfo m' relay
                 else
                   -- TODO [relays] owner: TBC failed RelayStatus?
                   messageError "relay link: relay member ID mismatch"
@@ -3332,7 +3333,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   forM_ results_ $ \results -> do
                     emitRosterResults gInfo author rosterBrokerTs results
                     -- ack while setting up (own status accepted/acknowledged); a serving (active) relay must not ack broadcasts.
-                    when (isRelay && relayOwnStatus gInfo `elem` [Just RSAccepted, Just RSAcknowledgedRoster]) $ do
+                    when (isRelay && relayOwnStatus gInfo == Just RSAccepted || relayOwnStatus gInfo == Just RSAcknowledgedRoster) $ do
                       sendRosterAck gInfo author pendingVer Nothing
                       withStore' $ \db -> void $ updateRelayOwnStatusFromTo db gInfo RSAccepted RSAcknowledgedRoster
       where

@@ -102,7 +102,7 @@ module Simplex.Chat.Store.Groups
     createRelayConnection,
     updateRelayStatus,
     updateRelayStatusFromTo,
-    setRelayKey,
+    setRelayLinkAccepted,
     setRelayLinkConfId,
     updateRelayCapabilities,
     getRelayConfId,
@@ -1663,18 +1663,10 @@ updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
 
-setRelayKey :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberKey -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
-setRelayKey db cxt user m (MemberKey relayKey) profile = do
+setRelayLinkAccepted :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberKey -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
+setRelayLinkAccepted db cxt user m (MemberKey relayKey) profile = do
   let gmId = groupMemberId' m
   currentTs <- liftIO getCurrentTime
-  liftIO $ DB.execute
-    db
-    [sql|
-      UPDATE group_members
-      SET member_pub_key = ?, updated_at = ?
-      WHERE group_member_id = ?
-    |]
-    (relayKey, currentTs, gmId)
   liftIO $ DB.execute
     db
     [sql|
@@ -1683,6 +1675,14 @@ setRelayKey db cxt user m (MemberKey relayKey) profile = do
       WHERE group_member_id = ?
     |]
     (RSAccepted, currentTs, gmId)
+  liftIO $ DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET member_pub_key = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (relayKey, currentTs, gmId)
   void $ updateMemberProfile db user m profile
   (,) <$> getGroupMemberById db cxt user gmId <*> getGroupRelayByGMId db gmId
 
