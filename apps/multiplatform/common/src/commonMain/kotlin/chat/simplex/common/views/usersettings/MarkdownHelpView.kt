@@ -30,11 +30,14 @@ fun MarkdownHelpView() {
     val equation = stringResource(MR.strings.a_plus_b)
     val colored = stringResource(MR.strings.colored_text)
     val secret = stringResource(MR.strings.secret_text)
+    val small = stringResource(MR.strings.small_text)
+    val link = stringResource(MR.strings.link_text)
 
     MdFormat("*$bold*", bold, Format.Bold())
     MdFormat("_${italic}_", italic, Format.Italic())
     MdFormat("~$strikethrough~", strikethrough, Format.StrikeThrough())
     MdFormat("`$equation`", equation, Format.Snippet())
+    MdFormat("!- $small!", small, Format.Small())
     Row {
       MdSyntax("!1 $colored!")
       Text(buildAnnotatedString {
@@ -56,6 +59,7 @@ fun MarkdownHelpView() {
         })
       }
     }
+    MdFormat("[$link](https://simplex.chat)", link, Format.HyperLink(link, "https://simplex.chat"))
     SectionBottomSpacer()
   }
 }

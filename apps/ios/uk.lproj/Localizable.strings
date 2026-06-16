@@ -6211,3 +6211,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваша адреса SimpleX";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- дрібний!";
+
+/* No comment provided by engineer. */
+"small" = "дрібний";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[посилання](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "посилання";

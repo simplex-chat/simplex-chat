@@ -6335,3 +6335,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "您的 SimpleX 地址";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- 小!";
+
+/* No comment provided by engineer. */
+"small" = "小";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[链接](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "链接";

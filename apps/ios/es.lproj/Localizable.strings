@@ -7040,3 +7040,12 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- pequeño!";
+
+/* No comment provided by engineer. */
+"small" = "pequeño";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[enlace](https://simplex.chat)";

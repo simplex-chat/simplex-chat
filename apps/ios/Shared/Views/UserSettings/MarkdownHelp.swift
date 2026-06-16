@@ -19,6 +19,7 @@ struct MarkdownHelp: View {
             mdFormat("_italic_", Text("italic").italic())
             mdFormat("~strike~", Text("strike").strikethrough())
             mdFormat("`a + b`", Text("`a + b`").font(.body.monospaced()))
+            mdFormat("!- small!", Text("small").font(.footnote).foregroundColor(.secondary))
             mdFormat("!1 colored!", Text("colored").foregroundColor(.red) + Text(verbatim: " (") + color("1", .red) + color("2", .green) + color("3", .blue) + color("4", .yellow) + color("5", .cyan) + Text("6").foregroundColor(.purple) + Text(verbatim: ")"))
             (
                 mdFormat("#secret#", Text("secret")
@@ -26,6 +27,7 @@ struct MarkdownHelp: View {
                     .underline(color: theme.colors.onBackground) + Text(" (can be copied)"))
             )
             .textSelection(.enabled)
+            mdFormat("[link](https://simplex.chat)", Text("link").foregroundColor(theme.colors.primary).underline())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

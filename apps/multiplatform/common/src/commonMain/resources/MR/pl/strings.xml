@@ -417,6 +417,8 @@
     <string name="callstate_received_confirmation">otrzymano potwierdzenie…</string>
     <string name="callstatus_rejected">odrzucone połączenie</string>
     <string name="secret_text">sekret</string>
+    <string name="small_text">małe</string>
+    <string name="link_text">odnośnik</string>
     <string name="callstate_starting">uruchamianie…</string>
     <string name="strikethrough_text">przekreślenie</string>
     <string name="first_platform_without_user_ids">Brak identyfikatorów użytkownika.</string>

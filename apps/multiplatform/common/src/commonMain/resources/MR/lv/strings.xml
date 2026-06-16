@@ -423,6 +423,8 @@
     <string name="strikethrough_text">Pārsvītrots Teksts</string>
     <string name="colored_text">Krāsains Teksts</string>
     <string name="secret_text">Slepenais Teksts</string>
+    <string name="small_text">mazs</string>
+    <string name="link_text">saite</string>
     <string name="callstatus_calling">Zvana Statuss Zvana</string>
     <string name="callstatus_missed">Zvana Statuss Garām Palaists</string>
     <string name="callstatus_rejected">Zvana Statuss Noraidīts</string>

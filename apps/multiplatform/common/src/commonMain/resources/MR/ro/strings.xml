@@ -292,6 +292,8 @@
     <string name="show_dev_options">Afișează:</string>
     <string name="show_internal_errors">Afișează erorile interne</string>
     <string name="secret_text">secret</string>
+    <string name="small_text">mic</string>
+    <string name="link_text">link</string>
     <string name="settings_section_title_settings">Setări</string>
     <string name="rcv_group_event_1_member_connected">%s conectat</string>
     <string name="profile_update_event_set_new_picture">setați o nouă poză de profil</string>

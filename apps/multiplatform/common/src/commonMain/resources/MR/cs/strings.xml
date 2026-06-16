@@ -339,6 +339,8 @@
     <string name="network_disable_socks_info">Pokud potvrdíte, budou servery zasílající zprávy vidět vaši IP adresu a váš poskytovatel - ke kterým serverům se připojujete.</string>
     <string name="colored_text">barevné</string>
     <string name="secret_text">tajné</string>
+    <string name="small_text">malé</string>
+    <string name="link_text">odkaz</string>
     <string name="callstatus_calling">volání…</string>
     <string name="callstate_connected">připojen</string>
     <string name="callstate_ended">ukončen</string>

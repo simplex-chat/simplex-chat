@@ -432,6 +432,8 @@
     <string name="a_plus_b">a + b</string>
     <string name="colored_text">coloré</string>
     <string name="secret_text">secret</string>
+    <string name="small_text">petit</string>
+    <string name="link_text">lien</string>
     <string name="callstatus_calling">appel…</string>
     <string name="callstatus_missed">appel manqué</string>
     <string name="callstate_waiting_for_answer">en attente de réponse…</string>

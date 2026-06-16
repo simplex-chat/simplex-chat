@@ -998,6 +998,8 @@
     <string name="save_preferences_question">حفظ التفضيلات؟</string>
     <string name="save_settings_question">حفظ الإعدادات؟</string>
     <string name="secret_text">سري</string>
+    <string name="small_text">صغير</string>
+    <string name="link_text">رابط</string>
     <string name="self_destruct_passcode">رمز المرور للتدمير الذاتي</string>
     <string name="self_destruct_passcode_changed">تغيّرت رمز المرور للتدمير الذاتي!</string>
     <string name="self_destruct_passcode_enabled">فعّلت رمز المرور للتدمير الذاتي!</string>

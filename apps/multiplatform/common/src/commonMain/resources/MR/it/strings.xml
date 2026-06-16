@@ -630,6 +630,8 @@
     <string name="save_and_notify_group_members">Salva e avvisa i membri del gruppo</string>
     <string name="save_preferences_question">Salvare le preferenze\?</string>
     <string name="secret_text">segreto</string>
+    <string name="small_text">piccolo</string>
+    <string name="link_text">link</string>
     <string name="callstate_starting">avvio…</string>
     <string name="strikethrough_text">barrato</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">La piattaforma di messaggistica che protegge la tua privacy e sicurezza.</string>

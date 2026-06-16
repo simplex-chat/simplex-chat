@@ -3250,3 +3250,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "ที่อยู่ SimpleX ของคุณ";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- เล็ก!";
+
+/* No comment provided by engineer. */
+"small" = "เล็ก";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[ลิงก์](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "ลิงก์";

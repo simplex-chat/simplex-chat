@@ -3716,3 +3716,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Vaše SimpleX adresa";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- malé!";
+
+/* No comment provided by engineer. */
+"small" = "malé";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[odkaz](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "odkaz";

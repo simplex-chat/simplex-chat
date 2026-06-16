@@ -504,6 +504,8 @@
     <string name="custom_time_picker_select">Вибрати</string>
     <string name="custom_time_picker_custom">інше</string>
     <string name="secret_text">прихований</string>
+    <string name="small_text">дрібний</string>
+    <string name="link_text">посилання</string>
     <string name="join_group_button">Приєднатися</string>
     <string name="role_in_group">Роль</string>
     <string name="conn_level_desc_indirect">непряме (%1$s)</string>

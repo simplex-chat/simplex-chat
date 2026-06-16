@@ -711,6 +711,8 @@
     <string name="network_socks_proxy_settings">SOCKS-välityspalvelimen asetukset</string>
     <string name="callstatus_missed">vastaamaton puhelu</string>
     <string name="secret_text">salainen</string>
+    <string name="small_text">pieni</string>
+    <string name="link_text">linkki</string>
     <string name="share_with_contacts">Jaa kontaktien kanssa</string>
     <string name="self_destruct">Itsetuho</string>
     <string name="self_destruct_passcode_changed">Itsetuhoutuva pääsykoodi vaihdettu!</string>

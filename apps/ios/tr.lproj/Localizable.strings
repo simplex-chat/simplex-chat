@@ -6309,3 +6309,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX adresin";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- küçük!";
+
+/* No comment provided by engineer. */
+"small" = "küçük";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[bağlantı](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "bağlantı";

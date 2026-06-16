@@ -396,6 +396,8 @@
     <string name="save_and_notify_contact">Sačuvati i obavestiti kontakt</string>
     <string name="save_and_notify_group_members">Sačuvati i obavestiti članove grupe</string>
     <string name="secret_text">tajna</string>
+    <string name="small_text">malo</string>
+    <string name="link_text">poveznica</string>
     <string name="video_call_no_encryption">video poziv (nije e2e šifrovan)</string>
     <string name="icon_descr_video_on">Video uključen</string>
     <string name="icon_descr_audio_off">Audio isključeno</string>

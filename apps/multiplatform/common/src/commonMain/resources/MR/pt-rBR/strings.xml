@@ -718,6 +718,8 @@
     <string name="developer_options">IDs de banco de dados e opção de isolamento de transporte.</string>
     <string name="profile_is_only_shared_with_your_contacts">O perfil é compartilhado apenas com seus contatos.</string>
     <string name="secret_text">segredo</string>
+    <string name="small_text">pequeno</string>
+    <string name="link_text">link</string>
     <string name="italic_text">Itálico</string>
     <string name="callstatus_missed">chamada perdida</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Você pode usar markdown para formatar mensagens:</string>

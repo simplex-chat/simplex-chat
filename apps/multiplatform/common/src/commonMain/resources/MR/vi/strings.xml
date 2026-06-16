@@ -1590,6 +1590,8 @@
     <string name="sender_at_ts">%s vào %s</string>
     <string name="select_contacts">Chọn các liên hệ</string>
     <string name="secret_text">bí mật</string>
+    <string name="small_text">nhỏ</string>
+    <string name="link_text">liên kết</string>
     <string name="sending_files_not_yet_supported">gửi tệp chưa được hỗ trợ</string>
     <string name="send_disappearing_message">Gửi tin nhắn tự xóa</string>
     <string name="cannot_share_message_alert_text">Các tùy chọn của cuộc trò chuyện được chọn không cho phép tin nhắn này.</string>

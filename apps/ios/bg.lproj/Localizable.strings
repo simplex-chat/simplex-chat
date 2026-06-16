@@ -4640,3 +4640,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Вашият адрес в SimpleX";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- малък!";
+
+/* No comment provided by engineer. */
+"small" = "малък";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[връзка](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "връзка";

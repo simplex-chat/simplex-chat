@@ -6007,3 +6007,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Uw SimpleX adres";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- klein!";
+
+/* No comment provided by engineer. */
+"small" = "klein";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[link](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "link";

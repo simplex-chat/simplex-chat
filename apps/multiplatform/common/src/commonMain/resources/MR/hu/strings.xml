@@ -881,6 +881,8 @@
     <string name="rcv_group_event_open_chat">Megnyitás</string>
     <string name="network_option_protocol_timeout">Protokoll időtúllépése</string>
     <string name="secret_text">titok</string>
+    <string name="small_text">kicsi</string>
+    <string name="link_text">hivatkozás</string>
     <string name="settings_notification_preview_mode_title">Értesítésekben megjelenő információk</string>
     <string name="callstate_waiting_for_confirmation">várakozás a visszaigazolásra…</string>
     <string name="stop_file__action">Fájl megállítása</string>

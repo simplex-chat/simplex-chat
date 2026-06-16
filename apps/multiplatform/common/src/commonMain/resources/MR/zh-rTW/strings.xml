@@ -74,6 +74,8 @@
     <string name="callstatus_calling">正在撥打…</string>
     <string name="callstatus_in_progress">通話中</string>
     <string name="secret_text">私密</string>
+    <string name="small_text">小</string>
+    <string name="link_text">連結</string>
     <string name="callstate_connected">已連接</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>對電量最好</b>。 只有在應用程式運行中的時侯才可以接收訊息通知。（沒有後台服務）]]></string>
     <string name="encrypted_video_call">端對端加密的視訊通話</string>

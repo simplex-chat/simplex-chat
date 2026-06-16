@@ -857,6 +857,8 @@
     <string name="we_do_not_store_contacts_or_messages_on_servers">ما هیچکدام از مخاطبان و پیام‌های(وقتی تحویل داده شدند) شما را روی سرورها ذخیره نمی‌کنیم.</string>
     <string name="colored_text">رنگی</string>
     <string name="secret_text">محرمانه</string>
+    <string name="small_text">کوچک</string>
+    <string name="link_text">پیوند</string>
     <string name="callstatus_calling">در حال تماس…</string>
     <string name="callstatus_missed">تماس ناموفق</string>
     <string name="callstatus_in_progress">تماس در جریان است</string>

@@ -2141,6 +2141,8 @@
     <string name="save_settings_question">Voleu desar les preferències?</string>
     <string name="stop_sharing_address">Voleu deixar de compartir l\'adreça?</string>
     <string name="secret_text">secret</string>
+    <string name="small_text">petit</string>
+    <string name="link_text">enllaç</string>
     <string name="icon_descr_speaker_off">Altaveu desactivat</string>
     <string name="icon_descr_speaker_on">Altaveu activat</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Sense Tor o una VPN, el servidors de fitxers podran veure la vostra adreça.</string>

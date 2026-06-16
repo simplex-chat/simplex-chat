@@ -735,6 +735,8 @@
     <string name="profile_is_only_shared_with_your_contacts">プロフィールは連絡先にしか共有されません。</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">メッセージの書式をマークダウンで編集できます。</string>
     <string name="secret_text">シークレット</string>
+    <string name="small_text">小さい</string>
+    <string name="link_text">リンク</string>
     <string name="strikethrough_text">取り消し線</string>
     <string name="callstate_starting">接続中…</string>
     <string name="next_generation_of_private_messaging">次世代のプライベートメッセンジャー</string>

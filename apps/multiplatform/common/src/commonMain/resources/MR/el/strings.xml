@@ -12,6 +12,8 @@
     <string name="security_code">Κωδικός ασφαλείας</string>
     <string name="smp_servers_scan_qr">Σάρωσε τον QR κωδικό του διακομιστή</string>
     <string name="secret_text">μυστικό</string>
+    <string name="small_text">μικρό</string>
+    <string name="link_text">σύνδεσμος</string>
     <string name="chat_item_ttl_week">1 εβδομάδα</string>
     <string name="v4_2_security_assessment">αξιολόγηση ασφαλείας</string>
     <string name="allow_verb">Επέτρεψε</string>

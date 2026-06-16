@@ -6386,3 +6386,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Twój adres SimpleX";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- małe!";
+
+/* No comment provided by engineer. */
+"small" = "małe";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[odnośnik](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "odnośnik";

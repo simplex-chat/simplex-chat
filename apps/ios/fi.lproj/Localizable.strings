@@ -3346,3 +3346,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX-osoitteesi";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- pieni!";
+
+/* No comment provided by engineer. */
+"small" = "pieni";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[linkki](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "linkki";

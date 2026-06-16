@@ -91,6 +91,8 @@
     <string name="delete_address__question">വിലാസം ഇല്ലാതാക്കണോ\?</string>
     <string name="settings_notifications_mode_title">അറിയിപ്പ് സേവനം</string>
     <string name="secret_text">രഹസ്യം</string>
+    <string name="small_text">ചെറുത്</string>
+    <string name="link_text">ലിങ്ക്</string>
     <string name="error_creating_address">വിലാസം സൃഷ്ടിക്കുന്നതിൽ പിശക്</string>
     <string name="error_changing_address">വിലാസം മാറ്റുന്നതിൽ പിശക്</string>
     <string name="hide_notification">മറയ്ക്കുക</string>

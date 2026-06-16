@@ -409,6 +409,8 @@
     <string name="create_another_profile_button">Buat profil</string>
     <string name="display_name">Masukkan nama Anda:</string>
     <string name="secret_text">rahasia</string>
+    <string name="small_text">kecil</string>
+    <string name="link_text">tautan</string>
     <string name="italic_text">miring</string>
     <string name="colored_text">berwarna</string>
     <string name="callstatus_connecting">menghubung panggilan…</string>

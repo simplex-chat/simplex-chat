@@ -1514,6 +1514,8 @@
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Galite prisijungti paspausdami ant nuorodos. Jei ji atsidaro naršyklėje, paspauskite ant <b>Atidaryti mobilioje programėlėje</b> mygtuko.]]></string>
     <string name="unable_to_open_browser_title">Įvyko klaida atveriant naršyklę</string>
     <string name="secret_text">paslaptis</string>
+    <string name="small_text">mažas</string>
+    <string name="link_text">nuoroda</string>
     <string name="shutdown_alert_desc">Pranešimai nustos veikti iki tol kol paleisite programėlę iš naujo</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Galite naudoti markdown, kad formatuoti žinutes:</string>
     <string name="run_chat_section">Paleisti pokalbius</string>

@@ -443,6 +443,8 @@
     <string name="a_plus_b">a + b</string>
     <string name="colored_text">farbig</string>
     <string name="secret_text">geheim</string>
+    <string name="small_text">klein</string>
+    <string name="link_text">Link</string>
     <!-- CICallStatus - in chat items -->
     <string name="callstatus_calling">Anruf…</string>
     <string name="callstatus_missed">Anruf verpasst</string>

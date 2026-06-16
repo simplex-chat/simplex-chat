@@ -440,6 +440,8 @@
     <string name="a_plus_b">a + b</string>
     <string name="colored_text">цвет</string>
     <string name="secret_text">секрет</string>
+    <string name="small_text">мелкий</string>
+    <string name="link_text">ссылка</string>
     <string name="connect_via_link">Соединиться через ссылку</string>
     <string name="this_string_is_not_a_connection_link">Эта строка не является ссылкой-приглашением!</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Вы также можете соединиться, открыв ссылку там, где Вы её получили. Если ссылка откроется в браузере, нажмите кнопку <b>Открыть в приложении</b>.]]></string>

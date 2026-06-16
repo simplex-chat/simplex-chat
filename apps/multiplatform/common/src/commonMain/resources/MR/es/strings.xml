@@ -593,6 +593,8 @@
     <string name="saved_ICE_servers_will_be_removed">Se eliminarán los servidores WebRTC ICE guardados.</string>
     <string name="callstatus_rejected">llamada rechazada</string>
     <string name="secret_text">secreto</string>
+    <string name="small_text">pequeño</string>
+    <string name="link_text">enlace</string>
     <string name="open_simplex_chat_to_accept_call">Abrir SimpleX Chat para aceptar llamada</string>
     <string name="network_options_reset_to_defaults">Reiniciar a valores predetarminados</string>
     <string name="icon_descr_server_status_pending">Pendiente</string>

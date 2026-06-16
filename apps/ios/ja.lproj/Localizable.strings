@@ -3629,3 +3629,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "あなたのSimpleXアドレス";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- 小さい!";
+
+/* No comment provided by engineer. */
+"small" = "小さい";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[リンク](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "リンク";

@@ -1059,6 +1059,8 @@
     <string name="smp_servers_test_some_failed">Някои сървъри не минаха теста:</string>
     <string name="shutdown_alert_question">Изключване\?</string>
     <string name="secret_text">таен</string>
+    <string name="small_text">малък</string>
+    <string name="link_text">връзка</string>
     <string name="alert_title_skipped_messages">Пропуснати съобщения</string>
     <string name="self_destruct">Самоунищожение</string>
     <string name="receipts_section_groups">Малки групи (максимум 20)</string>

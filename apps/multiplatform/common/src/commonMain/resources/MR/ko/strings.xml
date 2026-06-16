@@ -814,6 +814,8 @@
     <string name="smp_servers_use_server_for_new_conn">새로운 대화에 사용</string>
     <string name="smp_servers_invalid_address">잘못된 서버 주소에요!</string>
     <string name="secret_text">비밀</string>
+    <string name="small_text">작게</string>
+    <string name="link_text">링크</string>
     <string name="status_no_e2e_encryption">종단 간 암호화 안 됨</string>
     <string name="settings_section_title_themes">테마</string>
     <string name="snd_group_event_changed_role_for_yourself">내 역할이 %s로 변경되었어요.</string>

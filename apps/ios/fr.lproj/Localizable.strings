@@ -5672,3 +5672,15 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Votre adresse SimpleX";
 
+
+/* No comment provided by engineer. */
+"!- small!" = "!- petit!";
+
+/* No comment provided by engineer. */
+"small" = "petit";
+
+/* No comment provided by engineer. */
+"[link](https://simplex.chat)" = "\\[lien](https://simplex.chat)";
+
+/* No comment provided by engineer. */
+"link" = "lien";

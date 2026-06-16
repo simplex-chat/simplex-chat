@@ -1271,6 +1271,8 @@
     <string name="using_simplex_chat_servers">SimpleX Chat serverları kullanılıyor.</string>
     <string name="smp_servers_preset_add">Ön ayarlı sunucular ekle</string>
     <string name="secret_text">gizli</string>
+    <string name="small_text">küçük</string>
+    <string name="link_text">bağlantı</string>
     <string name="receipts_groups_disable_for_all">Bütün gruplar için devre dışı bırak</string>
     <string name="v4_6_group_welcome_message_descr">Yeni üyeler için gösterilecek mesajı seç!</string>
     <string name="stop_snd_file__message">Dosya gönderimi durdurulacaktır.</string>
