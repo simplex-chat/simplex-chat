@@ -102,6 +102,28 @@ fun TextEditor(
   }
 }
 
+@Composable
+fun PlainTextEditor(
+  value: MutableState<String>,
+  placeholder: String? = null,
+  singleLine: Boolean = true
+) {
+  BasicTextField(
+    value = value.value,
+    onValueChange = { value.value = it },
+    modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = 12.dp),
+    textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+    singleLine = singleLine,
+    cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+    decorationBox = { innerTextField ->
+      if (value.value.isEmpty() && placeholder != null) {
+        Text(placeholder, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+      }
+      innerTextField()
+    }
+  )
+}
+
 @Serializable
 data class ParsedFormattedText(
   val formattedText: List<FormattedText>? = null

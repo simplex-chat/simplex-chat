@@ -93,6 +93,7 @@ library
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
       Simplex.Chat.Util
+      Simplex.Chat.Web
   if !flag(client_library)
       exposed-modules:
           Simplex.Chat.Bot
@@ -141,6 +142,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260529_delivery_job_senders
           Simplex.Chat.Store.Postgres.Migrations.M20260530_client_services
           Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
+          Simplex.Chat.Store.Postgres.Migrations.M20260601_relay_sent_web_domain
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -301,6 +303,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260529_delivery_job_senders
           Simplex.Chat.Store.SQLite.Migrations.M20260530_client_services
           Simplex.Chat.Store.SQLite.Migrations.M20260531_member_removed_at
+          Simplex.Chat.Store.SQLite.Migrations.M20260601_relay_sent_web_domain
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

@@ -1207,8 +1207,8 @@ viewReceivedContactRequest c Profile {fullName, shortDescr} =
   ]
 
 showRelay :: GroupRelay -> StyledString
-showRelay GroupRelay {groupRelayId, relayStatus} =
-  "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus)
+showRelay GroupRelay {groupRelayId, relayStatus, relayCap = RelayCapabilities {webDomain}} =
+  "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus) <> maybe "" (\d -> ", web: " <> plain d) webDomain
 
 viewGroupRelays :: GroupInfo -> [GroupRelay] -> [StyledString]
 viewGroupRelays g relays =
@@ -1982,10 +1982,10 @@ countactUserPrefText cup = case cup of
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> Maybe MsgSigStatus -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma, publicGroup = pg}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma', publicGroup = pg'}}
   m signed = do
-    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated
+    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated <> publicGroupAccessUpdated
     if null update
       then []
       else memberUpdated <> update
@@ -2010,6 +2010,18 @@ viewGroupUpdated
       memberAdmissionUpdated
         | ma == ma' = []
         | otherwise = ["changed member admission rules"]
+      publicGroupAccessUpdated
+        | access == access' = []
+        | otherwise = ["updated public group access:" <> viewAccess access']
+        where
+          access = pg >>= publicGroupAccess
+          access' = pg' >>= publicGroupAccess
+          viewAccess Nothing = " removed"
+          viewAccess (Just PublicGroupAccess {groupWebPage, groupDomain, domainWebPage, allowEmbedding}) =
+            maybe "" (\u -> " web=" <> plain u) groupWebPage
+              <> maybe "" (\d -> " domain=" <> plain d) groupDomain
+              <> (if domainWebPage then " domain_page=on" else "")
+              <> (if allowEmbedding then " embed=on" else "")
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, description, image, groupPreferences = gps}} =

@@ -159,6 +159,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260516_supporter_badges
 import Simplex.Chat.Store.SQLite.Migrations.M20260529_delivery_job_senders
 import Simplex.Chat.Store.SQLite.Migrations.M20260530_client_services
 import Simplex.Chat.Store.SQLite.Migrations.M20260531_member_removed_at
+import Simplex.Chat.Store.SQLite.Migrations.M20260601_relay_sent_web_domain
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -317,7 +318,8 @@ schemaMigrations =
     ("20260516_supporter_badges", m20260516_supporter_badges, Just down_m20260516_supporter_badges),
     ("20260529_delivery_job_senders", m20260529_delivery_job_senders, Just down_m20260529_delivery_job_senders),
     ("20260530_client_services", m20260530_client_services, Just down_m20260530_client_services),
-    ("20260531_member_removed_at", m20260531_member_removed_at, Just down_m20260531_member_removed_at)
+    ("20260531_member_removed_at", m20260531_member_removed_at, Just down_m20260531_member_removed_at),
+    ("20260601_relay_sent_web_domain", m20260601_relay_sent_web_domain, Just down_m20260601_relay_sent_web_domain)
   ]
 
 -- | The list of migrations in ascending order by date

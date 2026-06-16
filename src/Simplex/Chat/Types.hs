@@ -881,8 +881,13 @@ instance FromJSON ImageData where
   parseJSON = fmap ImageData . J.parseJSON
 
 instance ToJSON ImageData where
-  toJSON (ImageData t) = J.toJSON t
-  toEncoding (ImageData t) = J.toEncoding t
+  toJSON (ImageData t) = J.toJSON $ safeImageData t
+  toEncoding (ImageData t) = J.toEncoding $ safeImageData t
+
+safeImageData :: Text -> Text
+safeImageData t
+  | "data:" `T.isPrefixOf` t = t
+  | otherwise = ""
 
 instance ToField ImageData where toField (ImageData t) = toField t
 

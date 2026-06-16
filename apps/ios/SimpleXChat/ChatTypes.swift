@@ -2614,6 +2614,13 @@ public enum GroupType: Codable, Hashable {
 }
 
 public struct PublicGroupAccess: Codable, Hashable {
+    public init(groupWebPage: String? = nil, groupDomain: String? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
+        self.groupWebPage = groupWebPage
+        self.groupDomain = groupDomain
+        self.domainWebPage = domainWebPage
+        self.allowEmbedding = allowEmbedding
+    }
+
     public var groupWebPage: String?
     public var groupDomain: String?
     public var domainWebPage: Bool = false

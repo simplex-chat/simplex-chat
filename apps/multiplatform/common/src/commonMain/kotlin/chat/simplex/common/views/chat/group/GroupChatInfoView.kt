@@ -175,6 +175,9 @@ fun ModalData.GroupChatInfoView(
       manageGroupLink = {
           ModalManager.end.showModal(cardScreen = true) { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo) }
       },
+      manageWebPage = {
+          ModalManager.end.showCustomModal { close -> ChannelWebPageView(rhId, groupInfo, chatModel, close) }
+      },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
     )
@@ -506,6 +509,7 @@ fun ModalData.GroupChatInfoLayout(
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
+  manageWebPage: () -> Unit,
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit,
   deletingItems: State<Boolean>
@@ -793,6 +797,13 @@ fun ModalData.GroupChatInfoLayout(
               else MR.strings.button_leave_chat
             LeaveGroupButton(titleId, leaveGroup)
           }
+        }
+      }
+
+      if (groupInfo.useRelays && groupInfo.isOwner) {
+        SectionDividerSpaced()
+        SectionView(title = stringResource(MR.strings.advanced_options)) {
+          ChannelWebPageButton(groupInfo, manageWebPage)
         }
       }
 
@@ -1210,6 +1221,16 @@ private fun ChannelLinkButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun ChannelWebPageButton(groupInfo: GroupInfo, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_travel_explore),
+    stringResource(if (groupInfo.isChannel) MR.strings.channel_webpage else MR.strings.group_webpage),
+    onClick,
+    iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
 private fun ChannelLinkQRCodeSection(groupLink: String) {
   val clipboard = LocalClipboardManager.current
   Box(Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
@@ -1413,6 +1434,7 @@ fun PreviewGroupChatInfoLayout() {
       clearChat = {},
       leaveGroup = {},
       manageGroupLink = {},
+      manageWebPage = {},
       onSearchClicked = {},
       deletingItems = remember { mutableStateOf(true) }
     )
