@@ -2734,6 +2734,7 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case new
     case invited
     case accepted
+    case acknowledgedRoster
     case active
     case inactive
     case rejected
@@ -2809,6 +2810,7 @@ extension RelayStatus {
         case .new: "new"
         case .invited: "invited"
         case .accepted: "accepted"
+        case .acknowledgedRoster: "acknowledged roster"
         case .active: "active"
         case .inactive: "inactive"
         case .rejected: "rejected"

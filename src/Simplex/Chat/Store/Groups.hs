@@ -101,7 +101,7 @@ module Simplex.Chat.Store.Groups
     createRelayConnection,
     updateRelayStatus,
     updateRelayStatusFromTo,
-    setRelayKey,
+    setRelayLinkAccepted,
     setRelayLinkConfId,
     updateRelayCapabilities,
     getRelayConfId,
@@ -1433,7 +1433,7 @@ getConnectedGroupRelays db GroupInfo {groupId} =
                  AND gr.relay_status IN (?,?)
              |]
       )
-      (groupId, GSMemConnected, RSAccepted, RSActive)
+      (groupId, GSMemConnected, RSAcknowledgedRoster, RSActive)
 
 groupRelayQuery :: Query
 groupRelayQuery =
@@ -1665,10 +1665,18 @@ updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
 
-setRelayKey :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberKey -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
-setRelayKey db cxt user m (MemberKey relayKey) profile = do
+setRelayLinkAccepted :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberKey -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
+setRelayLinkAccepted db cxt user m (MemberKey relayKey) profile = do
   let gmId = groupMemberId' m
   currentTs <- liftIO getCurrentTime
+  liftIO $ DB.execute
+    db
+    [sql|
+      UPDATE group_relays
+      SET relay_status = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (RSAccepted, currentTs, gmId)
   liftIO $ DB.execute
     db
     [sql|
@@ -1861,9 +1869,9 @@ getRelayServedGroups db cxt User {userId, userContactId} = do
     <$> DB.query
       db
       ( groupInfoQuery
-          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?)"
+          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)"
       )
-      (userId, userContactId, RSAccepted, RSActive)
+      (userId, userContactId, RSAccepted, RSAcknowledgedRoster, RSActive)
 
 getRelayInactiveGroups :: DB.Connection -> StoreCxt -> User -> NominalDiffTime -> IO [GroupInfo]
 getRelayInactiveGroups db cxt User {userId, userContactId} ttl = do

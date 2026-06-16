@@ -3813,6 +3813,7 @@ export enum RelayStatus {
   New = "new",
   Invited = "invited",
   Accepted = "accepted",
+  AcknowledgedRoster = "acknowledgedRoster",
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",

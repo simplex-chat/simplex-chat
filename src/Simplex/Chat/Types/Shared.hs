@@ -89,6 +89,7 @@ data RelayStatus
   = RSNew -- only for owner
   | RSInvited
   | RSAccepted
+  | RSAcknowledgedRoster
   | RSActive
   | RSInactive
   | RSRejected
@@ -99,6 +100,7 @@ relayStatusText = \case
   RSNew -> "new"
   RSInvited -> "invited"
   RSAccepted -> "accepted"
+  RSAcknowledgedRoster -> "acknowledged_roster"
   RSActive -> "active"
   RSInactive -> "inactive"
   RSRejected -> "rejected"
@@ -108,6 +110,7 @@ instance TextEncoding RelayStatus where
     RSNew -> "new"
     RSInvited -> "invited"
     RSAccepted -> "accepted"
+    RSAcknowledgedRoster -> "acknowledged_roster"
     RSActive -> "active"
     RSInactive -> "inactive"
     RSRejected -> "rejected"
@@ -115,6 +118,7 @@ instance TextEncoding RelayStatus where
     "new" -> Just RSNew
     "invited" -> Just RSInvited
     "accepted" -> Just RSAccepted
+    "acknowledged_roster" -> Just RSAcknowledgedRoster
     "active" -> Just RSActive
     "inactive" -> Just RSInactive
     "rejected" -> Just RSRejected

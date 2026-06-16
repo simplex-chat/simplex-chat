@@ -2671,7 +2671,7 @@ class RelayProfile(TypedDict):
     shortDescr: NotRequired[str]
     image: NotRequired[str]
 
-RelayStatus = Literal["new", "invited", "accepted", "active", "inactive", "rejected"]
+RelayStatus = Literal["new", "invited", "accepted", "acknowledgedRoster", "active", "inactive", "rejected"]
 
 ReportReason = Literal["spam", "content", "community", "profile", "other"]
 
