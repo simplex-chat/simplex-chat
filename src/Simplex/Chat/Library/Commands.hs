@@ -4880,7 +4880,7 @@ runRelayGroupLinkChecks user = do
                   then do
                     -- TODO [relays] emit event to UI when relay own status promoted to RSActive
                     -- CEvtGroupRelayUpdated requires GroupRelay (owner-side), not available on relay side
-                    void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSAcknowledgedRoster RSActive
+                    void $ withStore' $ \db -> updateRelayOwnStatus_ db gInfo RSActive
                   else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
               _ -> pure ()
           _ -> pure ()
