@@ -2034,6 +2034,11 @@ video {
   text-underline-offset: 4px;
 }
 
+.antialiased {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 .opacity-100 {
   opacity: 1;
 }
