@@ -19,7 +19,16 @@ CREATE TABLE contact_profiles(
   preferences TEXT,
   contact_link BLOB,
   short_descr TEXT,
-  chat_peer_type TEXT
+  chat_peer_type TEXT,
+  badge_proof BLOB,
+  badge_pres_header BLOB,
+  badge_expiry TEXT,
+  badge_type TEXT,
+  badge_verified INTEGER,
+  badge_extra TEXT,
+  badge_master_key BLOB,
+  badge_signature BLOB,
+  badge_key_idx INTEGER
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,

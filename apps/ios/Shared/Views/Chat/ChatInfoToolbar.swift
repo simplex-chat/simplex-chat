@@ -47,7 +47,7 @@ struct ChatInfoToolbar: View {
             }
             .padding(.trailing, 4)
             let t = Text(cInfo.displayName).font(.headline)
-            (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
+            NameWithBadge((cInfo.contact?.verified == true ? contactVerifiedShield + t : t), cInfo.nameBadge, .headline)
                 .lineLimit(1)
                 .if (cInfo.fullName != "" && cInfo.displayName != cInfo.fullName) { v in
                     VStack(spacing: 0) {

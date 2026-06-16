@@ -138,6 +138,21 @@ AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FI
 class AutoAccept(TypedDict):
     acceptIncognito: bool
 
+class BadgeInfo(TypedDict):
+    badgeType: "BadgeType"
+    badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
+    badgeExtra: str
+
+class BadgeProof(TypedDict):
+    badgeKeyIdx: int  # int
+    presHeader: str
+    proof: str
+    badgeInfo: "BadgeInfo"
+
+BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
+
+BadgeType = Literal["supporter", "legend", "investor"]
+
 class BlockingInfo(TypedDict):
     reason: "BlockingReason"
     notice: NotRequired["ClientNotice"]
@@ -1437,6 +1452,7 @@ class ContactShortLinkData(TypedDict):
     profile: "Profile"
     message: NotRequired["MsgContent"]
     business: bool
+    localBadge: NotRequired["LocalBadge"]
 
 ContactStatus = Literal["active", "deleted", "deletedByUser"]
 
@@ -2058,6 +2074,10 @@ class LinkPreview(TypedDict):
     image: str
     content: NotRequired["LinkContent"]
 
+class LocalBadge(TypedDict):
+    badge: "BadgeInfo"
+    status: "BadgeStatus"
+
 class LocalProfile(TypedDict):
     profileId: int  # int64
     displayName: str
@@ -2067,6 +2087,7 @@ class LocalProfile(TypedDict):
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
+    localBadge: NotRequired["LocalBadge"]
     localAlias: str
 
 MemberCriteria = Literal["all"]
@@ -2318,6 +2339,7 @@ class Profile(TypedDict):
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
+    badge: NotRequired["BadgeProof"]
 
 class ProxyClientError_protocolError(TypedDict):
     type: Literal["protocolError"]
@@ -3433,7 +3455,7 @@ class UserContactRequest(TypedDict):
     cReqChatVRange: "VersionRange"
     localDisplayName: str
     profileId: int  # int64
-    profile: "Profile"
+    profile: "LocalProfile"
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
     xContactId: NotRequired[str]

@@ -129,7 +129,8 @@ struct UserPicker: View {
                 }
             }
             .padding(.trailing, 6)
-            Text(u.user.displayName).font(.title2).lineLimit(1)
+            NameWithBadge(Text(u.user.displayName).font(.title2), u.user.profile.localBadge, .title2)
+                .lineLimit(1)
         }
         .padding(rowPadding)
         .modifier(ListRow {

@@ -374,25 +374,17 @@ struct ChatInfoView: View {
             // show actual display name, alias can be edited in this view
             let displayName = contact.profile.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
-            if contact.verified {
-                (
-                    Text(Image(systemName: "checkmark.shield"))
-                        .foregroundColor(theme.colors.secondary)
-                        .font(.title2)
-                    + textSpace
-                    + Text(displayName)
-                        .font(.largeTitle)
-                )
+            let badge = cInfo.nameBadge
+            // the shield is smaller (.title2) than the name (.largeTitle), so on the shared baseline it
+            // sits low; raise it by half the cap-height difference to center it with the capitals
+            let shieldRaise = (UIFont.preferredFont(forTextStyle: .largeTitle).capHeight - UIFont.preferredFont(forTextStyle: .title2).capHeight) / 2
+            let nameText = contact.verified
+                ? Text(Image(systemName: "checkmark.shield")).foregroundColor(theme.colors.secondary).font(.title2).baselineOffset(shieldRaise) + textSpace + Text(displayName).font(.largeTitle)
+                : Text(displayName).font(.largeTitle)
+            NameWithBadge(nameText, badge, .largeTitle) { if let badge { showBadgeInfoAlert(displayName, badge) } }
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.bottom, 2)
-            } else {
-                Text(displayName)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .padding(.bottom, 2)
-            }
             if fullName != "" && fullName != displayName && fullName != cInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines)  {
                 Text(cInfo.fullName)
                     .font(.title2)

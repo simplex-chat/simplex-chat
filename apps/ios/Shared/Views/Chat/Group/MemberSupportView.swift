@@ -172,7 +172,7 @@ struct MemberSupportView: View {
                     .padding(.trailing, 2)
                 VStack(alignment: .leading) {
                     let t = Text(member.chatViewName).foregroundColor(theme.colors.onBackground)
-                    (member.verified ? memberVerifiedShield + t : t)
+                    NameWithBadge((member.verified ? memberVerifiedShield + t : t), member.nameBadge)
                         .lineLimit(1)
                     Text(memberStatus(member))
                         .lineLimit(1)

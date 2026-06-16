@@ -202,6 +202,7 @@ cliCommands =
     "AbortSwitchGroupMember",
     "AcceptContact",
     "AcceptMember",
+    "AddBadge",
     "AddContact",
     "AddMember",
     "AllowRelayGroup",
