@@ -252,7 +252,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       toView $ CEvtSndFileCompleteXFTP user ci' ft
                       where
                         getRecipients
-                          | useRelays' g = withStore' $ \db -> getGroupRelaySendMembers db cxt user g
+                          | useRelays' g = withStore' $ \db -> getGroupRelayMembers db cxt user g
                           | otherwise = withStore' $ \db -> getGroupMembers db cxt user g
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -1385,7 +1385,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   -- dedicated subscriber count).
                   when (fromMaybe 0 publicMemberCount > 1) $
                     forM_ (L.nonEmpty newlyActiveLinks) $ \newlyActive -> do
-                      allRelayMembers <- withFastStore' $ \db -> getGroupRelaySendMembers db cxt user gInfo
+                      allRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
                       let recipients =
                             filter
                               (\GroupMember {memberStatus, relayLink} ->

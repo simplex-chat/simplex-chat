@@ -72,7 +72,6 @@ module Simplex.Chat.Store.Groups
     getGroupOnlyMembers,
     getGroupOwners,
     getGroupRelayMembers,
-    getGroupRelaySendMembers,
     getGroupMembersForExpiration,
     getRemovedMembersToCleanup,
     deleteGroupChatItems,
@@ -1261,24 +1260,6 @@ getGroupRelayMembers db cxt user@User {userId, userContactId} GroupInfo {groupId
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?")
       (userId, groupId, userContactId, GRRelay)
-
--- Relays eligible to receive sends (accepted the invitation onward) - excludes still-invited,
--- inactive and rejected relays. Unfiltered getGroupRelayMembers is for non-send callers
--- (relay-set reconciliation, connection cleanup, connected-relay counts).
-getGroupRelaySendMembers :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
-getGroupRelaySendMembers db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
-  map (toContactMember cxt user)
-    <$> DB.query
-      db
-      ( groupMemberQuery
-          <> " "
-          <> [sql|
-               JOIN group_relays gr ON gr.group_member_id = m.group_member_id
-               WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ?
-                 AND m.member_role = ? AND gr.relay_status IN (?,?,?)
-             |]
-      )
-      (userId, groupId, userContactId, GRRelay, RSAccepted, RSAcknowledgedRoster, RSActive)
 
 getGroupMembersForExpiration :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db cxt user@User {userId, userContactId} GroupInfo {groupId} = do
