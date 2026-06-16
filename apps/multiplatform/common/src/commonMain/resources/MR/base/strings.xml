@@ -3103,8 +3103,8 @@
   <string name="tray_quit">Quit SimpleX</string>
   <string name="tray_tooltip">SimpleX</string>
   <string name="tray_tooltip_unread">SimpleX — %d unread</string>
-  <string name="appearance_minimize_to_tray">Minimize to tray when closing window</string>
-  <string name="appearance_minimize_to_tray_desc">Keep SimpleX running in the background to receive messages.</string>
+  <string name="appearance_minimize_to_tray">Close to tray</string>
+  <string name="appearance_minimize_to_tray_desc">Runs in background to receive messages</string>
   <string name="badge_supports_simplex">%s supports SimpleX Chat.</string>
   <string name="badge_supported_simplex">%1$s supported SimpleX Chat. The badge expired on %2$s.</string>
   <string name="badge_support_from_v7">You can support SimpleX starting from v7 of the app.</string>
