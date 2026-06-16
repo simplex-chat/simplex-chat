@@ -202,7 +202,8 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
     }
   AlertManager.shared.showAlertDialog(
     title = generalGetString(titleId),
-    text = generalGetString(messageId),
+    text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}",
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withBGApi {
@@ -236,7 +237,8 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
     MR.strings.you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved
   AlertManager.shared.showAlertDialog(
     title = generalGetString(titleId),
-    text = generalGetString(messageId),
+    text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}",
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
       withLongRunningApi(60_000) {
@@ -1097,8 +1099,10 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
           if (member.verified) {
             MemberVerifiedShield()
           }
-          Text(
-            if (showlocalAliasAndFullName) member.localAliasAndFullName else member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+          NameWithBadge(
+            if (showlocalAliasAndFullName) member.localAliasAndFullName else member.chatViewName,
+            member.nameBadge,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
         }

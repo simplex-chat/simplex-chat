@@ -2064,7 +2064,7 @@ alert button */
 "Developer options" = "Fejlesztői beállítások";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Fejlesztői eszközök";
+"Developer" = "Fejlesztői eszközök";
 
 /* No comment provided by engineer. */
 "Device" = "Eszköz";
@@ -4533,7 +4533,7 @@ alert button */
 "Previously connected servers" = "Korábban kapcsolódott kiszolgálók";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Adatvédelem és biztonság";
+"Your privacy" = "Adatvédelem és biztonság";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Saját ügyfeleinek adatvédelme.";
@@ -6759,7 +6759,7 @@ server test failure */
 "You can enable later via Settings" = "Később engedélyezheti a beállításokban";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Később engedélyezheti őket az „Adatvédelem és biztonság” menüben.";
+"You can enable them later via app Your privacy settings." = "Később engedélyezheti őket az „Adatvédelem és biztonság” menüben.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Megpróbálhatja még egyszer.";

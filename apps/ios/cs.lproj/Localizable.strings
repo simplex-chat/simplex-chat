@@ -1306,7 +1306,7 @@ alert button */
 "Develop" = "Vyvinout";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Nástroje pro vývojáře";
+"Developer" = "Nástroje pro vývojáře";
 
 /* No comment provided by engineer. */
 "Device" = "Zařízení";
@@ -2578,7 +2578,7 @@ alert button */
 "Preview" = "Náhled";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Ochrana osobních údajů a zabezpečení";
+"Your privacy" = "Ochrana osobních údajů a zabezpečení";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Soukromé názvy souborů";
@@ -3543,7 +3543,7 @@ server test failure */
 "You can enable later via Settings" = "Můžete povolit později v Nastavení";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Můžete je povolit později v nastavení Soukromí & Bezpečnosti aplikace";
+"You can enable them later via app Your privacy settings." = "Můžete je povolit později v nastavení Soukromí & Bezpečnosti aplikace";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.";

@@ -3060,8 +3060,8 @@ alert button</note>
         <target>开发者选项</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer tools" xml:space="preserve">
-        <source>Developer tools</source>
+      <trans-unit id="Developer" xml:space="preserve">
+        <source>Developer</source>
         <target>开发者工具</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

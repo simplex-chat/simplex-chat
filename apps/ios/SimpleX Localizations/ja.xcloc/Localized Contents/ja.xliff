@@ -2891,8 +2891,8 @@ alert button</note>
         <target>開発者向けの設定</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer tools" xml:space="preserve">
-        <source>Developer tools</source>
+      <trans-unit id="Developer" xml:space="preserve">
+        <source>Developer</source>
         <target>開発ツール</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

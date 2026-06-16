@@ -1555,6 +1555,13 @@
   <string name="settings_section_title_files">Files</string>
   <string name="settings_section_title_delivery_receipts">Send delivery receipts to</string>
   <string name="settings_section_title_contact_requests_from_groups">Contact requests from groups</string>
+  <string name="settings_section_title_about">About</string>
+  <string name="settings_section_title_contact">Contact</string>
+  <string name="settings_section_title_support_project">Support the project</string>
+  <string name="chat_data">Chat data</string>
+  <string name="help_and_support">Help &amp; support</string>
+  <string name="more_privacy">More privacy</string>
+  <string name="advanced_settings">Advanced settings</string>
   <string name="settings_restart_app">Restart</string>
   <string name="settings_shutdown">Shutdown</string>
   <string name="settings_developer_tools">Developer tools</string>
@@ -2695,7 +2702,7 @@
   <string name="dont_enable_receipts">Don\'t enable</string>
   <string name="you_can_enable_delivery_receipts_later">You can enable later via Settings</string>
   <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
-  <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
+  <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Your privacy settings.</string>
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
 
   <!-- Remote access -->
@@ -3119,4 +3126,12 @@
   <string name="tray_tooltip_unread">SimpleX — %d unread</string>
   <string name="appearance_minimize_to_tray">Close to tray</string>
   <string name="appearance_minimize_to_tray_desc">Runs in background to receive messages</string>
+  <string name="badge_supports_simplex">%s supports SimpleX Chat.</string>
+  <string name="badge_supported_simplex">%1$s supported SimpleX Chat. The badge expired on %2$s.</string>
+  <string name="badge_support_from_v7">You can support SimpleX starting from v7 of the app.</string>
+  <string name="badge_invested">%s invested in SimpleX Chat crowdfunding.</string>
+  <string name="badge_unverified_title">Unverified badge</string>
+  <string name="badge_unverified_desc">This badge could not be verified and may not be genuine.</string>
+  <string name="badge_unknown_key_title">Badge cannot be verified</string>
+  <string name="badge_unknown_key_desc">The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge.</string>
 </resources>

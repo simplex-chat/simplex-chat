@@ -772,10 +772,11 @@ fun rejectContactRequest(rhId: Long?, contactRequestId: Long, chatModel: ChatMod
 fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_pending_connection__question),
-    text = generalGetString(
+    text = "${connection.displayName}\n\n" + generalGetString(
       if (connection.initiated) MR.strings.contact_you_shared_link_with_wont_be_able_to_connect
       else MR.strings.connection_you_accepted_will_be_cancelled
     ),
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withBGApi {

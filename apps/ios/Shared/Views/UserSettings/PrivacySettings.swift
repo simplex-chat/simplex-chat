@@ -81,30 +81,12 @@ struct PrivacySettings: View {
                     settingsRow("link", color: theme.colors.secondary) {
                         Toggle("Remove link tracking", isOn: $privacySanitizeLinks)
                     }
-                    settingsRow("message", color: theme.colors.secondary) {
-                        Toggle("Show last messages", isOn: $showChatPreviews)
-                    }
-                    settingsRow("rectangle.and.pencil.and.ellipsis", color: theme.colors.secondary) {
-                        Toggle("Message draft", isOn: $saveLastDraft)
-                    }
-                    .onChange(of: saveLastDraft) { saveDraft in
-                        if !saveDraft {
-                            m.draft = nil
-                            m.draftChatId = nil
-                        }
-                    }
                 } header: {
                     Text("Chats")
                         .foregroundColor(theme.colors.secondary)
                 }
 
                 Section {
-                    settingsRow("lock.doc", color: theme.colors.secondary) {
-                        Toggle("Encrypt local files", isOn: $encryptLocalFiles)
-                            .onChange(of: encryptLocalFiles) {
-                                setEncryptLocalFiles($0)
-                            }
-                    }
                     settingsRow("photo", color: theme.colors.secondary) {
                         Toggle("Auto-accept images", isOn: $autoAcceptImages)
                             .onChange(of: autoAcceptImages) {
@@ -126,20 +108,9 @@ struct PrivacySettings: View {
                             }
                         }
                     }
-                    settingsRow("network.badge.shield.half.filled", color: theme.colors.secondary) {
-                        Toggle("Protect IP address", isOn: $askToApproveRelays)
-                    }
                 } header: {
                     Text("Files")
                         .foregroundColor(theme.colors.secondary)
-                } footer: {
-                    if askToApproveRelays {
-                        Text("The app will ask to confirm downloads from unknown file servers (except .onion).")
-                            .foregroundColor(theme.colors.secondary)
-                    } else {
-                        Text("Without Tor or VPN, your IP address will be visible to file servers.")
-                            .foregroundColor(theme.colors.secondary)
-                    }
                 }
 
                 Section {
@@ -155,45 +126,8 @@ struct PrivacySettings: View {
                 }
 
                 Section {
-                    settingsRow("person", color: theme.colors.secondary) {
-                        Toggle("Contacts", isOn: $contactReceipts)
-                    }
-                    settingsRow("person.2", color: theme.colors.secondary) {
-                        Toggle("Small groups (max 20)", isOn: $groupReceipts)
-                    }
-                } header: {
-                    Text("Send delivery receipts to")
-                        .foregroundColor(theme.colors.secondary)
-                } footer: {
-                    VStack(alignment: .leading) {
-                        Text("These settings are for your current profile **\(m.currentUser?.displayName ?? "")**.")
-                        Text("They can be overridden in contact and group settings.")
-                    }
-                    .foregroundColor(theme.colors.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .confirmationDialog(contactReceiptsDialogTitle, isPresented: $contactReceiptsDialogue, titleVisibility: .visible) {
-                    Button(contactReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
-                        setSendReceiptsContacts(contactReceipts, clearOverrides: false)
-                    }
-                    Button(contactReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
-                        setSendReceiptsContacts(contactReceipts, clearOverrides: true)
-                    }
-                    Button("Cancel", role: .cancel) {
-                        contactReceiptsReset = true
-                        contactReceipts.toggle()
-                    }
-                }
-                .confirmationDialog(groupReceiptsDialogTitle, isPresented: $groupReceiptsDialogue, titleVisibility: .visible) {
-                    Button(groupReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
-                        setSendReceiptsGroups(groupReceipts, clearOverrides: false)
-                    }
-                    Button(groupReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
-                        setSendReceiptsGroups(groupReceipts, clearOverrides: true)
-                    }
-                    Button("Cancel", role: .cancel) {
-                        groupReceiptsReset = true
-                        groupReceipts.toggle()
+                    NavigationLink(destination: morePrivacyView) {
+                        settingsRow("ellipsis", color: theme.colors.secondary) { Text("More privacy") }
                     }
                 }
             }
@@ -241,6 +175,132 @@ struct PrivacySettings: View {
                 return Alert(title: Text(title), message: Text(error))
             }
         }
+    }
+
+    @ViewBuilder
+    private func morePrivacyView() -> some View {
+        List {
+            Section {
+                settingsRow("message", color: theme.colors.secondary) {
+                    Toggle("Show last messages", isOn: $showChatPreviews)
+                }
+                settingsRow("rectangle.and.pencil.and.ellipsis", color: theme.colors.secondary) {
+                    Toggle("Message draft", isOn: $saveLastDraft)
+                }
+                .onChange(of: saveLastDraft) { saveDraft in
+                    if !saveDraft {
+                        m.draft = nil
+                        m.draftChatId = nil
+                    }
+                }
+            } header: {
+                Text("Chats")
+                    .foregroundColor(theme.colors.secondary)
+            }
+
+            Section {
+                settingsRow("lock.doc", color: theme.colors.secondary) {
+                    Toggle("Encrypt local files", isOn: $encryptLocalFiles)
+                        .onChange(of: encryptLocalFiles) {
+                            setEncryptLocalFiles($0)
+                        }
+                }
+                settingsRow("network.badge.shield.half.filled", color: theme.colors.secondary) {
+                    Toggle("Protect IP address", isOn: $askToApproveRelays)
+                }
+            } header: {
+                Text("Files")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                if askToApproveRelays {
+                    Text("The app will ask to confirm downloads from unknown file servers (except .onion).")
+                        .foregroundColor(theme.colors.secondary)
+                } else {
+                    Text("Without Tor or VPN, your IP address will be visible to file servers.")
+                        .foregroundColor(theme.colors.secondary)
+                }
+            }
+
+            Section {
+                NavigationLink {
+                    List {
+                        Section {
+                            SelectionListView(list: NotificationPreviewMode.values, selection: $m.notificationPreview) { previewMode in
+                                ntfPreviewModeGroupDefault.set(previewMode)
+                                m.notificationPreview = previewMode
+                            }
+                        } footer: {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("You can set lock screen notification preview via settings.")
+                                    .foregroundColor(theme.colors.secondary)
+                                Button("Open Settings") {
+                                    DispatchQueue.main.async {
+                                        UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .navigationTitle("Show preview")
+                    .modifier(ThemedBackground(grouped: true))
+                    .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    HStack {
+                        Text("Show preview")
+                        Spacer()
+                        Text(m.notificationPreview.label)
+                    }
+                }
+            } header: {
+                Text("Notifications")
+                    .foregroundColor(theme.colors.secondary)
+            }
+
+            Section {
+                settingsRow("person", color: theme.colors.secondary) {
+                    Toggle("Contacts", isOn: $contactReceipts)
+                }
+                settingsRow("person.2", color: theme.colors.secondary) {
+                    Toggle("Small groups (max 20)", isOn: $groupReceipts)
+                }
+            } header: {
+                Text("Send delivery receipts to")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                VStack(alignment: .leading) {
+                    Text("These settings are for your current profile **\(m.currentUser?.displayName ?? "")**.")
+                    Text("They can be overridden in contact and group settings.")
+                }
+                .foregroundColor(theme.colors.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .confirmationDialog(contactReceiptsDialogTitle, isPresented: $contactReceiptsDialogue, titleVisibility: .visible) {
+                Button(contactReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
+                    setSendReceiptsContacts(contactReceipts, clearOverrides: false)
+                }
+                Button(contactReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
+                    setSendReceiptsContacts(contactReceipts, clearOverrides: true)
+                }
+                Button("Cancel", role: .cancel) {
+                    contactReceiptsReset = true
+                    contactReceipts.toggle()
+                }
+            }
+            .confirmationDialog(groupReceiptsDialogTitle, isPresented: $groupReceiptsDialogue, titleVisibility: .visible) {
+                Button(groupReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
+                    setSendReceiptsGroups(groupReceipts, clearOverrides: false)
+                }
+                Button(groupReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
+                    setSendReceiptsGroups(groupReceipts, clearOverrides: true)
+                }
+                Button("Cancel", role: .cancel) {
+                    groupReceiptsReset = true
+                    groupReceipts.toggle()
+                }
+            }
+        }
+        .navigationTitle("More privacy")
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func setEncryptLocalFiles(_ enable: Bool) {

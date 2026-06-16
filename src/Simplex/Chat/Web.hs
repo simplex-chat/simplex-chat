@@ -42,7 +42,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), mkStoreCxt)
 import Simplex.Chat.Markdown (FormattedText (..), MarkdownList, parseMaybeMarkdownList)
 import Simplex.Chat.Messages
   ( CChatItem (..),
@@ -137,7 +137,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     seedRoutinePending wps
     workerLoop wps
   where
-    vr' = chatVRange (config cc)
+    cxt = mkStoreCxt (config cc)
 
     workerLoop wps@WebPreviewState {priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal} = do
       drainRemovals
@@ -208,7 +208,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
       where
         renderOrRemoveStale = do
           r <- withTransaction (chatStore cc) $ \db ->
-            findUser $ \u -> fmap (\g -> (u, g)) <$> runExceptT (getGroupInfo db vr' u gId)
+            findUser $ \u -> fmap (\g -> (u, g)) <$> runExceptT (getGroupInfo db cxt u gId)
           case r of
             Just (u, gInfo) | hasPublicGroup gInfo ->
               void $ renderGroupPreview cfg cc u gInfo
@@ -235,7 +235,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
       let fName = publicGroupIdFileName publicGroupId <> ".json"
       (items, owners) <- withTransaction (chatStore cc) $ \db -> do
         is <- getGroupWebPreviewItems db user gInfo webPreviewItemCount
-        os <- getGroupOwners db vr' user gInfo
+        os <- getGroupOwners db cxt user gInfo
         pure (is, os)
       ts <- getCurrentTime
       let rendered = mapMaybe toRenderedItem $ rights items
@@ -257,7 +257,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
       pure $ corsEntry publicGroupId <$> publicGroupAccess
     Nothing -> pure Nothing
   where
-    vr' = chatVRange (config cc)
+    cxt = mkStoreCxt (config cc)
 
 channelContentChanged :: ChatController -> Int64 -> STM ()
 channelContentChanged cc gId =

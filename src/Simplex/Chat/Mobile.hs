@@ -38,6 +38,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri)
+import Simplex.Chat.Mobile.Badges
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
@@ -137,6 +138,10 @@ foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CStrin
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
 
 foreign export ccall "chat_json_length" cChatJsonLength :: CString -> IO CInt
+
+foreign export ccall "chat_badge_keygen" cChatBadgeKeygen :: IO CJSONString
+
+foreign export ccall "chat_badge_issue" cChatBadgeIssue :: CString -> IO CJSONString
 
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString
 

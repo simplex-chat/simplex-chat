@@ -82,6 +82,8 @@ import Simplex.Messaging.Agent.Store.DB (SQLError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Chat.Badges (BadgeCredential)
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
@@ -138,6 +140,8 @@ coreVersionInfo simplexmqCommit =
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     chatVRange :: VersionRangeChat,
+    -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
+    badgePublicKeys :: Map Int BBSPublicKey,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
@@ -207,6 +211,12 @@ newWebPreviewState = do
   wakeSignal <- newEmptyTMVarIO
   webPreviewWorkerAsync <- newTVarIO Nothing
   pure WebPreviewState {publishableGroupIds, priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal, webPreviewWorkerAsync}
+
+-- | Builds the read-only context threaded through store functions from chat config.
+-- The single construction point, so new store-wide config (e.g. server keys) is added in one place.
+mkStoreCxt :: ChatConfig -> StoreCxt
+mkStoreCxt ChatConfig {chatVRange, badgePublicKeys} = StoreCxt chatVRange badgePublicKeys
+{-# INLINE mkStoreCxt #-}
 
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
@@ -611,6 +621,7 @@ data ChatCommand
   | SetBotCommands [ChatBotCommand]
   | UpdateProfile ContactName (Maybe Text) -- UserId (not used in UI)
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
+  | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)

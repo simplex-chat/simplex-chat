@@ -34,6 +34,7 @@ fun CIVideoView(
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
+  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
@@ -84,7 +85,7 @@ fun CIVideoView(
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation, CIFileStatus.RcvAborted ->
-                receiveFileIfValidSize(file, receiveFile)
+                receiveFileIfValidSize(file, senderProfile, receiveFile)
               CIFileStatus.RcvAccepted ->
                 when (file.fileProtocol) {
                   FileProtocol.XFTP ->
@@ -114,7 +115,7 @@ fun CIVideoView(
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
         if (showDownloadButton(file?.fileStatus) && !blurred.value && file != null) {
-          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
+          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, senderProfile, receiveFile) }
         }
       }
     }
@@ -546,20 +547,13 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
 private fun showDownloadButton(status: CIFileStatus?): Boolean =
   status is CIFileStatus.RcvInvitation || status is CIFileStatus.RcvAborted
 
-private fun fileSizeValid(file: CIFile?): Boolean {
-  if (file != null) {
-    return file.fileSize <= getMaxFileSize(file.fileProtocol)
-  }
-  return false
-}
-
-private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
-  if (fileSizeValid(file)) {
+private fun receiveFileIfValidSize(file: CIFile, senderProfile: LocalProfile?, receiveFile: (Long) -> Unit) {
+  if (fileSizeValid(file, senderProfile)) {
     receiveFile(file.fileId)
   } else {
     AlertManager.shared.showAlertMsg(
       generalGetString(MR.strings.large_file),
-      String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
+      String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
     )
   }
 }

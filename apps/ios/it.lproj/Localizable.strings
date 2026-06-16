@@ -2064,7 +2064,7 @@ alert button */
 "Developer options" = "Opzioni sviluppatore";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Strumenti di sviluppo";
+"Developer" = "Strumenti di sviluppo";
 
 /* No comment provided by engineer. */
 "Device" = "Dispositivo";
@@ -4533,7 +4533,7 @@ alert button */
 "Previously connected servers" = "Server precedentemente connessi";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Privacy e sicurezza";
+"Your privacy" = "Privacy e sicurezza";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Privacy per i tuoi clienti.";
@@ -6759,7 +6759,7 @@ server test failure */
 "You can enable later via Settings" = "Puoi attivarle più tardi nelle impostazioni";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Puoi attivarle più tardi nelle impostazioni di privacy e sicurezza dell'app.";
+"You can enable them later via app Your privacy settings." = "Puoi attivarle più tardi nelle impostazioni di privacy e sicurezza dell'app.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Puoi fare un altro tentativo.";

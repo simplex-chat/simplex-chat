@@ -1859,7 +1859,7 @@ alert button */
 "Developer options" = "Geliştirici seçenekleri";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Geliştirici araçları";
+"Developer" = "Geliştirici araçları";
 
 /* No comment provided by engineer. */
 "Device" = "Cihaz";
@@ -4099,7 +4099,7 @@ alert button */
 "Previously connected servers" = "Önceden bağlanılmış sunucular";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Gizlilik & güvenlik";
+"Your privacy" = "Gizlilik & güvenlik";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Müşterileriniz için gizlilik.";
@@ -6064,7 +6064,7 @@ server test failure */
 "You can enable later via Settings" = "Daha sonra Ayarlardan etkinleştirebilirsin";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.";
+"You can enable them later via app Your privacy settings." = "Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Bir kez daha deneyebilirsiniz.";

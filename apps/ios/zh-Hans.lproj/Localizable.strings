@@ -1836,7 +1836,7 @@ alert button */
 "Developer options" = "开发者选项";
 
 /* No comment provided by engineer. */
-"Developer tools" = "开发者工具";
+"Developer" = "开发者工具";
 
 /* No comment provided by engineer. */
 "Device" = "设备";
@@ -4107,7 +4107,7 @@ alert button */
 "Previously connected servers" = "以前连接的服务器";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "隐私和安全";
+"Your privacy" = "隐私和安全";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "客户隐私。";
@@ -6093,7 +6093,7 @@ server test failure */
 "You can enable later via Settings" = "您可以稍后在设置中启用它";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "您可以稍后通过应用程序的 \"隐私与安全 \"设置启用它们。";
+"You can enable them later via app Your privacy settings." = "您可以稍后通过应用程序的 \"隐私与安全 \"设置启用它们。";
 
 /* No comment provided by engineer. */
 "You can give another try." = "你可以再试一次。";

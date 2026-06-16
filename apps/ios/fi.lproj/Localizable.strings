@@ -982,7 +982,7 @@ alert button */
 "Develop" = "Kehitä";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Kehittäjätyökalut";
+"Developer" = "Kehittäjätyökalut";
 
 /* No comment provided by engineer. */
 "Device" = "Laite";
@@ -2232,7 +2232,7 @@ new chat action */
 "Preview" = "Esikatselu";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Yksityisyys ja turvallisuus";
+"Your privacy" = "Yksityisyys ja turvallisuus";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Yksityiset tiedostonimet";
@@ -3179,7 +3179,7 @@ server test failure */
 "You can enable later via Settings" = "Voit ottaa käyttöön myöhemmin asetusten kautta";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Voit ottaa ne käyttöön myöhemmin sovelluksen Yksityisyys & Turvallisuus -asetuksista.";
+"You can enable them later via app Your privacy settings." = "Voit ottaa ne käyttöön myöhemmin sovelluksen Yksityisyys & Turvallisuus -asetuksista.";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Voit piilottaa tai mykistää käyttäjäprofiilin pyyhkäisemällä sitä oikealle.";
