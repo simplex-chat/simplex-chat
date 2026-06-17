@@ -330,7 +330,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
   val imagesPreview = ArrayList<String>()
   uris.forEach { uri ->
     var bitmap: ImageBitmap?
-    when {
+    val uploadContent: UploadContent? = when {
       isImage(uri) -> {
         // Image
         val drawable = getDrawableFromUri(uri)
@@ -340,16 +340,19 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
           // It's a gif or webp
           val fileSize = getFileSize(uri)
           if (fileSize != null && fileSize <= maxFileSize) {
-            content.add(UploadContent.AnimatedImage(uri))
+            UploadContent.AnimatedImage(uri)
           } else {
             bitmap = null
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
               String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
             )
+            null
           }
         } else if (bitmap != null) {
-          content.add(UploadContent.SimpleImage(uri))
+          UploadContent.SimpleImage(uri)
+        } else {
+          null
         }
       }
       else -> {
@@ -357,11 +360,22 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
         val res = getBitmapFromVideo(uri, withAlertOnException = true)
         bitmap = res.preview
         val durationMs = res.duration
-        content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))
+        UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0)
       }
     }
-    if (bitmap != null) {
+    // content and imagesPreview must stay index-aligned and equal-length: both consumers
+    // (ComposeImageView and sendMessageAsync) cross-index one list by the other's index.
+    // Only pair them when a preview bitmap exists; otherwise skip the media entirely.
+    if (bitmap != null && uploadContent != null) {
+      content.add(uploadContent)
       imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
+    } else if (uploadContent is UploadContent.Video && !AlertManager.shared.hasAlertsShown()) {
+      // A corrupted/undecodable video can yield a null preview frame without throwing, so
+      // getBitmapFromVideo shows no alert. Skip it (other picked media still send) and tell
+      // the user instead of dropping it silently. hasAlertsShown guards against stacking the
+      // alert across multiple bad items and against duplicating the one already shown on the
+      // exception path. Image decode failures are already surfaced by getBitmapFromUri above.
+      showVideoDecodingException()
     }
   }
   if (imagesPreview.isNotEmpty()) {
