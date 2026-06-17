@@ -1400,6 +1400,8 @@ function renderVideoContent(inner, mc, msg, mediaOnly) {
 
 function renderLinkContent(bubble, mc, msg) {
   if (mc.preview) {
+    // clamp the bubble to the link card width so long text wraps instead of widening the bubble
+    bubble.style.maxWidth = '400px';
     const card = document.createElement('div');
     card.className = 'simplex-preview-link-card';
     if (isDataImage(mc.preview.image)) {
