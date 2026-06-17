@@ -1084,7 +1084,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> fmap ctx <$> xGrpInfo gInfo' m'' p' msg brokerTs
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps' msg
-              XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' gr verifiedMsg sharedMsgId_ brokerTs
+              XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' m'' gr verifiedMsg sharedMsgId_ brokerTs
               XGrpRosterAck ackVer ackErr -> Nothing <$ xGrpRosterAck gInfo' m'' ackVer ackErr
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
@@ -1092,7 +1092,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
-              BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' sharedMsgId chunk msgMeta
+              BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' m'' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
@@ -1318,7 +1318,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     receiveFileChunk :: Maybe GroupInfo -> RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> CM ()
     receiveFileChunk gInfo_ ft@RcvFileTransfer {fileId, fileType, chunkSize} conn_ MsgMeta {recipient = (msgId, _), integrity} = \case
       FileChunkCancel -> case fileType of
-        FTRoster -> forM_ gInfo_ $ cleanupGroupRosterFile user
+        -- cancel only this source's transfer; other relays' in-flight transfers are independent
+        FTRoster -> do
+          t_ <- withStore' $ \db -> getRosterTransfer db fileId
+          forM_ t_ $ \RcvRosterTransfer {rosterTransferId} -> cleanupRosterTransferById rosterTransferId
         FTNormal ->
           unless (rcvFileCompleteOrCancelled ft) $ do
             cancelRcvFileTransfer user ft
@@ -2478,9 +2481,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     -- A group BFileChunk is a normal inline file chunk or a roster blob chunk, both located by
     -- (group_id, shared_msg_id). A chunk matching no in-flight transfer (an orphaned re-served roster
     -- chunk, or a missing normal file) is ignored; the outer withAckMessage acks it.
-    bFileChunkGroup :: GroupInfo -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
-    bFileChunkGroup gInfo@GroupInfo {groupId} sharedMsgId chunk meta = do
-      fileId_ <- withStore' $ \db -> getGroupRcvFileIdBySharedMsgId db userId groupId sharedMsgId
+    bFileChunkGroup :: GroupInfo -> GroupMember -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
+    bFileChunkGroup gInfo@GroupInfo {groupId} fromMember sharedMsgId chunk meta = do
+      fileId_ <- withStore' $ \db -> getGroupRcvFileId db userId groupId (groupMemberId' fromMember) sharedMsgId
       forM_ fileId_ $ \fileId -> do
         ft <- withStore $ \db -> getRcvFileTransfer db user fileId
         case fileType ft of
@@ -3265,8 +3268,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     -- The header only starts the transfer; the roster is applied and the version bumped only at
     -- blob completion, so a withheld or corrupted blob leaves the last good roster intact.
-    xGrpRoster :: GroupInfo -> GroupMember -> GroupRoster -> VerifiedMsg e -> Maybe SharedMsgId -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpRoster gInfo author GroupRoster {version = newVer, fileInv = InlineFileInvitation {fileSize, fileDigest}} verifiedMsg sharedMsgId_ brokerTs
+    -- fromMember is the relay that delivered THIS roster copy (the owner on a relay receiving directly,
+    -- a relay on a member receiving a forward); author is the owner who signed it.
+    xGrpRoster :: GroupInfo -> GroupMember -> GroupMember -> GroupRoster -> VerifiedMsg e -> Maybe SharedMsgId -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xGrpRoster gInfo fromMember author GroupRoster {version = newVer, fileInv = InlineFileInvitation {fileSize, fileDigest}} verifiedMsg sharedMsgId_ brokerTs
       -- only an owner may sign a roster; otherwise a relay could route it as a member whose key it controls
       | memberRole' author /= GROwner = messageError "x.grp.roster: not signed by an owner" $> Nothing
       | fileSize > maxGroupRosterBytes = messageError "x.grp.roster: roster blob size exceeds limit" $> Nothing
@@ -3276,68 +3281,73 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           VMSigned _ sm _ -> case sharedMsgId_ of
             Nothing -> Nothing <$ messageWarning "x.grp.roster: missing shared message id"
             Just sharedMsgId -> do
-              pendingVer_ <- fmap (\(v, _, _, _, _) -> v) <$> withStore' (\db -> getRosterPending db gInfo)
-              -- accept a version not below BOTH applied and pending (>=, Nothing below 0): a preceding signed
-              -- event may have already advanced rosterVersion to this blob's version; a lower one is a downgrade.
-              if newVer `aboveRoster` rosterVersion gInfo && newVer `aboveRoster` pendingVer_
+              -- per-source pending version (THIS relay's own in-flight transfer), not a single group slot
+              pendingVer_ <- withStore' $ \db -> getRosterTransferVersion db gInfo (groupMemberId' fromMember)
+              -- accept a version not below BOTH applied and this source's pending (>=, Nothing below 0): a preceding
+              -- signed event may have already advanced rosterVersion to this blob's version; a lower one is a downgrade.
+              if newVer `notBelowRoster` rosterVersion gInfo && newVer `notBelowRoster` pendingVer_
                 then startRosterTransfer sm sharedMsgId
                 else pure Nothing
       where
         startRosterTransfer sm sharedMsgId = do
-          -- supersede any in-flight roster file (older version or a restart) before the new transfer
-          cleanupGroupRosterFile user gInfo
+          -- supersede THIS source's own in-flight transfer (older version or a restart); other relays' transfers are independent
+          cleanupRosterTransfer gInfo (groupMemberId' fromMember)
           let relayHdr = if isUserGrpFwdRelay gInfo then Just sm else Nothing
-          withStore' $ \db -> setRosterPending db gInfo newVer fileDigest (groupMemberId' author) brokerTs relayHdr
           chSize <- asks $ fileChunkSize . config
           let rosterFInv = FileInvitation {fileName = "roster", fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Just IFMSent, fileDescr = Nothing}
-          rft@RcvFileTransfer {fileId} <- withStore $ \db -> createRcvGroupFileTransfer db userId gInfo Nothing FTRoster (Just sharedMsgId) rosterFInv (Just IFMSent) (fromIntegral chSize)
+          -- transfer record + its scratch file in one transaction (file owned by the transfer, keyed per source)
+          rft@RcvFileTransfer {fileId} <- withStore $ \db -> do
+            transferId <- liftIO $ createRosterTransfer db gInfo (groupMemberId' fromMember) newVer fileDigest (groupMemberId' author) brokerTs relayHdr
+            createRosterRcvFile db userId gInfo fromMember transferId sharedMsgId rosterFInv (Just IFMSent) (fromIntegral chSize)
           -- accept the chat-item-free file before chunk 1 (FIFO before it) so chunk 1 isn't rejected on RFSNew
           -- transient scratch file (consumed into roster_blob, then deleted): temp folder, not the user's files folder / Downloads
           tmpDir <- lift getChatTempDirectory
           rosterTs <- liftIO getCurrentTime
           let GroupInfo {groupId = gId} = gInfo
-              rosterFile = "roster_" <> show gId <> "_" <> formatTime defaultTimeLocale "%Y%m%d_%H%M%S" rosterTs
+              rosterFile = "roster_" <> show gId <> "_" <> show (groupMemberId' fromMember) <> "_" <> formatTime defaultTimeLocale "%Y%m%d_%H%M%S" rosterTs
           filePath <- getRcvFilePath fileId (Just tmpDir) rosterFile False
           withStore' $ \db -> startRcvInlineFT db user rft filePath (Just IFMSent)
           pure Nothing
 
     -- Roster version comparison treating Nothing (un-materialized) as below 0. Non-strict (>=) so a relay
     -- accepts the owner's blob at the version a preceding signed event already advanced rosterVersion to.
-    aboveRoster :: VersionRoster -> Maybe VersionRoster -> Bool
-    aboveRoster v = maybe True (v >=)
+    notBelowRoster :: VersionRoster -> Maybe VersionRoster -> Bool
+    notBelowRoster v = maybe True (v >=)
 
     -- Blob arrived: verify the owner-attested digest over the plaintext and guard against
     -- downgrade before applying; on a relay, ack the owner and re-serve to members.
     rosterCompletion :: GroupInfo -> RcvFileTransfer -> CM ()
-    rosterCompletion gInfo RcvFileTransfer {fileStatus} =
-      withStore' (\db -> getRosterPending db gInfo) >>= \case
-        Nothing -> cleanupGroupRosterFile user gInfo
-        Just (pendingVer, pendingDigest, ownerGMId, rosterBrokerTs, _) -> do
+    rosterCompletion gInfo RcvFileTransfer {fileId, fileStatus} =
+      withStore' (\db -> getRosterTransfer db fileId) >>= \case
+        -- defensive: the file always has its transfer (created together, deleted together)
+        Nothing -> lift (closeFileHandle fileId rcvFiles) >> forM_ (rosterFilePath fileStatus) removeFsFile
+        Just RcvRosterTransfer {rosterTransferId = transferId, rosterTransferVersion = pendingVer, rosterTransferDigest = pendingDigest, rosterTransferOwnerGMId = ownerGMId, rosterTransferBrokerTs = rosterBrokerTs, rosterTransferHeader = header_} -> do
           owner_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberById db cxt user ownerGMId)
           blob <- readAssembledRoster
           let isRelay = isUserGrpFwdRelay gInfo
               ackErr err = do
-                cleanupGroupRosterFile user gInfo
+                cleanupRosterTransferById transferId
                 when isRelay $ forM_ owner_ $ \owner -> sendRosterAck gInfo owner pendingVer (Just err)
           if FD.FileDigest (LC.sha512Hash (LB.fromStrict blob)) /= pendingDigest
             then ackErr "relay could not verify the roster blob"
             else case parseAll rosterBlobP blob of
               Left _ -> ackErr "relay could not parse the roster blob"
               Right entries -> case owner_ of
-                Nothing -> cleanupGroupRosterFile user gInfo
+                Nothing -> cleanupRosterTransferById transferId
                 Just author -> do
                   defaultRole <- unknownMemberRole gInfo
-                  -- gate against the persisted roster_version inside the apply transaction, so a reordered
-                  -- same-batch event cannot make this completion downgrade it; stale completion is rejected.
+                  -- gate against the persisted roster_version inside the apply transaction: a roster from another
+                  -- relay (or a preceding signed event) may already have advanced it past this one; a stale
+                  -- completion (e.g. relay1 sent v5 then v6, relay2's v5 completes after v6) is rejected.
                   results_ <- withStore $ \db -> do
                     cur <- liftIO $ getGroupRosterVersion db gInfo
                     if maybe False (pendingVer <) cur
                       then pure Nothing
                       else do
                         res <- processRosterEntries db gInfo defaultRole (validateGroupRoster entries)
-                        liftIO $ promoteRosterPending db gInfo blob
+                        liftIO $ setGroupLiveRoster db gInfo pendingVer ownerGMId rosterBrokerTs header_ blob
                         pure (Just res)
-                  cleanupGroupRosterFile user gInfo
+                  cleanupRosterTransferById transferId
                   forM_ results_ $ \results -> do
                     emitRosterResults gInfo author rosterBrokerTs results
                     -- ack while setting up (own status accepted/acknowledged); a serving (active) relay must not ack broadcasts.
@@ -3345,11 +3355,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                       sendRosterAck gInfo author pendingVer Nothing
                       withStore' $ \db -> void $ updateRelayOwnStatusFromTo db gInfo RSAccepted RSAcknowledgedRoster
       where
-        readAssembledRoster = case fileStatus of
-          RFSAccepted fp -> readAt fp
-          RFSConnected fp -> readAt fp
-          RFSComplete fp -> readAt fp
-          _ -> throwChatError $ CEInternalError "roster file not in progress"
+        rosterFilePath = \case
+          RFSAccepted p -> Just p
+          RFSConnected p -> Just p
+          RFSComplete p -> Just p
+          _ -> Nothing
+        readAssembledRoster = case rosterFilePath fileStatus of
+          Just fp -> readAt fp
+          Nothing -> throwChatError $ CEInternalError "roster file not in progress"
         readAt fp = lift (toFSFilePath fp) >>= liftIO . B.readFile
 
     -- TOFU-apply an owner-signed (key, role) to a resolved member: pin the key if absent; for a keyed
@@ -3755,7 +3768,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs gInfo author ps' rcvMsg
-            XGrpRoster gr -> withAuthor XGrpRoster_ $ \author -> void $ xGrpRoster gInfo author gr verifiedMsg sharedMsgId_ msgTs
+            XGrpRoster gr -> withAuthor XGrpRoster_ $ \author -> void $ xGrpRoster gInfo m author gr verifiedMsg sharedMsgId_ msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
           where
             withAuthor :: CMEventTag e -> (GroupMember -> CM ()) -> CM ()

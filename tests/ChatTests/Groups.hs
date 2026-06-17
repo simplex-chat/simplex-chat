@@ -298,6 +298,7 @@ chatGroupTests = do
         it "promoted member enters the roster and can post" testChannelPromotedMemberCanPost
         it "observer cannot post until promoted" testChannelObserverCannotPost
         it "promoted member re-connecting via a new relay is accepted via the roster-pinned key" testChannelPromotedMemberRejoinViaRelay
+        it "2 relays: multi-chunk roster reassembles per source (no stream interleaving)" testChannelRosterMultiRelayMultipart
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -8746,7 +8747,7 @@ prepareChannel2Relays gName owner relay1 relay2 = do
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
         owner
           <### [ EndsWith ": active",
-                 Predicate (\l -> ": invited" `isSuffixOf` l || ": accepted" `isSuffixOf` l)
+                 Predicate (\l -> ": invited" `isSuffixOf` l || ": accepted" `isSuffixOf` l || ": acknowledged_roster" `isSuffixOf` l)
                ]
         owner <## "group link:"
         void $ getTermLine owner -- consume group link line
@@ -10539,7 +10540,7 @@ testChannelRosterDigestMismatchRejected ps =
           -- frank joins; bob re-serves the valid header with the corrupted blob, frank rejects it
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
-          threadDelay 100000
+          threadDelay 1000000
           -- the rejected roster never elevates cath: the intro caps her to the channel default, so she
           -- stays observer (not moderator), and the version must not advance to the corrupted roster's version 1
           checkMemberRow frank "cath" (Just "observer")
@@ -10639,6 +10640,42 @@ testChannelPromotedMemberRejoinViaRelay ps =
             ]
           threadDelay 100000
           checkMemberRow dan "cath" (Just "member")
+
+testChannelRosterMultiRelayMultipart :: HasCallStack => TestParams -> IO ()
+testChannelRosterMultiRelayMultipart ps =
+  withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfgOpts ps cfg relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChatCfgOpts ps cfg testOpts "dan" danProfile $ \dan ->
+          withNewTestChatCfgOpts ps cfg testOpts "eve" eveProfile $ \eve ->
+            withNewTestChatCfgOpts ps cfg testOpts "frank" frankProfile $ \frank -> do
+              createChannel2Relays "team" alice bob cath dan eve frank
+
+              -- promote eve to moderator: the owner-signed roster broadcasts through BOTH relays to dan and
+              -- frank (each connected to both). At fileChunkSize=30 the blob spans multiple chunks, so each
+              -- member receives two interleaved multi-chunk streams (one per relay) for the same roster.
+              threadDelay 1000000
+              alice ##> "/mr #team eve moderator"
+              alice <## "#team: you changed the role of eve to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of eve from observer to moderator (signed)",
+                  cath <## "#team: alice changed the role of eve from observer to moderator (signed)",
+                  eve <## "#team: alice changed your role from observer to moderator (signed)",
+                  dan <### [EndsWith "to moderator (signed)"],
+                  frank <### [EndsWith "to moderator (signed)"]
+                ]
+              threadDelay 1000000 -- let both relays' interleaved multipart streams settle
+
+              -- per-source transfers keep the streams independent, so each member reassembles the blob and pins
+              -- eve as the single moderator WITH her owner-attested key (role + key both come from the blob)
+              checkOneModeratorWithKey dan
+              checkOneModeratorWithKey frank
+  where
+    cfg = testCfg {fileChunkSize = 30}
+    checkOneModeratorWithKey cc = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT member_pub_key FROM group_members WHERE member_role = 'moderator'" :: IO [Only (Maybe ByteString)]
+      map (\(Only k) -> isJust k) rows `shouldBe` [True]
 
 testChannelRemoveRelay :: HasCallStack => TestParams -> IO ()
 testChannelRemoveRelay ps =

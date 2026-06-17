@@ -91,10 +91,14 @@ module Simplex.Chat.Store.Groups
     setGroupRosterVersion,
     getGroupRosterVersion,
     getGroupRoster,
-    setRosterPending,
-    getRosterPending,
-    promoteRosterPending,
-    clearRosterPending,
+    RcvRosterTransfer (..),
+    createRosterTransfer,
+    getRosterTransferVersion,
+    getRosterTransferId,
+    getRosterTransfer,
+    setGroupLiveRoster,
+    deleteRosterTransfer,
+    deleteGroupRosterTransfers,
     setGroupMemberKeyRole,
     createRelayForOwner,
     getCreateRelayForMember,
@@ -1479,90 +1483,115 @@ getGroupRoster db GroupInfo {groupId} =
       (\sigs -> (ownerGMId, brokerTs, SignedMsg cb sigs body, (\(Binary b) -> b) <$> blob_)) <$> eitherToMaybe (smpDecode sigsBs)
     toRoster _ = Nothing
 
--- The signed-header columns are relay-only (Nothing on a member); promoted to the live header at
--- completion so the relay can re-forward the roster.
-setRosterPending :: DB.Connection -> GroupInfo -> VersionRoster -> FD.FileDigest -> GroupMemberId -> UTCTime -> Maybe SignedMsg -> IO ()
-setRosterPending db GroupInfo {groupId} v digest ownerGMId brokerTs sm_ = do
-  currentTs <- getCurrentTime
+-- A per-source in-flight roster transfer, keyed (group_id, from_member_id): replaces the single
+-- roster_pending_* slot, so two relays serving one member can't share a chunk stream. The signed-header
+-- columns are relay-only (NULL on members), promoted to the live roster_msg_* on groups at completion.
+createRosterTransfer :: DB.Connection -> GroupInfo -> GroupMemberId -> VersionRoster -> FD.FileDigest -> GroupMemberId -> UTCTime -> Maybe SignedMsg -> IO Int64
+createRosterTransfer db GroupInfo {groupId} fromMemberId v digest ownerGMId brokerTs sm_ = do
+  -- one in-flight transfer per (group, source): drop any prior row from this source so the INSERT can't hit
+  -- the UNIQUE constraint even if the caller's fs/handle cleanup was skipped (the scratch file would then leak
+  -- until group delete, but the transfer never gets stuck). Normally cleanupRosterTransfer ran first.
+  DB.execute db "DELETE FROM rcv_roster_transfers WHERE group_id = ? AND from_member_id = ?" (groupId, fromMemberId)
   DB.execute
     db
     [sql|
-      UPDATE groups
-      SET roster_pending_version = ?, roster_pending_digest = ?,
-          roster_pending_sending_owner_gm_id = ?, roster_pending_broker_ts = ?,
-          roster_pending_msg_chat_binding = ?, roster_pending_msg_signatures = ?, roster_pending_msg_body = ?,
-          updated_at = ?
-      WHERE group_id = ?
+      INSERT INTO rcv_roster_transfers
+        (group_id, from_member_id, roster_version, roster_digest, sending_owner_gm_id, broker_ts,
+         roster_msg_chat_binding, roster_msg_signatures, roster_msg_body)
+      VALUES (?,?,?,?,?,?,?,?,?)
     |]
-    ((v, Binary (FD.unFileDigest digest), ownerGMId, brokerTs)
-       :. ((\SignedMsg {chatBinding} -> chatBinding) <$> sm_, (\SignedMsg {signatures} -> Binary (smpEncode signatures)) <$> sm_, (\SignedMsg {signedBody} -> Binary signedBody) <$> sm_, currentTs, groupId))
+    ( (groupId, fromMemberId, v, Binary (FD.unFileDigest digest), ownerGMId, brokerTs)
+        :. ((\SignedMsg {chatBinding} -> chatBinding) <$> sm_, (\SignedMsg {signatures} -> Binary (smpEncode signatures)) <$> sm_, (\SignedMsg {signedBody} -> Binary signedBody) <$> sm_)
+    )
+  insertedRowId db
 
-getRosterPending :: DB.Connection -> GroupInfo -> IO (Maybe (VersionRoster, FD.FileDigest, GroupMemberId, UTCTime, Maybe SignedMsg))
-getRosterPending db GroupInfo {groupId} =
-  (>>= toPending)
+getRosterTransferVersion :: DB.Connection -> GroupInfo -> GroupMemberId -> IO (Maybe VersionRoster)
+getRosterTransferVersion db GroupInfo {groupId} fromMemberId =
+  maybeFirstRow fromOnly $
+    DB.query db "SELECT roster_version FROM rcv_roster_transfers WHERE group_id = ? AND from_member_id = ?" (groupId, fromMemberId)
+
+getRosterTransferId :: DB.Connection -> GroupInfo -> GroupMemberId -> IO (Maybe Int64)
+getRosterTransferId db GroupInfo {groupId} fromMemberId =
+  maybeFirstRow fromOnly $
+    DB.query db "SELECT roster_transfer_id FROM rcv_roster_transfers WHERE group_id = ? AND from_member_id = ?" (groupId, fromMemberId)
+
+-- An in-flight received roster transfer (a rcv_roster_transfers row joined to its scratch file), read at
+-- completion. The header is the relay's re-serve SignedMsg -- present only on a serving relay (NULL on a
+-- member, whose live roster_msg_* stay NULL so it never re-serves).
+data RcvRosterTransfer = RcvRosterTransfer
+  { rosterTransferId :: Int64,
+    rosterTransferVersion :: VersionRoster,
+    rosterTransferDigest :: FD.FileDigest,
+    rosterTransferOwnerGMId :: GroupMemberId,
+    rosterTransferBrokerTs :: UTCTime,
+    rosterTransferHeader :: Maybe SignedMsg
+  }
+  deriving (Show)
+
+-- The in-flight transfer for a received roster file (joined via files.roster_transfer_id), with its
+-- relay-only signed header. Read at completion to apply, promote into the live roster, and ack.
+getRosterTransfer :: DB.Connection -> Int64 -> IO (Maybe RcvRosterTransfer)
+getRosterTransfer db fileId =
+  (>>= toTransfer)
     <$> maybeFirstRow
       id
       ( DB.query
           db
           [sql|
-            SELECT roster_pending_version, roster_pending_digest,
-                   roster_pending_sending_owner_gm_id, roster_pending_broker_ts,
-                   roster_pending_msg_chat_binding, roster_pending_msg_signatures, roster_pending_msg_body
-            FROM groups WHERE group_id = ?
+            SELECT t.roster_transfer_id, t.roster_version, t.roster_digest, t.sending_owner_gm_id, t.broker_ts,
+                   t.roster_msg_chat_binding, t.roster_msg_signatures, t.roster_msg_body
+            FROM rcv_roster_transfers t
+            JOIN files f ON f.roster_transfer_id = t.roster_transfer_id
+            WHERE f.file_id = ?
           |]
-          (Only groupId)
+          (Only fileId)
       )
   where
-    toPending (Just v, Just (Binary d), Just ownerGMId, Just brokerTs, cb_, sigs_, body_) =
-      Just (v, FD.FileDigest d, ownerGMId, brokerTs, sm_)
+    toTransfer (tId, v, Binary d, ownerGMId, brokerTs, cb_, sigs_, body_) =
+      Just
+        RcvRosterTransfer
+          { rosterTransferId = tId,
+            rosterTransferVersion = v,
+            rosterTransferDigest = FD.FileDigest d,
+            rosterTransferOwnerGMId = ownerGMId,
+            rosterTransferBrokerTs = brokerTs,
+            rosterTransferHeader = sm_
+          }
       where
         sm_ = case (cb_, sigs_, body_) of
           (Just cb, Just (Binary sigsBs), Just (Binary body)) ->
             (\sigs -> SignedMsg cb sigs body) <$> eitherToMaybe (smpDecode sigsBs)
           _ -> Nothing
-    toPending _ = Nothing
 
--- Promote pending -> live (header + blob + version) and clear pending, in one statement.
-promoteRosterPending :: DB.Connection -> GroupInfo -> ByteString -> IO ()
-promoteRosterPending db GroupInfo {groupId} blob = do
+-- Write the single live roster on groups from a completed transfer's values (header NULL on a member,
+-- so its live roster_msg_* stay NULL and it never re-serves; only relays re-serve).
+setGroupLiveRoster :: DB.Connection -> GroupInfo -> VersionRoster -> GroupMemberId -> UTCTime -> Maybe SignedMsg -> ByteString -> IO ()
+setGroupLiveRoster db GroupInfo {groupId} v ownerGMId brokerTs sm_ blob = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE groups SET
-        roster_version = roster_pending_version,
-        roster_blob = ?,
-        roster_sending_owner_gm_id = roster_pending_sending_owner_gm_id,
-        roster_broker_ts = roster_pending_broker_ts,
-        roster_msg_chat_binding = roster_pending_msg_chat_binding,
-        roster_msg_signatures = roster_pending_msg_signatures,
-        roster_msg_body = roster_pending_msg_body,
-        roster_pending_version = NULL,
-        roster_pending_digest = NULL,
-        roster_pending_sending_owner_gm_id = NULL,
-        roster_pending_broker_ts = NULL,
-        roster_pending_msg_chat_binding = NULL,
-        roster_pending_msg_signatures = NULL,
-        roster_pending_msg_body = NULL,
+        roster_version = ?, roster_blob = ?,
+        roster_sending_owner_gm_id = ?, roster_broker_ts = ?,
+        roster_msg_chat_binding = ?, roster_msg_signatures = ?, roster_msg_body = ?,
         updated_at = ?
       WHERE group_id = ?
     |]
-    (Binary blob, currentTs, groupId)
+    ( (v, Binary blob, ownerGMId, brokerTs)
+        :. ((\SignedMsg {chatBinding} -> chatBinding) <$> sm_, (\SignedMsg {signatures} -> Binary (smpEncode signatures)) <$> sm_, (\SignedMsg {signedBody} -> Binary signedBody) <$> sm_, currentTs, groupId)
+    )
 
-clearRosterPending :: DB.Connection -> GroupInfo -> IO ()
-clearRosterPending db GroupInfo {groupId} = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE groups SET
-        roster_pending_version = NULL, roster_pending_digest = NULL,
-        roster_pending_sending_owner_gm_id = NULL, roster_pending_broker_ts = NULL,
-        roster_pending_msg_chat_binding = NULL, roster_pending_msg_signatures = NULL, roster_pending_msg_body = NULL,
-        updated_at = ?
-      WHERE group_id = ?
-    |]
-    (currentTs, groupId)
+-- Delete one in-flight transfer row (its files/rcv_files/rcv_file_chunks are removed separately, with
+-- the on-disk file). Caller removes the fs file + cached handle first.
+deleteRosterTransfer :: DB.Connection -> Int64 -> IO ()
+deleteRosterTransfer db transferId =
+  DB.execute db "DELETE FROM rcv_roster_transfers WHERE roster_transfer_id = ?" (Only transferId)
+
+-- All in-flight transfers for a group (group delete).
+deleteGroupRosterTransfers :: DB.Connection -> Int64 -> IO ()
+deleteGroupRosterTransfers db groupId =
+  DB.execute db "DELETE FROM rcv_roster_transfers WHERE group_id = ?" (Only groupId)
 
 setGroupMemberKeyRole :: DB.Connection -> GroupMember -> C.PublicKeyEd25519 -> GroupMemberRole -> IO ()
 setGroupMemberKeyRole db GroupMember {groupMemberId} pubKey role = do

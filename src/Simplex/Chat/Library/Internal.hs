@@ -1884,14 +1884,30 @@ closeFileHandle fileId files = do
 
 -- The roster file has no chat item, so chat-item file enumeration misses it; clean it up by group.
 cleanupGroupRosterFile :: User -> GroupInfo -> CM ()
-cleanupGroupRosterFile User {userId} gInfo@GroupInfo {groupId} = do
+cleanupGroupRosterFile User {userId} GroupInfo {groupId} = do
   infos <- withStore' $ \db -> getGroupRosterFileInfo db userId groupId
   forM_ infos $ \(fileId, filePath_) -> do
     lift $ closeFileHandle fileId rcvFiles
     forM_ filePath_ removeFsFile
   withStore' $ \db -> do
     deleteGroupRosterFile db userId groupId
-    clearRosterPending db gInfo
+    deleteGroupRosterTransfers db groupId
+
+-- Supersede/cancel one source relay's in-flight roster transfer: remove its on-disk file + cached
+-- handle first (the cascade only does rows), then the files + transfer rows.
+cleanupRosterTransfer :: GroupInfo -> GroupMemberId -> CM ()
+cleanupRosterTransfer gInfo fromMemberId =
+  withStore' (\db -> getRosterTransferId db gInfo fromMemberId) >>= mapM_ cleanupRosterTransferById
+
+cleanupRosterTransferById :: Int64 -> CM ()
+cleanupRosterTransferById transferId = do
+  file_ <- withStore' $ \db -> getRosterTransferFile db transferId
+  forM_ file_ $ \(fileId, filePath_) -> do
+    lift $ closeFileHandle fileId rcvFiles
+    forM_ filePath_ removeFsFile
+  withStore' $ \db -> do
+    deleteRosterTransferFile db transferId
+    deleteRosterTransfer db transferId
 
 -- MUST evict the cached AppendMode handle before deleting chunks, else re-driven bytes append
 -- after the stale prefix and corrupt the blob.
