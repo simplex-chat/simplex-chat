@@ -492,7 +492,6 @@ const STYLE = `
   min-width: 0;
   max-width: 640px;
   overflow-y: auto;
-  overscroll-behavior: contain;
   position: relative;
 }
 
