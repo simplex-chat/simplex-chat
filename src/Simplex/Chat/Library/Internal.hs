@@ -2126,6 +2126,22 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
+-- Relay advertises its current web preview capability to channel owners.
+-- Idempotent: sends only when the configured web domain differs from what was last sent, and only to
+-- owners whose recorded chat version supports relayWebCapVersion (older apps can't parse XGrpRelayCap).
+sendRelayCapIfNeeded :: User -> GroupInfo -> CM ()
+sendRelayCapIfNeeded user gInfo = do
+  ChatConfig {webPreviewConfig} <- asks config
+  let currentWebDomain = (\WebPreviewConfig {webDomain} -> webDomain) <$> webPreviewConfig
+  sentWebDomain <- withStore' (`getRelaySentWebDomain` gInfo)
+  when (currentWebDomain /= sentWebDomain) $ do
+    cxt <- chatStoreCxt
+    owners <- withStore' $ \db -> getGroupOwners db cxt user gInfo
+    let capableOwners = filter (\m -> memberCurrent m && m `supportsVersion` relayWebCapVersion) owners
+    unless (null capableOwners) $ do
+      void $ sendGroupMessage' user gInfo capableOwners (XGrpRelayCap RelayCapabilities {webDomain = currentWebDomain})
+      withStore' $ \db -> updateRelaySentWebDomain db gInfo currentWebDomain
+
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo scope asGroup members events = do
   -- TODO [knocking] send current profile to pending member after approval?
