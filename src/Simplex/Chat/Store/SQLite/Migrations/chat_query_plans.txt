@@ -30,6 +30,7 @@ Query:
                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -82,6 +83,7 @@ Query:
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
               
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -286,6 +288,7 @@ Query:
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -320,6 +323,7 @@ Query:
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -354,6 +358,7 @@ Query:
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -537,6 +542,7 @@ Query:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -570,6 +576,7 @@ Query:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -604,6 +611,7 @@ Query:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -638,6 +646,7 @@ Query:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -1067,15 +1076,6 @@ Plan:
 SEARCH display_names USING COVERING INDEX sqlite_autoindex_display_names_2 (user_id=? AND ldn_base=?)
 
 Query: 
-            SELECT roster_pending_version, roster_pending_digest,
-                   roster_pending_sending_owner_gm_id, roster_pending_broker_ts,
-                   roster_pending_msg_chat_binding, roster_pending_msg_signatures, roster_pending_msg_body
-            FROM groups WHERE group_id = ?
-          
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
             SELECT s.contact_id, g.group_id, s.group_member_id
             FROM sent_probes s
             LEFT JOIN contacts c ON s.contact_id = c.contact_id AND c.deleted = 0
@@ -1090,6 +1090,17 @@ SEARCH s USING INDEX sqlite_autoindex_sent_probes_1 (user_id=? AND probe=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH h USING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
+
+Query: 
+            SELECT t.roster_transfer_id, t.roster_version, t.roster_digest, t.sending_owner_gm_id, t.broker_ts,
+                   t.roster_msg_chat_binding, t.roster_msg_signatures, t.roster_msg_body
+            FROM rcv_roster_transfers t
+            JOIN files f ON f.roster_transfer_id = t.roster_transfer_id
+            WHERE f.file_id = ?
+          
+Plan:
+SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             UPDATE chat_items
@@ -1191,6 +1202,7 @@ Query:
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -1226,6 +1238,7 @@ Query:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -1874,6 +1887,7 @@ Query:
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -1908,6 +1922,7 @@ Query:
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       
 Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -3731,11 +3746,11 @@ SEARCH f USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
 Query: 
         SELECT f.file_id FROM files f
         JOIN rcv_files r ON r.file_id = f.file_id
-        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ?
-      
+        WHERE f.user_id = ? AND f.group_id = ? AND f.shared_msg_id = ? AND f.file_type = ?
+       AND r.group_member_id = ?
 Plan:
 SEARCH f USING INDEX idx_files_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
-SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH r USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=? AND rowid=?)
 
 Query: 
         SELECT file_id, contact_id, group_id, note_folder_id
@@ -3752,6 +3767,20 @@ Query:
       
 Plan:
 SEARCH files USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT g.group_id, gp.public_group_id,
+               gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding
+        FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id AND mu.contact_id = ?
+        WHERE g.user_id = ? AND g.relay_own_status IN (?, ?)
+          AND gp.public_group_id IS NOT NULL
+      
+Plan:
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT group_member_id
@@ -4811,6 +4840,14 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO rcv_roster_transfers
+        (group_id, from_member_id, roster_version, roster_digest, sending_owner_gm_id, broker_ts,
+         roster_msg_chat_binding, roster_msg_signatures, roster_msg_body)
+      VALUES (?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
       INSERT INTO remote_controllers
         (ctrl_device_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, dh_priv_key, prev_dh_priv_key)
       VALUES
@@ -5287,43 +5324,10 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-      UPDATE groups
-      SET roster_pending_version = ?, roster_pending_digest = ?,
-          roster_pending_sending_owner_gm_id = ?, roster_pending_broker_ts = ?,
-          roster_pending_msg_chat_binding = ?, roster_pending_msg_signatures = ?, roster_pending_msg_body = ?,
-          updated_at = ?
-      WHERE group_id = ?
-    
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
       UPDATE groups SET
-        roster_pending_version = NULL, roster_pending_digest = NULL,
-        roster_pending_sending_owner_gm_id = NULL, roster_pending_broker_ts = NULL,
-        roster_pending_msg_chat_binding = NULL, roster_pending_msg_signatures = NULL, roster_pending_msg_body = NULL,
-        updated_at = ?
-      WHERE group_id = ?
-    
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE groups SET
-        roster_version = roster_pending_version,
-        roster_blob = ?,
-        roster_sending_owner_gm_id = roster_pending_sending_owner_gm_id,
-        roster_broker_ts = roster_pending_broker_ts,
-        roster_msg_chat_binding = roster_pending_msg_chat_binding,
-        roster_msg_signatures = roster_pending_msg_signatures,
-        roster_msg_body = roster_pending_msg_body,
-        roster_pending_version = NULL,
-        roster_pending_digest = NULL,
-        roster_pending_sending_owner_gm_id = NULL,
-        roster_pending_broker_ts = NULL,
-        roster_pending_msg_chat_binding = NULL,
-        roster_pending_msg_signatures = NULL,
-        roster_pending_msg_body = NULL,
+        roster_version = ?, roster_blob = ?,
+        roster_sending_owner_gm_id = ?, roster_broker_ts = ?,
+        roster_msg_chat_binding = ?, roster_msg_signatures = ?, roster_msg_body = ?,
         updated_at = ?
       WHERE group_id = ?
     
@@ -5558,36 +5562,6 @@ Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-    SELECT
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
-      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?)
-Plan:
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -5855,7 +5829,6 @@ Query:
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
-<<<<<<< HEAD
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link,
@@ -5877,8 +5850,6 @@ Query:
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
-=======
->>>>>>> master
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
@@ -6623,6 +6594,14 @@ SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND loca
 SEARCH contacts USING COVERING INDEX sqlite_autoindex_contacts_1 (user_id=? AND local_display_name=?)
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: DELETE FROM files WHERE roster_transfer_id = ?
+Plan:
+SEARCH files USING COVERING INDEX idx_files_roster_transfer_id (roster_transfer_id=?)
+SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
+SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
+SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?)
+
 Query: DELETE FROM files WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH files USING INDEX idx_files_contact_id (contact_id=?)
@@ -6642,6 +6621,7 @@ SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?
 Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -6671,6 +6651,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
@@ -6700,6 +6681,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: DELETE FROM groups WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_group_id_from_member_id (group_id=?)
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_id (group_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_group_id (group_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_group_id (group_id=?)
@@ -6771,6 +6753,18 @@ SEARCH protocol_servers USING INTEGER PRIMARY KEY (rowid=?)
 Query: DELETE FROM rcv_file_chunks WHERE file_id = ?
 Plan:
 SEARCH rcv_file_chunks USING COVERING INDEX idx_rcv_file_chunks_file_id (file_id=?)
+
+Query: DELETE FROM rcv_roster_transfers WHERE group_id = ?
+Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_group_id_from_member_id (group_id=?)
+
+Query: DELETE FROM rcv_roster_transfers WHERE group_id = ? AND from_member_id = ?
+Plan:
+SEARCH rcv_roster_transfers USING INDEX idx_rcv_roster_transfers_group_id_from_member_id (group_id=? AND from_member_id=?)
+
+Query: DELETE FROM rcv_roster_transfers WHERE roster_transfer_id = ?
+Plan:
+SEARCH rcv_roster_transfers USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: DELETE FROM received_probes WHERE created_at <= ?
 Plan:
@@ -6898,6 +6892,9 @@ Plan:
 Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
+Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, roster_transfer_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+Plan:
+
 Query: INSERT INTO group_profiles (display_name, full_name, short_descr, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
 Plan:
 
@@ -6914,6 +6911,9 @@ Query: INSERT INTO rcv_files (file_id, file_status, created_at, updated_at) VALU
 Plan:
 
 Query: INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)
+Plan:
+
+Query: INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)
@@ -7153,9 +7153,17 @@ Query: SELECT file_id FROM files WHERE user_id = ? AND redirect_file_id = ?
 Plan:
 SEARCH files USING INDEX idx_files_redirect_file_id (redirect_file_id=?)
 
+Query: SELECT file_id, file_path FROM files WHERE roster_transfer_id = ?
+Plan:
+SEARCH files USING INDEX idx_files_roster_transfer_id (roster_transfer_id=?)
+
 Query: SELECT file_id, file_path FROM files WHERE user_id = ? AND group_id = ? AND file_type = ?
 Plan:
 SEARCH files USING INDEX idx_files_group_id (group_id=?)
+
+Query: SELECT file_type FROM files WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? LIMIT 1
+Plan:
+SEARCH files USING INDEX idx_files_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
 
 Query: SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?
 Plan:
@@ -7229,6 +7237,10 @@ Query: SELECT member_pub_key FROM group_members WHERE local_display_name = ?
 Plan:
 SCAN group_members
 
+Query: SELECT member_pub_key FROM group_members WHERE member_role = 'moderator'
+Plan:
+SCAN group_members
+
 Query: SELECT member_relations_vector FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -7289,6 +7301,10 @@ Query: SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_bind
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT roster_transfer_id FROM rcv_roster_transfers WHERE group_id = ? AND from_member_id = ?
+Plan:
+SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_group_id_from_member_id (group_id=? AND from_member_id=?)
+
 Query: SELECT roster_version FROM groups
 Plan:
 SCAN groups
@@ -7296,6 +7312,10 @@ SCAN groups
 Query: SELECT roster_version FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT roster_version FROM rcv_roster_transfers WHERE group_id = ? AND from_member_id = ?
+Plan:
+SEARCH rcv_roster_transfers USING INDEX idx_rcv_roster_transfers_group_id_from_member_id (group_id=? AND from_member_id=?)
 
 Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?
 Plan:
