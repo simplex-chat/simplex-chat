@@ -1,3 +1,4 @@
+(function() {
 #include "simplex-lib.jsc"
 
 const simplexDirectoryDataURL = 'https://directory.simplex.chat/data/';
@@ -6,7 +7,6 @@ const simplexDirectoryDataURL = 'https://directory.simplex.chat/data/';
 
 const simplexUsersGroup = 'SimpleX users group';
 
-(function() {
 if (!document.location.pathname.startsWith('/directory')) return;
 
 let allEntries = [];
