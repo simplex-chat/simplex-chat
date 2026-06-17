@@ -754,7 +754,8 @@ CREATE TABLE test_chat_schema.files (
     note_folder_id bigint,
     redirect_file_id bigint,
     shared_msg_id bytea,
-    file_type text DEFAULT 'normal'::text NOT NULL
+    file_type text DEFAULT 'normal'::text NOT NULL,
+    roster_transfer_id bigint
 );
 
 
@@ -987,14 +988,7 @@ CREATE TABLE test_chat_schema.groups (
     roster_msg_signatures bytea,
     roster_sending_owner_gm_id bigint,
     roster_broker_ts timestamp with time zone,
-    roster_blob bytea,
-    roster_pending_version bigint,
-    roster_pending_digest bytea,
-    roster_pending_msg_body bytea,
-    roster_pending_msg_chat_binding text,
-    roster_pending_msg_signatures bytea,
-    roster_pending_sending_owner_gm_id bigint,
-    roster_pending_broker_ts timestamp with time zone
+    roster_blob bytea
 );
 
 
@@ -1217,6 +1211,34 @@ CREATE TABLE test_chat_schema.rcv_files (
     agent_rcv_file_deleted smallint DEFAULT 0 NOT NULL,
     to_receive smallint,
     user_approved_relays smallint DEFAULT 0 NOT NULL
+);
+
+
+
+CREATE TABLE test_chat_schema.rcv_roster_transfers (
+    roster_transfer_id bigint NOT NULL,
+    group_id bigint NOT NULL,
+    from_member_id bigint NOT NULL,
+    roster_version bigint NOT NULL,
+    roster_digest bytea NOT NULL,
+    sending_owner_gm_id bigint NOT NULL,
+    broker_ts timestamp with time zone NOT NULL,
+    roster_msg_body bytea,
+    roster_msg_chat_binding text,
+    roster_msg_signatures bytea,
+    created_at text DEFAULT now() NOT NULL,
+    updated_at text DEFAULT now() NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.rcv_roster_transfers ALTER COLUMN roster_transfer_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.rcv_roster_transfers_roster_transfer_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
 
 
@@ -1751,6 +1773,11 @@ ALTER TABLE ONLY test_chat_schema.rcv_file_chunks
 
 ALTER TABLE ONLY test_chat_schema.rcv_files
     ADD CONSTRAINT rcv_files_pkey PRIMARY KEY (file_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.rcv_roster_transfers
+    ADD CONSTRAINT rcv_roster_transfers_pkey PRIMARY KEY (roster_transfer_id);
 
 
 
@@ -2295,6 +2322,10 @@ CREATE INDEX idx_files_redirect_file_id ON test_chat_schema.files USING btree (r
 
 
 
+CREATE INDEX idx_files_roster_transfer_id ON test_chat_schema.files USING btree (roster_transfer_id);
+
+
+
 CREATE INDEX idx_files_user_id ON test_chat_schema.files USING btree (user_id);
 
 
@@ -2464,6 +2495,14 @@ CREATE INDEX idx_rcv_files_file_descr_id ON test_chat_schema.rcv_files USING btr
 
 
 CREATE INDEX idx_rcv_files_group_member_id ON test_chat_schema.rcv_files USING btree (group_member_id);
+
+
+
+CREATE INDEX idx_rcv_roster_transfers_from_member_id ON test_chat_schema.rcv_roster_transfers USING btree (from_member_id);
+
+
+
+CREATE UNIQUE INDEX idx_rcv_roster_transfers_group_id_from_member_id ON test_chat_schema.rcv_roster_transfers USING btree (group_id, from_member_id);
 
 
 
@@ -3149,6 +3188,16 @@ ALTER TABLE ONLY test_chat_schema.rcv_files
 
 ALTER TABLE ONLY test_chat_schema.rcv_files
     ADD CONSTRAINT rcv_files_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.rcv_roster_transfers
+    ADD CONSTRAINT rcv_roster_transfers_from_member_id_fkey FOREIGN KEY (from_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.rcv_roster_transfers
+    ADD CONSTRAINT rcv_roster_transfers_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
 
 
 
