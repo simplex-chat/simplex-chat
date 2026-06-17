@@ -28,7 +28,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), WebPreviewConfig (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (HostMode (..), SMPWebPortServers (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
@@ -66,6 +66,7 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
+    webPreviewConfig :: Maybe WebPreviewConfig,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
@@ -240,6 +241,46 @@ coreChatOptsP appDir defaultDbName = do
       ( long "relay"
           <> help "Run as a chat relay client"
       )
+  webPreviewConfig <- do
+    webDomain_ <-
+      optional $
+        strOption
+          ( long "relay-web-domain"
+              <> metavar "DOMAIN"
+              <> help "Domain for channel web previews (relay only)"
+          )
+    webJsonDir_ <-
+      optional $
+        strOption
+          ( long "relay-web-dir"
+              <> metavar "DIR"
+              <> help "Directory for channel web preview JSON files (relay only)"
+          )
+    webCorsFile <-
+      optional $
+        strOption
+          ( long "relay-web-cors-file"
+              <> metavar "FILE"
+              <> help "Path to generated Caddy CORS config file (relay only)"
+          )
+    webUpdateInterval <-
+      option auto
+        ( long "relay-web-interval"
+            <> metavar "SECONDS"
+            <> help "Interval between web preview regeneration in seconds (relay only)"
+            <> value 300
+        )
+    webPreviewItemCount <-
+      option auto
+        ( long "relay-web-item-count"
+            <> metavar "COUNT"
+            <> help "Number of recent messages in channel web preview (relay only)"
+            <> value 50
+        )
+    pure $ case (webDomain_, webJsonDir_) of
+      (Just webDomain, Just webJsonDir) -> Just WebPreviewConfig {webDomain, webJsonDir, webCorsFile, webUpdateInterval, webPreviewItemCount}
+      (Nothing, Nothing) -> Nothing
+      _ -> errorWithoutStackTrace "--relay-web-domain and --relay-web-dir must both be provided"
   highlyAvailable <-
     switch
       ( long "ha"
@@ -283,6 +324,7 @@ coreChatOptsP appDir defaultDbName = do
         tbqSize,
         deviceName,
         chatRelay,
+        webPreviewConfig,
         highlyAvailable,
         yesToUpMigrations,
         migrationBackupPath,

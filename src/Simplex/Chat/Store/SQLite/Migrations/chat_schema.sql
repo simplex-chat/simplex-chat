@@ -192,6 +192,7 @@ CREATE TABLE groups(
   relay_request_delay INTEGER NOT NULL DEFAULT 0,
   relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
   relay_inactive_at TEXT,
+  relay_sent_web_domain TEXT,
   roster_version INTEGER,
   roster_msg_body BLOB,
   roster_msg_chat_binding TEXT,

@@ -170,6 +170,7 @@
 		648679AB2BC96A74006456E7 /* ChatItemForwardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648679AA2BC96A74006456E7 /* ChatItemForwardingView.swift */; };
 		6495D7042F48CFC50060512B /* ChannelMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6495D7032F48CFC50060512B /* ChannelMembersView.swift */; };
 		6495D7062F48CFFD0060512B /* ChannelRelaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6495D7052F48CFFD0060512B /* ChannelRelaysView.swift */; };
+		E5E418022F83D2CA00252B9E /* ChannelWebAccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E418032F83D2CA00252B9E /* ChannelWebAccessView.swift */; };
 		6495D7082F48D0000060512B /* AddGroupRelayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6495D7072F48D0000060512B /* AddGroupRelayView.swift */; };
 		649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCD9F280460FD00C3A862 /* ComposeImageView.swift */; };
 		649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCDA12805D6EF00C3A862 /* CIImageView.swift */; };
@@ -549,6 +550,7 @@
 		6493D667280ED77F007A76FB /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		6495D7032F48CFC50060512B /* ChannelMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelMembersView.swift; sourceTree = "<group>"; };
 		6495D7052F48CFFD0060512B /* ChannelRelaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelRelaysView.swift; sourceTree = "<group>"; };
+		E5E418032F83D2CA00252B9E /* ChannelWebAccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelWebAccessView.swift; sourceTree = "<group>"; };
 		6495D7072F48D0000060512B /* AddGroupRelayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGroupRelayView.swift; sourceTree = "<group>"; };
 		649BCD9F280460FD00C3A862 /* ComposeImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeImageView.swift; sourceTree = "<group>"; };
 		649BCDA12805D6EF00C3A862 /* CIImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIImageView.swift; sourceTree = "<group>"; };
@@ -1178,6 +1180,7 @@
 				64A779FD2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift */,
 				6495D7032F48CFC50060512B /* ChannelMembersView.swift */,
 				6495D7052F48CFFD0060512B /* ChannelRelaysView.swift */,
+				E5E418032F83D2CA00252B9E /* ChannelWebAccessView.swift */,
 				6495D7072F48D0000060512B /* AddGroupRelayView.swift */,
 			);
 			path = Group;
@@ -1640,6 +1643,7 @@
 				8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */,
 				647B15E82F4C8D2500EB431E /* AddChannelView.swift in Sources */,
 				6495D7062F48CFFD0060512B /* ChannelRelaysView.swift in Sources */,
+				E5E418022F83D2CA00252B9E /* ChannelWebAccessView.swift in Sources */,
 				6495D7082F48D0000060512B /* AddGroupRelayView.swift in Sources */,
 				5CB346E92869E8BA001FD2EF /* PushEnvironment.swift in Sources */,
 				5C55A91F283AD0E400C4E99E /* CallManager.swift in Sources */,

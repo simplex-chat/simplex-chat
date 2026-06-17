@@ -185,7 +185,7 @@ Cleanup spans ALL of these — miss none:
 
 ## Storage / migration
 
-In-flight state lives on `groups` (mirroring the live saved roster) and `files` (located by `shared_msg_id`) — no join table. These columns go into the in-progress **`M20260601_group_roster`** migration (already part of this work, not yet merged — so it's editable, not an applied migration), SQLite + Postgres; tests regenerate the schema files.
+In-flight state lives on `groups` (mirroring the live saved roster) and `files` (located by `shared_msg_id`) — no join table. These columns go into the in-progress **`M20260602_group_roster`** migration (already part of this work, not yet merged — so it's editable, not an applied migration), SQLite + Postgres; tests regenerate the schema files.
 
 | `groups` column(s) | Holds | Lifecycle |
 |---|---|---|

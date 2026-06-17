@@ -90,6 +90,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (liftIOEither, zipWith3')
 import qualified Simplex.Chat.Util as U
+import Simplex.Chat.Web (webPreviewWorker)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
@@ -201,6 +202,7 @@ startChatController mainApp enableSndFiles = do
           startCleanupManager
           void $ forkIO $ mapM_ startExpireCIs users
           startRelayChecks users
+          startWebPreview users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
@@ -232,6 +234,20 @@ startChatController mainApp enableSndFiles = do
             a <- Just <$> async (void $ runExceptT $ runRelayGroupLinkChecks relayUser)
             atomically $ writeTVar relayAsync a
           _ -> pure ()
+    startWebPreview users = do
+      let relayUsers = filter (\User {userChatRelay} -> isTrue userChatRelay) users
+      ChatConfig {webPreviewConfig = cfg_} <- asks config
+      case (relayUsers, cfg_) of
+        (_ : _, Just cfg) -> do
+          wps_ <- asks webPreviewState
+          forM_ wps_ $ \WebPreviewState {webPreviewWorkerAsync} ->
+            readTVarIO webPreviewWorkerAsync >>= \case
+              Nothing -> do
+                cc <- ask
+                a <- Just <$> async (liftIO $ webPreviewWorker cfg cc relayUsers)
+                atomically $ writeTVar webPreviewWorkerAsync a
+              _ -> pure ()
+        _ -> pure ()
     startExpireCIs user = whenM shouldExpireChats $ do
       startExpireCIThread user
       setExpireCIFlag user True
@@ -3080,6 +3096,12 @@ processChatCommand cxt nm = \case
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
     CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db cxt user gName)
+  SetPublicGroupAccess gName access -> withUser $ \user -> do
+    gInfo@GroupInfo {groupProfile = p@GroupProfile {publicGroup}} <- withStore $ \db ->
+      getGroupIdByName db user gName >>= getGroupInfo db cxt user
+    case publicGroup of
+      Just pg -> runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}}
+      Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
     gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     assertUserGroupRole gInfo GRAdmin
@@ -4918,6 +4940,17 @@ runRelayGroupLinkChecks user = do
                   else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
               _ -> pure ()
           _ -> pure ()
+        sendRelayCapIfNeeded cxt gInfo
+    sendRelayCapIfNeeded cxt gInfo = do
+      ChatConfig {webPreviewConfig} <- asks config
+      let currentWebDomain = (\WebPreviewConfig {webDomain} -> webDomain) <$> webPreviewConfig
+      sentWebDomain <- withStore' (`getRelaySentWebDomain` gInfo)
+      when (currentWebDomain /= sentWebDomain) $ do
+        owners <- withStore' $ \db -> getGroupOwners db cxt user gInfo
+        let capableOwners = filter (\m -> memberCurrent m && m `supportsVersion` relayWebCapVersion) owners
+        unless (null capableOwners) $ do
+          void $ sendGroupMessage' user gInfo capableOwners (XGrpRelayCap RelayCapabilities {webDomain = currentWebDomain})
+          withStore' $ \db -> updateRelaySentWebDomain db gInfo currentWebDomain
     checkRelayInactiveGroups = do
       cxt <- chatStoreCxt
       ttl <- asks (relayInactiveTTL . config)
@@ -5241,6 +5274,7 @@ chatCommandP =
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayNameP <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayNameP),
+      "/public group access " *> char_ '#' *> (SetPublicGroupAccess <$> displayNameP <*> publicGroupAccessP),
       "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> optional (A.space *> msgTextP)),
       "/set welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <* A.space <*> (Just <$> msgTextP)),
       "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> pure Nothing),
@@ -5447,6 +5481,12 @@ chatCommandP =
       clearOverrides <- (" clear_overrides=" *> onOffP) <|> pure False
       pure UserMsgReceiptSettings {enable, clearOverrides}
     onOffP = ("on" $> True) <|> ("off" $> False)
+    publicGroupAccessP = do
+      groupWebPage <- optional (" web=" *> (safeDecodeUtf8 <$> A.takeTill A.isSpace))
+      groupDomain <- optional (" domain=" *> (safeDecodeUtf8 <$> A.takeTill A.isSpace))
+      domainWebPage <- (" domain_page=" *> onOffP) <|> pure False
+      allowEmbedding <- (" embed=" *> onOffP) <|> pure False
+      pure PublicGroupAccess {groupWebPage, groupDomain, domainWebPage, allowEmbedding}
     profileNameDescr = (,) <$> displayNameP <*> shortDescrP
     -- 'Help with bot':'link <ID>','Menu of commands':[...]
     botCommandsP :: Parser [ChatBotCommand]

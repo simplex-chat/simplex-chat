@@ -114,9 +114,12 @@ module Simplex.Chat.Store.Groups
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
     updateRelayOwnStatus_,
+    getRelaySentWebDomain,
+    updateRelaySentWebDomain,
     isRelayGroupRejected,
     allowRelayGroup,
     getRelayServedGroups,
+    getRelayPublishableGroups,
     getRelayInactiveGroups,
     createNewContactMemberAsync,
     createJoiningMember,
@@ -1856,6 +1859,14 @@ updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
   let inactiveAt_ = if relayStatus == RSInactive then Just currentTs else Nothing
   DB.execute db "UPDATE groups SET relay_own_status = ?, relay_inactive_at = ?, updated_at = ? WHERE group_id = ?" (relayStatus, inactiveAt_, currentTs, groupId)
 
+getRelaySentWebDomain :: DB.Connection -> GroupInfo -> IO (Maybe Text)
+getRelaySentWebDomain db GroupInfo {groupId} =
+  join <$> maybeFirstRow fromOnly (DB.query db "SELECT relay_sent_web_domain FROM groups WHERE group_id = ?" (Only groupId))
+
+updateRelaySentWebDomain :: DB.Connection -> GroupInfo -> Maybe Text -> IO ()
+updateRelaySentWebDomain db GroupInfo {groupId} webDomain_ =
+  DB.execute db "UPDATE groups SET relay_sent_web_domain = ? WHERE group_id = ?" (webDomain_, groupId)
+
 -- Flip every RSRejected row sharing the targeted group's relay_request_group_link
 -- to RSInactive in one statement; returns the refreshed GroupInfo for the targeted groupId.
 allowRelayGroup :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO GroupInfo
@@ -1901,6 +1912,24 @@ getRelayServedGroups db cxt User {userId, userContactId} = do
           <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)"
       )
       (userId, userContactId, RSAccepted, RSAcknowledgedRoster, RSActive)
+
+getRelayPublishableGroups :: DB.Connection -> User -> IO [(Int64, B64UrlByteString, Maybe PublicGroupAccess)]
+getRelayPublishableGroups db User {userId, userContactId} =
+  map toRow <$>
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id, gp.public_group_id,
+               gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding
+        FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id AND mu.contact_id = ?
+        WHERE g.user_id = ? AND g.relay_own_status IN (?, ?)
+          AND gp.public_group_id IS NOT NULL
+      |]
+      (userContactId, userId, RSAccepted, RSActive)
+  where
+    toRow ((gId, pgId) :. accessRow) = (gId, pgId, toPublicGroupAccess accessRow)
 
 getRelayInactiveGroups :: DB.Connection -> StoreCxt -> User -> NominalDiffTime -> IO [GroupInfo]
 getRelayInactiveGroups db cxt User {userId, userContactId} ttl = do

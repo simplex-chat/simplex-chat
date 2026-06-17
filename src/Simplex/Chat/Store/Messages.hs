@@ -137,6 +137,7 @@ module Simplex.Chat.Store.Messages
     getGroupSndStatuses,
     getGroupSndStatusCounts,
     getGroupHistoryItems,
+    getGroupWebPreviewItems,
   )
 where
 
@@ -3713,3 +3714,21 @@ getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
             LIMIT ?
           |]
           (groupMemberId' m, userId, groupId, count)
+
+getGroupWebPreviewItems :: DB.Connection -> User -> GroupInfo -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
+getGroupWebPreviewItems db user@User {userId} g@GroupInfo {groupId} count = do
+  ciIds <-
+    map fromOnly
+      <$> DB.query
+        db
+        [sql|
+          SELECT i.chat_item_id
+          FROM chat_items i
+          WHERE i.user_id = ? AND i.group_id = ?
+            AND i.include_in_history = 1
+            AND i.item_deleted = 0
+          ORDER BY i.item_ts DESC, i.chat_item_id DESC
+          LIMIT ?
+        |]
+        (userId, groupId, count)
+  reverse <$> mapM (runExceptT . getGroupCIWithReactions db user g) ciIds

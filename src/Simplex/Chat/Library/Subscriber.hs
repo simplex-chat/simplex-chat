@@ -50,6 +50,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
 import Simplex.Chat.Files (getChatTempDirectory)
 import Simplex.Chat.Library.Internal
+import Simplex.Chat.Web (channelContentChanged, channelProfileUpdated, channelRemoved)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (batchDeliveryTasks1, batchProfiles, batchProfilesWithBody, encodeBinaryBatch, encodeFwdElement, maxBatchElementSize)
 import Simplex.Chat.Messages.CIContent
@@ -882,6 +883,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   else pure gInfo
               pure (m {memberStatus = GSMemConnected}, gInfo')
             toView $ CEvtUserJoinedGroup user gInfo' m'
+            when (isRelay membership) $ do
+              cc <- ask
+              atomically $ channelProfileUpdated cc groupId groupProfile
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             -- Create e2ee, feature and group description chat items only on first connected relay
             ifM
@@ -1035,6 +1039,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               pure newDeliveryTasks
           processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> VerifiedMsg e -> CM (Maybe NewMessageDeliveryTask)
           processEvent gInfo' m' verifiedMsg = do
+            cc <- ask
             (m'', conn', msg@RcvMessage {msgId, sharedMsgId_, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta verifiedMsg
             let ctx js = DeliveryTaskContext js False
                 checkSendAsGroup :: Maybe Bool -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
@@ -1094,7 +1099,17 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' m'' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
-            forM deliveryTaskContext_ $ \taskContext ->
+            forM deliveryTaskContext_ $ \taskContext -> do
+              let contentChanged :: CM ()
+                  contentChanged = atomically $ channelContentChanged cc groupId
+              case event of
+                XMsgNew {} -> contentChanged
+                XMsgUpdate {} -> contentChanged
+                XMsgDel {} -> contentChanged
+                XMsgReact {} -> contentChanged
+                XGrpInfo p' -> atomically $ channelProfileUpdated cc groupId p'
+                XGrpDel {} -> atomically $ channelRemoved cc groupId
+                _ -> pure ()
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
           checkSendRcpt :: [AParsedMsg] -> CM Bool
           checkSendRcpt aMsgs = do

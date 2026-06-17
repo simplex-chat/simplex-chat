@@ -261,6 +261,7 @@ mobileChatOpts dbOptions =
             tbqSize = 4096,
             deviceName = Nothing,
             chatRelay = False,
+            webPreviewConfig = Nothing,
             highlyAvailable = False,
             yesToUpMigrations = False,
             migrationBackupPath = Just "",
