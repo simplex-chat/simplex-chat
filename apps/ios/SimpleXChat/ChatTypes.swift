@@ -5774,6 +5774,7 @@ public struct ChatItemInfo: Decodable, Hashable {
     public var itemVersions: [ChatItemVersion]
     public var memberDeliveryStatuses: [MemberDeliveryStatus]?
     public var forwardedFromChatItem: AChatItem?
+    public var fileXftpServers: [String]?
 }
 
 public struct ChatItemVersion: Decodable, Hashable {

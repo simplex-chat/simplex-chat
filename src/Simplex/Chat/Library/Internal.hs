@@ -748,7 +748,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     if userApprovedRelays
       then receive' rd True
       else do
-        let srvs = fileServers rd
+        let srvs = fileDescrServers rd
         unknownSrvs <- getUnknownSrvs srvs
         let approved = null unknownSrvs
         ifM
@@ -761,9 +761,6 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs approved
       startReceivingFile user fileId
       withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
-    fileServers :: ValidFileDescription 'FRecipient -> [XFTPServer]
-    fileServers (FD.ValidFileDescription FD.FileDescription {chunks}) =
-      S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
       knownSrvs <- L.map protoServer' <$> getKnownAgentServers SPXFTP user
@@ -1590,6 +1587,30 @@ upgradedConnVersion v peerVR = do
 parseFileDescription :: FilePartyI p => Text -> CM (ValidFileDescription p)
 parseFileDescription =
   liftEither . first (ChatError . CEInvalidFileDescription) . (strDecode . encodeUtf8)
+
+-- | Unique XFTP servers hosting the file's chunks, parsed from a stored file description.
+fileDescrServers :: ValidFileDescription p -> [XFTPServer]
+fileDescrServers (FD.ValidFileDescription FD.FileDescription {chunks}) =
+  S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
+
+-- | XFTP servers the file's data chunks were uploaded to (sender's servers for sent items,
+-- the same servers via the recipient description for received items).
+-- Returns [] for non-XFTP/inline files or when no description is available; never fails the caller.
+getChatItemFileServers :: User -> SMsgDirection d -> ChatItem c d -> CM [XFTPServer]
+getChatItemFileServers user dir ci = case ci of
+  ChatItem {file = Just CIFile {fileId, fileProtocol = FPXFTP}} ->
+    itemFileServers fileId `catchAllErrors` \_ -> pure []
+  _ -> pure []
+  where
+    itemFileServers fileId = case dir of
+      SMDSnd -> do
+        sfd_ <- withStore' $ \db -> getSndFTPrivateSndDescr db user fileId
+        case sfd_ of
+          Just sfdText -> fileDescrServers <$> (parseFileDescription sfdText :: CM (ValidFileDescription 'FSender))
+          Nothing -> pure []
+      SMDRcv -> do
+        RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
 
 sendDirectFileInline :: User -> Contact -> FileTransferMeta -> SharedMsgId -> CM ()
 sendDirectFileInline user ct ft sharedMsgId = do

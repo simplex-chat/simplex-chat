@@ -624,7 +624,8 @@ processChatCommand cxt nm = \case
       (SCTGroup, SMDSnd) -> L.nonEmpty <$> withFastStore' (`getGroupSndStatuses` itemId)
       _ -> pure Nothing
     forwardedFromChatItem <- getForwardedFromItem user ci
-    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem}
+    fileXftpServers <- getChatItemFileServers user dir ci
+    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem, fileXftpServers}
     where
       getForwardedFromItem :: User -> ChatItem c d -> CM (Maybe AChatItem)
       getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
