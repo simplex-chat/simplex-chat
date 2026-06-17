@@ -1505,7 +1505,6 @@ createRosterTransfer db GroupInfo {groupId} fromMemberId v digest ownerGMId brok
     )
   insertedRowId db
 
--- In-flight version from a given source (header short-circuit), and the transfer id (supersede/cleanup).
 getRosterTransferVersion :: DB.Connection -> GroupInfo -> GroupMemberId -> IO (Maybe VersionRoster)
 getRosterTransferVersion db GroupInfo {groupId} fromMemberId =
   maybeFirstRow fromOnly $
