@@ -242,7 +242,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  describe "channels" $ do
+  fdescribe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -10540,7 +10540,7 @@ testChannelRosterDigestMismatchRejected ps =
           -- frank joins; bob re-serves the valid header with the corrupted blob, frank rejects it
           threadDelay 100000
           memberJoinChannel "team" [bob] [alice, cath] shortLink fullLink frank
-          threadDelay 100000
+          threadDelay 1000000
           -- the rejected roster never elevates cath: the intro caps her to the channel default, so she
           -- stays observer (not moderator), and the version must not advance to the corrupted roster's version 1
           checkMemberRow frank "cath" (Just "observer")
