@@ -94,6 +94,15 @@ const STYLE = `
   text-overflow: ellipsis;
 }
 
+.simplex-preview-container .simplex-preview-header-name {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--sp-text);
+  -webkit-text-fill-color: var(--sp-text);
+  text-fill-color: var(--sp-text);
+}
+
 .simplex-preview-header-description {
   font-size: 13px;
   color: var(--sp-text-secondary);
