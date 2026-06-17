@@ -94,6 +94,15 @@ const STYLE = `
   text-overflow: ellipsis;
 }
 
+.simplex-preview-container .simplex-preview-header-name {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--sp-text);
+  -webkit-text-fill-color: var(--sp-text);
+  text-fill-color: var(--sp-text);
+}
+
 .simplex-preview-header-description {
   font-size: 13px;
   color: var(--sp-text-secondary);
@@ -492,14 +501,16 @@ const STYLE = `
   min-width: 0;
   max-width: 640px;
   overflow-y: auto;
-  overscroll-behavior: contain;
   position: relative;
 }
 
 .simplex-preview-info {
   overflow-y: auto;
-  overscroll-behavior: contain;
   background: var(--sp-bg);
+}
+
+.simplex-preview-scroll-lock {
+  overflow: hidden;
 }
 
 .simplex-preview-info-close {
@@ -696,12 +707,13 @@ const STYLE = `
   .simplex-preview-info {
     display: none;
     position: fixed;
-    top: 0;
+    top: var(--sp-top-offset, 0px);
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 100;
     padding: 16px;
+    overscroll-behavior: contain;
   }
   .simplex-preview-info.open {
     display: block;
@@ -785,6 +797,13 @@ function initChannelPreview(container) {
   }
   if (container.dataset.darkBackground) {
     container.style.setProperty('--sp-dark-bg', container.dataset.darkBackground);
+  }
+  const topOffset = parseInt(container.dataset.topOffset || '0', 10);
+  if (topOffset > 0) {
+    container.style.setProperty('--sp-top-offset', topOffset + 'px');
+    container.style.marginTop = topOffset + 'px';
+    container.style.height = 'calc(100vh - ' + topOffset + 'px)';
+    container.style.height = 'calc(100dvh - ' + topOffset + 'px)';
   }
   container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
 
@@ -885,12 +904,16 @@ function render(container, data, channelLink, showAppBadges) {
     if (window.innerWidth < 1000) {
       info.classList.add('open');
       main.style.overflow = 'hidden';
+      document.documentElement.classList.add('simplex-preview-scroll-lock');
+      document.body.classList.add('simplex-preview-scroll-lock');
     }
   });
 
   closeBtn.addEventListener('click', () => {
     info.classList.remove('open');
     main.style.overflow = '';
+    document.documentElement.classList.remove('simplex-preview-scroll-lock');
+    document.body.classList.remove('simplex-preview-scroll-lock');
   });
 
   setupSecretToggles(container);

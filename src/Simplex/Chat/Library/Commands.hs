@@ -4918,17 +4918,7 @@ runRelayGroupLinkChecks user = do
                   else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
               _ -> pure ()
           _ -> pure ()
-        sendRelayCapIfNeeded cxt gInfo
-    sendRelayCapIfNeeded cxt gInfo = do
-      ChatConfig {webPreviewConfig} <- asks config
-      let currentWebDomain = (\WebPreviewConfig {webDomain} -> webDomain) <$> webPreviewConfig
-      sentWebDomain <- withStore' (`getRelaySentWebDomain` gInfo)
-      when (currentWebDomain /= sentWebDomain) $ do
-        owners <- withStore' $ \db -> getGroupOwners db cxt user gInfo
-        let capableOwners = filter (\m -> memberCurrent m && m `supportsVersion` relayWebCapVersion) owners
-        unless (null capableOwners) $ do
-          void $ sendGroupMessage' user gInfo capableOwners (XGrpRelayCap RelayCapabilities {webDomain = currentWebDomain})
-          withStore' $ \db -> updateRelaySentWebDomain db gInfo currentWebDomain
+        sendRelayCapIfNeeded user gInfo
     checkRelayInactiveGroups = do
       cxt <- chatStoreCxt
       ttl <- asks (relayInactiveTTL . config)

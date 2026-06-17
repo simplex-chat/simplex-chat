@@ -3323,6 +3323,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               unless (useRelays' g'') $
                 void $ forkIO $ void $ setGroupLinkData' NRMBackground user g''
             Just _ -> updateGroupPrefs_ msgSigned g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
+          -- relay advertises its web capability now that the owner's version is known (bumped by saveGroupRcvMsg)
+          when (isRelay (membership g)) $ sendRelayCapIfNeeded user g
           pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
 
     xGrpPrefs :: GroupInfo -> GroupMember -> GroupPreferences -> RcvMessage -> CM (Maybe DeliveryJobScope)
