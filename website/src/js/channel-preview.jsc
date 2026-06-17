@@ -290,6 +290,7 @@ const STYLE = `
 .simplex-preview-quote-text {
   font-size: 15px;
   overflow: hidden;
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1341,7 +1342,11 @@ function renderQuote(quote, membersMap, channel) {
 function classifyImage(img) {
   const w = img.naturalWidth;
   const h = img.naturalHeight;
-  img.classList.add(w * 0.97 <= h ? 'portrait' : 'landscape');
+  const portrait = w * 0.97 <= h;
+  img.classList.add(portrait ? 'portrait' : 'landscape');
+  // constrain the bubble to the image width so long text wraps instead of widening the bubble
+  const inner = img.closest('.simplex-preview-bubble-inner');
+  if (inner) inner.style.maxWidth = portrait ? '300px' : '400px';
 }
 
 function renderImageContent(inner, mc, msg, mediaOnly) {
