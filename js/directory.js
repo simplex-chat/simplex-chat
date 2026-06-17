@@ -9,6 +9,13 @@
 
 
 
+const simplexDirectoryDataURL = 'https://directory.simplex.chat/data/';
+
+// const simplexDirectoryDataURL = 'http://localhost:8080/directory-data/';
+
+const simplexUsersGroup = 'SimpleX users group';
+
+(function() {
 const isMobile = {
   Android: () => navigator.userAgent.match(/Android/i),
   iOS: () => navigator.userAgent.match(/iPhone|iPad|iPod/i),
@@ -165,14 +172,6 @@ function platformSimplexUri(uri) {
     return `https://simplex.chat/${linkType}#${fragment}`;
   }
 }
-
-const simplexDirectoryDataURL = 'https://directory.simplex.chat/data/';
-
-// const simplexDirectoryDataURL = 'http://localhost:8080/directory-data/';
-
-const simplexUsersGroup = 'SimpleX users group';
-
-(function() {
 if (!document.location.pathname.startsWith('/directory')) return;
 
 let allEntries = [];
