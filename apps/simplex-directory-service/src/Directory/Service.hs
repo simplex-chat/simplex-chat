@@ -280,7 +280,7 @@ acceptMemberHook
     when (useMemberFilter img $ rejectNames a) checkName
     pure $
       if
-        | useMemberFilter img (passCaptcha a) -> (GAPendingApproval, GRMember)
+        | useMemberFilter img (Just PCNoImage) -> (GAPendingApproval, GRMember)
         | useMemberFilter img (makeObserver a) -> (GAAccepted, GRObserver)
         | otherwise -> (GAAccepted, memberRole)
     where
