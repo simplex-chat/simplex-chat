@@ -1,6 +1,6 @@
-#include "simplex-lib.jsc"
-
 (function() {
+
+#include "simplex-lib.jsc"
 
 #include "qrcode.js"
 
@@ -1052,6 +1052,32 @@ function renderAppBadges(container) {
   container.appendChild(badges);
 }
 
+// the QR library only parses hex colors; map 'transparent' (used in dark mode) to a transparent hex
+function qrColor(value, fallback) {
+  value = (value || '').trim();
+  if (!value) return fallback;
+  return value === 'transparent' ? '#0000' : value;
+}
+
+// navigator.clipboard is undefined outside secure contexts; fall back to execCommand
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise(function(resolve, reject) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    ok ? resolve() : reject(new Error('copy failed'));
+  });
+}
+
 function renderDesktopConversion(container, channelLink, showAppBadges) {
   if (showAppBadges) {
     renderAppBadges(container);
@@ -1094,8 +1120,8 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
           QRCode.toCanvas(canvas, channelLink, {
             errorCorrectionLevel: 'M',
             color: {
-              dark: cs.getPropertyValue('--sp-qr-fg').trim() || '#062D56',
-              light: cs.getPropertyValue('--sp-qr-bg').trim() || '#ffffff'
+              dark: qrColor(cs.getPropertyValue('--sp-qr-fg'), '#062D56'),
+              light: qrColor(cs.getPropertyValue('--sp-qr-bg'), '#ffffff')
             },
             width: 400,
             margin: 1
@@ -1103,12 +1129,14 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
             canvas.style.width = '200px';
             canvas.style.height = '200px';
           }).catch(function() {
+            canvas._rendered = false;
             qrPopup.style.display = 'none';
-            qrToggle.style.display = 'none';
+            qrToggle.style.display = '';
           });
         } catch(err) {
+          canvas._rendered = false;
           qrPopup.style.display = 'none';
-          qrToggle.style.display = 'none';
+          qrToggle.style.display = '';
         }
       }
     } else {
@@ -1124,10 +1152,10 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
   const copyLink = document.createElement('a');
   copyLink.textContent = 'copy link';
   copyLink.addEventListener('click', function() {
-    navigator.clipboard.writeText(channelLink).then(function() {
+    copyToClipboard(channelLink).then(function() {
       copyLink.textContent = 'Copied!';
       setTimeout(function() { copyLink.textContent = 'copy link'; }, 2000);
-    });
+    }).catch(function() {});
   });
   copyAction.appendChild(document.createTextNode('Or '));
   copyAction.appendChild(copyLink);
