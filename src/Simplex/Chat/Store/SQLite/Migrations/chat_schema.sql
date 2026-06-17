@@ -198,14 +198,7 @@ CREATE TABLE groups(
   roster_msg_signatures BLOB,
   roster_sending_owner_gm_id INTEGER,
   roster_broker_ts TEXT,
-  roster_blob BLOB,
-  roster_pending_version INTEGER,
-  roster_pending_digest BLOB,
-  roster_pending_msg_body BLOB,
-  roster_pending_msg_chat_binding TEXT,
-  roster_pending_msg_signatures BLOB,
-  roster_pending_sending_owner_gm_id INTEGER,
-  roster_pending_broker_ts TEXT, -- received
+  roster_blob BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -293,7 +286,8 @@ CREATE TABLE files(
   note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
   redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE,
   shared_msg_id BLOB,
-  file_type TEXT NOT NULL DEFAULT 'normal'
+  file_type TEXT NOT NULL DEFAULT 'normal',
+  roster_transfer_id INTEGER
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -812,6 +806,20 @@ CREATE TABLE group_relays(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   base_web_url TEXT
+) STRICT;
+CREATE TABLE rcv_roster_transfers(
+  roster_transfer_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  from_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  roster_version INTEGER NOT NULL,
+  roster_digest BLOB NOT NULL,
+  sending_owner_gm_id INTEGER NOT NULL,
+  broker_ts TEXT NOT NULL,
+  roster_msg_body BLOB,
+  roster_msg_chat_binding TEXT,
+  roster_msg_signatures BLOB,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1332,10 +1340,18 @@ ON groups(
   relay_request_group_link
 )
 WHERE relay_request_group_link IS NOT NULL;
+CREATE UNIQUE INDEX idx_rcv_roster_transfers_group_id_from_member_id ON rcv_roster_transfers(
+  group_id,
+  from_member_id
+);
+CREATE INDEX idx_rcv_roster_transfers_from_member_id ON rcv_roster_transfers(
+  from_member_id
+);
 CREATE INDEX idx_files_group_id_shared_msg_id ON files(
   group_id,
   shared_msg_id
 );
+CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
