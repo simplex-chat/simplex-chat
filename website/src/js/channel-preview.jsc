@@ -696,7 +696,7 @@ const STYLE = `
   .simplex-preview-info {
     display: none;
     position: fixed;
-    top: 0;
+    top: var(--sp-top-offset, 0px);
     left: 0;
     right: 0;
     bottom: 0;
@@ -785,6 +785,13 @@ function initChannelPreview(container) {
   }
   if (container.dataset.darkBackground) {
     container.style.setProperty('--sp-dark-bg', container.dataset.darkBackground);
+  }
+  const topOffset = parseInt(container.dataset.topOffset || '0', 10);
+  if (topOffset > 0) {
+    container.style.setProperty('--sp-top-offset', topOffset + 'px');
+    container.style.marginTop = topOffset + 'px';
+    container.style.height = 'calc(100vh - ' + topOffset + 'px)';
+    container.style.height = 'calc(100dvh - ' + topOffset + 'px)';
   }
   container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
 

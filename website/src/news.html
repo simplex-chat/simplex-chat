@@ -7,10 +7,8 @@ active_directory: true
 ---
 
 <style>
-    [data-simplex-channel-preview] {
-        padding-top: 60px;
-        scroll-behavior: auto;
-    }
+    /* full-screen channel view: only the messages section scrolls, never the page */
+    html, body { overflow: hidden; }
 </style>
 
 <div data-simplex-channel-preview
@@ -19,5 +17,6 @@ active_directory: true
     data-relay-domains="relay1.simplex.chat,relay2.simplex.chat"
     data-app-download-buttons="off"
     data-color-scheme="site"
+    data-top-offset="54"
 ></div>
 <script src="https://simplex.chat/js/channel-preview.js"></script>
