@@ -661,7 +661,11 @@ final class ChatModel: ObservableObject {
                 chats[i].chatItems = switch cInfo {
                 case .group:
                     if let currentPreviewItem = chats[i].chatItems.first {
-                        if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
+                        // For a pending invitee the support item (received via the broker clock) is the
+                        // reason this preview updates; its itemTs isn't comparable to a locally-stamped
+                        // group event, so always surface it rather than dropping it on a cross-clock check.
+                        if cInfo.groupInfo?.membership.memberPending ?? false
+                            || cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
                             [cItem]
                         } else {
                             [currentPreviewItem]
