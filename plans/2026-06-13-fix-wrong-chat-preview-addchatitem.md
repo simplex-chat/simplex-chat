@@ -1,7 +1,7 @@
 # Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
 **PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
-**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview)
+**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview) · `2b20c9efb` edit/delete preview sync
 **Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
 
 Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
@@ -173,6 +173,18 @@ plus member-connected / E2EE-info / group-feature items (`Subscriber.hs:878-881`
 the status text). The outer guard already restricts to `groupChatScope() == null || memberPending`,
 so non-pending groups keep plain `itemTs` ordering.
 
+## 2d. Edit / delete of the shown support message — `2b20c9efb` (android, desktop, ios)
+
+`addChatItem` got the `memberPending` exception, but its siblings `upsertChatItem` /
+`removeChatItem` still gated their main-list-preview update on `groupChatScope() == null`. So once
+a support message was a pending invitee's preview, **editing it left stale text and
+deleting/moderating it left a phantom**. The same `memberPending` exception is added to both
+(Kotlin + iOS); they already match the preview item by id (`pItem?.id == cItem.id`). On iOS the
+extra "update preview for an item missing from the open scope" clause is now restricted to main
+scope, so a support item's status updates don't churn the preview. Side benefit: this pairs the
+support-item unread increment with a decrement on delete / read-of-preview (partial mitigation of
+the unread limitation below).
+
 ## 2c. Reload persistence — investigated, **NOT implemented (performance)**
 
 **The gap:** 2a/2b are in-memory only. `findGroupChatPreviews_` (`Store/Messages.hs`) selects the
@@ -219,12 +231,23 @@ Per chat-list load for a 500-group user (`EXPLAIN QUERY PLAN` + wall-clock):
 **Decision:** ship 2a/2b only. The gated `COALESCE` form above is the ready design if persistence
 is revisited.
 
-## Residual limitations (of shipped 2a/2b)
-- **In-memory only** (see 2c): after a reload the preview reverts to "reviewed by admins" until
-  the next support message; deferred for performance.
-- **Unread (pre-existing):** a received support message increments the main unread in-memory (the
-  #5909 `memberPending` branch) while the read path reconciles via `membership.supportChat.unread`
-  — not changed here.
+## Residual limitations / known follow-ups
+- **In-memory preview only** (see 2c): after a reload the preview reverts to "reviewed by admins"
+  until the next support message; persistence deferred for performance.
+- **Caption-less media support message shows "reviewed by admins":** `ChatPreviewView`
+  (`ChatPreviewView.kt:241` / `.swift:353`) shows the status text whenever the preview item's
+  `hasMsgContent` is false — which is the case for a photo / voice / file **without a caption**
+  (empty text). So a pending invitee's attachment-only support message is not surfaced as an
+  attachment in the preview. Pre-existing renderer behaviour; a fix needs a `ChatPreviewView`
+  change (render media items even when `hasMsgContent` is false), beyond this PR's diff.
+- **Out-of-order content pins the last-arrived message:** for a pending invitee, content items skip
+  the `itemTs` check (broker vs local clock are not comparable), so two content messages delivered
+  out of order show arrival order rather than newest-by-timestamp. Low frequency for support chats.
+- **Unread badge can lag (pre-existing):** a received support message increments the main-list
+  unread (the #5909 `memberPending` branch, now reachable). 2d adds a decrement on edit/delete and
+  read-of-preview, but reads of *non-preview* support messages reconcile via
+  `membership.supportChat.unread` rather than the main counter, so the main unread badge can lag.
+  Not fully addressed here.
 
 ## Verification (Part 2)
 - Desktop AppImage built on the branch with 2a/2b; in-app send/receive pending-preview behavior to
