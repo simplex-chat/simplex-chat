@@ -3119,6 +3119,7 @@ processChatCommand cxt nm = \case
       gInfo <- getGroupInfo db cxt user groupId
       gLink <- getGroupLink db user gInfo
       pure (gInfo, gLink)
+    assertUserGroupRole gInfo $ if useRelays' gInfo then GROwner else GRAdmin
     gLink' <- setGroupLinkData nm user gInfo gLink
     pure $ CRGroupLink user gInfo gLink'
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
