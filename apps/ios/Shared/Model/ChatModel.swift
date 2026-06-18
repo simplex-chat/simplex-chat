@@ -661,9 +661,8 @@ final class ChatModel: ObservableObject {
                 chats[i].chatItems = switch cInfo {
                 case .group:
                     if let currentPreviewItem = chats[i].chatItems.first {
-                        // For a pending invitee, surface the latest support message in the preview (its
-                        // broker-clock itemTs isn't comparable to a locally-stamped group event), but don't
-                        // let a no-content group event re-cover a message already shown ("reviewed by admins").
+                        // Pending invitee: surface the latest support message (broker vs local itemTs
+                        // aren't comparable); don't let a no-content event re-cover an already-shown message.
                         if cInfo.groupInfo?.membership.memberPending ?? false {
                             (cItem.content.hasMsgContent || !currentPreviewItem.content.hasMsgContent) ? [cItem] : [currentPreviewItem]
                         } else if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
@@ -722,8 +721,7 @@ final class ChatModel: ObservableObject {
     func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         // update chat list
         var itemAdded: Bool = false
-        // memberPending: a pending invitee's support item may be the main-list preview, so keep it in
-        // sync on edit/status change too (matching addChatItem)
+        // memberPending: a support item may be the main-list preview, keep it synced on edit/status (like addChatItem)
         if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
@@ -795,8 +793,7 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update chat list
-        // memberPending: a pending invitee's support item may be the main-list preview, so clear it
-        // when deleted/moderated too (matching addChatItem)
+        // memberPending: a support item may be the main-list preview, clear it on delete/moderate (like addChatItem)
         if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
             if cItem.isRcvNew {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)

@@ -760,8 +760,7 @@ fun ComposeView(
         if (updatedItem != null) {
           withContext(Dispatchers.Main) {
             chatsCtx.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
-            // an edit in a member-support scope is added only to the active (secondary) context; also
-            // update the primary context so the main chat list preview reflects the edit (like the send path)
+            // a member-support edit reaches only the active context; also update primary so the preview reflects it
             if (chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext) {
               chatModel.chatsContext.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
             }

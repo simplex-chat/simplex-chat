@@ -239,9 +239,8 @@ fun ChatPreviewView(
         modifier = Modifier.fillMaxWidth()
       )
     } else if (ci?.content?.msgContent == null && previewText != null) {
-      // only a no-content item (a group/connection event) shows the status text; a message —
-      // including caption-less media — falls through to render its content (the media thumbnail is
-      // shown separately), e.g. a pending invitee's photo shows "image" instead of "reviewed by admins"
+      // status text only for no-content events; any message (incl. caption-less media) renders its
+      // content (thumbnail shown separately) - e.g. a pending invitee's photo shows "image", not the status
       Text(previewText.first, color = previewText.second)
     } else if (ci != null && showChatPreviews) {
       val (text: CharSequence, inlineTextContent) = when {
