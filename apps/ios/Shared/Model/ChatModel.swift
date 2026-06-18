@@ -795,15 +795,14 @@ final class ChatModel: ObservableObject {
         // update chat list
         // memberPending: a support item may be the main-list preview, clear it on delete/moderate (like addChatItem)
         if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
-            let chat = getChat(cInfo.id)
-            // clamp: only decrement when there is something to decrement (matches the Android primary-context
-            // decrement), so deleting an item that never incremented the badge can't drive it negative
-            if cItem.isRcvNew, let chat, chat.chatStats.unreadCount > 0 {
+            if cItem.isRcvNew {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
             }
             // update previews
-            if let chat, let pItem = chat.chatItems.last, pItem.id == cItem.id {
-                chat.chatItems = [ChatItem.deletedItemDummy()]
+            if let chat = getChat(cInfo.id) {
+                if let pItem = chat.chatItems.last, pItem.id == cItem.id {
+                    chat.chatItems = [ChatItem.deletedItemDummy()]
+                }
             }
         }
         // remove from current scope
@@ -1110,10 +1109,13 @@ final class ChatModel: ObservableObject {
     func changeUnreadCounter(_ chatIndex: Int, by count: Int, unreadMentions: Int) {
         let wasUnread = chats[chatIndex].unreadTag
         let stats = chats[chatIndex].chatStats
-        chats[chatIndex].chatStats.unreadCount = stats.unreadCount + count
-        chats[chatIndex].chatStats.unreadMentions = stats.unreadMentions + unreadMentions
+        // clamp at 0 so an over-decrement can't drive the per-chat count or the user badge negative
+        // (e.g. deleting an item that never incremented the badge); feed the badge the clamped delta
+        let newUnreadCount = max(stats.unreadCount + count, 0)
+        chats[chatIndex].chatStats.unreadCount = newUnreadCount
+        chats[chatIndex].chatStats.unreadMentions = max(stats.unreadMentions + unreadMentions, 0)
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: count)
+        changeUnreadCounter(user: currentUser!, by: newUnreadCount - stats.unreadCount)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
