@@ -1,7 +1,7 @@
 # Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
 **PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
-**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview) · `2b20c9efb` edit/delete preview sync
+**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview) · `2b20c9efb`/`8440f17d5` edit/delete preview sync
 **Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
 
 Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
@@ -173,17 +173,27 @@ plus member-connected / E2EE-info / group-feature items (`Subscriber.hs:878-881`
 the status text). The outer guard already restricts to `groupChatScope() == null || memberPending`,
 so non-pending groups keep plain `itemTs` ordering.
 
-## 2d. Edit / delete of the shown support message — `2b20c9efb` (android, desktop, ios)
+## 2d. Edit / delete of the shown support message — `2b20c9efb` · `8440f17d5` (android, desktop, ios)
 
-`addChatItem` got the `memberPending` exception, but its siblings `upsertChatItem` /
-`removeChatItem` still gated their main-list-preview update on `groupChatScope() == null`. So once
-a support message was a pending invitee's preview, **editing it left stale text and
-deleting/moderating it left a phantom**. The same `memberPending` exception is added to both
-(Kotlin + iOS); they already match the preview item by id (`pItem?.id == cItem.id`). On iOS the
-extra "update preview for an item missing from the open scope" clause is now restricted to main
-scope, so a support item's status updates don't churn the preview. Side benefit: this pairs the
+Two parts.
+
+**Guard** (`2b20c9efb`): `addChatItem` got the `memberPending` exception, but its siblings
+`upsertChatItem` / `removeChatItem` still gated their main-list-preview update on
+`groupChatScope() == null`. So once a support message was a pending invitee's preview, **editing it
+left stale text and deleting/moderating it left a phantom**. The same `memberPending` exception is
+added to both (Kotlin + iOS); they already match the preview item by id (`pItem?.id == cItem.id`).
+On iOS the extra "update preview for an item missing from the open scope" clause is now restricted
+to main scope, so a support item's status updates don't churn the preview. Side benefit: pairs the
 support-item unread increment with a decrement on delete / read-of-preview (partial mitigation of
 the unread limitation below).
+
+**Edit dispatch** (`8440f17d5`, android/desktop only): the guard alone wasn't enough for an
+invitee's **own** edit. Deletes reach the primary context (the receive dispatcher and the delete UI
+both call both contexts), but an own edit goes through `ComposeView` → `chatsCtx.upsertChatItem` on
+the **active (secondary) context only** — the same asymmetry as sends — so the primary preview was
+never touched. Fix: on an edit in a `GroupChatScopeContext`, also call
+`chatModel.chatsContext.upsertChatItem` (`ComposeView.kt`). iOS is unaffected (single `chats` list;
+its `upsertChatItem` already updates the preview via the guard).
 
 ## 2c. Reload persistence — investigated, **NOT implemented (performance)**
 
