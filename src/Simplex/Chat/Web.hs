@@ -26,7 +26,7 @@ where
 import Control.Concurrent.STM (check, flushTQueue)
 import Control.Exception (SomeException, catch)
 import Control.Logger.Simple
-import Control.Monad (forM_, void, when)
+import Control.Monad
 import Control.Monad.Except (runExceptT)
 import Data.Either (rights)
 import Data.Int (Int64)
@@ -42,7 +42,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), mkStoreCxt)
+import Simplex.Chat.Controller (ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), mkStoreCxt)
 import Simplex.Chat.Markdown (FormattedText (..), MarkdownList, parseMaybeMarkdownList)
 import Simplex.Chat.Messages
   ( CChatItem (..),
@@ -75,11 +75,11 @@ import Simplex.Chat.Types
   )
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
-import qualified URI.ByteString as U
+import Simplex.Messaging.Util (catchOwn, eitherToMaybe, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Parsers (defaultJSON)
 import System.Directory (createDirectoryIfMissing, listDirectory, removeFile, renameFile)
 import System.FilePath (dropExtension, takeExtension, (</>))
+import qualified URI.ByteString as U
 import UnliftIO.STM
 
 data WebFileInfo = WebFileInfo
@@ -135,7 +135,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     cleanStaleFiles wps
     regenerateCors wps
     seedRoutinePending wps
-    workerLoop wps
+    forever $ workerLoop wps `catchOwn` \e -> logError ("web preview worker error: " <> tshow e)
   where
     cxt = mkStoreCxt (config cc)
 
@@ -146,7 +146,6 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
       renderRoutine
       noRoutine <- atomically $ S.null <$> readTVar routinePending
       when noRoutine waitRefresh
-      workerLoop wps
       where
         drainRemovals = atomically (tryReadTQueue filesToRemove) >>= \case
           Nothing -> pure ()
