@@ -189,7 +189,9 @@
                 # for android we build a shared library, passing these arguments is a bit tricky, as
                 # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
                 # template haskell cross compilation. Thus we just pass them as linker options (-optl).
-                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi" "-j1"];
+                # 32-bit ARM only: processAgentMessageConn is too large for ARM's PC-relative constant-pool
+                # range at -O2; -O1 is appended after the cabal -O2 here, so it wins (aarch64 stays -O2).
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi" "-j1" "-O1"];
                 postInstall = ''
                   set -x
                   ${pkgs.tree}/bin/tree $out
