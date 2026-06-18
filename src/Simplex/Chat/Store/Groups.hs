@@ -87,7 +87,7 @@ module Simplex.Chat.Store.Groups
     getGroupRelayById,
     getGroupRelayByGMId,
     getGroupRelays,
-    getConnectedGroupRelays,
+    getPublishableGroupRelays,
     setGroupRosterVersion,
     getGroupRosterVersion,
     getGroupRoster,
@@ -1426,21 +1426,31 @@ getGroupRelays db GroupInfo {groupId} =
       (groupRelayQuery <> " WHERE gr.group_id = ?")
       (Only groupId)
 
-getConnectedGroupRelays :: DB.Connection -> GroupInfo -> IO [GroupRelay]
-getConnectedGroupRelays db GroupInfo {groupId} =
-  map toGroupRelay
-    <$> DB.query
-      db
-      ( groupRelayQuery
-          <> " "
-          <> [sql|
-               JOIN group_members m ON m.group_member_id = gr.group_member_id
-               WHERE gr.group_id = ?
-                 AND m.member_status = ?
-                 AND gr.relay_status IN (?,?)
-             |]
-      )
-      (groupId, GSMemConnected, RSAcknowledgedRoster, RSActive)
+-- Relays whose link is published to subscribers, paired with their member: acked relays
+-- (RSAcknowledgedRoster/RSActive) plus pre-roster relays still at RSAccepted (below groupRosterVersion,
+-- they can't ack a roster). The relay's version comes from the member connection, read per relay.
+getPublishableGroupRelays :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [(GroupRelay, GroupMember)]
+getPublishableGroupRelays db cxt user GroupInfo {groupId} = do
+  relays <-
+    map toGroupRelay
+      <$> DB.query
+        db
+        ( groupRelayQuery
+            <> " "
+            <> [sql|
+                 JOIN group_members m ON m.group_member_id = gr.group_member_id
+                 WHERE gr.group_id = ?
+                   AND m.member_status = ?
+                   AND gr.relay_status IN (?,?,?)
+               |]
+        )
+        (groupId, GSMemConnected, RSAccepted, RSAcknowledgedRoster, RSActive)
+  rms <- fmap catMaybes . forM relays $ \gr@GroupRelay {groupMemberId} ->
+    fmap (gr,) . eitherToMaybe <$> runExceptT (getGroupMemberById db cxt user groupMemberId)
+  pure $ filter publishable rms
+  where
+    publishable (GroupRelay {relayStatus}, m) =
+      relayStatus /= RSAccepted || not (m `supportsVersion` groupRosterVersion)
 
 groupRelayQuery :: Query
 groupRelayQuery =
