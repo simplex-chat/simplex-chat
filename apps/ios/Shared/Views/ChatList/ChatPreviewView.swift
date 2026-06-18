@@ -350,7 +350,10 @@ struct ChatPreviewView: View {
         if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
             let (t, hasSecrets) = messageDraft(draft)
             chatPreviewLayout(t, draft: true, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
-        } else if cItem?.content.hasMsgContent != true, let previewText = chatPreviewInfoText() {
+        } else if cItem?.content.msgContent == nil, let previewText = chatPreviewInfoText() {
+            // only a no-content item (a group/connection event) shows the status text; a message —
+            // including caption-less media — falls through to render its content (thumbnail shown
+            // separately), e.g. a pending invitee's photo shows "image" instead of "reviewed by admins"
             chatPreviewInfoTextLayout(previewText)
         } else if let cItem = cItem {
             let (t, hasSecrets) = chatItemPreview(cItem)
