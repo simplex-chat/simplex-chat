@@ -795,14 +795,15 @@ final class ChatModel: ObservableObject {
         // update chat list
         // memberPending: a support item may be the main-list preview, clear it on delete/moderate (like addChatItem)
         if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
-            if cItem.isRcvNew {
+            let chat = getChat(cInfo.id)
+            // clamp: only decrement when there is something to decrement (matches the Android primary-context
+            // decrement), so deleting an item that never incremented the badge can't drive it negative
+            if cItem.isRcvNew, let chat, chat.chatStats.unreadCount > 0 {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
             }
             // update previews
-            if let chat = getChat(cInfo.id) {
-                if let pItem = chat.chatItems.last, pItem.id == cItem.id {
-                    chat.chatItems = [ChatItem.deletedItemDummy()]
-                }
+            if let chat, let pItem = chat.chatItems.last, pItem.id == cItem.id {
+                chat.chatItems = [ChatItem.deletedItemDummy()]
             }
         }
         // remove from current scope
