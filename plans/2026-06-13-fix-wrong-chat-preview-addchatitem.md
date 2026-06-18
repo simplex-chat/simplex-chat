@@ -1,7 +1,7 @@
 # Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
 **PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
-**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881`/`56290cc7b` prefer-content (msgContent, caption-less media wins) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview · `342e270a1` ios unread clamp
+**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881`/`56290cc7b` prefer-content (msgContent, caption-less media wins) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview · `342e270a1`/`fb849aa2c` ios unread clamp (apply-point)
 **Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
 
 Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
@@ -105,7 +105,8 @@ preserved.
 ## Verification
 - Reproduced and confirmed fixed by report author.
 - Compiles: `chats[i]` get/set is the established idiom used throughout `ChatsContext`
-  (lines 418, 436, 443, 493, 618, 621).
+  (the get/set sites in `addChatItem` / `upsertChatItem` / `removeChatItem`; at the fix commit
+  `8b93c226d^` these were lines 418, 436, 443, 493, 618, 621).
 
 ---
 
@@ -144,7 +145,7 @@ Scoped to `GroupChatScopeContext` (reports view has no compose). Safe: sent item
 scope; no recursion (primary delegate has `secondaryContextFilter == null`). Matches iOS,
 where `ComposeView` already calls `chatModel.addChatItem` on its single list.
 
-## 2b. Received messages — `bd7c6c3e8` (android, desktop) · `55bdaa216` (ios) · `5b37cf881` (prefer-content)
+## 2b. Received messages — `bd7c6c3e8` (android, desktop) · `55bdaa216` (ios) · `5b37cf881`/`56290cc7b` (prefer-content)
 
 **Symptom:** a received support message showed the static "reviewed by admins" status text
 in the preview instead of the message. (`ChatPreviewView` renders that text only when the
@@ -264,12 +265,26 @@ is revisited.
 - **Out-of-order content pins the last-arrived message:** for a pending invitee, content items skip
   the `itemTs` check (broker vs local clock are not comparable), so two content messages delivered
   out of order show arrival order rather than newest-by-timestamp. Low frequency for support chats.
+  (A future refinement could order by local monotonic `createdAt` instead of dropping ordering.)
 - **Unread badge can lag (pre-existing):** a received support message increments the main-list
   unread (the #5909 `memberPending` branch, now reachable). 2d adds a decrement on edit/delete and
   read-of-preview, but reads of *non-preview* support messages reconcile via
   `membership.supportChat.unread` rather than the main counter, so the main unread badge can lag.
-  Not fully addressed here. iOS `removeChatItem`'s decrement is clamped (`342e270a1`) to match
-  Android's self-clamping path so a delete can't drive the badge negative.
+  Not fully addressed here. iOS clamps the unread counter at the **apply point**
+  (`changeUnreadCounter(chatIndex:)`, `fb849aa2c`) so an over-decrement can't drive the per-chat
+  count or the badge negative — superseding the earlier call-site clamp `342e270a1`, which was racy
+  against the 1 s `UnreadCollector` debounce (a receive-then-quick-delete could skip the matching
+  decrement). Android's `decreaseCounterInPrimaryContext` already self-clamps synchronously.
+- **Dispatcher-delivered *sent* support item double-touches the primary preview (Android/Desktop,
+  minor):** a remote-host / multi-device sent support message arrives via the dispatcher, which calls
+  **both** contexts; the secondary pass then re-runs the sent-mirror (`ChatModel.kt:525`) even though
+  the dispatcher's primary pass already added it, so the preview re-set + `reorderChat`/pop run twice.
+  Idempotent (preview content unchanged; unread unaffected since sent ≠ `RcvNew`) — redundant work,
+  not a visible bug. Local sends are single (only the secondary context is called).
+- **Hard- vs soft-delete preview differ (cosmetic):** deleting the shown support message via a hard /
+  broadcast delete leaves `deletedItemDummy` (`msgContent == null`) → preview falls back to "reviewed
+  by admins"; a soft delete / moderation keeps the item (`itemDeleted != null`, `msgContent` present)
+  → preview shows "marked deleted". Both are defensible.
 
 ## Verification (Part 2)
 - Desktop AppImage built on the branch with 2a/2b; in-app send/receive pending-preview behavior to
