@@ -144,7 +144,7 @@ Scoped to `GroupChatScopeContext` (reports view has no compose). Safe: sent item
 scope; no recursion (primary delegate has `secondaryContextFilter == null`). Matches iOS,
 where `ComposeView` already calls `chatModel.addChatItem` on its single list.
 
-## 2b. Received messages — `bd7c6c3e8` (android, desktop) · `55bdaa216` (ios)
+## 2b. Received messages — `bd7c6c3e8` (android, desktop) · `55bdaa216` (ios) · `5b37cf881` (prefer-content)
 
 **Symptom:** a received support message showed the static "reviewed by admins" status text
 in the preview instead of the message. (`ChatPreviewView` renders that text only when the
@@ -156,10 +156,22 @@ SMP **broker** clock; the placeholder group event (e.g. `RGEInvitedViaGroupLink`
 **local device** clock `itemTs`. This cross-clock comparison can keep the no-content event.
 Sent items win only because their `itemTs` is the same device's local clock.
 
-**Fix:** bypass the comparison when membership is pending (Kotlin + iOS):
-`if (memberPending || cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) cItem else currentPreviewItem`.
-Guard already restricts to `groupChatScope() == null || memberPending`, so non-pending groups
-are unchanged.
+**Fix (two parts):** for a pending invitee, (1) **bypass the cross-clock comparison** so the
+support message surfaces, and (2) **prefer content** so a no-content event can't re-cover an
+already-shown message (Kotlin + iOS):
+```
+if (memberPending)
+  if (cItem.content.hasMsgContent || !currentPreviewItem.content.hasMsgContent) cItem else currentPreviewItem
+else if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) cItem else currentPreviewItem
+```
+Part (2) (`5b37cf881`) fixes a follow-up symptom — **"reviewed by admins" reappearing after the
+first message**: a pending invitee's member-support no-content events arrive as new chat items in
+member-support scope and, with bare "take newest", re-covered the preview. The trigger is
+`SGEUserPendingReview` on the PendingApproval→PendingReview transition (`Subscriber.hs:2661`),
+plus member-connected / E2EE-info / group-feature items (`Subscriber.hs:878-881`); all have
+`msgContent = null` so `hasMsgContent` is false (matching how `ChatPreviewView` decides to show
+the status text). The outer guard already restricts to `groupChatScope() == null || memberPending`,
+so non-pending groups keep plain `itemTs` ordering.
 
 ## 2c. Reload persistence — investigated, **NOT implemented (performance)**
 
@@ -210,10 +222,6 @@ is revisited.
 ## Residual limitations (of shipped 2a/2b)
 - **In-memory only** (see 2c): after a reload the preview reverts to "reviewed by admins" until
   the next support message; deferred for performance.
-- **No-content event can re-cover the preview:** because 2b takes the new item whenever
-  `memberPending`, a no-content group event arriving after a support message can revert the
-  preview to "reviewed by admins" until the next message (a pending invitee rarely receives such
-  events; could be tightened to "prefer content item").
 - **Unread (pre-existing):** a received support message increments the main unread in-memory (the
   #5909 `memberPending` branch) while the read path reconciles via `membership.supportChat.unread`
   — not changed here.
