@@ -722,10 +722,12 @@ final class ChatModel: ObservableObject {
     func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         // update chat list
         var itemAdded: Bool = false
-        if cInfo.groupChatScope() == nil {
+        // memberPending: a pending invitee's support item may be the main-list preview, so keep it in
+        // sync on edit/status change too (matching addChatItem)
+        if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
-                    if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                    if pItem.id == cItem.id || (cInfo.groupChatScope() == nil && chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
                         chat.chatItems = [cItem]
                     }
                 } else {
@@ -793,7 +795,9 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update chat list
-        if cInfo.groupChatScope() == nil {
+        // memberPending: a pending invitee's support item may be the main-list preview, so clear it
+        // when deleted/moderated too (matching addChatItem)
+        if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
             if cItem.isRcvNew {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
             }

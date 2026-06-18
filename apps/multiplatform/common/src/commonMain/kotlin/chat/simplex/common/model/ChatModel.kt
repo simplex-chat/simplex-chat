@@ -622,7 +622,9 @@ object ChatModel {
     suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
       var itemAdded = false
       // update chat list
-      if (cInfo.groupChatScope() == null) {
+      // memberPending: a pending invitee's support item may be the main-list preview, so keep it in
+      // sync on edit/status change too (matching addChatItem)
+      if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
         val i = getChatIndex(rhId, cInfo.id)
         val chat: Chat
         if (i >= 0) {
@@ -680,7 +682,9 @@ object ChatModel {
 
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       // update chat list
-      if (cInfo.groupChatScope() == null) {
+      // memberPending: a pending invitee's support item may be the main-list preview, so clear it
+      // when deleted/moderated too (matching addChatItem)
+      if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
         if (cItem.isRcvNew) {
           decreaseCounterInPrimaryContext(rhId, cInfo.id)
         }
