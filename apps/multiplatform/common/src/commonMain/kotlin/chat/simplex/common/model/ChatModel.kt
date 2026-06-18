@@ -520,9 +520,10 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
-      // Sent items reach only the active context; received items reach both. Mirror that so a message
-      // sent in a secondary scope (member support) still updates the main chat list preview (#5909).
-      if (secondaryContextFilter != null && cItem.chatDir.sent) {
+      // A message sent in a member-support scope ("chat with admins") is added only to that secondary
+      // context; received items reach both. Mirror it so the send still updates the main chat list
+      // preview (e.g. a pending invitee's own message) - #5909.
+      if (secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext && cItem.chatDir.sent) {
         chatsContext.addChatItem(rhId, chatInfo, cItem)
       }
       // updates membersRequireAttention
@@ -545,7 +546,11 @@ object ChatModel {
             is ChatInfo.Group -> {
               val currentPreviewItem = chat.chatItems.firstOrNull()
               if (currentPreviewItem != null) {
-                if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
+                // For a pending invitee the support item (received via the broker clock) is the
+                // reason this preview updates; its itemTs isn't comparable to a locally-stamped
+                // group event, so always surface it rather than dropping it on a cross-clock check.
+                if (cInfo.groupInfo_?.membership?.memberPending == true ||
+                  cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
                   cItem
                 } else {
                   currentPreviewItem
