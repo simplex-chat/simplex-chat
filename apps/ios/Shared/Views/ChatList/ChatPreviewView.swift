@@ -349,12 +349,13 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatMessagePreview(_ cItem: ChatItem?, _ hasFilePreview: Bool = false) -> some View {
+        // pending invitee only: a member-support message (incl. caption-less media) renders its content,
+        // not the "reviewed by admins" status; other chats keep the original no-text behaviour
+        let previewHasNoContent = chat.chatInfo.groupInfo?.membership.memberPending ?? false ? cItem?.content.msgContent == nil : cItem?.content.hasMsgContent != true
         if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
             let (t, hasSecrets) = messageDraft(draft)
             chatPreviewLayout(t, draft: true, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
-        } else if cItem?.content.msgContent == nil, let previewText = chatPreviewInfoText() {
-            // status text only for no-content events; any message (incl. caption-less media) renders
-            // its content (thumbnail shown separately) - e.g. a pending invitee's photo shows "image"
+        } else if previewHasNoContent, let previewText = chatPreviewInfoText() {
             chatPreviewInfoTextLayout(previewText)
         } else if let cItem = cItem {
             let (t, hasSecrets) = chatItemPreview(cItem)
