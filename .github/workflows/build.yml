@@ -233,7 +233,7 @@ jobs:
         run: |
           cabal clean
           cabal update
-          cabal build -j --enable-tests
+          cabal build -j --enable-tests ${{ github.event_name != 'pull_request' && '--constraint "simplex-chat +optimize" --constraint "simplexmq +optimize"' || '' }}
           mkdir -p /out
           for i in simplex-chat simplex-chat-test; do
             bin=$(find /project/dist-newstyle -name "$i" -type f -executable)
@@ -527,7 +527,7 @@ jobs:
         id: mac_cli_build
         shell: bash
         run: |
-          cabal build -j --enable-tests
+          cabal build -j --enable-tests ${{ github.event_name != 'pull_request' && '--constraint "simplex-chat +optimize" --constraint "simplexmq +optimize"' || '' }}
           path=$(cabal list-bin simplex-chat)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
@@ -575,7 +575,7 @@ jobs:
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
           while [ "$i" -le "$attempts" ]; do
-            if cabal test --test-show-details=direct; then
+            if cabal test --test-show-details=direct ${{ github.event_name != 'pull_request' && '--constraint "simplex-chat +optimize" --constraint "simplexmq +optimize"' || '' }}; then
               break
             else
               echo "Attempt $i failed, retrying..."
@@ -654,7 +654,7 @@ jobs:
 
           rm -rf dist-newstyle/src/direct-sq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
-          cabal build -j --enable-tests
+          cabal build -j --enable-tests ${{ github.event_name != 'pull_request' && '--constraint "simplex-chat +optimize" --constraint "simplexmq +optimize"' || '' }}
           rm -rf dist-newstyle/src/direct-sq*
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
