@@ -546,11 +546,12 @@ object ChatModel {
             is ChatInfo.Group -> {
               val currentPreviewItem = chat.chatItems.firstOrNull()
               if (currentPreviewItem != null) {
-                // For a pending invitee the support item (received via the broker clock) is the
-                // reason this preview updates; its itemTs isn't comparable to a locally-stamped
-                // group event, so always surface it rather than dropping it on a cross-clock check.
-                if (cInfo.groupInfo_?.membership?.memberPending == true ||
-                  cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
+                // For a pending invitee, surface the latest support message in the preview (its
+                // broker-clock itemTs isn't comparable to a locally-stamped group event), but don't
+                // let a no-content group event re-cover a message already shown ("reviewed by admins").
+                if (cInfo.groupInfo_?.membership?.memberPending == true) {
+                  if (cItem.content.hasMsgContent || !currentPreviewItem.content.hasMsgContent) cItem else currentPreviewItem
+                } else if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
                   cItem
                 } else {
                   currentPreviewItem
