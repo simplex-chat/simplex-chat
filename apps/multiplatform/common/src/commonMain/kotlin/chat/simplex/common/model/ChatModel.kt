@@ -548,7 +548,7 @@ object ChatModel {
                 // Pending invitee: surface the latest support message (broker vs local itemTs aren't
                 // comparable); don't let a no-content event re-cover an already-shown message.
                 if (cInfo.groupInfo_?.membership?.memberPending == true) {
-                  if (cItem.content.hasMsgContent || !currentPreviewItem.content.hasMsgContent) cItem else currentPreviewItem
+                  if (cItem.content.msgContent != null || currentPreviewItem.content.msgContent == null) cItem else currentPreviewItem
                 } else if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
                   cItem
                 } else {
