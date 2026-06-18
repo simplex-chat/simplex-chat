@@ -2618,8 +2618,10 @@ data class GroupMember (
     else if (groupInfo.useRelays && !groupInfo.isOwner) null
     else groupInfo.membership.memberRole.let { userRole ->
       if (groupInfo.useRelays)
-        // TODO [relays] multi-owner: exclude Owner from the channel picker until channels support multiple owners
-        GroupMemberRole.selectableRoles.filter { it <= userRole && it != GroupMemberRole.Owner }
+        // TODO [relays]: for now owners can only set observer/member in channels.
+        //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
+        // GroupMemberRole.selectableRoles.filter { it <= userRole && it != GroupMemberRole.Owner }
+        listOf(GroupMemberRole.Observer, GroupMemberRole.Member)
       else
         GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
@@ -2699,11 +2701,13 @@ enum class GroupMemberRole(val memberRole: String) {
     val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Moderator, Admin, Owner)
   }
 
-  val text: String get() = when (this) {
+  val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when (this) {
     Relay -> generalGetString(MR.strings.group_member_role_relay)
-    Observer -> generalGetString(MR.strings.group_member_role_observer)
+    Observer -> generalGetString(if (isChannel) MR.strings.group_member_role_observer_channel else MR.strings.group_member_role_observer)
     Author -> generalGetString(MR.strings.group_member_role_author)
-    Member -> generalGetString(MR.strings.group_member_role_member)
+    Member -> generalGetString(if (isChannel) MR.strings.group_member_role_member_channel else MR.strings.group_member_role_member)
     Moderator -> generalGetString(MR.strings.group_member_role_moderator)
     Admin -> generalGetString(MR.strings.group_member_role_admin)
     Owner -> generalGetString(MR.strings.group_member_role_owner)

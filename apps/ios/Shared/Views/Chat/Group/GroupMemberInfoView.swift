@@ -181,12 +181,12 @@ struct GroupMemberInfoView: View {
                         if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
                                 ForEach(roles) { role in
-                                    Text(role.text)
+                                    Text(role.text(isChannel: groupInfo.isChannel))
                                 }
                             }
                             .frame(height: 36)
                         } else {
-                            infoRow("Role", member.memberRole.text)
+                            infoRow("Role", member.memberRole.text(isChannel: groupInfo.isChannel))
                         }
                         if let link = member.relayLink {
                             infoRow("Relay link", String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(link)))
@@ -732,13 +732,13 @@ struct GroupMemberInfoView: View {
             message: (
                 mem.memberCurrent
                 ? (
-                    groupInfo.useRelays
-                    ? Text("Member role will be changed to \"\(newRole.text)\". All subscribers will be notified.")
+                    groupInfo.isChannel
+                    ? Text("Member role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All subscribers will be notified.")
                     : groupInfo.businessChat == nil
-                    ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.")
-                    : Text("Member role will be changed to \"\(newRole.text)\". All chat members will be notified.")
+                    ? Text("Member role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All group members will be notified.")
+                    : Text("Member role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All chat members will be notified.")
                 )
-                : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation.")
+                : Text("Member role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". The member will receive a new invitation.")
             ),
             primaryButton: .default(Text("Change")) {
                 Task {

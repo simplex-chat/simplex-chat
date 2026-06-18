@@ -2982,8 +2982,10 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         if groupInfo.useRelays && !groupInfo.isOwner { return nil }
         let userRole = groupInfo.membership.memberRole
         if groupInfo.useRelays {
-            // TODO [relays] multi-owner: exclude Owner from the channel picker until channels support multiple owners
-            return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
+            // TODO [relays]: for now owners can only set observer/member in channels.
+            //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
+            // return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
+            return [.observer, .member]
         } else {
             return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
         }
@@ -3074,12 +3076,18 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .moderator, .admin, .owner]
 
-    public var text: String {
+    public var text: String { text(isChannel: false) }
+
+    public func text(isChannel: Bool) -> String {
         switch self {
         case .relay: return NSLocalizedString("relay", comment: "member role")
-        case .observer: return NSLocalizedString("observer", comment: "member role")
+        case .observer: return isChannel
+            ? NSLocalizedString("subscriber", comment: "member role")
+            : NSLocalizedString("observer", comment: "member role")
         case .author: return NSLocalizedString("author", comment: "member role")
-        case .member: return NSLocalizedString("member", comment: "member role")
+        case .member: return isChannel
+            ? NSLocalizedString("contributor", comment: "member role")
+            : NSLocalizedString("member", comment: "member role")
         case .moderator: return NSLocalizedString("moderator", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")

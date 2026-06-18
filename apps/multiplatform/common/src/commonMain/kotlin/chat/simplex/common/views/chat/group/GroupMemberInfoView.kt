@@ -599,9 +599,9 @@ fun GroupMemberInfoLayout(
       InfoRow(stringResource(titleId), groupInfo.displayName)
       val roles = remember { member.canChangeRoleTo(groupInfo) }
       if (roles != null) {
-        RoleSelectionRow(roles, newRole, onRoleSelected)
+        RoleSelectionRow(roles, newRole, onRoleSelected, groupInfo.isChannel)
       } else {
-        InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
+        InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text(isChannel = groupInfo.isChannel))
       }
       val relayLink = member.relayLink
       if (relayLink != null) {
@@ -885,14 +885,15 @@ fun ConnectViaAddressButton(onClick: () -> Unit) {
 private fun RoleSelectionRow(
   roles: List<GroupMemberRole>,
   selectedRole: MutableState<GroupMemberRole>,
-  onSelected: (GroupMemberRole) -> Unit
+  onSelected: (GroupMemberRole) -> Unit,
+  isChannel: Boolean
 ) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = remember { roles.map { it to it.text } }
+    val values = remember { roles.map { it to it.text(isChannel = isChannel) } }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.change_role),
       values,
@@ -952,18 +953,18 @@ fun updateMemberRoleDialog(
 ) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(
-      if (groupInfo.useRelays) MR.strings.change_member_role_question_channel
+      if (groupInfo.isChannel) MR.strings.change_member_role_question_channel
       else MR.strings.change_member_role_question
     ),
     text = if (memberCurrent) {
-      if (groupInfo.useRelays)
-        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_channel), newRole.text)
+      if (groupInfo.isChannel)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_channel), newRole.text(isChannel = groupInfo.isChannel))
       else if (groupInfo.businessChat == null)
-        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text(isChannel = groupInfo.isChannel))
       else
-        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text(isChannel = groupInfo.isChannel))
     } else
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text),
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text(isChannel = groupInfo.isChannel)),
     confirmText = generalGetString(MR.strings.change_verb),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
