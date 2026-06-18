@@ -178,7 +178,7 @@ struct GroupMemberInfoView: View {
                         let label: LocalizedStringKey = groupInfo.useRelays ? "Channel" : groupInfo.businessChat == nil ? "Group" : "Chat"
                         infoRow(label, groupInfo.displayName)
 
-                        if !groupInfo.useRelays, let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
                                 ForEach(roles) { role in
                                     Text(role.text)
@@ -732,7 +732,9 @@ struct GroupMemberInfoView: View {
             message: (
                 mem.memberCurrent
                 ? (
-                    groupInfo.businessChat == nil
+                    groupInfo.useRelays
+                    ? Text("Member role will be changed to \"\(newRole.text)\". All subscribers will be notified.")
+                    : groupInfo.businessChat == nil
                     ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.")
                     : Text("Member role will be changed to \"\(newRole.text)\". All chat members will be notified.")
                 )

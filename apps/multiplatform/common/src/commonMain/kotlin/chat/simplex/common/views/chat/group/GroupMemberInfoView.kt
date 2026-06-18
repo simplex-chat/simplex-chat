@@ -597,13 +597,9 @@ fun GroupMemberInfoLayout(
         else if (groupInfo.businessChat == null) MR.strings.info_row_group
         else MR.strings.info_row_chat
       InfoRow(stringResource(titleId), groupInfo.displayName)
-      if (!groupInfo.useRelays) {
-        val roles = remember { member.canChangeRoleTo(groupInfo) }
-        if (roles != null) {
-          RoleSelectionRow(roles, newRole, onRoleSelected)
-        } else {
-          InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
-        }
+      val roles = remember { member.canChangeRoleTo(groupInfo) }
+      if (roles != null) {
+        RoleSelectionRow(roles, newRole, onRoleSelected)
       } else {
         InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
       }
@@ -955,9 +951,14 @@ fun updateMemberRoleDialog(
   onConfirm: () -> Unit
 ) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.change_member_role_question),
+    title = generalGetString(
+      if (groupInfo.useRelays) MR.strings.change_member_role_question_channel
+      else MR.strings.change_member_role_question
+    ),
     text = if (memberCurrent) {
-      if (groupInfo.businessChat == null)
+      if (groupInfo.useRelays)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_channel), newRole.text)
+      else if (groupInfo.businessChat == null)
         String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
       else
         String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text)

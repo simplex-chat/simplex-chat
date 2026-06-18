@@ -2615,8 +2615,10 @@ data class GroupMember (
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (memberRole == GroupMemberRole.Relay || !canBeRemoved(groupInfo) || memberStatus == GroupMemberStatus.MemRemoved || memberStatus == GroupMemberStatus.MemLeft || memberPending) null
+    else if (groupInfo.useRelays && !groupInfo.isOwner) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.selectableRoles.filter { it <= userRole }
+      // TODO [relays] multi-owner: exclude Owner from the channel picker until channels support multiple owners
+      GroupMemberRole.selectableRoles.filter { it <= userRole && !(groupInfo.useRelays && it == GroupMemberRole.Owner) }
     }
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
