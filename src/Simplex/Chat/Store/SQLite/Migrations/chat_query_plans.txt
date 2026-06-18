@@ -7285,6 +7285,10 @@ Query: SELECT relay_own_status FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT relay_sent_web_domain FROM groups WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT relay_status FROM group_relays
 Plan:
 SCAN group_relays

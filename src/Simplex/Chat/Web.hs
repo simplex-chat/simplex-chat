@@ -26,7 +26,7 @@ where
 import Control.Concurrent.STM (check, flushTQueue)
 import Control.Exception (SomeException, catch)
 import Control.Logger.Simple
-import Control.Monad (forM_, void, when)
+import Control.Monad
 import Control.Monad.Except (runExceptT)
 import Data.Either (rights)
 import Data.Int (Int64)
@@ -42,7 +42,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), mkStoreCxt)
+import Simplex.Chat.Controller (ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), mkStoreCxt)
 import Simplex.Chat.Markdown (FormattedText (..), MarkdownList, parseMaybeMarkdownList)
 import Simplex.Chat.Messages
   ( CChatItem (..),
@@ -57,7 +57,7 @@ import Simplex.Chat.Messages
   )
 import Simplex.Chat.Messages.CIContent (ciMsgContent)
 import Simplex.Chat.Protocol (MsgContent, MsgRef (..), QuotedMsg (..), isReport)
-import Simplex.Chat.Store.Groups (getGroupOwners, getRelayPublishableGroups)
+import Simplex.Chat.Store.Groups (getGroupOwners, getRelayPublishableGroups, updatePublicMemberCount)
 import Simplex.Chat.Store.Messages (getGroupWebPreviewItems)
 import Simplex.Chat.Store.Shared (getGroupInfo)
 import Simplex.Chat.Types
@@ -75,11 +75,11 @@ import Simplex.Chat.Types
   )
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (safeDecodeUtf8)
-import qualified URI.ByteString as U
+import Simplex.Messaging.Util (catchOwn, eitherToMaybe, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Parsers (defaultJSON)
 import System.Directory (createDirectoryIfMissing, listDirectory, removeFile, renameFile)
 import System.FilePath (dropExtension, takeExtension, (</>))
+import qualified URI.ByteString as U
 import UnliftIO.STM
 
 data WebFileInfo = WebFileInfo
@@ -135,7 +135,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     cleanStaleFiles wps
     regenerateCors wps
     seedRoutinePending wps
-    workerLoop wps
+    forever $ workerLoop wps `catchOwn` \e -> logError ("web preview worker error: " <> tshow e)
   where
     cxt = mkStoreCxt (config cc)
 
@@ -146,7 +146,6 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
       renderRoutine
       noRoutine <- atomically $ S.null <$> readTVar routinePending
       when noRoutine waitRefresh
-      workerLoop wps
       where
         drainRemovals = atomically (tryReadTQueue filesToRemove) >>= \case
           Nothing -> pure ()
@@ -233,6 +232,12 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
   case publicGroup of
     Just PublicGroupProfile {publicGroupId, publicGroupAccess} -> do
       let fName = publicGroupIdFileName publicGroupId <> ".json"
+      -- backfill the subscriber count for channels created before it was tracked
+      subscribers <- case publicMemberCount of
+        Just _ -> pure publicMemberCount
+        Nothing -> do
+          g_ <- withTransaction (chatStore cc) (\db -> runExceptT $ updatePublicMemberCount db cxt user gInfo)
+          pure $ eitherToMaybe g_ >>= \GroupInfo {groupSummary = GroupSummary {publicMemberCount = pmc}} -> pmc
       (items, owners) <- withTransaction (chatStore cc) $ \db -> do
         is <- getGroupWebPreviewItems db user gInfo webPreviewItemCount
         os <- getGroupOwners db cxt user gInfo
@@ -246,7 +251,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
               shortDescription = toFormattedText =<< sd,
               welcomeMessage = toFormattedText =<< wd,
               members = senders,
-              subscribers = publicMemberCount,
+              subscribers,
               messages = msgs,
               updatedAt = ts
             }

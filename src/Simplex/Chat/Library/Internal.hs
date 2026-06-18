@@ -701,7 +701,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         ci <- xftpAcceptRcvFT db cxt user fileId filePath userApproved
         rfd <- getRcvFileDescrByRcvFileId db fileId
         pure (ci, rfd)
-      receiveViaCompleteFD user fileId rfd userApproved cryptoArgs
+      receiveViaCompleteFD user fileId rfd fileSize userApproved cryptoArgs
       pure ci
     (Nothing, Just _fileConnReq) -> throwChatError $ CEException "accepting file via a separate connection is deprecated"
     -- group & direct file protocol
@@ -743,10 +743,17 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
              )
 
-receiveViaCompleteFD :: User -> FileTransferId -> RcvFileDescr -> Bool -> Maybe CryptoFileArgs -> CM ()
-receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} userApprovedRelays cfArgs =
+receiveViaCompleteFD :: User -> FileTransferId -> RcvFileDescr -> Integer -> Bool -> Maybe CryptoFileArgs -> CM ()
+receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} expectedFileSize userApprovedRelays cfArgs =
   when fileDescrComplete $ do
     rd <- parseFileDescription fileDescrText
+    let FD.ValidFileDescription FD.FileDescription {size = FD.FileSize encSize, redirect} = rd
+        redirectSize = maybe 0 (\FD.RedirectFileInfo {size = FD.FileSize s} -> toInteger s) redirect
+        -- for a redirect, encSize is the description blob and redirectSize the final file; take the larger
+        rcvSize = max (toInteger encSize) redirectSize
+        -- 10 MB margin: encryption and chunk-size rounding make the transfer larger than the advertised size
+        maxRcvSize = min expectedFileSize (toInteger FD.maxFileSizeHard) + toInteger (FD.mb 10 :: Int64)
+    when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
       then receive' rd True
       else do
@@ -1428,6 +1435,9 @@ updatePublicGroupData user gInfo
         pure (gInfo', gLink)
       setGroupLinkDataAsync user gInfo' gLink
       pure gInfo'
+  | useRelays' gInfo && isRelay (membership gInfo) = do
+      cxt <- chatStoreCxt
+      withStore $ \db -> updatePublicMemberCount db cxt user gInfo
   | otherwise = pure gInfo
 
 updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> CM (GroupInfo, Bool)
@@ -2298,6 +2308,22 @@ sendInlineBlobChunks user gInfo members sharedMsgId blob = do
       let (chunk, rest) = B.splitAt chSize bytes
       void $ sendGroupMessage' user gInfo members (BFileChunk sharedMsgId (FileChunk chunkNo chunk))
       unless (B.null rest) $ go chSize (chunkNo + 1) rest
+
+-- Relay advertises its current web preview capability to channel owners.
+-- Idempotent: sends only when the configured web domain differs from what was last sent, and only to
+-- owners whose recorded chat version supports relayWebCapVersion (older apps can't parse XGrpRelayCap).
+sendRelayCapIfNeeded :: User -> GroupInfo -> CM ()
+sendRelayCapIfNeeded user gInfo = do
+  ChatConfig {webPreviewConfig} <- asks config
+  let currentWebDomain = (\WebPreviewConfig {webDomain} -> webDomain) <$> webPreviewConfig
+  sentWebDomain <- withStore' (`getRelaySentWebDomain` gInfo)
+  when (currentWebDomain /= sentWebDomain) $ do
+    cxt <- chatStoreCxt
+    owners <- withStore' $ \db -> getGroupOwners db cxt user gInfo
+    let capableOwners = filter (\m -> memberCurrent m && m `supportsVersion` relayWebCapVersion) owners
+    unless (null capableOwners) $ do
+      void $ sendGroupMessage' user gInfo capableOwners (XGrpRelayCap RelayCapabilities {webDomain = currentWebDomain})
+      withStore' $ \db -> updateRelaySentWebDomain db gInfo currentWebDomain
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo scope asGroup members events = do

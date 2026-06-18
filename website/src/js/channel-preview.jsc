@@ -1,6 +1,6 @@
-#include "simplex-lib.jsc"
-
 (function() {
+
+#include "simplex-lib.jsc"
 
 #include "qrcode.js"
 
@@ -92,6 +92,15 @@ const STYLE = `
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.simplex-preview-container .simplex-preview-header-name {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--sp-text);
+  -webkit-text-fill-color: var(--sp-text);
+  text-fill-color: var(--sp-text);
 }
 
 .simplex-preview-header-description {
@@ -281,6 +290,7 @@ const STYLE = `
 .simplex-preview-quote-text {
   font-size: 15px;
   overflow: hidden;
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -492,14 +502,16 @@ const STYLE = `
   min-width: 0;
   max-width: 640px;
   overflow-y: auto;
-  overscroll-behavior: contain;
   position: relative;
 }
 
 .simplex-preview-info {
   overflow-y: auto;
-  overscroll-behavior: contain;
   background: var(--sp-bg);
+}
+
+.simplex-preview-scroll-lock {
+  overflow: hidden;
 }
 
 .simplex-preview-info-close {
@@ -696,12 +708,13 @@ const STYLE = `
   .simplex-preview-info {
     display: none;
     position: fixed;
-    top: 0;
+    top: var(--sp-top-offset, 0px);
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 100;
     padding: 16px;
+    overscroll-behavior: contain;
   }
   .simplex-preview-info.open {
     display: block;
@@ -785,6 +798,13 @@ function initChannelPreview(container) {
   }
   if (container.dataset.darkBackground) {
     container.style.setProperty('--sp-dark-bg', container.dataset.darkBackground);
+  }
+  const topOffset = parseInt(container.dataset.topOffset || '0', 10);
+  if (topOffset > 0) {
+    container.style.setProperty('--sp-top-offset', topOffset + 'px');
+    container.style.marginTop = topOffset + 'px';
+    container.style.height = 'calc(100vh - ' + topOffset + 'px)';
+    container.style.height = 'calc(100dvh - ' + topOffset + 'px)';
   }
   container.innerHTML = '<p class="simplex-preview-empty">Loading channel...</p>';
 
@@ -885,12 +905,16 @@ function render(container, data, channelLink, showAppBadges) {
     if (window.innerWidth < 1000) {
       info.classList.add('open');
       main.style.overflow = 'hidden';
+      document.documentElement.classList.add('simplex-preview-scroll-lock');
+      document.body.classList.add('simplex-preview-scroll-lock');
     }
   });
 
   closeBtn.addEventListener('click', () => {
     info.classList.remove('open');
     main.style.overflow = '';
+    document.documentElement.classList.remove('simplex-preview-scroll-lock');
+    document.body.classList.remove('simplex-preview-scroll-lock');
   });
 
   setupSecretToggles(container);
@@ -1028,6 +1052,32 @@ function renderAppBadges(container) {
   container.appendChild(badges);
 }
 
+// the QR library only parses hex colors; map 'transparent' (used in dark mode) to a transparent hex
+function qrColor(value, fallback) {
+  value = (value || '').trim();
+  if (!value) return fallback;
+  return value === 'transparent' ? '#0000' : value;
+}
+
+// navigator.clipboard is undefined outside secure contexts; fall back to execCommand
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise(function(resolve, reject) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    ok ? resolve() : reject(new Error('copy failed'));
+  });
+}
+
 function renderDesktopConversion(container, channelLink, showAppBadges) {
   if (showAppBadges) {
     renderAppBadges(container);
@@ -1070,8 +1120,8 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
           QRCode.toCanvas(canvas, channelLink, {
             errorCorrectionLevel: 'M',
             color: {
-              dark: cs.getPropertyValue('--sp-qr-fg').trim() || '#062D56',
-              light: cs.getPropertyValue('--sp-qr-bg').trim() || '#ffffff'
+              dark: qrColor(cs.getPropertyValue('--sp-qr-fg'), '#062D56'),
+              light: qrColor(cs.getPropertyValue('--sp-qr-bg'), '#ffffff')
             },
             width: 400,
             margin: 1
@@ -1079,12 +1129,14 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
             canvas.style.width = '200px';
             canvas.style.height = '200px';
           }).catch(function() {
+            canvas._rendered = false;
             qrPopup.style.display = 'none';
-            qrToggle.style.display = 'none';
+            qrToggle.style.display = '';
           });
         } catch(err) {
+          canvas._rendered = false;
           qrPopup.style.display = 'none';
-          qrToggle.style.display = 'none';
+          qrToggle.style.display = '';
         }
       }
     } else {
@@ -1100,10 +1152,10 @@ function renderDesktopConversion(container, channelLink, showAppBadges) {
   const copyLink = document.createElement('a');
   copyLink.textContent = 'copy link';
   copyLink.addEventListener('click', function() {
-    navigator.clipboard.writeText(channelLink).then(function() {
+    copyToClipboard(channelLink).then(function() {
       copyLink.textContent = 'Copied!';
       setTimeout(function() { copyLink.textContent = 'copy link'; }, 2000);
-    });
+    }).catch(function() {});
   });
   copyAction.appendChild(document.createTextNode('Or '));
   copyAction.appendChild(copyLink);
@@ -1318,7 +1370,11 @@ function renderQuote(quote, membersMap, channel) {
 function classifyImage(img) {
   const w = img.naturalWidth;
   const h = img.naturalHeight;
-  img.classList.add(w * 0.97 <= h ? 'portrait' : 'landscape');
+  const portrait = w * 0.97 <= h;
+  img.classList.add(portrait ? 'portrait' : 'landscape');
+  // constrain the bubble to the image width so long text wraps instead of widening the bubble
+  const inner = img.closest('.simplex-preview-bubble-inner');
+  if (inner) inner.style.maxWidth = portrait ? '300px' : '400px';
 }
 
 function renderImageContent(inner, mc, msg, mediaOnly) {
@@ -1372,6 +1428,8 @@ function renderVideoContent(inner, mc, msg, mediaOnly) {
 
 function renderLinkContent(bubble, mc, msg) {
   if (mc.preview) {
+    // clamp the bubble to the link card width so long text wraps instead of widening the bubble
+    bubble.style.maxWidth = '400px';
     const card = document.createElement('div');
     card.className = 'simplex-preview-link-card';
     if (isDataImage(mc.preview.image)) {
