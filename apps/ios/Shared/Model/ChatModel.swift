@@ -1109,13 +1109,10 @@ final class ChatModel: ObservableObject {
     func changeUnreadCounter(_ chatIndex: Int, by count: Int, unreadMentions: Int) {
         let wasUnread = chats[chatIndex].unreadTag
         let stats = chats[chatIndex].chatStats
-        // clamp at 0 so an over-decrement can't drive the per-chat count or the user badge negative
-        // (e.g. deleting an item that never incremented the badge); feed the badge the clamped delta
-        let newUnreadCount = max(stats.unreadCount + count, 0)
-        chats[chatIndex].chatStats.unreadCount = newUnreadCount
-        chats[chatIndex].chatStats.unreadMentions = max(stats.unreadMentions + unreadMentions, 0)
+        chats[chatIndex].chatStats.unreadCount = stats.unreadCount + count
+        chats[chatIndex].chatStats.unreadMentions = stats.unreadMentions + unreadMentions
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
-        changeUnreadCounter(user: currentUser!, by: newUnreadCount - stats.unreadCount)
+        changeUnreadCounter(user: currentUser!, by: count)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
