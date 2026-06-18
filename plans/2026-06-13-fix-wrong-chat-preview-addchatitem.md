@@ -1,7 +1,7 @@
 # Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
 **PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
-**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview · `342e270a1` ios unread clamp
+**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881`/`56290cc7b` prefer-content (msgContent, caption-less media wins) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview · `342e270a1` ios unread clamp
 **Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
 
 Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
@@ -157,11 +157,11 @@ SMP **broker** clock; the placeholder group event (e.g. `RGEInvitedViaGroupLink`
 Sent items win only because their `itemTs` is the same device's local clock.
 
 **Fix (two parts):** for a pending invitee, (1) **bypass the cross-clock comparison** so the
-support message surfaces, and (2) **prefer content** so a no-content event can't re-cover an
-already-shown message (Kotlin + iOS):
+support message surfaces, and (2) **prefer a message over a no-content event** so an event can't
+re-cover an already-shown message (Kotlin + iOS):
 ```
 if (memberPending)
-  if (cItem.content.hasMsgContent || !currentPreviewItem.content.hasMsgContent) cItem else currentPreviewItem
+  if (cItem.content.msgContent != null || currentPreviewItem.content.msgContent == null) cItem else currentPreviewItem
 else if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) cItem else currentPreviewItem
 ```
 Part (2) (`5b37cf881`) fixes a follow-up symptom — **"reviewed by admins" reappearing after the
@@ -169,9 +169,15 @@ first message**: a pending invitee's member-support no-content events arrive as 
 member-support scope and, with bare "take newest", re-covered the preview. The trigger is
 `SGEUserPendingReview` on the PendingApproval→PendingReview transition (`Subscriber.hs:2661`),
 plus member-connected / E2EE-info / group-feature items (`Subscriber.hs:878-881`); all have
-`msgContent = null` so `hasMsgContent` is false (matching how `ChatPreviewView` decides to show
-the status text). The outer guard already restricts to `groupChatScope() == null || memberPending`,
-so non-pending groups keep plain `itemTs` ordering.
+`msgContent == null` (a true no-content event). The outer guard already restricts to
+`groupChatScope() == null || memberPending`, so non-pending groups keep plain `itemTs` ordering.
+
+The check uses **`msgContent != null` (is-a-message), not `hasMsgContent` (has non-empty text)**
+(`56290cc7b`): the original `hasMsgContent` treated a **caption-less** photo / voice / file like a
+no-content event, so a sent file couldn't become the preview when a prior text message was shown —
+it was silently dropped. `msgContent != null` lets caption-less media win while still blocking real
+events (which have `msgContent == null`). This pairs with the 2e renderer change so the item both
+*becomes* the preview and *renders* as media.
 
 ## 2d. Edit / delete of the shown support message — `2b20c9efb` · `8440f17d5` (android, desktop, ios)
 
