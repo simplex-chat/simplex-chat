@@ -105,8 +105,7 @@ preserved.
 ## Verification
 - Reproduced and confirmed fixed by report author.
 - Compiles: `chats[i]` get/set is the established idiom used throughout `ChatsContext`
-  (the get/set sites in `addChatItem` / `upsertChatItem` / `removeChatItem`; at the fix commit
-  `8b93c226d^` these were lines 418, 436, 443, 493, 618, 621).
+  (the same get/set pattern already used in `addChatItem` / `upsertChatItem` / `removeChatItem`).
 
 ---
 
@@ -272,9 +271,12 @@ is revisited.
   `membership.supportChat.unread` rather than the main counter, so the main unread badge can lag.
   Not fully addressed here. iOS clamps the unread counter at the **apply point**
   (`changeUnreadCounter(chatIndex:)`, `fb849aa2c`) so an over-decrement can't drive the per-chat
-  count or the badge negative — superseding the earlier call-site clamp `342e270a1`, which was racy
-  against the 1 s `UnreadCollector` debounce (a receive-then-quick-delete could skip the matching
-  decrement). Android's `decreaseCounterInPrimaryContext` already self-clamps synchronously.
+  count or the badge negative. The over-decrement is reachable (not feature-specific): `markChatItemsRead`
+  decrements by the requested id count regardless of whether each item still counted — so this is iOS
+  reaching **parity with Android's pre-existing self-clamping** `decreaseCounterInPrimaryContext`
+  (`max(unreadCount − 1, 0)`), not new scope. It supersedes the earlier call-site clamp `342e270a1`,
+  which was racy against the 1 s `UnreadCollector` debounce (a receive-then-quick-delete could skip the
+  matching decrement).
 - **Dispatcher-delivered *sent* support item double-touches the primary preview (Android/Desktop,
   minor):** a remote-host / multi-device sent support message arrives via the dispatcher, which calls
   **both** contexts; the secondary pass then re-runs the sent-mirror (`ChatModel.kt:525`) even though
