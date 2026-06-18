@@ -520,6 +520,11 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
+      // Sent items reach only the active context; received items reach both. Mirror that so a message
+      // sent in a secondary scope (member support) still updates the main chat list preview (#5909).
+      if (secondaryContextFilter != null && cItem.chatDir.sent) {
+        chatsContext.addChatItem(rhId, chatInfo, cItem)
+      }
       // updates membersRequireAttention
       val cInfo = if (chatInfo is ChatInfo.Direct && chatInfo.chatDeleted) {
         // mark chat non deleted
