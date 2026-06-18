@@ -1,7 +1,7 @@
 # Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
 **PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
-**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview
+**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview · `342e270a1` ios unread clamp
 **Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
 
 Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
@@ -262,7 +262,8 @@ is revisited.
   unread (the #5909 `memberPending` branch, now reachable). 2d adds a decrement on edit/delete and
   read-of-preview, but reads of *non-preview* support messages reconcile via
   `membership.supportChat.unread` rather than the main counter, so the main unread badge can lag.
-  Not fully addressed here.
+  Not fully addressed here. iOS `removeChatItem`'s decrement is clamped (`342e270a1`) to match
+  Android's self-clamping path so a delete can't drive the badge negative.
 
 ## Verification (Part 2)
 - Desktop AppImage built on the branch with 2a/2b; in-app send/receive pending-preview behavior to
