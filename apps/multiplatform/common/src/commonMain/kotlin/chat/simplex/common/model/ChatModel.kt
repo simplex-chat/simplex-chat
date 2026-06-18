@@ -2617,8 +2617,11 @@ data class GroupMember (
     if (memberRole == GroupMemberRole.Relay || !canBeRemoved(groupInfo) || memberStatus == GroupMemberStatus.MemRemoved || memberStatus == GroupMemberStatus.MemLeft || memberPending) null
     else if (groupInfo.useRelays && !groupInfo.isOwner) null
     else groupInfo.membership.memberRole.let { userRole ->
-      // TODO [relays] multi-owner: exclude Owner from the channel picker until channels support multiple owners
-      GroupMemberRole.selectableRoles.filter { it <= userRole && !(groupInfo.useRelays && it == GroupMemberRole.Owner) }
+      if (groupInfo.useRelays)
+        // TODO [relays] multi-owner: exclude Owner from the channel picker until channels support multiple owners
+        GroupMemberRole.selectableRoles.filter { it <= userRole && it != GroupMemberRole.Owner }
+      else
+        GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {

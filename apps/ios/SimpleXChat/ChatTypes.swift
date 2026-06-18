@@ -2981,8 +2981,12 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         if memberRole == .relay || !canBeRemoved(groupInfo: groupInfo) || memberStatus == .memRemoved || memberStatus == .memLeft || memberPending { return nil }
         if groupInfo.useRelays && !groupInfo.isOwner { return nil }
         let userRole = groupInfo.membership.memberRole
-        // TODO [relays] multi-owner: exclude Owner from the channel picker until channels support multiple owners
-        return GroupMemberRole.supportedRoles.filter { $0 <= userRole && !(groupInfo.useRelays && $0 == .owner) }
+        if groupInfo.useRelays {
+            // TODO [relays] multi-owner: exclude Owner from the channel picker until channels support multiple owners
+            return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
+        } else {
+            return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
+        }
     }
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
