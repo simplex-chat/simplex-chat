@@ -637,7 +637,8 @@ jobs:
             toolchain:p
             cmake:p
 
-      # rm -rf dist-newstyle/src/direct-sq* is here because of the bug in cabal's dependency which prevents second build from finishing
+      # rm -rf dist-newstyle/src/{direct-sq,simplexmq}* is here because of the bug in cabal's dependency which prevents second build from finishing
+      # (simplexmq is removed because cabal cannot delete its read-only git submodule pack files - blst, libbbs - on Windows)
       - name: Build CLI
         id: windows_cli_build
         shell: msys2 {0}
@@ -652,10 +653,10 @@ jobs:
           echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
           echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
 
-          rm -rf dist-newstyle/src/direct-sq*
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build -j --enable-tests
-          rm -rf dist-newstyle/src/direct-sq*
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
@@ -679,7 +680,7 @@ jobs:
           scripts/desktop/build-lib-windows.sh
           cd apps/multiplatform
           ./gradlew -Psimplex.assets.dir=../../assets packageMsi
-          rm -rf dist-newstyle/src/direct-sq*
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
           path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
