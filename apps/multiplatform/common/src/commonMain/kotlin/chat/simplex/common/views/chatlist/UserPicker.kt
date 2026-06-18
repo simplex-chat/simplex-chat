@@ -210,7 +210,7 @@ fun UserPicker(
         }
       } else if (currentUser != null) {
         SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
+          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped, badge = currentUser.profile.localBadge)
         }
       }
     }
@@ -380,7 +380,7 @@ private fun GlobalSettingsSection(
 
   SectionItemView(
     click = {
-      ModalManager.start.showModalCloseable { close ->
+      ModalManager.start.showModalCloseable(cardScreen = true) { close ->
         SettingsView(chatModel, setPerformLA, close)
       }
     },
@@ -468,10 +468,11 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
       image = u.image,
       size = 54.dp * fontSizeSqrtMultiplier
     )
-    Text(
+    // the end padding is on the row, not the name, so the badge stays right after the name
+    NameWithBadge(
       u.displayName,
-      modifier = Modifier
-        .padding(start = 10.dp, end = 8.dp),
+      u.profile.localBadge,
+      Modifier.padding(start = 10.dp, end = 8.dp),
       color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )

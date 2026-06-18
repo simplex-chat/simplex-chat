@@ -1404,6 +1404,7 @@ enum GroupLinkPlan: Decodable, Hashable {
     case connectingProhibit(groupInfo_: GroupInfo?)
     case known(groupInfo: GroupInfo)
     case noRelays(groupSLinkData_: GroupShortLinkData?)
+    case updateRequired(groupSLinkData_: GroupShortLinkData?)
 }
 
 struct ChatTagData: Encodable {

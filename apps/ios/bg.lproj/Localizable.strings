@@ -1364,7 +1364,7 @@ server test step */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Контактите могат да маркират съобщения за изтриване; ще можете да ги разглеждате.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Продължи";
 
 /* No comment provided by engineer. */
@@ -1659,7 +1659,7 @@ alert button */
 "Develop" = "Разработване";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Инструменти за разработчици";
+"Developer" = "Инструменти за разработчици";
 
 /* No comment provided by engineer. */
 "Device" = "Устройство";
@@ -3217,7 +3217,7 @@ alert button */
 "Preview" = "Визуализация";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Поверителност и сигурност";
+"Your privacy" = "Поверителност и сигурност";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Поверителни имена на файлове";
@@ -4452,7 +4452,7 @@ server test failure */
 "You can enable later via Settings" = "Можете да активирате по-късно през Настройки";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Можете да ги активирате по-късно през настройките за \"Поверителност и сигурност\" на приложението.";
+"You can enable them later via app Your privacy settings." = "Можете да ги активирате по-късно през настройките за \"Поверителност и сигурност\" на приложението.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Можете да опитате още веднъж.";

@@ -55,7 +55,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
     OnboardingConditionsDesktop(selectedOperatorIds)
   } else {
     CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-      ModalView({}, showClose = false, showAppBar = false) {
+      ModalView({}, showClose = false, showAppBar = false, cardScreen = true) {
         OnboardingShrinkingLayout(
           modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
             .systemBarsPadding()
@@ -133,7 +133,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
 @Composable
 private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Long>>) {
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView({}, showClose = false) {
+    ModalView({}, showClose = false, cardScreen = true) {
       ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
         Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
@@ -184,7 +184,7 @@ fun ModalData.ChooseServerOperators(
     prepareChatBeforeFinishingOnboarding()
   }
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView(close, enableClose = selectedOperatorIds.value.isNotEmpty()) {
+    ModalView(close, enableClose = selectedOperatorIds.value.isNotEmpty(), cardScreen = true) {
       ColumnWithScrollBar(
         Modifier
           .themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
@@ -373,7 +373,7 @@ private fun ChooseServerOperatorsInfoView() {
 
     SectionDividerSpaced()
 
-    SectionView(title = stringResource(MR.strings.onboarding_network_about_operators).uppercase()) {
+    SectionView(title = stringResource(MR.strings.onboarding_network_about_operators)) {
       chatModel.conditions.value.serverOperators.forEach { op ->
         ServerOperatorRow(op)
       }

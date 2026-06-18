@@ -49,6 +49,7 @@ import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
+import Simplex.Chat.Badges (LocalBadge)
 import Simplex.Chat.Call
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
@@ -82,12 +83,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 15 - support specifying message scopes for group messages (2025-03-12)
 -- 16 - support short link data (2025-06-10)
 -- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
+-- 18 - relay web capabilities (2026-05-31)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 17
+currentChatVersion = VersionChat 18
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -153,6 +155,10 @@ shortLinkDataVersion = VersionChat 16
 -- support host voice messages during member approval regardless of group voice setting
 memberSupportVoiceVersion :: VersionChat
 memberSupportVoiceVersion = VersionChat 17
+
+-- relay sends web preview capabilities to owner
+relayWebCapVersion :: VersionChat
+relayWebCapVersion = VersionChat 18
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -262,6 +268,14 @@ data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknow
 data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RROther | RRUnknown Text
   deriving (Eq, Show)
 
+data RelayCapabilities = RelayCapabilities
+  { webDomain :: Maybe Text
+  }
+  deriving (Eq, Show)
+
+defaultRelayCapabilities :: RelayCapabilities
+defaultRelayCapabilities = RelayCapabilities {webDomain = Nothing}
+
 $(pure [])
 
 instance FromJSON LinkContent where
@@ -280,6 +294,12 @@ instance ToJSON LinkContent where
     v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
 
 $(JQ.deriveJSON defaultJSON ''LinkPreview)
+
+$(JQ.deriveToJSON defaultJSON ''RelayCapabilities)
+
+instance FromJSON RelayCapabilities where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''RelayCapabilities)
+  omittedField = Just defaultRelayCapabilities
 
 instance StrEncoding ReportReason where
   strEncode = \case
@@ -441,10 +461,11 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
-  XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
+  XGrpRelayAcpt :: ShortLinkContact -> RelayCapabilities -> ChatMsgEvent 'Json
   XGrpRelayTest :: ByteString -> Maybe ByteString -> ChatMsgEvent 'Json
   XGrpRelayNew :: ShortLinkContact -> ChatMsgEvent 'Json
   XGrpRelayReject :: RelayRejectionReason -> ChatMsgEvent 'Json
+  XGrpRelayCap :: RelayCapabilities -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -991,6 +1012,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpRelayTest_ :: CMEventTag 'Json
   XGrpRelayNew_ :: CMEventTag 'Json
   XGrpRelayReject_ :: CMEventTag 'Json
+  XGrpRelayCap_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
   XGrpMemIntro_ :: CMEventTag 'Json
   XGrpMemInv_ :: CMEventTag 'Json
@@ -1050,6 +1072,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpRelayTest_ -> "x.grp.relay.test"
     XGrpRelayNew_ -> "x.grp.relay.new"
     XGrpRelayReject_ -> "x.grp.relay.reject"
+    XGrpRelayCap_ -> "x.grp.relay.cap"
     XGrpMemNew_ -> "x.grp.mem.new"
     XGrpMemIntro_ -> "x.grp.mem.intro"
     XGrpMemInv_ -> "x.grp.mem.inv"
@@ -1110,6 +1133,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.relay.test" -> XGrpRelayTest_
         "x.grp.relay.new" -> XGrpRelayNew_
         "x.grp.relay.reject" -> XGrpRelayReject_
+        "x.grp.relay.cap" -> XGrpRelayCap_
         "x.grp.mem.new" -> XGrpMemNew_
         "x.grp.mem.intro" -> XGrpMemIntro_
         "x.grp.mem.inv" -> XGrpMemInv_
@@ -1162,10 +1186,11 @@ toCMEventTag msg = case msg of
   XGrpLinkMem _ -> XGrpLinkMem_
   XGrpLinkAcpt {} -> XGrpLinkAcpt_
   XGrpRelayInv _ -> XGrpRelayInv_
-  XGrpRelayAcpt _ -> XGrpRelayAcpt_
+  XGrpRelayAcpt {} -> XGrpRelayAcpt_
   XGrpRelayTest {} -> XGrpRelayTest_
   XGrpRelayNew _ -> XGrpRelayNew_
   XGrpRelayReject _ -> XGrpRelayReject_
+  XGrpRelayCap _ -> XGrpRelayCap_
   XGrpMemNew {} -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -1242,10 +1267,8 @@ requiresSignature = \case
   XInfo_ -> True
   _ -> False
 
--- TODO [relays] relay: vectors tracking which members received which other member profiles/keys.
--- TODO   - don't forward XGrpLeave/XInfo to members who haven't seen sender's profile/key.
--- TODO   - unverifiedAllowed is a temporary workaround postponing targeted event forwarding.
-
+-- TODO [relays] can be tightened — sender keys are now disseminated via
+-- TODO   prepended XGrpMemNew before forwarded XInfo/XGrpLeave reach the recipient.
 -- Allow signed but unverified XGrpLeave/XInfo between subscribers when sender's key is unknown.
 -- Owner keys are always known, so subscribers are required to verify from owners.
 -- Likewise, subscriber keys are always known to owners, so owners are required to verify from subscribers.
@@ -1318,7 +1341,8 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
       XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "acceptance" <*> p "role" <*> p "memberId"
       XGrpRelayInv_ -> XGrpRelayInv <$> p "groupRelayInvitation"
-      XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink"
+      XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink" <*> (fromMaybe defaultRelayCapabilities <$> opt "relayCap")
+      XGrpRelayCap_ -> XGrpRelayCap <$> p "relayCap"
       XGrpRelayTest_ -> do
         B64UrlByteString challenge <- p "challenge"
         sig_ <- fmap (\(B64UrlByteString s) -> s) <$> opt "signature"
@@ -1390,7 +1414,8 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpLinkMem profile -> o ["profile" .= profile]
       XGrpLinkAcpt acceptance role memberId -> o ["acceptance" .= acceptance, "role" .= role, "memberId" .= memberId]
       XGrpRelayInv groupRelayInv -> o ["groupRelayInvitation" .= groupRelayInv]
-      XGrpRelayAcpt relayLink -> o ["relayLink" .= relayLink]
+      XGrpRelayAcpt relayLink relayCap -> o ["relayLink" .= relayLink, "relayCap" .= relayCap]
+      XGrpRelayCap relayCap -> o ["relayCap" .= relayCap]
       XGrpRelayTest challenge sig_ -> o $
         ("signature" .=? (B64UrlByteString <$> sig_))
         ["challenge" .= B64UrlByteString challenge]
@@ -1462,7 +1487,10 @@ instance FromField (ChatMessage 'Json) where
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
     message :: Maybe MsgContent,
-    business :: Bool
+    business :: Bool,
+    -- set by the receiving client for the UI: the link profile's badge, verified and crypto-free.
+    -- never part of the published link data (the link carries the proof inside profile).
+    localBadge :: Maybe LocalBadge
   }
   deriving (Show)
 

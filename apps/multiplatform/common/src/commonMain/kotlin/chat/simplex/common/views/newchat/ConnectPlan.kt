@@ -30,14 +30,23 @@ suspend fun planAndConnect(
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
-  val link = strHasSingleSimplexLink(shortOrFullLink.trim())
-  if (link?.format is Format.SimplexLink && (link.format as Format.SimplexLink).linkType == SimplexLinkType.relay) {
-    AlertManager.privacySensitive.showAlertMsg(
-      generalGetString(MR.strings.relay_address_alert_title),
-      generalGetString(MR.strings.relay_address_alert_message),
-    )
-    cleanup?.invoke()
-    return CompletableDeferred(false)
+  when (val target = strConnectTarget(shortOrFullLink.trim())) {
+    is ConnectTarget.Name -> {
+      showUnsupportedNameAlert(target.nameInfo)
+      cleanup?.invoke()
+      return CompletableDeferred(false)
+    }
+    is ConnectTarget.Link -> {
+      if (target.linkType == SimplexLinkType.relay) {
+        AlertManager.privacySensitive.showAlertMsg(
+          generalGetString(MR.strings.relay_address_alert_title),
+          generalGetString(MR.strings.relay_address_alert_message),
+        )
+        cleanup?.invoke()
+        return CompletableDeferred(false)
+      }
+    }
+    null -> {}
   }
   connectProgressManager.cancelConnectProgress()
   val inProgress = mutableStateOf(true)
@@ -73,11 +82,8 @@ private suspend fun planAndConnectTask(
   if (!inProgress.value) { return completable }
   if (result != null) {
     val (connectionLink, connectionPlan) = result
-    val link = strHasSingleSimplexLink(shortOrFullLink.trim())
-    val linkText = if (link?.format is Format.SimplexLink)
-      "<br><br><u>${link.format.simplexLinkText}</u>"
-    else
-      ""
+    val target = strConnectTarget(shortOrFullLink.trim())
+    val linkText = if (target is ConnectTarget.Link) "<br><br><u>${target.linkText}</u>" else ""
     when (connectionPlan) {
       is ConnectionPlan.InvitationLink -> when (connectionPlan.invitationLinkPlan) {
         is InvitationLinkPlan.Ok ->
@@ -316,6 +322,33 @@ private suspend fun planAndConnectTask(
             cleanup()
           }
         }
+        is GroupLinkPlan.UpdateRequired -> {
+          Log.d(TAG, "planAndConnect, .GroupLink, .UpdateRequired")
+          val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
+          if (groupSLinkData != null) {
+            AlertManager.privacySensitive.showOpenChatAlert(
+              profileName = groupSLinkData.groupProfile.displayName,
+              profileFullName = groupSLinkData.groupProfile.fullName,
+              profileImage = {
+                ProfileImage(
+                  size = alertProfileImageSize,
+                  image = groupSLinkData.groupProfile.image,
+                  icon = MR.images.ic_supervised_user_circle_filled
+                )
+              },
+              subtitle = generalGetString(MR.strings.group_link_requires_newer_version),
+              confirmText = null,
+              dismissText = generalGetString(MR.strings.ok),
+              onDismiss = { cleanup() }
+            )
+          } else {
+            AlertManager.privacySensitive.showAlertMsg(
+              generalGetString(MR.strings.app_update_required),
+              generalGetString(MR.strings.group_link_requires_newer_version)
+            )
+            cleanup()
+          }
+        }
       }
       is ConnectionPlan.Error -> {
         Log.d(TAG, "planAndConnect, error ${connectionPlan.chatError}")
@@ -441,6 +474,8 @@ private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: 
         icon = contact.chatIconName
       )
     },
+    // the alert shows the badge inline, so it skips the long-expired (ExpiredOld) badge here too
+    profileBadge = if (contact.active && contact.profile.localBadge?.status != BadgeStatus.ExpiredOld) contact.profile.localBadge else null,
     confirmText = generalGetString(if (contact.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat),
     onConfirm = {
       openKnownContact(chatModel, rhId, close, contact)
@@ -600,6 +635,7 @@ fun showPrepareContactAlert(
           else MR.images.ic_account_circle_filled
       )
     },
+    profileBadge = if (contactShortLinkData.localBadge?.status == BadgeStatus.ExpiredOld) null else contactShortLinkData.localBadge,
     information = ownerVerificationMessage(ownerVerification),
     confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),
     onConfirm = {

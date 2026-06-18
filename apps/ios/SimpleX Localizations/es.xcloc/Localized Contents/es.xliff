@@ -7,7 +7,7 @@
     <body>
       <trans-unit id=" (can be copied)" xml:space="preserve">
         <source> (can be copied)</source>
-        <target> (puede copiarse)</target>
+        <target> (puede ser copiado)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
@@ -736,6 +736,10 @@ swipe action</note>
         <target>Conexiones activas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add" xml:space="preserve">
+        <source>Add</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." xml:space="preserve">
         <source>Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts.</source>
         <target>Añade la dirección a tu perfil para que tus contactos SimpleX puedan compartirla con otros. La actualización del perfil se enviará a tus contactos SimpleX.</target>
@@ -759,6 +763,14 @@ swipe action</note>
       <trans-unit id="Add profile" xml:space="preserve">
         <source>Add profile</source>
         <target>Añadir perfil</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add relays" xml:space="preserve">
+        <source>Add relays</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add relays to restore message delivery." xml:space="preserve">
+        <source>Add relays to restore message delivery.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add server" xml:space="preserve">
@@ -804,11 +816,6 @@ swipe action</note>
       <trans-unit id="Added message servers" xml:space="preserve">
         <source>Added message servers</source>
         <target>Servidores de mensajes añadidos</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Adding relays will be supported later." xml:space="preserve">
-        <source>Adding relays will be supported later.</source>
-        <target>Añadir servidores estará disponible en una versión posterior.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Additional accent" xml:space="preserve">
@@ -1185,6 +1192,10 @@ swipe action</note>
         <source>App session</source>
         <target>por sesión</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App update required" xml:space="preserve">
+        <source>App update required</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
@@ -1615,6 +1626,14 @@ en tu red</target>
 alert button
 new chat action</note>
       </trans-unit>
+      <trans-unit id="Cancel and delete channel" xml:space="preserve">
+        <source>Cancel and delete channel</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cancel creating channel?" xml:space="preserve">
+        <source>Cancel creating channel?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Cancel migration" xml:space="preserve">
         <source>Cancel migration</source>
         <target>Cancelar migración</target>
@@ -1772,9 +1791,8 @@ alert subtitle</note>
         <target>El canal será eliminado para tí. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Channel will start working with %d of %d relays. Proceed?" xml:space="preserve">
-        <source>Channel will start working with %1$d of %2$d relays. Proceed?</source>
-        <target>El canal comenzará a funcionar con %1$d de %2$d servidores. ¿Continuar?</target>
+      <trans-unit id="Channel will start working with %d of %d relays. Continue?" xml:space="preserve">
+        <source>Channel will start working with %1$d of %2$d relays. Continue?</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Channels" xml:space="preserve">
@@ -2278,6 +2296,14 @@ This is your own one-time link!</source>
         <target>Conectando con ordenador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connecting via channel name requires a newer app version." xml:space="preserve">
+        <source>Connecting via channel name requires a newer app version.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Connecting via contact name requires a newer app version." xml:space="preserve">
+        <source>Connecting via contact name requires a newer app version.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Connection" xml:space="preserve">
         <source>Connection</source>
         <target>Conexión</target>
@@ -2433,7 +2459,7 @@ This is your own one-time link!</source>
       <trans-unit id="Continue" xml:space="preserve">
         <source>Continue</source>
         <target>Continuar</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Contribute" xml:space="preserve">
         <source>Contribute</source>
@@ -2879,6 +2905,10 @@ swipe action</note>
         <target>Eliminar para mí</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete from history" xml:space="preserve">
+        <source>Delete from history</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete group" xml:space="preserve">
         <source>Delete group</source>
         <target>Eliminar grupo</target>
@@ -3100,8 +3130,8 @@ alert button</note>
         <target>Opciones desarrollador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer tools" xml:space="preserve">
-        <source>Developer tools</source>
+      <trans-unit id="Developer" xml:space="preserve">
+        <source>Developer</source>
         <target>Herramientas desarrollo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3666,6 +3696,10 @@ chat item action</note>
         <target>Error al añadir el servidor</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Error adding relays" xml:space="preserve">
+        <source>Error adding relays</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error adding server" xml:space="preserve">
         <source>Error adding server</source>
         <target>Error al añadir servidor</target>
@@ -3794,6 +3828,10 @@ chat item action</note>
       <trans-unit id="Error deleting database" xml:space="preserve">
         <source>Error deleting database</source>
         <target>Error al eliminar base de datos</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Error deleting message" xml:space="preserve">
+        <source>Error deleting message</source>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting old database" xml:space="preserve">
@@ -6005,6 +6043,10 @@ El cifrado más seguro.</target>
         <target>Sin contraseña de la aplicación</target>
         <note>Authentication unavailable</note>
       </trans-unit>
+      <trans-unit id="No available relays" xml:space="preserve">
+        <source>No available relays</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No chat relays" xml:space="preserve">
         <source>No chat relays</source>
         <target>Sin servidores de chat</target>
@@ -6128,6 +6170,10 @@ El cifrado más seguro.</target>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
         <target>Sin archivos recibidos o enviados</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No relays" xml:space="preserve">
+        <source>No relays</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No servers for private message routing." xml:space="preserve">
@@ -6778,6 +6824,10 @@ Error: %@</target>
         <target>Por favor, intenta desactivar y reactivar las notificaciones.</target>
         <note>token info</note>
       </trans-unit>
+      <trans-unit id="Please upgrade the app." xml:space="preserve">
+        <source>Please upgrade the app.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve">
         <source>Please wait for group moderators to review your request to join the group.</source>
         <target>Por favor, espera a que tu solicitud sea revisada por los moderadores del grupo.</target>
@@ -6902,11 +6952,6 @@ Error: %@</target>
         <source>Private routing timeout</source>
         <target>Timeout enrutamiento privado</target>
         <note>alert title</note>
-      </trans-unit>
-      <trans-unit id="Proceed" xml:space="preserve">
-        <source>Proceed</source>
-        <target>Continuar</target>
-        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
@@ -7302,6 +7347,14 @@ swipe action</note>
         <target>¡El test del servidor ha fallado!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Relay will be removed from channel - this cannot be undone!" xml:space="preserve">
+        <source>Relay will be removed from channel - this cannot be undone!</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Relays added: %@." xml:space="preserve">
+        <source>Relays added: %@.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Reliability: many relays per channel." xml:space="preserve">
         <source>Reliability: many relays per channel.</source>
         <target>Fiabilidad: muchos servidores por canal.</target>
@@ -7347,10 +7400,9 @@ swipe action</note>
         <target>¿Eliminar contraseña de Keychain?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove subscriber" xml:space="preserve">
-        <source>Remove subscriber</source>
-        <target>Eliminar suscriptor</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Remove relay?" xml:space="preserve">
+        <source>Remove relay?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Remove subscriber?" xml:space="preserve">
         <source>Remove subscriber?</source>
@@ -8667,6 +8719,10 @@ report reason</note>
         <target>Estadísticas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Status" xml:space="preserve">
+        <source>Status</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Stop" xml:space="preserve">
         <source>Stop</source>
         <target>Parar</target>
@@ -9254,9 +9310,18 @@ y los contactos son tuyos.</target>
         <target>Este grupo ya no existe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This group requires a newer version of the app. Please update the app to join." xml:space="preserve">
+        <source>This group requires a newer version of the app. Please update the app to join.</source>
+        <note>alert message
+alert subtitle</note>
+      </trans-unit>
       <trans-unit id="This is a chat relay address, it cannot be used to connect." xml:space="preserve">
         <source>This is a chat relay address, it cannot be used to connect.</source>
         <target>Esto es una dirección de servidor, no puede usarse para conectar.</target>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This is the last active relay. Removing it will prevent message delivery to subscribers." xml:space="preserve">
+        <source>This is the last active relay. Removing it will prevent message delivery to subscribers.</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This is your link for channel %@!" xml:space="preserve">
@@ -9593,10 +9658,18 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>No leído</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Unsupported channel name" xml:space="preserve">
+        <source>Unsupported channel name</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Unsupported connection link" xml:space="preserve">
         <source>Unsupported connection link</source>
         <target>Enlace de conexión no compatible</target>
         <note>conn error description</note>
+      </trans-unit>
+      <trans-unit id="Unsupported contact name" xml:space="preserve">
+        <source>Unsupported contact name</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
@@ -10605,6 +10678,11 @@ Repeat connection request?</source>
         <source>Your network</source>
         <target>Tu red</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your new channel %@ is connected to %d of %d relays.&#10;If you cancel, the channel will be deleted - you can create it again." xml:space="preserve">
+        <source>Your new channel %1$@ is connected to %2$d of %3$d relays.
+If you cancel, the channel will be deleted - you can create it again.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
         <source>Your preferences</source>

@@ -26,6 +26,8 @@ import java.io.Closeable
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import kotlin.math.min
 
 data class SemVer(
@@ -376,7 +378,7 @@ private fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset>
   val res = if (isRunningFromFlatpak()) {
     // No need to show download options for Flatpak users
     emptyList()
-  } else if (!isRunningFromAppImage() && Runtime.getRuntime().exec("which dpkg").onExit().join().exitValue() == 0) {
+  } else if (desktopPlatform.isLinux() && !isRunningFromAppImage() && Runtime.getRuntime().exec("which dpkg").onExit().join().exitValue() == 0) {
     // Show all available .deb packages and user will choose the one that works on his system (for Debian derivatives)
     release.assets.filter { it.name.lowercase().endsWith(".deb") }
   } else {
@@ -388,18 +390,42 @@ private fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset>
 private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
   when {
     desktopPlatform.isLinux() -> {
-      val process = Runtime.getRuntime().exec("xdg-open ${file.absolutePath}").onExit().join()
-      val startedInstallation = process.exitValue() == 0 && process.children().count() > 0
-      if (!startedInstallation) {
-        Log.e(TAG, "Error starting installation: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
-        // Failed to start installation. show directory with the file for manual installation
-        desktopOpenDir(file.parentFile)
+      val appImagePath = System.getenv("APPIMAGE")
+      if (appImagePath != null) {
+        // Replace the running AppImage crash-safely: copy onto the target's own
+        // filesystem first (an atomic rename only works within one filesystem, and
+        // the download lives in the temp dir which is usually a different one),
+        // then atomically move the staged file onto $APPIMAGE.
+        val target = File(appImagePath)
+        val staging = File(target.parentFile, ".${target.name}.update")
+        try {
+          Files.copy(file.toPath(), staging.toPath(), StandardCopyOption.REPLACE_EXISTING)
+          staging.setExecutable(true, false)
+          Files.move(staging.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+          file.delete()
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
+            text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
+          )
+        } catch (e: Exception) {
+          Log.e(TAG, "Failed to replace AppImage: ${e.stackTraceToString()}")
+          staging.delete()
+          desktopOpenDir(file.parentFile)
+        }
       } else {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
-          text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
-        )
-        file.delete()
+        val process = Runtime.getRuntime().exec("xdg-open ${file.absolutePath}").onExit().join()
+        val startedInstallation = process.exitValue() == 0 && process.children().count() > 0
+        if (!startedInstallation) {
+          Log.e(TAG, "Error starting installation: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
+          // Failed to start installation. show directory with the file for manual installation
+          desktopOpenDir(file.parentFile)
+        } else {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
+            text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
+          )
+          file.delete()
+        }
       }
     }
     desktopPlatform.isWindows() -> {

@@ -675,17 +675,18 @@ struct ChatListSearchBar: View {
             if ignoreSearchTextChange {
                 ignoreSearchTextChange = false
             } else {
-                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
+                switch strConnectTarget(t.trimmingCharacters(in: .whitespaces)) {
+                case let .link(text, _, linkText):
                     searchFocussed = false
-                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
-                        ignoreSearchTextChange = true
-                        searchText = simplexLinkText(linkType, smpHosts)
-                    }
+                    ignoreSearchTextChange = true
+                    searchText = linkText
                     searchShowingSimplexLink = true
                     searchChatFilteredBySimplexLink = nil
-                    connect(link.text)
-                } else {
-                    if t != "" { // if some other text is pasted, enter search mode
+                    connect(text)
+                case let .name(nameInfo):
+                    showUnsupportedNameAlert(nameInfo)
+                case .none:
+                    if t != "" {
                         searchFocussed = true
                     } else {
                         ConnectProgressManager.shared.cancelConnectProgress()

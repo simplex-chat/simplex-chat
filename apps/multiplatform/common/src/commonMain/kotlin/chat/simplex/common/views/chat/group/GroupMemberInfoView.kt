@@ -2,12 +2,12 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.InlineTextContent
@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -420,10 +421,9 @@ fun GroupMemberInfoLayout(
   @Composable
   fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
-    // TODO [relays] re-enable when relay management ships
-    val canRemove = member.canBeRemoved(groupInfo) && member.memberRole != GroupMemberRole.Relay
+    val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
       SectionView {
         if (canBlockForAll) {
           if (member.blockedByAdmin) {
@@ -445,7 +445,7 @@ fun GroupMemberInfoLayout(
 
   @Composable
   fun NonAdminBlockSection() {
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
     SectionView {
       if (member.blockedByAdmin) {
         SettingsActionItem(
@@ -469,7 +469,7 @@ fun GroupMemberInfoLayout(
     ) {
       GroupMemberInfoHeader(member)
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     val contactId = member.memberContactId
 
@@ -533,7 +533,7 @@ fun GroupMemberInfoLayout(
         }
       }
 
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
     val showMemberSupportChat = !openedFromSupportChat &&
@@ -566,7 +566,7 @@ fun GroupMemberInfoLayout(
     }
 
     if (member.contactLink != null) {
-      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title)) {
         SimpleXLinkQRCode(member.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(member.contactLink)) }
@@ -577,8 +577,8 @@ fun GroupMemberInfoLayout(
         } else {
           ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
         }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       }
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       SectionDividerSpaced()
     }
 
@@ -735,19 +735,32 @@ fun GroupMemberInfoHeader(member: GroupMember) {
   ) {
     MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val displayName = member.displayName.trim() // alias if set
+    val badge = member.nameBadge
     val text = buildAnnotatedString {
       if (member.verified) {
         appendInlineContent(id = "shieldIcon")
       }
       append(displayName)
-    }
-    val inlineContent: Map<String, InlineTextContent> = mapOf(
-      "shieldIcon" to InlineTextContent(
-        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
-      ) {
-        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      if (badge != null) {
+        append(" ")
+        appendInlineContent(id = "nameBadge")
       }
-    )
+    }
+    val nameFontSize = MaterialTheme.typography.h1.fontSize
+    val uriHandler = LocalUriHandler.current
+    val inlineContent: Map<String, InlineTextContent> = buildMap {
+      put(
+        "shieldIcon",
+        InlineTextContent(
+          Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+        ) {
+          Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+        }
+      )
+      if (badge != null) {
+        put("nameBadge", nameBadgeInline(badge, nameFontSize) { showBadgeInfoAlert(displayName, badge, uriHandler) })
+      }
+    }
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = fun(name: String) {
       clipboard.setText(AnnotatedString(name))

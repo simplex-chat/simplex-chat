@@ -21,6 +21,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
@@ -406,7 +407,7 @@ fun ChatView(
                 val selectedItems: MutableState<Set<Long>?> = mutableStateOf(null)
                 ModalManager.end.showCustomModal { close ->
                   val appBar = remember { mutableStateOf(null as @Composable (BoxScope.() -> Unit)?) }
-                  ModalView(close, appBar = appBar.value) {
+                  ModalView(close, cardScreen = true, appBar = appBar.value) {
                     val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
                       var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
@@ -509,7 +510,7 @@ fun ChatView(
                 if (chatsCtx.secondaryContextFilter == null) {
                   ModalManager.end.closeModals()
                 }
-                ModalManager.end.showModalCloseable(true) { close ->
+                ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
                     GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
                   }
@@ -801,7 +802,7 @@ fun ChatView(
       }
       is ChatInfo.ContactConnection -> {
         val close = { chatModel.chatId.value = null }
-          ModalView(close, showClose = appPlatform.isAndroid, content = {
+          ModalView(close, showClose = appPlatform.isAndroid, cardScreen = true, content = {
             ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, false, close)
           })
           LaunchedEffect(chatInfo.id) {
@@ -1564,8 +1565,8 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
         if ((cInfo as? ChatInfo.Direct)?.contact?.verified == true) {
           ContactVerifiedShield()
         }
-        Text(
-          cInfo.displayName, fontWeight = FontWeight.SemiBold,
+        NameWithBadge(
+          cInfo.displayName, cInfo.nameBadge, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
       }
@@ -2016,8 +2017,10 @@ fun BoxScope.ChatItemsList(
                         } else {
                           null to 1
                         }
-                      Text(
+                      // the name and the badge are one element, so SpaceBetween separates them from the role, not from each other
+                      NameWithBadge(
                         memberNames(member, prevMember, memCount),
+                        if (prevMember == null && memCount == 1) member.nameBadge else null,
                         Modifier
                           .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
                           .weight(1f, false),
@@ -2284,8 +2287,18 @@ fun BoxScope.ChatItemsList(
           .background(MaterialTheme.appColors.receivedMessage)
       ) {
         ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
+        val bannerBadge = chatInfo.nameBadge
+        val uriHandler = LocalUriHandler.current
         Text(
-          chatInfo.displayName,
+          buildAnnotatedString {
+            append(chatInfo.displayName)
+            if (bannerBadge != null) {
+              append(" ")
+              appendInlineContent(id = "nameBadge")
+            }
+          },
+          inlineContent =
+            if (bannerBadge != null) mapOf("nameBadge" to nameBadgeInline(bannerBadge, MaterialTheme.typography.h3.fontSize) { showBadgeInfoAlert(chatInfo.displayName, bannerBadge, uriHandler) }) else emptyMap(),
           style = MaterialTheme.typography.h3,
           color = MaterialTheme.colors.onBackground,
           textAlign = TextAlign.Center,
@@ -3193,7 +3206,7 @@ fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close:
   withBGApi {
     setGroupMembers(rhId, groupInfo, chatModel)
     close?.invoke()
-    ModalManager.end.showModalCloseable(true) { close ->
+    ModalManager.end.showModalCloseable(showClose = true) { close ->
       AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
     }
   }
@@ -3204,7 +3217,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
   withBGApi {
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
-    ModalManager.end.showModalCloseable(true) {
+    ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) {
       GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo)
     }
   }

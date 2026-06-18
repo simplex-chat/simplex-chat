@@ -136,6 +136,8 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var contactLink: String?
     public var preferences: Preferences?
     public var peerType: ChatPeerType?
+    // the badge proof from the wire profile - opaque to the UI, round-tripped to the core (apiPrepareContact)
+    public var badge: BadgeProof?
     public var localAlias: String { get { "" } }
 
     var profileViewName: String {
@@ -158,6 +160,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         contactLink: String? = nil,
         preferences: Preferences? = nil,
         peerType: ChatPeerType? = nil,
+        localBadge: LocalBadge? = nil,
         localAlias: String
     ) {
         self.profileId = profileId
@@ -168,6 +171,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.contactLink = contactLink
         self.preferences = preferences
         self.peerType = peerType
+        self.localBadge = localBadge
         self.localAlias = localAlias
     }
 
@@ -179,6 +183,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var contactLink: String?
     public var preferences: Preferences?
     public var peerType: ChatPeerType?
+    public var localBadge: LocalBadge?
     public var localAlias: String
 
     var profileViewName: String {
@@ -199,6 +204,70 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
 public enum ChatPeerType: String, Codable {
     case human
     case bot
+}
+
+// Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
+// Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
+public enum BadgeType: Hashable {
+    case supporter
+    case legend
+    case investor
+    case unknown(String)
+
+    // the disclosed (signed) type name, shown to the user for verified badges
+    public var text: String {
+        switch self {
+        case .supporter: "supporter"
+        case .legend: "legend"
+        case .investor: "investor"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension BadgeType: Codable {
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "supporter": self = .supporter
+        case "legend": self = .legend
+        case "investor": self = .investor
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
+    }
+}
+
+public enum BadgeStatus: String, Codable {
+    case active
+    case expired
+    // expired over a month ago - the badge is not shown at all
+    case expiredOld
+    case failed
+    // signed with a key index this app version does not know - shown as a warning
+    case unknownKey
+}
+
+public struct BadgeInfo: Codable, Hashable {
+    public var badgeType: BadgeType
+    public var badgeExpiry: Date?
+    public var badgeExtra: String
+}
+
+public struct LocalBadge: Codable, Hashable {
+    public var badge: BadgeInfo
+    public var status: BadgeStatus
+}
+
+// the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
+public struct BadgeProof: Codable, Hashable {
+    public var badgeKeyIdx: Int
+    public var presHeader: String
+    public var proof: String
+    public var badgeInfo: BadgeInfo
 }
 
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
@@ -1358,6 +1427,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
 
 public struct GroupPreference: Codable, Equatable, Hashable {
     public var enable: GroupFeatureEnabled
+    public var role: GroupMemberRole?
 
     public var on: Bool {
         enable == .on
@@ -1375,8 +1445,9 @@ public struct GroupPreference: Codable, Equatable, Hashable {
         }
     }
 
-    public init(enable: GroupFeatureEnabled) {
+    public init(enable: GroupFeatureEnabled, role: GroupMemberRole? = nil) {
         self.enable = enable
+        self.role = role
     }
 }
 
@@ -1453,6 +1524,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             case let .contactRequest(contactRequest): return contactRequest.localDisplayName
             case let .contactConnection(contactConnection): return contactConnection.localDisplayName
             case .invalidJSON: return ChatInfo.invalidChatName
+            }
+        }
+    }
+
+    // the badge shown for a chat's name: an active contact's or a contact request's (groups have none)
+    public var nameBadge: LocalBadge? {
+        get {
+            switch self {
+            case let .direct(contact): return contact.active ? contact.profile.localBadge : nil
+            case let .contactRequest(contactRequest): return contactRequest.profile.localBadge
+            default: return nil
             }
         }
     }
@@ -2263,7 +2345,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public var userContactLinkId_: Int64?
     public var cReqChatVRange: VersionRange
     var localDisplayName: ContactName
-    var profile: Profile
+    public var profile: LocalProfile
     var createdAt: Date
     public var updatedAt: Date
 
@@ -2281,7 +2363,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
         userContactLinkId_: 1,
         cReqChatVRange: VersionRange(1, 1),
         localDisplayName: "alice",
-        profile: Profile.sampleData,
+        profile: LocalProfile.sampleData,
         createdAt: .now,
         updatedAt: .now
     )
@@ -2531,10 +2613,29 @@ public enum GroupType: Codable, Hashable {
     }
 }
 
+public struct PublicGroupAccess: Codable, Hashable {
+    public init(groupWebPage: String? = nil, groupDomain: String? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
+        self.groupWebPage = groupWebPage
+        self.groupDomain = groupDomain
+        self.domainWebPage = domainWebPage
+        self.allowEmbedding = allowEmbedding
+    }
+
+    public var groupWebPage: String?
+    public var groupDomain: String?
+    public var domainWebPage: Bool = false
+    public var allowEmbedding: Bool = false
+}
+
+public struct RelayCapabilities: Codable, Hashable {
+    public var webDomain: String?
+}
+
 public struct PublicGroupProfile: Codable, Hashable {
     public var groupType: GroupType
     public var groupLink: String
     public var publicGroupId: String
+    public var publicGroupAccess: PublicGroupAccess?
 }
 
 public struct GroupProfile: Codable, NamedChat, Hashable {
@@ -2613,6 +2714,8 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: MsgContent?
     public var business: Bool
+    // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
+    public var localBadge: LocalBadge?
 }
 
 public struct GroupSummary: Decodable, Hashable {
@@ -2703,6 +2806,7 @@ public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
     public var userChatRelay: UserChatRelay
     public var relayStatus: RelayStatus
     public var relayLink: String?
+    public var relayCap: RelayCapabilities
     public var id: Int64 { groupRelayId }
 }
 
@@ -2768,6 +2872,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
+    public var nameBadge: LocalBadge? { memberProfile.localBadge }
     public var verified: Bool { activeConn?.connectionCode != nil }
     public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
@@ -5104,6 +5209,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case uri
     case hyperLink(showText: String?, linkUri: String)
     case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case simplexName(nameInfo: SimplexNameInfo)
     case command(commandStr: String)
     case mention(memberName: String)
     case email
@@ -5136,6 +5242,28 @@ public enum SimplexLinkType: String, Decodable, Hashable {
         case .relay: return NSLocalizedString("SimpleX relay address", comment: "simplex link type")
         }
     }
+}
+
+public struct SimplexNameInfo: Decodable, Equatable, Hashable {
+    public var nameType: SimplexNameType
+    public var nameDomain: SimplexNameDomain
+}
+
+public struct SimplexNameDomain: Decodable, Equatable, Hashable {
+    public var nameTLD: SimplexTLD
+    public var domain: String
+    public var subDomain: [String]
+}
+
+public enum SimplexTLD: String, Decodable, Hashable {
+    case simplex
+    case testing
+    case web
+}
+
+public enum SimplexNameType: String, Decodable, Hashable {
+    case publicGroup
+    case contact
 }
 
 public enum FormatColor: String, Decodable, Hashable {

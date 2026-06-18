@@ -705,7 +705,7 @@ server test step */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "ผู้ติดต่อสามารถทําเครื่องหมายข้อความเพื่อลบได้ คุณจะสามารถดูได้";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "ดำเนินการต่อ";
 
 /* No comment provided by engineer. */
@@ -946,7 +946,7 @@ alert button */
 "Develop" = "พัฒนา";
 
 /* No comment provided by engineer. */
-"Developer tools" = "เครื่องมือสำหรับนักพัฒนา";
+"Developer" = "เครื่องมือสำหรับนักพัฒนา";
 
 /* No comment provided by engineer. */
 "Device" = "อุปกรณ์";
@@ -2172,7 +2172,7 @@ new chat action */
 "Preview" = "ดูตัวอย่าง";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "ความเป็นส่วนตัวและความปลอดภัย";
+"Your privacy" = "ความเป็นส่วนตัวและความปลอดภัย";
 
 /* No comment provided by engineer. */
 "Private filenames" = "ชื่อไฟล์ส่วนตัว";
@@ -3089,7 +3089,7 @@ server test failure */
 "You can enable later via Settings" = "คุณสามารถเปิดใช้งานในภายหลังผ่านการตั้งค่า";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "คุณสามารถเปิดใช้งานได้ในภายหลังผ่านการตั้งค่าความเป็นส่วนตัวและความปลอดภัยของแอป";
+"You can enable them later via app Your privacy settings." = "คุณสามารถเปิดใช้งานได้ในภายหลังผ่านการตั้งค่าความเป็นส่วนตัวและความปลอดภัยของแอป";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - ปัดไปทางขวา";

@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
+import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
 import uk.co.caprica.vlcj.media.VideoOrientation
 import uk.co.caprica.vlcj.player.base.*
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
@@ -214,7 +215,7 @@ actual class VideoPlayer actual constructor(
       }
     }
 
-    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(playerThread.asCoroutineDispatcher()) {
+    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(previewThread.asCoroutineDispatcher()) {
       val mediaComponent = getOrCreateHelperPlayer()
       val player = mediaComponent.mediaPlayer()
       if (uri == null || !uri.toFile().exists()) {
@@ -222,12 +223,12 @@ actual class VideoPlayer actual constructor(
 
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
       }
+      val surface = SkiaBitmapVideoSurface()
+      player.videoSurface().set(surface)
       player.media().startPaused(uri.toFile().absolutePath)
-      val start = System.currentTimeMillis()
-      var snap: BufferedImage? = null
-      while (snap == null && start + 1500 > System.currentTimeMillis()) {
-        snap = player.snapshots()?.get()
-        delay(50)
+      val snap = withTimeoutOrNull(1500L) {
+        while (surface.bitmap.value == null) delay(50)
+        surface.bitmap.value!!.toAwtImage()
       }
       val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()
       if (orientation == null) {
@@ -255,6 +256,7 @@ actual class VideoPlayer actual constructor(
     }
 
     val playerThread = Executors.newSingleThreadExecutor()
+    private val previewThread = Executors.newSingleThreadExecutor()
     private val playersPool: ArrayList<Component> = ArrayList()
     private val helperPlayersPool: ArrayList<CallbackMediaPlayerComponent> = ArrayList()
 

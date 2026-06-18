@@ -53,11 +53,11 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
           closeAll.invoke()
 
           if (!groupInfo.incognito) {
-            ModalManager.end.showModalCloseable(true) { close ->
+            ModalManager.end.showModalCloseable(showClose = true) { close ->
               AddGroupMembersView(rhId, groupInfo, creatingGroup = true, chatModel, close)
             }
           } else {
-            ModalManager.end.showModalCloseable(true) { close ->
+            ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
               GroupLinkView(chatModel, rhId, groupInfo, groupLink = null, onGroupLinkUpdated = null, creatingGroup = true, close = close)
             }
           }

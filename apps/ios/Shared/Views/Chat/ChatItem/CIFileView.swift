@@ -16,6 +16,7 @@ struct CIFileView: View {
     @EnvironmentObject var theme: AppTheme
     let file: CIFile?
     let edited: Bool
+    let senderProfile: LocalProfile?
     var smallViewSize: CGFloat?
 
     var body: some View {
@@ -85,7 +86,7 @@ struct CIFileView: View {
         if let file = file {
             switch (file.fileStatus) {
             case .rcvInvitation, .rcvAborted:
-                if fileSizeValid(file) {
+                if fileSizeValid(file, senderProfile) {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
@@ -93,7 +94,7 @@ struct CIFileView: View {
                         }
                     }
                 } else {
-                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol), countStyle: .binary)
+                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol, senderProfile), countStyle: .binary)
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
                         message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
@@ -165,7 +166,7 @@ struct CIFileView: View {
             case .sndError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .sndWarning: fileIcon("doc.fill", innerIcon: "exclamationmark.triangle.fill", innerIconSize: 10)
             case .rcvInvitation:
-                if fileSizeValid(file) {
+                if fileSizeValid(file, senderProfile) {
                     fileIcon("arrow.down.doc.fill", color: theme.colors.primary)
                 } else {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
@@ -227,9 +228,9 @@ struct CIFileView: View {
     }
 }
 
-func fileSizeValid(_ file: CIFile?) -> Bool {
+func fileSizeValid(_ file: CIFile?, _ senderProfile: LocalProfile?) -> Bool {
     if let file = file {
-        return file.fileSize <= getMaxFileSize(file.fileProtocol)
+        return file.fileSize <= getMaxFileSize(file.fileProtocol, senderProfile)
     }
     return false
 }

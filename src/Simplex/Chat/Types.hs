@@ -40,6 +40,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -47,6 +48,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -134,17 +137,19 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    autoAcceptMemberContacts :: BoolDef,
+    autoAcceptMemberContacts :: Bool,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
-    uiThemes :: Maybe UIThemeEntityOverrides,
-    userChatRelay :: BoolDef
+    userChatRelay :: BoolDef,
+    clientService :: BoolDef,
+    uiThemes :: Maybe UIThemeEntityOverrides
   }
   deriving (Show)
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
     pastTimestamp :: Bool,
-    userChatRelay :: Bool
+    userChatRelay :: BoolDef,
+    clientService :: BoolDef
   }
   deriving (Show)
 
@@ -367,7 +372,7 @@ data UserContactRequest = UserContactRequest
     cReqChatVRange :: VersionRangeChat,
     localDisplayName :: ContactName,
     profileId :: Int64,
-    profile :: Profile,
+    profile :: LocalProfile,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId,
@@ -685,7 +690,8 @@ data Profile = Profile
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
-    peerType :: Maybe ChatPeerType
+    peerType :: Maybe ChatPeerType,
+    badge :: Maybe BadgeProof
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -718,7 +724,7 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -726,6 +732,15 @@ profilesMatch
   LocalProfile {displayName = n1, fullName = fn1, image = i1}
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
+
+-- equal for profile-update detection: badge proofs are re-generated for every presentation,
+-- so compare badges by disclosed info (not proof bytes) - a re-presentation of the same badge is a no-op
+sameProfileContent :: Profile -> Profile -> Bool
+sameProfileContent p@Profile {badge = b} p'@Profile {badge = b'} =
+  p {badge = Nothing} == p' {badge = Nothing} && (proofInfo <$> b) == (proofInfo <$> b')
+  where
+    proofInfo :: BadgeProof -> BadgeInfo
+    proofInfo (BadgeProof _ _ _ info) = info
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
@@ -758,6 +773,7 @@ data LocalProfile = LocalProfile
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
+    localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias
   }
   deriving (Eq, Show)
@@ -765,13 +781,37 @@ data LocalProfile = LocalProfile
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} localAlias =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localAlias}
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> LocalProfile
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} localAlias now verified =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias}
+  where
+    localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now verified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge} =
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge}
+  where
+    -- any stored peer proof rides the wire (receivers verify independently); the own credential is presented fresh, and a display-only badge never sends
+    wireBadge :: LocalBadge -> Maybe BadgeProof
+    wireBadge = \case
+      PeerBadge b _ -> Just b
+      OwnBadge _ _ -> Nothing
+      ShownBadge _ _ -> Nothing
+
+profileBadgeVerified :: Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
+profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
+  case (localBadge, newBadge) of
+    (_, Nothing) -> pure (Just False)
+    -- an unchanged badge that verified before stays verified; failed or unknown-key badges
+    -- are re-verified, so an unknown key heals once an app update adds it
+    (Just lb, Just (BadgeProof _ _ _ newInfo))
+      | localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (Just True)
+    (_, Just newB) -> verifyBadge keys newB
+
+-- a failed or unknown-key badge is re-verified on the next profile update even when its disclosed content
+-- is unchanged, so it heals once an app update adds the issuer key
+badgeNeedsReverify :: LocalProfile -> Bool
+badgeNeedsReverify LocalProfile {localBadge} = maybe False ((`elem` [BSFailed, BSUnknownKey]) . localBadgeStatus) localBadge
 
 data GroupType
   = GTChannel
@@ -793,10 +833,19 @@ instance FromField GroupType where fromField = fromTextField_ textDecode
 
 instance ToField GroupType where toField = toField . textEncode
 
+data PublicGroupAccess = PublicGroupAccess
+  { groupWebPage :: Maybe Text,
+    groupDomain :: Maybe Text,
+    domainWebPage :: Bool,
+    allowEmbedding :: Bool
+  }
+  deriving (Eq, Show)
+
 data PublicGroupProfile = PublicGroupProfile
   { groupType :: GroupType,
     groupLink :: ShortLinkContact,
-    publicGroupId :: B64UrlByteString -- group identity = sha256(genesis root key), immutable
+    publicGroupId :: B64UrlByteString, -- group identity = sha256(genesis root key), immutable
+    publicGroupAccess :: Maybe PublicGroupAccess
   }
   deriving (Eq, Show)
 
@@ -832,8 +881,13 @@ instance FromJSON ImageData where
   parseJSON = fmap ImageData . J.parseJSON
 
 instance ToJSON ImageData where
-  toJSON (ImageData t) = J.toJSON t
-  toEncoding (ImageData t) = J.toEncoding t
+  toJSON (ImageData t) = J.toJSON $ safeImageData t
+  toEncoding (ImageData t) = J.toEncoding $ safeImageData t
+
+safeImageData :: Text -> Text
+safeImageData t
+  | "data:" `T.isPrefixOf` t = t
+  | otherwise = ""
 
 instance ToField ImageData where toField (ImageData t) = toField t
 
@@ -2024,6 +2078,10 @@ type VersionChat = Version ChatVersion
 
 type VersionRangeChat = VersionRange ChatVersion
 
+-- | Store-wide context passed to store functions in place of the bare `vr`
+-- parameter. Built from config by mkStoreCxt; more fields are added here over time.
+data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey}
+
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
 
@@ -2083,6 +2141,8 @@ instance FromJSON GroupType where
 instance ToJSON GroupType where
   toJSON = textToJSON
   toEncoding = textToEncoding
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupAccess)
 
 $(JQ.deriveJSON defaultJSON ''PublicGroupProfile)
 
