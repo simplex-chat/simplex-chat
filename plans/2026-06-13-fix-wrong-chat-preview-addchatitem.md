@@ -109,13 +109,13 @@ preserved.
 
 ---
 
-# Part 2 — Follow-up: pending invitee's member-support preview (sent / received)
+# Part 2 — Follow-up: pending invitee's member-support preview
 
 The revert is correct for the wrong-chat bug, but testing surfaced that the #5909 feature
 (a pending invitee's "chat with admins" / member-support messages shown as the group's
-main-list preview) was not actually delivered end-to-end. Three gaps were found: **2a (sent)**
-and **2b (received)** are fixed in the clients; **2c (reload persistence)** was investigated
-and deferred for performance.
+main-list preview) was not actually delivered end-to-end. Gaps found and fixed in the clients:
+**2a (sent)**, **2b (received, incl. prefer-content)**, **2d (edit / delete sync)**, **2e (media)**;
+**2c (reload persistence)** was investigated and deferred for performance.
 
 ## 2a. Sent messages — `862d93c64` (android, desktop)
 
