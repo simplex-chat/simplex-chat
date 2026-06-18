@@ -57,7 +57,7 @@ import Simplex.Chat.Messages
   )
 import Simplex.Chat.Messages.CIContent (ciMsgContent)
 import Simplex.Chat.Protocol (MsgContent, MsgRef (..), QuotedMsg (..), isReport)
-import Simplex.Chat.Store.Groups (getGroupOwners, getRelayPublishableGroups)
+import Simplex.Chat.Store.Groups (getGroupOwners, getRelayPublishableGroups, updatePublicMemberCount)
 import Simplex.Chat.Store.Messages (getGroupWebPreviewItems)
 import Simplex.Chat.Store.Shared (getGroupInfo)
 import Simplex.Chat.Types
@@ -75,7 +75,7 @@ import Simplex.Chat.Types
   )
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import qualified URI.ByteString as U
 import Simplex.Messaging.Parsers (defaultJSON)
 import System.Directory (createDirectoryIfMissing, listDirectory, removeFile, renameFile)
@@ -233,6 +233,12 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
   case publicGroup of
     Just PublicGroupProfile {publicGroupId, publicGroupAccess} -> do
       let fName = publicGroupIdFileName publicGroupId <> ".json"
+      -- backfill the subscriber count for channels created before it was tracked
+      subscribers <- case publicMemberCount of
+        Just _ -> pure publicMemberCount
+        Nothing -> do
+          g_ <- withTransaction (chatStore cc) (\db -> runExceptT $ updatePublicMemberCount db cxt user gInfo)
+          pure $ eitherToMaybe g_ >>= \GroupInfo {groupSummary = GroupSummary {publicMemberCount = pmc}} -> pmc
       (items, owners) <- withTransaction (chatStore cc) $ \db -> do
         is <- getGroupWebPreviewItems db user gInfo webPreviewItemCount
         os <- getGroupOwners db cxt user gInfo
@@ -246,7 +252,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
               shortDescription = toFormattedText =<< sd,
               welcomeMessage = toFormattedText =<< wd,
               members = senders,
-              subscribers = publicMemberCount,
+              subscribers,
               messages = msgs,
               updatedAt = ts
             }

@@ -1376,6 +1376,9 @@ updatePublicGroupData user gInfo
         pure (gInfo', gLink)
       setGroupLinkDataAsync user gInfo' gLink
       pure gInfo'
+  | useRelays' gInfo && isRelay (membership gInfo) = do
+      cxt <- chatStoreCxt
+      withStore $ \db -> updatePublicMemberCount db cxt user gInfo
   | otherwise = pure gInfo
 
 updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> CM (GroupInfo, Bool)
