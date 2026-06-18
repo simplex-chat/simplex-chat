@@ -1,7 +1,7 @@
 # Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
 **PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
-**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881`/`56290cc7b` prefer-content (msgContent, caption-less media wins) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview · `342e270a1`/`fb849aa2c` ios unread clamp (apply-point)
+**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881`/`56290cc7b` prefer-content (msgContent, caption-less media wins) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5`/`8bb47e505` media preview
 **Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
 
 Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
@@ -266,17 +266,17 @@ is revisited.
   out of order show arrival order rather than newest-by-timestamp. Low frequency for support chats.
   (A future refinement could order by local monotonic `createdAt` instead of dropping ordering.)
 - **Unread badge can lag (pre-existing):** a received support message increments the main-list
-  unread (the #5909 `memberPending` branch, now reachable). 2d adds a decrement on edit/delete and
-  read-of-preview, but reads of *non-preview* support messages reconcile via
-  `membership.supportChat.unread` rather than the main counter, so the main unread badge can lag.
-  Not fully addressed here. iOS clamps the unread counter at the **apply point**
-  (`changeUnreadCounter(chatIndex:)`, `fb849aa2c`) so an over-decrement can't drive the per-chat
-  count or the badge negative. The over-decrement is reachable (not feature-specific): `markChatItemsRead`
-  decrements by the requested id count regardless of whether each item still counted — so this is iOS
-  reaching **parity with Android's pre-existing self-clamping** `decreaseCounterInPrimaryContext`
-  (`max(unreadCount − 1, 0)`), not new scope. It supersedes the earlier call-site clamp `342e270a1`,
-  which was racy against the 1 s `UnreadCollector` debounce (a receive-then-quick-delete could skip the
-  matching decrement).
+  unread (the #5909 `memberPending` branch). The support-item increment is balanced by a matching
+  decrement on read / delete (every support `−1` pairs with a `+1`), but reads of *non-preview*
+  support messages reconcile via `membership.supportChat.unread` rather than the main counter, so the
+  main unread badge can lag. Not fully addressed here.
+- **iOS unread over-decrement left untouched (pre-existing, out of scope):** iOS's
+  `changeUnreadCounter` does not clamp at 0, unlike Android's `decreaseCounterInPrimaryContext`
+  (`max(unreadCount − 1, 0)`); `markChatItemsRead` can over-decrement (it decrements by the requested
+  id count regardless of whether each item still counted). This is **general (all chats), not
+  introduced or worsened by this feature**, so it is intentionally not touched here — a clamp belongs
+  in its own change. (A clamp added during review, `342e270a1`/`fb849aa2c`, was removed in `0c7fa1886`
+  to keep this PR surgical.)
 - **Dispatcher-delivered *sent* support item double-touches the primary preview (Android/Desktop,
   minor):** a remote-host / multi-device sent support message arrives via the dispatcher, which calls
   **both** contexts; the secondary pass then re-runs the sent-mirror (`ChatModel.kt:525`) even though
