@@ -1,7 +1,7 @@
 # Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
 **PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
-**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview) · `2b20c9efb`/`8440f17d5` edit/delete preview sync
+**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios) · `5b37cf881` prefer-content (no event re-covers the preview) · `2b20c9efb`/`8440f17d5` edit/delete preview sync · `1d2a7a3b5` media preview
 **Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
 
 Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
@@ -195,6 +195,17 @@ never touched. Fix: on an edit in a `GroupChatScopeContext`, also call
 `chatModel.chatsContext.upsertChatItem` (`ComposeView.kt`). iOS is unaffected (single `chats` list;
 its `upsertChatItem` already updates the preview via the guard).
 
+## 2e. Media support messages in the preview — `1d2a7a3b5` (android, desktop, ios)
+
+A caption-less photo / video / voice / file support message rendered its **thumbnail** (never
+gated) but its **text line** showed the status ("reviewed by admins"), because `ChatPreviewView`
+showed `chatPreviewInfoText()` whenever the last item had no non-empty *text* (`hasMsgContent`) —
+which also catches caption-less media. Fix: show the status only for true no-content **events**
+(`content.msgContent == null`); any message — including caption-less media — falls through to render
+its content ("image" / "video message" / etc.). Captioned media already worked (it has text). Minor:
+a direct chat in a pre-connection state with a media last item now shows the media type instead of
+the connection status (consistent with the thumbnail that already renders there) — rare.
+
 ## 2c. Reload persistence — investigated, **NOT implemented (performance)**
 
 **The gap:** 2a/2b are in-memory only. `findGroupChatPreviews_` (`Store/Messages.hs`) selects the
@@ -244,12 +255,6 @@ is revisited.
 ## Residual limitations / known follow-ups
 - **In-memory preview only** (see 2c): after a reload the preview reverts to "reviewed by admins"
   until the next support message; persistence deferred for performance.
-- **Caption-less media support message shows "reviewed by admins":** `ChatPreviewView`
-  (`ChatPreviewView.kt:241` / `.swift:353`) shows the status text whenever the preview item's
-  `hasMsgContent` is false — which is the case for a photo / voice / file **without a caption**
-  (empty text). So a pending invitee's attachment-only support message is not surfaced as an
-  attachment in the preview. Pre-existing renderer behaviour; a fix needs a `ChatPreviewView`
-  change (render media items even when `hasMsgContent` is false), beyond this PR's diff.
 - **Out-of-order content pins the last-arrived message:** for a pending invitee, content items skip
   the `itemTs` check (broker vs local clock are not comparable), so two content messages delivered
   out of order show arrival order rather than newest-by-timestamp. Low frequency for support chats.
