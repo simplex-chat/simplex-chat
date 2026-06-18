@@ -1,7 +1,13 @@
-# Fix: message preview & unread count applied to the wrong chat
+# Fix: chat list preview — wrong-chat clobber + pending invitee's member-support messages
 
-**PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat` · **Commit:** `8b93c226d`
-**File:** `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt` (`ChatsContext.addChatItem`)
+**PR:** #7072 · **Branch:** `nd/fix-message-preview-and-unread-on-wrong-chat`
+**Commits:** `8b93c226d` wrong-chat revert · `862d93c64` sent preview · `bd7c6c3e8`/`55bdaa216` received preview (android-desktop/ios)
+**Files:** `ChatModel.kt`/`ChatModel.swift` (`addChatItem`)
+
+Part 1 (below) is the original wrong-chat fix. Part 2 (Follow-up, at the end) makes the
+#5909 pending-invitee preview feature correct in-session for sent / received — and
+**corrects a wrong assumption in "Why it's safe" below**. Reload persistence was investigated
+and **deliberately deferred** for performance (see 2c).
 
 ## User-facing bug
 
@@ -86,8 +92,10 @@ preserved.
 ## Why it's safe
 
 - The #5909 feature (pending invitee sees support-scope messages in the main preview) is
-  delivered by the **always-called primary** `addChatItem` invocation + the broadened guard;
-  it does not depend on the secondary→primary write.
+  delivered for **received** items by the **always-called primary** `addChatItem` invocation +
+  the broadened guard. ⚠️ **Correction (see Follow-up):** this does **not** hold for **sent**
+  items — they reach only the active (secondary) context, so the revert dropped the sent-message
+  preview and a dedicated fix was required. #5909's `chatsContext.` write had masked this.
 - `popChatCollector` is **per-context** (`PopChatCollector(this)`), so the pop/reorder calls
   act on the same context they run in.
 - `updateChatTagReadInPrimaryContext` / `increaseUnreadCounter` already self-guard with
@@ -98,3 +106,121 @@ preserved.
 - Reproduced and confirmed fixed by report author.
 - Compiles: `chats[i]` get/set is the established idiom used throughout `ChatsContext`
   (lines 418, 436, 443, 493, 618, 621).
+
+---
+
+# Part 2 — Follow-up: pending invitee's member-support preview (sent / received)
+
+The revert is correct for the wrong-chat bug, but testing surfaced that the #5909 feature
+(a pending invitee's "chat with admins" / member-support messages shown as the group's
+main-list preview) was not actually delivered end-to-end. Three gaps were found: **2a (sent)**
+and **2b (received)** are fixed in the clients; **2c (reload persistence)** was investigated
+and deferred for performance.
+
+## 2a. Sent messages — `862d93c64` (android, desktop)
+
+**Symptom:** a pending invitee's own sent support message did not appear in the main-list
+preview (it did before the revert).
+
+**Cause:** received items are dispatched to **both** contexts (`SimpleXAPI` `NewChatItems`,
+primary + secondary), but **sent** items are added only to the **active** context —
+`ComposeView` send/forward and `FramedItemView` command-send all call
+`chatsCtx.addChatItem`, and in the member-support view `chatsCtx` is the **secondary**
+context. So a sent support item never reached the primary context that owns the main-list
+preview; with the revert it updated only the (invisible) secondary list. #5909's
+`chatsContext.chats[i]` write had masked this (at a wrong index = the wrong-chat bug).
+
+**Fix:** in `addChatItem`, when on a member-support secondary context and the item is sent,
+mirror it to the primary context (like the receive dispatcher):
+
+```kotlin
+if (secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext && cItem.chatDir.sent) {
+  chatsContext.addChatItem(rhId, chatInfo, cItem)
+}
+```
+
+Scoped to `GroupChatScopeContext` (reports view has no compose). Safe: sent items aren't
+`RcvNew`, so no unread double-count; `chatItemBelongsToScope` keeps the body out of the main
+scope; no recursion (primary delegate has `secondaryContextFilter == null`). Matches iOS,
+where `ComposeView` already calls `chatModel.addChatItem` on its single list.
+
+## 2b. Received messages — `bd7c6c3e8` (android, desktop) · `55bdaa216` (ios)
+
+**Symptom:** a received support message showed the static "reviewed by admins" status text
+in the preview instead of the message. (`ChatPreviewView` renders that text only when the
+preview item has **no `msgContent`**, i.e. it's still a group event.)
+
+**Cause:** the group preview keeps the higher-`itemTs` item:
+`cItem.meta.itemTs >= currentPreviewItem.meta.itemTs`. A **received** item's `itemTs` is the
+SMP **broker** clock; the placeholder group event (e.g. `RGEInvitedViaGroupLink`) has a
+**local device** clock `itemTs`. This cross-clock comparison can keep the no-content event.
+Sent items win only because their `itemTs` is the same device's local clock.
+
+**Fix:** bypass the comparison when membership is pending (Kotlin + iOS):
+`if (memberPending || cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) cItem else currentPreviewItem`.
+Guard already restricts to `groupChatScope() == null || memberPending`, so non-pending groups
+are unchanged.
+
+## 2c. Reload persistence — investigated, **NOT implemented (performance)**
+
+**The gap:** 2a/2b are in-memory only. `findGroupChatPreviews_` (`Store/Messages.hs`) selects the
+main-list preview item with `group_scope_tag IS NULL AND group_scope_group_member_id IS NULL`,
+excluding support-scope items — so after a full reload (app restart / user switch) a pending
+invitee's preview reverts to the no-content group event ("reviewed by admins") until the next
+support message re-populates it in memory.
+
+**Why deferred:** persisting it means relaxing that scope filter in the **per-group preview
+subquery**, which is a hot query run on every chat-list load. The naive relaxation measurably
+regresses it for **large chat lists**, and the clean fixes add query complexity for a state that
+is rare and **transient** (only until an admin approves/rejects the invitee). 2a/2b already
+deliver the feature within the active session, and the reload revert is a minor cosmetic gap.
+
+### Benchmark (SQLite 3.40, schema from `chat_schema.sql`, 500 groups × 100 items, 500 runs)
+
+Per chat-list load for a 500-group user (`EXPLAIN QUERY PLAN` + wall-clock):
+
+| Variant | per load | plan |
+|---|---|---|
+| Current (main-scope only) | **0.92 ms** | **COVERING** seek on `idx_chat_items_group_scope_item_ts` (4-col) |
+| Naive `… OR EXISTS(pending)` | 2.36 ms (**2.6×**) | loses covering → `idx_chat_items_groups_item_ts` scan + **table-fetch per group** + correlated `group_members` lookup |
+| `UNION ALL` of two covering seeks, pick newer | 1.98 ms (2.1×) | both branches covering; evaluates both |
+| `COALESCE(support-if-pending, main)` | 1.43 ms (1.5×) | both covering; also fixes the cross-clock pick (prefers support) |
+| `CASE WHEN EXISTS THEN support / main` | 1.56 ms (1.7×) | covering; skips support seek for non-pending groups |
+| **Per-user gate** → old query if not pending | **1.06 ms** | non-pending users (≈ everyone) ~unchanged; one `EXISTS` check |
+
+### Root cause & how far it could be optimized
+- **Regression source:** the `OR` defeats the covering index
+  `idx_chat_items_group_scope_item_ts (user_id, group_id, group_scope_tag, group_scope_group_member_id, item_ts)`,
+  forcing a per-group table-row fetch to read the scope columns (visible as `sys` time ~0.01s→0.38s).
+- **Best design found — per-user global gate + covering form:** check once whether the user is
+  pending in *any* group; if not, run the **byte-identical old query** (zero plan change for the
+  vast majority of users); if so, run the `COALESCE`/covering form. Non-pending users → ~old
+  performance; a pending user stays on covering seeks (~1.7×, **sub-2 ms / 500 groups**) with only
+  the actual pending group doing the extra support lookup. It would also fix the cross-clock pick
+  (prefer support over a higher-`itemTs` local event) for free.
+- **Irreducible cost:** while a user *is* pending, the relaxed branch (or the per-group check)
+  applies — ~1.5–1.7× the old query, transient and sub-2 ms at 500 groups, but non-zero.
+  Eliminating it entirely would need either a new covering index ordered
+  `(…, item_ts)` for the support case, or a denormalized per-group "last preview item id" — both
+  larger than this PR warrants.
+
+**Decision:** ship 2a/2b only. The gated `COALESCE` form above is the ready design if persistence
+is revisited.
+
+## Residual limitations (of shipped 2a/2b)
+- **In-memory only** (see 2c): after a reload the preview reverts to "reviewed by admins" until
+  the next support message; deferred for performance.
+- **No-content event can re-cover the preview:** because 2b takes the new item whenever
+  `memberPending`, a no-content group event arriving after a support message can revert the
+  preview to "reviewed by admins" until the next message (a pending invitee rarely receives such
+  events; could be tightened to "prefer content item").
+- **Unread (pre-existing):** a received support message increments the main unread in-memory (the
+  #5909 `memberPending` branch) while the read path reconciles via `membership.supportChat.unread`
+  — not changed here.
+
+## Verification (Part 2)
+- Desktop AppImage built on the branch with 2a/2b; in-app send/receive pending-preview behavior to
+  be confirmed by the report author.
+- iOS change mirrors the Kotlin guard one-to-one; reuses the existing
+  `cInfo.groupInfo?.membership.memberPending` accessor already used two lines above.
+- 2c benchmark: `sqlite3` + `EXPLAIN QUERY PLAN` against `chat_schema.sql`, 500 groups × 100 items.
