@@ -1183,21 +1183,22 @@ memberIntroEvt gInfo reMember =
 -- Forward the saved owner-signed roster verbatim (reusing its signed shared_msg_id), then the
 -- blob chunks, so the recipient verifies the owner signature.
 serveRoster :: User -> GroupInfo -> GroupMember -> CM ()
-serveRoster user gInfo member = do
-  cxt <- chatStoreCxt
-  withStore' (\db -> getGroupRoster db gInfo) >>= \case
-    Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
-      case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
-        Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
-        Right chatMsg@ChatMessage {msgId} ->
-          withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
-            Right owner -> do
-              let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
-              sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
-              forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
-                sendInlineBlobChunks user gInfo [member] sid blob
-            Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
-    Nothing -> pure ()
+serveRoster user gInfo member =
+  when (member `supportsVersion` groupRosterVersion) $ do
+    cxt <- chatStoreCxt
+    withStore' (\db -> getGroupRoster db gInfo) >>= \case
+      Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
+        case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
+          Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
+          Right chatMsg@ChatMessage {msgId} ->
+            withStore' (\db -> runExceptT $ getGroupMemberById db cxt user ownerGMId) >>= \case
+              Right owner -> do
+                let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' owner) (memberShortenedName owner), fwdBrokerTs = brokerTs}
+                sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
+                forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
+                  sendInlineBlobChunks user gInfo [member] sid blob
+              Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
+      Nothing -> pure ()
 
 -- Used in groups with relays to introduce moderators and above to a new member,
 -- and to announce the new member to moderators and above.
