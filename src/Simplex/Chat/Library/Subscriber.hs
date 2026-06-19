@@ -3257,7 +3257,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | membershipMemId == memId =
           applyAtRosterVersion gInfo m rosterVer_ $
             let gInfo' = gInfo {membership = membership {memberRole = memRole}}
-             in changeMemberRole gInfo' membership (\db -> updateGroupMemberRole db user membership memRole) $ RGEUserRole memRole
+             in changeMemberRole gInfo' membership False (\db -> updateGroupMemberRole db user membership memRole) $ RGEUserRole memRole
       | otherwise = applyAtRosterVersion gInfo m rosterVer_ $ do
           defaultRole <- unknownMemberRole gInfo
           -- an owner-signed event with a key TOFU-creates an unknown member only for a roster role; else a plain lookup
@@ -3267,11 +3267,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- just created (keyless, and allowCreate ensured the event carries its key): pin key + role
               | created, Just (MemberKey pubKey) <- memberKey_ ->
                   let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-                   in changeMemberRole gInfo member (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent
+                   in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent
               -- known member: apply the role (its key is established via roster/intro; the event's key is ignored)
               | otherwise ->
                   let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-                   in changeMemberRole gInfo member (\db -> updateGroupMemberRole db user member memRole) gEvent
+                   in changeMemberRole gInfo member created (\db -> updateGroupMemberRole db user member memRole) gEvent
             -- in relay groups the roster may deliver role update for previously-unknown privileged members
             _ | useRelays' gInfo -> pure Nothing
               | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
@@ -3279,15 +3279,16 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         GroupMember {memberId = membershipMemId} = membership
         -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
-        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} applyMember gEvent
+        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent
           | senderRole < GRAdmin
               || senderRole < fromRole
               || senderRole < memRole =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
               messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing
-          -- in channels a forwarded role event that the roster already applied is a no-op; suppress it
-          | useRelays' gInfo && fromRole == memRole = pure $ memberEventDeliveryScope member
+          -- a forwarded role event the roster already applied is a no-op; suppress it.
+          -- a just-created member is keyless here, so fall through to pin its owner-attested key.
+          | useRelays' gInfo && not created && fromRole == memRole = pure $ memberEventDeliveryScope member
           | otherwise = do
               withStore' applyMember
               (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
