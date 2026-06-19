@@ -87,7 +87,7 @@ module Simplex.Chat.Store.Groups
     getGroupRelayById,
     getGroupRelayByGMId,
     getGroupRelays,
-    getConnectedGroupRelays,
+    getPublishableGroupRelays,
     setGroupRosterVersion,
     getGroupRosterVersion,
     getGroupRoster,
@@ -1426,21 +1426,30 @@ getGroupRelays db GroupInfo {groupId} =
       (groupRelayQuery <> " WHERE gr.group_id = ?")
       (Only groupId)
 
-getConnectedGroupRelays :: DB.Connection -> GroupInfo -> IO [GroupRelay]
-getConnectedGroupRelays db GroupInfo {groupId} =
-  map toGroupRelay
-    <$> DB.query
-      db
-      ( groupRelayQuery
-          <> " "
-          <> [sql|
-               JOIN group_members m ON m.group_member_id = gr.group_member_id
-               WHERE gr.group_id = ?
-                 AND m.member_status = ?
-                 AND gr.relay_status IN (?,?)
-             |]
-      )
-      (groupId, GSMemConnected, RSAcknowledgedRoster, RSActive)
+-- Relays whose link is published to subscribers: acked relays (RSAcknowledgedRoster/RSActive) plus
+-- pre-roster relays at RSAccepted (below groupRosterVersion, they can't ack a roster), gated by the
+-- relay's negotiated version read from its member connection.
+getPublishableGroupRelays :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupRelay]
+getPublishableGroupRelays db cxt user gInfo@GroupInfo {groupId} = do
+  relays <-
+    map toGroupRelay
+      <$> DB.query
+        db
+        ( groupRelayQuery
+            <> " "
+            <> [sql|
+                 JOIN group_members m ON m.group_member_id = gr.group_member_id
+                 WHERE gr.group_id = ?
+                   AND m.member_status = ?
+                   AND gr.relay_status IN (?,?,?)
+               |]
+        )
+        (groupId, GSMemConnected, RSAccepted, RSAcknowledgedRoster, RSActive)
+  members <- getGroupRelayMembers db cxt user gInfo
+  pure [gr | gr@GroupRelay {groupMemberId} <- relays, m <- members, groupMemberId' m == groupMemberId, publishable gr m]
+  where
+    publishable GroupRelay {relayStatus} m =
+      relayStatus /= RSAccepted || not (m `supportsVersion` groupRosterVersion)
 
 groupRelayQuery :: Query
 groupRelayQuery =

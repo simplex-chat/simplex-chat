@@ -85,12 +85,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 16 - support short link data (2025-06-10)
 -- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
 -- 18 - relay web capabilities (2026-05-31)
+-- 19 - group roster (2026-06-18)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 18
+currentChatVersion = VersionChat 19
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -160,6 +161,11 @@ memberSupportVoiceVersion = VersionChat 17
 -- relay sends web preview capabilities to owner
 relayWebCapVersion :: VersionChat
 relayWebCapVersion = VersionChat 18
+
+-- owner-signed roster (promoted members/moderators/admins) and the relay roster-ack handshake;
+-- a relay below this version is published without the handshake (it can't ack a roster)
+groupRosterVersion :: VersionChat
+groupRosterVersion = VersionChat 19
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v

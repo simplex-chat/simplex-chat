@@ -5975,11 +5975,11 @@ Query:
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
    
-               JOIN group_members m ON m.group_member_id = gr.group_member_id
-               WHERE gr.group_id = ?
-                 AND m.member_status = ?
-                 AND gr.relay_status IN (?,?)
-             
+                 JOIN group_members m ON m.group_member_id = gr.group_member_id
+                 WHERE gr.group_id = ?
+                   AND m.member_status = ?
+                   AND gr.relay_status IN (?,?,?)
+               
 Plan:
 SEARCH gr USING INDEX idx_group_relays_group_id (group_id=?)
 SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)

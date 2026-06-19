@@ -910,14 +910,21 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           GCInviteeMember
             | isRelay m -> do
                 withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
-                -- always send the relay a roster (materializing version 0 for old channels with NULL roster_version);
-                -- the relay stays RSInvited (unpublishable) until it acks, so no joiner can impersonate a privileged member
-                gInfo' <- case rosterVersion gInfo of
-                  Just _ -> pure gInfo
-                  Nothing -> do
-                    withStore' $ \db -> setGroupRosterVersion db gInfo (VersionRoster 0)
-                    pure gInfo {rosterVersion = Just (VersionRoster 0)}
-                sendGroupRosterToRelay user gInfo' m
+                if m `supportsVersion` groupRosterVersion
+                  then do
+                    -- send the relay a roster (materializing version 0 for old channels with NULL roster_version);
+                    -- the relay stays RSInvited (unpublishable) until it acks, so no joiner can impersonate a privileged member
+                    gInfo' <- case rosterVersion gInfo of
+                      Just _ -> pure gInfo
+                      Nothing -> do
+                        withStore' $ \db -> setGroupRosterVersion db gInfo (VersionRoster 0)
+                        pure gInfo {rosterVersion = Just (VersionRoster 0)}
+                    sendGroupRosterToRelay user gInfo' m
+                  else do
+                    -- a relay below groupRosterVersion can't ack a roster; publish it on connect as before
+                    -- the handshake (getPublishableGroupRelays and the LINK handler include/activate it by version)
+                    gLink <- withStore $ \db -> getGroupLink db user gInfo
+                    setGroupLinkDataAsync user gInfo gLink
             | otherwise -> do
                 (gInfo', mStatus) <-
                   if not (memberPending m)
@@ -1418,7 +1425,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks, newlyActiveGMIds) =
                       case relayLink of
                         Just rLink
-                          | rLink `elem` relayLinks && relayStatus == RSAcknowledgedRoster -> do
+                          -- version is gated upstream at publish (getPublishableGroupRelays): an RSAccepted relay
+                          -- whose link is in the published data is necessarily pre-roster, so activate it too
+                          | rLink `elem` relayLinks && (relayStatus == RSAcknowledgedRoster || relayStatus == RSAccepted) -> do
                               relay' <- updateRelayStatus db relay RSActive
                               pure (relay' : acc, True, rLink : newlyActiveLinks, groupMemberId : newlyActiveGMIds)
                           | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActiveLinks, newlyActiveGMIds)
