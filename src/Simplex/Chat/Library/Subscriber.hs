@@ -116,7 +116,7 @@ smallGroupsRcptsMemLimit = 20
 verifyGroupSig :: C.PublicKeyEd25519 -> B64UrlByteString -> MemberId -> NonEmpty MsgSignature -> ByteString -> Bool
 verifyGroupSig key publicGroupId memberId signatures signedBody =
   let prefix = smpEncode CBGroup <> smpEncode (publicGroupId, memberId)
-   in all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 key) sig (prefix <> signedBody)) signatures
+   in all (\case (MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 key) sig (prefix <> signedBody)) signatures
 
 processAgentMessage :: ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessage _ _ (DEL_RCVQS delQs) =
@@ -3825,7 +3825,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         signed MSSVerified <$ guard (verifyGroupSig pubKey publicGroupId memberId signatures signedBody)
                     | otherwise ->
                         let prefix = smpEncode chatBinding <> smpEncode (memberId, pubKey) -- forward compatibility for verifying signed messages in p2p groups
-                         in signed MSSVerified <$ guard (all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
+                         in signed MSSVerified <$ guard (all (\case (MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
                   _ -> signed MSSSignedNoKey <$ guard signatureOptional
             | otherwise -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
             where
