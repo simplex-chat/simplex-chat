@@ -1426,11 +1426,11 @@ getGroupRelays db GroupInfo {groupId} =
       (groupRelayQuery <> " WHERE gr.group_id = ?")
       (Only groupId)
 
--- Relays whose link is published to subscribers, paired with their member: acked relays
--- (RSAcknowledgedRoster/RSActive) plus pre-roster relays still at RSAccepted (below groupRosterVersion,
--- they can't ack a roster). The relay's version comes from the member connection, read per relay.
-getPublishableGroupRelays :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [(GroupRelay, GroupMember)]
-getPublishableGroupRelays db cxt user GroupInfo {groupId} = do
+-- Relays whose link is published to subscribers: acked relays (RSAcknowledgedRoster/RSActive) plus
+-- pre-roster relays at RSAccepted (below groupRosterVersion, they can't ack a roster), gated by the
+-- relay's negotiated version read from its member connection.
+getPublishableGroupRelays :: DB.Connection -> StoreCxt -> User -> GroupInfo -> IO [GroupRelay]
+getPublishableGroupRelays db cxt user gInfo@GroupInfo {groupId} = do
   relays <-
     map toGroupRelay
       <$> DB.query
@@ -1445,11 +1445,10 @@ getPublishableGroupRelays db cxt user GroupInfo {groupId} = do
                |]
         )
         (groupId, GSMemConnected, RSAccepted, RSAcknowledgedRoster, RSActive)
-  rms <- fmap catMaybes . forM relays $ \gr@GroupRelay {groupMemberId} ->
-    fmap (gr,) . eitherToMaybe <$> runExceptT (getGroupMemberById db cxt user groupMemberId)
-  pure $ filter publishable rms
+  members <- getGroupRelayMembers db cxt user gInfo
+  pure [gr | gr@GroupRelay {groupMemberId} <- relays, m <- members, groupMemberId' m == groupMemberId, publishable gr m]
   where
-    publishable (GroupRelay {relayStatus}, m) =
+    publishable GroupRelay {relayStatus} m =
       relayStatus /= RSAccepted || not (m `supportsVersion` groupRosterVersion)
 
 groupRelayQuery :: Query

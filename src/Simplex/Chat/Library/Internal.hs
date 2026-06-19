@@ -1400,7 +1400,7 @@ setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM G
 setGroupLinkData nm user gInfo gLink = do
   cxt <- chatStoreCxt
   (conn, groupRelays) <- withFastStore $ \db ->
-    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (map fst <$> getPublishableGroupRelays db cxt user gInfo)
+    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
       linkType = if useRelays' gInfo then CCTChannel else CCTGroup
   sLnk <- shortenShortLink' . setShortLinkType_ linkType =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
@@ -1410,7 +1410,7 @@ setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
 setGroupLinkDataAsync user gInfo gLink = do
   cxt <- chatStoreCxt
   (conn, groupRelays) <- withStore $ \db ->
-    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (map fst <$> getPublishableGroupRelays db cxt user gInfo)
+    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
