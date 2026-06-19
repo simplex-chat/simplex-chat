@@ -38,6 +38,10 @@ Behaviour:
 
 One line changed (plus a clarifying comment). `Files` / `StandardCopyOption` are already imported.
 
+## Compatibility impact
+
+Before this change the updater's download step worked only on *some* Linux systems — it failed on those where `File.renameTo` returns `false`. In particular it did **not** work on **Whonix**, where the "Download completed" dialog appeared over an empty folder and the update could not proceed. `Files.move` succeeds on those systems too (in-place rename when possible, copy+delete otherwise, throwing only on genuine failure), so this fix expands the set of platforms on which the in-app updater works — Whonix included — without changing behaviour where `renameTo` already succeeded.
+
 ## Scope / out of scope
 
 - This change is limited to the shared download step; it fixes the reported symptom on every OS at once.
