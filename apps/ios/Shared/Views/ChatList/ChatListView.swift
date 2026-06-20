@@ -559,8 +559,8 @@ struct ChatListView: View {
 }
 
 struct SubsStatusIndicator: View {
-    @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
-    @State private var hasSess: Bool = false
+    // Totals live on a dedicated observable so they survive this view being recreated on frequent toolbar rebuilds
+    @ObservedObject private var subsModel = SubsStatusModel.shared
     @State private var task: Task<Void, Never>?
     @State private var showServersSummary = false
 
@@ -572,9 +572,9 @@ struct SubsStatusIndicator: View {
         } label: {
             HStack(spacing: 4) {
                 Text("Chats").foregroundStyle(Color.primary).fixedSize().font(.headline)
-                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
+                SubscriptionStatusIndicatorView(subs: subsModel.totalSubs, hasSess: subsModel.hasSession)
                 if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
+                    SubscriptionStatusPercentageView(subs: subsModel.totalSubs, hasSess: subsModel.hasSession)
                 }
             }
         }
@@ -598,8 +598,7 @@ struct SubsStatusIndicator: View {
                     do {
                         let (subs, hasSess) = try await getAgentSubsTotal()
                         await MainActor.run {
-                            self.subs = subs
-                            self.hasSess = hasSess
+                            SubsStatusModel.shared.update(subs, hasSess)
                         }
                     } catch let error {
                         logger.error("getSubsTotal error: \(responseError(error))")
