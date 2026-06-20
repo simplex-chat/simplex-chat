@@ -359,6 +359,24 @@ class ChannelRelaysModel: ObservableObject {
     }
 }
 
+// Subscription totals for the chat list status indicator. Kept in a dedicated
+// observable (not on ChatModel) so they survive the toolbar-hosted indicator
+// being recreated on frequent toolbar rebuilds, without waking ChatModel's many
+// observers on every poll tick.
+class SubsStatusModel: ObservableObject {
+    static let shared = SubsStatusModel()
+    @Published var totalSubs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
+    @Published var hasSession: Bool = false
+
+    func update(_ totalSubs: SMPServerSubs, _ hasSession: Bool) {
+        // only publish on change - avoid re-rendering the indicator on every idle poll tick
+        if self.totalSubs != totalSubs || self.hasSession != hasSession {
+            self.totalSubs = totalSubs
+            self.hasSession = hasSession
+        }
+    }
+}
+
 // Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
