@@ -296,7 +296,7 @@ obfuscatedSimplexLinks = describe "SimpleX links obfuscated with whitespace" do
     hasObfuscatedSimplexLink (T.intercalate "\n" $ T.chunksOf 8 addr) `shouldBe` True
     hasObfuscatedSimplexLink ("connect with me: " <> spaced addr) `shouldBe` True
     hasObfuscatedSimplexLink (T.intercalate " " $ T.chunksOf 8 $ "https://simplex.chat" <> inv) `shouldBe` True
-  it "detects a split short link followed by other text" do
+  it "detects a split link followed by other text" do
     hasObfuscatedSimplexLink (spaced addr <> "\nplease connect") `shouldBe` True
   it "ignores text without a SimpleX link" do
     hasObfuscatedSimplexLink "" `shouldBe` False
