@@ -5,7 +5,7 @@ title: Channel webpage
 
 A channel webpage shows a preview of your channel on the web: its name, description, recent messages and subscriber count. Visitors can see what the channel is about before they subscribe, and the page gives them a "Join" button along with links to download the app.
 
-You don't have to build the preview yourself. The chat relays that host your channel publish its content as a small file, and a ready-made script renders it on your page. All it takes is to enter the address of your page in the app, copy the code it generates, and paste that code into a web page you host.
+You don't have to build the preview yourself. The chat relays that host your channel publish its content as a small file, and a ready-made script renders it on your page. All it takes is to copy the code the app generates and paste it into a web page you host.
 
 ## What you need
 
@@ -17,23 +17,15 @@ You'll also need somewhere to publish an HTML page. Your own site works, but any
 
 Open the channel and tap its name at the top to open the channel information. Scroll down to **Advanced options** and tap **Channel webpage**. This button is only shown to channel owners.
 
-## Step 2. Enter the webpage URL
+## Step 2. Allow embedding while you build the page
 
-Under **Enter webpage URL**, type the address where you're going to publish the page, for example `https://example.com/my-channel`.
+Turn on **Allow anyone to embed** and tap **Save**.
 
-This address matters. It's shown to your subscribers, and the relay uses its domain to allow your page to load the preview. If you publish the page on a different domain, the preview won't load there (unless you allow embedding everywhere, which is the next step).
+With this on, the relay serves your channel preview to any page, so you can build and test from wherever the page lives without it being tied to one domain yet. Leave the webpage URL empty for now; nothing is shown to your subscribers until you set it.
 
-## Step 3. Choose who can embed the preview
+## Step 3. Copy the code
 
-The **Allow anyone to embed** toggle controls which sites are allowed to show your channel preview.
-
-When it's off (the default), only the page at the URL above can show the preview. When it's on, any webpage can show it. Turn it on only if you actually want other sites to embed your channel.
-
-## Step 4. Copy the code and save
-
-Under **Webpage code** you'll see a snippet like the one below. Tap **Copy code**, then tap **Save**. The app asks you to **Save and notify channel subscribers**; confirm to apply the settings.
-
-The generated code looks like this:
+Under **Webpage code** you'll see a snippet like the one below. Tap **Copy code**.
 
 ```html
 <div data-simplex-channel-preview
@@ -48,9 +40,9 @@ The generated code looks like this:
 
 Everything specific to your channel is already in the code: its link, its ID, and the relay domains that serve the preview. There's no need to edit those values.
 
-## Step 5. Add the code to your webpage
+## Step 4. Add the code to your page and test it
 
-Paste the snippet into the page you host at the URL from Step 2. Here's a complete minimal page:
+Paste the snippet into the page you're going to publish. Here's a complete minimal page:
 
 ```html
 <!DOCTYPE html>
@@ -77,7 +69,17 @@ Paste the snippet into the page you host at the URL from Step 2. Here's a comple
 </html>
 ```
 
-Publish the page and open it in a browser. The channel preview shows up in place of the `<div>`.
+Publish the page and open it in a browser. The channel preview shows up in place of the `<div>`. Because embedding is still open, it loads no matter which address you test from, so you can adjust the page until it looks right.
+
+## Step 5. Set the webpage URL and lock it down
+
+Once the page works, go back to **Channel webpage** in the app:
+
+- Under **Enter webpage URL**, type the address where the page is published, for example `https://example.com/my-channel`.
+- Turn **Allow anyone to embed** off if you don't want other sites to be able to show your channel preview. Leave it on if you're happy for anyone to embed it.
+- Tap **Save**.
+
+The URL now appears as a link in your channel info that every subscriber can see. If you turned embedding off, the relay also restricts the preview to your own domain.
 
 ## Customizing the preview
 
@@ -118,7 +120,7 @@ If your channel is served by more than one relay, all of them are listed in `dat
 
 ## If something doesn't work
 
-If the preview area stays empty, check that the page is hosted on the same domain as the URL you entered in Step 2, or turn on **Allow anyone to embed**. The relay only lets that domain load the preview.
+If the preview area stays empty, check that the page is hosted on the same domain as the URL you set in Step 5, or turn **Allow anyone to embed** back on while you sort it out. The relay only lets that domain load the preview.
 
 If the app says "Used chat relays do not support webpages.", the relays hosting your channel don't support this feature yet, so no code can be generated.
 
