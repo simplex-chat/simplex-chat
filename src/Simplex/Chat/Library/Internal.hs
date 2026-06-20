@@ -367,7 +367,7 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
 prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Maybe MarkdownList -> Bool
 prohibitedSimplexLinks gInfo m mc ft =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
-    && (isChatLink mc || maybe False (any ftIsSimplexLink) ft)
+    && (isChatLink mc || maybe False (any ftIsSimplexLink) ft || hasObfuscatedSimplexLink (msgContentText mc))
   where
     isChatLink = \case
       MCChat {} -> True
@@ -1177,7 +1177,7 @@ introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn
     sendGroupMemberMessages user gInfo conn introEvts'
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
-userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
+userProfileInGroup user = userProfileInGroup' user . groupUserAllowSimplexLinks
 {-# INLINE userProfileInGroup #-}
 
 userProfileInGroup' :: User -> Bool -> Maybe Profile -> Profile
@@ -1195,7 +1195,7 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
       memberKey = MemberKey <$> memberPubKey
     }
   where
-    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
+    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && groupFeatureMemberAllowed SGFDirectMessages m g
 
 redactedMemberProfile :: Bool -> Profile -> Profile
 redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType, badge} =
@@ -1203,6 +1203,7 @@ redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDes
   where
     removeSimplexLink s
       | allowSimplexLinks = Just s
+      | hasObfuscatedSimplexLink s = Nothing
       | otherwise = maybe (Just s) (\fts -> if any ftIsSimplexLink fts then Nothing else Just s) $ parseMaybeMarkdownList s
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
@@ -2129,7 +2130,7 @@ sendGroupMessages user gInfo scope asGroup members events = do
             _ -> False
     sendProfileUpdate = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
-          allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+          allowSimplexLinks = groupUserAllowSimplexLinks gInfo
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
       profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
