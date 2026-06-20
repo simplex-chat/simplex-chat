@@ -498,10 +498,10 @@ export class ChatApi {
     chatItemId: number,
     add: boolean,
     reaction: T.MsgReaction
-  ) {
+  ): Promise<T.ACIReaction> {
     const r = await this.sendChatCmd(CC.APIChatItemReaction.cmdString({chatRef: {chatType, chatId}, chatItemId, add, reaction}))
-    if (r.type === "chatItemsDeleted") return r.chatItemDeletions
-    throw new ChatCommandError("error setting item reaction", r)  
+    if (r.type === "chatItemReaction") return r.reaction
+    throw new ChatCommandError("error setting item reaction", r)
   }
 
   /**
