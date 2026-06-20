@@ -18,6 +18,7 @@ import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Attoparsec.ByteString.Char8 as AB
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.ByteString.Char8 (ByteString)
@@ -190,6 +191,21 @@ isLink = \case
 
 hasLinks :: MarkdownList -> Bool
 hasLinks = any $ \(FormattedText f _) -> maybe False isLink f
+
+-- True if removing whitespace from the text exposes a SimpleX connection link.
+-- Catches links obfuscated with spaces to bypass group prohibition of SimpleX links.
+hasObfuscatedSimplexLink :: Text -> Bool
+hasObfuscatedSimplexLink t =
+  fromRight False $ AB.parseOnly findLinkP $ encodeUtf8 $ T.filter keep t
+  where
+    -- a SimpleX link's query parser stops at a space or newline: collapse the
+    -- obfuscating spaces but keep newlines, so the link stays bounded from any
+    -- following text instead of gluing onto it and failing to parse.
+    keep c = c == '\n' || not (isSpace c)
+    findLinkP =
+      (True <$ (strP :: AB.Parser AConnectionLink))
+        <|> (AB.anyChar *> findLinkP)
+        <|> pure False
 
 markdownP :: Parser Markdown
 markdownP = mconcat <$> A.many' fragmentP

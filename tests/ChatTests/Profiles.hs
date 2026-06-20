@@ -2903,6 +2903,11 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     bob <## "bad chat command: feature not allowed SimpleX links"
     bob ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}]")
     bob <## "bad chat command: feature not allowed SimpleX links"
+    -- a link with a space inserted is still blocked
+    let (lnk1, lnk2) = splitAt 12 inv
+        spacedInv = lnk1 <> " " <> lnk2
+    bob ##> ("#team \"" <> spacedInv <> "\\ntest\"")
+    bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
     bob `send` ("@alice \"" <> inv <> "\\ntest\"")
