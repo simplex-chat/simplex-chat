@@ -201,7 +201,8 @@ hasObfuscatedSimplexLink :: Text -> Bool
 hasObfuscatedSimplexLink t =
   fromRight False $ AB.parseOnly findLinkP $ encodeUtf8 $ T.filter (not . isSpace) t
   where
-    findLinkP =
+    findLinkP = do
+      AB.skipWhile (\c -> c /= 's' && c /= 'h') -- links start only with "simplex:" or "https://"
       (True <$ (strP :: AB.Parser AConnectionLink))
         <|> (AB.anyChar *> findLinkP)
         <|> pure False
