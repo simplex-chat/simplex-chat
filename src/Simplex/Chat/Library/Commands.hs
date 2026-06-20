@@ -3675,7 +3675,7 @@ processChatCommand cxt nm = \case
       profileToSend <-
         presentUserBadge user incognitoProfile $ case gInfo_ of
           Just gInfo_' ->
-            let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
+            let allowSimplexLinks = maybe True groupUserAllowSimplexLinks gInfo_'
              in userProfileInGroup' user allowSimplexLinks incognitoProfile
           Nothing -> userProfileDirect user incognitoProfile Nothing True
       chatEvent <- case gInfo_ of
@@ -3988,7 +3988,7 @@ processChatCommand cxt nm = \case
                 conn <- createRelayConnection db cxt user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
                 pure (relayMember, conn, groupRelay)
               let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-                  allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+                  allowSimplexLinks = groupUserAllowSimplexLinks gInfo
                   GroupMember {memberId = relayMemberId} = relayMember
               membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
               let relayInv = GroupRelayInvitation {
