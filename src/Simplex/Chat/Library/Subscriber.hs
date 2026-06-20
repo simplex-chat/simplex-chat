@@ -813,8 +813,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
                     let GroupMember {memberId = membershipMemId} = membership
-                        keepLinks = groupUserKeepsLinks gInfo
-                    membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile keepLinks $ fromLocalProfile $ memberProfile membership
+                        allowSimplexLinks = groupUserAllowSimplexLinks gInfo
+                    membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId membershipProfile
@@ -2700,8 +2700,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise =
           pure m
       where
-        contentChanged = not (sameProfileContent (redactedMemberProfile keepLinks (fromLocalProfile p)) (redactedMemberProfile keepLinks p'))
-        keepLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo && groupFeatureMemberAllowed SGFDirectMessages m gInfo
+        contentChanged = not (sameProfileContent (redactedMemberProfile allowSimplexLinks (fromLocalProfile p)) (redactedMemberProfile allowSimplexLinks p'))
+        allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo && groupFeatureMemberAllowed SGFDirectMessages m gInfo
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -3090,8 +3090,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         pure toMember
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      let keepLinks = groupUserKeepsLinks gInfo
-      membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile keepLinks $ fromLocalProfile $ memberProfile membership
+      let allowSimplexLinks = groupUserAllowSimplexLinks gInfo
+      membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user Nothing (chatHasNtfs chatSettings) groupConnReq dm subMode

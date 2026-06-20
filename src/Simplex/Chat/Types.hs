@@ -640,8 +640,8 @@ groupFeatureUserAllowed feature GroupInfo {membership = GroupMember {memberRole}
 
 -- A connection link in a profile description enables a direct connection, so a description
 -- keeps its links only when both SimpleX links and direct messages are allowed.
-groupUserKeepsLinks :: GroupInfo -> Bool
-groupUserKeepsLinks g =
+groupUserAllowSimplexLinks :: GroupInfo -> Bool
+groupUserAllowSimplexLinks g =
   groupFeatureUserAllowed SGFSimplexLinks g && groupFeatureUserAllowed SGFDirectMessages g
 
 mergeUserChatPrefs :: User -> Contact -> FullPreferences

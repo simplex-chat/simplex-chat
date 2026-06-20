@@ -1177,13 +1177,13 @@ introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn
     sendGroupMemberMessages user gInfo conn introEvts'
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
-userProfileInGroup user = userProfileInGroup' user . groupUserKeepsLinks
+userProfileInGroup user = userProfileInGroup' user . groupUserAllowSimplexLinks
 {-# INLINE userProfileInGroup #-}
 
 userProfileInGroup' :: User -> Bool -> Maybe Profile -> Profile
-userProfileInGroup' User {profile = p} keepLinks incognitoProfile =
+userProfileInGroup' User {profile = p} allowSimplexLinks incognitoProfile =
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-   in redactedMemberProfile keepLinks p'
+   in redactedMemberProfile allowSimplexLinks p'
 
 memberInfo :: GroupInfo -> GroupMember -> MemberInfo
 memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, activeConn} =
@@ -1191,22 +1191,20 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = redactedMemberProfile keepLinks $ fromLocalProfile memberProfile,
+      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile,
       memberKey = MemberKey <$> memberPubKey
     }
   where
-    keepLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && groupFeatureMemberAllowed SGFDirectMessages m g
+    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && groupFeatureMemberAllowed SGFDirectMessages m g
 
 redactedMemberProfile :: Bool -> Profile -> Profile
-redactedMemberProfile keepLinks Profile {displayName, fullName, shortDescr, image, peerType, badge} =
+redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType, badge} =
   Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType, badge}
   where
     removeSimplexLink s
-      | keepLinks = Just s
-      | hasSimplexLink s = Nothing
-      | otherwise = Just s
-    hasSimplexLink s =
-      maybe False (any ftIsSimplexLink) (parseMaybeMarkdownList s) || hasObfuscatedSimplexLink s
+      | allowSimplexLinks = Just s
+      | hasObfuscatedSimplexLink s = Nothing
+      | otherwise = maybe (Just s) (\fts -> if any ftIsSimplexLink fts then Nothing else Just s) $ parseMaybeMarkdownList s
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
 sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
@@ -2132,9 +2130,9 @@ sendGroupMessages user gInfo scope asGroup members events = do
             _ -> False
     sendProfileUpdate = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
-          keepLinks = groupUserKeepsLinks gInfo
+          allowSimplexLinks = groupUserAllowSimplexLinks gInfo
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
-      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile keepLinks $ fromLocalProfile p
+      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
