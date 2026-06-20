@@ -1979,7 +1979,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, 10 + memberImageSize + 12)
+                            .padding(.leading, chat.chatInfo.isChannel ? 12 : 10 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
@@ -2076,7 +2076,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, 10 + memberImageSize + 12)
+                            .padding(.leading, chat.chatInfo.isChannel ? 12 : 10 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
