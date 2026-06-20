@@ -193,15 +193,14 @@ hasLinks :: MarkdownList -> Bool
 hasLinks = any $ \(FormattedText f _) -> maybe False isLink f
 
 -- True if removing whitespace from the text exposes a SimpleX connection link.
--- Catches links obfuscated with spaces to bypass group prohibition of SimpleX links.
+-- Catches links split with spaces or newlines to bypass group prohibition of SimpleX
+-- links. (A full link directly followed by text - no separating whitespace left after
+-- stripping - can still evade, as the trailing text corrupts the last query parameter;
+-- short links are unaffected, since the trailing text is just absorbed into the key.)
 hasObfuscatedSimplexLink :: Text -> Bool
 hasObfuscatedSimplexLink t =
-  fromRight False $ AB.parseOnly findLinkP $ encodeUtf8 $ T.filter keep t
+  fromRight False $ AB.parseOnly findLinkP $ encodeUtf8 $ T.filter (not . isSpace) t
   where
-    -- a SimpleX link's query parser stops at a space or newline: collapse the
-    -- obfuscating spaces but keep newlines, so the link stays bounded from any
-    -- following text instead of gluing onto it and failing to parse.
-    keep c = c == '\n' || not (isSpace c)
     findLinkP =
       (True <$ (strP :: AB.Parser AConnectionLink))
         <|> (AB.anyChar *> findLinkP)
