@@ -1135,6 +1135,19 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+            UPDATE group_members
+            SET member_role = 'owner'
+            WHERE member_category = 'user'
+              AND group_id IN (
+                SELECT group_id FROM groups WHERE local_display_name = 'team'
+              )
+          
+Plan:
+SEARCH group_members USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
+LIST SUBQUERY 1
+SCAN groups USING COVERING INDEX sqlite_autoindex_groups_1
+
+Query: 
           DELETE FROM chat_item_reactions
           WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
         
