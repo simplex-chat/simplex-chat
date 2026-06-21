@@ -3064,7 +3064,6 @@ processChatCommand cxt nm = \case
     pure $ CRGroupLink user gInfo gLnk'
   APIDeleteGroupLink groupId -> withUser $ \user -> withGroupLock "deleteGroupLink" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
-    assertUserGroupRole gInfo GRAdmin
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
