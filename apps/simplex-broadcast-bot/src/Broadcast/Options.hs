@@ -94,6 +94,5 @@ mkChatOpts BroadcastBotOpts {coreOptions, botDisplayName} =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Just CreateBotOpts {botDisplayName, allowFiles = False},
-      maintenance = False
+      createBot = Just CreateBotOpts {botDisplayName, allowFiles = False}
     }

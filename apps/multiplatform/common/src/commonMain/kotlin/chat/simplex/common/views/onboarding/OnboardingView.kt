@@ -6,7 +6,8 @@ enum class OnboardingStage {
   LinkAMobile,
   Step2_5_SetupDatabasePassphrase,
   Step3_ChooseServerOperators,
-  Step3_CreateSimpleXAddress,
-  Step4_SetNotificationsMode,
+  Step3_CreateSimpleXAddress, // deprecated
+  Step4_SetNotificationsMode, // deprecated
+  Step4_NetworkCommitments,
   OnboardingComplete
 }

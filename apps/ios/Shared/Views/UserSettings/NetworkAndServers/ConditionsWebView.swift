@@ -5,6 +5,7 @@
 //  Created by Stanislav Dmitrenko on 26.11.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/architecture.md
 
 import SwiftUI
 import WebKit
@@ -70,11 +71,7 @@ struct ConditionsWebView: UIViewRepresentable {
             switch navigationAction.navigationType {
             case .linkActivated:
                 decisionHandler(.cancel)
-                if url.absoluteString.starts(with: "https://simplex.chat/contact#") {
-                    ChatModel.shared.appOpenUrl = url
-                } else {
-                    UIApplication.shared.open(url)
-                }
+                openExternalLink(url)
             default:
                 decisionHandler(.allow)
             }

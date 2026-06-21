@@ -11,6 +11,7 @@ import SimpleXChat
 
 private let liveMsgInterval: UInt64 = 3000_000000
 
+// Spec: spec/client/compose.md#SendMessageView
 struct SendMessageView: View {
     var placeholder: String?
     @Binding var composeState: ComposeState

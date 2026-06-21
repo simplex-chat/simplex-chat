@@ -107,7 +107,7 @@ private fun SetupDatabasePassphraseLayout(
         Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer).padding(horizontal = DEFAULT_PADDING),
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
-        AppBarTitle(stringResource(MR.strings.setup_database_passphrase))
+        AppBarTitle(stringResource(MR.strings.setup_database_passphrase), overrideTitleColor = MaterialTheme.colors.onBackground)
 
         val onClickUpdate = {
           // Don't do things concurrently. Shouldn't be here concurrently, just in case

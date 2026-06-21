@@ -14,7 +14,6 @@ import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
-import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)

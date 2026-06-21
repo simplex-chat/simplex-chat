@@ -12,7 +12,7 @@ import SimpleXChat
 struct NewChatMenuButton: View {
     // do not use chatModel here because it prevents showing AddGroupMembersView after group creation and QR code after link creation on iOS 16
 //    @EnvironmentObject var chatModel: ChatModel
-    @State private var showNewChatSheet = false
+    @Binding var showNewChatSheet: Bool
     @State private var alert: SomeAlert? = nil
 
     var body: some View {
@@ -24,10 +24,6 @@ struct NewChatMenuButton: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
-        }
-        .appSheet(isPresented: $showNewChatSheet) {
-            NewChatSheet()
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
         .alert(item: $alert) { a in
             return a.alert
@@ -59,7 +55,7 @@ struct NewChatSheet: View {
         let showArchive = chatModel.chats.contains { $0.chatInfo.contact?.chatDeleted == true }
         let v = NavigationView {
             viewBody(showArchive)
-                .navigationTitle("New message")
+                .navigationTitle("New chat")
                 .navigationBarTitleDisplayMode(.large)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
@@ -103,9 +99,8 @@ struct NewChatSheet: View {
                 Section {
                     NavigationLink(isActive: $isAddContactActive) {
                         NewChatView(selection: .invite)
-                            .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
-                            .navigationBarTitleDisplayMode(.large)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         navigateOnTap(Label("Create 1-time link", systemImage: "link.badge.plus")) {
                             isAddContactActive = true
@@ -113,9 +108,8 @@ struct NewChatSheet: View {
                     }
                     NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true)
-                            .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
-                            .navigationBarTitleDisplayMode(.large)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         navigateOnTap(Label("Scan / Paste link", systemImage: "qrcode")) {
                             isScanPasteLinkActive = true
@@ -128,6 +122,14 @@ struct NewChatSheet: View {
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Label("Create group", systemImage: "person.2.circle.fill")
+                    }
+                    NavigationLink {
+                        AddChannelView()
+                            .navigationTitle("Create public channel")
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        Label("Create public channel (BETA)", systemImage: "antenna.radiowaves.left.and.right")
                     }
                 }
                 
@@ -379,17 +381,18 @@ struct ContactsListSearchBar: View {
             if ignoreSearchTextChange {
                 ignoreSearchTextChange = false
             } else {
-                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
+                switch strConnectTarget(t.trimmingCharacters(in: .whitespaces)) {
+                case let .link(text, _, linkText):
                     searchFocussed = false
-                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
-                        ignoreSearchTextChange = true
-                        searchText = simplexLinkText(linkType, smpHosts)
-                    }
+                    ignoreSearchTextChange = true
+                    searchText = linkText
                     searchShowingSimplexLink = true
                     searchChatFilteredBySimplexLink = nil
-                    connect(link.text)
-                } else {
-                    if t != "" { // if some other text is pasted, enter search mode
+                    connect(text)
+                case let .name(nameInfo):
+                    showUnsupportedNameAlert(nameInfo)
+                case .none:
+                    if t != "" {
                         searchFocussed = true
                     } else {
                         connectProgressManager.cancelConnectProgress()
@@ -471,5 +474,5 @@ struct DeletedChats: View {
 }
 
 #Preview {
-    NewChatMenuButton()
+    NewChatMenuButton(showNewChatSheet: Binding.constant(false))
 }

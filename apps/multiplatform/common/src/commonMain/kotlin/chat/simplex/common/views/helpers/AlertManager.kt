@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
@@ -15,10 +16,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
@@ -272,10 +275,13 @@ class AlertManager {
     profileName: String,
     profileFullName: String,
     profileImage: @Composable () -> Unit,
-    confirmText: String = generalGetString(MR.strings.connect_plan_open_chat),
-    onConfirm: () -> Unit,
+    profileBadge: LocalBadge? = null,
+    subtitle: String? = null,
+    information: String? = null,
+    confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
+    onConfirm: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
-    onDismiss: (() -> Unit)?,
+    onDismiss: (() -> Unit)? = null,
   ) {
     showAlert {
       AlertDialog(
@@ -297,8 +303,17 @@ class AlertManager {
               ) {
                 profileImage()
                 Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                val nameFontSize = MaterialTheme.typography.h4.fontSize
                 Text(
-                  profileName,
+                  buildAnnotatedString {
+                    append(profileName)
+                    if (profileBadge != null) {
+                      append(" ")
+                      appendInlineContent(id = "nameBadge")
+                    }
+                  },
+                  inlineContent =
+                    if (profileBadge != null) mapOf("nameBadge" to nameBadgeInline(profileBadge, nameFontSize)) else emptyMap(),
                   textAlign = TextAlign.Center,
                   style = MaterialTheme.typography.h4,
                   lineHeight = 20.sp,
@@ -317,6 +332,27 @@ class AlertManager {
                     modifier = Modifier.fillMaxWidth()
                   )
                 }
+                if (subtitle != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    subtitle,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.secondary,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
+                if (information != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    information,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
               }
 
               Column(
@@ -329,16 +365,18 @@ class AlertManager {
                   delay(200)
                   focusRequester.requestFocus()
                 }
-                TextButton(onClick = {
-                  onConfirm.invoke()
-                  hideAlert()
-                }, Modifier.focusRequester(focusRequester)) {
-                  Text(confirmText)
+                if (confirmText != null && onConfirm != null) {
+                  TextButton(onClick = {
+                    onConfirm.invoke()
+                    hideAlert()
+                  }, Modifier.focusRequester(focusRequester)) {
+                    Text(confirmText)
+                  }
                 }
                 TextButton(onClick = {
                   onDismiss?.invoke()
                   hideAlert()
-                }) {
+                }, if (confirmText == null) Modifier.focusRequester(focusRequester) else Modifier) {
                   Text(dismissText)
                 }
               }

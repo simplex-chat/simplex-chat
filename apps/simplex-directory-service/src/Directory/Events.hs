@@ -10,11 +10,13 @@
 module Directory.Events
   ( DirectoryEvent (..),
     DirectoryCmd (..),
+    DirectoryCmdTag (..),
     ADirectoryCmd (..),
     DirectoryHelpSection (..),
     DirectoryRole (..),
     SDirectoryRole (..),
     crDirectoryEvent,
+    directoryCmdP,
     directoryCmdTag,
   )
 where
@@ -31,10 +33,10 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Directory.Store
 import Simplex.Chat.Controller
-import Simplex.Chat.Markdown (displayNameTextP)
+import Simplex.Chat.Markdown (MarkdownList, displayNameTextP)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
-import Simplex.Chat.Protocol (MsgContent (..))
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink, MsgContent (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..))
@@ -47,6 +49,7 @@ data DirectoryEvent
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {member :: GroupMember, fromGroup :: GroupInfo, toGroup :: GroupInfo}
+  | DEGroupLinkCheck GroupInfo
   | DEPendingMember GroupInfo GroupMember
   | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
@@ -55,6 +58,8 @@ data DirectoryEvent
   | DEContactLeftGroup ContactId GroupInfo
   | DEServiceRemovedFromGroup GroupInfo
   | DEGroupDeleted GroupInfo
+  | DEChatLinkReceived {contact :: Contact, chatItemId :: ChatItemId, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
+  | DEMemberUpdated {groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | DEUnsupportedMessage Contact ChatItemId
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
@@ -66,7 +71,7 @@ crDirectoryEvent :: Either ChatError ChatEvent -> Maybe DirectoryEvent
 crDirectoryEvent = \case
   Right evt -> crDirectoryEvent_ evt
   Left e -> case e of
-    ChatErrorAgent {agentError = BROKER _ NETWORK} -> Nothing
+    ChatErrorAgent {agentError = BROKER _ (NETWORK _)} -> Nothing
     ChatErrorAgent {agentError = BROKER _ TIMEOUT} -> Nothing
     _ -> Just $ DELogChatResponse $ "chat error: " <> tshow e
 
@@ -89,11 +94,14 @@ crDirectoryEvent_ = \case
   CEvtLeftMember {groupInfo, member} -> (`DEContactLeftGroup` groupInfo) <$> memberContactId member
   CEvtDeletedMemberUser {groupInfo} -> Just $ DEServiceRemovedFromGroup groupInfo
   CEvtGroupDeleted {groupInfo} -> Just $ DEGroupDeleted groupInfo
+  CEvtUnknownMemberAnnounced {groupInfo, unknownMember, announcedMember} -> Just $ DEMemberUpdated {groupInfo, fromMember = unknownMember, toMember = announcedMember}
+  CEvtGroupMemberUpdated {groupInfo, fromMember, toMember} -> Just $ DEMemberUpdated {groupInfo, fromMember, toMember}
   CEvtChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
   CEvtChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
-  CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}) : _} ->
+  CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, formattedText = ft, meta = CIMeta {itemLive}}) : _} ->
     Just $ case (mc, itemLive) of
-      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.dropWhileEnd isSpace t
+      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP ft <* A.endOfInput) $ T.dropWhileEnd isSpace t
+      (MCChat {chatLink, ownerSig}, Nothing) -> DEChatLinkReceived {contact = ct, chatItemId = ciId, chatLink, ownerSig}
       _ -> DEUnsupportedMessage ct ciId
     where
       ciId = chatItemId' ci
@@ -135,6 +143,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCInviteOwnerToGroup_ :: DirectoryCmdTag 'DRAdmin
   -- DCAddBlockedWord_ :: DirectoryCmdTag 'DRAdmin
   -- DCRemoveBlockedWord_ :: DirectoryCmdTag 'DRAdmin
+  DCPromoteGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCExecuteCommand_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
@@ -146,7 +155,7 @@ data DirectoryHelpSection = DHSRegistration | DHSCommands
 
 data DirectoryCmd (r :: DirectoryRole) where
   DCHelp :: DirectoryHelpSection -> DirectoryCmd 'DRUser
-  DCSearchGroup :: Text -> DirectoryCmd 'DRUser
+  DCSearchGroup :: Text -> Maybe MarkdownList -> DirectoryCmd 'DRUser
   DCSearchNext :: DirectoryCmd 'DRUser
   DCAllGroups :: DirectoryCmd 'DRUser
   DCRecentGroups :: DirectoryCmd 'DRUser
@@ -157,7 +166,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCMemberRole :: UserGroupRegId -> Maybe GroupName -> Maybe GroupMemberRole -> DirectoryCmd 'DRUser
   DCGroupFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
   DCShowUpgradeGroupLink :: GroupId -> Maybe GroupName -> DirectoryCmd 'DRUser
-  DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRAdmin
+  DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId, promote :: Maybe Bool} -> DirectoryCmd 'DRAdmin
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
@@ -167,6 +176,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCInviteOwnerToGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   -- DCAddBlockedWord :: Text -> DirectoryCmd 'DRAdmin
   -- DCRemoveBlockedWord :: Text -> DirectoryCmd 'DRAdmin
+  DCPromoteGroup :: GroupId -> GroupName -> Bool -> DirectoryCmd 'DRSuperUser
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -177,11 +187,11 @@ data ADirectoryCmd = forall r. ADC (SDirectoryRole r) (DirectoryCmd r)
 
 deriving instance Show ADirectoryCmd
 
-directoryCmdP :: Parser ADirectoryCmd
-directoryCmdP =
+directoryCmdP :: Maybe MarkdownList -> Parser ADirectoryCmd
+directoryCmdP ft =
   (A.char '/' *> cmdStrP)
     <|> (A.char '.' $> ADC SDRUser DCSearchNext)
-    <|> (ADC SDRUser . DCSearchGroup <$> A.takeText)
+    <|> (ADC SDRUser . (`DCSearchGroup` ft) <$> A.takeText)
   where
     cmdStrP =
       (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError t)))
@@ -211,6 +221,7 @@ directoryCmdP =
         "invite" -> au DCInviteOwnerToGroup_
         -- "block_word" -> au DCAddBlockedWord_
         -- "unblock_word" -> au DCRemoveBlockedWord_
+        "promote" -> su DCPromoteGroup_
         "exec" -> su DCExecuteCommand_
         "x" -> su DCExecuteCommand_
         _ -> fail "bad command tag"
@@ -270,7 +281,8 @@ directoryCmdP =
       DCApproveGroup_ -> do
         (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
-        pure DCApproveGroup {groupId, displayName, groupApprovalId}
+        promote <- Just <$> (" promote=" *> onOffP) <|> pure Nothing
+        pure DCApproveGroup {groupId, displayName, groupApprovalId, promote}
       DCRejectGroup_ -> gc DCRejectGroup
       DCSuspendGroup_ -> gc DCSuspendGroup
       DCResumeGroup_ -> gc DCResumeGroup
@@ -283,17 +295,22 @@ directoryCmdP =
       DCInviteOwnerToGroup_ -> gc DCInviteOwnerToGroup
       -- DCAddBlockedWord_ -> DCAddBlockedWord <$> wordP
       -- DCRemoveBlockedWord_ -> DCRemoveBlockedWord <$> wordP
+      DCPromoteGroup_ -> do
+        (groupId, displayName) <- gc (,)
+        promote <- A.space *> onOffP
+        pure $ DCPromoteGroup groupId displayName promote
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (spacesP *> A.takeText)
       where
         gc f = f <$> (spacesP *> A.decimal) <*> (A.char ':' *> displayNameTextP)
         gc_ f = f <$> (spacesP *> A.decimal) <*> optional (A.char ':' *> displayNameTextP)
         -- wordP = spacesP *> A.takeTill isSpace
         spacesP = A.takeWhile1 isSpace
+        onOffP = (A.string "on" $> True) <|> (A.string "off" $> False)
 
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
   DCHelp _ -> "help"
-  DCSearchGroup _ -> "search"
+  DCSearchGroup {} -> "search"
   DCSearchNext -> "next"
   DCAllGroups -> "all"
   DCRecentGroups -> "new"
@@ -314,6 +331,7 @@ directoryCmdTag = \case
   DCInviteOwnerToGroup {} -> "invite"
   -- DCAddBlockedWord _ -> "block_word"
   -- DCRemoveBlockedWord _ -> "unblock_word"
+  DCPromoteGroup {} -> "promote"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"

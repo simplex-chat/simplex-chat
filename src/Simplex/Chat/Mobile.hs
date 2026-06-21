@@ -38,6 +38,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri)
+import Simplex.Chat.Mobile.Badges
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
@@ -50,7 +51,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
@@ -135,6 +136,10 @@ foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CStrin
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
 
 foreign export ccall "chat_json_length" cChatJsonLength :: CString -> IO CInt
+
+foreign export ccall "chat_badge_keygen" cChatBadgeKeygen :: IO CJSONString
+
+foreign export ccall "chat_badge_issue" cChatBadgeIssue :: CString -> IO CJSONString
 
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString
 
@@ -253,8 +258,11 @@ mobileChatOpts dbOptions =
             logFile = Nothing,
             tbqSize = 4096,
             deviceName = Nothing,
+            chatRelay = False,
             highlyAvailable = False,
-            yesToUpMigrations = False
+            yesToUpMigrations = False,
+            migrationBackupPath = Just "",
+            maintenance = True
           },
       chatCmd = "",
       chatCmdDelay = 3,
@@ -267,8 +275,7 @@ mobileChatOpts dbOptions =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Nothing,
-      maintenance = True
+      createBot = Nothing
     }
 
 defaultMobileConfig :: ChatConfig
@@ -276,7 +283,6 @@ defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
       logLevel = CLLError,
-      coreApi = True,
       deviceNameForRemote = "Mobile"
     }
 
@@ -294,8 +300,9 @@ chatMigrateInit dbFilePrefix dbKey confirm = do
 chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
 chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
-  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey) confirmMigrations
-  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey) confirmMigrations
+  let migrationConfig = MigrationConfig confirmMigrations (Just "")
+  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey chatDBFunctions) migrationConfig
+  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey []) migrationConfig
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
     opts = mobileChatOpts $ removeDbKey chatDbOpts

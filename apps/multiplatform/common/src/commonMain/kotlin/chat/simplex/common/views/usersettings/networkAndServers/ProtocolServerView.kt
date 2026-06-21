@@ -36,6 +36,7 @@ fun ProtocolServerView(
   serverProtocol: ServerProtocol,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   onDelete: () -> Unit,
   onUpdate: (UserServer) -> Unit,
   close: () -> Unit,
@@ -93,6 +94,13 @@ fun ProtocolServerView(
             if (isActive) {
               draftServer.value = res.first
               testing.value = false
+              val failure = res.second
+              if (failure != null) {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.smp_servers_test_failed),
+                  text = failure.localizedDescription
+                )
+              }
             }
           }
         },

@@ -8,6 +8,7 @@ module APIDocs where
 import API.Docs.Commands
 import API.Docs.Events
 import API.Docs.Generate
+import qualified API.Docs.Generate.Python as Py
 import qualified API.Docs.Generate.TypeScript as TS
 import API.Docs.Responses
 import API.Docs.Types
@@ -42,6 +43,11 @@ apiDocsTest = do
     it "generate typescript responses code" $ testGenerate TS.responsesCodeFile TS.responsesCodeText
     it "generate typescript events code" $ testGenerate TS.eventsCodeFile TS.eventsCodeText
     it "generate typescript types code" $ testGenerate TS.typesCodeFile TS.typesCodeText
+  describe "Python" $ do
+    it "generate python commands code"  $ testGenerate Py.commandsCodeFile  Py.commandsCodeText
+    it "generate python responses code" $ testGenerate Py.responsesCodeFile Py.responsesCodeText
+    it "generate python events code"    $ testGenerate Py.eventsCodeFile    Py.eventsCodeText
+    it "generate python types code"     $ testGenerate Py.typesCodeFile     Py.typesCodeText
 
 documentedCmds :: [String]
 documentedCmds = concatMap (map consName' . commands) chatCommandsDocs

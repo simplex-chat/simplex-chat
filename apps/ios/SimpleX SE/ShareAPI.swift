@@ -48,7 +48,7 @@ func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     throw r.unexpected
 }
 
-func apiGetChats(userId: User.ID) throws -> Array<ChatData> {
+func apiGetChats(userId: User.ID) throws -> Array<SEChatData> {
     let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiGetChats(userId: userId))
     if case let .result(.apiChats(user: _, chats: chats)) = r { return chats }
     throw r.unexpected
@@ -68,6 +68,7 @@ func apiSendMessages(
             type: chatInfo.chatType,
             id: chatInfo.apiId,
             scope: chatInfo.groupChatScope(),
+            sendAsGroup: chatInfo.sendAsGroup,
             live: false,
             ttl: nil,
             composedMessages: composedMessages
@@ -124,7 +125,7 @@ enum SEChatCommand: ChatCmdProtocol {
     case apiSetEncryptLocalFiles(enable: Bool)
     case apiGetChats(userId: Int64)
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
-    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
     
     var cmdString: String {
         switch self {
@@ -140,10 +141,11 @@ enum SEChatCommand: ChatCmdProtocol {
         case let .apiCreateChatItems(noteFolderId, composedMessages):
             let msgs = encodeJSON(composedMessages)
             return "/_create *\(noteFolderId) json \(msgs)"
-        case let .apiSendMessages(type, id, scope, live, ttl, composedMessages):
+        case let .apiSendMessages(type, id, scope, sendAsGroup, live, ttl, composedMessages):
             let msgs = encodeJSON(composedMessages)
             let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-            return "/_send \(ref(type, id, scope: scope)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+            let asGroup = sendAsGroup ? "(as_group=on)" : ""
+            return "/_send \(ref(type, id, scope: scope))\(asGroup) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
         }
     }
     
@@ -160,6 +162,8 @@ enum SEChatCommand: ChatCmdProtocol {
             } else {
                 "(_support)"
             }
+        case .reports:
+            "(reports, prohibited)" // can't use surrogate Reports scope
         }
     }
 }
@@ -168,7 +172,7 @@ enum SEChatResponse: Decodable, ChatAPIResult {
     case activeUser(user: User)
     case chatStarted
     case chatRunning
-    case apiChats(user: UserRef, chats: [ChatData])
+    case apiChats(user: UserRef, chats: [SEChatData])
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case cmdOk(user_: UserRef?)
     
@@ -197,7 +201,7 @@ enum SEChatResponse: Decodable, ChatAPIResult {
     }
 
     static func fallbackResult(_ type: String, _ json: NSDictionary) -> SEChatResponse? {
-        if type == "apiChats", let r = parseApiChats(json) {
+        if type == "apiChats", let r = seParseApiChats(json) {
             .apiChats(user: r.user, chats: r.chats)
         } else {
             nil
@@ -236,4 +240,36 @@ enum SEChatEvent: Decodable, ChatAPIResult {
         case let .sndFileWarning(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
         }
     }    
+}
+
+public struct SEChatData: Decodable, Identifiable, Hashable, ChatLike {
+    public var chatInfo: ChatInfo
+
+    public var id: ChatId { get { chatInfo.id } }
+
+    public init(chatInfo: ChatInfo) {
+        self.chatInfo = chatInfo
+    }
+
+    public static func invalidJSON(_ json: Data?) -> SEChatData {
+        SEChatData(chatInfo: .invalidJSON(json: json))
+    }
+}
+
+public func seParseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [SEChatData])? {
+    if let jApiChats = jResp["apiChats"] as? NSDictionary,
+       let user: UserRef = try? decodeObject(jApiChats["user"] as Any),
+       let jChats = jApiChats["chats"] as? NSArray {
+        let chats: [SEChatData] = jChats.map { jChat in
+            if let jChatDict = jChat as? NSDictionary,
+               let jChatInfo = jChatDict["chatInfo"],
+               let chatInfo: ChatInfo = try? decodeObject(jChatInfo) {
+                return SEChatData(chatInfo: chatInfo)
+            }
+            return SEChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted))
+        }
+        return (user, chats)
+    } else {
+        return nil
+    }
 }

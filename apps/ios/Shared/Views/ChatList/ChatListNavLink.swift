@@ -40,6 +40,7 @@ func dynamicSize(_ font: DynamicTypeSize) -> DynamicSizes {
     dynamicSizes[font] ?? defaultDynamicSizes
 }
 
+// Spec: spec/client/chat-list.md#ChatListNavLink
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -90,6 +91,7 @@ struct ChatListNavLink: View {
         .actionSheet(item: $actionSheet) { $0.actionSheet }
     }
     
+    // Spec: spec/client/chat-list.md#contactNavLink
     private func contactNavLink(_ contact: Contact) -> some View {
         Group {
             if contact.isContactCard {
@@ -211,6 +213,7 @@ struct ChatListNavLink: View {
         }
     }
 
+    // Spec: spec/client/chat-list.md#groupNavLink
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
@@ -241,7 +244,7 @@ struct ChatListNavLink: View {
                 }
                 .swipeActions(edge: .trailing) {
                     tagChatButton(chat)
-                    if (groupInfo.membership.memberCurrentOrPending) {
+                    if groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner) {
                         leaveGroupChatButton(groupInfo)
                     }
                     if groupInfo.canDelete {
@@ -266,7 +269,7 @@ struct ChatListNavLink: View {
                 let showReportsButton = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator
                 let showClearButton = !chat.chatItems.isEmpty
                 let showDeleteGroup = groupInfo.canDelete
-                let showLeaveGroup = groupInfo.membership.memberCurrentOrPending
+                let showLeaveGroup = groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)
                 let totalNumberOfButtons = 1 + (showReportsButton ? 1 : 0) + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
 
                 if showClearButton && totalNumberOfButtons <= 3 {
@@ -295,6 +298,7 @@ struct ChatListNavLink: View {
         }
     }
 
+    // Spec: spec/client/chat-list.md#noteFolderNavLink
     private func noteFolderNavLink(_ noteFolder: NoteFolder) -> some View {
         NavLinkPlain(
             chatId: chat.chatInfo.id,
@@ -325,6 +329,7 @@ struct ChatListNavLink: View {
         .tint(chat.chatInfo.incognito ? .indigo : theme.colors.primary)
     }
 
+    // Spec: spec/client/chat-list.md#markReadButton
     @ViewBuilder private func markReadButton() -> some View {
         if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
             Button {
@@ -344,6 +349,7 @@ struct ChatListNavLink: View {
 
     }
 
+    // Spec: spec/client/chat-list.md#toggleFavoriteButton
     @ViewBuilder private func toggleFavoriteButton() -> some View {
         if chat.chatInfo.chatSettings?.favorite == true {
             Button {
@@ -362,6 +368,7 @@ struct ChatListNavLink: View {
         }
     }
 
+    // Spec: spec/client/chat-list.md#toggleNtfsButton
     @ViewBuilder private func toggleNtfsButton(chat: Chat) -> some View {
         if let nextMode = chat.chatInfo.nextNtfMode {
             Button {
@@ -382,6 +389,7 @@ struct ChatListNavLink: View {
         }
     }
 
+    // Spec: spec/client/chat-list.md#clearChatButton
     private func clearChatButton() -> some View {
         Button {
             AlertManager.shared.showAlert(clearChatAlert())
@@ -483,6 +491,7 @@ struct ChatListNavLink: View {
         .tint(.red)
     }
 
+    // Spec: spec/client/chat-list.md#contactRequestNavLink
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
         .frameCompat(height: dynamicRowHeight)
@@ -517,6 +526,7 @@ struct ChatListNavLink: View {
         }
     }
 
+    // Spec: spec/client/chat-list.md#contactConnectionNavLink
     private func contactConnectionNavLink(_ contactConnection: PendingContactConnection) -> some View {
         ContactConnectionView(chat: chat)
         .frameCompat(height: dynamicRowHeight)
@@ -555,7 +565,7 @@ struct ChatListNavLink: View {
     }
 
     private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
-        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
+        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
         return Alert(
             title: Text(label),
             message: deleteGroupAlertMessage(groupInfo),
@@ -610,9 +620,11 @@ struct ChatListNavLink: View {
     }
 
     private func leaveGroupAlert(_ groupInfo: GroupInfo) -> Alert {
-        let titleLabel: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
+        let titleLabel: LocalizedStringKey = groupInfo.useRelays ? "Leave channel?" : groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
         let messageLabel: LocalizedStringKey = (
-            groupInfo.businessChat == nil
+            groupInfo.useRelays
+            ? "You will stop receiving messages from this channel. Chat history will be preserved."
+            : groupInfo.businessChat == nil
             ? "You will stop receiving messages from this group. Chat history will be preserved."
             : "You will stop receiving messages from this chat. Chat history will be preserved."
         )

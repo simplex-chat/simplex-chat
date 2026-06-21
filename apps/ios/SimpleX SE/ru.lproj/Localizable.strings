@@ -29,7 +29,7 @@
 "Database error" = "Ошибка базы данных";
 
 /* No comment provided by engineer. */
-"Database passphrase is different from saved in the keychain." = "Пароль базы данных отличается от сохраненного в keychain.";
+"Database passphrase is different from saved in the keychain." = "Пароль базы данных отличается от сохранённого в keychain.";
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "Введите пароль базы данных, чтобы открыть чат.";
@@ -77,7 +77,7 @@
 "Passphrase" = "Пароль";
 
 /* No comment provided by engineer. */
-"Please create a profile in the SimpleX app" = "Пожалуйста, создайте профиль в приложении SimpleX.";
+"Please create a profile in the SimpleX app" = "Пожалуйста, создайте профиль в приложении SimpleX";
 
 /* No comment provided by engineer. */
 "Selected chat preferences prohibit this message." = "Выбранные настройки чата запрещают это сообщение.";

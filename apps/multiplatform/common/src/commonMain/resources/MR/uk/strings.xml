@@ -124,7 +124,7 @@
     <string name="server_error">помилка</string>
     <string name="server_connecting">підключення</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Ви підключені до сервера для отримання повідомлень від цього контакту.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Спроба підключитися до сервера для отримання повідомлень від цього контакту (помилка: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Спроба підключитися до сервера для отримання повідомлень від цього контакту (помилка: %1$s).</string>
     <string name="deleted_description">видалено</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Спроба підключитися до сервера для отримання повідомлень від цього контакту.</string>
     <string name="marked_deleted_description">відзначено як видалено</string>
@@ -407,7 +407,6 @@
     <string name="callstate_waiting_for_confirmation">очікування підтвердження…</string>
     <string name="privacy_redefined">Приватність перевизначена</string>
     <string name="people_can_connect_only_via_links_you_share">Ви вирішуєте, хто може під\'єднатися.</string>
-    <string name="how_simplex_works">Як працює SimpleX</string>
     <string name="encrypted_audio_call">зашифрований e2e аудіовиклик</string>
     <string name="open_simplex_chat_to_accept_call">Відкрийте SimpleX Chat для прийняття виклику</string>
     <string name="status_e2e_encrypted">e2e зашифровано</string>
@@ -1887,7 +1886,6 @@
     <string name="new_message">Нове повідомлення</string>
     <string name="create_address_button">Створити</string>
     <string name="invite_friends_short">Запросити</string>
-    <string name="one_hand_ui_card_title">Перемикнути список чатів:</string>
     <string name="one_hand_ui_change_instruction">Ви можете змінити це в налаштуваннях зовнішнього вигляду.</string>
     <string name="info_row_message_status">Статус повідомлення</string>
     <string name="v6_0_your_contacts_descr">Архівувати контакти, щоб поговорити пізніше.</string>
@@ -2376,7 +2374,6 @@
     <string name="onboarding_conditions_private_chats_not_accessible">Приватні чати, групи та ваші контакти недоступні для операторів сервера.</string>
     <string name="onboarding_conditions_accept">Прийняти</string>
     <string name="onboarding_conditions_by_using_you_agree">Використовуючи SimpleX Chat, ви погоджуєтесь на:\n- надсилати тільки легальний контент у публічних групах.\n- поважати інших користувачів – без спаму.</string>
-    <string name="onboarding_conditions_configure_server_operators">Налаштувати операторів сервера</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Політика конфіденційності та умови використання</string>
     <string name="link_requires_newer_app_version_please_upgrade">Це посилання вимагає новішої версії додатку. Будь ласка, оновіть додаток або попросіть вашого контакту надіслати сумісне посилання.</string>
     <string name="full_link_button_text">Повне посилання</string>
@@ -2512,4 +2509,23 @@
     <string name="chat_banner_your_contact">Ваш контакт</string>
     <string name="chat_banner_your_group">Ваша група</string>
     <string name="context_user_picker_your_profile">Ваш профіль</string>
+    <string name="allow_files_and_media_only_if">Дозволяйте файли та медіа лише за умови, що ваш контакт їх дозволяє.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Дозвольте своїм контактам надсилати файли та медіа.</string>
+    <string name="chat_banner_bot">Бот</string>
+    <string name="both_you_and_your_contact_can_send_files">Ви, і ваш контакт можете надсилати файли та медіа.</string>
+    <string name="settings_section_title_contact_requests_from_groups">ЗАПИТИ НА ЗВ’ЯЗОК ВІД ГРУП</string>
+    <string name="deprecated_options_section">Застарілі опції</string>
+    <string name="error_marking_member_support_chat_read">Помилка при відмітці як прочитане</string>
+    <string name="files_prohibited_in_this_chat">Файли та медіа заборонені у цьому чаті.</string>
+    <string name="smp_proxy_error_unknown_ca">Відбиток у адресі сервера переадресації не співпадає з сертифікатом: %1$s.</string>
+    <string name="network_error_unknown_ca">Відбиток у адресі сервера не співпадає з сертифікатом: %1$s.</string>
+    <string name="member_is_deleted_cant_accept_request">Користувача видалено - не може прийняти запит.</string>
+    <string name="only_you_can_send_files">Тільки ви можете надсилати файли та медіа.</string>
+    <string name="only_your_contact_can_send_files">Лише ваш контакт може надсилати файли та медіа.</string>
+    <string name="privacy_chat_list_open_clean_web_link">Відкрити чисте посилання</string>
+    <string name="privacy_chat_list_open_full_web_link">Відкрити повне посилання</string>
+    <string name="open_to_use_bot">Відкрити для використання бота</string>
+    <string name="prohibit_sending_files_and_media">Заборонити надсилання файлів і медіа.</string>
+    <string name="sanitize_links_toggle">Видалити відстеження посилань</string>
+    <string name="rcv_direct_event_group_inv_link_received">запит на підключення до групи %1$s</string>
 </resources>

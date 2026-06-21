@@ -5,15 +5,18 @@
 //  Created by Avently on 30/03/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import AVKit
 import SimpleXChat
 import Combine
 
+// Spec: spec/client/chat-view.md#CIVideoView
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
     private let chatItem: ChatItem
+    private let senderProfile: LocalProfile?
     private let preview: UIImage?
     @State private var duration: Int
     @State private var progress: Int = 0
@@ -33,8 +36,9 @@ struct CIVideoView: View {
     private var sizeMultiplier: CGFloat { smallView ? 0.38 : 1 }
     @State private var blurred: Bool = UserDefaults.standard.integer(forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) > 0
 
-    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false, showFullscreenPlayer: Binding<Bool>) {
+    init(chatItem: ChatItem, senderProfile: LocalProfile?, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false, showFullscreenPlayer: Binding<Bool>) {
         self.chatItem = chatItem
+        self.senderProfile = senderProfile
         self.preview = preview
         self._duration = State(initialValue: duration)
         self.maxWidth = maxWidth
@@ -185,7 +189,8 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 VideoPlayerView(player: player, url: url, showControls: false)
-                .frame(width: w, height: w * preview.size.height / preview.size.width)
+                .frame(width: w, height: w * heightRatio(preview.size))
+                .clipped()
                 .onChange(of: m.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
@@ -313,8 +318,9 @@ struct CIVideoView: View {
         return ZStack(alignment: .topTrailing) {
             Image(uiImage: img)
             .resizable()
-            .scaledToFit()
-            .frame(width: w)
+            .scaledToFill()
+            .frame(width: w, height: w * heightRatio(img.size))
+            .clipped()
             .modifier(PrivacyBlur(blurred: $blurred))
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 fileStatusIcon()
@@ -417,10 +423,18 @@ struct CIVideoView: View {
 
     // TODO encrypt: where file size is checked?
     private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
-        Task {
-            if let user = m.currentUser {
-                await receiveFile(user, file.fileId, false, false)
+        if fileSizeValid(file, senderProfile) {
+            Task {
+                if let user = m.currentUser {
+                    await receiveFile(user, file.fileId, false, false)
+                }
             }
+        } else {
+            let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol, senderProfile), countStyle: .binary)
+            AlertManager.shared.showAlertMsg(
+                title: "Large file!",
+                message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
+            )
         }
     }
 

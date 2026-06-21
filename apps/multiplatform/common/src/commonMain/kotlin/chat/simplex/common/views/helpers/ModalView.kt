@@ -111,8 +111,8 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
-    showCustomModal(id = id) { close ->
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+    showCustomModal(id = id, forceAnimated = forceAnimated) { close ->
       ModalView(close, showClose = showClose, endButtons = endButtons, content = { content() })
     }
   }
@@ -123,7 +123,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     }
   }
 
-  fun showCustomModal(animated: Boolean = true, keyboardCoversBar: Boolean = true, id: ModalViewId? = null, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showCustomModal(animated: Boolean = true, keyboardCoversBar: Boolean = true, id: ModalViewId? = null, forceAnimated: Boolean = false, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showCustomModal")
     val data = ModalData(keyboardCoversBar = keyboardCoversBar)
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
@@ -133,7 +133,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     }
     // Make animated appearance only on Android (everytime) and on Desktop (when it's on the start part of the screen or modals > 0)
     // to prevent unneeded animation on different situations
-    val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START)
+    val anim = if (appPlatform.isAndroid) animated else (animated && (modalCount.value > 0 || placement == ModalPlacement.START)) || forceAnimated
     modalViews.add(ModalViewHolder(id, anim, data, modal))
     _modalCount.value = modalViews.size - toRemove.size
 

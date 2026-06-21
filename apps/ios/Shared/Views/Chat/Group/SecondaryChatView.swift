@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct SecondaryChatView: View {
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var scrollToItemId: ChatItem.ID?
@@ -23,9 +24,10 @@ struct SecondaryChatView: View {
                 floatingButtonModel: FloatingButtonModel(im: im),
                 scrollToItemId: $scrollToItemId
             )
-            .onDisappear {
+            .modifier(BackButton(disabled: Binding.constant(false)) {
                 chatModel.secondaryIM = nil
-            }
+                dismiss()
+            })
         }
     }
 }

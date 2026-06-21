@@ -14,13 +14,7 @@
 "!1 colored!" = "!1 värillinen!";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Osallistu](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Lähetä meille sähköpostia](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Tähti GitHubissa](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e-salattu** äänipuhelu";
@@ -258,9 +252,6 @@ swipe action */
 "accepted call" = "hyväksytty puhelu";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.";
-
-/* No comment provided by engineer. */
 "Add profile" = "Lisää profiili";
 
 /* No comment provided by engineer. */
@@ -385,9 +376,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Answer call" = "Vastaa puheluun";
-
-/* No comment provided by engineer. */
-"Anybody can host servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Sovellusversio: %@";
@@ -650,7 +638,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Confirm password" = "Vahvista salasana";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Yhdistä";
 
 /* No comment provided by engineer. */
@@ -698,7 +687,7 @@ set passcode view */
 /* alert title */
 "Connection error" = "Yhteysvirhe";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Yhteysvirhe (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -743,17 +732,17 @@ set passcode view */
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Kontaktit voivat merkitä viestit poistettaviksi; voit katsella niitä.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Jatka";
+
+/* No comment provided by engineer. */
+"Contribute" = "Osallistu";
 
 /* No comment provided by engineer. */
 "Copy" = "Kopioi";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Ydinversio: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "Luo";
 
 /* server test step */
 "Create file" = "Luo tiedosto";
@@ -860,9 +849,6 @@ set passcode view */
 /* time unit */
 "days" = "päivää";
 
-/* No comment provided by engineer. */
-"Decentralized" = "Hajautettu";
-
 /* message decrypt error item */
 "Decryption error" = "Salauksen purkuvirhe";
 
@@ -943,7 +929,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Poista viesti?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Poista viestit";
 
 /* No comment provided by engineer. */
@@ -1096,7 +1083,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Edit group profile" = "Muokkaa ryhmäprofiilia";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Salli";
 
 /* No comment provided by engineer. */
@@ -1113,9 +1100,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Enable lock" = "Ota lukitus käyttöön";
-
-/* No comment provided by engineer. */
-"Enable notifications" = "Salli ilmoitukset";
 
 /* No comment provided by engineer. */
 "Enable periodic notifications?" = "Salli säännölliset ilmoitukset?";
@@ -1225,7 +1209,7 @@ swipe action */
 /* No comment provided by engineer. */
 "error" = "virhe";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Virhe";
 
 /* No comment provided by engineer. */
@@ -1428,6 +1412,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Löydä keskustelut nopeammin";
 
+/* relay test error
+server test error */
+"Fingerprint in server address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
+
 /* No comment provided by engineer. */
 "Fix" = "Korjaa";
 
@@ -1491,7 +1479,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Ryhmäkutsu ei ole enää voimassa, lähettäjä poisti sen.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Ryhmälinkki";
 
 /* No comment provided by engineer. */
@@ -1594,9 +1582,6 @@ snd error text */
 "Immediately" = "Heti";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Immuuni roskapostille ja väärinkäytöksille";
-
-/* No comment provided by engineer. */
 "Import" = "Tuo";
 
 /* No comment provided by engineer. */
@@ -1660,7 +1645,7 @@ snd error text */
 "Initial role" = "Alkuperäinen rooli";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Asenna [SimpleX Chat terminaalille](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Asenna SimpleX Chat terminaalille";
 
 /* No comment provided by engineer. */
 "Instant" = "Heti";
@@ -1677,7 +1662,7 @@ snd error text */
 /* No comment provided by engineer. */
 "invalid chat data" = "virheelliset keskustelu-tiedot";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Virheellinen yhteyslinkki";
 
 /* invalid chat item */
@@ -1866,7 +1851,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Jäsen poistetaan ryhmästä - tätä ei voi perua!";
 
 /* No comment provided by engineer. */
@@ -1980,7 +1965,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Verkkoasetukset";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Verkon tila";
 
 /* delete after time */
@@ -2057,9 +2042,6 @@ snd error text */
 
 /* copied message info in history */
 "no text" = "ei tekstiä";
-
-/* No comment provided by engineer. */
-"No user identifiers." = "Ensimmäinen alusta ilman käyttäjätunnisteita – suunniteltu yksityiseksi.";
 
 /* No comment provided by engineer. */
 "Notifications" = "Ilmoitukset";
@@ -2240,9 +2222,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Polish interface" = "Puolalainen käyttöliittymä";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Säilytä viimeinen viestiluonnos liitteineen.";
 
@@ -2256,9 +2235,6 @@ new chat action */
 "Privacy & security" = "Yksityisyys ja turvallisuus";
 
 /* No comment provided by engineer. */
-"Privacy redefined" = "Yksityisyys uudelleen määritettynä";
-
-/* No comment provided by engineer. */
 "Private filenames" = "Yksityiset tiedostonimet";
 
 /* No comment provided by engineer. */
@@ -2269,9 +2245,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile password" = "Profiilin salasana";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Profiilipäivitys lähetetään kontakteillesi.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Estä ääni- ja videopuhelut.";
@@ -2325,13 +2298,10 @@ new chat action */
 "Read more" = "Lue lisää";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
+"Read more in our GitHub repository." = "Lue lisää GitHub-arkistosta.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Lue lisää [GitHub-arkistosta](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Lue lisää Käyttöoppaasta.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Kuittaukset pois käytöstä";
@@ -2347,9 +2317,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "vahvistus saatu…";
-
-/* notification */
-"Received file event" = "Tiedoston vastaanottotapahtuma";
 
 /* message info title */
 "Received message" = "Vastaanotettu viesti";
@@ -2401,13 +2368,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Välityspalvelin suojaa IP-osoitteesi, mutta se voi tarkkailla puhelun kestoa.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Poista";
 
 /* No comment provided by engineer. */
 "Remove member" = "Poista jäsen";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Poista jäsen?";
 
 /* No comment provided by engineer. */
@@ -2642,9 +2609,6 @@ chat item action */
 /* copied message info */
 "Sent at: %@" = "Lähetetty klo: %@";
 
-/* notification */
-"Sent file event" = "Lähetetty tiedosto tapahtuma";
-
 /* message info title */
 "Sent message" = "Lähetetty viesti";
 
@@ -2652,10 +2616,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "Lähetetyt viestit poistetaan asetetun ajan kuluttua.";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
+"Server requires authorization to create queues, check password." = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
+"Server requires authorization to upload, check password." = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Palvelintesti epäonnistui!";
@@ -2700,14 +2664,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Jaa osoite";
 
-/* alert title */
-"Share address with contacts?" = "Jaa osoite kontakteille?";
-
 /* No comment provided by engineer. */
 "Share link" = "Jaa linkki";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Jaa kontaktien kanssa";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Näytä puhelut puhelinhistoriassa";
@@ -2774,6 +2732,9 @@ chat item action */
 
 /* notification title */
 "Somebody" = "Joku";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Tähti GitHubissa";
 
 /* No comment provided by engineer. */
 "Start chat" = "Aloita keskustelu";
@@ -2853,7 +2814,8 @@ chat item action */
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Testi epäonnistui vaiheessa %@.";
 
 /* No comment provided by engineer. */
@@ -2891,9 +2853,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Salaus toimii ja uutta salaussopimusta ei tarvita. Tämä voi johtaa yhteysvirheisiin!";
-
-/* No comment provided by engineer. */
-"The future of messaging" = "Seuraavan sukupolven yksityisviestit";
 
 /* No comment provided by engineer. */
 "The hash of the previous message is different." = "Edellisen viestin tarkiste on erilainen.";
@@ -2980,12 +2939,6 @@ chat item action */
 "Transport isolation" = "Kuljetuksen eristäminen";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Yritetään muodostaa yhteyttä palvelimeen, jota käytetään tämän kontaktin viestien vastaanottamiseen (virhe: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta.";
-
-/* No comment provided by engineer. */
 "Turn off" = "Sammuta";
 
 /* No comment provided by engineer. */
@@ -3065,9 +3018,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Käytä .onion-isäntiä";
-
-/* No comment provided by engineer. */
-"Use chat" = "Käytä chattia";
 
 /* new chat action */
 "Use current profile" = "Käytä nykyistä profiilia";
@@ -3214,9 +3164,6 @@ chat item action */
 "You are already connected to %@." = "Olet jo muodostanut yhteyden %@:n kanssa.";
 
 /* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Sinut on kutsuttu ryhmään";
 
 /* No comment provided by engineer. */
@@ -3275,9 +3222,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Sinua ei voitu todentaa; yritä uudelleen.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Kimin bağlanabileceğine siz karar verirsiniz.";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.";

@@ -5,12 +5,13 @@
 //  Created by Evgeny Poberezkin on 31/01/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import StoreKit
 import SimpleXChat
 
-let simplexTeamURL = URL(string: "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")!
+let simplexTeamURL = URL(string: "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im")!
 
 let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
 
@@ -147,6 +148,10 @@ let hintDefaults = [
     DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT,
     DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE,
     DEFAULT_SHOW_DELETE_CONTACT_NOTICE
+]
+
+let hintGroupDefaults = [
+    GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT
 ]
 
 // not used anymore
@@ -385,7 +390,9 @@ struct SettingsView: View {
                     Button("Send questions and ideas") {
                         dismiss()
                         DispatchQueue.main.async {
-                            UIApplication.shared.open(simplexTeamURL)
+                            // simplexTeamURL targets this same app; route to the in-app connect flow
+                            // (UIApplication.shared.open is dropped for self-owned URLs in the foreground)
+                            ChatModel.shared.appOpenUrl = simplexTeamURL
                         }
                     }
                 }
@@ -394,7 +401,9 @@ struct SettingsView: View {
             }
 
             Section(header: Text("Support SimpleX Chat").foregroundColor(theme.colors.secondary)) {
-                settingsRow("keyboard", color: theme.colors.secondary) { Text("[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)") }
+                settingsRow("keyboard", color: theme.colors.secondary) {
+                    ExternalLink("Contribute", destination: URL(string: "https://github.com/simplex-chat/simplex-chat#contribute")!)
+                }
                 settingsRow("star", color: theme.colors.secondary) {
                     Button("Rate the app") {
                         if let scene = sceneDelegate.windowScene {
@@ -402,14 +411,16 @@ struct SettingsView: View {
                         }
                     }
                 }
-                ZStack(alignment: .leading) {
-                    Image(colorScheme == .dark ? "github_light" : "github")
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                        .opacity(0.5)
-                        .colorMultiply(theme.colors.secondary)
-                    Text("[Star on GitHub](https://github.com/simplex-chat/simplex-chat)")
-                        .padding(.leading, indent)
+                ExternalLink(destination: URL(string: "https://github.com/simplex-chat/simplex-chat")!) {
+                    ZStack(alignment: .leading) {
+                        Image(colorScheme == .dark ? "github_light" : "github")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .opacity(0.5)
+                            .colorMultiply(theme.colors.secondary)
+                        Text("Star on GitHub")
+                            .padding(.leading, indent)
+                    }
                 }
             }
 
@@ -517,12 +528,14 @@ func settingsRow<Content : View>(_ icon: String, color: Color/* = .secondary*/, 
 struct ProfilePreview: View {
     var profileOf: NamedChat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
+    var badge: LocalBadge? = nil
 
     var body: some View {
         HStack {
             ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
-            profileName(profileOf).lineLimit(1)
+            NameWithBadge(profileName(profileOf), badge, .title2)
+                .lineLimit(1)
         }
     }
 }

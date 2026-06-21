@@ -19,7 +19,7 @@
     "simplex-explained-tab-2-p-2": "伺服器僅單向傳遞消息，無法全面瞭解使用者的對話記錄或連接。",
     "simplex-explained-tab-2-p-1": "對於每個連接，您可以使用兩個單獨的消息佇列通過不同的伺服器發送和接收消息。",
     "chat-protocol": "聊天協定",
-    "copyright-label": "© 2020-2025 SimpleX |開源專案",
+    "copyright-label": "© 2020-2025 SimpleX Chat |開源專案",
     "donate": "捐助",
     "simplex-explained-tab-1-p-1": "你可以建立聯絡人和群組，並進行雙向對話，就像在任何其他即時通訊軟件中一樣。",
     "simplex-explained-tab-1-p-2": "它如何在沒有使用者個人檔案識別符的情況下使用單向佇列？",

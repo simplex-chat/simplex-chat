@@ -17,6 +17,15 @@ extension View {
             self
         }
     }
+
+    @inline(__always)
+    @ViewBuilder func compactSectionSpacing() -> some View {
+        if #available(iOS 17, *) {
+            self.listSectionSpacing(.compact)
+        } else {
+            self
+        }
+    }
 }
 
 extension Notification.Name {

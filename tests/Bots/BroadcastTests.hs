@@ -33,7 +33,7 @@ withBroadcastBot opts test =
     bot = simplexChatCore testCfg (mkChatOpts opts) $ broadcastBot opts
 
 broadcastBotProfile :: Profile
-broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
+broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing}
 
 mkBotOpts :: TestParams -> [KnownContact] -> BroadcastBotOpts
 mkBotOpts ps publishers =
@@ -71,7 +71,7 @@ testBroadcastMessages ps = do
     withTestChat ps "alice" $ \alice ->
       withNewTestChat ps "bob" bobProfile $ \bob ->
         withNewTestChat ps "cath" cathProfile $ \cath -> do
-          alice <## "1 contacts connected (use /cs for the list)"
+          alice <## "subscribed 1 connections on server localhost"
           bob `connectVia` botLink
           bob #> "@broadcast_bot hello"
           bob <# "broadcast_bot> > hello"

@@ -14,10 +14,10 @@
 "Cannot forward message" = "Nem lehet továbbítani az üzenetet";
 
 /* No comment provided by engineer. */
-"Comment" = "Hozzászólás";
+"Comment" = "Megjegyzés";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Jelenleg támogatott legnagyobb fájl méret: %@.";
+"Currently maximum supported file size is %@." = "Jelenleg támogatott legnagyobb fájlméret: %@.";
 
 /* No comment provided by engineer. */
 "Database downgrade required" = "Adatbázis visszafejlesztése szükséges";
@@ -29,7 +29,7 @@
 "Database error" = "Adatbázishiba";
 
 /* No comment provided by engineer. */
-"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata nem egyezik a kulcstartóba mentettől.";
+"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata eltér a kulcstartóban tárolttól.";
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "A csevegés megnyitásához adja meg az adatbázis jelmondatát.";
@@ -80,7 +80,7 @@
 "Please create a profile in the SimpleX app" = "Hozzon létre egy profilt a SimpleX alkalmazásban";
 
 /* No comment provided by engineer. */
-"Selected chat preferences prohibit this message." = "A kijelölt csevegési beállítások tiltják ezt az üzenetet.";
+"Selected chat preferences prohibit this message." = "A kiválasztott csevegési beállítások tiltják ezt az üzenetet.";
 
 /* No comment provided by engineer. */
 "Sending a message takes longer than expected." = "Az üzenet elküldése a vártnál tovább tart.";
@@ -101,7 +101,7 @@
 "Unsupported format" = "Nem támogatott formátum";
 
 /* No comment provided by engineer. */
-"Wait" = "Várjon";
+"Wait" = "Várakozás";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Érvénytelen adatbázis-jelmondat";

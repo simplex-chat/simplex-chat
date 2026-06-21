@@ -162,7 +162,6 @@ fun acceptMemberContact(
         chatModel.chatsContext.updateContact(rhId, contact)
         inProgress?.value = false
       }
-      chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
       close?.invoke(chat)
     } else {

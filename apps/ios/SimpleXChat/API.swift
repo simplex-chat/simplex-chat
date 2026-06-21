@@ -110,6 +110,7 @@ public func resetChatCtrl() {
     migrationResult = nil
 }
 
+// Spec: spec/api.md#sendSimpleXCmd
 @inline(__always)
 public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil, retryNum: Int32 = 0) -> APIResult<R> {
     if let d = sendSimpleXCmdStr(cmd.cmdString, ctrl, retryNum: retryNum) {
@@ -366,6 +367,15 @@ public enum MigrationError: Decodable, Equatable {
 public struct UpMigration: Decodable, Equatable {
     public var upName: String
 //    public var withDown: Bool
+}
+
+public func downMigrationWarnings(_ downMigrations: [String]) -> [String] {
+    let warnings: [(String, String)] = [
+        ("20260222_chat_relays", NSLocalizedString("If you joined or created channels, they will stop working permanently.", comment: "down migration warning"))
+    ]
+    return warnings.compactMap { (key, message) in
+        downMigrations.contains(key) ? message : nil
+    }
 }
 
 public enum MTRError: Decodable, Equatable {

@@ -86,8 +86,8 @@ actual fun PlatformTextField(
   // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
   // In this case padding from right side should be bigger
   val startEndPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
-  val startPadding = if (isRtlByCharacters && isLtrGlobally) startEndPadding else 0.dp
-  val endPadding = if (isRtlByCharacters && isLtrGlobally) 0.dp else startEndPadding
+  val startPadding = 0.dp
+  val endPadding = startEndPadding
   val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message.text, selection = cs.message.selection)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message.text, selection = cs.message.selection)

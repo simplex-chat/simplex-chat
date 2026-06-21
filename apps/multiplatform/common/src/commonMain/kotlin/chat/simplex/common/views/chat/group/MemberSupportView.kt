@@ -116,7 +116,10 @@ private fun ModalData.MemberSupportViewLayout(
     if (membersWithChats.isEmpty()) {
       item {
         Box(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-          Text(generalGetString(MR.strings.no_support_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+          Text(
+            generalGetString(if (groupInfo.fullGroupPreferences.support.on) MR.strings.no_support_chats else MR.strings.support_chats_disabled),
+            color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center
+          )
         }
       }
     } else {
@@ -162,7 +165,9 @@ private fun ModalData.MemberSupportViewLayout(
 @Composable
 fun SupportChatRow(member: GroupMember) {
   fun memberStatus(): String {
-    return if (member.activeConn?.connDisabled == true) {
+    return if (member.activeConn?.connStatus is ConnStatus.Failed) {
+      generalGetString(MR.strings.member_info_member_failed)
+    } else if (member.activeConn?.connDisabled == true) {
       generalGetString(MR.strings.member_info_member_disabled)
     } else if (member.activeConn?.connInactive == true) {
       generalGetString(MR.strings.member_info_member_inactive)
@@ -229,8 +234,8 @@ fun SupportChatRow(member: GroupMember) {
           if (member.verified) {
             MemberVerifiedShield()
           }
-          Text(
-            member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+          NameWithBadge(
+            member.chatViewName, member.nameBadge, maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
         }
@@ -270,6 +275,12 @@ private fun DropDownMenuForSupportChat(rhId: Long?, member: GroupMember, groupIn
         showMenu.value = false
       })
     } else {
+      if (member.supportChatNotRead) {
+        ItemAction(stringResource(MR.strings.mark_read), painterResource(MR.images.ic_check), color = MaterialTheme.colors.primary, onClick = {
+          markSupportChatRead(rhId, groupInfo, member)
+          showMenu.value = false
+        })
+      }
       ItemAction(stringResource(MR.strings.delete_member_support_chat_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
         deleteMemberSupportChatDialog(rhId, groupInfo, member)
         showMenu.value = false
@@ -296,6 +307,25 @@ private fun deleteMemberSupportChat(rhId: Long?, groupInfo: GroupInfo, member: G
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.upsertGroupMember(rhId, r.first, r.second)
         chatModel.chatsContext.updateGroup(rhId, r.first)
+      }
+    }
+  }
+}
+
+private fun markSupportChatRead(rhId: Long?, groupInfo: GroupInfo, member: GroupMember) {
+  withBGApi {
+    if (member.supportChatNotRead) {
+      val r = chatModel.controller.apiSupportChatRead(
+        rh = rhId,
+        type = ChatType.Group,
+        id = groupInfo.apiId,
+        scope = GroupChatScope.MemberSupport(member.groupMemberId)
+      )
+      if (r != null) {
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.upsertGroupMember(rhId, r.first, r.second)
+          chatModel.chatsContext.updateGroup(rhId, r.first)
+        }
       }
     }
   }

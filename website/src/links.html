@@ -1,0 +1,303 @@
+---
+layout: layouts/main.html
+title: "SimpleX Chat Links"
+description: "Reviews, articles, videos, podcasts, and community content about SimpleX Chat"
+permalink: /links/
+templateEngineOverride: njk
+active_links: true
+---
+{% set lang = page.url | getlang %}
+{% block css_links %}
+<style>
+    #links-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+    #links-filters select {
+        padding: 4px 0;
+        border: none;
+        background: transparent;
+        font-size: 15px;
+        cursor: pointer;
+        color: #1B95D2;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%231B95D2' d='M1.5.9C1.2.6.7.6.5.9c-.3.3-.3.7 0 1l3.8 3.6c0 0 .1.1.1.1.3.2.7.2.9 0l3.8-3.6c.3-.3.3-.7 0-1-.3-.3-.7-.3-1 0L4.7 4 1.5.9z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right center;
+        background-size: 10px;
+        padding-right: 16px;
+    }
+    .dark #links-filters select {
+        color: #70F0F9;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%2370F0F9' d='M1.5.9C1.2.6.7.6.5.9c-.3.3-.3.7 0 1l3.8 3.6c0 0 .1.1.1.1.3.2.7.2.9 0l3.8-3.6c.3-.3.3-.7 0-1-.3-.3-.7-.3-1 0L4.7 4 1.5.9z'/%3E%3C/svg%3E");
+    }
+    .filter-chip {
+        padding: 4px 0;
+        border: none;
+        border-radius: 0;
+        font-size: 15px;
+        cursor: pointer;
+        background: transparent;
+        color: #1B95D2;
+        text-decoration: none;
+        position: relative;
+        display: inline-block;
+        margin: 0 4px;
+    }
+    .dark .filter-chip {
+        color: #70F0F9;
+    }
+    .filter-chip::before {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 1px;
+        bottom: 0;
+        right: 0;
+        background-color: currentColor;
+        transition: width 0.25s ease-out;
+    }
+    .filter-chip:hover::before,
+    .filter-chip.active::before {
+        width: 100%;
+        left: 0;
+        right: auto;
+    }
+    .filter-chip::after {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+        height: 0;
+        overflow: hidden;
+        visibility: hidden;
+    }
+    .filter-chip.active {
+        font-weight: bold;
+    }
+    .link-item {
+        transition: background 0.3s;
+    }
+    .link-item[data-featured] {
+        border-left: 3px solid #1B95D2;
+    }
+    .link-item .share-anchor {
+        opacity: 0;
+        transition: opacity 0.15s;
+        cursor: pointer;
+        color: #A8B0B4;
+        text-decoration: none;
+        font-size: 16px;
+        margin-left: 6px;
+        font-weight: normal;
+    }
+    .link-item:hover .share-anchor {
+        opacity: 1;
+    }
+    .link-item.highlighted {
+        background: rgba(27, 149, 210, 0.08) !important;
+    }
+    .dark .link-item.highlighted {
+        background: rgba(27, 149, 210, 0.15) !important;
+    }
+    .link-publisher {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-top: 6px;
+    }
+    .dark .link-publisher {
+        color: #d1d5db;
+    }
+    .link-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        font-size: 12px;
+        color: #A8B0B4;
+        margin-top: 4px;
+        margin-bottom: 10px;
+    }
+    .link-meta span::after {
+        content: "·";
+        margin-left: 12px;
+    }
+    .link-meta span:last-child::after {
+        content: none;
+    }
+    .featured-badge {
+        display: inline-block;
+        padding: 1px 8px;
+        border-radius: 4px;
+        background: #FFF8E6;
+        color: #C49000;
+        font-size: 11px;
+        font-weight: 500;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+    .dark .featured-badge {
+        background: #2A2000;
+        color: #FFD54F;
+    }
+    .link-url {
+        display: block;
+        font-size: 13px;
+        color: #1B95D2;
+        text-decoration: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        margin-top: auto;
+    }
+    .dark .link-url {
+        color: #70F0F9;
+    }
+    .link-url:hover {
+        text-decoration: underline;
+    }
+    #links-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        margin-top: 32px;
+        padding: 10px 0;
+    }
+    #links-pagination button {
+        padding: 8px 12px;
+        border: none;
+        background-color: transparent;
+        color: #374151;
+        cursor: pointer;
+        border-radius: 50%;
+        font-size: 14px;
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .dark #links-pagination button {
+        color: #70F0F9;
+    }
+    #links-pagination button:hover {
+        background-color: #f3f4f6;
+    }
+    .dark #links-pagination button:hover {
+        background-color: #0B2A50;
+    }
+    #links-pagination button.active {
+        font-weight: bold;
+        color: #0B2A59;
+    }
+    .dark #links-pagination button.active {
+        color: #70F0F9;
+    }
+    #links-pagination button.text-btn {
+        border-radius: 20px;
+        min-width: auto;
+        padding: 8px 16px;
+    }
+    #links-pagination button:disabled {
+        opacity: 0.3;
+        cursor: default;
+    }
+    #links-count {
+        text-align: center;
+        font-size: 14px;
+        color: #A8B0B4;
+        margin-bottom: 16px;
+    }
+    @media (max-width: 640px) {
+        #links-pagination button:not(.text-btn):not(.active):not(.neighbor) {
+            display: none;
+        }
+        #links-pagination button.text-btn {
+            padding: 4px 8px;
+            height: 32px;
+            border-radius: 16px;
+            font-size: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block js_scripts %}
+<script src="/js/links.js" defer></script>
+{% endblock %}
+
+<section class="py-10 px-5 mt-[66px]" id="links-page">
+    <div class="container">
+        <h1 class="text-[38px] text-center font-bold mb-8">{{ "links-title" | i18n({}, lang) | safe }}</h1>
+
+        <div id="links-filters">
+            <select id="filter-language">
+                <option value="">{{ "links-all-languages" | i18n({}, lang) | safe }}</option>
+                {% for l in linkLanguages %}
+                    <option value="{{ l }}">{{ l }}</option>
+                {% endfor %}
+            </select>
+
+            <button class="filter-chip active" data-filter="" data-value="" data-label="All">All</button>
+            {% for p in linkPills %}
+                {% if p == "Video" or p == "Audio" %}
+            <button class="filter-chip" data-filter="media" data-value="{{ p | lower }}" data-label="{{ p }}">{{ p }}</button>
+                {% else %}
+            <button class="filter-chip" data-filter="cat" data-value="{{ p }}" data-label="{{ p | capitalize }}">{{ p | capitalize }}</button>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div id="links-list">
+            {% for item in links %}
+            <article
+                class="link-item w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#0B2A59] mb-8"
+                {% if loop.index0 >= 10 %}style="display:none"{% endif %}
+                id="{{ item.id }}"
+                data-lang="{{ item.language }}"
+                data-category="{{ item.category | lower }}"
+                data-media="{{ item.mediaType }}"
+                data-date="{{ item.dateSort }}"
+                {% if item.featured %}data-featured{% endif %}>
+                {% if item.image and item.imageExists %}
+                <div class="min-h-[160px] h-[inherit] self-stretch md:w-[168px] bg-[#DBEEFF] dark:bg-[#071C46] flex items-center justify-center flex-[1] relative overflow-hidden">
+                    <img class="w-full h-auto object-contain" src="/links/images/{{ item.image }}" alt="" loading="lazy" />
+                </div>
+                {% else %}
+                <div class="min-h-[160px] h-[inherit] self-stretch md:w-[168px] bg-[#DBEEFF] dark:bg-[#071C46] flex items-center justify-center flex-[1] relative">
+                    <img class="h-[44px] self-center dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" />
+                    <img class="h-[44px] self-center hidden dark:inline-block" src="/img/new/logo-symbol-dark.svg" alt="" />
+                </div>
+                {% endif %}
+                <div class="p-6 md:py-8 flex-[2.5] flex flex-col min-w-0">
+                    <div>
+                        <h2 class="text-grey-black dark:text-white !text-lg md:!text-xl font-bold">
+                            {{ item.title }}
+                            <a class="share-anchor" href="#link={{ item.id }}">#</a>
+                            {% if item.featured %}<span class="featured-badge">Featured</span>{% endif %}
+                        </h2>
+                        {% if item.originalTitle %}
+                        <p class="text-sm text-[#A8B0B4] mt-1 italic">{{ item.originalTitle }}</p>
+                        {% endif %}
+                        <p class="link-publisher">{{ item.publisher }}</p>
+                        <div class="link-meta">
+                            <span>{{ item.date }}{% if item.estimated %} (est.){% endif %}</span>
+                            <span>{{ item.language }}</span>
+                            <span>{{ item.category }}</span>
+                        </div>
+                        <p class="dark:text-white mb-4 text-sm">{{ item.preview }}</p>
+                    </div>
+                    <a class="link-url" href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.url }}</a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <div id="links-pagination"></div>
+    </div>
+</section>

@@ -5,13 +5,16 @@
 //  Created by JRoberts on 12/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIImageView
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     let chatItem: ChatItem
+    let senderProfile: LocalProfile?
     var scrollToItem: ((ChatItem.ID) -> Void)? = nil
     var preview: UIImage?
     let maxWidth: CGFloat
@@ -49,10 +52,18 @@ struct CIImageView: View {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
-                                Task {
-                                    if let user = m.currentUser {
-                                        await receiveFile(user: user, fileId: file.fileId)
+                                if fileSizeValid(file, senderProfile) {
+                                    Task {
+                                        if let user = m.currentUser {
+                                            await receiveFile(user: user, fileId: file.fileId)
+                                        }
                                     }
+                                } else {
+                                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol, senderProfile), countStyle: .binary)
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "Large file!",
+                                        message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
+                                    )
                                 }
                             case .rcvAccepted:
                                 switch file.fileProtocol {
@@ -96,12 +107,13 @@ struct CIImageView: View {
             if img.imageData == nil {
                 Image(uiImage: img)
                         .resizable()
-                        .scaledToFit()
-                        .frame(width: w)
+                        .scaledToFill()
+                        .frame(width: w, height: w * heightRatio(img.size))
+                        .clipped()
             } else {
-                SwiftyGif(image: img)
-                        .frame(width: w, height: w * img.size.height / img.size.width)
-                        .scaledToFit()
+                SwiftyGif(image: img, contentMode: .scaleAspectFill)
+                        .frame(width: w, height: w * heightRatio(img.size))
+                        .clipped()
             }
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 loadingIndicator()

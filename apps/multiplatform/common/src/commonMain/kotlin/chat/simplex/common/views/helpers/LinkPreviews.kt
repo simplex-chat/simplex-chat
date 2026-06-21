@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.LinkPreview
+import chat.simplex.common.model.NetworkProxyAuth
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
@@ -24,67 +25,124 @@ import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
 import chat.simplex.common.views.chat.item.imageViewFullWidth
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
+import java.net.Authenticator
+import java.net.InetSocketAddress
+import java.net.PasswordAuthentication
+import java.net.Proxy
 import java.net.URL
+import java.util.UUID
 
 private const val OG_SELECT_QUERY = "meta[property^=og:]"
 private const val ICON_SELECT_QUERY = "link[rel^=icon],link[rel^=apple-touch-icon],link[rel^=shortcut icon]"
 private val IMAGE_SUFFIXES = listOf(".jpg", ".png", ".ico", ".webp", ".gif")
 
+// Authenticator.setDefault is process-global. The mutex serializes preview fetches
+// so concurrent calls cannot clobber each other's authenticator, and so the
+// snapshot/restore in getLinkPreview is race-free.
+private val previewMutex = Mutex()
+
 suspend fun getLinkPreview(url: String): LinkPreview? {
   return withContext(Dispatchers.IO) {
-    try {
-      val title: String?
-      val u = kotlin.runCatching { URL(url) }.getOrNull() ?: return@withContext null
-      var imageUri = when {
-        IMAGE_SUFFIXES.any { u.path.lowercase().endsWith(it) } -> {
-          title = u.path.substringAfterLast("/")
-          url
-        }
-        else -> {
-          val connection = Jsoup.connect(url)
-            .ignoreContentType(true)
-            .timeout(10000)
-            .followRedirects(true)
-
-          val response = if (url.lowercase().startsWith("https://x.com/")) {
-            // Apple sends request with special user-agent which handled differently by X.com.
-            // Different response that includes video poster from post
-            connection
-              .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0")
-              .execute()
-          } else {
-            connection
-              .execute()
-          }
-          val doc = response.parse()
-          val ogTags = doc.select(OG_SELECT_QUERY)
-          title = ogTags.firstOrNull { it.attr("property") == "og:title" }?.attr("content") ?: doc.title()
-          ogTags.firstOrNull { it.attr("property") == "og:image" }?.attr("content")
-            ?: doc.select(ICON_SELECT_QUERY).firstOrNull { it.attr("rel").contains("icon") }?.attr("href")
-        }
-      }
-      if (imageUri != null) {
-        imageUri = normalizeImageUri(u, imageUri)
+    previewMutex.withLock {
+      try {
         try {
-          val stream = URL(imageUri).openStream()
-          val image = resizeImageToStrSize(stream.use(::loadImageBitmap), maxDataSize = 14000)
-          //          TODO add once supported in iOS
-          //          val description = ogTags.firstOrNull {
-          //            it.attr("property") == "og:description"
-          //          }?.attr("content") ?: ""
-          if (title != null) {
-            return@withContext LinkPreview(url, title, description = "", image)
+          val title: String?
+          val u = kotlin.runCatching { URL(url) }.getOrNull() ?: return@withLock null
+          val useSocksProxy = appPrefs.networkUseSocksProxy.get()
+          val proxy: Proxy?
+          if (useSocksProxy) {
+            val networkProxy = appPrefs.networkProxy.get()
+            proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress(networkProxy.host, networkProxy.port))
+            val (authUser, authPass) = when (networkProxy.auth) {
+              NetworkProxyAuth.USERNAME ->
+                if (networkProxy.username.isNotEmpty() && networkProxy.password.isNotEmpty())
+                  networkProxy.username to networkProxy.password
+                else
+                  null to null
+              // Per-call random credentials drive Tor-style stream isolation: each
+              // preview gets its own circuit, and previews don't share a circuit
+              // with other unauthenticated traffic on the proxy.
+              NetworkProxyAuth.ISOLATE ->
+                UUID.randomUUID().toString() to UUID.randomUUID().toString()
+            }
+            if (authUser != null && authPass != null) {
+              Authenticator.setDefault(object : Authenticator() {
+                override fun getPasswordAuthentication(): PasswordAuthentication? =
+                  // Only respond when the SOCKS proxy itself challenges. A destination
+                  // server returning 401 also triggers RequestorType.SERVER; without
+                  // this gate, the JDK's auto-retry would post our SOCKS credentials
+                  // in an Authorization header to the destination.
+                  if (requestingHost == networkProxy.host && requestingPort == networkProxy.port)
+                    PasswordAuthentication(authUser, authPass.toCharArray())
+                  else null
+              })
+            } else {
+              Authenticator.setDefault(null)
+            }
+          } else {
+            proxy = null
+            Authenticator.setDefault(null)
+          }
+          var imageUri = when {
+            IMAGE_SUFFIXES.any { u.path.lowercase().endsWith(it) } -> {
+              title = u.path.substringAfterLast("/")
+              url
+            }
+            else -> {
+              val connection = Jsoup.connect(url)
+                .ignoreContentType(true)
+                .timeout(10000)
+                .followRedirects(true)
+                .proxy(proxy)
+
+              val response = if (url.lowercase().startsWith("https://x.com/")) {
+                // Apple sends request with special user-agent which handled differently by X.com.
+                // Different response that includes video poster from post
+                connection
+                  .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0")
+                  .execute()
+              } else {
+                connection
+                  .execute()
+              }
+              val doc = response.parse()
+              val ogTags = doc.select(OG_SELECT_QUERY)
+              title = ogTags.firstOrNull { it.attr("property") == "og:title" }?.attr("content") ?: doc.title()
+              ogTags.firstOrNull { it.attr("property") == "og:image" }?.attr("content")
+                ?: doc.select(ICON_SELECT_QUERY).firstOrNull { it.attr("rel").contains("icon") }?.attr("href")
+            }
+          }
+          if (imageUri != null) {
+            imageUri = normalizeImageUri(u, imageUri)
+            try {
+              val conn = URL(imageUri).openConnection(proxy ?: Proxy.NO_PROXY)
+              conn.connectTimeout = 20_000
+              conn.readTimeout = 20_000
+              val stream = conn.getInputStream()
+              val image = resizeImageToStrSize(stream.use(::loadImageBitmap), maxDataSize = 14000)
+              //          TODO add once supported in iOS
+              //          val description = ogTags.firstOrNull {
+              //            it.attr("property") == "og:description"
+              //          }?.attr("content") ?: ""
+              if (title != null) {
+                return@withLock LinkPreview(url, title, description = "", image)
+              }
+            } catch (e: Exception) {
+              e.printStackTrace()
+            }
           }
         } catch (e: Exception) {
           e.printStackTrace()
         }
+        return@withLock null
+      } finally {
+        Authenticator.setDefault(null)
       }
-    } catch (e: Exception) {
-      e.printStackTrace()
     }
-    return@withContext null
   }
 }
 

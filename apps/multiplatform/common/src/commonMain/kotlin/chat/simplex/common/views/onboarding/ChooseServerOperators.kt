@@ -14,82 +14,160 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.darkStops
+import chat.simplex.common.views.newchat.gradientPoints
+import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.common.views.usersettings.networkAndServers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun ModalData.OnboardingConditionsView() {
+fun OnboardingConditionsView(chatModel: ChatModel) {
   LaunchedEffect(Unit) {
     prepareChatBeforeFinishingOnboarding()
   }
-  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView({}, showClose = false) {
-      val serverOperators = remember { derivedStateOf { chatModel.conditions.value.serverOperators } }
-      val selectedOperatorIds = remember { stateGetOrPut("selectedOperatorIds") { serverOperators.value.filter { it.enabled }.map { it.operatorId }.toSet() } }
-      val selectedOperators = remember { derivedStateOf { serverOperators.value.filter { selectedOperatorIds.value.contains(it.operatorId) } } }
 
-      ColumnWithScrollBar(
-        Modifier
-          .themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
-        maxIntrinsicSize = true
-      ) {
-        Box(Modifier.align(Alignment.CenterHorizontally)) {
-          AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), bottomPadding = DEFAULT_PADDING)
-        }
+  val serverOperators = remember { derivedStateOf { chatModel.conditions.value.serverOperators } }
+  val selectedOperatorIds = remember {
+    mutableStateOf(OnboardingSharedState.selectedOperatorIds.ifEmpty {
+      serverOperators.value.filter { it.enabled }.map { it.operatorId }.toSet()
+    })
+  }
 
-        Spacer(Modifier.weight(1f))
-        Column(
-          (if (appPlatform.isDesktop) Modifier.width(450.dp).align(Alignment.CenterHorizontally) else Modifier)
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
-          horizontalAlignment = Alignment.Start
-        ) {
-          Text(
-            stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
-            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
-          )
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Text(
-            stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
-            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
-          )
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Text(
-            stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
-            style = TextStyle(fontSize = 17.sp),
-            color = MaterialTheme.colors.primary,
-            modifier = Modifier
-              .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
+  if (appPlatform.isDesktop) {
+    OnboardingConditionsDesktop(selectedOperatorIds)
+  } else {
+    CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+      ModalView({}, showClose = false, showAppBar = false) {
+        OnboardingShrinkingLayout(
+          modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
+            .systemBarsPadding()
+            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+          topPadding = DEFAULT_PADDING,
+          image = {
+            Column(Modifier.padding(vertical = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
+              OnboardingImage(
+                MR.images.network_commitments, MR.images.network_commitments_light, MR.images.ic_shield,
+                modifier = Modifier.fillMaxWidth(),
+                aspectRatio = 1.5f
+              )
+            }
+          },
+          content = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+              Text(
+                stringResource(MR.strings.onboarding_network_commitments),
+                style = MaterialTheme.typography.h1,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                lineHeight = 42.sp,
+                modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+              )
+              Column(
+                Modifier.fillMaxWidth()
+                  .padding(horizontal = DEFAULT_PADDING_HALF)
+                  .padding(top = DEFAULT_PADDING),
+                horizontalAlignment = Alignment.Start
               ) {
-                ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
-                  SimpleConditionsView(rhId = null)
-                }
+                Text(
+                  stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
+                  style = MaterialTheme.typography.body2,
+                  lineHeight = 22.sp
+                )
+                Spacer(Modifier.height(DEFAULT_PADDING))
+                Text(
+                  stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
+                  style = MaterialTheme.typography.body2,
+                  lineHeight = 22.sp
+                )
+                Spacer(Modifier.height(DEFAULT_PADDING))
+                Text(
+                  stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
+                  style = MaterialTheme.typography.body1,
+                  fontWeight = FontWeight.Medium,
+                  color = MaterialTheme.colors.primary,
+                  modifier = Modifier
+                    .clickable(
+                      interactionSource = remember { MutableInteractionSource() },
+                      indication = null
+                    ) {
+                      ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
+                        SimpleConditionsView(rhId = null) {
+                          ModalManager.fullscreen.closeModal()
+                          acceptConditions(selectedOperatorIds.value)
+                        }
+                      }
+                    }
+                )
               }
-          )
-        }
-        Spacer(Modifier.weight(1f))
-
-        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-          AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperators, selectedOperatorIds)
-          TextButtonBelowOnboardingButton(stringResource(MR.strings.onboarding_conditions_configure_server_operators)) {
-            ModalManager.fullscreen.showModalCloseable { close ->
-              ChooseServerOperators(serverOperators, selectedOperatorIds, close)
+            }
+          },
+          button = {
+            Column(Modifier.widthIn(max = 450.dp).padding(bottom = DEFAULT_PADDING * 2), horizontalAlignment = Alignment.CenterHorizontally) {
+              AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
             }
           }
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Long>>) {
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+    ModalView({}, showClose = false) {
+      ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          Box(Modifier.align(Alignment.CenterHorizontally)) {
+            AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
+          }
+          Column(Modifier.width(450.dp), horizontalAlignment = Alignment.Start) {
+            ReadableText(MR.strings.onboarding_conditions_private_chats_not_accessible, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            ReadableText(MR.strings.onboarding_conditions_by_using_you_agree, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            Text(
+              stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
+              style = MaterialTheme.typography.body1,
+              fontWeight = FontWeight.Medium,
+              color = MaterialTheme.colors.primary,
+              modifier = Modifier
+                .clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = null
+                ) {
+                  ModalManager.fullscreen.showModal(forceAnimated = true, endButtons = { ConditionsLinkButton() }) {
+                    SimpleConditionsView(rhId = null) {
+                      ModalManager.fullscreen.closeModal()
+                      acceptConditions(selectedOperatorIds.value)
+                    }
+                  }
+                }
+            )
+          }
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
+          TextButtonBelowOnboardingButton("", null)
         }
       }
     }
@@ -106,7 +184,7 @@ fun ModalData.ChooseServerOperators(
     prepareChatBeforeFinishingOnboarding()
   }
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView({}, showClose = false) {
+    ModalView(close, enableClose = selectedOperatorIds.value.isNotEmpty()) {
       ColumnWithScrollBar(
         Modifier
           .themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
@@ -143,11 +221,9 @@ fun ModalData.ChooseServerOperators(
         }
         Spacer(Modifier.weight(1f))
 
-        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           val enabled = selectedOperatorIds.value.isNotEmpty()
           SetOperatorsButton(enabled, close)
-          // Reserve space
-          TextButtonBelowOnboardingButton("", null)
         }
       }
     }
@@ -214,55 +290,42 @@ private fun SetOperatorsButton(enabled: Boolean, close: () -> Unit) {
   )
 }
 
+private fun acceptConditions(selectedOperatorIds: Set<Long>) {
+  withBGApi {
+    val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+    val r = chatController.acceptConditions(chatModel.remoteHostId(), conditionsId = conditionsId, operatorIds = selectedOperatorIds.toList())
+    if (r != null) {
+      chatModel.conditions.value = r
+      val enabledOps = enabledOperators(r.serverOperators, selectedOperatorIds)
+      if (enabledOps != null) {
+        val r2 = chatController.setServerOperators(rh = chatModel.remoteHostId(), operators = enabledOps)
+        if (r2 != null) {
+          chatModel.conditions.value = r2
+          completeOnboarding()
+        }
+      } else {
+        completeOnboarding()
+      }
+    }
+  }
+}
+
 @Composable
 private fun AcceptConditionsButton(
   enabled: Boolean,
-  selectedOperators: State<List<ServerOperator>>,
   selectedOperatorIds: State<Set<Long>>
 ) {
-  fun continueOnAccept() {
-    if (appPlatform.isDesktop) {
-      continueToNextStep()
-    } else {
-      continueToSetNotificationsAfterAccept()
-    }
-  }
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.onboarding_conditions_accept,
     onboarding = null,
     enabled = enabled,
-    onclick = {
-      withBGApi {
-        val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
-        val acceptForOperators = selectedOperators.value.filter { !it.conditionsAcceptance.conditionsAccepted }
-        val operatorIds = acceptForOperators.map { it.operatorId }
-        val r = chatController.acceptConditions(chatModel.remoteHostId(), conditionsId = conditionsId, operatorIds = operatorIds)
-        if (r != null) {
-          chatModel.conditions.value = r
-          val enabledOperators = enabledOperators(r.serverOperators, selectedOperatorIds.value)
-          if (enabledOperators != null) {
-            val r2 = chatController.setServerOperators(rh = chatModel.remoteHostId(), operators = enabledOperators)
-            if (r2 != null) {
-              chatModel.conditions.value = r2
-              continueOnAccept()
-            }
-          } else {
-            continueOnAccept()
-          }
-        }
-      }
-    }
+    onclick = { acceptConditions(selectedOperatorIds.value) }
   )
 }
 
-private fun continueToNextStep() {
-    appPrefs.onboardingStage.set(if (appPlatform.isAndroid) OnboardingStage.Step4_SetNotificationsMode else OnboardingStage.OnboardingComplete)
-}
-
-private fun continueToSetNotificationsAfterAccept() {
-  appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
-  ModalManager.fullscreen.showModalCloseable(showClose = false) { SetNotificationsMode(chatModel) }
+private fun completeOnboarding() {
+  appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
 }
 
 private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorIds: Set<Long>): List<ServerOperator>? {

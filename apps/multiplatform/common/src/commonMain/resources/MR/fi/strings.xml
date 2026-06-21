@@ -388,7 +388,6 @@
     <string name="how_to">Miten</string>
     <string name="full_name__field">Koko nimi:</string>
     <string name="how_to_use_markdown">Miten markdownia käytetään</string>
-    <string name="how_simplex_works">Miten SimpleX toimii</string>
     <string name="incoming_audio_call">Saapuva äänipuhelu</string>
     <string name="incoming_video_call">Saapuva videopuhelu</string>
     <string name="ignore">Sivuuta</string>
@@ -822,7 +821,7 @@
     <string name="rate_the_app">Arvioi sovellus</string>
     <string name="smp_servers_scan_qr">Skannaa palvelimen QR-koodi</string>
     <string name="profile_update_will_be_sent_to_contacts">Profiilipäivitys lähetetään kontakteillesi.</string>
-    <string name="share_address_with_contacts_question">Jaa osoite kontakteille\?</string>
+    <string name="share_address_with_contacts_question">Jaa osoite kontakteille?</string>
     <string name="stop_sharing">Lopeta jakaminen</string>
     <string name="stop_sharing_address">Lopeta osoitteen jakaminen\?</string>
     <string name="save_auto_accept_settings">Tallenna automaattisen hyväksynnän asetukset</string>
@@ -1036,7 +1035,7 @@
     <string name="profile_will_be_sent_to_contact_sending_link">Profiilisi lähetetään kontaktille, jolta sait tämän linkin.</string>
     <string name="you_will_join_group">Liityt ryhmään, johon tämä linkki viittaa, ja muodostat yhteyden sen ryhmän jäseniin.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta (virhe: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta (virhe: %1$s).</string>
     <string name="sender_you_pronoun">sinä</string>
     <string name="description_via_one_time_link">kertalinkillä</string>
     <string name="simplex_link_connection">%1$s:n kautta</string>

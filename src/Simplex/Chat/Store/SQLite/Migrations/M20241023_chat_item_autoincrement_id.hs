@@ -16,7 +16,7 @@ PRAGMA writable_schema=1;
 UPDATE sqlite_master SET sql = replace(sql, 'INTEGER PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
 WHERE name = 'chat_items' AND type = 'table';
 
-PRAGMA writable_schema=0;
+PRAGMA writable_schema=RESET;
 |]
 
 down_m20241023_chat_item_autoincrement_id :: Query
@@ -30,5 +30,5 @@ UPDATE sqlite_master
 SET sql = replace(sql, 'INTEGER PRIMARY KEY AUTOINCREMENT', 'INTEGER PRIMARY KEY')
 WHERE name = 'chat_items' AND type = 'table';
 
-PRAGMA writable_schema=0;
+PRAGMA writable_schema=RESET;
 |]

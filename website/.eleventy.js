@@ -1,6 +1,7 @@
 const markdownIt = require("markdown-it")
 const markdownItAnchor = require("markdown-it-anchor")
 const markdownItReplaceLink = require('markdown-it-replace-link')
+const markdownItFootnote = require('markdown-it-footnote')
 const slugify = require("slugify")
 const uri = require('fast-uri')
 const i18n = require('eleventy-plugin-i18n')
@@ -10,6 +11,15 @@ const matter = require('gray-matter')
 const pluginRss = require('@11ty/eleventy-plugin-rss')
 const { JSDOM } = require('jsdom')
 
+
+// Links page data
+const parseLinks = require('./parse_links')
+const linksFilePath = path.resolve(__dirname, '../docs/LINKS.md')
+const linksData = fs.existsSync(linksFilePath) ? parseLinks(linksFilePath) : []
+const linkImagesDir = path.resolve(__dirname, 'src/link-images')
+linksData.forEach(entry => {
+  entry.imageExists = entry.image && fs.existsSync(path.join(linkImagesDir, entry.image))
+})
 
 // The implementation of Glossary feature
 const md = new markdownIt()
@@ -53,7 +63,7 @@ const globalConfig = {
 }
 
 const translationsDirectoryPath = './langs'
-const supportedRoutes = ["blog", "contact", "invitation", "docs", "fdroid", ""]
+const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "fdroid", "why", "file", ""]
 let supportedLangs = []
 fs.readdir(translationsDirectoryPath, (err, files) => {
   if (err) {
@@ -69,6 +79,22 @@ fs.readdir(translationsDirectoryPath, (err, files) => {
 const translations = require("./translations.json")
 
 module.exports = function (ty) {
+  // Add this after your markdownLib definition
+  ty.addShortcode("mdInclude", function (filepath) {
+    const fullPath = path.join(__dirname, 'src/_includes', filepath);
+    const content = fs.readFileSync(fullPath, 'utf8');
+    return markdownLib.render(content);
+  });
+
+  ty.addGlobalData("links", linksData)
+  ty.addGlobalData("linkLanguages", [...new Set(linksData.map(e => e.language).filter(Boolean))].sort())
+
+  const catCounts = {}
+  linksData.forEach(e => { if (e.category) { const c = e.category.toLowerCase(); catCounts[c] = (catCounts[c] || 0) + 1 } })
+  const mediaPills = ["Video", "Audio"].filter(p => linksData.some(e => e.mediaType === p.toLowerCase()))
+  const catPills = Object.keys(catCounts).sort()
+  ty.addGlobalData("linkPills", mediaPills.concat(catPills))
+
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
   ty.addFilter("getlang", (path) => {
@@ -106,9 +132,10 @@ module.exports = function (ty) {
 
       allContentNodes.forEach((node) => {
         const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
-        const replacement = `<span data-glossary="tooltip-${id}" class="glossary-term">${term.term}</span>`
         const beforeContent = node.innerHTML
-        node.innerHTML = node.innerHTML.replace(regex, replacement)
+        node.innerHTML = node.innerHTML.replace(regex, (match) => {
+          return `<span data-glossary="tooltip-${id}" class="glossary-term">${match}</span>`
+        })
         if (beforeContent !== node.innerHTML && !changeNoted) {
           changeNoted = true
         }
@@ -256,8 +283,9 @@ module.exports = function (ty) {
       else if (obj.lang === "en")
         return `${obj.url}`
       return `/${obj.lang}${obj.url}`
-    }
-    else if (supportedLangs.includes(urlParts[1])) {
+    } else if (urlParts[1] === "old") {
+      return `/${obj.lang}${obj.url}`
+    } else if (supportedLangs.includes(urlParts[1])) {
       if (urlParts[2] == "blog")
         return `/blog`
       else if (obj.lang === "en")
@@ -288,6 +316,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/call")
   ty.addPassthroughCopy("src/hero-phone")
   ty.addPassthroughCopy("src/hero-phone-dark")
+  ty.addPassthroughCopy({ "src/link-images": "links/images" })
   ty.addPassthroughCopy("src/blog/images")
   ty.addPassthroughCopy("src/docs/*.png")
   ty.addPassthroughCopy("src/docs/images")
@@ -296,6 +325,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/images")
   ty.addPassthroughCopy("src/CNAME")
   ty.addPassthroughCopy("src/.well-known")
+  ty.addPassthroughCopy("src/file-assets")
 
   ty.addCollection('blogs', function (collection) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()
@@ -428,6 +458,38 @@ module.exports = function (ty) {
         strict: true,
       })
   }).use(markdownItReplaceLink)
+  .use(markdownItFootnote)
+
+  markdownLib.renderer.rules.footnote_anchor_name = function (tokens, idx, options, env) {
+    var token = tokens[idx]
+    var label = token.meta.label
+    if (label) return label
+    var n = Number(token.meta.id + 1).toString()
+    var prefix = typeof env.docId === 'string' ? '-' + env.docId + '-' : ''
+    return prefix + n
+  }
+  markdownLib.renderer.rules.footnote_caption = function (tokens, idx) {
+    var n = Number(tokens[idx].meta.id + 1).toString()
+    if (tokens[idx].meta.subId > 0) n += ':' + tokens[idx].meta.subId
+    return n
+  }
+  markdownLib.renderer.rules.footnote_ref = function (tokens, idx, options, env, slf) {
+    var id = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf)
+    var caption = slf.rules.footnote_caption(tokens, idx, options, env, slf)
+    var refid = id
+    if (tokens[idx].meta.subId > 0) refid += ':' + tokens[idx].meta.subId
+    return '<sup class="footnote-ref"><a href="#note-' + id + '" id="ref-' + refid + '">' + caption + '</a></sup>'
+  }
+  markdownLib.renderer.rules.footnote_open = function (tokens, idx, options, env, slf) {
+    var id = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf)
+    if (tokens[idx].meta.subId > 0) id += ':' + tokens[idx].meta.subId
+    return '<li id="note-' + id + '" class="footnote-item">'
+  }
+  markdownLib.renderer.rules.footnote_anchor = function (tokens, idx, options, env, slf) {
+    var id = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf)
+    if (tokens[idx].meta.subId > 0) id += ':' + tokens[idx].meta.subId
+    return ' <a href="#ref-' + id + '" class="footnote-backref">↩︎</a>'
+  }
 
   // replace the default markdown-it instance
   ty.setLibrary("md", markdownLib)

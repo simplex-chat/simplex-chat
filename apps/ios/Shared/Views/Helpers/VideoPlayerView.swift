@@ -29,6 +29,7 @@ struct VideoPlayerView: UIViewRepresentable {
     func makeUIView(context: UIViewRepresentableContext<VideoPlayerView>) -> UIView {
         let controller = AVPlayerViewController()
         controller.showsPlaybackControls = showControls
+        controller.videoGravity = .resizeAspectFill
         if #available(iOS 16.0, *) {
             controller.speeds = []
         }

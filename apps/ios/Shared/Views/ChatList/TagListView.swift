@@ -16,6 +16,7 @@ struct TagEditorNavParams {
     let tagId: Int64?
 }
 
+// Spec: spec/client/chat-list.md#TagListView
 struct TagListView: View {
     var chat: Chat? = nil
     @Environment(\.dismiss) var dismiss: DismissAction

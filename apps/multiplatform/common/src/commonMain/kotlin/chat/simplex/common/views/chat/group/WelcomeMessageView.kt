@@ -45,7 +45,7 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
         welcome = null
       }
       val groupProfileUpdated = gInfo.groupProfile.copy(description = welcome)
-      val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated)
+      val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated, gInfo.useRelays)
       if (res != null) {
         gInfo = res
         withContext(Dispatchers.Main) {

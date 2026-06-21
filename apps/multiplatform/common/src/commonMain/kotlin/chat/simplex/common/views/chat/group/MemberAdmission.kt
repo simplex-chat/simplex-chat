@@ -34,7 +34,7 @@ fun MemberAdmissionView(m: ChatModel, rhId: Long?, chatId: String, close: () -> 
   fun saveAdmission(afterSave: () -> Unit = {}) {
     withBGApi {
       val gp = gInfo.groupProfile.copy(memberAdmission = admission)
-      val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
+      val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp, gInfo.useRelays)
       if (g != null) {
         withContext(Dispatchers.Main) {
           chatModel.chatsContext.updateGroup(rhId, g)

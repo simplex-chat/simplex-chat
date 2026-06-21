@@ -31,10 +31,12 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
+// Spec: spec/client/chat-list.md#ChatPreviewView
 @Composable
 fun ChatPreviewView(
   chat: Chat,
@@ -42,7 +44,6 @@ fun ChatPreviewView(
   chatModelDraft: ComposeState?,
   chatModelDraftChatId: ChatId?,
   currentUserProfileDisplayName: String?,
-  contactNetworkStatus: NetworkStatus?,
   disabled: Boolean,
   linkMode: SimplexLinkMode,
   inProgress: Boolean,
@@ -151,7 +152,15 @@ fun ChatPreviewView(
           } else {
             Color.Unspecified
           }
-          chatPreviewTitleText(color = color)
+          NameWithBadge(
+            cInfo.chatViewName,
+            cInfo.nameBadge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.h3,
+            fontWeight = FontWeight.Bold,
+            color = color
+          )
         }
       }
       is ChatInfo.Group -> {
@@ -241,18 +250,24 @@ fun ChatPreviewView(
       Text(previewText.first, color = previewText.second)
     } else if (ci != null && showChatPreviews) {
       val (text: CharSequence, inlineTextContent) = when {
-        ci.meta.itemDeleted == null -> ci.text to null
-        else -> markedDeletedText(ci, chat.chatInfo) to null
+        ci.meta.itemDeleted != null -> markedDeletedText(ci, chat.chatInfo) to null
+        ci.content.msgContent is MsgContent.MCChat -> {
+          val chatLink = (ci.content.msgContent as MsgContent.MCChat).chatLink
+          val descr = chatLink.shortDescription?.let { "\n$it" } ?: ""
+          (chatLink.displayName + descr) to null
+        }
+        else -> ci.text(chat.chatInfo.isChannel) to null
       }
-      val formattedText = when {
-        ci.meta.itemDeleted == null -> ci.formattedText
-        else -> null
+      val formattedText: List<FormattedText>? = when {
+        ci.meta.itemDeleted != null -> null
+        ci.content.msgContent is MsgContent.MCChat -> null
+        else -> ci.formattedText
       }
-      val prefix = when (val mc = ci.content.msgContent) {
+      val prefix = when (ci.content.msgContent) {
         is MsgContent.MCReport ->
           buildAnnotatedString {
             withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
-              append(if (text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+              append(itemPrefixText(ci))
             }
           }
 
@@ -309,13 +324,13 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCImage -> SmallContentPreview {
-        CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
+        CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true, senderProfile = ciSenderProfile(ci, chat.chatInfo)) {
           val user = chatModel.currentUser.value ?: return@CIImageView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
       }
       is MsgContent.MCVideo -> SmallContentPreview {
-        CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
+        CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true, senderProfile = ciSenderProfile(ci, chat.chatInfo)) {
           val user = chatModel.currentUser.value ?: return@CIVideoView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
@@ -327,9 +342,22 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCFile -> SmallContentPreviewFile {
-        CIFileView(ci.file, false, remember { mutableStateOf(false) }, smallView = true) {
+        CIFileView(ci.file, false, remember { mutableStateOf(false) }, smallView = true, senderProfile = ciSenderProfile(ci, chat.chatInfo)) {
           val user = chatModel.currentUser.value ?: return@CIFileView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+        }
+      }
+      is MsgContent.MCChat -> SmallContentPreview(borderColor = if (mc.chatLink.image != null) MaterialTheme.colors.onSurface.copy(alpha = 0.12f) else Color.Transparent) {
+        Box(
+          Modifier.fillMaxSize().clickable { withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) } },
+          contentAlignment = Alignment.Center
+        ) {
+          val image = mc.chatLink.image
+          if (image != null) {
+            Image(base64ToBitmap(image), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+          } else {
+            Icon(painterResource(mc.chatLink.iconRes), null, Modifier.size(44.sp.toDp()), tint = if (isInDarkTheme()) FileDark else FileLight)
+          }
         }
       }
       else -> {}
@@ -349,33 +377,7 @@ fun ChatPreviewView(
 
   @Composable
   fun chatStatusImage() {
-    if (cInfo is ChatInfo.Direct) {
-      if (
-        cInfo.contact.active &&
-        (cInfo.contact.activeConn?.connStatus == ConnStatus.Ready || cInfo.contact.activeConn?.connStatus == ConnStatus.SndReady)
-      ) {
-        val descr = contactNetworkStatus?.statusString
-        when (contactNetworkStatus) {
-          is NetworkStatus.Connected ->
-            IncognitoIcon(chat.chatInfo.incognito)
-
-          is NetworkStatus.Error ->
-            Icon(
-              painterResource(MR.images.ic_error),
-              contentDescription = descr,
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier
-                .size(19.sp.toDp())
-                .offset(x = 2.sp.toDp())
-            )
-
-          else ->
-            progressView()
-        }
-      } else {
-        IncognitoIcon(chat.chatInfo.incognito)
-      }
-    } else if (cInfo is ChatInfo.Group) {
+    if (cInfo is ChatInfo.Group) {
       if (progressByTimeout) {
         progressView()
       } else if (chat.chatStats.reportsCount > 0) {
@@ -526,8 +528,8 @@ fun ChatPreviewView(
 }
 
 @Composable
-private fun SmallContentPreview(content: @Composable BoxScope.() -> Unit) {
-  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
+private fun SmallContentPreview(borderColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.12f), content: @Composable BoxScope.() -> Unit) {
+  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).border(0.5.dp, borderColor, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
     content()
   }
 }
@@ -636,6 +638,6 @@ private data class ActiveVoicePreview(
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+    ChatPreviewView(Chat.sampleData, true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
   }
 }

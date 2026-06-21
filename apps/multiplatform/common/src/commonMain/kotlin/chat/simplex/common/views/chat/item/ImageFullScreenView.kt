@@ -158,7 +158,10 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           val uriDecrypted = remember(media.uri.path) { mutableStateOf(if (media.fileSource?.cryptoArgs == null) media.uri else media.fileSource.decryptedGet()) }
           val decrypted = uriDecrypted.value
           if (decrypted != null) {
-            VideoView(modifier, decrypted, preview, index == settledCurrentPage, close)
+            // settledCurrentPage finishes **only** when fully swiped
+            // So we use pagerState.currentPage that changes right away as the screen is being dragged
+            val isCurrentPage = index == pagerState.currentPage && kotlin.math.abs(pagerState.currentPageOffsetFraction) < 0.3f
+            VideoView(modifier, decrypted, preview, isCurrentPage, close)
             DisposableEffect(Unit) {
               onDispose { playersToRelease.add(decrypted) }
             }

@@ -10,7 +10,7 @@ import chat.simplex.res.MR
 @Composable
 actual fun OnboardingActionButton(user: User?, onboardingStage: SharedPreference<OnboardingStage>, onclick: (() -> Unit)?) {
   if (user == null) {
-    OnboardingActionButton(Modifier.fillMaxWidth(), labelId = MR.strings.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onclick = onclick)
+    OnboardingActionButton(Modifier.fillMaxWidth(), labelId = MR.strings.get_started, onboarding = OnboardingStage.Step2_CreateProfile, onclick = onclick)
   } else {
     OnboardingActionButton(Modifier.fillMaxWidth(), labelId = MR.strings.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onclick = onclick)
   }

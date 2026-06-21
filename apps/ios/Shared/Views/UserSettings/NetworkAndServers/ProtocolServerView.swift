@@ -5,6 +5,7 @@
 //  Created by Evgeny on 15/11/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/architecture.md
 
 import SwiftUI
 import SimpleXChat
@@ -14,6 +15,7 @@ struct ProtocolServerView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
+    @Binding var serverWarnings: [UserServersWarning]
     @Binding var server: UserServer
     @State var serverToEdit: UserServer
     var backLabel: LocalizedStringKey
@@ -49,7 +51,7 @@ struct ProtocolServerView: View {
                     )
                 } else {
                     server = serverToEdit
-                    validateServers_($userServers, $serverErrors)
+                    validateServers_($userServers, $serverErrors, $serverWarnings)
                     dismiss()
                 }
             } else {
@@ -201,6 +203,7 @@ struct ProtocolServerView_Previews: PreviewProvider {
         ProtocolServerView(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
             serverErrors: Binding.constant([]),
+            serverWarnings: Binding.constant([]),
             server: Binding.constant(UserServer.sampleData.custom),
             serverToEdit: UserServer.sampleData.custom,
             backLabel: "Your SMP servers"

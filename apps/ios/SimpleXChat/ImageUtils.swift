@@ -297,7 +297,7 @@ private func uniqueCombine(_ fileName: String, fullPath: Bool = false) -> String
         let name = ns.deletingPathExtension
         let ext = ns.pathExtension
         let suffix = (n == 0) ? "" : "_\(n)"
-        let f = "\(name)\(suffix).\(ext)"
+        let f = ext.isEmpty ? "\(name)\(suffix)" : "\(name)\(suffix).\(ext)"
         return (FileManager.default.fileExists(atPath: fullPath ? f : getAppFilePath(f).path)) ? tryCombine(fileName, n + 1) : f
     }
     return tryCombine(fileName, 0)
@@ -400,6 +400,11 @@ extension UIImage {
         }
         return self
     }
+}
+
+// Max image height/width ratio for chat item display, taller images are cropped
+public func heightRatio(_ size: CGSize) -> CGFloat {
+    size.width > 0 ? min(size.height / size.width, 2.33) : 1
 }
 
 public func imageFromBase64(_ base64Encoded: String?) -> UIImage? {

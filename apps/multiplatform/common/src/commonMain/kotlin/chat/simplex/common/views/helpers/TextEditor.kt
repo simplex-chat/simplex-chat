@@ -32,7 +32,8 @@ fun TextEditor(
   placeholder: String? = null,
   contentPadding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
   isValid: (String) -> Boolean = { true },
-  focusRequester: FocusRequester? = null
+  focusRequester: FocusRequester? = null,
+  enabled: Boolean = true
 ) {
   var valid by rememberSaveable { mutableStateOf(true) }
   var focused by rememberSaveable { mutableStateOf(false) }
@@ -64,6 +65,7 @@ fun TextEditor(
       value = value.value,
       onValueChange = { value.value = it },
       modifier = if (focusRequester == null) textFieldModifier else textFieldModifier.focusRequester(focusRequester),
+      enabled = enabled,
       textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
       keyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.None,
@@ -83,7 +85,7 @@ fun TextEditor(
           leadingIcon = null,
           trailingIcon = null,
           singleLine = false,
-          enabled = true,
+          enabled = enabled,
           isError = false,
           interactionSource = remember { MutableInteractionSource() },
           colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)

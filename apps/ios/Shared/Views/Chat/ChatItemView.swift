@@ -38,6 +38,7 @@ extension EnvironmentValues {
     }
 }
 
+// Spec: spec/client/chat-view.md#ChatItemView
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
@@ -144,6 +145,7 @@ struct ChatItemContentView<Content: View>: View {
             } else {
                 ZStack {}
             }
+        case let .rcvMsgError(rcvMsgError): RcvMsgErrorItemView(chat: chat, rcvMsgError: rcvMsgError, chatItem: chatItem)
         case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(chat: chat, msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
@@ -170,8 +172,8 @@ struct ChatItemContentView<Content: View>: View {
         case .rcvBlocked: deletedItemView()
         case let .sndDirectE2EEInfo(e2eeInfo): CIEventView(eventText: directE2EEInfoText(e2eeInfo))
         case let .rcvDirectE2EEInfo(e2eeInfo): CIEventView(eventText: directE2EEInfoText(e2eeInfo))
-        case .sndGroupE2EEInfo: CIEventView(eventText: e2eeInfoNoPQText())
-        case .rcvGroupE2EEInfo: CIEventView(eventText: e2eeInfoNoPQText())
+        case let .sndGroupE2EEInfo(e2eeInfo): CIEventView(eventText: groupE2EEInfoText(e2eeInfo))
+        case let .rcvGroupE2EEInfo(e2eeInfo): CIEventView(eventText: groupE2EEInfoText(e2eeInfo))
         case .chatBanner: EmptyView()
         case let .invalidJSON(json): CIInvalidJSONView(json: json)
         }
@@ -194,7 +196,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func pendingReviewEventItemText() -> Text {
-        Text(chatItem.content.text)
+        Text(chatItem.content.text(isChannel: chat.chatInfo.isChannel))
             .font(.caption)
             .foregroundColor(theme.colors.secondary)
             .fontWeight(.bold)
@@ -208,9 +210,9 @@ struct ChatItemContentView<Content: View>: View {
                     .font(.caption)
                     .foregroundColor(secondaryColor)
                     .fontWeight(.light)
-                + chatEventText(chatItem, secondaryColor)
+                + chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel)
         } else {
-            return chatEventText(chatItem, secondaryColor)
+            return chatEventText(chatItem, secondaryColor, isChannel: chat.chatInfo.isChannel)
         }
     }
 
@@ -233,7 +235,7 @@ struct ChatItemContentView<Content: View>: View {
         return if count <= 1 {
             nil
         } else if ns.count == 0 {
-            Text("\(count) group events")
+            chat.chatInfo.isChannel ? Text("\(count) channel events") : Text("\(count) group events")
         } else if count > ns.count {
             Text(members) + textSpace + Text("and \(count - ns.count) other events")
         } else {
@@ -255,6 +257,12 @@ struct ChatItemContentView<Content: View>: View {
         e2eeInfoText("Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.")
     }
 
+    private func groupE2EEInfoText(_ info: E2EEInfo) -> Text {
+        info.public == true
+        ? e2eeInfoText("Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages.")
+        : e2eeInfoNoPQText()
+    }
+
     private func e2eeInfoText(_ s: LocalizedStringKey) -> Text {
         Text(s)
             .font(.caption)
@@ -274,8 +282,8 @@ func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text, _ secondaryColor
     chatEventText(Text(eventText) + textSpace + ts, secondaryColor)
 }
 
-func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {
-    chatEventText("\(ci.content.text)", ci.timestampText, secondaryColor)
+func chatEventText(_ ci: ChatItem, _ secondaryColor: Color, isChannel: Bool = false) -> Text {
+    chatEventText("\(ci.content.text(isChannel: isChannel))", ci.timestampText, secondaryColor)
 }
 
 struct ChatItemView_Previews: PreviewProvider {

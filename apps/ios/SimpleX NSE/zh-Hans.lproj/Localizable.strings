@@ -1,7 +1,15 @@
-/* 
-  Localizable.strings
-  SimpleX
+/* notification body */
+"%d new events" = "%d条新事件";
 
-  Created by EP on 30/07/2024.
-  Copyright © 2024 SimpleX Chat. All rights reserved.
-*/
+/* notification body */
+"From %d chat(s)" = "来自 %d 条聊天";
+
+/* notification body */
+"From: %@" = "来自： %@";
+
+/* notification */
+"New events" = "新事件";
+
+/* notification */
+"New messages" = "新消息";
+

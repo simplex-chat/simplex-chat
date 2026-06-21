@@ -49,7 +49,7 @@ Please, note, that if you use a modern version of SimpleX, the databases will be
 In order to view database data you need to decrypt it first. Install `sqlcipher` using your favorite package manager and run the following commands in the directory with databases:
 ```bash
 sqlcipher files_chat.db
-pragma key="youDecryptionPassphrase";
+pragma key="yourDecryptionPassphrase";
 # Ensure it works fine
 select * from users;
 ```

@@ -90,7 +90,6 @@
     <string name="host_verb">Domaćin</string>
     <string name="onboarding_notifications_mode_subtitle">Kako utiče na bateriju</string>
     <string name="how_it_helps_privacy">Kako pomaže privatnosti</string>
-    <string name="how_simplex_works">Kako SimpleX radi</string>
     <string name="group_profile_is_stored_on_members_devices">Grupni profil je uskladnjen na uredjajima korisnika, ne na serverima.</string>
     <string name="onboarding_network_about_operators">O operatorima</string>
     <string name="hidden_profile_password">Skrivena šifra profila</string>

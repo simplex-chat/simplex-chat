@@ -2,6 +2,7 @@
 // Created by Avently on 17.01.2023.
 // Copyright (c) 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat

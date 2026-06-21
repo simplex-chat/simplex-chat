@@ -40,6 +40,7 @@ compose {
       }
       mainClass = "chat.simplex.desktop.MainKt"
       nativeDistributions {
+        copyright = "(c) 2020-2026 SimpleX Chat"
         // For debugging via VisualVM
         if (debugJava) {
           modules("jdk.zipfs", "jdk.unsupported", "jdk.management.agent")
@@ -72,6 +73,12 @@ compose {
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
+          infoPlist {
+            extraKeysRawXml = """
+              <key>NSMicrophoneUsageDescription</key>
+              <string>SimpleX needs microphone access to record voice messages</string>
+            """
+          }
           val identity = rootProject.extra["desktop.mac.signing.identity"] as String?
           val keychain = rootProject.extra["desktop.mac.signing.keychain"] as String?
           val appleId = rootProject.extra["desktop.mac.notarization.apple_id"] as String?

@@ -482,7 +482,6 @@
     <string name="hide_profile">הסתר פרופיל</string>
     <string name="how_to_use_markdown">איך להשתמש במרקדאון</string>
     <string name="how_it_works">איך זה עובד</string>
-    <string name="how_simplex_works">איך SimpleX עובדת</string>
     <string name="icon_descr_hang_up">נתק</string>
     <string name="settings_section_title_help">עזרה</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">הקבוצה תימחק עבור כל חברי הקבוצה – לא ניתן לבטל זאת!</string>
@@ -945,7 +944,7 @@
     <string name="show_QR_code">הצג קוד QR</string>
     <string name="chat_lock">נעילת SimpleX</string>
     <string name="star_on_github">כוכב ב־GitHub</string>
-    <string name="share_address_with_contacts_question">לשתף כתובת עם אנשי קשר\?</string>
+    <string name="share_address_with_contacts_question">לשתף כתובת עם אנשי קשר?</string>
     <string name="stop_sharing">עצור שיתוף</string>
     <string name="set_passcode">הגדרת קוד גישה</string>
     <string name="la_notice_title_simplex_lock">נעילת SimpleX</string>
@@ -1063,7 +1062,7 @@
     <string name="to_verify_compare">כדי לאמת הצפנה מקצה־לקצה עם איש הקשר שלכם, יש להשוות (או לסרוק) את הקוד במכשירים שלכם.</string>
     <string name="your_chat_profiles">פרופילי צ׳אט</string>
     <string name="update_network_session_mode_question">לעדכן מצב בידוד תעבורה\?</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">מנסה להתחבר לשרת המשמש לקבלת הודעות מאיש קשר זה (שגיאה: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">מנסה להתחבר לשרת המשמש לקבלת הודעות מאיש קשר זה (שגיאה: %1$s).</string>
     <string name="unknown_message_format">פורמט הודעה לא ידוע</string>
     <string name="simplex_link_mode_browser">דרך הדפדפן</string>
     <string name="unmute_chat">בטל השתקה</string>
@@ -2095,7 +2094,6 @@
     <string name="operator_use_for_sending">לשליחה</string>
     <string name="group_new_support_chat_one">צ\'אט אחד עם חבר</string>
     <string name="new_message">הודעה חדשה</string>
-    <string name="onboarding_conditions_configure_server_operators">הגדרת מפעילי שרת</string>
     <string name="onboarding_network_operators_configure_via_settings">ניתן להגדיר שרתים דרך הגדרות.</string>
     <string name="rcv_group_event_user_accepted">אישר אותך</string>
     <string name="group_member_status_pending_review">ממתין לסקירה</string>
@@ -2138,4 +2136,17 @@
     <string name="connect_plan_open_new_chat">פתח שיחה חדשה</string>
     <string name="connect_plan_open_new_group">פתח קבוצה חדשה</string>
     <string name="v6_4_support_chat_descr">שלח את המשוב הפרטי שלך לקבוצות.</string>
+    <string name="accept_contact_request">הסכמה לבקשת חבר</string>
+    <string name="chat_list_notes">הערות</string>
+    <string name="forward_alert_title_nothing_to_forward">לא נבחר כלום להעברה!</string>
+    <string name="onboarding_notifications_mode_battery">התראות וסוללה</string>
+    <string name="compose_view_add_message">הוסף הודעה</string>
+    <string name="allow_files_and_media_only_if">אפשר קבצים ומדיה רק כאשר החבר מאשר אותם</string>
+    <string name="allow_your_contacts_to_send_files_and_media">אפשר לאנשי קשר שלך לשלוח קבצים ומדיה</string>
+    <string name="short_descr__field">אודות:</string>
+    <string name="bio_too_large">האודות ארוך מדי</string>
+    <string name="chat_banner_bot">בוט</string>
+    <string name="both_you_and_your_contact_can_send_files">אתה והאיש קשר שלך יכולים לשלוח קבצים ומדיה</string>
+    <string name="chat_banner_business_connection">צ\'אט עסקי</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">אי אפשר לשנות תמונת פרופיל</string>
 </resources>

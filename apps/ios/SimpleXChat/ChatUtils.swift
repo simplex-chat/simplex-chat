@@ -9,9 +9,7 @@
 import Foundation
 
 public protocol ChatLike {
-    var chatInfo: ChatInfo { get}
-    var chatItems: [ChatItem] { get }
-    var chatStats: ChatStats { get }
+    var chatInfo: ChatInfo { get }
 }
 
 extension ChatLike {
@@ -27,6 +25,7 @@ extension ChatLike {
             case .files: p.files.on(for: groupInfo.membership)
             case .simplexLinks: p.simplexLinks.on(for: groupInfo.membership)
             case .history: p.history.on
+            case .support: p.support.on
             case .reports: p.reports.on
             }
         } else {
@@ -54,11 +53,11 @@ extension ChatLike {
     }
 }
 
-public func filterChatsToForwardTo<C: ChatLike>(chats: [C]) -> [C] {
+public func filterChatsToForwardTo<C: ChatLike>(chats: [C], includeLocal: Bool = true) -> [C] {
     var filteredChats = chats.filter { c in
         c.chatInfo.chatType != .local && canForwardToChat(c.chatInfo)
     }
-    if let privateNotes = chats.first(where: { $0.chatInfo.chatType == .local }) {
+    if includeLocal, let privateNotes = chats.first(where: { $0.chatInfo.chatType == .local }) {
         filteredChats.insert(privateNotes, at: 0)
     }
     return filteredChats

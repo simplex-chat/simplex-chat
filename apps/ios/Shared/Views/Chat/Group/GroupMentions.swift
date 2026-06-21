@@ -107,6 +107,8 @@ struct GroupMentionsView: View {
                 } else {
                     return member.memberRole >= .moderator
                 }
+            case .reports:
+                return false
             }
         case .msgContentTagContext:
             return false

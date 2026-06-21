@@ -153,7 +153,6 @@
     <string name="icon_descr_instant_notifications">通知の常時受信</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMPサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
-    <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信してすぐに通知が出ます）。]]></string>
     <string name="callstatus_calling">発信中</string>
@@ -347,7 +346,7 @@
     <string name="database_passphrase">データベースパスフレーズ</string>
     <string name="export_database">データベースをエクスポート</string>
     <string name="delete_database">データベースを削除</string>
-    <string name="import_database">データベースを読み込みますか？</string>
+    <string name="import_database">データベースのインポート</string>
     <string name="new_database_archive">新しいデータベースのアーカイブ</string>
     <string name="old_database_archive">過去のデータベースアーカイブ</string>
     <string name="delete_files_and_media_all">ファイルを全て削除</string>
@@ -887,7 +886,7 @@
     <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに SimpleX メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>
     <string name="group_main_profile_sent">あなたのチャットプロフィールが他のグループメンバーに公開されます。</string>
     <string name="to_verify_compare">エンドツーエンド暗号化を確認するには、ご自分の端末と連絡先の端末のコードを比べます (スキャンします)。</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">このコンタクトから受信するメッセージのサーバに接続しようとしてます。(エラー： %1$s)。</string>
+    <string name="error_connecting_to_server_to_receive_messages">このコンタクトから受信するメッセージのサーバに接続しようとしてます。(エラー： %1$s)。</string>
     <string name="connection_error_auth_desc">使用済みリンク、または連絡先による接続の削除ではなければ、バッグの可能性があります。開発者にお伝えください。
 \n繋がるには、連絡先に新しくリンクを発行してもらって、電波が安定かどうかご確認ください。</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">接続を完了するには、連絡相手がオンラインになる必要があります。
@@ -1097,7 +1096,7 @@
     <string name="v5_0_app_passcode_descr">システム認証の代わりに設定します。</string>
     <string name="make_profile_private">プロフィールを非表示にできます！</string>
     <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話時間は監視されます。</string>
-    <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか\?</string>
+    <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか?</string>
     <string name="icon_descr_call_pending_sent">保留中の通話</string>
     <string name="invalid_migration_confirmation">データ移行の確認が正しくない</string>
     <string name="feature_offered_item">%s を提供しました</string>
@@ -1826,7 +1825,6 @@
     <string name="smp_servers_configured">SMPサーバーの構成</string>
     <string name="servers_info_sessions_connected">接続中</string>
     <string name="xftp_servers_configured">XFTPサーバーの構成</string>
-    <string name="one_hand_ui_card_title">チャトリスト切り替え</string>
     <string name="contact_list_header_title">連絡先</string>
     <string name="message_servers">メッセージサーバ</string>
     <string name="media_and_file_servers">メディア&amp;ファイルサーバ</string>
@@ -2014,7 +2012,6 @@
     <string name="v6_3_better_privacy_and_security">プライバシーとセキュリティの向上</string>
     <string name="accept_pending_member_button">承諾</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">プライバシーポリシーと利用条件</string>
-    <string name="onboarding_conditions_configure_server_operators">サーバオペレータの設定</string>
     <string name="onboarding_conditions_accept">承諾</string>
     <string name="onboarding_conditions_private_chats_not_accessible">サーバオペレータは、プライベートチャット・グループ・連絡先にはアクセスできません。</string>
     <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat を利用することで、以下の事項に同意したものと見なされます：\n- パブリックグループでは合法なコンテンツのみを送信すること。\n- 他のユーザを尊重すること、またスパムメッセージを送信しないこと。</string>
@@ -2042,4 +2039,23 @@
     <string name="no_message_servers_configured_for_private_routing">プライベートメッセージルーティング用のサーバーがありません。</string>
     <string name="no_media_servers_configured">メディアおよびファイルサーバーは存在しません。</string>
     <string name="no_media_servers_configured_for_sending">ファイルを送信するサーバーがありません。</string>
+    <string name="for_social_media">ソーシャルメディア向け</string>
+    <string name="operator_use_operator_toggle_description">サーバを利用する</string>
+    <string name="your_servers">あなたのサーバ</string>
+    <string name="content_filter_videos">ビデオ</string>
+    <string name="content_filter_files">ファイル</string>
+    <string name="content_filter_images">画像</string>
+    <string name="content_filter_links">リンク</string>
+    <string name="content_filter_all_messages">すべて</string>
+    <string name="content_filter_voice_messages">音声メッセージ</string>
+    <string name="content_filter_menu_item">フィルター</string>
+    <string name="accept_pending_member_alert_confirmation_as_member">メンバーとして承認する</string>
+    <string name="accept_pending_member_alert_confirmation_as_observer">オブザーバーとして承認する</string>
+    <string name="blocking_reason_spam">スパム</string>
+    <string name="archive_verb">アーカイブ</string>
+    <string name="short_descr__field">自己紹介</string>
+    <string name="bio_too_large">自己紹介の文字数が上限を超えています</string>
+    <string name="appearance_bars_blur_radius">ぼかし</string>
+    <string name="chat_list_contacts">連絡先</string>
+    <string name="chat_list_favorites">お気に入り</string>
 </resources>

@@ -29,19 +29,42 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
     ORIG_NAME_COPY=$ORIG_NAME-copy
     mv "$ORIG_NAME" "$ORIG_NAME_COPY"
 
-    (cd apk && zip -r -q -"$level" ../"$ORIG_NAME" .)
-    # Shouldn't be compressed because of Android requirement
-    (cd apk && zip -r -q -0 ../"$ORIG_NAME" resources.arsc)
+    # Determenistic build
+    find apk -type f -exec chmod 644 {} +
+    find apk -type d -exec chmod 755 {} +
+    find apk -exec touch -h -d '2025-12-01T00:00:00' {} +
+
+    (
+        cd apk
+        find . -not -path './res/*' -not -name 'resources.arsc' -type f -print0 | sort -z | xargs -0 zip -X -r -q -"$level" ../"$ORIG_NAME"
+    )
 
     if [ $case_insensitive -eq 1 ]; then
         # For case-insensitive file systems
-        list_of_files=$(unzip -l "$ORIG_NAME_COPY" | grep res/ | sed -e "s|.*res/|res/|")
-        for file in $list_of_files; do unzip -o -q -d apk "$ORIG_NAME_COPY" "$file" && (cd apk && zip -r -q -0 ../"$ORIG_NAME" "$file"); done
+        list_of_files=$(unzip -l "$ORIG_NAME_COPY" | grep res/ | sed -e "s|.*res/|res/|" | sort)
+        for file in $list_of_files; do
+            unzip -o -q -d apk "$ORIG_NAME_COPY" "$file"
+            (
+                cd apk
+                chmod 644 "$file"
+                touch -h -d '2025-12-01T00:00:00' "$file"
+                zip -X -r -q -0 ../"$ORIG_NAME" "$file"
+            )
+        done
     else
         # This method is not working correctly on case-insensitive file systems since Android AAPT produce the same names of files
         # but with different case like xX.png, Xx.png, xx.png, etc
-        (cd apk && zip -r -q -0 ../"$ORIG_NAME" res)
+        (
+            cd apk
+            find res -type f -print0 | sort -z | xargs -0 zip -X -r -q -0 ../"$ORIG_NAME"
+        )
     fi
+
+    # Shouldn't be compressed because of Android requirement
+    (
+        cd apk
+        find resources.arsc -type f -print0 | sort -z | xargs -0 zip -X -r -q -0 ../"$ORIG_NAME"
+    )
 
     #(cd apk && 7z a -r -mx=$level -tzip -x!resources.arsc ../$ORIG_NAME .)
     #(cd apk && 7z a -r -mx=0 -tzip ../$ORIG_NAME resources.arsc)

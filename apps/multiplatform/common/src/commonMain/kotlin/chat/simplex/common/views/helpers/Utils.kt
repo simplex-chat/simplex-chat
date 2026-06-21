@@ -114,6 +114,7 @@ fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedStr
 expect fun SetupClipboardListener()
 
 // maximum image file size to be auto-accepted
+// Spec: spec/services/files.md#MAX_IMAGE_SIZE
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
 const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
@@ -125,9 +126,15 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
+// raised XFTP receive limits for files from a sender with a supporter badge (also investor) or a legend badge
+const val MAX_FILE_SIZE_XFTP_SUPPORTER: Long = 2_147_483_648 // 2GB
+const val MAX_FILE_SIZE_XFTP_LEGEND: Long = 5_368_709_120 // 5GB
+
 const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI
+
+expect fun clearImageCaches()
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
 expect suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>?
@@ -380,7 +387,7 @@ fun uniqueCombine(fileName: String, dir: File): String {
   val ext = orig.extension
   fun tryCombine(n: Int): String {
     val suffix = if (n == 0) "" else "_$n"
-    val f = "$name$suffix.$ext"
+    val f = if (ext.isEmpty()) "$name$suffix" else "$name$suffix.$ext"
     return if (File(dir, f).exists()) tryCombine(n + 1) else f
   }
   return tryCombine(0)
@@ -422,6 +429,7 @@ fun deleteAppFiles() {
   } catch (e: java.lang.Exception) {
     Log.e(TAG, "Util deleteAppFiles error: ${e.stackTraceToString()}")
   }
+  clearImageCaches()
 }
 
 fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in bytes
@@ -438,12 +446,23 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
-fun getMaxFileSize(fileProtocol: FileProtocol): Long {
-  return when (fileProtocol) {
-    FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
-    FileProtocol.SMP -> MAX_FILE_SIZE_SMP
-    FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
+fun getMaxFileSize(fileProtocol: FileProtocol, senderProfile: LocalProfile? = null): Long = when (fileProtocol) {
+  FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+  FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
+  // a sender's active badge raises the XFTP limit: legend to 5GB, any other (supporter/investor) to 2GB
+  FileProtocol.XFTP -> {
+    val badge = senderProfile?.localBadge
+    if (badge == null || badge.status != BadgeStatus.Active) MAX_FILE_SIZE_XFTP
+    else if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND
+    else MAX_FILE_SIZE_XFTP_SUPPORTER
   }
+}
+
+// the profile of whoever sent a received chat item - the group member, or the direct chat's contact
+fun ciSenderProfile(ci: ChatItem, chatInfo: ChatInfo): LocalProfile? = when (val dir = ci.chatDir) {
+  is CIDirection.GroupRcv -> dir.groupMember.memberProfile
+  is CIDirection.DirectRcv -> (chatInfo as? ChatInfo.Direct)?.contact?.profile
+  else -> null
 }
 
 expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration
@@ -530,6 +549,20 @@ fun UriHandler.openUriCatching(uri: String) {
     openUri(uri)
   } catch (e: Exception/*ActivityNotFoundException*/) {
     Log.e(TAG, e.stackTraceToString())
+  }
+}
+
+fun UriHandler.openExternalLink(uri: String) {
+  val uriHandler = this
+  if (uri.startsWith("https://simplex.chat/contact#") || (uri.startsWith("https://smp") && ".simplex.im/a#" in uri)) {
+    uriHandler.openVerifiedSimplexUri(uri)
+  } else {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.open_external_link_title),
+      text = uri,
+      confirmText = generalGetString(MR.strings.open_verb),
+      onConfirm = { uriHandler.openUriCatching(uri) }
+    )
   }
 }
 

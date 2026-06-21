@@ -10,6 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
+import Simplex.Messaging.Agent.Protocol (SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$$>))
 import System.Console.ANSI.Types
@@ -20,13 +21,16 @@ markdownTests :: Spec
 markdownTests = do
   textFormat
   secretText
+  textSmall
   textColor
   textWithUri
   textWithHyperlink
+  obfuscatedSimplexLinks
   textWithEmail
   textWithPhone
   textWithMentions
   textWithCommands
+  textWithSimplexNames
   multilineMarkdownList
   testSanitizeUri
 
@@ -116,7 +120,7 @@ secretText = describe "secret text" do
     "this is # unformatted # text"
       <==> "this is # unformatted # text"
     "this is #unformatted # text"
-      <==> "this is #unformatted # text"
+      <==> "this is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " # text"
     "this is # unformatted# text"
       <==> "this is # unformatted# text"
     "this is ## unformatted ## text"
@@ -124,12 +128,41 @@ secretText = describe "secret text" do
     "this is#unformatted# text"
       <==> "this is#unformatted# text"
     "this is #unformatted text"
-      <==> "this is #unformatted text"
+      <==> "this is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " text"
     "*this* is #unformatted text"
-      <==> bold "this" <> " is #unformatted text"
+      <==> bold "this" <> " is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " text"
   it "ignored internal markdown" do
     "snippet: `this is #secret_text#`"
       <==> "snippet: " <> markdown Snippet "this is #secret_text#"
+
+small :: Text -> Markdown
+small = markdown Small
+
+textSmall :: Spec
+textSmall = describe "text small" do
+  it "correct markdown" do
+    "this is !- small! text"
+      <==> "this is " <> small "small" <> " text"
+    "!- small! text"
+      <==> small "small" <> " text"
+    "this is !- small!"
+      <==> "this is " <> small "small"
+    " !- small! text"
+      <==> " " <> small "small" <> " text"
+    "this is !- small! "
+      <==> "this is " <> small "small" <> " "
+  it "ignored as markdown" do
+    "this is !- unformatted ! text"
+      <==> "this is !- unformatted ! text"
+    "this is !-  unformatted! text"
+      <==> "this is !-  unformatted! text"
+    "this is!- unformatted! text"
+      <==> "this is!- unformatted! text"
+    "this is !- unformatted text"
+      <==> "this is !- unformatted text"
+  it "ignored internal markdown" do
+    "this is !- long *small* (not bold)! text"
+      <==> "this is " <> small "long *small* (not bold)" <> " text"
 
 red :: Text -> Markdown
 red = markdown (colored Red)
@@ -197,6 +230,10 @@ textWithUri = describe "text with Uri" do
     "https://github.com/simplex-chat/ - SimpleX on GitHub" <==> uri "https://github.com/simplex-chat/" <> " - SimpleX on GitHub"
     -- "SimpleX on GitHub (https://github.com/simplex-chat/)" <==> "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
     "https://en.m.wikipedia.org/wiki/Servo_(software)" <==> uri "https://en.m.wikipedia.org/wiki/Servo_(software)"
+    "https://simplex.chat/page_name_" <==> uri "https://simplex.chat/page_name_"
+    "https://simplex.chat/page_name_, hello" <==> uri "https://simplex.chat/page_name_" <> ", hello"
+    "https://simplex.chat/page!" <==> uri "https://simplex.chat/page!"
+    "https://simplex.chat/page!, hello" <==> uri "https://simplex.chat/page!" <> ", hello"
     "example.com" <==> uri "example.com"
     "example.com." <==> uri "example.com" <> "."
     "example.com..." <==> uri "example.com" <> "..."
@@ -248,6 +285,24 @@ textWithHyperlink = describe "text with HyperLink without link text" do
     "[click here](example.com)" <==> "[click here](example.com)"
     "[click here](https://example.com )" <==> "[click here](https://example.com )"
 
+obfuscatedSimplexLinks :: Spec
+obfuscatedSimplexLinks = describe "SimpleX links obfuscated with whitespace" do
+  let addr = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
+      inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
+  let spaced s = T.replace "://" ":// " s -- insert a space right after the scheme
+  it "detects links split with spaces or newlines" do
+    hasObfuscatedSimplexLink addr `shouldBe` True
+    hasObfuscatedSimplexLink (spaced addr) `shouldBe` True
+    hasObfuscatedSimplexLink (T.intercalate "\n" $ T.chunksOf 8 addr) `shouldBe` True
+    hasObfuscatedSimplexLink ("connect with me: " <> spaced addr) `shouldBe` True
+    hasObfuscatedSimplexLink (T.intercalate " " $ T.chunksOf 8 $ "https://simplex.chat" <> inv) `shouldBe` True
+  it "detects a split link followed by other text" do
+    hasObfuscatedSimplexLink (spaced addr <> "\nplease connect") `shouldBe` True
+  it "ignores text without a SimpleX link" do
+    hasObfuscatedSimplexLink "" `shouldBe` False
+    hasObfuscatedSimplexLink "hello there, this is a normal message" `shouldBe` False
+    hasObfuscatedSimplexLink "see https://example.com/page?ref=123 for details" `shouldBe` False
+
 email :: Text -> Markdown
 email = Markdown $ Just Email
 
@@ -263,8 +318,8 @@ textWithEmail = describe "text with Email" do
     "test chat@simplex.chat." <==> "test " <> email "chat@simplex.chat" <> "."
     "test chat@simplex.chat..." <==> "test " <> email "chat@simplex.chat" <> "..."
   it "ignored as email markdown" do
-    "chat @simplex.chat" <==> "chat " <> mention "simplex.chat" "@simplex.chat"
-    "this is chat @simplex.chat" <==> "this is chat " <> mention "simplex.chat" "@simplex.chat"
+    "chat @simplex.chat" <==> "chat " <> sname NTContact TLDWeb "simplex.chat" [] "simplex.chat"
+    "this is chat @simplex.chat" <==> "this is chat " <> sname NTContact TLDWeb "simplex.chat" [] "simplex.chat"
     "this is chat@ simplex.chat" <==> "this is chat@ " <> uri "simplex.chat"
     "this is chat @ simplex.chat" <==> "this is chat @ " <> uri "simplex.chat"
     "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ " <> uri "simplex.chat"
@@ -344,6 +399,39 @@ uri' = FormattedText $ Just Uri
 command' :: Text -> Text -> FormattedText
 command' = FormattedText . Just . Command
 
+sname :: SimplexNameType -> SimplexTLD -> Text -> [Text] -> Text -> Markdown
+sname nt ns dom sub txt = markdown (SimplexName $ SimplexNameInfo nt (SimplexNameDomain ns dom sub)) (pfx <> txt)
+  where
+    pfx = case nt of NTPublicGroup -> "#"; NTContact -> "@"
+
+textWithSimplexNames :: Spec
+textWithSimplexNames = describe "text with SimpleX names" do
+  it "channel names - simplex namespace" do
+    "#privacy" <==> sname NTPublicGroup TLDSimplex "privacy" [] "privacy"
+    "#privacy.simplex" <==> sname NTPublicGroup TLDSimplex "privacy" [] "privacy.simplex"
+    "#my-channel.simplex" <==> sname NTPublicGroup TLDSimplex "my-channel" [] "my-channel.simplex"
+    "hello #privacy!" <==> "hello " <> sname NTPublicGroup TLDSimplex "privacy" [] "privacy" <> "!"
+    "see #privacy.simplex now" <==> "see " <> sname NTPublicGroup TLDSimplex "privacy" [] "privacy.simplex" <> " now"
+    "#123" <==> sname NTPublicGroup TLDSimplex "123" [] "123"
+  it "channel names - subdomains" do
+    "#support.acme.simplex" <==> sname NTPublicGroup TLDSimplex "acme" ["support"] "support.acme.simplex"
+    "#a.b.acme.simplex" <==> sname NTPublicGroup TLDSimplex "acme" ["b", "a"] "a.b.acme.simplex"
+  it "channel names - testing namespace" do
+    "#test.testing" <==> sname NTPublicGroup TLDTesting "test" [] "test.testing"
+    "#sub.test.testing" <==> sname NTPublicGroup TLDTesting "test" ["sub"] "sub.test.testing"
+  it "channel names - web domains" do
+    "#example.com" <==> sname NTPublicGroup TLDWeb "example.com" [] "example.com"
+    "#news.bbc.co.uk" <==> sname NTPublicGroup TLDWeb "news.bbc.co.uk" [] "news.bbc.co.uk"
+    "#123.com" <==> sname NTPublicGroup TLDWeb "123.com" [] "123.com"
+  it "contact names" do
+    "@privacy.simplex" <==> sname NTContact TLDSimplex "privacy" [] "privacy.simplex"
+    "@my-name.simplex" <==> sname NTContact TLDSimplex "my-name" [] "my-name.simplex"
+    "@alice.example.com" <==> sname NTContact TLDWeb "alice.example.com" [] "alice.example.com"
+  it "not parsed as names" do
+    "#secret#" <==> markdown Secret "secret"
+    "##double secret##" <==> markdown Secret "#double secret#"
+    "#" <==> "#"
+
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do
   it "correct markdown" do
@@ -386,6 +474,10 @@ testSanitizeUri = describe "sanitizeUri" $ do
     "https://example.com/page/a123?source=abc" `safeSanitized` Nothing -- source is in unsafe blacklist
     "https://example.com/page/a123?name=abc" `eagerSanitized` Just "https://example.com/page/a123"
     "https://example.com/page/a123?name=abc" `safeSanitized` Nothing -- name is not in a whitelist
+  it "should keep whitelisted parameters in safe mode even if they match a blacklist prefix" $ do
+    "https://example.com/playlist?list=abc" `sanitized` Nothing -- "list" is whitelisted, "li" is blacklisted
+    "https://example.com/playlist?list=abc&si=def" `sanitized` Just "https://example.com/playlist?list=abc"
+    "https://github.com/owner/repo?ref=main" `sanitized` Nothing -- "ref" is whitelisted for github.com
   where
     s `eagerSanitized` res = sanitized_ False s res
     s `safeSanitized` res = sanitized_ True s res

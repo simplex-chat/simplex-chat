@@ -5,6 +5,7 @@
 //  Created by JRoberts on 22.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
@@ -219,9 +220,12 @@ struct AddGroupMembersViewCommon: View {
             HStack{
                 ProfileImage(imageStr: contact.image, size: 30)
                     .padding(.trailing, 2)
-                Text(ChatInfo.direct(contact: contact).chatViewName)
-                    .foregroundColor(prohibitedToInviteIncognito ? theme.colors.secondary : theme.colors.onBackground)
-                    .lineLimit(1)
+                NameWithBadge(
+                    Text(ChatInfo.direct(contact: contact).chatViewName)
+                        .foregroundColor(prohibitedToInviteIncognito ? theme.colors.secondary : theme.colors.onBackground),
+                    contact.active ? contact.profile.localBadge : nil
+                )
+                .lineLimit(1)
                 Spacer()
                 Image(systemName: icon)
                     .foregroundColor(iconColor)

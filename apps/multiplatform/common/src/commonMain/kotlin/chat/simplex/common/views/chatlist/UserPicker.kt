@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.*
 
 private val USER_PICKER_SECTION_SPACING = 32.dp
 
+// Spec: spec/client/chat-list.md#UserPicker
 @Composable
 fun UserPicker(
   chatModel: ChatModel,
@@ -131,7 +132,7 @@ fun UserPicker(
   }
   LaunchedEffect(Unit) {
     // Controller.ctrl can be null when self-destructing activates
-    if (controller.ctrl != null && controller.ctrl != -1L) {
+    if (controller.hasChatCtrl()) {
       withBGApi {
         controller.reloadRemoteHosts()
       }
@@ -209,7 +210,7 @@ fun UserPicker(
         }
       } else if (currentUser != null) {
         SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
+          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped, badge = currentUser.profile.localBadge)
         }
       }
     }
@@ -467,10 +468,11 @@ fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning 
       image = u.image,
       size = 54.dp * fontSizeSqrtMultiplier
     )
-    Text(
+    // the end padding is on the row, not the name, so the badge stays right after the name
+    NameWithBadge(
       u.displayName,
-      modifier = Modifier
-        .padding(start = 10.dp, end = 8.dp),
+      u.profile.localBadge,
+      Modifier.padding(start = 10.dp, end = 8.dp),
       color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )

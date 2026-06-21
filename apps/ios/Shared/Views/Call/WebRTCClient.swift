@@ -2,12 +2,14 @@
 // Created by Avently on 09.02.2023.
 // Copyright (c) 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/calls.md
 
 import WebRTC
 import LZString
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/services/calls.md#WebRTCClient
 final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDelegate, RTCFrameDecryptorDelegate {
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
@@ -87,6 +89,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         WebRTC.RTCIceServer(urlStrings: ["turns:turn.simplex.im:443?transport=tcp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"),
     ]
 
+    // Spec: spec/services/calls.md#initializeCall
     func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
         let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers, relay)
         connection.delegate = self
@@ -132,6 +135,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         )
     }
 
+    // Spec: spec/services/calls.md#createPeerConnection
     func createPeerConnection(_ iceServers: [WebRTC.RTCIceServer], _ relay: Bool?) -> RTCPeerConnection {
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil,
             optionalConstraints: ["DtlsSrtpKeyAgreement": kRTCMediaConstraintsValueTrue])
@@ -157,6 +161,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         return config
     }
 
+    // Spec: spec/services/calls.md#addIceCandidates
     func addIceCandidates(_ connection: RTCPeerConnection, _ remoteIceCandidates: [RTCIceCandidate]) {
         remoteIceCandidates.forEach { candidate in
             connection.add(candidate.toWebRTCCandidate()) { error in
@@ -167,6 +172,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    // Spec: spec/services/calls.md#sendCallCommand
     func sendCallCommand(command: WCallCommand) async {
         var resp: WCallResponse? = nil
         let pc = activeCall?.connection
@@ -295,6 +301,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    // Spec: spec/services/calls.md#sendIceCandidates
     func sendIceCandidates(_ candidates: [RTCIceCandidate]) async {
         await self.sendCallResponse(.init(
             corrId: nil,
@@ -353,6 +360,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    // Spec: spec/services/calls.md#enableMedia
     @MainActor
     func enableMedia(_ source: CallMediaSource, _ enable: Bool) {
         logger.debug("WebRTCClient: enabling media \(source.rawValue) \(enable)")
@@ -411,6 +419,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         localRendererAspectRatio.wrappedValue = size.width / size.height
     }
 
+    // Spec: spec/services/calls.md#setupLocalTracks
     func setupLocalTracks(_ incomingCall: Bool, _ call: Call) {
         let pc = call.connection
         let transceivers = call.connection.transceivers
@@ -490,6 +499,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     // Should be called after local description set
+    // Spec: spec/services/calls.md#setupEncryptionForLocalTracks
     func setupEncryptionForLocalTracks(_ call: Call) {
         if let encryptor = call.frameEncryptor {
             call.connection.senders.forEach { $0.setRtcFrameEncryptor(encryptor) }
@@ -567,6 +577,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    // Spec: spec/services/calls.md#startCaptureLocalVideo
     func startCaptureLocalVideo(_ device: AVCaptureDevice.Position?, _ capturer: RTCVideoCapturer?) {
 #if targetEnvironment(simulator)
         guard
@@ -630,6 +641,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         return (localCamera, localVideoTrack)
     }
 
+    // Spec: spec/services/calls.md#endCall
     func endCall() {
         if #available(iOS 16.0, *) {
             _endCall()

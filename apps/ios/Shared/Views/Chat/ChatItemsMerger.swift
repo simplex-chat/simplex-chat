@@ -267,6 +267,7 @@ struct ListItem: Hashable {
         case .directRcv: 1
         case .groupSnd: 2
         case let .groupRcv(mem): "\(mem.groupMemberId) \(mem.displayName) \(mem.memberStatus.rawValue) \(mem.memberRole.rawValue) \(mem.image?.hash ?? 0)".hash
+        case .channelRcv: 3
         case .localSnd: 4
         case .localRcv: 5
         }

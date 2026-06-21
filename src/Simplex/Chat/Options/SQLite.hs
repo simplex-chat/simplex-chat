@@ -11,7 +11,9 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Foreign.C.String
 import Options.Applicative
+import Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
+import Simplex.Messaging.Agent.Store.SQLite.Common (SQLiteFuncDef (..), SQLiteFuncPtrs (..))
 import Simplex.Messaging.Agent.Store.SQLite.DB (TrackQueries (..))
 import System.FilePath (combine)
 
@@ -54,17 +56,31 @@ chatDbOptsP appDir defaultDbName = do
         vacuumOnMigration = not disableVacuum
       }
 
+migrationBackupPathP :: Parser (Maybe FilePath)
+migrationBackupPathP =
+  flag' Nothing
+    ( long "disable-backup"
+        <> help "Disable backup when migrating database"
+    )
+    <|>
+      (fmap Just . strOption)
+        ( long "backup-directory"
+            <> help "Directory to backup database for migration"
+            <> value ""
+        )
+
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbFilePrefix} = dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
 
-toDBOpts :: ChatDbOpts -> String -> Bool -> DBOpts
-toDBOpts ChatDbOpts {dbFilePrefix, dbKey, trackQueries, vacuumOnMigration} dbSuffix keepKey = do
+toDBOpts :: ChatDbOpts -> String -> Bool -> [SQLiteFuncDef] -> DBOpts
+toDBOpts ChatDbOpts {dbFilePrefix, dbKey, trackQueries, vacuumOnMigration} dbSuffix keepKey dbFunctions = do
   DBOpts
     { dbFilePath = dbFilePrefix <> dbSuffix,
+      dbFunctions,
       dbKey,
       keepKey,
-      track = trackQueries,
-      vacuum = vacuumOnMigration
+      vacuum = vacuumOnMigration,
+      track = trackQueries
     }
 
 chatSuffix :: String
@@ -72,6 +88,12 @@ chatSuffix = "_chat.db"
 
 agentSuffix :: String
 agentSuffix = "_agent.db"
+
+chatDBFunctions :: [SQLiteFuncDef]
+chatDBFunctions =
+  [ SQLiteFuncDef "migrate_relations_vector" 3 (SQLiteAggrPtrs sqliteMemberRelationsStepPtr sqliteMemberRelationsFinalPtr),
+    SQLiteFuncDef "set_member_vector_new_relation" 4 (SQLiteFuncPtr True sqliteSetMemberVectorNewRelationPtr)
+  ]
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts
 mobileDbOpts fp key = do

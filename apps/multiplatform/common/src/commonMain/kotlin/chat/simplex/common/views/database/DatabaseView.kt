@@ -366,6 +366,7 @@ fun startChat(
   chatDbChanged: MutableState<Boolean>,
   progressIndicator: MutableState<Boolean>? = null
 ) {
+  Log.d(TAG, "startChat")
   withLongRunningApi {
     try {
       progressIndicator?.value = true
@@ -532,7 +533,7 @@ fun deleteChatDatabaseFilesAndState() {
   appPrefs.newDatabaseInitialized.set(false)
   chatModel.desktopOnboardingRandomPassword.value = false
   controller.appPrefs.storeDBPassphrase.set(true)
-  controller.ctrl = null
+  controller.setChatCtrl(null)
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null

@@ -22,14 +22,16 @@ struct DeveloperView: View {
         VStack {
             List {
                 Section {
-                    ZStack(alignment: .leading) {
-                        Image(colorScheme == .dark ? "github_light" : "github")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .opacity(0.5)
-                            .colorMultiply(theme.colors.secondary)
-                        Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
-                            .padding(.leading, 36)
+                    ExternalLink(destination: URL(string: "https://github.com/simplex-chat/simplex-chat")!) {
+                        ZStack(alignment: .leading) {
+                            Image(colorScheme == .dark ? "github_light" : "github")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .opacity(0.5)
+                                .colorMultiply(theme.colors.secondary)
+                            Text("Install SimpleX Chat for terminal")
+                                .padding(.leading, 36)
+                        }
                     }
                     NavigationLink {
                         TerminalView()
@@ -91,6 +93,11 @@ struct DeveloperView: View {
                 UserDefaults.standard.set(val, forKey: def)
             }
         }
+        for def in hintGroupDefaults {
+            if let val = groupAppDefaults[def] as? Bool {
+                groupDefaults.set(val, forKey: def)
+            }
+        }
         hintsUnchanged = true
     }
 }
@@ -98,6 +105,8 @@ struct DeveloperView: View {
 private func hintDefaultsUnchanged() -> Bool {
     hintDefaults.allSatisfy { def in
         appDefaults[def] as? Bool == UserDefaults.standard.bool(forKey: def)
+    } && hintGroupDefaults.allSatisfy { def in
+        groupAppDefaults[def] as? Bool == groupDefaults.bool(forKey: def)
     }
 }
 

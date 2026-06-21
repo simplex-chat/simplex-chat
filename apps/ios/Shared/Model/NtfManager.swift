@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 08/02/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/notifications.md
 
 import Foundation
 import UserNotifications
@@ -22,6 +23,7 @@ enum NtfCallAction {
     case reject
 }
 
+// Spec: spec/services/notifications.md#NtfManager
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
@@ -48,6 +50,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         handler()
     }
 
+    // Spec: spec/services/notifications.md#processNotificationResponse
     func processNotificationResponse(_ ntfResponse: UNNotificationResponse) {
         let chatModel = ChatModel.shared
         let content = ntfResponse.notification.request.content
@@ -149,6 +152,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         return false
     }
 
+    // Spec: spec/services/notifications.md#registerCategories
     func registerCategories() {
         logger.debug("NtfManager.registerCategories")
         UNUserNotificationCenter.current().setNotificationCategories([
@@ -207,6 +211,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         ])
     }
 
+    // Spec: spec/services/notifications.md#requestAuthorization
     func requestAuthorization(onDeny denied: (()-> Void)? = nil, onAuthorized authorized: (()-> Void)? = nil) {
         logger.debug("NtfManager.requestAuthorization")
         let center = UNUserNotificationCenter.current()
@@ -230,6 +235,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         }
     }
 
+    // Spec: spec/services/notifications.md#notifyContactRequest
     func notifyContactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
         addNotification(createContactRequestNtf(user, contactRequest, 0))
@@ -240,6 +246,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         addNotification(createContactConnectedNtf(user, contact, 0))
     }
 
+    // Spec: spec/services/notifications.md#notifyMessageReceived
     func notifyMessageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         if cInfo.ntfsEnabled(chatItem: cItem) {
@@ -247,16 +254,19 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         }
     }
 
+    // Spec: spec/services/notifications.md#notifyCallInvitation
     func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
         addNotification(createCallInvitationNtf(invitation, 0))
     }
 
+    // Spec: spec/services/notifications.md#setNtfBadgeCount
     func setNtfBadgeCount(_ count: Int) {
         UIApplication.shared.applicationIconBadgeNumber = count
         ntfBadgeCountGroupDefault.set(count)
     }
 
+    // Spec: spec/services/notifications.md#changeNtfBadgeCount
     func changeNtfBadgeCount(by count: Int = 1) {
         setNtfBadgeCount(max(0, UIApplication.shared.applicationIconBadgeNumber + count))
     }

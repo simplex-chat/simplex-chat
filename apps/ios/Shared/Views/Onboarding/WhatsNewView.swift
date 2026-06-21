@@ -5,6 +5,7 @@
 //  Created by Evgeny on 24/12/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
@@ -631,6 +632,38 @@ private let versionDescriptions: [VersionDescription] = [
             ))
         ]
     ),
+    VersionDescription(
+        version: "v6.5",
+        post: URL(string: "https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"),
+        features: [
+            .feature(Description(
+                icon: nil,
+                title: "Public channels - speak freely 🚀",
+                description: nil,
+                subfeatures: [
+                    ("antenna.radiowaves.left.and.right", "Reliability: many relays per channel."),
+                    ("server.rack", "Ownership: you can run your own relays."),
+                    ("key.2.on.ring", "Security: owners hold channel keys."),
+                    ("person.badge.shield.checkmark", "Privacy: for owners and subscribers."),
+                ]
+            )),
+            .feature(Description(
+                icon: "link.badge.plus",
+                title: "Easier to invite your friends 👋",
+                description: "We made connecting simpler for new users."
+            )),
+            .feature(Description(
+                icon: "network.badge.shield.half.filled",
+                title: "Safe web links",
+                description: "- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking."
+            )),
+            .feature(Description(
+                icon: "network",
+                title: "Non-profit governance",
+                description: "To make SimpleX Network last."
+            ))
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -758,7 +791,7 @@ struct WhatsNewView: View {
                                 }
                             }
                             if let post = v.post {
-                                Link(destination: post) {
+                                ExternalLink(destination: post) {
                                     HStack {
                                         Text("Read more")
                                         Image(systemName: "arrow.up.right.circle")

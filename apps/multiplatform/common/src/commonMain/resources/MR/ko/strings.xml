@@ -500,7 +500,6 @@
     <string name="how_to">설명서</string>
     <string name="how_to_use_your_servers">내 서버 사용법</string>
     <string name="how_to_use_markdown">마크다운 사용법</string>
-    <string name="how_simplex_works">SimpleX 작동 방식</string>
     <string name="group_invitation_expired">그룹 초대가 만료되었어요.</string>
     <string name="group_members_can_delete">그룹 멤버는 보낸 메시지를 영구 삭제할 수 있습니다. (24 시간)</string>
     <string name="group_members_can_send_voice">그룹 멤버는 음성 메시지를 보낼 수 있어요.</string>

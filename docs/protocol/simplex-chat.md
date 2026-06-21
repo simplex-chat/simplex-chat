@@ -266,6 +266,12 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting.
 
+### Channels: relay-mediated groups
+
+Channels are groups where message delivery is mediated by dedicated relay members rather than by direct connections between all members. Channels extend the group sub-protocol with additional roles (`relay`, `observer`), message signing for administrative actions, a binary batch format for signed and forwarded messages, and an asynchronous delivery pipeline.
+
+For architecture and design rationale, see [SimpleX Channels Overview](./channels-overview.md). For protocol-level detail - wire formats, message types, signing mechanics, delivery pipeline - see [SimpleX Channels Protocol](./channels-protocol.md).
+
 ## Sub-protocol for WebRTC audio/video calls
 
 This sub-protocol is used to send call invitations and to negotiate end-to-end encryption keys and pass WebRTC signalling information.
@@ -282,12 +288,13 @@ These message are used for WebRTC calls:
 
 ## Threat model
 
-This threat model compliments SMP, XFTP, push notifications and XRCP protocols threat models:
+This threat model complements SMP, XFTP, push notifications and XRCP protocols threat models, as well as the channel-specific threat model:
 
 - [SimpleX Messaging Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#threat-model);
 - [SimpleX File Transfer Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xftp.md#threat-model);
 - [Push notifications threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model);
-- [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model).
+- [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model);
+- [SimpleX Channels threat model](./channels-overview.md#threat-model).
 
 #### A user's contact
 
@@ -342,3 +349,27 @@ This threat model compliments SMP, XFTP, push notifications and XRCP protocols t
 *cannot:*
 
 - prove that two group members with incognito profiles is the same user.
+
+#### A channel relay
+
+For the full channel threat model, see [SimpleX Channels: threat model](./channels-overview.md#threat-model).
+
+*can:*
+
+- send arbitrary unsigned content messages to subscribers, effectively fabricating the content stream while the channel identity and signed profile remain intact.
+
+- selectively drop any messages, both content and signed administrative events, for some or all subscribers.
+
+- ignore the "message from channel" directive, revealing which specific owner sent a message.
+
+- fabricate subscriber connections, inflating subscriber counts.
+
+*cannot:*
+
+- impersonate an owner - administrative messages (roster changes, profile updates, channel deletion) require valid cryptographic signatures that the relay cannot produce.
+
+- substitute the channel profile - profile changes require a valid owner signature.
+
+- redirect joining subscribers to a different channel - the channel's entity ID is baked into both the channel link and the relay link's immutable data.
+
+- determine the real-world identity of subscribers - subscriber connections carry no persistent identity.

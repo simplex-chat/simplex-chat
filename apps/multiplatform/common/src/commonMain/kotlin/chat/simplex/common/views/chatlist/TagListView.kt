@@ -43,6 +43,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 
+// Spec: spec/client/chat-list.md#TagListView
 @Composable
 fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode: Boolean) {
   val userTags = remember { chatModel.userTags }

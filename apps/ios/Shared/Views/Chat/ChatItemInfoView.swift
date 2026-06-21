@@ -9,6 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#ChatItemInfoView
 struct ChatItemInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss
@@ -386,23 +387,31 @@ struct ChatItemInfoView: View {
                     Text("you")
                         .italic()
                         .foregroundColor(theme.colors.onBackground)
-                    Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(theme.colors.secondary)
-                        .lineLimit(1)
+                    NameWithBadge(
+                        Text(forwardedFromItem.chatInfo.chatViewName).foregroundColor(theme.colors.secondary),
+                        forwardedFromItem.chatInfo.nameBadge
+                    )
+                    .lineLimit(1)
                 }
             } else if case let .groupRcv(groupMember) = forwardedFromItem.chatItem.chatDir {
                 VStack(alignment: .leading) {
-                    Text(groupMember.chatViewName)
-                        .foregroundColor(theme.colors.onBackground)
-                        .lineLimit(1)
-                    Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(theme.colors.secondary)
-                        .lineLimit(1)
+                    NameWithBadge(
+                        Text(groupMember.chatViewName).foregroundColor(theme.colors.onBackground),
+                        groupMember.nameBadge
+                    )
+                    .lineLimit(1)
+                    NameWithBadge(
+                        Text(forwardedFromItem.chatInfo.chatViewName).foregroundColor(theme.colors.secondary),
+                        forwardedFromItem.chatInfo.nameBadge
+                    )
+                    .lineLimit(1)
                 }
             } else {
-                Text(forwardedFromItem.chatInfo.chatViewName)
-                    .foregroundColor(theme.colors.onBackground)
-                    .lineLimit(1)
+                NameWithBadge(
+                    Text(forwardedFromItem.chatInfo.chatViewName).foregroundColor(theme.colors.onBackground),
+                    forwardedFromItem.chatInfo.nameBadge
+                )
+                .lineLimit(1)
             }
         }
     }
@@ -450,7 +459,7 @@ struct ChatItemInfoView: View {
         HStack{
             MemberProfileImage(member, size: 30)
                 .padding(.trailing, 2)
-            Text(member.chatViewName)
+            NameWithBadge(Text(member.chatViewName), member.nameBadge)
                 .lineLimit(1)
             Spacer()
             if sentViaProxy == true {

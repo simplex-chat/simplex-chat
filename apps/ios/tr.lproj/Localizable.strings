@@ -26,13 +26,7 @@
 "(this device v%@)" = "(bu cihaz v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Katkıda bulun](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Bize e-posta gönder](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Bize GitHub'da yıldız verin](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Kişi ekle**: yeni bir davet bağlantısı oluşturmak için, ya da aldığın bağlantıyla bağlan.";
@@ -175,6 +169,18 @@
 /* time interval */
 "%d months" = "%d ay";
 
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays failed" = "%d aktarıcı başarısız oldu";
+
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays not active" = "%d aktarıcı etkin değil";
+
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays removed" = "%d aktarıcı kaldırıldı";
+
 /* time interval */
 "%d sec" = "%d saniye";
 
@@ -184,8 +190,31 @@
 /* integrity error chat item */
 "%d skipped message(s)" = "%d okunmamış mesaj(lar)";
 
+/* channel subscriber count */
+"%d subscriber" = "%d abone";
+
+/* channel subscriber count */
+"%d subscribers" = "%d abone";
+
 /* time interval */
 "%d weeks" = "%d hafta";
+
+/* channel creation progress
+channel relay bar progress */
+"%d/%d relays active" = "%1$d/%2$d aktarıcı etkin";
+
+/* channel relay bar */
+"%d/%d relays active, %d errors" = "%1$d/%2$d aktarıcı etkin, %3$d hata";
+
+/* channel creation progress with errors
+channel relay bar */
+"%d/%d relays active, %d failed" = "%1$d/%2$d aktarıcı etkin, %3$d başarısız";
+
+/* channel relay bar */
+"%d/%d relays active, %d removed" = "%1$d/%2$d aktarıcı etkin, %3$d kaldırıldı";
+
+/* channel subscriber relay bar progress */
+"%d/%d relays connected" = "%1$d/%2$d aktarıcı bağlı";
 
 /* No comment provided by engineer. */
 "%lld" = "%lld";
@@ -399,9 +428,6 @@ swipe action */
 "Active connections" = "Aktif bağlantılar";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Kişilerinizin başkalarıyla paylaşabilmesi için profilinize adres ekleyin. Profil güncellemesi kişilerinize gönderilecek.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Arkadaş ekle";
 
 /* No comment provided by engineer. */
@@ -558,6 +584,9 @@ swipe action */
 "Allow downgrade" = "Sürüm düşürmeye izin ver";
 
 /* No comment provided by engineer. */
+"Allow files and media only if your contact allows them." = "Dosyalara ve medyaya yalnızca iletişiminiz izin verdiğinde izin verin.";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Konuştuğun kişi, kalıcı olarak silinebilen mesajlara izin veriyorsa sen de ver. (24 saat içinde)";
 
 /* No comment provided by engineer. */
@@ -609,6 +638,9 @@ swipe action */
 "Allow your contacts to send disappearing messages." = "Kişilerinizin kaybolan mesajlar göndermesine izin verin.";
 
 /* No comment provided by engineer. */
+"Allow your contacts to send files and media." = "Kişilerinizin dosya ve medya göndermesine izin verin.";
+
+/* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Kişilerinizin sesli mesajlar göndermesine izin verin.";
 
 /* No comment provided by engineer. */
@@ -640,9 +672,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Answer call" = "Aramayı cevapla";
-
-/* No comment provided by engineer. */
-"Anybody can host servers." = "Açık kaynak protokolü ve kodu - herhangi biri sunucuları çalıştırabilir.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Uygulama sürümü: %@";
@@ -862,6 +891,9 @@ marked deleted chat item preview text */
 "bold" = "kalın";
 
 /* No comment provided by engineer. */
+"Bot" = "Bot";
+
+/* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Sen ve konuştuğun kişi mesaj tepkileri ekleyebilir.";
 
 /* No comment provided by engineer. */
@@ -874,12 +906,15 @@ marked deleted chat item preview text */
 "Both you and your contact can send disappearing messages." = "Sen ve konuştuğun kişi kaybolan mesajlar gönderebilir.";
 
 /* No comment provided by engineer. */
+"Both you and your contact can send files and media." = "Sen de kişilerin de medya ve dosya gönderebilir.";
+
+/* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Sen ve konuştuğun kişi sesli mesaj gönderebilir.";
 
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgarca, Fince, Tayca ve Ukraynaca - kullanıcılara ve [Weblate] e teşekkürler! (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "İş adresi";
 
 /* No comment provided by engineer. */
@@ -893,9 +928,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Sohbet profiline göre (varsayılan) veya [bağlantıya göre](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "SimpleX Chat'i kullanarak şunları kabul etmiş olursunuz:\n- herkese açık gruplarda yalnızca yasal içerik göndermek.\n- diğer kullanıcılara saygı göstermek – spam yapmamak.";
 
 /* No comment provided by engineer. */
 "call" = "Ara";
@@ -1080,7 +1112,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Sohbet senden silinecek - bu geri alınamaz!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Yöneticilerle sohbet et";
 
 /* No comment provided by engineer. */
@@ -1179,7 +1212,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Koşullar çoktan operatör(ler) tarafından kabul edildi: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Kullanım koşulları";
 
 /* No comment provided by engineer. */
@@ -1193,9 +1226,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICE sunucularını ayarla";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Sunucu operatörlerini yapılandır";
 
 /* No comment provided by engineer. */
 "Confirm" = "Onayla";
@@ -1230,7 +1260,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Onaylandı";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Bağlan";
 
 /* No comment provided by engineer. */
@@ -1329,7 +1360,7 @@ set passcode view */
 /* alert title */
 "Connection error" = "Bağlantı hatası";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Bağlantı hatası (DOĞRULAMA)";
 
 /* chat list item title (it should not be shown */
@@ -1428,8 +1459,11 @@ set passcode view */
 /* blocking reason */
 "Content violates conditions of use" = "İçerik kullanım koşullarını ihlal ediyor";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Devam et";
+
+/* No comment provided by engineer. */
+"Contribute" = "Katkıda bulun";
 
 /* No comment provided by engineer. */
 "Conversation deleted!" = "Sohbet silindi!";
@@ -1446,11 +1480,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Köşeleri yuvarlama";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "İsim %@ olarak düzeltilsin mi?";
-
-/* No comment provided by engineer. */
-"Create" = "Oluştur";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Tek kullanımlık bağlantı oluştur";
@@ -1605,9 +1636,6 @@ set passcode view */
 /* No comment provided by engineer. */
 "Debug delivery" = "Hata ayıklama teslimatı";
 
-/* No comment provided by engineer. */
-"Decentralized" = "Merkezi Olmayan";
-
 /* message decrypt error item */
 "Decryption error" = "Şifre çözme hatası";
 
@@ -1721,7 +1749,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Mesaj silinsin mi?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Mesajları sil";
 
 /* No comment provided by engineer. */
@@ -1789,6 +1818,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Delivery receipts!" = "Mesaj gönderildi bilgisi!";
+
+/* No comment provided by engineer. */
+"Deprecated options" = "Kullanımdan kaldırılan seçenekler";
 
 /* No comment provided by engineer. */
 "Description" = "Açıklama";
@@ -2001,7 +2033,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Boş mesaj!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Etkinleştir";
 
 /* No comment provided by engineer. */
@@ -2030,9 +2062,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable lock" = "Kilidi etkinleştir";
-
-/* No comment provided by engineer. */
-"Enable notifications" = "Bildirimleri etkinleştir";
 
 /* No comment provided by engineer. */
 "Enable periodic notifications?" = "Periyodik bildirimler etkinleştirilsin mi?";
@@ -2175,7 +2204,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "hata";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Hata";
 
 /* No comment provided by engineer. */
@@ -2251,10 +2280,10 @@ chat item action */
 "Error decrypting file" = "Dosya şifresi çözülürken hata oluştu";
 
 /* alert title */
-"Error deleting chat database" = "Sohbet veritabanı silinirken sorun oluştu";
+"Error deleting chat" = "Üye ile sohbet silme hatası";
 
 /* alert title */
-"Error deleting chat with member" = "Üye ile sohbet silme hatası";
+"Error deleting chat database" = "Sohbet veritabanı silinirken sorun oluştu";
 
 /* alert title */
 "Error deleting chat!" = "Sohbet silinirken hata oluştu!";
@@ -2306,9 +2335,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Error opening chat" = "Kişiyi hazırlama hatası";
-
-/* No comment provided by engineer. */
-"Error opening group" = "Grubu hazırlama hatası";
 
 /* alert title */
 "Error receiving file" = "Dosya alınırken sorun oluştu";
@@ -2369,6 +2395,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Error sending message" = "Mesaj gönderilirken hata oluştu";
+
+/* No comment provided by engineer. */
+"Error setting auto-accept" = "Otomatik kabul ayarında hata";
 
 /* No comment provided by engineer. */
 "Error setting delivery receipts!" = "Görüldü ayarlanırken hata oluştu!";
@@ -2529,6 +2558,9 @@ snd error text */
 "Files and media" = "Dosyalar ve medya";
 
 /* No comment provided by engineer. */
+"Files and media are prohibited in this chat." = "Bu sohbette dosyalar ve medya yasaktır.";
+
+/* No comment provided by engineer. */
 "Files and media are prohibited." = "Dosyalar ve medya bu grupta yasaklandı.";
 
 /* No comment provided by engineer. */
@@ -2552,6 +2584,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Sohbetleri daha hızlı bul";
 
+/* relay test error
+server test error */
+"Fingerprint in server address does not match certificate." = "Muhtemelen, sunucu adresindeki parmakizi sertifikası doğru değil";
+
 /* No comment provided by engineer. */
 "Fix" = "Düzelt";
 
@@ -2573,7 +2609,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "Tüm moderatörler için";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "Sohbet profili için %@:";
 
 /* No comment provided by engineer. */
@@ -2705,7 +2742,7 @@ snd error text */
 /* No comment provided by engineer. */
 "group is deleted" = "grup silindi";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Grup bağlantısı";
 
 /* No comment provided by engineer. */
@@ -2832,9 +2869,6 @@ snd error text */
 "Immediately" = "Hemen";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Spam ve kötüye kullanıma karşı bağışıklı";
-
-/* No comment provided by engineer. */
 "Import" = "İçe aktar";
 
 /* No comment provided by engineer. */
@@ -2934,7 +2968,7 @@ snd error text */
 "Initial role" = "Başlangıç rolü";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[Terminal için SimpleX Chat]i indir(https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Terminal için SimpleX Chat'i indir";
 
 /* No comment provided by engineer. */
 "Instant" = "Anında";
@@ -2969,7 +3003,7 @@ snd error text */
 /* No comment provided by engineer. */
 "invalid chat data" = "geçersi̇z sohbet verisi";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Geçersiz bağlanma bağlantısı";
 
 /* invalid chat item */
@@ -2984,7 +3018,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Geçersiz taşıma onayı";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Geçersiz isim!";
 
 /* No comment provided by engineer. */
@@ -3106,6 +3140,9 @@ snd error text */
 
 /* alert title */
 "Keep unused invitation?" = "Kullanılmamış davet tutulsun mu?";
+
+/* No comment provided by engineer. */
+"Keep your chats clean" = "Sohbetlerinizi temiz tutun";
 
 /* No comment provided by engineer. */
 "Keep your connections" = "Bağlantılarınızı koruyun";
@@ -3233,6 +3270,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Member" = "Kişi";
 
+/* past/unknown group member */
+"Member %@" = "Üye%@";
+
 /* profile update event chat item */
 "member %@ changed to %@" = "kişi %1$@ , %2$@ olarak değişti";
 
@@ -3248,6 +3288,9 @@ snd error text */
 /* item status text */
 "Member inactive" = "Üye inaktif";
 
+/* No comment provided by engineer. */
+"Member is deleted - can't accept request" = "Üye silinmiş - istek kabul edilemez";
+
 /* chat feature */
 "Member reports" = "Üye raporları";
 
@@ -3260,10 +3303,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Üye rolü \"%@\" olarak değiştirilecektir. Ve üye yeni bir davetiye alacaktır.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Üye sohbetten kaldırılacak - bu geri alınamaz!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Üye gruptan çıkarılacaktır - bu geri alınamaz!";
 
 /* alert message */
@@ -3396,9 +3439,6 @@ snd error text */
 "Migrate device" = "Cihazı taşıma";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Başka bir cihazdan geçiş yapın";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Buraya göç edin";
 
 /* No comment provided by engineer. */
@@ -3506,7 +3546,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Ağ ayarları";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Ağ durumu";
 
 /* delete after time */
@@ -3675,9 +3715,6 @@ snd error text */
 "No unread chats" = "Okunmamış sohbet yok";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Herhangi bir kullanıcı tanımlayıcısı yok.";
-
-/* No comment provided by engineer. */
 "Not compatible!" = "Uyumlu değil!";
 
 /* No comment provided by engineer. */
@@ -3733,7 +3770,7 @@ alert button
 new chat action */
 "Ok" = "Tamam";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "TAMAM";
 
 /* No comment provided by engineer. */
@@ -3791,6 +3828,9 @@ new chat action */
 "Only you can send disappearing messages." = "Sadece sen kaybolan mesajlar gönderebilirsin.";
 
 /* No comment provided by engineer. */
+"Only you can send files and media." = "Sadece sen dosya ve medya gönderebilirsin.";
+
+/* No comment provided by engineer. */
 "Only you can send voice messages." = "Sadece sen sesli mesajlar gönderebilirsin.";
 
 /* No comment provided by engineer. */
@@ -3806,9 +3846,13 @@ new chat action */
 "Only your contact can send disappearing messages." = "Sadece karşıdaki kişi kaybolan mesajlar gönderebilir.";
 
 /* No comment provided by engineer. */
+"Only your contact can send files and media." = "Sadece kişilerin dosya ve medya gönderebilir.";
+
+/* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Sadece karşıdaki kişi sesli mesajlar gönderebilir.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Aç";
 
 /* No comment provided by engineer. */
@@ -3820,8 +3864,14 @@ new chat action */
 /* authentication reason */
 "Open chat console" = "Sohbet konsolunu aç";
 
+/* alert action */
+"Open clean link" = "Temiz linki aç";
+
 /* No comment provided by engineer. */
 "Open conditions" = "Açık koşullar";
+
+/* alert action */
+"Open full link" = "Tam linki aç";
 
 /* new chat action */
 "Open group" = "Grubu aç";
@@ -3849,6 +3899,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Open to join" = "Katılmak için aç";
+
+/* No comment provided by engineer. */
+"Open to use bot" = "Botu kullanmak için aç";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Uygulama açılıyor…";
@@ -4030,9 +4083,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Port" = "Port";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Muhtemelen, sunucu adresindeki parmakizi sertifikası doğru değil";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Son mesaj taslağını ekleriyle birlikte koru.";
 
@@ -4056,12 +4106,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Gizlilik politikası ve kullanım koşulları.";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Gizlilik yeniden tanımlandı";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Özel sohbetler, gruplar ve kişilerinize sunucu operatörleri tarafından erişilemez.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Gizli dosya adları";
@@ -4101,9 +4145,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Profil teması";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Profil güncellemesi kişilerinize gönderilecektir.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Sesli/görüntülü aramaları yasakla.";
@@ -4193,16 +4234,10 @@ new chat action */
 "Read more" = "Dahasını oku";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "GitHub deposunda daha fazlasını okuyun.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "[GitHub deposu]nda daha fazlasını okuyun(https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Kullanıcı Rehberinde daha fazlasını okuyun.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Alındı onayları devre dışı bırakıldı";
@@ -4221,9 +4256,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "onaylama alındı…";
-
-/* notification */
-"Received file event" = "Dosya etkinliği alındı";
 
 /* message info title */
 "Received message" = "Mesaj alındı";
@@ -4320,7 +4352,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Yönlendirici sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Sil";
 
 /* No comment provided by engineer. */
@@ -4330,9 +4362,12 @@ swipe action */
 "Remove image" = "Resmi kaldır";
 
 /* No comment provided by engineer. */
-"Remove member" = "Kişiyi sil";
+"Remove link tracking" = "Bağlantı izlemeyi kaldır";
 
 /* No comment provided by engineer. */
+"Remove member" = "Kişiyi sil";
+
+/* alert title */
 "Remove member?" = "Kişi silinsin mi?";
 
 /* No comment provided by engineer. */
@@ -4418,6 +4453,12 @@ swipe action */
 
 /* No comment provided by engineer. */
 "request to join rejected" = "katılma isteği reddedildi";
+
+/* rcv group event chat item */
+"requested connection" = "istenilen bağlantı";
+
+/* rcv direct event chat item */
+"requested connection from group %@" = "%@ grubundan bağlantı isteği";
 
 /* chat list item title */
 "requested to connect" = "bağlanma isteği gönderildi";
@@ -4777,9 +4818,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Direkt gönderildi";
 
-/* notification */
-"Sent file event" = "Dosya etkinliği gönderildi";
-
 /* message info title */
 "Sent message" = "Mesaj gönderildi";
 
@@ -4826,10 +4864,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "sunucu kuyruk bilgisi: %1$@\n\nson alınan msj: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Sunucunun sıra oluşturması için yetki gereklidir, şifreyi kontrol edin";
+"Server requires authorization to create queues, check password." = "Sunucunun sıra oluşturması için yetki gereklidir, şifreyi kontrol edin";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Sunucunun yükleme yapması için yetki gereklidir, şifreyi kontrol edin";
+"Server requires authorization to upload, check password." = "Sunucunun yükleme yapması için yetki gereklidir, şifreyi kontrol edin";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Sunucu testinde hata oluştu!";
@@ -4895,6 +4933,9 @@ chat item action */
 "Set passphrase to export" = "Dışa aktarmak için parola ayarla";
 
 /* No comment provided by engineer. */
+"Set profile bio and welcome message." = "Profil biyografisi ve hoşgeldiniz mesajı düzenle.";
+
+/* No comment provided by engineer. */
 "Set the message shown to new members!" = "Yeni üyeler için gösterilen bir mesaj ayarla!";
 
 /* No comment provided by engineer. */
@@ -4925,14 +4966,17 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Adresinizi herkese açık olarak paylaşın";
 
-/* alert title */
-"Share address with contacts?" = "Kişilerle adres paylaşılsın mı?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Diğer uygulamalardan paylaşın.";
 
 /* No comment provided by engineer. */
 "Share link" = "Bağlantıyı paylaş";
+
+/* alert button */
+"Share old address" = "Eski adresi paylaş";
+
+/* alert button */
+"Share old link" = "Eski bağlantıyı paylaş";
 
 /* No comment provided by engineer. */
 "Share profile" = "Profil paylaş";
@@ -4947,13 +4991,16 @@ chat item action */
 "Share to SimpleX" = "SimpleX ile paylaş";
 
 /* No comment provided by engineer. */
-"Share with contacts" = "Kişilerle paylaş";
+"Share your address" = "Adresini paylaş";
 
 /* No comment provided by engineer. */
 "Short description" = "Kısa açıklama";
 
 /* No comment provided by engineer. */
 "Short link" = "Kısa bağlantı";
+
+/* No comment provided by engineer. */
+"Short SimpleX address" = "Kısa SimpleX adresi";
 
 /* No comment provided by engineer. */
 "Show → on messages sent via private routing." = "Gizli yönlendirme yoluyla gönderilen mesajlarda → işaretini göster.";
@@ -5098,6 +5145,9 @@ report reason */
 "standard end-to-end encryption" = "standart uçtan uca şifreleme";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Bize GitHub'da yıldız verin";
+
+/* No comment provided by engineer. */
 "Start chat" = "Sohbeti başlat";
 
 /* No comment provided by engineer. */
@@ -5200,7 +5250,7 @@ report reason */
 "Tap Connect to send request" = "Bağlan'a dokunarak isteği gönderin";
 
 /* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Daha sonra oluşturmak için menüden BasitX adresi oluştur'a dokunun.";
+"Tap Connect to use bot" = "Botu kullanmak için Bağlan tuşuna bas";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "Gruba katıl'a dokunun";
@@ -5247,7 +5297,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "Geçici dosya hatası";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Test %@ adımında başarısız oldu.";
 
 /* No comment provided by engineer. */
@@ -5270,6 +5321,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Kullanıcılar için teşekkürler - Weblate aracılığıyla katkıda bulun!";
+
+/* alert message */
+"The address will be short, and your profile will be shared via the address." = "Adres kısa olacak ve profiliniz bu adres üzerinden paylaşılacaktır.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Uygulama, mesaj veya iletişim isteği aldığınızda sizi bilgilendirebilir - etkinleştirmek için lütfen ayarları açın.";
@@ -5302,13 +5356,13 @@ report reason */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Şifreleme çalışıyor ve yeni şifreleme anlaşması gerekli değil. Bağlantı hatalarına neden olabilir!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Gizli mesajlaşmanın yeni nesli";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Önceki mesajın hash'i farklı.";
 
 /* No comment provided by engineer. */
 "The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "Bir sonraki mesajın kimliği yanlış (bir öncekinden az veya aynı).\nBazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.";
+
+/* alert message */
+"The link will be short, and group profile will be shared via the link." = "Bağlantı kısa olacak ve grup profili bağlantı üzerinden paylaşılacaktır.";
 
 /* No comment provided by engineer. */
 "The message will be deleted for all members." = "Mesaj tüm üyeler için silinecektir.";
@@ -5407,6 +5461,12 @@ report reason */
 "This setting applies to messages in your current chat profile **%@**." = "Bu ayar, geçerli sohbet profiliniz **%@** deki mesajlara uygulanır.";
 
 /* No comment provided by engineer. */
+"This setting is for your current profile **%@**." = "Bu ayar, mevcut profiliniz içindir.";
+
+/* No comment provided by engineer. */
+"Time to disappear is set only for new contacts." = "Kaybolma süresi yalnızca yeni kişiler için ayarlanır.";
+
+/* No comment provided by engineer. */
 "Title" = "Başlık";
 
 /* No comment provided by engineer. */
@@ -5454,6 +5514,9 @@ report reason */
 /* No comment provided by engineer. */
 "To send" = "Göndermek için";
 
+/* alert message */
+"To send commands you must be connected." = "Komut göndermek için bağlı olmanız gerekir.";
+
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Anlık anlık bildirimleri desteklemek için sohbet veritabanının taşınması gerekir.";
 
@@ -5465,9 +5528,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Kişinizle uçtan uca şifrelemeyi doğrulamak için cihazlarınızdaki kodu karşılaştırın (veya tarayın).";
-
-/* No comment provided by engineer. */
-"Toggle chat list:" = "Sohbet listesini değiştir:";
 
 /* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Bağlanırken gizli moda geçiş yap.";
@@ -5486,12 +5546,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Transport sessions" = "Taşıma oturumları";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor.";
 
 /* No comment provided by engineer. */
 "Turkish interface" = "Türkçe arayüz";
@@ -5592,7 +5646,7 @@ report reason */
 /* swipe action */
 "Unread" = "Okunmamış";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Desteklenmeyen bağlantı bağlantısı";
 
 /* No comment provided by engineer. */
@@ -5622,8 +5676,26 @@ report reason */
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Ayarların güncellenmesi, istemciyi tüm sunuculara yeniden bağlayacaktır.";
 
+/* alert button */
+"Upgrade" = "Yükseltme";
+
+/* No comment provided by engineer. */
+"Upgrade address" = "Adres güncelleme";
+
+/* alert message */
+"Upgrade address?" = "Adres güncellensin mi?";
+
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Yükselt ve sohbeti aç";
+
+/* alert message */
+"Upgrade group link?" = "Grub linki güncellensin mi?";
+
+/* No comment provided by engineer. */
+"Upgrade link" = "Linki güncelle";
+
+/* No comment provided by engineer. */
+"Upgrade your address" = "Adresini yükselt";
 
 /* No comment provided by engineer. */
 "Upload errors" = "Yükleme hataları";
@@ -5649,9 +5721,6 @@ report reason */
 /* No comment provided by engineer. */
 "Use %@" = "%@ kullan";
 
-/* No comment provided by engineer. */
-"Use chat" = "Sohbeti kullan";
-
 /* new chat action */
 "Use current profile" = "Şu anki profili kullan";
 
@@ -5666,6 +5735,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Use from desktop" = "Bilgisayardan kullan";
+
+/* No comment provided by engineer. */
+"Use incognito profile" = "Gizli profil kullan";
 
 /* No comment provided by engineer. */
 "Use iOS call interface" = "iOS arama arayüzünden kullan";
@@ -5860,6 +5932,9 @@ report reason */
 "Welcome message is too long" = "Hoş geldiniz mesajı çok uzun";
 
 /* No comment provided by engineer. */
+"Welcome your contacts 👋" = "Kişilerine hoş geldin👋";
+
+/* No comment provided by engineer. */
 "What's new" = "Neler yeni";
 
 /* No comment provided by engineer. */
@@ -5962,9 +6037,6 @@ report reason */
 "You are already joining the group!\nRepeat join request?" = "Gruba zaten katılıyorsunuz!\nKatılma isteği tekrarlansın mı?";
 
 /* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Bu kişiden mesaj almak için kullanılan sunucuya bağlısınız.";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Gruba davet edildiniz";
 
 /* No comment provided by engineer. */
@@ -6056,9 +6128,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Doğrulanamadınız; lütfen tekrar deneyin.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Kimin bağlanabileceğine siz karar verirsiniz.";
 
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Zaten bağlantı isteğinde bulundunuz!\nBağlantı isteği tekrarlansın mı?";
