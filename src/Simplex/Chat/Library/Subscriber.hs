@@ -1326,15 +1326,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
       REQ invId pqSupport _ connInfo -> do
-        let User {userChatRelay} = user
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
           XMember p joiningMemberId joiningMemberKey -> memberJoinRequestViaRelay invId chatVRange p joiningMemberId joiningMemberKey
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
-          XGrpRelayTest challenge _
-            | isTrue userChatRelay && isNothing ucGroupId_ -> xGrpRelayTest invId chatVRange challenge
+          XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       LINK _link auData ->
@@ -1574,20 +1572,23 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 createRelayRequestGroup db cxt user groupRelayInv invId chatVRange initialDelay GSMemAccepted RSInvited
               lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
-        xGrpRelayTest invId chatVRange challenge = do
-          privKey_ <- withAgent $ \a -> getConnLinkPrivKey a (aConnId conn)
-          case privKey_ of
-            Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
-            Just privKey -> do
-              let sig = C.signatureBytes $ C.sign' privKey challenge
-                  msg = XGrpRelayTest challenge (Just sig)
-              subMode <- chatReadVar subscriptionMode
-              chatVR <- chatVersionRange
-              let chatV = chatVR `peerConnChatVersion` chatVRange
-              (cmdId, acId) <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
-              withStore $ \db -> do
-                Connection {connId = testCId} <- createRelayTestConnection db cxt user acId ConnAccepted chatV subMode
-                liftIO $ setCommandConnId db user cmdId testCId
+        xGrpRelayTest invId chatVRange challenge
+          | isTrue userChatRelay && isNothing ucGroupId_ =
+              withAgent (`getConnLinkPrivKey` aConnId conn) >>= \case
+                Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
+                Just privKey -> do
+                  let sig = C.signatureBytes $ C.sign' privKey challenge
+                      msg = XGrpRelayTest challenge (Just sig)
+                  subMode <- chatReadVar subscriptionMode
+                  chatVR <- chatVersionRange
+                  let chatV = chatVR `peerConnChatVersion` chatVRange
+                  (cmdId, acId) <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+                  withStore $ \db -> do
+                    Connection {connId = testCId} <- createRelayTestConnection db cxt user acId ConnAccepted chatV subMode
+                    liftIO $ setCommandConnId db user cmdId testCId
+          | otherwise = messageError "relay test sent to non-relay link"
+            where
+              User {userChatRelay} = user
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
         memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> MemberKey -> CM ()
