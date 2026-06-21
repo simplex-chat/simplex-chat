@@ -90,7 +90,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..))
-import Simplex.Messaging.Compression (compressionLevel)
+import Simplex.Messaging.Compression (compressionLevel, limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1447,25 +1447,10 @@ encodeShortLinkData d =
         | otherwise = s
    in UserLinkData s'
 
-maxDecompressedLinkDataLength :: Int
-maxDecompressedLinkDataLength = 65536
-
-decompressLinkUserData :: ByteString -> Either String ByteString
-decompressLinkUserData s = case Z1.decompressedSize s of
-  Just size
-    | size <= maxDecompressedLinkDataLength -> case Z1.decompress s of
-        Z1.Error e -> Left e
-        Z1.Skip -> Right ""
-        Z1.Decompress s' -> Right s'
-  _ ->
-    Left $
-      "compressed link data size not specified or exceeds "
-        <> show maxDecompressedLinkDataLength
-
 decodeLinkUserData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
 decodeLinkUserData cData
   | B.null s = pure Nothing
-  | B.head s == 'X' = case decompressLinkUserData $ B.drop 1 s of
+  | B.head s == 'X' = case limitDecompress' maxDecompressedMsgLength $ B.drop 1 s of
       Left e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
       Right s' -> decode s'
   | otherwise = decode s

@@ -9,11 +9,7 @@ module ProtocolTests where
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
-import Simplex.Chat.Library.Internal
-  ( decodeLinkUserData,
-    encodeShortLinkData,
-    maxDecompressedLinkDataLength,
-  )
+import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -122,7 +118,7 @@ shortLinkDataTests = describe "Short link data encoding/decoding" $ do
     let value = replicate 11000 'a'
     decodeLinkUserData (linkData value) `shouldReturn` Just value
   it "rejects compressed short-link user data above the decompressed size limit" $ do
-    let value = replicate (maxDecompressedLinkDataLength + 1) 'a'
+    let value = replicate (maxDecompressedMsgLength + 1) 'a'
     decodeLinkUserData (linkData value) `shouldReturn` (Nothing :: Maybe String)
   where
     linkData value =
