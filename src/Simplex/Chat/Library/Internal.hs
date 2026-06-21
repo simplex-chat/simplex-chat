@@ -90,7 +90,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..))
-import Simplex.Messaging.Compression (compressionLevel)
+import Simplex.Messaging.Compression (compressionLevel, limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1450,10 +1450,9 @@ encodeShortLinkData d =
 decodeLinkUserData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
 decodeLinkUserData cData
   | B.null s = pure Nothing
-  | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
-      Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
-      Z1.Skip -> pure Nothing
-      Z1.Decompress s' -> decode s'
+  | B.head s == 'X' = case limitDecompress' maxDecompressedMsgLength $ B.drop 1 s of
+      Left e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
+      Right s' -> decode s'
   | otherwise = decode s
   where
     decode s' = case J.eitherDecodeStrict s' of
