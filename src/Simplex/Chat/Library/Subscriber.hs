@@ -741,8 +741,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   ct <- getContactViaMember db cxt user m
                   liftIO $ setNewContactMemberConnRequest db user m cReq
                   liftIO $ (ct,) <$> getGroupLinkId db user gInfo
-                sendGrpInvitation ct m groupLinkId
-                toView $ CEvtSentGroupInvitation user gInfo ct m
+                if memberRole' membership >= GRAdmin
+                  then do
+                    sendGrpInvitation ct m groupLinkId
+                    toView $ CEvtSentGroupInvitation user gInfo ct m
+                  else messageError "processGroupMessage: group link host no longer has admin role"
                 where
                   sendGrpInvitation :: Contact -> GroupMember -> Maybe GroupLinkId -> CM ()
                   sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} groupLinkId = do
@@ -1558,9 +1561,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               -- TODO [short links] deduplicate request by xContactId?
               gInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
-              if useRelays' gInfo
-                then messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored direct join request from " <> displayName <> " (group uses relays)"
-                else do
+              if
+                | useRelays' gInfo ->
+                    messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored direct join request from " <> displayName <> " (group uses relays)"
+                | memberRole' (membership gInfo) < GRAdmin ->
+                    messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored join request because host is no longer admin"
+                | otherwise -> do
                   acceptMember_ <- asks $ acceptMember . chatHooks . config
                   maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
                     Right (acceptance, useRole)
@@ -1589,20 +1595,23 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 createRelayRequestGroup db cxt user groupRelayInv invId chatVRange initialDelay GSMemAccepted RSInvited
               lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
-        xGrpRelayTest invId chatVRange challenge = do
-          privKey_ <- withAgent $ \a -> getConnLinkPrivKey a (aConnId conn)
-          case privKey_ of
-            Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
-            Just privKey -> do
-              let sig = C.signatureBytes $ C.sign' privKey challenge
-                  msg = XGrpRelayTest challenge (Just sig)
-              subMode <- chatReadVar subscriptionMode
-              chatVR <- chatVersionRange
-              let chatV = chatVR `peerConnChatVersion` chatVRange
-              (cmdId, acId) <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
-              withStore $ \db -> do
-                Connection {connId = testCId} <- createRelayTestConnection db cxt user acId ConnAccepted chatV subMode
-                liftIO $ setCommandConnId db user cmdId testCId
+        xGrpRelayTest invId chatVRange challenge
+          | isTrue userChatRelay && isNothing ucGroupId_ =
+              withAgent (`getConnLinkPrivKey` aConnId conn) >>= \case
+                Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
+                Just privKey -> do
+                  let sig = C.signatureBytes $ C.sign' privKey challenge
+                      msg = XGrpRelayTest challenge (Just sig)
+                  subMode <- chatReadVar subscriptionMode
+                  chatVR <- chatVersionRange
+                  let chatV = chatVR `peerConnChatVersion` chatVRange
+                  (cmdId, acId) <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+                  withStore $ \db -> do
+                    Connection {connId = testCId} <- createRelayTestConnection db cxt user acId ConnAccepted chatV subMode
+                    liftIO $ setCommandConnId db user cmdId testCId
+          | otherwise = messageError "relay test sent to non-relay link"
+            where
+              User {userChatRelay} = user
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
         memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> MemberKey -> CM ()
@@ -3144,7 +3153,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       where
         GroupMember {memberId = membershipMemId} = membership
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
-          | senderRole < GRAdmin || senderRole < fromRole =
+          | senderRole < maximum ([GRAdmin, fromRole, memRole] :: [GroupMemberRole]) =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | otherwise = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
