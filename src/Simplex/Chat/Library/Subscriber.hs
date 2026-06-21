@@ -1594,13 +1594,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               gInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
-              if memberRole' (membership gInfo) < GRAdmin
-                then messageWarning $ "memberJoinRequestViaRelay (group " <> groupName' gInfo <> "): ignored join request because host is no longer admin"
-                else do
-                  mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted gLinkMemRole Nothing (Just joiningMemberKey)
-                  (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
-                  createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                  toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
+              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted gLinkMemRole Nothing (Just joiningMemberKey)
+              (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
+              createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+              toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
 
