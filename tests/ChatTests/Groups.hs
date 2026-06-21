@@ -81,6 +81,7 @@ chatGroupTests = do
     it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
+    it "check owner role change" testOwnerRoleChange
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate own message (should process as deletion)" testGroupModerateOwn
@@ -108,6 +109,7 @@ chatGroupTests = do
     it "invitee incognito" testGroupLinkInviteeIncognito
     it "incognito - join/invite" testGroupLinkIncognitoJoinInvite
     it "group link member role" testGroupLinkMemberRole
+    it "demotion does not remove group link" testGroupLinkDemotedAdmin
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
   describe "group links - member screening" $ do
@@ -1608,6 +1610,37 @@ testUpdateMemberRole =
       alice ##> "/mr team alice admin"
       alice <## "bad chat command: can't change role for self"
 
+testOwnerRoleChange :: HasCallStack => TestParams -> IO ()
+testOwnerRoleChange =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      void $ withCCTransaction cath $ \db ->
+        DB.execute_
+          db
+          [sql|
+            UPDATE group_members
+            SET member_role = 'owner'
+            WHERE member_category = 'user'
+              AND group_id IN (
+                SELECT group_id FROM groups WHERE local_display_name = 'team'
+              )
+          |]
+
+      cath ##> "/mr #team bob owner"
+      cath <## "#team: you changed the role of bob to owner"
+      concurrentlyN_
+        [ alice <## "error: x.grp.mem.role with insufficient member permissions",
+          bob <## "error: x.grp.mem.role with insufficient member permissions"
+        ]
+
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               "cath (Catherine): admin, connected"
+             ]
+
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
   connectUsers alice bob
@@ -2928,6 +2961,25 @@ testGroupLinkMemberRole =
       cath <## "#team: you changed the role of bob to admin"
       bob <## "#team: cath changed your role from member to admin"
       alice <## "#team: cath changed the role of bob from member to admin"
+
+testGroupLinkDemotedAdmin :: HasCallStack => TestParams -> IO ()
+testGroupLinkDemotedAdmin =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob _cath -> do
+      createGroup2' "team" alice (bob, GRAdmin) True
+
+      bob ##> "/create link #team member"
+      _gLink <- getGroupLink bob "team" GRMember True
+
+      alice ##> "/mr #team bob member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob to member",
+          bob <## "#team: alice changed your role from admin to member"
+        ]
+
+      -- demotion does not remove bob's group link (it is preserved, usable again on re-promotion)
+      bob ##> "/show link #team"
+      void $ getGroupLink bob "team" GRMember False
 
 testGroupLinkHostIncognito :: HasCallStack => TestParams -> IO ()
 testGroupLinkHostIncognito =

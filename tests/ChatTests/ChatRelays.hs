@@ -6,6 +6,7 @@ module ChatTests.ChatRelays where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel, prepareChannel', prepareChannel1Relay, setupRelay)
+import ChatTests.Profiles (addTestBadge, issueTestBadge, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import qualified Data.Aeson as J
@@ -14,8 +15,10 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import ProtocolTests (testGroupProfile)
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
 import Simplex.Chat.Types (GroupProfile (..))
+import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Util (decodeJSON)
 import Test.Hspec hiding (it)
@@ -32,6 +35,40 @@ chatRelayTests = do
     it "share channel card in direct chat" testShareChannelDirect
     it "share channel card in group" testShareChannelGroup
     it "share channel card in channel" testShareChannelChannel
+  describe "channel badges" $ do
+    it "subscriber and owner see each other's badges forwarded by the relay" testChannelMemberBadges
+
+-- A channel owner and a subscriber each hold a supporter badge; their member profiles only reach
+-- each other forwarded by the relay. Both sides should still see the other's active badge.
+testChannelMemberBadges :: HasCallStack => TestParams -> IO ()
+testChannelMemberBadges ps = do
+  Right (pk, sk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = testBadgeKeys pk}
+  withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfgOpts ps cfg testOpts "cath" cathProfile $ \cath -> do
+        addTestBadge alice =<< issueTestBadge sk Nothing
+        addTestBadge cath =<< issueTestBadge sk Nothing
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        -- a channel message lets the relay-forwarded member profiles settle on both sides
+        alice #> "#team hi"
+        bob <# "#team> hi"
+        cath <# "#team> hi [>>]"
+        threadDelay 1000000
+        -- owner and subscriber are connected only via the relay, so /i shows the badge then "member not connected" for both
+        alice ##> "/i #team cath"
+        alice <## "group ID: 1"
+        alice <##. "member ID: "
+        alice <## "supporter badge - active"
+        alice <## "no expiry"
+        alice <## "member not connected"
+        cath ##> "/i #team alice"
+        cath <## "group ID: 1"
+        cath <##. "member ID: "
+        cath <## "supporter badge - active"
+        cath <## "no expiry"
+        cath <## "member not connected"
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
 testGetSetChatRelays ps =
