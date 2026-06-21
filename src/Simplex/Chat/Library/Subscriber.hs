@@ -3123,8 +3123,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | otherwise = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
-              when (memberId' member == membershipMemId && memRole < GRAdmin) $
-                deleteGroupLinkIfExists user gInfo'
               (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
               (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
               groupMsgToView cInfo ci

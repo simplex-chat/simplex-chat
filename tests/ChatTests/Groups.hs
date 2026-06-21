@@ -109,7 +109,7 @@ chatGroupTests = do
     it "invitee incognito" testGroupLinkInviteeIncognito
     it "incognito - join/invite" testGroupLinkIncognitoJoinInvite
     it "group link member role" testGroupLinkMemberRole
-    it "demoted admin cannot keep using group link" testGroupLinkDemotedAdmin
+    it "demotion does not remove group link" testGroupLinkDemotedAdmin
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
   describe "group links - member screening" $ do
@@ -2977,8 +2977,9 @@ testGroupLinkDemotedAdmin =
           bob <## "#team: alice changed your role from admin to member"
         ]
 
+      -- demotion does not remove bob's group link (it is preserved, usable again on re-promotion)
       bob ##> "/show link #team"
-      bob <## "#team: you have insufficient permissions for this action, the required role is admin"
+      void $ getGroupLink bob "team" GRMember False
 
 testGroupLinkHostIncognito :: HasCallStack => TestParams -> IO ()
 testGroupLinkHostIncognito =
