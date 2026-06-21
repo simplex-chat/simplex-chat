@@ -2382,7 +2382,7 @@ struct ServerSessions: Codable {
     var hasSess: Bool { ssConnected > 0 }
 }
 
-struct SMPServerSubs: Codable, Equatable {
+struct SMPServerSubs: Codable {
     var ssActive: Int
     var ssPending: Int
 

@@ -559,30 +559,37 @@ struct ChatListView: View {
 }
 
 struct SubsStatusIndicator: View {
-    // Totals live on a dedicated observable so they survive this view being recreated on frequent toolbar rebuilds
-    @ObservedObject private var subsModel = SubsStatusModel.shared
+    @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
+    @State private var hasSess: Bool = false
     @State private var task: Task<Void, Never>?
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
+    init() {
+        logger.debug("SUBS_TRACE view init: SubsStatusIndicator struct created (toolbar rebuild recreates the struct here)")
+    }
+
     var body: some View {
+        let _ = logger.debug("SUBS_TRACE view body: rendering with ssActive=\(subs.ssActive) ssPending=\(subs.ssPending) total=\(subs.total) hasSess=\(hasSess) (empty/share-unknown if total==0 && !hasSess) task=\(task == nil ? "nil" : "running")")
         Button {
             showServersSummary = true
         } label: {
             HStack(spacing: 4) {
                 Text("Chats").foregroundStyle(Color.primary).fixedSize().font(.headline)
-                SubscriptionStatusIndicatorView(subs: subsModel.totalSubs, hasSess: subsModel.hasSession)
+                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
                 if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: subsModel.totalSubs, hasSess: subsModel.hasSession)
+                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
                 }
             }
         }
         .disabled(ChatModel.shared.chatRunning != true)
         .onAppear {
+            logger.debug("SUBS_TRACE view onAppear: starting poll task (existing task=\(self.task == nil ? "nil" : "running"))")
             startTask()
         }
         .onDisappear {
+            logger.debug("SUBS_TRACE view onDisappear: cancelling poll task")
             stopTask()
         }
         .appSheet(isPresented: $showServersSummary) {
@@ -592,20 +599,32 @@ struct SubsStatusIndicator: View {
     }
 
     private func startTask() {
+        if task != nil {
+            logger.debug("SUBS_TRACE poll startTask: a task already exists, replacing it (the old one keeps running until it sees isCancelled)")
+        }
         task = Task {
+            logger.debug("SUBS_TRACE poll loop: started")
             while !Task.isCancelled {
-                if AppChatState.shared.value == .active, ChatModel.shared.chatRunning == true {
+                let appActive = AppChatState.shared.value == .active
+                let running = ChatModel.shared.chatRunning == true
+                if appActive, running {
                     do {
                         let (subs, hasSess) = try await getAgentSubsTotal()
+                        logger.debug("SUBS_TRACE poll fetched: ssActive=\(subs.ssActive) ssPending=\(subs.ssPending) total=\(subs.total) hasSess=\(hasSess) — writing to @State")
                         await MainActor.run {
-                            SubsStatusModel.shared.update(subs, hasSess)
+                            self.subs = subs
+                            self.hasSess = hasSess
+                            logger.debug("SUBS_TRACE poll wrote @State: self.subs.total=\(self.subs.total) self.hasSess=\(self.hasSess)")
                         }
                     } catch let error {
                         logger.error("getSubsTotal error: \(responseError(error))")
                     }
+                } else {
+                    logger.debug("SUBS_TRACE poll skipped tick: appActive=\(appActive) chatRunning=\(running) (gated out, not fetching)")
                 }
                 try? await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
             }
+            logger.debug("SUBS_TRACE poll loop: exited (Task.isCancelled=\(Task.isCancelled))")
         }
     }
 
