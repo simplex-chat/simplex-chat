@@ -84,7 +84,7 @@ struct GroupLinkView: View {
                     if !isChannel {
                         Picker("Initial role", selection: $groupLinkMemberRole) {
                             ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
-                                Text(role.text)
+                                Text(role.text(isChannel: isChannel))
                             }
                         }
                         .frame(height: 36)

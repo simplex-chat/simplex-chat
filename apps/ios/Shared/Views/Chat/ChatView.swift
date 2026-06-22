@@ -1999,7 +1999,7 @@ struct ChatView: View {
                                     let (name, role) = if ci.meta.showGroupAsSender {
                                         (groupInfo.chatViewName, NSLocalizedString("group", comment: "shown on group welcome message"))
                                     } else {
-                                        (member.chatViewName, member.memberRole.text)
+                                        (member.chatViewName, member.memberRole.text(isChannel: groupInfo.isChannel))
                                     }
                                     Group {
                                         if #available(iOS 16.0, *) {
