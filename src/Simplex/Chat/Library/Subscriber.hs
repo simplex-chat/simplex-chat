@@ -3266,7 +3266,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | membershipMemId == memId =
           applyAtRosterVersion gInfo m rosterVer_ $
             let gInfo' = gInfo {membership = membership {memberRole = memRole}}
-             in changeMemberRole gInfo' membership False (\db -> updateGroupMemberRole db user membership memRole) $ RGEUserRole memRole
+             in changeMemberRole gInfo' membership False (\db -> updateGroupMemberRole db user membership memRole) (RGEUserRole memRole) True
       | otherwise = applyAtRosterVersion gInfo m rosterVer_ $ do
           defaultRole <- unknownMemberRole gInfo
           -- an owner-signed event with a key TOFU-creates an unknown member only for a roster role; else a plain lookup
@@ -3276,11 +3276,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- just created (keyless, and allowCreate ensured the event carries its key): pin key + role
               | created, Just (MemberKey pubKey) <- memberKey_ ->
                   let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-                   in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent
+                   in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent (not $ useRelays' gInfo)
               -- known member: apply the role (its key is established via roster/intro; the event's key is ignored)
               | otherwise ->
                   let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-                   in changeMemberRole gInfo member created (\db -> updateGroupMemberRole db user member memRole) gEvent
+                   in changeMemberRole gInfo member created (\db -> updateGroupMemberRole db user member memRole) gEvent (not $ useRelays' gInfo)
             -- in relay groups the roster may deliver role update for previously-unknown privileged members
             _ | useRelays' gInfo -> pure Nothing
               | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
@@ -3288,7 +3288,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         GroupMember {memberId = membershipMemId} = membership
         -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
-        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent
+        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent createItem
           | senderRole < maximum ([GRAdmin, fromRole, memRole] :: [GroupMemberRole]) =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
@@ -3298,9 +3298,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | useRelays' gInfo && not created && fromRole == memRole = pure $ memberEventDeliveryScope member
           | otherwise = do
               withStore' applyMember
-              (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
-              (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
-              groupMsgToView cInfo ci
+              (gInfo'', m') <-
+                if createItems
+                  then do
+                    (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
+                    (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
+                    groupMsgToView cInfo ci
+                  else pure (gInfo', m)
               toView CEvtMemberRole {user, groupInfo = gInfo'', byMember = m', member = member {memberRole = memRole}, fromRole, toRole = memRole, msgSigned}
               pure $ memberEventDeliveryScope member
 
