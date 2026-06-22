@@ -2081,7 +2081,10 @@ func apiGetVersion() throws -> CoreVersionInfo {
 func getAgentSubsTotal() async throws -> (SMPServerSubs, Bool) {
     let userId = try currentUserId("getAgentSubsTotal")
     let r: ChatResponse2 = try await chatSendCmd(.getAgentSubsTotal(userId: userId), log: false)
-    if case let .agentSubsTotal(_, subsTotal, hasSession) = r { return (subsTotal, hasSession) }
+    if case let .agentSubsTotal(_, subsTotal, hasSession) = r {
+        logger.debug("SUBS_TRACE source getAgentSubsTotal: userId=\(userId) ssActive=\(subsTotal.ssActive) ssPending=\(subsTotal.ssPending) total=\(subsTotal.total) hasSession=\(hasSession)")
+        return (subsTotal, hasSession)
+    }
     logger.error("getAgentSubsTotal error: \(String(describing: r))")
     throw r.unexpected
 }
