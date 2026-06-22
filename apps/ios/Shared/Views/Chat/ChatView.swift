@@ -895,8 +895,9 @@ struct ChatView: View {
                         }
                     } else {
                         let voiceNoFrame = voiceWithoutFrame(ci)
+                        let channelReceived = !ci.chatDir.sent && cInfo.isChannel
                         let maxWidth = cInfo.chatType == .group
-                        ? voiceNoFrame
+                        ? voiceNoFrame || channelReceived
                         ? (g.size.width - 28) - 42
                         : (g.size.width - 28) * 0.84 - 42
                         : voiceNoFrame
@@ -1998,7 +1999,7 @@ struct ChatView: View {
                                     let (name, role) = if ci.meta.showGroupAsSender {
                                         (groupInfo.chatViewName, NSLocalizedString("group", comment: "shown on group welcome message"))
                                     } else {
-                                        (member.chatViewName, member.memberRole.text)
+                                        (member.chatViewName, member.memberRole.text(isChannel: groupInfo.isChannel))
                                     }
                                     Group {
                                         if #available(iOS 16.0, *) {

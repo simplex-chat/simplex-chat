@@ -731,7 +731,7 @@ fun ModalData.GroupChatInfoLayout(
             }
           }
           SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-            MemberRow(groupInfo.membership, user = true)
+            MemberRow(groupInfo.membership, user = true, isChannel = groupInfo.isChannel)
           }
         }
       }
@@ -765,7 +765,7 @@ fun ModalData.GroupChatInfoLayout(
               val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
               DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
               Box(Modifier.padding(start = selectionOffset)) {
-                MemberRow(member)
+                MemberRow(member, isChannel = groupInfo.isChannel)
               }
             }
           }
@@ -1057,7 +1057,7 @@ private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialThem
 }
 
 @Composable
-fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, showlocalAliasAndFullName: Boolean = false, selected: Boolean = false) {
+fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, showlocalAliasAndFullName: Boolean = false, selected: Boolean = false, isChannel: Boolean = false) {
   @Composable
   fun MemberInfo() {
     if (member.blocked) {
@@ -1065,7 +1065,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
     } else {
       val role = member.memberRole
       if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Moderator, GroupMemberRole.Observer)) {
-        Text(role.text, color = MaterialTheme.colors.secondary)
+        Text(role.text(isChannel = isChannel), color = MaterialTheme.colors.secondary)
       }
     }
   }
