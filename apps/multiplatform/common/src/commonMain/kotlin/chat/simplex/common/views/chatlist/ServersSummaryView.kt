@@ -367,7 +367,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
       )
       SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew.hasSess)
     }
-    Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
+    SectionView {
       InfoRow(
         generalGetString(MR.strings.servers_info_subscriptions_connections_subscribed),
         numOrDash(subs.ssActive)
@@ -540,20 +540,16 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
         )
       )
     }
-    if (summary.stats != null || summary.sessions != null) {
-      SectionDividerSpaced()
-    }
+  }
 
-    if (summary.stats != null) {
-      XFTPStatsView(stats = summary.stats, rh = rh, statsStartedAt = statsStartedAt)
-      if (summary.sessions != null) {
-        SectionDividerSpaced()
-      }
-    }
+  if (summary.stats != null) {
+    SectionDividerSpaced()
+    XFTPStatsView(stats = summary.stats, rh = rh, statsStartedAt = statsStartedAt)
+  }
 
-    if (summary.sessions != null) {
-      ServerSessionsView(summary.sessions)
-    }
+  if (summary.sessions != null) {
+    SectionDividerSpaced()
+    ServerSessionsView(summary.sessions)
   }
 
   SectionBottomSpacer()
@@ -572,27 +568,21 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
         )
       )
     }
-    if (summary.stats != null || summary.subs != null || summary.sessions != null) {
-      SectionDividerSpaced()
-    }
+  }
 
-    if (summary.stats != null) {
-      SMPStatsView(stats = summary.stats, remoteHostInfo = rh, statsStartedAt = statsStartedAt)
-      if (summary.subs != null || summary.sessions != null) {
-        SectionDividerSpaced()
-      }
-    }
+  if (summary.stats != null) {
+    SectionDividerSpaced()
+    SMPStatsView(stats = summary.stats, remoteHostInfo = rh, statsStartedAt = statsStartedAt)
+  }
 
-    if (summary.subs != null) {
-      SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
-      if (summary.sessions != null) {
-        SectionDividerSpaced()
-      }
-    }
+  if (summary.subs != null) {
+    SectionDividerSpaced()
+    SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
+  }
 
-    if (summary.sessions != null) {
-      ServerSessionsView(summary.sessions)
-    }
+  if (summary.sessions != null) {
+    SectionDividerSpaced()
+    ServerSessionsView(summary.sessions)
   }
 
   SectionBottomSpacer()
