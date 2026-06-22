@@ -1030,7 +1030,7 @@ window.addEventListener('click',(e)=>{
 <p><strong>Subscribers</strong> connect to relays and receive content. They cannot send messages by default, but can be given posting rights.</p>
 </li>
 </ul>
-<p>Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol.</p>
+<p>Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol. The owner-signed roster tracks the promoted set - members, moderators, and admins; subscribers are observers until an owner promotes them.</p>
 <p>For protocol-level detail - wire formats, message types, signing and verification mechanics, delivery pipeline - see <a href="/docs/protocol/channels-protocol.html">SimpleX Channels Protocol</a>.</p>
 <h2 id="cryptographic-primitives" tabindex="-1">Cryptographic primitives</h2>
 <ul>
@@ -1084,6 +1084,7 @@ window.addEventListener('click',(e)=>{
 <li>Undetectably substitute content - subscribers on honest relays receive the original.</li>
 <li>Alter the channel's authoritative state on the owner's device.</li>
 <li>Substitute the channel profile or impersonate an owner - these require valid signatures.</li>
+<li>Replay an old roster or role change to re-elevate a removed or demoted member for existing subscribers - they reject anything older than the roster version they applied (a new joiner with no prior roster can still be served an old one, until it syncs from another relay).</li>
 <li>Redirect subscribers to a different channel - the entity ID is validated across link and profile.</li>
 <li>Determine subscriber identity or network address - inherited from SMP transport.</li>
 <li>Correlate subscriber participation across channels - each connection uses independent SMP queues. The subscriber chooses their SMP router independently, so collusion between a relay and the relay's SMP router does not compromise connections through a different router.</li>
