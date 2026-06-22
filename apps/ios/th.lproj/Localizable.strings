@@ -465,9 +465,6 @@ swipe action */
 "calling…" = "กำลังโทร…";
 
 /* No comment provided by engineer. */
-"Calls" = "โทร";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
 
 /* No comment provided by engineer. */
@@ -941,9 +938,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Description" = "คำอธิบาย";
-
-/* No comment provided by engineer. */
-"Develop" = "พัฒนา";
 
 /* No comment provided by engineer. */
 "Developer" = "เครื่องมือสำหรับนักพัฒนา";
@@ -1710,7 +1704,7 @@ server test error */
 /* No comment provided by engineer. */
 "Large file!" = "ไฟล์ขนาดใหญ่!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "ศึกษาเพิ่มเติม";
 
 /* swipe action */
@@ -2170,9 +2164,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Preview" = "ดูตัวอย่าง";
-
-/* No comment provided by engineer. */
-"Your privacy" = "ความเป็นส่วนตัวและความปลอดภัย";
 
 /* No comment provided by engineer. */
 "Private filenames" = "ชื่อไฟล์ส่วนตัว";
@@ -2701,9 +2692,6 @@ chat item action */
 "Submit" = "ส่ง";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "สนับสนุน SimpleX แชท";
-
-/* No comment provided by engineer. */
 "System" = "ระบบ";
 
 /* No comment provided by engineer. */
@@ -2951,9 +2939,6 @@ server test failure */
 "Using SimpleX Chat servers." = "กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "ตรวจสอบความปลอดภัยในการเชื่อมต่อ";
 
 /* No comment provided by engineer. */
@@ -3089,9 +3074,6 @@ server test failure */
 "You can enable later via Settings" = "คุณสามารถเปิดใช้งานในภายหลังผ่านการตั้งค่า";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "คุณสามารถเปิดใช้งานได้ในภายหลังผ่านการตั้งค่าความเป็นส่วนตัวและความปลอดภัยของแอป";
-
-/* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - ปัดไปทางขวา";
 
 /* notification body */
@@ -3198,9 +3180,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "การโทรของคุณ";
-
-/* No comment provided by engineer. */
-"Your chat database" = "ฐานข้อมูลการแชทของคุณ";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "ฐานข้อมูลการแชทของคุณไม่ได้ถูก encrypt - ตั้งรหัสผ่านเพื่อ encrypt";

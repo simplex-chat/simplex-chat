@@ -898,9 +898,6 @@ marked deleted chat item preview text */
 "calling…" = "дзвоніть…";
 
 /* No comment provided by engineer. */
-"Calls" = "Дзвінки";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Дзвінки заборонені!";
 
 /* No comment provided by engineer. */
@@ -1800,13 +1797,10 @@ alert button */
 "Details" = "Деталі";
 
 /* No comment provided by engineer. */
-"Develop" = "Розробник";
+"Developer" = "Інструменти для розробників";
 
 /* No comment provided by engineer. */
 "Developer options" = "Можливості для розробників";
-
-/* No comment provided by engineer. */
-"Developer" = "Інструменти для розробників";
 
 /* No comment provided by engineer. */
 "Device" = "Пристрій";
@@ -3097,7 +3091,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Великий файл!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Дізнайтеся більше";
 
 /* swipe action */
@@ -4017,9 +4011,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "Раніше підключені сервери";
-
-/* No comment provided by engineer. */
-"Your privacy" = "Конфіденційність і безпека";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Конфіденційність для ваших клієнтів.";
@@ -5131,9 +5122,6 @@ report reason */
 "Subscriptions ignored" = "Підписки ігноруються";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Підтримка чату SimpleX";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Перемикайте аудіо та відео під час дзвінка.";
 
 /* No comment provided by engineer. */
@@ -5696,9 +5684,6 @@ server test failure */
 "v%@" = "v%@";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify code with desktop" = "Перевірте код на робочому столі";
 
 /* No comment provided by engineer. */
@@ -5966,9 +5951,6 @@ server test failure */
 "You can enable later via Settings" = "Ви можете увімкнути пізніше в Налаштуваннях";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "Ви можете увімкнути їх пізніше в налаштуваннях конфіденційності та безпеки програми.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Ви можете спробувати ще раз.";
 
 /* No comment provided by engineer. */
@@ -6129,9 +6111,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Твої дзвінки";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Ваша база даних чату";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Ваша база даних чату не зашифрована - встановіть ключову фразу, щоб зашифрувати її.";
