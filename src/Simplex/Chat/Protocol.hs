@@ -1006,7 +1006,7 @@ parseChatMessages msg = case B.head msg of
       Right (compressed :: L.NonEmpty Compressed) -> case traverse decompressedSize compressed of
         Nothing -> [Left "compressed size not specified"]
         Just sizes
-          | sum sizes > maxDecompressedMsgLength -> [Left "decompressed size exceeds limit"]
+          | any (maxDecompressedMsgLength <) sizes || maxDecompressedMsgLength < sum sizes -> [Left "decompressed size exceeds limit"]
           | otherwise -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1) compressed
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s

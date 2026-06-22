@@ -91,7 +91,7 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..))
-import Simplex.Messaging.Compression (compressionLevel)
+import Simplex.Messaging.Compression (compressionLevel, limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -368,7 +368,7 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
 prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Maybe MarkdownList -> Bool
 prohibitedSimplexLinks gInfo m mc ft =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
-    && (isChatLink mc || maybe False (any ftIsSimplexLink) ft)
+    && (isChatLink mc || maybe False (any ftIsSimplexLink) ft || hasObfuscatedSimplexLink (msgContentText mc))
   where
     isChatLink = \case
       MCChat {} -> True
@@ -1223,7 +1223,7 @@ introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn
       sendGroupMemberMessages user gInfo conn evts
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
-userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
+userProfileInGroup user = userProfileInGroup' user . groupUserAllowSimplexLinks
 {-# INLINE userProfileInGroup #-}
 
 userProfileInGroup' :: User -> Bool -> Maybe Profile -> Profile
@@ -1241,7 +1241,7 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
       memberKey = MemberKey <$> memberPubKey
     }
   where
-    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
+    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && groupFeatureMemberAllowed SGFDirectMessages m g
 
 redactedMemberProfile :: Bool -> Profile -> Profile
 redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType, badge} =
@@ -1249,6 +1249,7 @@ redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDes
   where
     removeSimplexLink s
       | allowSimplexLinks = Just s
+      | hasObfuscatedSimplexLink s = Nothing
       | otherwise = maybe (Just s) (\fts -> if any ftIsSimplexLink fts then Nothing else Just s) $ parseMaybeMarkdownList s
 
 -- Roles carried by the roster; owners are on the link, not the roster.
@@ -1509,10 +1510,9 @@ encodeShortLinkData d =
 decodeLinkUserData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
 decodeLinkUserData cData
   | B.null s = pure Nothing
-  | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
-      Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
-      Z1.Skip -> pure Nothing
-      Z1.Decompress s' -> decode s'
+  | B.head s == 'X' = case limitDecompress' maxDecompressedMsgLength $ B.drop 1 s of
+      Left e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
+      Right s' -> decode s'
   | otherwise = decode s
   where
     decode s' = case J.eitherDecodeStrict s' of
@@ -2346,7 +2346,7 @@ sendGroupMessages user gInfo scope asGroup members events = do
             _ -> False
     sendProfileUpdate = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
-          allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+          allowSimplexLinks = groupUserAllowSimplexLinks gInfo
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
       profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate

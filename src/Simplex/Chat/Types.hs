@@ -641,6 +641,12 @@ groupFeatureUserAllowed :: GroupFeatureRoleI f => SGroupFeature f -> GroupInfo -
 groupFeatureUserAllowed feature GroupInfo {membership = GroupMember {memberRole}, fullGroupPreferences} =
   groupFeatureMemberAllowed' feature memberRole fullGroupPreferences
 
+-- A connection link in a profile description enables a direct connection, so a description
+-- keeps its links only when both SimpleX links and direct messages are allowed.
+groupUserAllowSimplexLinks :: GroupInfo -> Bool
+groupUserAllowSimplexLinks g =
+  groupFeatureUserAllowed SGFSimplexLinks g && groupFeatureUserAllowed SGFDirectMessages g
+
 mergeUserChatPrefs :: User -> Contact -> FullPreferences
 mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) (userPreferences ct)
 

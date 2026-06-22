@@ -753,8 +753,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   ct <- getContactViaMember db cxt user m
                   liftIO $ setNewContactMemberConnRequest db user m cReq
                   liftIO $ (ct,) <$> getGroupLinkId db user gInfo
-                sendGrpInvitation ct m groupLinkId
-                toView $ CEvtSentGroupInvitation user gInfo ct m
+                if memberRole' membership >= GRAdmin
+                  then do
+                    sendGrpInvitation ct m groupLinkId
+                    toView $ CEvtSentGroupInvitation user gInfo ct m
+                  else messageError "processGroupMessage: group link host no longer has admin role"
                 where
                   sendGrpInvitation :: Contact -> GroupMember -> Maybe GroupLinkId -> CM ()
                   sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} groupLinkId = do
@@ -835,7 +838,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
                     let GroupMember {memberId = membershipMemId} = membership
-                        allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+                        allowSimplexLinks = groupUserAllowSimplexLinks gInfo
                     membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
@@ -1596,9 +1599,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               -- TODO [short links] deduplicate request by xContactId?
               gInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
-              if useRelays' gInfo
-                then messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored direct join request from " <> displayName <> " (group uses relays)"
-                else do
+              if
+                | useRelays' gInfo ->
+                    messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored direct join request from " <> displayName <> " (group uses relays)"
+                | memberRole' (membership gInfo) < GRAdmin ->
+                    messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored join request because host is no longer admin"
+                | otherwise -> do
                   acceptMember_ <- asks $ acceptMember . chatHooks . config
                   maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
                     Right (acceptance, useRole)
@@ -1627,20 +1633,23 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 createRelayRequestGroup db cxt user groupRelayInv invId chatVRange initialDelay GSMemAccepted RSInvited
               lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
-        xGrpRelayTest invId chatVRange challenge = do
-          privKey_ <- withAgent $ \a -> getConnLinkPrivKey a (aConnId conn)
-          case privKey_ of
-            Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
-            Just privKey -> do
-              let sig = C.signatureBytes $ C.sign' privKey challenge
-                  msg = XGrpRelayTest challenge (Just sig)
-              subMode <- chatReadVar subscriptionMode
-              chatVR <- chatVersionRange
-              let chatV = chatVR `peerConnChatVersion` chatVRange
-              (cmdId, acId) <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
-              withStore $ \db -> do
-                Connection {connId = testCId} <- createRelayTestConnection db cxt user acId ConnAccepted chatV subMode
-                liftIO $ setCommandConnId db user cmdId testCId
+        xGrpRelayTest invId chatVRange challenge
+          | isTrue userChatRelay && isNothing ucGroupId_ =
+              withAgent (`getConnLinkPrivKey` aConnId conn) >>= \case
+                Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
+                Just privKey -> do
+                  let sig = C.signatureBytes $ C.sign' privKey challenge
+                      msg = XGrpRelayTest challenge (Just sig)
+                  subMode <- chatReadVar subscriptionMode
+                  chatVR <- chatVersionRange
+                  let chatV = chatVR `peerConnChatVersion` chatVRange
+                  (cmdId, acId) <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+                  withStore $ \db -> do
+                    Connection {connId = testCId} <- createRelayTestConnection db cxt user acId ConnAccepted chatV subMode
+                    liftIO $ setCommandConnId db user cmdId testCId
+          | otherwise = messageError "relay test sent to non-relay link"
+            where
+              User {userChatRelay} = user
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Maybe SignedMsg -> Profile -> MemberId -> MemberKey -> Maybe MemberId -> CM ()
         memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey@(MemberKey joiningKey) viaRelay = do
@@ -2804,7 +2813,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           pure m
       where
         contentChanged = not (sameProfileContent (redactedMemberProfile allowSimplexLinks (fromLocalProfile p)) (redactedMemberProfile allowSimplexLinks p'))
-        allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo
+        allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo && groupFeatureMemberAllowed SGFDirectMessages m gInfo
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -3220,7 +3229,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         pure toMember
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      let allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+      let allowSimplexLinks = groupUserAllowSimplexLinks gInfo
       membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
@@ -3280,9 +3289,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent
-          | senderRole < GRAdmin
-              || senderRole < fromRole
-              || senderRole < memRole =
+          | senderRole < maximum ([GRAdmin, fromRole, memRole] :: [GroupMemberRole]) =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
               messageError "x.grp.mem.role: only the owner can change member, moderator and admin roles in relay groups" $> Nothing
