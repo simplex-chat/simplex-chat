@@ -945,9 +945,6 @@ marked deleted chat item preview text */
 "calling…" = "aranıyor…";
 
 /* No comment provided by engineer. */
-"Calls" = "Aramalar";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Aramalara izin verilmiyor!";
 
 /* No comment provided by engineer. */
@@ -1853,13 +1850,10 @@ alert button */
 "Details" = "Detaylar";
 
 /* No comment provided by engineer. */
-"Develop" = "Geliştir";
+"Developer" = "Geliştirici araçları";
 
 /* No comment provided by engineer. */
 "Developer options" = "Geliştirici seçenekleri";
-
-/* No comment provided by engineer. */
-"Developer" = "Geliştirici araçları";
 
 /* No comment provided by engineer. */
 "Device" = "Cihaz";
@@ -3156,7 +3150,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Büyük dosya!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Daha fazlası";
 
 /* swipe action */
@@ -4097,9 +4091,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "Önceden bağlanılmış sunucular";
-
-/* No comment provided by engineer. */
-"Your privacy" = "Gizlilik & güvenlik";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Müşterileriniz için gizlilik.";
@@ -5220,9 +5211,6 @@ report reason */
 "Subscriptions ignored" = "Abonelikler göz ardı edildi";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "SimpleX Chat'e destek ol";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Görüşme sırasında ses ve görüntüyü değiştirin.";
 
 /* No comment provided by engineer. */
@@ -5794,9 +5782,6 @@ server test failure */
 "v%@" = "v%@";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify code with desktop" = "Bilgisayarla kodu doğrula";
 
 /* No comment provided by engineer. */
@@ -6064,9 +6049,6 @@ server test failure */
 "You can enable later via Settings" = "Daha sonra Ayarlardan etkinleştirebilirsin";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Bir kez daha deneyebilirsiniz.";
 
 /* No comment provided by engineer. */
@@ -6227,9 +6209,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Aramaların";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Sohbet veritabanınız";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Sohbet veritabanınız şifrelenmemiş - şifrelemek için parola ayarlayın.";
