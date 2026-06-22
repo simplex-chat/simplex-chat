@@ -262,7 +262,7 @@ chatGroupTests = do
       it "large profile fits in body" testChannelLargeProfileFits
       it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfiles
       it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
-    describe "channel operations" $ do ----
+    describe "channel operations" $ do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
