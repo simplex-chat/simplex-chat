@@ -2369,6 +2369,11 @@ export interface FileTransferMeta {
   cancelled: boolean
 }
 
+export enum FileType {
+  Normal = "normal",
+  Roster = "roster",
+}
+
 export type Format = 
   | Format.Bold
   | Format.Italic
@@ -2599,6 +2604,7 @@ export interface GroupInfo {
   uiThemes?: UIThemeEntityOverrides
   customData?: object
   groupSummary: GroupSummary
+  rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
@@ -3635,6 +3641,7 @@ export interface RcvFileTransfer {
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
   fileStatus: RcvFileStatus
+  fileType: FileType
   rcvFileInline?: InlineFileMode
   senderDisplayName: string
   chunkSize: number // int64
@@ -3806,6 +3813,7 @@ export enum RelayStatus {
   New = "new",
   Invited = "invited",
   Accepted = "accepted",
+  AcknowledgedRoster = "acknowledgedRoster",
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",

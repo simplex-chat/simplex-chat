@@ -3022,6 +3022,7 @@
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
+  <string name="relay_status_acknowledged_roster">acknowledged roster</string>
   <string name="relay_status_active">active</string>
   <string name="relay_status_inactive">inactive</string>
   <string name="relay_status_rejected">rejected</string>
