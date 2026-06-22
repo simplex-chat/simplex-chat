@@ -68,8 +68,26 @@ struct ServersSummaryView: View {
     private func getServersSummary() {
         do {
             serversSummary = try getAgentServersSummary()
+            if let summ = serversSummary {
+                // SUBS_TRACE: this detail view shows the real %. Log the subs it actually has,
+                // so they can be compared with what the chat-list indicator's getAgentSubsTotal returns.
+                let allS = summ.allUsersSMP.smpTotals
+                let curS = summ.currentUserSMP.smpTotals
+                logger.debug("SUBS_TRACE detail getAgentServersSummary: appState=\(AppChatState.shared.value.rawValue) allUsersSMP subs ssActive=\(allS.subs.ssActive) ssPending=\(allS.subs.ssPending) total=\(allS.subs.total) sessHasSess=\(allS.sessions.hasSess); currentUserSMP subs ssActive=\(curS.subs.ssActive) ssPending=\(curS.subs.ssPending) total=\(curS.subs.total) sessHasSess=\(curS.sessions.hasSess)")
+            }
         } catch let error {
             logger.error("getAgentServersSummary error: \(responseError(error))")
+        }
+        // SUBS_TRACE: run the chat-list indicator's own query (getAgentSubsTotal) here too, UNGATED,
+        // so a single open of this view shows both core queries head-to-head at the same moment / user,
+        // regardless of whether AppChatState gates the indicator's poll. Raw payload is logged in API.sendSimpleXCmd.
+        Task {
+            do {
+                let (subs, hasSess) = try await getAgentSubsTotal()
+                logger.debug("SUBS_TRACE detail getAgentSubsTotal (same query the indicator uses): ssActive=\(subs.ssActive) ssPending=\(subs.ssPending) total=\(subs.total) hasSess=\(hasSess)")
+            } catch let error {
+                logger.error("SUBS_TRACE detail getAgentSubsTotal error: \(responseError(error))")
+            }
         }
     }
 
