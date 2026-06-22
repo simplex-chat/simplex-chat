@@ -697,15 +697,15 @@ object ChatModel {
     }
 
     suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
-      fun removedUpdatedItem(item: ChatItem): ChatItem? {
-        val newContent = when {
-          item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId -> CIContent.SndModerated
-          item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId -> CIContent.RcvModerated
-          else -> return null
-        }
+      fun isRemovedMemberItem(item: ChatItem): Boolean = when {
+        item.chatDir is CIDirection.GroupSnd -> removedMember.groupMemberId == groupInfo.membership.groupMemberId
+        item.chatDir is CIDirection.GroupRcv -> item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId
+        else -> false
+      }
+      fun markedUpdatedItem(item: ChatItem): ChatItem? {
+        if (!isRemovedMemberItem(item)) return null
         val updatedItem = item.copy(
-          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember)),
-          content = if (groupInfo.fullGroupPreferences.fullDelete.on) newContent else item.content
+          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember))
         )
         if (item.isActiveReport) {
           decreaseGroupReportsCounter(rhId, groupInfo.id)
@@ -713,21 +713,52 @@ object ChatModel {
         return updatedItem
       }
 
+      // Mirrors backend groupFeatureMemberAllowed: fullDelete may be role-gated in business groups.
+      val fullDeletePref = groupInfo.fullGroupPreferences.fullDelete
+      val fullDelete = fullDeletePref.on &&
+        byMember.memberRole >= (fullDeletePref.role ?: GroupMemberRole.Observer)
       val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
-        for (i in 0 until chatItems.value.size) {
-          val updatedItem = removedUpdatedItem(chatItems.value[i])
-          if (updatedItem != null) {
-            updateChatItem(cInfo, updatedItem, atIndex = i)
+        if (fullDelete) {
+          for (item in chatItems.value) {
+            if (isRemovedMemberItem(item)) {
+              if (item.isRcvNew) {
+                decreaseCounterInPrimaryContext(rhId, groupInfo.id)
+              }
+              if (item.isActiveReport) {
+                decreaseGroupReportsCounter(rhId, groupInfo.id)
+              }
+            }
+          }
+          chatItems.removeAllAndNotify { item ->
+            val remove = isRemovedMemberItem(item)
+            if (remove) AudioPlayer.stop(item)
+            remove
+          }
+        } else {
+          for (i in 0 until chatItems.value.size) {
+            val updatedItem = markedUpdatedItem(chatItems.value[i])
+            if (updatedItem != null) {
+              updateChatItem(cInfo, updatedItem, atIndex = i)
+            }
           }
         }
       } else {
         val i = getChatIndex(rhId, groupInfo.id)
-        val chat = chats[i]
-        if (chat.chatItems.isNotEmpty()) {
-          val updatedItem = removedUpdatedItem(chat.chatItems[0])
-          if (updatedItem != null) {
-            chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
+        if (i >= 0) {
+          val chat = chats[i]
+          if (chat.chatItems.isNotEmpty()) {
+            val preview = chat.chatItems[0]
+            if (isRemovedMemberItem(preview)) {
+              if (fullDelete) {
+                chats.value[i] = chat.copy(chatItems = listOf(ChatItem.deletedItemDummy))
+              } else {
+                val updatedItem = markedUpdatedItem(preview)
+                if (updatedItem != null) {
+                  chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
+                }
+              }
+            }
           }
         }
       }
@@ -1430,6 +1461,17 @@ data class Chat(
 @Serializable
 sealed class ChatInfo: SomeChat, NamedChat {
 
+  // the badge shown for a chat's name: an active contact's or a contact request's (groups have none).
+  // a badge that expired over a month ago (ExpiredOld) is not shown at all.
+  val nameBadge: LocalBadge? get() {
+    val badge = when {
+      this is Direct && contact.active -> contact.profile.localBadge
+      this is ContactRequest -> contactRequest.profile.localBadge
+      else -> null
+    }
+    return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
+  }
+
   @Serializable @SerialName("direct")
   data class Direct(val contact: Contact): ChatInfo() {
     override val chatType get() = ChatType.Direct
@@ -1994,7 +2036,10 @@ data class Profile(
   override val localAlias : String = "",
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
-  val peerType: ChatPeerType? = null
+  val peerType: ChatPeerType? = null,
+  // the badge proof from the wire profile: not interpreted by the UI (display uses crypto-free LocalBadge),
+  // but preserved so passing a link profile back to the core (apiPrepareContact) keeps the proof
+  val badge: BadgeProof? = null
 ): NamedChat {
   val profileViewName: String
     get() {
@@ -2022,7 +2067,8 @@ data class LocalProfile(
   override val localAlias: String,
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
-  val peerType: ChatPeerType? = null
+  val peerType: ChatPeerType? = null,
+  val localBadge: LocalBadge? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
@@ -2045,6 +2091,70 @@ enum class ChatPeerType {
   @SerialName("human") Human,
   @SerialName("bot") Bot
 }
+
+// Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
+// Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
+@Serializable(with = BadgeTypeSerializer::class)
+sealed class BadgeType {
+  @Serializable @SerialName("supporter") object Supporter: BadgeType()
+  @Serializable @SerialName("legend") object Legend: BadgeType()
+  @Serializable @SerialName("investor") object Investor: BadgeType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): BadgeType()
+
+  // the disclosed (signed) type name, shown to the user for verified badges
+  val text: String
+    get() = when (this) {
+      is Supporter -> "supporter"
+      is Legend -> "legend"
+      is Investor -> "investor"
+      is Unknown -> type
+    }
+}
+
+object BadgeTypeSerializer : KSerializer<BadgeType> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeType", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): BadgeType =
+    when (val v = decoder.decodeString()) {
+      "supporter" -> BadgeType.Supporter
+      "legend" -> BadgeType.Legend
+      "investor" -> BadgeType.Investor
+      else -> BadgeType.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: BadgeType) = encoder.encodeString(value.text)
+}
+
+@Serializable
+enum class BadgeStatus {
+  @SerialName("active") Active,
+  @SerialName("expired") Expired,
+  // expired over a month ago - the badge is not shown at all
+  @SerialName("expiredOld") ExpiredOld,
+  @SerialName("failed") Failed,
+  // signed with a key index this app version does not know - shown as a warning
+  @SerialName("unknownKey") UnknownKey
+}
+
+@Serializable
+data class BadgeInfo(
+  val badgeType: BadgeType,
+  val badgeExpiry: Instant? = null,
+  val badgeExtra: String = ""
+)
+
+@Serializable
+data class LocalBadge(
+  val badge: BadgeInfo,
+  val status: BadgeStatus
+)
+
+// the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
+@Serializable
+data class BadgeProof(
+  val badgeKeyIdx: Int,
+  val presHeader: String,
+  val proof: String,
+  val badgeInfo: BadgeInfo
+)
 
 @Serializable
 data class UserProfileUpdateSummary(
@@ -2210,10 +2320,24 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 }
 
 @Serializable
+data class PublicGroupAccess(
+  val groupWebPage: String? = null,
+  val groupDomain: String? = null,
+  val domainWebPage: Boolean = false,
+  val allowEmbedding: Boolean = false
+)
+
+@Serializable
+data class RelayCapabilities(
+  val webDomain: String? = null
+)
+
+@Serializable
 data class PublicGroupProfile(
   val groupType: GroupType,
   val groupLink: String,
-  val publicGroupId: String
+  val publicGroupId: String,
+  val publicGroupAccess: PublicGroupAccess? = null
 )
 
 @Serializable
@@ -2264,7 +2388,9 @@ enum class MemberCriteria {
 data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
-  val business: Boolean
+  val business: Boolean,
+  // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
+  val localBadge: LocalBadge? = null
 )
 
 @Serializable
@@ -2289,6 +2415,7 @@ enum class RelayStatus {
   @SerialName("new") New,
   @SerialName("invited") Invited,
   @SerialName("accepted") Accepted,
+  @SerialName("acknowledgedRoster") AcknowledgedRoster,
   @SerialName("active") Active,
   @SerialName("inactive") Inactive,
   @SerialName("rejected") Rejected;
@@ -2297,6 +2424,7 @@ enum class RelayStatus {
     New -> generalGetString(MR.strings.relay_status_new)
     Invited -> generalGetString(MR.strings.relay_status_invited)
     Accepted -> generalGetString(MR.strings.relay_status_accepted)
+    AcknowledgedRoster -> generalGetString(MR.strings.relay_status_acknowledged_roster)
     Active -> generalGetString(MR.strings.relay_status_active)
     Inactive -> generalGetString(MR.strings.relay_status_inactive)
     Rejected -> generalGetString(MR.strings.relay_status_rejected)
@@ -2337,7 +2465,8 @@ data class GroupRelay(
   val groupMemberId: Long,
   val userChatRelay: UserChatRelay,
   val relayStatus: RelayStatus,
-  val relayLink: String? = null
+  val relayLink: String? = null,
+  val relayCap: RelayCapabilities
 ) {
   val id: Long get() = groupRelayId
 }
@@ -2394,6 +2523,11 @@ data class GroupMember (
   override val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
+  // the badge shown for a member's name; a badge that expired over a month ago (ExpiredOld) is not shown
+  val nameBadge: LocalBadge? get() {
+    val badge = memberProfile.localBadge
+    return if (badge?.status == BadgeStatus.ExpiredOld) null else badge
+  }
   val blocked get() = blockedByAdmin || !memberSettings.showMessages
 
   override val localAlias: String = memberProfile.localAlias
@@ -2712,7 +2846,7 @@ class UserContactRequest (
   val contactRequestId: Long,
   val cReqChatVRange: VersionRange,
   override val localDisplayName: String,
-  val profile: Profile,
+  val profile: LocalProfile,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -2738,7 +2872,7 @@ class UserContactRequest (
       contactRequestId = 1,
       cReqChatVRange = VersionRange(1, 1),
       localDisplayName = "alice",
-      profile = Profile.sampleData,
+      profile = LocalProfile.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -4680,6 +4814,7 @@ sealed class Format {
     val viaHosts: String get() =
       "(${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
   }
+  @Serializable @SerialName("simplexName") class SimplexName(val nameInfo: SimplexNameInfo): Format()
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
@@ -4697,6 +4832,7 @@ sealed class Format {
     is Uri -> linkStyle
     is HyperLink -> linkStyle
     is SimplexLink -> linkStyle
+    is SimplexName -> linkStyle
     is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
@@ -4726,6 +4862,32 @@ enum class SimplexLinkType(val linkType: String) {
       channel -> MR.strings.simplex_link_channel
       relay -> MR.strings.simplex_link_relay
   })
+}
+
+@Serializable
+data class SimplexNameInfo(
+  val nameType: SimplexNameType,
+  val nameDomain: SimplexNameDomain
+)
+
+@Serializable
+data class SimplexNameDomain(
+  val nameTLD: SimplexTLD,
+  val domain: String,
+  val subDomain: List<String>
+)
+
+@Serializable
+enum class SimplexTLD {
+  @SerialName("simplex") simplex,
+  @SerialName("testing") testing,
+  @SerialName("web") web
+}
+
+@Serializable
+enum class SimplexNameType {
+  @SerialName("publicGroup") publicGroup,
+  @SerialName("contact") contact
 }
 
 @Serializable

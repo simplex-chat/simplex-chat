@@ -78,5 +78,7 @@ skipComparisonForDownMigrations =
   [ -- via_group field moves
     "20250922_remove_unused_connections",
     -- group_member_intro_id field moves
-    "20251128_migrate_member_relations"
+    "20251128_migrate_member_relations",
+    -- on down migration single_sender_group_member_id column is re-added at the end of the table
+    "20260529_delivery_job_senders"
   ]

@@ -182,7 +182,7 @@ The low-level protocol supports multiple owners from the initial release. The ap
 
 - **Subscribers** connect to relays and receive content. They cannot send messages by default, but can be given posting rights.
 
-Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol.
+Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol. The owner-signed roster tracks the promoted set - members, moderators, and admins; subscribers are observers until an owner promotes them.
 
 For protocol-level detail - wire formats, message types, signing and verification mechanics, delivery pipeline - see [SimpleX Channels Protocol](./channels-protocol.md).
 
@@ -242,6 +242,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 - Undetectably substitute content - subscribers on honest relays receive the original.
 - Alter the channel's authoritative state on the owner's device.
 - Substitute the channel profile or impersonate an owner - these require valid signatures.
+- Replay an old roster or role change to re-elevate a removed or demoted member for existing subscribers - they reject anything older than the roster version they applied (a new joiner with no prior roster can still be served an old one, until it syncs from another relay).
 - Redirect subscribers to a different channel - the entity ID is validated across link and profile.
 - Determine subscriber identity or network address - inherited from SMP transport.
 - Correlate subscriber participation across channels - each connection uses independent SMP queues. The subscriber chooses their SMP router independently, so collusion between a relay and the relay's SMP router does not compromise connections through a different router.

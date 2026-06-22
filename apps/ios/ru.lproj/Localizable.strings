@@ -506,9 +506,6 @@ swipe action */
 "Added message servers" = "Дополнительные серверы сообщений";
 
 /* No comment provided by engineer. */
-"Adding relays will be supported later." = "Добавление релеев будет поддерживаться позже.";
-
-/* No comment provided by engineer. */
 "Additional accent" = "Дополнительный акцент";
 
 /* No comment provided by engineer. */
@@ -1182,9 +1179,6 @@ alert subtitle */
 /* No comment provided by engineer. */
 "Channel will be deleted for you - this cannot be undone!" = "Канал будет удалён для Вас - это нельзя отменить!";
 
-/* alert message */
-"Channel will start working with %d of %d relays. Proceed?" = "Канал начнёт работу с %1$d из %2$d релеев. Продолжить?";
-
 /* No comment provided by engineer. */
 "Channels" = "Каналы";
 
@@ -1634,7 +1628,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Содержание нарушает условия использования";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Продолжить";
 
 /* No comment provided by engineer. */
@@ -2070,7 +2064,7 @@ alert button */
 "Developer options" = "Опции разработчика";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Инструменты разработчика";
+"Developer" = "Разработчик";
 
 /* No comment provided by engineer. */
 "Device" = "Устройство";
@@ -4539,7 +4533,7 @@ alert button */
 "Previously connected servers" = "Ранее подключенные серверы";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Конфиденциальность";
+"Your privacy" = "Конфиденциальность";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Конфиденциальность для ваших покупателей.";
@@ -4576,9 +4570,6 @@ alert button */
 
 /* alert title */
 "Private routing timeout" = "Таймаут конфиденциальной доставки";
-
-/* alert action */
-"Proceed" = "Продолжить";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Профиль и соединения на сервере";
@@ -4860,9 +4851,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Remove passphrase from keychain?" = "Удалить пароль из Keychain?";
-
-/* No comment provided by engineer. */
-"Remove subscriber" = "Удалить подписчика";
 
 /* alert title */
 "Remove subscriber?" = "Удалить подписчика?";
@@ -6327,7 +6315,7 @@ server test failure */
 "Update settings?" = "Обновить настройки?";
 
 /* rcv group event chat item */
-"updated channel profile" = "обновлён профиль канала";
+"updated channel profile" = "обновил профиль канала";
 
 /* No comment provided by engineer. */
 "Updated conditions" = "Обновлённые условия";
@@ -6771,7 +6759,7 @@ server test failure */
 "You can enable later via Settings" = "Вы можете включить их позже в Настройках";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Вы можете включить их позже в настройках Конфиденциальности.";
+"You can enable them later via app Your privacy settings." = "Вы можете включить их позже в настройках Конфиденциальности.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Вы можете попробовать ещё раз.";

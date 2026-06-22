@@ -230,7 +230,8 @@ private fun ProfilePickerOption(
   disabled: Boolean,
   onSelected: () -> Unit,
   image: @Composable () -> Unit,
-  onInfo: (() -> Unit)? = null
+  onInfo: (() -> Unit)? = null,
+  badge: LocalBadge? = null
 ) {
   Row(
     Modifier
@@ -243,7 +244,7 @@ private fun ProfilePickerOption(
   ) {
     image()
     TextIconSpaced(false)
-    Text(title, modifier = Modifier.align(Alignment.CenterVertically))
+    NameWithBadge(title, badge, Modifier.align(Alignment.CenterVertically))
     if (onInfo != null) {
       Spacer(Modifier.padding(6.dp))
       Column(Modifier
@@ -365,7 +366,8 @@ fun ActiveProfilePicker(
           }
         }
       },
-        image = { ProfileImage(size = 42.dp, image = user.image) }
+        image = { ProfileImage(size = 42.dp, image = user.image) },
+        badge = user.profile.localBadge
     )
   }
 
@@ -495,7 +497,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
     )
     SimpleXCreatedLinkQRCode(connLinkInvitation, short = showShortLink.value, onShare = { chatModel.markShowingInvitationUsed() })
   } else {
-    SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
+    SectionView(stringResource(MR.strings.share_this_1_time_link), headerBottomPadding = 5.dp) {
       LinkTextView(connLinkInvitation.simplexChatUri(short = showShortLink.value), true)
     }
 
@@ -519,7 +521,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
   val currentUser = remember { chatModel.currentUser }.value
 
   if (currentUser != null) {
-    SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase(), headerBottomPadding = 5.dp) {
+    SectionView(stringResource(MR.strings.new_chat_share_profile), headerBottomPadding = 5.dp) {
       SectionItemView(
         padding = PaddingValues(
           top = 0.dp,
@@ -643,14 +645,14 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
     )
   }
 
-  SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
+  SectionView(stringResource(MR.strings.paste_the_link_you_received), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
 
   if (appPlatform.isAndroid) {
     Spacer(Modifier.height(10.dp))
 
-    SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
+    SectionView(stringResource(MR.strings.or_scan_qr_code), headerBottomPadding = 5.dp) {
       QRCodeScanner(showQRCodeScanner) { text ->
         val linkVerified = verifyOnly(text)
         if (!linkVerified) {
@@ -671,13 +673,14 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
     val clipboard = LocalClipboardManager.current
     SectionItemView({
       val str = clipboard.getText()?.text ?: return@SectionItemView
-      val link = strHasSingleSimplexLink(str.trim())
-      if (link != null) {
-        pastedLink.value = link.text
-        showQRCodeScanner.value = false
-        withBGApi { connect(rhId, link.text, close) { pastedLink.value = "" } }
-      } else {
-        AlertManager.shared.showAlertMsg(
+      when (val target = strConnectTarget(str.trim())) {
+        is ConnectTarget.Link -> {
+          pastedLink.value = target.text
+          showQRCodeScanner.value = false
+          withBGApi { connect(rhId, target.text, close) { pastedLink.value = "" } }
+        }
+        is ConnectTarget.Name -> showUnsupportedNameAlert(target.nameInfo)
+        null -> AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.invalid_contact_link),
           text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
         )
@@ -819,12 +822,32 @@ fun strIsSimplexLink(str: String): Boolean {
   return parsedMd != null && parsedMd.size == 1 && parsedMd[0].format is Format.SimplexLink
 }
 
-fun strHasSingleSimplexLink(str: String): FormattedText? {
-  val parsedMd = parseToMarkdown(str) ?: return null
-  val parsedLinks = parsedMd.filter { it.format?.isSimplexLink ?: false }
-  if (parsedLinks.size != 1) return null
+sealed class ConnectTarget {
+  class Link(val text: String, val linkType: SimplexLinkType, val linkText: String) : ConnectTarget()
+  class Name(val nameInfo: SimplexNameInfo) : ConnectTarget()
+}
 
-  return parsedLinks[0]
+fun strConnectTarget(str: String): ConnectTarget? {
+  val parsedMd = parseToMarkdown(str) ?: return null
+  val links = parsedMd.filter { it.format?.isSimplexLink ?: false }
+  if (links.size == 1) {
+    val fmt = links[0].format as Format.SimplexLink
+    return ConnectTarget.Link(links[0].text, fmt.linkType, fmt.simplexLinkText)
+  }
+  if (links.isEmpty()) {
+    val nameInfo = parsedMd.firstNotNullOfOrNull { (it.format as? Format.SimplexName)?.nameInfo }
+    if (nameInfo != null) return ConnectTarget.Name(nameInfo)
+  }
+  return null
+}
+
+fun showUnsupportedNameAlert(nameInfo: SimplexNameInfo) {
+  val (title, msg) = if (nameInfo.nameType == SimplexNameType.contact) {
+    generalGetString(MR.strings.unsupported_contact_name) to generalGetString(MR.strings.contact_name_requires_newer_app_version)
+  } else {
+    generalGetString(MR.strings.unsupported_channel_name) to generalGetString(MR.strings.channel_name_requires_newer_app_version)
+  }
+  AlertManager.shared.showAlertMsg(title, "$msg ${generalGetString(MR.strings.please_upgrade_the_app)}")
 }
 
 @Composable

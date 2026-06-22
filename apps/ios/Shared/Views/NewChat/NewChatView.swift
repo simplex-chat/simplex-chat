@@ -560,9 +560,11 @@ private struct ActiveProfilePicker: View {
             HStack {
                 ProfileImage(imageStr: user.image, size: 30)
                     .padding(.trailing, 2)
-                Text(user.chatViewName)
-                    .foregroundColor(theme.colors.onBackground)
-                    .lineLimit(1)
+                NameWithBadge(
+                    Text(user.chatViewName).foregroundColor(theme.colors.onBackground),
+                    user.profile.localBadge
+                )
+                .lineLimit(1)
                 Spacer()
                 if selectedProfile == user, !incognitoEnabled {
                     Image(systemName: "checkmark")
@@ -663,14 +665,13 @@ private struct ConnectView: View {
             ZStack(alignment: .trailing) {
                 Button {
                     if let str = UIPasteboard.general.string {
-                        if let link = strHasSingleSimplexLink(str.trimmingCharacters(in: .whitespaces)) {
-                            pastedLink = link.text
-                            // It would be good to hide it, but right now it is not clear how to release camera in CodeScanner
-                            // https://github.com/twostraws/CodeScanner/issues/121
-                            // No known tricks worked (changing view ID, wrapping it in another view, etc.)
-                            // showQRCodeScanner = false
+                        switch strConnectTarget(str.trimmingCharacters(in: .whitespaces)) {
+                        case let .link(text, _, _):
+                            pastedLink = text
                             connect(pastedLink)
-                        } else {
+                        case let .name(nameInfo):
+                            showUnsupportedNameAlert(nameInfo)
+                        case .none:
                             alert = .newChatSomeAlert(alert: SomeAlert(
                                 alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
                                 id: "pasteLinkView: code is not a SimpleX link"
@@ -866,16 +867,36 @@ func strIsSimplexLink(_ str: String) -> Bool {
     }
 }
 
-func strHasSingleSimplexLink(_ str: String) -> FormattedText? {
-    if let parsedMd = parseSimpleXMarkdown(str) {
-       let parsedLinks = parsedMd.filter({ $0.format?.isSimplexLink ?? false })
-        if parsedLinks.count == 1 {
-            return parsedLinks[0]
-        } else {
-            return nil
-        }
+enum ConnectTarget {
+    case link(text: String, linkType: SimplexLinkType, linkText: String)
+    case name(SimplexNameInfo)
+}
+
+func strConnectTarget(_ str: String) -> ConnectTarget? {
+    let parsedMd = parseSimpleXMarkdown(str)
+    let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
+    return if links.count == 1, case let .simplexLink(_, linkType, _, smpHosts) = links[0].format {
+        .link(text: links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
+    } else if links.isEmpty,
+              case let .simplexName(nameInfo) = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } })?.format {
+        .name(nameInfo)
     } else {
-        return nil
+        nil
+    }
+}
+
+func showUnsupportedNameAlert(_ nameInfo: SimplexNameInfo) {
+    let upgrade = " " + NSLocalizedString("Please upgrade the app.", comment: "alert message")
+    if nameInfo.nameType == .contact {
+        showAlert(
+            NSLocalizedString("Unsupported contact name", comment: "alert title"),
+            message: NSLocalizedString("Connecting via contact name requires a newer app version.", comment: "alert message") + upgrade
+        )
+    } else {
+        showAlert(
+            NSLocalizedString("Unsupported channel name", comment: "alert title"),
+            message: NSLocalizedString("Connecting via channel name requires a newer app version.", comment: "alert message") + upgrade
+        )
     }
 }
 
@@ -1141,6 +1162,7 @@ private func showPrepareContactAlert(
                             : "person.crop.circle.fill",
                 size: alertProfileImageSize
             ),
+        profileBadge: contactShortLinkData.localBadge,
         theme: theme,
         information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
@@ -1234,6 +1256,7 @@ private func showOpenKnownContactAlert(
                 iconName: contact.chatIconName,
                 size: alertProfileImageSize
             ),
+        profileBadge: contact.active ? contact.profile.localBadge : nil,
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
@@ -1295,13 +1318,21 @@ func planAndConnect(
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
-    if case .simplexLink(_, .relay, _, _) = strHasSingleSimplexLink(shortOrFullLink)?.format {
-        showAlert(
-            NSLocalizedString("Relay address", comment: "alert title"),
-            message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
-        )
+    switch strConnectTarget(shortOrFullLink) {
+    case let .name(nameInfo):
+        showUnsupportedNameAlert(nameInfo)
         cleanup?()
         return
+    case let .link(_, linkType, _):
+        if linkType == .relay {
+            showAlert(
+                NSLocalizedString("Relay address", comment: "alert title"),
+                message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
+            )
+            cleanup?()
+            return
+        }
+    case .none: break
     }
     ConnectProgressManager.shared.cancelConnectProgress()
     let inProgress = BoxedValue(true)
@@ -1555,6 +1586,33 @@ func planAndConnect(
                                 showAlert(
                                     NSLocalizedString("Channel temporarily unavailable", comment: "alert title"),
                                     message: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert message")
+                                )
+                                cleanup?()
+                            }
+                        }
+                    case let .updateRequired(groupSLinkData_):
+                        logger.debug("planAndConnect, .groupLink, .updateRequired")
+                        await MainActor.run {
+                            if let groupSLinkData = groupSLinkData_ {
+                                showOpenChatAlert(
+                                    profileName: groupSLinkData.groupProfile.displayName,
+                                    profileFullName: groupSLinkData.groupProfile.fullName,
+                                    profileImage:
+                                        ProfileImage(
+                                            imageStr: groupSLinkData.groupProfile.image,
+                                            iconName: "person.2.circle.fill",
+                                            size: alertProfileImageSize
+                                        ),
+                                    theme: theme,
+                                    subtitle: NSLocalizedString("This group requires a newer version of the app. Please update the app to join.", comment: "alert subtitle"),
+                                    cancelTitle: NSLocalizedString("OK", comment: "alert button"),
+                                    confirmTitle: nil,
+                                    onCancel: { cleanup?() }
+                                )
+                            } else {
+                                showAlert(
+                                    NSLocalizedString("App update required", comment: "alert title"),
+                                    message: NSLocalizedString("This group requires a newer version of the app. Please update the app to join.", comment: "alert message")
                                 )
                                 cleanup?()
                             }

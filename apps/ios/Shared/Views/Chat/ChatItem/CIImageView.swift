@@ -14,6 +14,7 @@ import SimpleXChat
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     let chatItem: ChatItem
+    let senderProfile: LocalProfile?
     var scrollToItem: ((ChatItem.ID) -> Void)? = nil
     var preview: UIImage?
     let maxWidth: CGFloat
@@ -51,10 +52,18 @@ struct CIImageView: View {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
-                                Task {
-                                    if let user = m.currentUser {
-                                        await receiveFile(user: user, fileId: file.fileId)
+                                if fileSizeValid(file, senderProfile) {
+                                    Task {
+                                        if let user = m.currentUser {
+                                            await receiveFile(user: user, fileId: file.fileId)
+                                        }
                                     }
+                                } else {
+                                    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol, senderProfile), countStyle: .binary)
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "Large file!",
+                                        message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
+                                    )
                                 }
                             case .rcvAccepted:
                                 switch file.fileProtocol {

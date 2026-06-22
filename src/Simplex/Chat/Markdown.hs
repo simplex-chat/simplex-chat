@@ -18,6 +18,7 @@ import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Attoparsec.ByteString.Char8 as AB
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.ByteString.Char8 (ByteString)
@@ -35,11 +36,11 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), SimplexNameInfo (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
-import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8, tshow, (<$?>))
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
 import qualified URI.ByteString as U
@@ -59,6 +60,7 @@ data Format
   -- showText is Nothing for the usual Uri without text
   | HyperLink {showText :: Maybe Text, linkUri :: Text}
   | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
+  | SimplexName {nameInfo :: SimplexNameInfo}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
@@ -184,10 +186,21 @@ isLink = \case
   Uri -> True
   HyperLink {} -> True
   SimplexLink {} -> True
+  SimplexName {} -> True
   _ -> False
 
 hasLinks :: MarkdownList -> Bool
 hasLinks = any $ \(FormattedText f _) -> maybe False isLink f
+
+hasObfuscatedSimplexLink :: Text -> Bool
+hasObfuscatedSimplexLink t =
+  fromRight False $ AB.parseOnly findLinkP $ encodeUtf8 $ T.filter (not . isSpace) t
+  where
+    findLinkP = do
+      AB.skipWhile (\c -> c /= 's' && c /= 'h') -- links start only with "simplex:" or "https://"
+      (True <$ (strP :: AB.Parser AConnectionLink))
+        <|> (AB.anyChar *> findLinkP)
+        <|> pure False
 
 markdownP :: Parser Markdown
 markdownP = mconcat <$> A.many' fragmentP
@@ -202,9 +215,9 @@ markdownP = mconcat <$> A.many' fragmentP
           '_' -> formattedP '_' Italic
           '~' -> formattedP '~' StrikeThrough
           '`' -> formattedP '`' Snippet
-          '#' -> A.char '#' *> secretP
+          '#' -> A.char '#' *> (secretP <|> nameRefP '#' <|> secretFallback)
           '!' -> styledP <|> wordP
-          '@' -> mentionP <|> wordP
+          '@' -> (A.char '@' *> nameRefP '@') <|> mentionP <|> wordP
           '/' -> commandP <|> wordP
           '[' -> sowLinkP <|> wordP
           _
@@ -221,14 +234,29 @@ markdownP = mconcat <$> A.many' fragmentP
           unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
     secretP :: Parser Markdown
-    secretP = secret <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile (== '#')
-    secret :: Text -> Text -> Text -> Markdown
-    secret b s a
-      | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
-          unmarked $ '#' `T.cons` ss
-      | otherwise = markdown Secret $ T.init ss
+    secretP = secret <$?> ((,,) <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile1 (== '#'))
+    secret :: (Text, Text, Text) -> Either String Markdown
+    secret (b, s, a)
+      | T.null s || T.head s == ' ' || T.last s == ' ' = Left "not secret"
+      | otherwise = Right $ markdown Secret $ T.init ss
       where
         ss = b <> s <> a
+    secretFallback :: Parser Markdown
+    secretFallback = unmarked . ('#' `T.cons`) <$> A.takeTill (== ' ')
+    nameRefP :: Char -> Parser Markdown
+    nameRefP pfx = nameRef <$?> A.takeTill (== ' ')
+      where
+        nameRef word
+          | pfx == '@' && T.all (/= '.') name = Left "not a name"
+          | otherwise = mkMd <$> strDecode (encodeUtf8 full)
+          where
+            (name, punct) = splitPunctuation word
+            full = pfx `T.cons` name
+            mkMd ni
+              | T.null punct = md'
+              | otherwise = md' :|: unmarked punct
+              where
+                md' = markdown (SimplexName ni) full
     styledP :: Parser Markdown
     styledP = do
       f <- A.char '!' *> ((A.char '-' $> Small) <|> (colored <$> colorP)) <* A.space
@@ -449,6 +477,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Uri -> t
     HyperLink {} -> t
     SimplexLink {} -> t
+    SimplexName {} -> t
     Mention _ -> t
     Command _ -> t
     Email -> t
@@ -479,7 +508,6 @@ displayNameTextP_ = (,"") <$> quoted '\'' <|> splitPunctuation <$> takeNameTill 
     takeNameTill p =
       A.peekChar' >>= \c ->
         if refChar c then A.takeTill p else fail "invalid first character in display name"
-    splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
@@ -489,6 +517,9 @@ commandTextP = do
   case T.words cmd of
     (keyword : _) | T.all (\c -> isAlpha c || isDigit c || c == '_') keyword -> pure (cmd, punct)
     _ -> fail "invalid command keyword"
+
+splitPunctuation :: Text -> (Text, Text)
+splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)
 
 -- quotes names that contain spaces or end on punctuation
 viewName :: Text -> Text

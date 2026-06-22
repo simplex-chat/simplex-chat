@@ -85,7 +85,7 @@ fun MemberSupportChatAppBar(
           } else {
             null
           }
-          ModalManager.end.showModalCloseable(true) { closeCurrent ->
+          ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(scopeMember_.groupMemberId) } }.value?.let { mem ->
               GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = true, close = closeCurrent) {
                 closeCurrent()
@@ -137,8 +137,8 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
         if (member.verified) {
           MemberVerifiedShield()
         }
-        Text(
-          member.displayName, fontWeight = FontWeight.SemiBold,
+        NameWithBadge(
+          member.displayName, member.nameBadge, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
       }

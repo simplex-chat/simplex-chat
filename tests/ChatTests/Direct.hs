@@ -122,6 +122,7 @@ chatDirectTests = do
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "delete user with chat tags" testDeleteUserChatTags
+    it "rejects raw chat TTL updates for another user's chat" testRejectCrossUserChatTTL
     it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
@@ -2095,6 +2096,25 @@ testDeleteUserChatTags =
 
       alice ##> "/users"
       alice <## "alisa (active)"
+
+testRejectCrossUserChatTTL :: HasCallStack => TestParams -> IO ()
+testRejectCrossUserChatTTL =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice #$> ("/_ttl 1 @2 2", id, "ok")
+      alice #$> ("/ttl @bob", id, "old messages are set to be deleted after: 2 second(s)")
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      alice ##> "/_ttl 2 @2 9"
+      alice <##. "chat db error:"
+
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/ttl @bob", id, "old messages are set to be deleted after: 2 second(s)")
 
 testUsersDifferentCIExpirationTTL :: HasCallStack => TestParams -> IO ()
 testUsersDifferentCIExpirationTTL ps = do

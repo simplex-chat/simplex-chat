@@ -217,6 +217,9 @@ class SelectionManager {
         val hi = maxOf(r.startIndex, r.endIndex)
         return (lo..hi).mapNotNull { idx ->
             val ci = items.getOrNull(idx)?.newest()?.item ?: return@mapNotNull null
+            // Only real messages are copyable. Event/info items (e.g. "connected", calls, e2ee info)
+            // have no msgContent and are never highlighted as selected, so they must never be copied.
+            if (ci.content.msgContent == null) return@mapNotNull null
             if (ci.meta.itemDeleted != null && (!revealedItems.contains(ci.id) || ci.isDeletedContent)) return@mapNotNull null
             val sel = selectedRange(range, idx) ?: return@mapNotNull null
             selectedItemCopiedText(ci, sel, linkMode)

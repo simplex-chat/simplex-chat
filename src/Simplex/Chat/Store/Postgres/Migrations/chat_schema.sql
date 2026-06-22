@@ -531,7 +531,16 @@ CREATE TABLE test_chat_schema.contact_profiles (
     preferences text,
     contact_link bytea,
     short_descr text,
-    chat_peer_type text
+    chat_peer_type text,
+    badge_proof bytea,
+    badge_pres_header bytea,
+    badge_expiry timestamp with time zone,
+    badge_type text,
+    badge_verified smallint,
+    badge_extra text,
+    badge_master_key bytea,
+    badge_signature bytea,
+    badge_key_idx bigint
 );
 
 
@@ -635,14 +644,14 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     job_scope_spec_tag text,
     job_scope_include_pending smallint,
     job_scope_support_gm_id bigint,
-    single_sender_group_member_id bigint,
     body bytea,
     cursor_group_member_id bigint,
     job_status text NOT NULL,
     job_err_reason text,
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    sender_group_member_ids text
 );
 
 
@@ -743,7 +752,10 @@ CREATE TABLE test_chat_schema.files (
     file_crypto_key bytea,
     file_crypto_nonce bytea,
     note_folder_id bigint,
-    redirect_file_id bigint
+    redirect_file_id bigint,
+    shared_msg_id bytea,
+    file_type text DEFAULT 'normal'::text NOT NULL,
+    roster_transfer_id bigint
 );
 
 
@@ -818,7 +830,8 @@ CREATE TABLE test_chat_schema.group_members (
     index_in_group bigint DEFAULT 0 NOT NULL,
     member_relations_vector bytea,
     relay_link bytea,
-    member_pub_key bytea
+    member_pub_key bytea,
+    removed_at timestamp with time zone
 );
 
 
@@ -849,7 +862,11 @@ CREATE TABLE test_chat_schema.group_profiles (
     short_descr text,
     group_type text,
     group_link bytea,
-    public_group_id bytea
+    public_group_id bytea,
+    group_web_page text,
+    group_domain text,
+    domain_web_page bigint,
+    allow_embedding bigint
 );
 
 
@@ -874,7 +891,8 @@ CREATE TABLE test_chat_schema.group_relays (
     relay_link bytea,
     conf_id bytea,
     created_at text DEFAULT now() NOT NULL,
-    updated_at text DEFAULT now() NOT NULL
+    updated_at text DEFAULT now() NOT NULL,
+    base_web_url text
 );
 
 
@@ -963,7 +981,15 @@ CREATE TABLE test_chat_schema.groups (
     relay_request_retries bigint DEFAULT 0 NOT NULL,
     relay_request_delay bigint DEFAULT 0 NOT NULL,
     relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 04:00:00+04'::timestamp with time zone NOT NULL,
-    relay_inactive_at timestamp with time zone
+    relay_inactive_at timestamp with time zone,
+    relay_sent_web_domain text,
+    roster_version bigint,
+    roster_msg_body bytea,
+    roster_msg_chat_binding text,
+    roster_msg_signatures bytea,
+    roster_sending_owner_gm_id bigint,
+    roster_broker_ts timestamp with time zone,
+    roster_blob bytea
 );
 
 
@@ -1186,6 +1212,34 @@ CREATE TABLE test_chat_schema.rcv_files (
     agent_rcv_file_deleted smallint DEFAULT 0 NOT NULL,
     to_receive smallint,
     user_approved_relays smallint DEFAULT 0 NOT NULL
+);
+
+
+
+CREATE TABLE test_chat_schema.rcv_roster_transfers (
+    roster_transfer_id bigint NOT NULL,
+    group_id bigint NOT NULL,
+    from_member_id bigint NOT NULL,
+    roster_version bigint NOT NULL,
+    roster_digest bytea NOT NULL,
+    sending_owner_gm_id bigint NOT NULL,
+    broker_ts timestamp with time zone NOT NULL,
+    roster_msg_body bytea,
+    roster_msg_chat_binding text,
+    roster_msg_signatures bytea,
+    created_at text DEFAULT now() NOT NULL,
+    updated_at text DEFAULT now() NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.rcv_roster_transfers ALTER COLUMN roster_transfer_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.rcv_roster_transfers_roster_transfer_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
 
 
@@ -1433,7 +1487,8 @@ CREATE TABLE test_chat_schema.users (
     ui_themes text,
     active_order bigint DEFAULT 0 NOT NULL,
     auto_accept_member_contacts smallint DEFAULT 0 NOT NULL,
-    is_user_chat_relay smallint DEFAULT 0 NOT NULL
+    is_user_chat_relay smallint DEFAULT 0 NOT NULL,
+    client_service smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1719,6 +1774,11 @@ ALTER TABLE ONLY test_chat_schema.rcv_file_chunks
 
 ALTER TABLE ONLY test_chat_schema.rcv_files
     ADD CONSTRAINT rcv_files_pkey PRIMARY KEY (file_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.rcv_roster_transfers
+    ADD CONSTRAINT rcv_roster_transfers_pkey PRIMARY KEY (roster_transfer_id);
 
 
 
@@ -2203,10 +2263,6 @@ CREATE INDEX idx_delivery_jobs_next ON test_chat_schema.delivery_jobs USING btre
 
 
 
-CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON test_chat_schema.delivery_jobs USING btree (single_sender_group_member_id);
-
-
-
 CREATE INDEX idx_delivery_tasks_created_at ON test_chat_schema.delivery_tasks USING btree (created_at);
 
 
@@ -2259,7 +2315,15 @@ CREATE INDEX idx_files_group_id ON test_chat_schema.files USING btree (group_id)
 
 
 
+CREATE INDEX idx_files_group_id_shared_msg_id ON test_chat_schema.files USING btree (group_id, shared_msg_id);
+
+
+
 CREATE INDEX idx_files_redirect_file_id ON test_chat_schema.files USING btree (redirect_file_id);
+
+
+
+CREATE INDEX idx_files_roster_transfer_id ON test_chat_schema.files USING btree (roster_transfer_id);
 
 
 
@@ -2432,6 +2496,14 @@ CREATE INDEX idx_rcv_files_file_descr_id ON test_chat_schema.rcv_files USING btr
 
 
 CREATE INDEX idx_rcv_files_group_member_id ON test_chat_schema.rcv_files USING btree (group_member_id);
+
+
+
+CREATE INDEX idx_rcv_roster_transfers_from_member_id ON test_chat_schema.rcv_roster_transfers USING btree (from_member_id);
+
+
+
+CREATE UNIQUE INDEX idx_rcv_roster_transfers_group_id_from_member_id ON test_chat_schema.rcv_roster_transfers USING btree (group_id, from_member_id);
 
 
 
@@ -2835,11 +2907,6 @@ ALTER TABLE ONLY test_chat_schema.delivery_jobs
 
 
 
-ALTER TABLE ONLY test_chat_schema.delivery_jobs
-    ADD CONSTRAINT delivery_jobs_single_sender_group_member_id_fkey FOREIGN KEY (single_sender_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY test_chat_schema.delivery_tasks
     ADD CONSTRAINT delivery_tasks_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
 
@@ -3122,6 +3189,16 @@ ALTER TABLE ONLY test_chat_schema.rcv_files
 
 ALTER TABLE ONLY test_chat_schema.rcv_files
     ADD CONSTRAINT rcv_files_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.rcv_roster_transfers
+    ADD CONSTRAINT rcv_roster_transfers_from_member_id_fkey FOREIGN KEY (from_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.rcv_roster_transfers
+    ADD CONSTRAINT rcv_roster_transfers_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
 
 
 

@@ -170,6 +170,7 @@ toTypeInfo tr =
       "DBEntityId'" -> ST TInt64 []
       "Integer" -> ST TInt64 []
       "Version" -> ST TInt []
+      "VersionRoster" -> ST TInt64 []
       "BoolDef" -> ST TBool []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
@@ -198,7 +199,11 @@ toTypeInfo tr =
         "AgentInvId",
         "AgentRcvFileId",
         "AgentSndFileId",
+        "BadgeMasterKey",
         "B64UrlByteString",
+        "BBSProof",
+        "BBSPresHeader",
+        "BBSSignature",
         "CbNonce",
         "ConnectionLink",
         "ConnShortLink",

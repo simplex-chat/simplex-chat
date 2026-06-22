@@ -66,7 +66,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
           closeAll()
           withBGApi {
             openGroupChat(null, gInfo.groupId)
-            ModalManager.end.showModalCloseable(true) { close ->
+            ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
               GroupLinkView(chatModel, rhId = null, groupInfo = gInfo, groupLink = groupLink.value, onGroupLinkUpdated = null, creatingGroup = true, isChannel = true, shareGroupInfo = gInfo, close = close)
             }
           }
@@ -567,7 +567,7 @@ private fun LinkStepView(
       }
     }
   }
-  ModalView(close = close, showClose = false) {
+  ModalView(close = close, showClose = false, cardScreen = true) {
     GroupLinkView(
       chatModel = chatModel,
       rhId = null,

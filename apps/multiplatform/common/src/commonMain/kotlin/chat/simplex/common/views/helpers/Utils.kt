@@ -126,6 +126,10 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
+// raised XFTP receive limits for files from a sender with a supporter badge (also investor) or a legend badge
+const val MAX_FILE_SIZE_XFTP_SUPPORTER: Long = 2_147_483_648 // 2GB
+const val MAX_FILE_SIZE_XFTP_LEGEND: Long = 5_368_709_120 // 5GB
+
 const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI
@@ -383,7 +387,7 @@ fun uniqueCombine(fileName: String, dir: File): String {
   val ext = orig.extension
   fun tryCombine(n: Int): String {
     val suffix = if (n == 0) "" else "_$n"
-    val f = "$name$suffix.$ext"
+    val f = if (ext.isEmpty()) "$name$suffix" else "$name$suffix.$ext"
     return if (File(dir, f).exists()) tryCombine(n + 1) else f
   }
   return tryCombine(0)
@@ -442,12 +446,23 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
-fun getMaxFileSize(fileProtocol: FileProtocol): Long {
-  return when (fileProtocol) {
-    FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
-    FileProtocol.SMP -> MAX_FILE_SIZE_SMP
-    FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
+fun getMaxFileSize(fileProtocol: FileProtocol, senderProfile: LocalProfile? = null): Long = when (fileProtocol) {
+  FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+  FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
+  // a sender's active badge raises the XFTP limit: legend to 5GB, any other (supporter/investor) to 2GB
+  FileProtocol.XFTP -> {
+    val badge = senderProfile?.localBadge
+    if (badge == null || badge.status != BadgeStatus.Active) MAX_FILE_SIZE_XFTP
+    else if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND
+    else MAX_FILE_SIZE_XFTP_SUPPORTER
   }
+}
+
+// the profile of whoever sent a received chat item - the group member, or the direct chat's contact
+fun ciSenderProfile(ci: ChatItem, chatInfo: ChatInfo): LocalProfile? = when (val dir = ci.chatDir) {
+  is CIDirection.GroupRcv -> dir.groupMember.memberProfile
+  is CIDirection.DirectRcv -> (chatInfo as? ChatInfo.Direct)?.contact?.profile
+  else -> null
 }
 
 expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration

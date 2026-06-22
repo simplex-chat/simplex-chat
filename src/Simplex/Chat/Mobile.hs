@@ -38,6 +38,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri)
+import Simplex.Chat.Mobile.Badges
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
@@ -49,6 +50,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
+import Simplex.Messaging.Agent.Protocol (AgentErrorType)
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
@@ -72,6 +74,7 @@ data DBMigrationResult
   | DBMErrorNotADatabase {dbFile :: String}
   | DBMErrorMigration {dbFile :: String, migrationError :: MigrationError}
   | DBMErrorSQL {dbFile :: String, migrationSQLError :: String}
+  | DBMAgentError {agentError :: AgentErrorType}
   deriving (Show)
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "DBM") ''DBMigrationResult)
@@ -135,6 +138,10 @@ foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CStrin
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
 
 foreign export ccall "chat_json_length" cChatJsonLength :: CString -> IO CInt
+
+foreign export ccall "chat_badge_keygen" cChatBadgeKeygen :: IO CJSONString
+
+foreign export ccall "chat_badge_issue" cChatBadgeIssue :: CString -> IO CJSONString
 
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString
 
@@ -254,6 +261,7 @@ mobileChatOpts dbOptions =
             tbqSize = 4096,
             deviceName = Nothing,
             chatRelay = False,
+            webPreviewConfig = Nothing,
             highlyAvailable = False,
             yesToUpMigrations = False,
             migrationBackupPath = Just "",
@@ -298,12 +306,12 @@ chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
   let migrationConfig = MigrationConfig confirmMigrations (Just "")
   chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey chatDBFunctions) migrationConfig
   agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey []) migrationConfig
-  liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
+  ExceptT $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
     opts = mobileChatOpts $ removeDbKey chatDbOpts
     initialize st db = do
-      user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig opts backgroundMode
+      user_ <- liftIO $ getActiveUser_ st
+      first DBMAgentError <$> newChatController db user_ defaultMobileConfig opts backgroundMode
     migrate createStore dbOpts confirmMigrations =
       ExceptT $
         (first (DBMErrorMigration errDbStr) <$> createStore dbOpts confirmMigrations)

@@ -973,7 +973,7 @@
     <string name="icon_descr_speaker_off">רמקול כבוי</string>
     <string name="icon_descr_speaker_on">רמקול פעיל</string>
     <string name="settings_section_title_settings">הגדרות</string>
-    <string name="settings_section_title_support">תמיכה ב־SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">תמיכה ב־SimpleX Chat</string>
     <string name="stop_chat_question">לעצור צ׳אט\?</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">עיצרו את הצ׳אט כדי לייצא, לייבא או למחוק את מסד הנתונים. לא תוכלו לקבל ולשלוח הודעות בזמן שהצ׳אט מופסק.</string>
     <string name="stop_chat_confirmation">עצור</string>

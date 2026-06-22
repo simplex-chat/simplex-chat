@@ -43,6 +43,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Library.Commands (maxImageSize)
 import Simplex.Chat.Markdown
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -111,7 +112,7 @@ chatErrorToView isCmd ChatConfig {logLevel, testView} = viewChatError isCmd logL
 
 chatResponseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
 chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveItems ts tz outputRH = \case
-  CRActiveUser User {profile, uiThemes} -> viewUserProfile (fromLocalProfile profile) <> viewUITheme uiThemes
+  CRActiveUser User {profile = p@LocalProfile {localBadge}, uiThemes} -> viewUserProfile localBadge (fromLocalProfile p) <> viewUITheme uiThemes
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -193,7 +194,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRSentGroupInvitation u g c _ -> ttyUser u $ viewSentGroupInvitation g c
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
-  CRUserProfile u p -> ttyUser u $ viewUserProfile p
+  CRUserProfile u@User {profile = LocalProfile {localBadge}} p -> ttyUser u $ viewUserProfile localBadge p
   CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
   CRUserPrivacy u u' -> ttyUserPrefix hu outputRH u $ viewUserPrivacy u u'
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
@@ -452,7 +453,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtRcvFileProgressXFTP {} -> []
   CEvtContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CEvtGroupMemberUpdated {} -> []
-  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _chat -> ttyUser u $ viewReceivedContactRequest c profile
+  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _chat -> ttyUser u $ viewReceivedContactRequest c (fromLocalProfile profile)
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
   CEvtRcvStandaloneFileComplete u _ ft -> ttyUser u $ receivingFileStandalone "completed" ft
@@ -481,7 +482,8 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> tshow (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtServiceSubStatus srv event -> [plain $ serviceSubEventStr srv event]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g m -> ttyUser u $ viewUserJoinedGroup g m
   CEvtGroupLinkDataUpdated u g groupLink relays relaysChanged
@@ -618,13 +620,14 @@ viewUsersList us =
    in if null ss then ["no users"] else ss
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
-    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, peerType}, activeUser, showNtfs, viewPwdHash} count)
-      | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName shortDescr <> infoStr <> bot
+    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, peerType, localBadge}, activeUser, showNtfs, viewPwdHash, clientService} count)
+      | activeUser || isNothing viewPwdHash = Just $ ttyFullNameBadge n fullName shortDescr localBadge <> infoStr <> bot
       | otherwise = Nothing
       where
         infoStr = if null info then "" else " (" <> mconcat (intersperse ", " info) <> ")"
         info =
           [highlight' "active" | activeUser]
+            <> [highlight' "service" | isTrue clientService]
             <> [highlight' "hidden" | isJust viewPwdHash]
             <> ["muted" | not showNtfs]
             <> [plain ("unread: " <> show count) | count /= 0]
@@ -632,8 +635,8 @@ viewUsersList us =
           Just CPTBot -> " (bot)"
           _ -> ""
 
-showSMPServer :: SMPServer -> String
-showSMPServer ProtocolServer {host} = B.unpack $ strEncode host
+showSMPServer :: SMPServer -> Text
+showSMPServer ProtocolServer {host} = safeDecodeUtf8 $ strEncode host
 
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
@@ -1204,8 +1207,8 @@ viewReceivedContactRequest c Profile {fullName, shortDescr} =
   ]
 
 showRelay :: GroupRelay -> StyledString
-showRelay GroupRelay {groupRelayId, relayStatus} =
-  "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus)
+showRelay GroupRelay {groupRelayId, relayStatus, relayCap = RelayCapabilities {webDomain}} =
+  "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus) <> maybe "" (\d -> ", web: " <> plain d) webDomain
 
 viewGroupRelays :: GroupInfo -> [GroupRelay] -> [StyledString]
 viewGroupRelays g relays =
@@ -1326,7 +1329,7 @@ viewJoinedGroupMemberConnecting g@GroupInfo {groupId} host m@GroupMember {groupM
     [ (ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting and pending review...), ")
       <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
     ]
-  _ | useRelays' g -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group"]
+  _ | useRelays' g -> [ttyGroup' g <> ": " <> ttyMember host <> " introduced " <> ttyFullMember m <> " in the channel"]
     | otherwise -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
 
 viewConnectedToGroupMember :: GroupInfo -> GroupMember -> [StyledString]
@@ -1493,7 +1496,7 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
 
 viewNewMemberContactReceivedInv :: User -> Contact -> GroupInfo -> GroupMember -> [StyledString]
 viewNewMemberContactReceivedInv user ct@Contact {localDisplayName = c} g m
-  | isTrue (autoAcceptMemberContacts user) =
+  | autoAcceptMemberContacts user =
       [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   | otherwise =
       [ ttyGroup' g <> " " <> ttyMember m <> " requests to create direct contact with you",
@@ -1507,9 +1510,9 @@ viewContactAndMemberAssociated ct g m ct' =
     "use " <> ttyToContact' ct' <> highlight' "<message>" <> " to send messages"
   ]
 
-viewUserProfile :: Profile -> [StyledString]
-viewUserProfile Profile {displayName, fullName, shortDescr, peerType, preferences} =
-  [ "user profile: " <> ttyFullName displayName fullName shortDescr <> bot,
+viewUserProfile :: Maybe LocalBadge -> Profile -> [StyledString]
+viewUserProfile localBadge Profile {displayName, fullName, shortDescr, peerType, preferences} =
+  [ "user profile: " <> ttyFullNameBadge displayName fullName shortDescr localBadge <> bot,
     "use " <> highlight' "/p <name> [<bio>]" <> " to change it"
   ]
     ++ viewCommands
@@ -1579,12 +1582,22 @@ viewConnDiffIds userDiff connDiff
       where
         showIds = plain . T.intercalate ", " . map (tshow . unwrapId)
 
-subStatusStr :: SubscriptionStatus -> String
+subStatusStr :: SubscriptionStatus -> Text
 subStatusStr = \case
   SSActive -> "subscribed"
   SSPending -> "disconnected"
-  SSRemoved e -> "removed: " <> e
+  SSRemoved e -> "removed: " <> T.pack e
   SSNoSub -> "no subscription"
+
+serviceSubEventStr :: SMPServer -> ServiceSubEvent -> Text
+serviceSubEventStr srv = \case
+  ServiceSubUp e_ n -> "subscribed service " <> conns n <> srvStr <> ": " <> fromMaybe "ok" e_
+  ServiceSubDown n -> "disconnected service " <> conns n <> srvStr
+  ServiceSubAll -> "received messages from service" <> srvStr -- "(" <> n <> "connections)"
+  ServiceSubEnd n -> "service subscription ended " <> conns n <> srvStr
+  where
+    conns n = "(" <> tshow n <> " connections)"
+    srvStr = " on server " <> showSMPServer srv
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] [] []) = []
@@ -1752,9 +1765,22 @@ smpProxyModeStr :: SMPProxyMode -> SMPProxyFallback -> String
 smpProxyModeStr SPMNever _ = "private message routing disabled."
 smpProxyModeStr mode fallback = T.unpack $ safeDecodeUtf8 $ "private message routing mode: " <> strEncode mode <> ", fallback: " <> strEncode fallback
 
+viewContactBadge :: Maybe LocalBadge -> [StyledString]
+viewContactBadge = maybe [] $ \lb ->
+  let BadgeInfo {badgeType, badgeExpiry} = localBadgeInfo lb
+      st = case localBadgeStatus lb of
+        BSActive -> "active"
+        BSExpired -> "expired"
+        BSExpiredOld -> "expired (old)"
+        BSFailed -> "verification failed"
+        BSUnknownKey -> "unknown key"
+      expiry = maybe "no expiry" (("expires " <>) . T.pack . formatTime defaultTimeLocale "%Y-%m-%d") badgeExpiry
+   in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
+
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
+    <> viewContactBadge localBadge
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact' l)]) contactLink
     <> maybe
@@ -1787,10 +1813,11 @@ viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink}, activeConn} stats =
+viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink, localBadge}, activeConn} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
+    <> viewContactBadge localBadge
     <> maybe ["member not connected"] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact' l)]) contactLink
     <> ["alias: " <> plain localAlias | localAlias /= ""]
@@ -1810,7 +1837,7 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
-viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
+viewRcvQueuesInfo = plain . T.intercalate ", " . map showQueueInfo
   where
     showQueueInfo RcvQueueInfo {rcvServer, rcvSwitchStatus, canAbortSwitch} =
       let switchCanBeAborted = if canAbortSwitch then ", can be aborted" else ""
@@ -1823,7 +1850,7 @@ viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
       RSReceivedMessage -> "switch secured"
 
 viewSndQueuesInfo :: [SndQueueInfo] -> StyledString
-viewSndQueuesInfo = plain . intercalate ", " . map showQueueInfo
+viewSndQueuesInfo = plain . T.intercalate ", " . map showQueueInfo
   where
     showQueueInfo SndQueueInfo {sndServer, sndSwitchStatus} =
       showSMPServer sndServer
@@ -1955,10 +1982,10 @@ countactUserPrefText cup = case cup of
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> Maybe MsgSigStatus -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma, publicGroup = pg}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma', publicGroup = pg'}}
   m signed = do
-    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated
+    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated <> publicGroupAccessUpdated
     if null update
       then []
       else memberUpdated <> update
@@ -1983,6 +2010,18 @@ viewGroupUpdated
       memberAdmissionUpdated
         | ma == ma' = []
         | otherwise = ["changed member admission rules"]
+      publicGroupAccessUpdated
+        | access == access' = []
+        | otherwise = ["updated public group access:" <> viewAccess access']
+        where
+          access = pg >>= publicGroupAccess
+          access' = pg' >>= publicGroupAccess
+          viewAccess Nothing = " removed"
+          viewAccess (Just PublicGroupAccess {groupWebPage, groupDomain, domainWebPage, allowEmbedding}) =
+            maybe "" (\u -> " web=" <> plain u) groupWebPage
+              <> maybe "" (\d -> " domain=" <> plain d) groupDomain
+              <> (if domainWebPage then " domain_page=on" else "")
+              <> (if allowEmbedding then " embed=on" else "")
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, description, image, groupPreferences = gps}} =
@@ -2138,6 +2177,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           ]
         knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
     GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
+    GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
     where
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
@@ -2584,7 +2624,6 @@ viewChatError isCmd logLevel testView = \case
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
     CENoSndFileUser aFileId -> ["error: snd file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
     CENoRcvFileUser aFileId -> ["error: rcv file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
-    CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
     CEChatRelayExists -> ["chat realy user already exists"]
     CEUserUnknown -> ["user does not exist or incorrect password"]
@@ -2784,9 +2823,47 @@ ttyContact = styled (colored Green) . viewName
 ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
 
+-- Supporter badge: a colored star marks an active badge (only the star is colored).
+-- supporter cyan, legend blue, investor yellow, unknown cyan; business has no star.
+badgeStarColor :: BadgeType -> Maybe Color
+badgeStarColor = \case
+  BTSupporter -> Just Cyan
+  BTLegend -> Just Blue
+  BTInvestor -> Just Yellow
+  BTUnknown _ -> Just Cyan
+
+-- (star color, type word) for an active, colorable badge
+activeBadge :: Maybe LocalBadge -> Maybe (Color, Text)
+activeBadge lb_ = do
+  lb <- lb_
+  case localBadgeStatus lb of
+    BSActive -> let BadgeInfo {badgeType} = localBadgeInfo lb in (\col -> (col, textEncode badgeType)) <$> badgeStarColor badgeType
+    _ -> Nothing
+
+badgeStar :: Color -> StyledString
+badgeStar col = styled (colored col) ("*" :: Text)
+
+-- " *" (space + colored star) for sender prefixes, "" if no active badge
+badgeStarSep :: Maybe LocalBadge -> StyledString
+badgeStarSep lb_ = maybe "" (\(c, _) -> " " <> badgeStar c) (activeBadge lb_)
+
+-- name + badge for full-name contexts: "alice (Alice, * supporter)" / "alice (* supporter)" / "alice (Alice)" / "alice"
+ttyFullNameBadge :: ContactName -> Text -> Maybe Text -> Maybe LocalBadge -> StyledString
+ttyFullNameBadge c fullName shortDescr lb_ = ttyContact c <> optFullNameBadge c fullName shortDescr lb_
+
+optFullNameBadge :: ContactName -> Text -> Maybe Text -> Maybe LocalBadge -> StyledString
+optFullNameBadge c fullName shortDescr lb_ = case activeBadge lb_ of
+  Nothing -> optFullName c fullName shortDescr
+  Just (color, typeWord) -> " (" <> nameInner <> badgeStar color <> plain (" " <> typeWord) <> ")"
+  where
+    nameInner = maybe "" (\t -> plain (t <> ", ")) innerName
+    innerName
+      | T.null fullName || c == fullName = shortDescr
+      | otherwise = Just fullName
+
 ttyFullContact :: Contact -> StyledString
-ttyFullContact Contact {localDisplayName, profile = LocalProfile {fullName, shortDescr}} =
-  ttyFullName localDisplayName fullName shortDescr
+ttyFullContact Contact {localDisplayName, profile = LocalProfile {fullName, shortDescr, localBadge}} =
+  ttyFullNameBadge localDisplayName fullName shortDescr localBadge
 
 ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
@@ -2815,7 +2892,8 @@ ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom (vie
 ttyQuotedMember Nothing = ">"
 
 ttyFromContact :: Contact -> StyledString
-ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> ")
+ttyFromContact ct@Contact {localDisplayName = c, profile = LocalProfile {localBadge}} =
+  ctIncognito ct <> ttyFrom (viewName c) <> badgeStarSep localBadge <> ttyFrom "> "
 
 ttyFromContactEdited :: Contact -> StyledString
 ttyFromContactEdited ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> [edited] ")

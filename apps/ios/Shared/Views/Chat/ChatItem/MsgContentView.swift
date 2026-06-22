@@ -191,9 +191,14 @@ private func handleTextTaps(
                         }
                     }
                 }
-                if let index, let (uri, browser) = attributedStringLink(s, for: index) {
+                if let index, let (uri, browser, simplex) = attributedStringLink(s, for: index) {
                     if browser {
                         openBrowserAlert(uri: uri)
+                    } else if simplex, let url = URL(string: uri) {
+                        // SimpleX links target this same app (simplex: scheme / simplex.chat universal link),
+                        // so UIApplication.shared.open is dropped by iOS while the app is in the foreground.
+                        // Route to the in-app connect flow instead (same sink onOpenURL feeds).
+                        ChatModel.shared.appOpenUrl = url
                     } else if let url = URL(string: uri) {
                         UIApplication.shared.open(url)
                     } else {
@@ -203,14 +208,18 @@ private func handleTextTaps(
             })
     }
 
-    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (String, Bool)? {
+    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (String, Bool, Bool)? {
         var linkURL: String?
         var browser: Bool = false
+        var simplex: Bool = false
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
-                if let url = attrs[linkAttrKey] as? String {
+                if let nameInfo = attrs[nameAttrKey] as? SimplexNameInfo {
+                    showUnsupportedNameAlert(nameInfo)
+                } else if let url = attrs[linkAttrKey] as? String {
                     linkURL = url
                     browser = attrs[webLinkAttrKey] != nil
+                    simplex = attrs[simplexLinkAttrKey] != nil
                 } else if let showSecrets, let i = attrs[secretAttrKey] as? Int {
                     if showSecrets.wrappedValue.contains(i) {
                         showSecrets.wrappedValue.remove(i)
@@ -223,7 +232,7 @@ private func handleTextTaps(
                 stop.pointee = true
             }
         }
-        return if let linkURL { (linkURL, browser) } else { nil }
+        return if let linkURL { (linkURL, browser, simplex) } else { nil }
     }
 }
 
@@ -248,9 +257,12 @@ private let linkAttrKey = NSAttributedString.Key("chat.simplex.app.link")
 
 private let webLinkAttrKey = NSAttributedString.Key("chat.simplex.app.webLink")
 
+private let simplexLinkAttrKey = NSAttributedString.Key("chat.simplex.app.simplexLink")
+
 private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
 private let commandAttrKey = NSAttributedString.Key("chat.simplex.app.command")
+private let nameAttrKey = NSAttributedString.Key("chat.simplex.app.name")
 
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
 
@@ -389,6 +401,7 @@ func messageText(
                 attrs = linkAttrs()
                 if !preview {
                     attrs[linkAttrKey] = simplexUri
+                    attrs[simplexLinkAttrKey] = true
                     handleTaps = true
                 }
                 if let s = text ?? (privacySimplexLinkModeDefault.get() == .description ? linkType.description : nil) {
@@ -423,6 +436,12 @@ func messageText(
                     } else {
                         t = mentionText(memberName)
                     }
+                }
+            case let .simplexName(nameInfo):
+                attrs = linkAttrs()
+                if !preview {
+                    attrs[nameAttrKey] = nameInfo
+                    handleTaps = true
                 }
             case .email:
                 attrs = linkAttrs()

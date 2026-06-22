@@ -27,8 +27,9 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
         .padding(start = 8.dp, end = 8.sp.toDp())
         .weight(1F)
     ) {
-      Text(
+      NameWithBadge(
         contactRequest.chatViewName,
+        contactRequest.nameBadge,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
