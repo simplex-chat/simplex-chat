@@ -5101,13 +5101,13 @@ sealed class RcvGroupEvent() {
     is MemberAccepted -> String.format(generalGetString(MR.strings.rcv_group_event_member_accepted), profile.profileViewName)
     is UserAccepted -> generalGetString(MR.strings.rcv_group_event_user_accepted)
     is MemberLeft -> generalGetString(MR.strings.rcv_group_event_member_left)
-    is MemberRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_member_role), profile.profileViewName, role.text)
+    is MemberRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_member_role), profile.profileViewName, role.text(isChannel = isChannel))
     is MemberBlocked -> if (blocked) {
       String.format(generalGetString(MR.strings.rcv_group_event_member_blocked), profile.profileViewName)
     } else {
       String.format(generalGetString(MR.strings.rcv_group_event_member_unblocked), profile.profileViewName)
     }
-    is UserRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_your_role), role.text)
+    is UserRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_your_role), role.text(isChannel = isChannel))
     is MemberDeleted -> String.format(generalGetString(MR.strings.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(MR.strings.rcv_group_event_user_deleted)
     is GroupDeleted -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_channel_deleted else MR.strings.rcv_group_event_group_deleted)
@@ -5146,8 +5146,8 @@ sealed class SndGroupEvent() {
   val text: String get() = text(isChannel = false)
 
   fun text(isChannel: Boolean): String = when (this) {
-    is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
-    is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text)
+    is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text(isChannel = isChannel))
+    is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text(isChannel = isChannel))
     is MemberBlocked -> if (blocked) {
       String.format(generalGetString(MR.strings.snd_group_event_member_blocked), profile.profileViewName)
     } else {
