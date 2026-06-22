@@ -2035,7 +2035,7 @@ fun BoxScope.ChatItemsList(
                         val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
 
                         Text(
-                          member.memberRole.text,
+                          member.memberRole.text(isChannel = chatInfo.isChannel),
                           Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
                           fontSize = 13.5.sp,
                           fontWeight = FontWeight.Medium,
