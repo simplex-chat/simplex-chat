@@ -952,10 +952,7 @@ fun updateMemberRoleDialog(
   onConfirm: () -> Unit
 ) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(
-      if (groupInfo.isChannel) MR.strings.change_member_role_question_channel
-      else MR.strings.change_member_role_question
-    ),
+    title = generalGetString(MR.strings.change_member_role_question),
     text = if (memberCurrent) {
       if (groupInfo.isChannel)
         String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_channel), newRole.text(isChannel = groupInfo.isChannel))

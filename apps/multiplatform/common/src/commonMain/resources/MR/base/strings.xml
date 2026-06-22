@@ -2045,8 +2045,7 @@
   <string name="change_role">Change role</string>
   <string name="change_verb">Change</string>
   <string name="switch_verb">Switch</string>
-  <string name="change_member_role_question">Change group role?</string>
-  <string name="change_member_role_question_channel">Change channel role?</string>
+  <string name="change_member_role_question">Change role?</string>
   <string name="member_role_will_be_changed_with_notification">The role will be changed to "%s". Everyone in the group will be notified.</string>
   <string name="member_role_will_be_changed_with_notification_chat">The role will be changed to "%s". Everyone in the chat will be notified.</string>
   <string name="member_role_will_be_changed_with_notification_channel">The role will be changed to "%s". Everyone in the channel will be notified.</string>

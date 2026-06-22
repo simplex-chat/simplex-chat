@@ -728,17 +728,17 @@ struct GroupMemberInfoView: View {
 
     private func changeMemberRoleAlert(_ mem: GroupMember) -> Alert {
         Alert(
-            title: Text("Change member role?"),
+            title: Text("Change role?"),
             message: (
                 mem.memberCurrent
                 ? (
                     groupInfo.isChannel
-                    ? Text("Member role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All subscribers will be notified.")
+                    ? Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All subscribers will be notified.")
                     : groupInfo.businessChat == nil
-                    ? Text("Member role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All group members will be notified.")
-                    : Text("Member role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All chat members will be notified.")
+                    ? Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All group members will be notified.")
+                    : Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All chat members will be notified.")
                 )
-                : Text("Member role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". The member will receive a new invitation.")
+                : Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". The member will receive a new invitation.")
             ),
             primaryButton: .default(Text("Change")) {
                 Task {
