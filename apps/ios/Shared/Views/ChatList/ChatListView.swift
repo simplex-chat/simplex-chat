@@ -605,7 +605,8 @@ struct SubsStatusIndicator: View {
         task = Task {
             logger.debug("SUBS_TRACE poll loop: started")
             while !Task.isCancelled {
-                let appActive = AppChatState.shared.value == .active
+                let appState = AppChatState.shared.value
+                let appActive = appState == .active
                 let running = ChatModel.shared.chatRunning == true
                 if appActive, running {
                     do {
@@ -620,7 +621,7 @@ struct SubsStatusIndicator: View {
                         logger.error("getSubsTotal error: \(responseError(error))")
                     }
                 } else {
-                    logger.debug("SUBS_TRACE poll skipped tick: appActive=\(appActive) chatRunning=\(running) (gated out, not fetching)")
+                    logger.debug("SUBS_TRACE poll skipped tick: appState=\(appState.rawValue) appActive=\(appActive) chatRunning=\(running) (gated out, not fetching)")
                 }
                 try? await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
             }
