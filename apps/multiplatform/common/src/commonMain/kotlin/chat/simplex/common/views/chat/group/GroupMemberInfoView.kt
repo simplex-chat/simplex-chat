@@ -421,8 +421,7 @@ fun GroupMemberInfoLayout(
   @Composable
   fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
-    // TODO [relays] re-enable when relay management ships
-    val canRemove = member.canBeRemoved(groupInfo) && member.memberRole != GroupMemberRole.Relay
+    val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
       SectionDividerSpaced()
       SectionView {

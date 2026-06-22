@@ -87,8 +87,6 @@ private fun ChannelRelaysLayout(
             minHeight = 54.dp,
             padding = PaddingValues(horizontal = DEFAULT_PADDING)
           ) {
-            // TODO [relays] re-enable when relay management ships
-            /*
             if (groupInfo.isOwner && member.canBeRemoved(groupInfo)) {
               DefaultDropdownMenu(showMenu) {
                 ItemAction(generalGetString(MR.strings.button_remove_relay), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
@@ -97,7 +95,6 @@ private fun ChannelRelaysLayout(
                 })
               }
             }
-            */
             val statusText = if (groupInfo.isOwner) {
               ownerRelayStatusText(member, groupRelays)
             } else {
@@ -109,8 +106,6 @@ private fun ChannelRelaysLayout(
       }
       SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages))
     }
-    // TODO [relays] re-enable when relay management ships
-    /*
     if (groupInfo.isOwner) {
       SectionView {
         SectionItemView(click = {
@@ -139,7 +134,6 @@ private fun ChannelRelaysLayout(
         }
       }
     }
-    */
     SectionBottomSpacer()
   }
 }

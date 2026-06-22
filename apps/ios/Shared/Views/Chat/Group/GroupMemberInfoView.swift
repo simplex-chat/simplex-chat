@@ -633,8 +633,7 @@ struct GroupMemberInfoView: View {
                         blockForAllButton(mem)
                     }
                 }
-                // TODO [relays] re-enable when relay management ships
-                if canRemove && mem.memberRole != .relay {
+                if canRemove {
                     if mem.memberStatus != .memRemoved && (mem.memberStatus != .memLeft || mem.memberRole == .relay) {
                         removeMemberButton(mem)
                     } else if mem.memberRole != .relay {
