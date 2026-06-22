@@ -10,6 +10,10 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AutoAccept](#autoaccept)
+- [BadgeInfo](#badgeinfo)
+- [BadgeProof](#badgeproof)
+- [BadgeStatus](#badgestatus)
+- [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
 - [BlockingReason](#blockingreason)
 - [BrokerErrorType](#brokererrortype)
@@ -83,6 +87,7 @@ This file is generated automatically.
 - [FileProtocol](#fileprotocol)
 - [FileStatus](#filestatus)
 - [FileTransferMeta](#filetransfermeta)
+- [FileType](#filetype)
 - [Format](#format)
 - [FormattedText](#formattedtext)
 - [FullGroupPreferences](#fullgrouppreferences)
@@ -122,6 +127,7 @@ This file is generated automatically.
 - [LinkContent](#linkcontent)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
+- [LocalBadge](#localbadge)
 - [LocalProfile](#localprofile)
 - [MemberCriteria](#membercriteria)
 - [MsgChatLink](#msgchatlink)
@@ -351,6 +357,49 @@ INACTIVE:
 
 **Record type**:
 - acceptIncognito: bool
+
+
+---
+
+## BadgeInfo
+
+**Record type**:
+- badgeType: [BadgeType](#badgetype)
+- badgeExpiry: UTCTime?
+- badgeExtra: string
+
+
+---
+
+## BadgeProof
+
+**Record type**:
+- badgeKeyIdx: int
+- presHeader: string
+- proof: string
+- badgeInfo: [BadgeInfo](#badgeinfo)
+
+
+---
+
+## BadgeStatus
+
+**Enum type**:
+- "active"
+- "expired"
+- "expiredOld"
+- "failed"
+- "unknownKey"
+
+
+---
+
+## BadgeType
+
+**Enum type**:
+- "supporter"
+- "legend"
+- "investor"
 
 
 ---
@@ -1763,6 +1812,7 @@ ContactViaAddress:
 - profile: [Profile](#profile)
 - message: [MsgContent](#msgcontent)?
 - business: bool
+- localBadge: [LocalBadge](#localbadge)?
 
 
 ---
@@ -2053,6 +2103,15 @@ NO_FILE:
 
 ---
 
+## FileType
+
+**Enum type**:
+- "normal"
+- "roster"
+
+
+---
+
 ## Format
 
 **Discriminated union type**:
@@ -2267,6 +2326,7 @@ MemberSupport:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
+- rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?
@@ -2671,6 +2731,15 @@ Unknown:
 
 ---
 
+## LocalBadge
+
+**Record type**:
+- badge: [BadgeInfo](#badgeinfo)
+- status: [BadgeStatus](#badgestatus)
+
+
+---
+
 ## LocalProfile
 
 **Record type**:
@@ -2682,6 +2751,7 @@ Unknown:
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
+- localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
 
 
@@ -3027,6 +3097,7 @@ count=<count>
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
+- badge: [BadgeProof](#badgeproof)?
 
 
 ---
@@ -3257,6 +3328,7 @@ Cancelled:
 - xftpRcvFile: [XFTPRcvFile](#xftprcvfile)?
 - fileInvitation: [FileInvitation](#fileinvitation)
 - fileStatus: [RcvFileStatus](#rcvfilestatus)
+- fileType: [FileType](#filetype)
 - rcvFileInline: [InlineFileMode](#inlinefilemode)?
 - senderDisplayName: string
 - chunkSize: int64
@@ -3359,7 +3431,7 @@ ParseError:
 ## RelayCapabilities
 
 **Record type**:
-- baseWebUrl: string?
+- webDomain: string?
 
 
 ---
@@ -3381,6 +3453,7 @@ ParseError:
 - "new"
 - "invited"
 - "accepted"
+- "acknowledgedRoster"
 - "active"
 - "inactive"
 - "rejected"
@@ -4212,7 +4285,7 @@ Handshake:
 - cReqChatVRange: [VersionRange](#versionrange)
 - localDisplayName: string
 - profileId: int64
-- profile: [Profile](#profile)
+- profile: [LocalProfile](#localprofile)
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - xContactId: string?

@@ -146,9 +146,10 @@ fun ComposeContextProfilePickerView(
     ) {
       ProfileImage(size = USER_ROW_AVATAR_SIZE, image = user.image)
       TextIconSpaced(false)
-      Text(
+      NameWithBadge(
         user.chatViewName,
-        modifier = Modifier.align(Alignment.CenterVertically),
+        user.profile.localBadge,
+        Modifier.align(Alignment.CenterVertically),
         fontWeight = if (selectedUser.value.userId == user.userId && !incognitoDefault) FontWeight.Medium else FontWeight.Normal
       )
 

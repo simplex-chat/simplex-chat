@@ -2289,7 +2289,7 @@ object ChatController {
     return when {
       r is API.Result && r.res is CR.GroupUpdated -> r.res.toGroup
       r is API.Error -> {
-        AlertManager.shared.showAlertMsg(generalGetString(errorTitle), "$r.err")
+        AlertManager.shared.showAlertMsg(generalGetString(errorTitle), "${r.err.string}")
         null
       }
       else -> {

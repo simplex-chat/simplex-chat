@@ -321,7 +321,11 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
               stream.copyTo(output)
             }
             val newFile = File(file.parentFile, asset.name)
-            file.renameTo(newFile)
+            // Moving instead of renameTo: a bare rename can silently fail (returns false, ignored),
+            // and the enclosing createTmpFileAndDelete then deletes the only copy in its finally block,
+            // leaving the user with an empty download dir. Files.move performs the same in-place rename
+            // when possible, falls back to copy when it can't, and throws (handled below) on real failure.
+            Files.move(file.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
 
             AlertManager.shared.showAlertDialogButtonsColumn(
               generalGetString(MR.strings.app_check_for_updates_download_completed_title),

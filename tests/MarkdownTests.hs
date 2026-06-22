@@ -25,6 +25,7 @@ markdownTests = do
   textColor
   textWithUri
   textWithHyperlink
+  obfuscatedSimplexLinks
   textWithEmail
   textWithPhone
   textWithMentions
@@ -283,6 +284,24 @@ textWithHyperlink = describe "text with HyperLink without link text" do
   it "ignored as markdown" do
     "[click here](example.com)" <==> "[click here](example.com)"
     "[click here](https://example.com )" <==> "[click here](https://example.com )"
+
+obfuscatedSimplexLinks :: Spec
+obfuscatedSimplexLinks = describe "SimpleX links obfuscated with whitespace" do
+  let addr = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
+      inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
+  let spaced s = T.replace "://" ":// " s -- insert a space right after the scheme
+  it "detects links split with spaces or newlines" do
+    hasObfuscatedSimplexLink addr `shouldBe` True
+    hasObfuscatedSimplexLink (spaced addr) `shouldBe` True
+    hasObfuscatedSimplexLink (T.intercalate "\n" $ T.chunksOf 8 addr) `shouldBe` True
+    hasObfuscatedSimplexLink ("connect with me: " <> spaced addr) `shouldBe` True
+    hasObfuscatedSimplexLink (T.intercalate " " $ T.chunksOf 8 $ "https://simplex.chat" <> inv) `shouldBe` True
+  it "detects a split link followed by other text" do
+    hasObfuscatedSimplexLink (spaced addr <> "\nplease connect") `shouldBe` True
+  it "ignores text without a SimpleX link" do
+    hasObfuscatedSimplexLink "" `shouldBe` False
+    hasObfuscatedSimplexLink "hello there, this is a normal message" `shouldBe` False
+    hasObfuscatedSimplexLink "see https://example.com/page?ref=123 for details" `shouldBe` False
 
 email :: Text -> Markdown
 email = Markdown $ Just Email

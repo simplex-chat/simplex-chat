@@ -13,6 +13,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -173,6 +175,9 @@ fun ModalData.GroupChatInfoView(
       manageGroupLink = {
           ModalManager.end.showModal(cardScreen = true) { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo) }
       },
+      manageWebPage = {
+          ModalManager.end.showCustomModal { close -> ChannelWebPageView(rhId, groupInfo, chatModel, close) }
+      },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
     )
@@ -197,7 +202,8 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
     }
   AlertManager.shared.showAlertDialog(
     title = generalGetString(titleId),
-    text = generalGetString(messageId),
+    text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}",
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withBGApi {
@@ -231,7 +237,8 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
     MR.strings.you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved
   AlertManager.shared.showAlertDialog(
     title = generalGetString(titleId),
-    text = generalGetString(messageId),
+    text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}",
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
       withLongRunningApi(60_000) {
@@ -502,6 +509,7 @@ fun ModalData.GroupChatInfoLayout(
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
+  manageWebPage: () -> Unit,
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit,
   deletingItems: State<Boolean>
@@ -792,6 +800,13 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
 
+      if (groupInfo.useRelays && groupInfo.isOwner) {
+        SectionDividerSpaced()
+        SectionView(title = stringResource(MR.strings.advanced_options)) {
+          ChannelWebPageButton(groupInfo, manageWebPage)
+        }
+      }
+
       if (developerTools) {
         SectionDividerSpaced()
         SectionView(title = stringResource(MR.strings.section_title_for_console)) {
@@ -930,6 +945,18 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
+    if (webPage != null) {
+      val uriHandler = LocalUriHandler.current
+      Text(
+        webPage,
+        style = MaterialTheme.typography.body2,
+        color = MaterialTheme.colors.primary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.clickable { uriHandler.openUriCatching(webPage) }
+      )
+    }
     if (groupInfo.useRelays) {
       val count = groupInfo.groupSummary.publicMemberCount
       if (count != null && count > 0) {
@@ -1072,8 +1099,10 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
           if (member.verified) {
             MemberVerifiedShield()
           }
-          Text(
-            if (showlocalAliasAndFullName) member.localAliasAndFullName else member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+          NameWithBadge(
+            if (showlocalAliasAndFullName) member.localAliasAndFullName else member.chatViewName,
+            member.nameBadge,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
         }
@@ -1186,6 +1215,16 @@ private fun ChannelLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_link),
     stringResource(MR.strings.channel_link),
+    onClick,
+    iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
+private fun ChannelWebPageButton(groupInfo: GroupInfo, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_travel_explore),
+    stringResource(if (groupInfo.isChannel) MR.strings.channel_webpage else MR.strings.group_webpage),
     onClick,
     iconColor = MaterialTheme.colors.secondary
   )
@@ -1395,6 +1434,7 @@ fun PreviewGroupChatInfoLayout() {
       clearChat = {},
       leaveGroup = {},
       manageGroupLink = {},
+      manageWebPage = {},
       onSearchClicked = {},
       deletingItems = remember { mutableStateOf(true) }
     )

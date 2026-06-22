@@ -895,8 +895,9 @@ struct ChatView: View {
                         }
                     } else {
                         let voiceNoFrame = voiceWithoutFrame(ci)
+                        let channelReceived = !ci.chatDir.sent && cInfo.isChannel
                         let maxWidth = cInfo.chatType == .group
-                        ? voiceNoFrame
+                        ? voiceNoFrame || channelReceived
                         ? (g.size.width - 28) - 42
                         : (g.size.width - 28) * 0.84 - 42
                         : voiceNoFrame
@@ -981,8 +982,8 @@ struct ChatView: View {
             let v = VStack(spacing: 8) {
                 ChatInfoImage(chat: chat, size: alertProfileImageSize)
 
-                Text(chat.chatInfo.displayName)
-                    .font(.title3)
+                let badge = chat.chatInfo.nameBadge
+                NameWithBadge(Text(chat.chatInfo.displayName).font(.title3), badge, .title3) { if let badge { showBadgeInfoAlert(chat.chatInfo.displayName, badge) } }
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2003,7 +2004,7 @@ struct ChatView: View {
                                     Group {
                                         if #available(iOS 16.0, *) {
                                             MemberLayout(spacing: 16, msgWidth: msgWidth) {
-                                                Text(name)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2012,7 +2013,7 @@ struct ChatView: View {
                                             }
                                         } else {
                                             HStack(spacing: 16) {
-                                                Text(name)
+                                                NameWithBadge(Text(name), ci.meta.showGroupAsSender ? nil : member.nameBadge, .caption1)
                                                     .lineLimit(1)
                                                 Text(role)
                                                     .fontWeight(.semibold)
@@ -2026,7 +2027,7 @@ struct ChatView: View {
                                         alignment: chatItem.chatDir.sent ? .trailing : .leading
                                     )
                                 } else {
-                                    Text(memberNames(member, prevMember, memCount))
+                                    NameWithBadge(Text(memberNames(member, prevMember, memCount)), memCount == 1 ? member.nameBadge : nil, .caption1)
                                         .lineLimit(2)
                                 }
                             }
@@ -2311,7 +2312,7 @@ struct ChatView: View {
                     } else {
                         saveButton(file: fileSource)
                     }
-                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
+                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file, ciSenderProfile(ci, chat.chatInfo)) {
                     downloadButton(file: file)
                 }
                 if ci.meta.editable && !mc.isVoice && !live {

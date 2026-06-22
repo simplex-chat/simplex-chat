@@ -560,9 +560,11 @@ private struct ActiveProfilePicker: View {
             HStack {
                 ProfileImage(imageStr: user.image, size: 30)
                     .padding(.trailing, 2)
-                Text(user.chatViewName)
-                    .foregroundColor(theme.colors.onBackground)
-                    .lineLimit(1)
+                NameWithBadge(
+                    Text(user.chatViewName).foregroundColor(theme.colors.onBackground),
+                    user.profile.localBadge
+                )
+                .lineLimit(1)
                 Spacer()
                 if selectedProfile == user, !incognitoEnabled {
                     Image(systemName: "checkmark")
@@ -1160,6 +1162,7 @@ private func showPrepareContactAlert(
                             : "person.crop.circle.fill",
                 size: alertProfileImageSize
             ),
+        profileBadge: contactShortLinkData.localBadge,
         theme: theme,
         information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
@@ -1253,6 +1256,7 @@ private func showOpenKnownContactAlert(
                 iconName: contact.chatIconName,
                 size: alertProfileImageSize
             ),
+        profileBadge: contact.active ? contact.profile.localBadge : nil,
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:

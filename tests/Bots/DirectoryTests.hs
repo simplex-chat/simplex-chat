@@ -27,8 +27,10 @@ import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
+import Simplex.Chat.Protocol (memberSupportVoiceVersion)
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Version
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 
@@ -96,7 +98,7 @@ directoryServiceTests = do
     it "should update subscriber count periodically" testLinkCheckUpdatesCount
 
 directoryProfile :: Profile
-directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
+directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing}
 
 mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> Maybe FilePath -> DirectoryOpts
 mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
@@ -1492,7 +1494,7 @@ testVoiceCaptchaOldClient ps@TestParams {tmpPath} = do
   setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
   withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgVPrev "cath" cathProfile $ \cath -> do
+      withNewTestChatCfg ps testCfg {chatVRange = (chatVRange testCfg) {maxVersion = prevVersion memberSupportVoiceVersion}} "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         bob #> "@'SimpleX Directory' /role 1"

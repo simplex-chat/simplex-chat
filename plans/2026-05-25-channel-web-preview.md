@@ -19,7 +19,7 @@ simplex-chat CLI (--relay --web-json-dir=... --web-base-url=...)
         └── Regenerate Caddy CORS config → caddy reload
 
 Caddy (operator-configured)
-  ├── Serves JSON at <baseWebUrl>/<publicGroupId>.json
+  ├── Serves JSON at https://<webDomain>/group/<publicGroupId>.json
   └── Imports generated CORS config file
 
 Channel page (static HTML+JS, hosted by owner or on GitHub)
@@ -105,7 +105,7 @@ Extend `toPublicGroupProfile` to accept and pass through `Maybe PublicGroupAcces
 New record for relay capabilities (extensible for future fields):
 ```haskell
 data RelayCapabilities = RelayCapabilities
-  { baseWebUrl :: Maybe Text
+  { webDomain :: Maybe Text
   }
 ```
 
@@ -132,7 +132,7 @@ Encoding: `XGrpRelayCap cap -> o ["relayCap" .= cap]`
 
 Sent by relay to owner only when capabilities change (not periodic). Relay detects change by comparing current config against persisted state on startup.
 
-### 3. Store `baseWebUrl` per relay
+### 3. Store `webDomain` per relay
 
 **File:** `src/Simplex/Chat/Operators.hs` (line 278)
 
@@ -152,7 +152,7 @@ Add: `relayCap :: Maybe RelayCapabilities`
 Stored as separate columns (same pattern as `PublicGroupAccess`):
 **Migration:** `ALTER TABLE group_relays ADD COLUMN base_web_url TEXT`
 
-`relayCap` constructed from columns: `Just RelayCapabilities {baseWebUrl}` when any capability column is non-NULL, `Nothing` otherwise.
+`relayCap` constructed from columns: `Just RelayCapabilities {webDomain}` when any capability column is non-NULL, `Nothing` otherwise.
 
 **Handlers in `src/Simplex/Chat/Library/Subscriber.hs`:**
 - `XGrpRelayAcpt` (line 770): store `RelayCapabilities` in relay record on acceptance
@@ -168,7 +168,7 @@ New record bundling all web preview options:
 ```haskell
 data RelayWebOptions = RelayWebOptions
   { webJsonDir :: FilePath,       -- --web-json-dir: where to write JSON files
-    webBaseUrl :: Text,           -- --web-base-url: public URL prefix (sent in XGrpRelayAcpt)
+    webDomain :: Text,           -- --web-base-url: public URL prefix (sent in XGrpRelayAcpt)
     webCorsFile :: FilePath,      -- --web-cors-file: generated Caddy CORS config path
     webUpdateInterval :: Int      -- --web-update-interval: seconds (default 300)
   }
@@ -443,7 +443,7 @@ data class PublicGroupProfile(
 
 @Serializable
 data class RelayCapabilities(
-    val baseWebUrl: String? = null
+    val webDomain: String? = null
 )
 
 // Extend existing GroupRelay:
@@ -473,7 +473,7 @@ New nav destination opens `ChannelWebPageView`.
 - Text field: domain (`groupDomain`)
 - Toggle: allow embedding (`allowEmbeding`)
 - Toggle: show on domain's page (`domainWebPage`) - stored but inert until RSLV ships
-- Section: embed snippet (read-only, auto-generated from relay `baseWebUrl` values + `publicGroupId`)
+- Section: embed snippet (read-only, auto-generated from relay `webDomain` values + `publicGroupId`)
 - Save button -> `apiUpdateGroup` with updated `GroupProfile`
 
 ### Subscriber: Channel info page
@@ -518,12 +518,12 @@ simplex-chat --relay \
 
 ### Embed snippet (shown to owner)
 
-The "Channel web page" screen auto-generates this from the channel's relay `baseWebUrl` values and `publicGroupId`. Owner copies it into their page:
+The "Channel web page" screen auto-generates this from the channel's relay `webDomain` values and `publicGroupId`. Owner copies it into their page:
 
 ```html
 <div id="simplex-channel"
   data-channel-id="<publicGroupId>"
-  data-relays="<baseWebUrl1>,<baseWebUrl2>">
+  data-relays="<webDomain1>,<webDomain2>">
 </div>
 <script src="https://simplex.chat/channel-preview.js"></script>
 ```
@@ -565,7 +565,7 @@ Separate repo or folder. `channel-preview.js` + minimal CSS:
 - `src/Simplex/Chat/Protocol.hs` - `RelayCapabilities` record, extend `XGrpRelayAcpt`, add `XGrpRelayCap`
 - `src/Simplex/Chat/Options.hs` - `RelayWebOptions` record, `relayWebOptions :: Maybe RelayWebOptions` in `CoreChatOpts`
 - `src/Simplex/Chat/Core.hs` - start web preview thread in `runSimplexChat`
-- `src/Simplex/Chat/Operators.hs` - `baseWebUrl` in `GroupRelay`
+- `src/Simplex/Chat/Operators.hs` - `webDomain` in `GroupRelay`
 - `src/Simplex/Chat/Store/Groups.hs` - read/write `PublicGroupAccess` columns; `getWebPublishGroups`
 - `src/Simplex/Chat/Store/Shared.hs` - `toPublicGroupAccess`, extend `toPublicGroupProfile` and `GroupInfoRow`
 - `src/Simplex/Chat/Library/Subscriber.hs` - handle `RelayCapabilities` in `XGrpRelayAcpt` and `XGrpRelayCap`

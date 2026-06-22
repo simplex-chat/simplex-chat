@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -420,8 +421,7 @@ fun GroupMemberInfoLayout(
   @Composable
   fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
-    // TODO [relays] re-enable when relay management ships
-    val canRemove = member.canBeRemoved(groupInfo) && member.memberRole != GroupMemberRole.Relay
+    val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
       SectionDividerSpaced()
       SectionView {
@@ -735,19 +735,32 @@ fun GroupMemberInfoHeader(member: GroupMember) {
   ) {
     MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val displayName = member.displayName.trim() // alias if set
+    val badge = member.nameBadge
     val text = buildAnnotatedString {
       if (member.verified) {
         appendInlineContent(id = "shieldIcon")
       }
       append(displayName)
-    }
-    val inlineContent: Map<String, InlineTextContent> = mapOf(
-      "shieldIcon" to InlineTextContent(
-        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
-      ) {
-        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      if (badge != null) {
+        append(" ")
+        appendInlineContent(id = "nameBadge")
       }
-    )
+    }
+    val nameFontSize = MaterialTheme.typography.h1.fontSize
+    val uriHandler = LocalUriHandler.current
+    val inlineContent: Map<String, InlineTextContent> = buildMap {
+      put(
+        "shieldIcon",
+        InlineTextContent(
+          Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+        ) {
+          Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+        }
+      )
+      if (badge != null) {
+        put("nameBadge", nameBadgeInline(badge, nameFontSize) { showBadgeInfoAlert(displayName, badge, uriHandler) })
+      }
+    }
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = fun(name: String) {
       clipboard.setText(AnnotatedString(name))

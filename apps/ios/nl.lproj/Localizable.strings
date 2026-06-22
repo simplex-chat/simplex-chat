@@ -1382,7 +1382,7 @@ server test step */
 /* blocking reason */
 "Content violates conditions of use" = "Inhoud schendt de gebruiksvoorwaarden";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Continue" = "Doorgaan";
 
 /* No comment provided by engineer. */
@@ -1773,7 +1773,7 @@ alert button */
 "Developer options" = "Ontwikkelaars opties";
 
 /* No comment provided by engineer. */
-"Developer tools" = "Ontwikkel gereedschap";
+"Developer" = "Ontwikkel gereedschap";
 
 /* No comment provided by engineer. */
 "Device" = "Apparaat";
@@ -3929,7 +3929,7 @@ alert button */
 "Previously connected servers" = "Eerder verbonden servers";
 
 /* No comment provided by engineer. */
-"Privacy & security" = "Privacy en beveiliging";
+"Your privacy" = "Privacy en beveiliging";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Privacy voor uw klanten.";
@@ -5777,7 +5777,7 @@ server test failure */
 "You can enable later via Settings" = "U kunt later inschakelen via Instellingen";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.";
+"You can enable them later via app Your privacy settings." = "U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Je kunt het nog een keer proberen.";
