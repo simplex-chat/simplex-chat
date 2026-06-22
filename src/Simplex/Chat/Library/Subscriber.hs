@@ -3299,11 +3299,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | otherwise = do
               withStore' applyMember
               (gInfo'', m') <-
-                if createItems
+                if createItem
                   then do
                     (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
                     (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
                     groupMsgToView cInfo ci
+                    pure (gInfo'', m')
                   else pure (gInfo', m)
               toView CEvtMemberRole {user, groupInfo = gInfo'', byMember = m', member = member {memberRole = memRole}, fromRole, toRole = memRole, msgSigned}
               pure $ memberEventDeliveryScope member
