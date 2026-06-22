@@ -581,7 +581,7 @@ struct GroupChatInfoView: View {
             } else {
                 let role = member.memberRole
                 if [.owner, .admin, .moderator, .observer].contains(role) {
-                    Text(member.memberRole.text)
+                    Text(member.memberRole.text(isChannel: groupInfo.isChannel))
                         .foregroundColor(theme.colors.secondary)
                 }
             }

@@ -66,7 +66,7 @@ struct ChannelMembersView: View {
             }
             Spacer()
             if showRole {
-                Text(member.memberRole.text)
+                Text(member.memberRole.text(isChannel: groupInfo.isChannel))
                     .foregroundColor(theme.colors.secondary)
             }
         }

@@ -976,9 +976,9 @@ fun updateMembersRoleDialog(
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
     text = if (groupInfo.businessChat == null)
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text(isChannel = groupInfo.isChannel))
     else
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text),
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text(isChannel = groupInfo.isChannel)),
     confirmText = generalGetString(MR.strings.change_verb),
     onConfirm = onConfirm,
   )

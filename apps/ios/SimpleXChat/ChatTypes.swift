@@ -3076,8 +3076,6 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .moderator, .admin, .owner]
 
-    public var text: String { text(isChannel: false) }
-
     public func text(isChannel: Bool) -> String {
         switch self {
         case .relay: return NSLocalizedString("relay", comment: "member role")

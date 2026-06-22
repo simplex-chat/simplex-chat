@@ -2701,8 +2701,6 @@ enum class GroupMemberRole(val memberRole: String) {
     val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Moderator, Admin, Owner)
   }
 
-  val text: String get() = text(isChannel = false)
-
   fun text(isChannel: Boolean): String = when (this) {
     Relay -> generalGetString(MR.strings.group_member_role_relay)
     Observer -> generalGetString(if (isChannel) MR.strings.group_member_role_observer_channel else MR.strings.group_member_role_observer)
