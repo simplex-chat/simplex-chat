@@ -101,11 +101,11 @@ private extension QRCodeType {
         case let .connectionLink(_, linkType):
             return linkType == .relay ? nil : NSLocalizedString("Open New chat, then scan or paste the link.", comment: "qr where to scan")
         case .serverAddress:
-            return NSLocalizedString("Open Settings, Network & servers, Your servers, then Scan server QR code.", comment: "qr where to scan")
+            return NSLocalizedString("Tap your profile image, then Settings, Network & servers, Your servers, then Scan server QR code.", comment: "qr where to scan")
         case .migrationLink:
             return NSLocalizedString("On the new device, when first setting up the app, choose Migrate from another device.", comment: "qr where to scan")
         case .desktopAddress:
-            return NSLocalizedString("Open Settings, Use from desktop, then Scan QR code from desktop.", comment: "qr where to scan")
+            return NSLocalizedString("Tap your profile image, then Use from desktop, then Scan QR code from desktop.", comment: "qr where to scan")
         case .securityCode:
             return NSLocalizedString("Open the chat, tap the contact's name, then Verify security code.", comment: "qr where to scan")
         case .unknown:
