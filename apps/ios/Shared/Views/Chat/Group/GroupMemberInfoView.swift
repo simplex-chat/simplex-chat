@@ -178,15 +178,15 @@ struct GroupMemberInfoView: View {
                         let label: LocalizedStringKey = groupInfo.useRelays ? "Channel" : groupInfo.businessChat == nil ? "Group" : "Chat"
                         infoRow(label, groupInfo.displayName)
 
-                        if !groupInfo.useRelays, let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
                                 ForEach(roles) { role in
-                                    Text(role.text)
+                                    Text(role.text(isChannel: groupInfo.isChannel))
                                 }
                             }
                             .frame(height: 36)
                         } else {
-                            infoRow("Role", member.memberRole.text)
+                            infoRow("Role", member.memberRole.text(isChannel: groupInfo.isChannel))
                         }
                         if let link = member.relayLink {
                             infoRow("Relay link", String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(link)))
@@ -522,25 +522,14 @@ struct GroupMemberInfoView: View {
             // show alias if set, alias cannot be edited in this view
             let displayName = mem.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = mem.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
-            if mem.verified {
-                (
-                    Text(Image(systemName: "checkmark.shield"))
-                        .foregroundColor(theme.colors.secondary)
-                        .font(.title2)
-                    + textSpace
-                    + Text(displayName)
-                        .font(.largeTitle)
-                )
+            let badge = mem.nameBadge
+            let nameText = mem.verified
+                ? Text(Image(systemName: "checkmark.shield")).foregroundColor(theme.colors.secondary).font(.title2) + textSpace + Text(displayName).font(.largeTitle)
+                : Text(displayName).font(.largeTitle)
+            NameWithBadge(nameText, badge, .largeTitle) { if let badge { showBadgeInfoAlert(displayName, badge) } }
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.bottom, 2)
-            } else {
-                Text(displayName)
-                    .font(.largeTitle)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .padding(.bottom, 2)
-            }
             if fullName != "" && fullName != displayName && fullName != mem.memberProfile.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
                 Text(mem.fullName)
                     .font(.title2)
@@ -644,8 +633,7 @@ struct GroupMemberInfoView: View {
                         blockForAllButton(mem)
                     }
                 }
-                // TODO [relays] re-enable when relay management ships
-                if canRemove && mem.memberRole != .relay {
+                if canRemove {
                     if mem.memberStatus != .memRemoved && (mem.memberStatus != .memLeft || mem.memberRole == .relay) {
                         removeMemberButton(mem)
                     } else if mem.memberRole != .relay {
@@ -739,15 +727,17 @@ struct GroupMemberInfoView: View {
 
     private func changeMemberRoleAlert(_ mem: GroupMember) -> Alert {
         Alert(
-            title: Text("Change member role?"),
+            title: Text("Change role?"),
             message: (
                 mem.memberCurrent
                 ? (
-                    groupInfo.businessChat == nil
-                    ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.")
-                    : Text("Member role will be changed to \"\(newRole.text)\". All chat members will be notified.")
+                    groupInfo.isChannel
+                    ? Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All subscribers will be notified.")
+                    : groupInfo.businessChat == nil
+                    ? Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All group members will be notified.")
+                    : Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". All chat members will be notified.")
                 )
-                : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation.")
+                : Text("Role will be changed to \"\(newRole.text(isChannel: groupInfo.isChannel))\". The member will receive a new invitation.")
             ),
             primaryButton: .default(Text("Change")) {
                 Task {

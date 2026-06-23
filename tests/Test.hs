@@ -11,6 +11,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
+import BadgeTests
 import JSONTests
 import MarkdownTests
 import MemberRelationsTests
@@ -61,6 +62,7 @@ main = do
 #endif
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
+      describe "Supporter badges" badgeTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests

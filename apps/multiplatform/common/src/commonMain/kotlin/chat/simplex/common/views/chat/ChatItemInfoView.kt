@@ -170,9 +170,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   @Composable
   fun ForwardedFromSender(forwardedFromItem: AChatItem) {
     @Composable
-    fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground) {
-      Text(
+    fun ItemText(text: String, fontStyle: FontStyle = FontStyle.Normal, color: Color = MaterialTheme.colors.onBackground, badge: LocalBadge? = null) {
+      NameWithBadge(
         text,
+        badge,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.body1,
@@ -191,13 +192,13 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         if (forwardedFromItem.chatItem.chatDir.sent) {
           ItemText(text = stringResource(MR.strings.sender_you_pronoun), fontStyle = FontStyle.Italic)
           Spacer(Modifier.height(7.dp))
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary, badge = forwardedFromItem.chatInfo.nameBadge)
         } else if (forwardedFromItem.chatItem.chatDir is CIDirection.GroupRcv) {
-          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName)
+          ItemText(text = forwardedFromItem.chatItem.chatDir.groupMember.chatViewName, badge = forwardedFromItem.chatItem.chatDir.groupMember.nameBadge)
           Spacer(Modifier.height(7.dp))
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.secondary, badge = forwardedFromItem.chatInfo.nameBadge)
         } else {
-          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground)
+          ItemText(forwardedFromItem.chatInfo.chatViewName, color = MaterialTheme.colors.onBackground, badge = forwardedFromItem.chatInfo.nameBadge)
         }
       }
     }
@@ -344,9 +345,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     ) {
       MemberProfileImage(size = 36.dp, member)
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-      Text(
+      NameWithBadge(
         member.chatViewName,
-        modifier = Modifier.weight(10f, fill = true),
+        member.nameBadge,
+        Modifier.weight(10f, fill = true),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )

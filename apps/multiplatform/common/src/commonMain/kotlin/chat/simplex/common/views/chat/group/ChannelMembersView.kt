@@ -46,7 +46,7 @@ fun ChannelMembersView(
       val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
       SectionView(title = subscriberCountStr(subscriberCount)) {
         SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-          ChannelMemberRow(groupInfo.membership, user = true, showRole = true)
+          ChannelMemberRow(groupInfo.membership, user = true, showRole = true, isChannel = groupInfo.isChannel)
         }
         members.forEachIndexed { index, member ->
           Divider()
@@ -55,7 +55,7 @@ fun ChannelMembersView(
             minHeight = 54.dp,
             padding = PaddingValues(horizontal = DEFAULT_PADDING)
           ) {
-            ChannelMemberRow(member, user = false, showRole = member.memberRole >= GroupMemberRole.Owner)
+            ChannelMemberRow(member, user = false, showRole = member.memberRole >= GroupMemberRole.Owner, isChannel = groupInfo.isChannel)
           }
         }
       }
@@ -71,7 +71,7 @@ fun ChannelMembersView(
             minHeight = 54.dp,
             padding = PaddingValues(horizontal = DEFAULT_PADDING)
           ) {
-            ChannelMemberRow(member, user = false, showRole = false)
+            ChannelMemberRow(member, user = false, showRole = false, isChannel = groupInfo.isChannel)
           }
         }
       }
@@ -81,7 +81,7 @@ fun ChannelMembersView(
 }
 
 @Composable
-private fun ChannelMemberRow(member: GroupMember, user: Boolean, showRole: Boolean) {
+private fun ChannelMemberRow(member: GroupMember, user: Boolean, showRole: Boolean, isChannel: Boolean) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
@@ -94,8 +94,9 @@ private fun ChannelMemberRow(member: GroupMember, user: Boolean, showRole: Boole
         if (member.verified) {
           MemberVerifiedShield()
         }
-        Text(
+        NameWithBadge(
           member.chatViewName,
+          member.nameBadge,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           color = if (member.memberIncognito) Indigo else Color.Unspecified
@@ -111,7 +112,7 @@ private fun ChannelMemberRow(member: GroupMember, user: Boolean, showRole: Boole
     }
     if (showRole) {
       Text(
-        member.memberRole.text,
+        member.memberRole.text(isChannel = isChannel),
         color = MaterialTheme.colors.secondary
       )
     }

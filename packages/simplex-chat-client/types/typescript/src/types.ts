@@ -193,6 +193,33 @@ export interface AutoAccept {
   acceptIncognito: boolean
 }
 
+export interface BadgeInfo {
+  badgeType: BadgeType
+  badgeExpiry?: string // ISO-8601 timestamp
+  badgeExtra: string
+}
+
+export interface BadgeProof {
+  badgeKeyIdx: number // int
+  presHeader: string
+  proof: string
+  badgeInfo: BadgeInfo
+}
+
+export enum BadgeStatus {
+  Active = "active",
+  Expired = "expired",
+  ExpiredOld = "expiredOld",
+  Failed = "failed",
+  UnknownKey = "unknownKey",
+}
+
+export enum BadgeType {
+  Supporter = "supporter",
+  Legend = "legend",
+  Investor = "investor",
+}
+
 export interface BlockingInfo {
   reason: BlockingReason
   notice?: ClientNotice
@@ -2083,6 +2110,7 @@ export interface ContactShortLinkData {
   profile: Profile
   message?: MsgContent
   business: boolean
+  localBadge?: LocalBadge
 }
 
 export enum ContactStatus {
@@ -2393,6 +2421,11 @@ export interface FileTransferMeta {
   cancelled: boolean
 }
 
+export enum FileType {
+  Normal = "normal",
+  Roster = "roster",
+}
+
 export type Format = 
   | Format.Bold
   | Format.Italic
@@ -2623,6 +2656,7 @@ export interface GroupInfo {
   uiThemes?: UIThemeEntityOverrides
   customData?: object
   groupSummary: GroupSummary
+  rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
@@ -2989,6 +3023,11 @@ export interface LinkPreview {
   content?: LinkContent
 }
 
+export interface LocalBadge {
+  badge: BadgeInfo
+  status: BadgeStatus
+}
+
 export interface LocalProfile {
   profileId: number // int64
   displayName: string
@@ -2999,6 +3038,7 @@ export interface LocalProfile {
   simplexName?: SimplexNameInfo
   preferences?: Preferences
   peerType?: ChatPeerType
+  localBadge?: LocalBadge
   localAlias: string
 }
 
@@ -3382,6 +3422,7 @@ export interface Profile {
   simplexName?: SimplexNameInfo
   preferences?: Preferences
   peerType?: ChatPeerType
+  badge?: BadgeProof
 }
 
 export type ProxyClientError = 
@@ -3688,6 +3729,7 @@ export interface RcvFileTransfer {
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
   fileStatus: RcvFileStatus
+  fileType: FileType
   rcvFileInline?: InlineFileMode
   senderDisplayName: string
   chunkSize: number // int64
@@ -3859,6 +3901,7 @@ export enum RelayStatus {
   New = "new",
   Invited = "invited",
   Accepted = "accepted",
+  AcknowledgedRoster = "acknowledgedRoster",
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",
@@ -4966,7 +5009,7 @@ export interface UserContactRequest {
   cReqChatVRange: VersionRange
   localDisplayName: string
   profileId: number // int64
-  profile: Profile
+  profile: LocalProfile
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
   xContactId?: string

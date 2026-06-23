@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -420,8 +421,7 @@ fun GroupMemberInfoLayout(
   @Composable
   fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
-    // TODO [relays] re-enable when relay management ships
-    val canRemove = member.canBeRemoved(groupInfo) && member.memberRole != GroupMemberRole.Relay
+    val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
       SectionDividerSpaced()
       SectionView {
@@ -596,15 +596,11 @@ fun GroupMemberInfoLayout(
         else if (groupInfo.businessChat == null) MR.strings.info_row_group
         else MR.strings.info_row_chat
       InfoRow(stringResource(titleId), groupInfo.displayName)
-      if (!groupInfo.useRelays) {
-        val roles = remember { member.canChangeRoleTo(groupInfo) }
-        if (roles != null) {
-          RoleSelectionRow(roles, newRole, onRoleSelected)
-        } else {
-          InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
-        }
+      val roles = remember { member.canChangeRoleTo(groupInfo) }
+      if (roles != null) {
+        RoleSelectionRow(roles, newRole, onRoleSelected, groupInfo.isChannel)
       } else {
-        InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
+        InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text(isChannel = groupInfo.isChannel))
       }
       val relayLink = member.relayLink
       if (relayLink != null) {
@@ -735,19 +731,32 @@ fun GroupMemberInfoHeader(member: GroupMember) {
   ) {
     MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val displayName = member.displayName.trim() // alias if set
+    val badge = member.nameBadge
     val text = buildAnnotatedString {
       if (member.verified) {
         appendInlineContent(id = "shieldIcon")
       }
       append(displayName)
-    }
-    val inlineContent: Map<String, InlineTextContent> = mapOf(
-      "shieldIcon" to InlineTextContent(
-        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
-      ) {
-        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      if (badge != null) {
+        append(" ")
+        appendInlineContent(id = "nameBadge")
       }
-    )
+    }
+    val nameFontSize = MaterialTheme.typography.h1.fontSize
+    val uriHandler = LocalUriHandler.current
+    val inlineContent: Map<String, InlineTextContent> = buildMap {
+      put(
+        "shieldIcon",
+        InlineTextContent(
+          Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+        ) {
+          Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+        }
+      )
+      if (badge != null) {
+        put("nameBadge", nameBadgeInline(badge, nameFontSize) { showBadgeInfoAlert(displayName, badge, uriHandler) })
+      }
+    }
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = fun(name: String) {
       clipboard.setText(AnnotatedString(name))
@@ -875,14 +884,15 @@ fun ConnectViaAddressButton(onClick: () -> Unit) {
 private fun RoleSelectionRow(
   roles: List<GroupMemberRole>,
   selectedRole: MutableState<GroupMemberRole>,
-  onSelected: (GroupMemberRole) -> Unit
+  onSelected: (GroupMemberRole) -> Unit,
+  isChannel: Boolean
 ) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = remember { roles.map { it to it.text } }
+    val values = remember { roles.map { it to it.text(isChannel = isChannel) } }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.change_role),
       values,
@@ -943,12 +953,14 @@ fun updateMemberRoleDialog(
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
     text = if (memberCurrent) {
-      if (groupInfo.businessChat == null)
-        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+      if (groupInfo.isChannel)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_channel), newRole.text(isChannel = groupInfo.isChannel))
+      else if (groupInfo.businessChat == null)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text(isChannel = groupInfo.isChannel))
       else
-        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text(isChannel = groupInfo.isChannel))
     } else
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text),
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text(isChannel = groupInfo.isChannel)),
     confirmText = generalGetString(MR.strings.change_verb),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
@@ -964,9 +976,9 @@ fun updateMembersRoleDialog(
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
     text = if (groupInfo.businessChat == null)
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text(isChannel = groupInfo.isChannel))
     else
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text),
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text(isChannel = groupInfo.isChannel)),
     confirmText = generalGetString(MR.strings.change_verb),
     onConfirm = onConfirm,
   )

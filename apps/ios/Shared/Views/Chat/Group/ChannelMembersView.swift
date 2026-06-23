@@ -56,7 +56,7 @@ struct ChannelMembersView: View {
             MemberProfileImage(member, size: 38)
                 .padding(.trailing, 2)
             VStack(alignment: .leading) {
-                displayName
+                NameWithBadge(displayName, member.nameBadge)
                     .lineLimit(1)
                 if user {
                     Text("you")
@@ -66,7 +66,7 @@ struct ChannelMembersView: View {
             }
             Spacer()
             if showRole {
-                Text(member.memberRole.text)
+                Text(member.memberRole.text(isChannel: groupInfo.isChannel))
                     .foregroundColor(theme.colors.secondary)
             }
         }

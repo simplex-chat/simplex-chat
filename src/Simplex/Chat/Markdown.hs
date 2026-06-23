@@ -18,6 +18,7 @@ import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Attoparsec.ByteString.Char8 as AB
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.ByteString.Char8 (ByteString)
@@ -190,6 +191,16 @@ isLink = \case
 
 hasLinks :: MarkdownList -> Bool
 hasLinks = any $ \(FormattedText f _) -> maybe False isLink f
+
+hasObfuscatedSimplexLink :: Text -> Bool
+hasObfuscatedSimplexLink t =
+  fromRight False $ AB.parseOnly findLinkP $ encodeUtf8 $ T.filter (not . isSpace) t
+  where
+    findLinkP = do
+      AB.skipWhile (\c -> c /= 's' && c /= 'h') -- links start only with "simplex:" or "https://"
+      (True <$ (strP :: AB.Parser AConnectionLink))
+        <|> (AB.anyChar *> findLinkP)
+        <|> pure False
 
 markdownP :: Parser Markdown
 markdownP = mconcat <$> A.many' fragmentP

@@ -24,11 +24,12 @@ import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), WebPreviewConfig (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options
@@ -153,6 +154,7 @@ testCoreOpts =
       tbqSize = 16,
       deviceName = Nothing,
       chatRelay = False,
+      webPreviewConfig = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
@@ -161,6 +163,9 @@ testCoreOpts =
 
 relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
+
+relayWebTestOpts :: Text -> FilePath -> Maybe FilePath -> ChatOpts
+relayWebTestOpts webDomain webDir webCorsFile = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {webDomain, webJsonDir = webDir, webCorsFile, webUpdateInterval = 300, webPreviewItemCount = 50}}}
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
@@ -212,7 +217,7 @@ testCfg =
       shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
       tbqSize = 16,
-      channelSubscriberRole = GRMember, -- starting role is GRMember to test members sending messages
+      channelSubscriberRole = GRObserver,
       confirmMigrations = MCYesUp
     }
 
@@ -582,7 +587,6 @@ smpServerCfg =
       allowSMPProxy = True,
       serverClientConcurrency = 16,
       namesConfig = Nothing,
-      namesResolverCall_ = Nothing,
       information = Nothing,
       startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}
     }

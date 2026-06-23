@@ -420,7 +420,9 @@ struct SettingsView: View {
                     Button("Send questions and ideas") {
                         dismiss()
                         DispatchQueue.main.async {
-                            UIApplication.shared.open(simplexTeamURL)
+                            // simplexTeamURL targets this same app; route to the in-app connect flow
+                            // (UIApplication.shared.open is dropped for self-owned URLs in the foreground)
+                            ChatModel.shared.appOpenUrl = simplexTeamURL
                         }
                     }
                 }
@@ -535,12 +537,14 @@ func settingsRow<Content : View>(_ icon: String, color: Color/* = .secondary*/, 
 struct ProfilePreview: View {
     var profileOf: NamedChat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
+    var badge: LocalBadge? = nil
 
     var body: some View {
         HStack {
             ProfileImage(imageStr: profileOf.image, size: 44, color: color)
                 .padding(.trailing, 6)
-            profileName(profileOf).lineLimit(1)
+            NameWithBadge(profileName(profileOf), badge, .title2)
+                .lineLimit(1)
         }
     }
 }
