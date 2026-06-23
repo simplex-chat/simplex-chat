@@ -3411,8 +3411,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       Just k
         | k /= pubKey -> pure (Left (memberId' m))
         | memberRole' m == role -> pure (Right Nothing)
-        | otherwise -> updateGroupMemberRole db user m role $> Right (Just (m {memberRole = role}, memberRole' m))
-      Nothing -> setGroupMemberKeyRole db m pubKey role $> Right (Just (m {memberRole = role}, memberRole' m))
+        | otherwise -> updateGroupMemberRole db user m role $> Right (Just ((m :: GroupMember) {memberRole = role}, memberRole' m))
+      Nothing -> setGroupMemberKeyRole db m pubKey role $> Right (Just ((m :: GroupMember) {memberRole = role}, memberRole' m))
 
     -- TOFU apply: pin each member's key on first use, then update roles.
     processRosterEntries :: DB.Connection -> GroupInfo -> GroupMemberRole -> [RosterMember] -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole, Bool)])
