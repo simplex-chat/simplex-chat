@@ -1068,24 +1068,26 @@ describe("Team Member Lifecycle", () => {
     expect(chat.roleChanges.some(r => r.groupId === CUSTOMER_GROUP_ID && r.memberIds.includes(5000 + TEAM_MEMBER_1_ID) && r.role === GroupMemberRole.Owner)).toBe(true)
   })
 
-  test("/team invites team member → apiSetMembersRole(Owner) called at invite time", async () => {
+  test("/team invites team member → added directly as Owner, single invitation", async () => {
     await bot.onNewChatItems(customerMessage("/team"))
-    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
-    expect(chat.roleChanges.some(r =>
-      r.groupId === CUSTOMER_GROUP_ID
-      && r.memberIds.includes(5000 + TEAM_MEMBER_1_ID)
-      && r.role === GroupMemberRole.Owner
+    expect(chat.added.some(a =>
+      a.groupId === CUSTOMER_GROUP_ID
+      && a.contactId === TEAM_MEMBER_1_ID
+      && a.role === GroupMemberRole.Owner
     )).toBe(true)
+    // No role change — that would send a second invitation.
+    expect(chat.roleChanges.length).toBe(0)
   })
 
-  test("/join invites team member → apiSetMembersRole(Owner) called at invite time", async () => {
+  test("/join invites team member → added directly as Owner, single invitation", async () => {
     await bot.onNewChatItems(teamGroupMessage(`/join ${CUSTOMER_GROUP_ID}`))
-    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
-    expect(chat.roleChanges.some(r =>
-      r.groupId === CUSTOMER_GROUP_ID
-      && r.memberIds.includes(5000 + TEAM_MEMBER_1_ID)
-      && r.role === GroupMemberRole.Owner
+    expect(chat.added.some(a =>
+      a.groupId === CUSTOMER_GROUP_ID
+      && a.contactId === TEAM_MEMBER_1_ID
+      && a.role === GroupMemberRole.Owner
     )).toBe(true)
+    // No role change — that would send a second invitation.
+    expect(chat.roleChanges.length).toBe(0)
   })
 
   test("/team when team member already in group (any non-terminal status) → apiSetMembersRole NOT re-called", async () => {
