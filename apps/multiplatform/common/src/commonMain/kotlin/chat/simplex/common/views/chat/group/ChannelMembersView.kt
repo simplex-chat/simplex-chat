@@ -55,7 +55,7 @@ fun ChannelMembersView(
             minHeight = 54.dp,
             padding = PaddingValues(horizontal = DEFAULT_PADDING)
           ) {
-            ChannelMemberRow(member, user = false, showRole = member.memberRole >= GroupMemberRole.Owner, isChannel = groupInfo.isChannel)
+            ChannelMemberRow(member, user = false, showRole = member.memberRole >= GroupMemberRole.Member, isChannel = groupInfo.isChannel)
           }
         }
       }
