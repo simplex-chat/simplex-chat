@@ -27,7 +27,7 @@ struct ChannelMembersView: View {
                 Section(header: Text(subscriberCountStr(subscriberCount)).foregroundColor(theme.colors.secondary)) {
                     memberRow(GMember(groupInfo.membership), user: true, showRole: true)
                     ForEach(members) { member in
-                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .owner)
+                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .member)
                     }
                 }
             }
