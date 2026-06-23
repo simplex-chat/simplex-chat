@@ -12,6 +12,7 @@
 
 module Server where
 
+import Control.Concurrent.MVar (newMVar, withMVar)
 import Control.Monad
 import Control.Monad.Reader
 import Data.Aeson (FromJSON, ToJSON (..))
@@ -68,8 +69,19 @@ instance ToJSON (CSRBody r) => ToJSON (ChatSrvResponse r) where
   toJSON = $(JQ.mkToJSON defaultJSON ''ChatSrvResponse)
 
 simplexChatServer :: ServiceName -> ChatConfig -> ChatOpts -> IO ()
-simplexChatServer chatPort cfg opts =
-  simplexChatCore cfg opts . const $ runChatServer defaultChatServerConfig {chatPort}
+simplexChatServer chatPort cfg@ChatConfig {chatHooks} opts@ChatOpts {coreOptions = CoreChatOpts {logFile}} = do
+  cfg' <- case logFile of
+    Just path -> do
+      logLock <- newMVar ()
+      pure cfg {chatHooks = chatHooks {eventHook = Just $ logFileHook logLock path}}
+    Nothing -> pure cfg
+  simplexChatCore cfg' opts . const $ runChatServer defaultChatServerConfig {chatPort}
+  where
+    logFileHook logLock path cc r = do
+      when (either (const True) logEventToFile r) $ do
+        u_ <- readTVarIO $ currentUser cc
+        withMVar logLock (\_ -> logResponseToFile u_ (config cc) r path) `catchAny` \e -> putStrLn ("log-file write error: " <> show e)
+      pure r
 
 data ChatServerConfig = ChatServerConfig
   { chatPort :: ServiceName,
