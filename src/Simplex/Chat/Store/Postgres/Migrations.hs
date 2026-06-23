@@ -39,9 +39,6 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
 import Simplex.Chat.Store.Postgres.Migrations.M20260601_relay_sent_web_domain
 import Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
 import Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
-import Simplex.Chat.Store.Postgres.Migrations.M20260604_simplex_name_profiles
-import Simplex.Chat.Store.Postgres.Migrations.M20260606_simplex_name_verified
-import Simplex.Chat.Store.Postgres.Migrations.M20260612_smp_role_names
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -80,10 +77,7 @@ schemaMigrations =
     ("20260531_member_removed_at", m20260531_member_removed_at, Just down_m20260531_member_removed_at),
     ("20260601_relay_sent_web_domain", m20260601_relay_sent_web_domain, Just down_m20260601_relay_sent_web_domain),
     ("20260602_group_roster", m20260602_group_roster, Just down_m20260602_group_roster),
-    ("20260603_simplex_name", m20260603_simplex_name, Just down_m20260603_simplex_name),
-    ("20260604_simplex_name_profiles", m20260604_simplex_name_profiles, Just down_m20260604_simplex_name_profiles),
-    ("20260606_simplex_name_verified", m20260606_simplex_name_verified, Just down_m20260606_simplex_name_verified),
-    ("20260612_smp_role_names", m20260612_smp_role_names, Just down_m20260612_smp_role_names)
+    ("20260603_simplex_name", m20260603_simplex_name, Just down_m20260603_simplex_name)
   ]
 
 -- | The list of migrations in ascending order by date
