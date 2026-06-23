@@ -1321,8 +1321,7 @@ ON contacts(
   user_id,
   simplex_name
 )
-WHERE simplex_name IS NOT NULL 
-    AND deleted = 0;
+WHERE simplex_name IS NOT NULL AND deleted = 0;
 CREATE UNIQUE INDEX idx_groups_simplex_name
 ON groups(
   user_id,
