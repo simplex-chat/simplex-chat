@@ -62,7 +62,7 @@ fun ChannelMembersView(
         }
       }
     } else {
-      val contributors = members.filter { it.memberRole >= GroupMemberRole.Member }
+      val contributors = members.filter { it.memberRole >= GroupMemberRole.Member && it.memberStatus != GroupMemberStatus.MemUnknown }
       val contributorCount = contributors.size + if (groupInfo.membership.memberRole >= GroupMemberRole.Member) 1 else 0
       SectionView(title = contributorCountStr(contributorCount)) {
         if (groupInfo.membership.memberRole >= GroupMemberRole.Member) {

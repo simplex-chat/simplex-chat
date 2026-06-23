@@ -33,7 +33,7 @@ struct ChannelMembersView: View {
                 }
             }
         } else {
-            let contributors = members.filter { $0.wrapped.memberRole >= .member }
+            let contributors = members.filter { $0.wrapped.memberRole >= .member && $0.wrapped.memberStatus != .memUnknown }
             let contributorCount = contributors.count + (groupInfo.membership.memberRole >= .member ? 1 : 0)
             List {
                 Section(header: Text(contributorsCountStr(contributorCount)).foregroundColor(theme.colors.secondary)) {
