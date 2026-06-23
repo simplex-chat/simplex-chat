@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.contributorCountStr
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -33,17 +34,18 @@ fun ChannelMembersView(
           && m.memberStatus != GroupMemberStatus.MemRemoved
           && m.memberRole != GroupMemberRole.Relay
     }
+    .sortedByDescending { it.memberRole }
 
   ColumnWithScrollBar {
     val title = if (groupInfo.isOwner) {
       generalGetString(MR.strings.channel_members_title_subscribers)
     } else {
-      generalGetString(MR.strings.channel_members_section_owners)
+      generalGetString(MR.strings.channel_members_section_contributors)
     }
     AppBarTitle(title)
 
+    val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
     if (groupInfo.isOwner) {
-      val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
       SectionView(title = subscriberCountStr(subscriberCount)) {
         SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           ChannelMemberRow(groupInfo.membership, user = true, showRole = true, isChannel = groupInfo.isChannel)
@@ -60,9 +62,16 @@ fun ChannelMembersView(
         }
       }
     } else {
-      val owners = members.filter { it.memberRole >= GroupMemberRole.Owner }
-      SectionView(title = generalGetString(MR.strings.channel_members_section_owners)) {
-        owners.forEachIndexed { index, member ->
+      val contributors = members.filter { it.memberRole >= GroupMemberRole.Member }
+      val contributorCount = contributors.size + if (groupInfo.membership.memberRole >= GroupMemberRole.Member) 1 else 0
+      SectionView(title = contributorCountStr(contributorCount)) {
+        if (groupInfo.membership.memberRole >= GroupMemberRole.Member) {
+          SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+            ChannelMemberRow(groupInfo.membership, user = true, showRole = true, isChannel = groupInfo.isChannel)
+          }
+          Divider()
+        }
+        contributors.forEachIndexed { index, member ->
           if (index > 0) {
             Divider()
           }
@@ -71,7 +80,7 @@ fun ChannelMembersView(
             minHeight = 54.dp,
             padding = PaddingValues(horizontal = DEFAULT_PADDING)
           ) {
-            ChannelMemberRow(member, user = false, showRole = false, isChannel = groupInfo.isChannel)
+            ChannelMemberRow(member, user = false, showRole = member.memberRole >= GroupMemberRole.Moderator, isChannel = groupInfo.isChannel)
           }
         }
       }

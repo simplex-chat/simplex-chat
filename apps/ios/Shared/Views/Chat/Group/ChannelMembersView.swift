@@ -21,8 +21,9 @@ struct ChannelMembersView: View {
                 let s = m.wrapped.memberStatus
                 return s != .memLeft && s != .memRemoved && m.wrapped.memberRole != .relay
             }
+            .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
+        let subscriberCount = groupInfo.groupSummary.publicMemberCount ?? Int64(members.count + 1)
         if groupInfo.isOwner {
-            let subscriberCount = groupInfo.groupSummary.publicMemberCount ?? Int64(members.count + 1)
             List {
                 Section(header: Text(subscriberCountStr(subscriberCount)).foregroundColor(theme.colors.secondary)) {
                     memberRow(GMember(groupInfo.membership), user: true, showRole: true)
@@ -32,11 +33,15 @@ struct ChannelMembersView: View {
                 }
             }
         } else {
-            let owners = members.filter { $0.wrapped.memberRole >= .owner }
+            let contributors = members.filter { $0.wrapped.memberRole >= .member }
+            let contributorCount = contributors.count + (groupInfo.membership.memberRole >= .member ? 1 : 0)
             List {
-                Section(header: Text("Owners").foregroundColor(theme.colors.secondary)) {
-                    ForEach(owners) { member in
-                        memberRow(member, user: false, showRole: false)
+                Section(header: Text(contributorsCountStr(contributorCount)).foregroundColor(theme.colors.secondary)) {
+                    if groupInfo.membership.memberRole >= .member {
+                        memberRow(GMember(groupInfo.membership), user: true, showRole: true)
+                    }
+                    ForEach(contributors) { member in
+                        memberRow(member, user: false, showRole: member.wrapped.memberRole >= .moderator)
                     }
                 }
             }
