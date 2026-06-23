@@ -1023,9 +1023,6 @@ marked deleted chat item preview text */
 "calling…" = "hívás…";
 
 /* No comment provided by engineer. */
-"Calls" = "Hívások";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "A hívások le vannak tiltva!";
 
 /* No comment provided by engineer. */
@@ -2058,13 +2055,10 @@ alert button */
 "Details" = "További részletek";
 
 /* No comment provided by engineer. */
-"Develop" = "Fejlesztés";
+"Developer" = "Fejlesztői eszközök";
 
 /* No comment provided by engineer. */
 "Developer options" = "Fejlesztői beállítások";
-
-/* No comment provided by engineer. */
-"Developer" = "Fejlesztői eszközök";
 
 /* No comment provided by engineer. */
 "Device" = "Eszköz";
@@ -3464,7 +3458,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Nagy fájl!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Tudjon meg többet";
 
 /* swipe action */
@@ -4531,9 +4525,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "Korábban kapcsolódott kiszolgálók";
-
-/* No comment provided by engineer. */
-"Your privacy" = "Adatvédelem és biztonság";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Saját ügyfeleinek adatvédelme.";
@@ -5819,9 +5810,6 @@ report reason */
 "Subscriptions ignored" = "Mellőzött feliratkozások";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "SimpleX Chat támogatása";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Hang/Videó váltása hívás közben.";
 
 /* No comment provided by engineer. */
@@ -6455,9 +6443,6 @@ server test failure */
 /* No comment provided by engineer. */
 "v%@" = "v%@";
 
-/* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
 /* relay test step */
 "Verify" = "Ellenőrzés";
 
@@ -6759,9 +6744,6 @@ server test failure */
 "You can enable later via Settings" = "Később engedélyezheti a beállításokban";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "Később engedélyezheti őket az „Adatvédelem és biztonság” menüben.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Megpróbálhatja még egyszer.";
 
 /* No comment provided by engineer. */
@@ -6940,9 +6922,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your channel" = "Saját csatorna";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Csevegési adatbázis";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "A csevegési adatbázis nincs titkosítva – adjon meg egy jelmondatot a titkosításhoz.";

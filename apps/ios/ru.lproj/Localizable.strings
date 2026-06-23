@@ -1023,9 +1023,6 @@ marked deleted chat item preview text */
 "calling…" = "входящий звонок…";
 
 /* No comment provided by engineer. */
-"Calls" = "Звонки";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Звонки запрещены!";
 
 /* No comment provided by engineer. */
@@ -2058,13 +2055,10 @@ alert button */
 "Details" = "Подробности";
 
 /* No comment provided by engineer. */
-"Develop" = "Для разработчиков";
+"Developer" = "Инструменты разработчика";
 
 /* No comment provided by engineer. */
 "Developer options" = "Опции разработчика";
-
-/* No comment provided by engineer. */
-"Developer" = "Разработчик";
 
 /* No comment provided by engineer. */
 "Device" = "Устройство";
@@ -3464,7 +3458,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Большой файл!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Узнать больше";
 
 /* swipe action */
@@ -4531,9 +4525,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "Ранее подключенные серверы";
-
-/* No comment provided by engineer. */
-"Your privacy" = "Конфиденциальность";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Конфиденциальность для ваших покупателей.";
@@ -5819,9 +5810,6 @@ report reason */
 "Subscriptions ignored" = "Подписок игнорировано";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Поддержать SimpleX Chat";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Переключайте звук и видео во время звонка.";
 
 /* No comment provided by engineer. */
@@ -6455,9 +6443,6 @@ server test failure */
 /* No comment provided by engineer. */
 "v%@" = "v%@";
 
-/* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
 /* relay test step */
 "Verify" = "Проверить";
 
@@ -6759,9 +6744,6 @@ server test failure */
 "You can enable later via Settings" = "Вы можете включить их позже в Настройках";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "Вы можете включить их позже в настройках Конфиденциальности.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Вы можете попробовать ещё раз.";
 
 /* No comment provided by engineer. */
@@ -6940,9 +6922,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your channel" = "Ваш канал";
-
-/* No comment provided by engineer. */
-"Your chat database" = "База данных";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "База данных НЕ зашифрована. Установите пароль, чтобы защитить Ваши данные.";

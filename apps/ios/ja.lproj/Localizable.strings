@@ -692,9 +692,6 @@ swipe action */
 /* call status */
 "calling…" = "発信中…";
 
-/* No comment provided by engineer. */
-"Calls" = "通話";
-
 /* alert title */
 "Can't change profile" = "プロフィールを変更できません";
 
@@ -1264,13 +1261,10 @@ alert button */
 "Desktop devices" = "デスクトップ機器";
 
 /* No comment provided by engineer. */
-"Develop" = "開発";
+"Developer" = "開発ツール";
 
 /* No comment provided by engineer. */
 "Developer options" = "開発者向けの設定";
-
-/* No comment provided by engineer. */
-"Developer" = "開発ツール";
 
 /* No comment provided by engineer. */
 "Device" = "端末";
@@ -1350,14 +1344,32 @@ alert button */
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "ダウングレードしてチャットを開く";
 
+/* No comment provided by engineer. */
+"Download errors" = "ダウンロードエラー";
+
+/* No comment provided by engineer. */
+"Download failed" = "ダウンロード失敗";
+
 /* server test step */
 "Download file" = "ファイルをダウンロード";
+
+/* No comment provided by engineer. */
+"Downloaded" = "ダウンロード済";
+
+/* No comment provided by engineer. */
+"Downloaded files" = "ダウンロード済ファイル";
+
+/* No comment provided by engineer. */
+"Downloading archive" = "アーカイブをダウンロード中";
 
 /* No comment provided by engineer. */
 "Duplicate display name!" = "表示の名前が重複してます！";
 
 /* integrity error chat item */
 "duplicate message" = "重複メッセージ";
+
+/* No comment provided by engineer. */
+"duplicates" = "重複";
 
 /* No comment provided by engineer. */
 "Duration" = "間隔";
@@ -1370,6 +1382,9 @@ alert button */
 
 /* No comment provided by engineer. */
 "Edit group profile" = "グループのプロフィールを編集";
+
+/* No comment provided by engineer. */
+"Empty message!" = "メッセージが空です!";
 
 /* alert button */
 "Enable" = "有効";
@@ -2055,7 +2070,7 @@ server test error */
 /* No comment provided by engineer. */
 "Large file!" = "大きなファイル！";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "さらに詳しく";
 
 /* swipe action */
@@ -2531,9 +2546,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Preview" = "プレビュー";
-
-/* No comment provided by engineer. */
-"Your privacy" = "プライバシーとセキュリティ";
 
 /* No comment provided by engineer. */
 "Private filenames" = "プライベートなファイル名";
@@ -3062,9 +3074,6 @@ chat item action */
 "Submit" = "送信";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Simplex Chatを支援";
-
-/* No comment provided by engineer. */
 "System" = "システム";
 
 /* No comment provided by engineer. */
@@ -3321,9 +3330,6 @@ server test failure */
 "Using SimpleX Chat servers." = "SimpleX チャット サーバーを使用する。";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "接続のセキュリティを確認";
 
 /* No comment provided by engineer. */
@@ -3459,9 +3465,6 @@ server test failure */
 "You can enable later via Settings" = "あとで設定から有効にできます";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "あとでアプリのプライバシーとセキュリティの設定から有効にすることができます。";
-
-/* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。";
 
 /* No comment provided by engineer. */
@@ -3574,9 +3577,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "あなたの通話";
-
-/* No comment provided by engineer. */
-"Your chat database" = "あなたのチャットデータベース";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "チャット データベースは暗号化されていません - 暗号化するにはパスフレーズを設定してください。";
