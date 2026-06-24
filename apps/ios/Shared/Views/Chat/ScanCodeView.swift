@@ -11,6 +11,7 @@ import CodeScanner
 
 struct ScanCodeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     @Binding var connectionVerified: Bool
     var verify: (String?) async -> (Bool, String)?
     @State private var showCodeError = false
@@ -34,14 +35,16 @@ struct ScanCodeView: View {
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            Task {
-                if let (ok, _) = await verify(r.string) {
-                    await MainActor.run {
-                        connectionVerified = ok
-                        if ok {
-                            dismiss()
-                        } else {
-                            showCodeError = true
+            handleScan(r.string, expected: .securityCode, theme: theme) { qr in
+                Task {
+                    if let (ok, _) = await verify(qr.text) {
+                        await MainActor.run {
+                            connectionVerified = ok
+                            if ok {
+                                dismiss()
+                            } else {
+                                showCodeError = true
+                            }
                         }
                     }
                 }

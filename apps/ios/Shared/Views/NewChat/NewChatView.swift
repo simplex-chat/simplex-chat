@@ -700,15 +700,7 @@ private struct ConnectView: View {
     private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            let link = r.string
-            if strIsSimplexLink(r.string) {
-                connect(link)
-            } else {
-                alert = .newChatSomeAlert(alert: SomeAlert(
-                    alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
-                    id: "processQRCode: code is not a SimpleX link"
-                ))
-            }
+            handleScan(r.string, expected: .connectionLink, theme: theme, scannerPaused: $scannerPaused) { qr in connect(qr.text) }
         case let .failure(e):
             logger.error("processQRCode QR code error: \(e.localizedDescription)")
             alert = .newChatSomeAlert(alert: SomeAlert(
@@ -854,16 +846,6 @@ struct InfoSheetButton<Content: View>: View {
         .sheet(isPresented: $showInfoSheet) {
             content
         }
-    }
-}
-
-func strIsSimplexLink(_ str: String) -> Bool {
-    if let parsedMd = parseSimpleXMarkdown(str),
-       parsedMd.count == 1,
-       case .simplexLink = parsedMd[0].format {
-        return true
-    } else {
-        return false
     }
 }
 

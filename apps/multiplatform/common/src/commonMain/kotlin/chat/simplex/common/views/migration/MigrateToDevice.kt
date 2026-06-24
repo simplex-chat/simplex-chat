@@ -25,7 +25,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
-import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.OnionRelatedLayout
@@ -206,7 +206,7 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
       if (appPlatform.isAndroid) {
         SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ')) {
           QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
-            checkUserLink(text)
+            handleScan(null, text, QRCodeType.MigrationLink::class, close) { checkUserLink(it.text) }
           }
         }
         SectionSpacer()
@@ -727,7 +727,7 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   chatModel.migrationState.value = null
 }
 
-private fun strHasSimplexFileLink(text: String): Boolean =
+internal fun strHasSimplexFileLink(text: String): Boolean =
   text.startsWith("simplex:/file") || text.startsWith("https://simplex.chat/file")
 
 private fun fileForTemporaryDatabase(): File =
