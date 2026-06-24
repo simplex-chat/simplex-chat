@@ -255,6 +255,8 @@ chatGroupTests = do
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
+      it "should connect to channel via /c (CLI)" testConnectChannelCLI
+      it "should connect to channel via /c incognito (CLI)" testConnectChannelCLIIncognito
     describe "deliver member profiles via relay" $ do
       it "late joiner (no prior history) learns sender on first forward" testChannelLateJoinerReceivesProfile
       it "2 relays: deduplicate member announcement" testChannel2RelaysDeduplicateProfile
@@ -8643,6 +8645,61 @@ testSupportPreferenceChannel ps =
             [ relay <# "#team (support: bob) alice> yes",
               bob <# "#team (support) alice> yes [>>]"
             ]
+
+testConnectChannelCLI :: HasCallStack => TestParams -> IO ()
+testConnectChannelCLI ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, _fullLink) <- prepareChannel2Relays "team" alice bob cath
+          relayNames <- mapM userName [bob, cath]
+          mName <- userName dan
+          mFullName <- showName dan
+          dan ##> ("/c " <> shortLink)
+          dan <## "#team: connection started"
+          concurrentlyN_ $
+            [ dan
+                <### concat
+                  [ [ ConsoleString ("#team: joining the group (connecting to relay " <> rName <> ")..."),
+                      ConsoleString ("#team: you joined the group (connected to relay " <> rName <> ")")
+                    ]
+                  | rName <- relayNames
+                  ]
+            ]
+              <> [ do
+                     relay <## (mFullName <> ": accepting request to join group #team...")
+                     relay <## ("#team: " <> mName <> " joined the group")
+                 | relay <- [bob, cath]
+                 ]
+              <> [alice <### [EndsWith ("introduced " <> mFullName <> " in the channel")]]
+
+testConnectChannelCLIIncognito :: HasCallStack => TestParams -> IO ()
+testConnectChannelCLIIncognito ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, _fullLink) <- prepareChannel2Relays "team" alice bob cath
+          relayNames <- mapM userName [bob, cath]
+          dan ##> ("/c i " <> shortLink)
+          danIncognito <- getTermLine dan
+          dan <## "#team: connection started incognito"
+          concurrentlyN_ $
+            [ dan
+                <### concat
+                  [ [ ConsoleString ("#team: joining the group (connecting to relay " <> rName <> ")..."),
+                      ConsoleString ("#team: you joined the group (connected to relay " <> rName <> ") incognito as " <> danIncognito)
+                    ]
+                  | rName <- relayNames
+                  ]
+            ]
+              <> [ do
+                     relay <## (danIncognito <> ": accepting request to join group #team...")
+                     relay <## ("#team: " <> danIncognito <> " joined the group")
+                 | relay <- [bob, cath]
+                 ]
+              <> [alice <### [EndsWith ("introduced " <> danIncognito <> " in the channel")]]
 
 testChannels1RelayDeliver :: HasCallStack => TestParams -> IO ()
 testChannels1RelayDeliver ps =
