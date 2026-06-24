@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -16,30 +17,37 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.STM (atomically)
 import Control.Monad (forM_, void, when)
+import Control.Monad.Except (runExceptT)
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust, maybeToList)
-import Data.Time (UTCTime)
+import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
+import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
+import Simplex.Messaging.Agent (sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
+import Simplex.Messaging.Protocol (MsgFlags (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
@@ -293,6 +301,7 @@ chatGroupTests = do
         it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
+        it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
         it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
         it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly
         it "corrupted roster blob is rejected on digest mismatch" testChannelRosterDigestMismatchRejected
@@ -9314,6 +9323,13 @@ testChannels2RelaysIncognito ps =
               frank <# ("#team " <> danIncognito <> "> > hi")
               frank <## "    + 👍"
 
+              alice `hasContactProfiles` ["alice", "bob", "cath", T.pack danIncognito, "eve", "frank"]
+              bob `hasContactProfiles` ["alice", "bob", T.pack danIncognito, "eve", "frank"]
+              cath `hasContactProfiles` ["alice", "cath", T.pack danIncognito, "eve", "frank"]
+              dan `hasContactProfiles` ["alice", "bob", "cath", "dan", T.pack danIncognito]
+              eve `hasContactProfiles` ["alice", "bob", "cath", T.pack danIncognito, "eve"]
+              frank `hasContactProfiles` ["alice", "bob", "cath", T.pack danIncognito, "frank"]
+
 testChannelUpdateProfileSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdateProfileSigned ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -9848,6 +9864,68 @@ testChannelRelayCannotDowngradeRosterMember ps =
       case rows of
         [Only k] -> pure k
         _ -> fail $ "expected one row for " <> T.unpack name
+
+testChannelRelayCannotForgePrivilegedMember :: HasCallStack => TestParams -> IO ()
+testChannelRelayCannotForgePrivilegedMember ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        threadDelay 1000000
+        -- the forged attribution only resolves to a privileged author if the victim already holds the
+        -- owner at GROwner (established via the group link on join) - this documents and guards that premise
+        checkMemberRow cath "alice" (Just "owner")
+        ownerMemId <- ownerMemberId bob
+        connId <- relayConnIdToMember bob "cath"
+        -- the malicious relay forges the announcement, choosing the new member's role and signing key
+        g <- C.newRandom
+        kp <- atomically $ C.generateKeyPair g
+        ts <- getCurrentTime
+        let ChatController {smpAgent = bobAgent} = chatController bob
+            attackerPub = fst kp :: C.PublicKeyEd25519
+            forgedMemId = MemberId "forgedadmin1"
+            forgedProfile = (aliceProfile :: Profile) {displayName = "forgery", fullName = "Forgery"}
+            memInfo =
+              MemberInfo
+                { memberId = forgedMemId,
+                  memberRole = GRAdmin,
+                  v = Nothing,
+                  profile = forgedProfile,
+                  memberKey = Just (MemberKey attackerPub)
+                }
+            chatMsg = ChatMessage chatInitialVRange Nothing (XGrpMemNew memInfo Nothing)
+            fwd = GrpMsgForward (FwdMember ownerMemId "alice") ts
+            body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+        sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+        either (fail . show) (const $ pure ()) sent
+        -- secure: the victim rejects the forged privileged announcement instead of storing it
+        cath <##. "error: x.grp.mem.new: privileged member not established by roster"
+        forged <- forgedMemberRows cath "forgery"
+        forged `shouldBe` []
+  where
+    ownerMemberId :: TestCC -> IO MemberId
+    ownerMemberId cc = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_id FROM group_members WHERE member_role = ? LIMIT 1" (Only ("owner" :: T.Text)) :: IO [Only ByteString]
+      case rows of
+        [Only mid] -> pure (MemberId mid)
+        _ -> fail "expected exactly one owner member on the relay"
+    relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
+    relayConnIdToMember cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
+          (Only name) ::
+          IO [Only ByteString]
+      case rows of
+        (Only connId : _) -> pure connId
+        _ -> fail $ "no relay connection to member " <> T.unpack name
+    forgedMemberRows :: TestCC -> T.Text -> IO [(T.Text, Maybe ByteString)]
+    forgedMemberRows cc name =
+      withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?" (Only name)
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
