@@ -489,9 +489,6 @@ swipe action */
 "calling…" = "soittaa…";
 
 /* No comment provided by engineer. */
-"Calls" = "Puhelut";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Kontaktia ei voi kutsua!";
 
 /* No comment provided by engineer. */
@@ -977,9 +974,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Description" = "Kuvaus";
-
-/* No comment provided by engineer. */
-"Develop" = "Kehitä";
 
 /* No comment provided by engineer. */
 "Developer" = "Kehittäjätyökalut";
@@ -1764,7 +1758,7 @@ server test error */
 /* No comment provided by engineer. */
 "Large file!" = "Suuri tiedosto!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Lue lisää";
 
 /* swipe action */
@@ -2230,9 +2224,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Preview" = "Esikatselu";
-
-/* No comment provided by engineer. */
-"Your privacy" = "Yksityisyys ja turvallisuus";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Yksityiset tiedostonimet";
@@ -2779,9 +2770,6 @@ chat item action */
 "Submit" = "Lähetä";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "SimpleX Chat tuki";
-
-/* No comment provided by engineer. */
 "System" = "Järjestelmä";
 
 /* No comment provided by engineer. */
@@ -3041,9 +3029,6 @@ server test failure */
 "Using SimpleX Chat servers." = "Käyttää SimpleX Chat -palvelimia.";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "Tarkista yhteyden suojaus";
 
 /* No comment provided by engineer. */
@@ -3179,9 +3164,6 @@ server test failure */
 "You can enable later via Settings" = "Voit ottaa käyttöön myöhemmin asetusten kautta";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "Voit ottaa ne käyttöön myöhemmin sovelluksen Yksityisyys & Turvallisuus -asetuksista.";
-
-/* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Voit piilottaa tai mykistää käyttäjäprofiilin pyyhkäisemällä sitä oikealle.";
 
 /* notification body */
@@ -3291,9 +3273,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Puhelusi";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Keskustelut-tietokantasi";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Keskustelut-tietokantasi ei ole salattu - aseta tunnuslause sen salaamiseksi.";

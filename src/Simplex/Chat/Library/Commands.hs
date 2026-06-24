@@ -2266,8 +2266,6 @@ processChatCommand cxt nm = \case
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito (Just ct) -> withUser $ \user -> do
-    -- TODO [relays] member: /c api to support groups with relays
-    -- TODO   - possibly by going through APIPrepareGroup -> APIConnectPreparedGroup
     (ccLink, plan) <- connectPlan user ct False Nothing `catchAllErrors` \e -> case ct of
       CTLink (ACL m (CLFull cReq)) -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing))
       _ -> throwError e
@@ -4274,8 +4272,27 @@ processChatCommand cxt nm = \case
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
               processChatCommand cxt nm $ APIConnectContactViaAddress userId incognito contactId
+            CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _)
+              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink plan
+      where
+        joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
+        joinChannelViaRelays ccl gld = do
+          GroupInfo {groupId} <- prepareChannelGroup
+          processChatCommand cxt nm APIConnectPreparedGroup {groupId, incognito, ownerContact = Nothing, msgContent_ = Nothing}
+            `catchAllErrors` \e -> do
+              deletePreparedChannel groupId `catchAllErrors` eToView
+              throwError e
+          where
+            prepareChannelGroup =
+              processChatCommand cxt nm (APIPrepareGroup userId ccl False gld) >>= \case
+                CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _)) -> pure gInfo
+                _ -> throwChatError $ CEException "joinChannelViaRelays: unexpected response from APIPrepareGroup"
+            deletePreparedChannel groupId = do
+              gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+              deleteGroupConnections user gInfo False
+              withFastStore' $ \db -> deleteGroup db user gInfo
     invitationRequestPlan :: User -> ConnReqInvitation -> Maybe ContactShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
     invitationRequestPlan user cReq cld ov = do
       maybe (CPInvitationLink (ILPOk cld ov)) (invitationEntityPlan cld ov)
