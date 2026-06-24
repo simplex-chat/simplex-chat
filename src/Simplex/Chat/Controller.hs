@@ -61,6 +61,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
+import Simplex.Chat.Service
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Stats (PresentedServersSummary)
 import Simplex.Chat.Store (AddressSettings, ChatLockEntity, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
@@ -661,6 +662,7 @@ data ChatCommand
   | GetAgentWorkers
   | GetAgentWorkersDetails
   | GetAgentQueuesInfo
+  | APICallService UserId AServiceCommand
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
@@ -891,6 +893,7 @@ data ChatResponse
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRAppSettings {appSettings :: AppSettings}
+  | CRServiceResponse {user :: User, serviceResponse :: AServiceResponse}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
