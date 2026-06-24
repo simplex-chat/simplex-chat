@@ -1590,7 +1590,7 @@ To update your smp-server to latest version, choose your installation method and
 
 ## Reproduce builds
 
-You can locally reproduce server binaries, following these instructions.
+You can locally reproduce server or CLI binaries, following these instructions.
 
 If you are a security expert or researcher, you can help SimpleX network and users community by signing the release checksums – we will [publish your signature](https://github.com/simplex-chat/simplexmq/releases/tag/v6.3.1). Please reach out to us!
 
@@ -1599,6 +1599,8 @@ To reproduce the build you must have:
 - Linux machine
 - `x86-64` architecture
 - Installed `docker`, `curl` and `git`
+
+### Server binaries
 
 1. Download script:
 
@@ -1615,7 +1617,7 @@ To reproduce the build you must have:
 3. Execute the script with the required tag:
 
    ```sh
-   ./simplexmq-reproduce-builds.sh 'v6.3.1'
+   ./simplexmq-reproduce-builds.sh 'v6.3.3'
    ```
 
    The script executes these steps (please review the script to confirm):
@@ -1626,10 +1628,50 @@ To reproduce the build you must have:
 
    This will take a while.
 
-4. After compilation, you should see the folder named as the tag (e.g., `v6.3.1`) with two subfolders:
+4. After compilation, you should see the folder named as the tag (e.g., `v6.3.3-simplexmq`) with two subfolders:
 
    ```sh
-   ls v6.3.1
+   ls v6.3.3-simplexmq
+   ```
+
+   ```sh
+   from-source  prebuilt  _sha256sums
+   ```
+
+   The file _sha256sums contains the hashes of all builds - you can compare it with the same file in GitHub release.
+
+### CLI binaries
+
+1. Download script:
+
+   ```sh
+   curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplex-chat/refs/heads/master/scripts/simplex-chat-reproduce-builds.sh'
+   ```
+
+2. Make it executable:
+
+   ```sh
+   chmod +x simplex-chat-reproduce-builds.sh
+   ```
+
+3. Execute the script with the required tag:
+
+   ```sh
+   ./simplex-chat-reproduce-builds.sh 'v6.3.3'
+   ```
+
+   The script executes these steps (please review the script to confirm):
+
+   1) builds all CLI binaries for the release in docker container.
+   2) downloads binaries from the same GitHub release and compares them with the built binaries.
+   3) if they all match, generates _sha256sums file with their checksums.
+
+   This will take a while.
+
+4. After compilation, you should see the folder named as the tag (e.g., `v6.3.3-simplex-chat`) with two subfolders:
+
+   ```sh
+   ls v6.3.3-simplex-chat
    ```
 
    ```sh
