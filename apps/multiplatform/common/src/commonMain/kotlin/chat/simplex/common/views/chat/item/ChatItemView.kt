@@ -240,7 +240,7 @@ fun ChatItemView(
     }
 
     @Composable
-    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, iconSize: Dp = 22.dp, parentActivated: State<Boolean>, onClick: () -> Unit) {
+    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, iconSize: Dp = 22.dp, parentActivated: State<Boolean>, mirror: Boolean = false, onClick: () -> Unit) {
       val buttonInteractionSource = remember { MutableInteractionSource() }
       val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
       val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
@@ -275,7 +275,7 @@ fun ChatItemView(
           .size(22.dp),
         interactionSource = buttonInteractionSource
       ) {
-        Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)
+        Icon(painterResource(icon), null, Modifier.size(iconSize).then(if (mirror) Modifier.mirrorIfRtl() else Modifier), tint = iconTint)
       }
     }
 
@@ -291,7 +291,7 @@ fun ChatItemView(
           }
         }
       } else if (chatTypeApiIdMsgId != null) {
-        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
+        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated, mirror = true) {
           val (chatType, apiId, msgId) = chatTypeApiIdMsgId
           withBGApi {
             openChat(secondaryChatsCtx = null, rhId, chatType, apiId, msgId)
@@ -1247,7 +1247,7 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
   }
 }
 
-private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
+private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, layoutDirection ->
   val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
   val width = size.width
   val height = size.height
@@ -1299,7 +1299,9 @@ private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boole
     quadraticBezierTo(bubbleInitialX, 0f, bubbleInitialX + rx, 0f) // Top-left corner
   }
 
-  if (sent) {
+  // Default path draws the tail at the bottom-left corner.
+  val tailOnRight = sent != (layoutDirection == LayoutDirection.Rtl)
+  if (tailOnRight) {
     val matrix = Matrix()
     matrix.scale(-1f, 1f)
     this.transform(matrix)
