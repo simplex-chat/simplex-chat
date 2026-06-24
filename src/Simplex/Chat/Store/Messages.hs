@@ -2086,6 +2086,7 @@ updateGroupChatItemsRead db User {userId} GroupInfo {groupId} = do
     [sql|
       UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND group_id = ?
+        AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
         AND item_status = ?
     |]
     (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
@@ -2142,6 +2143,7 @@ getGroupUnreadTimedItems db User {userId} groupId scope =
           SELECT chat_item_id, timed_ttl
           FROM chat_items
           WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL
             AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
         |]
         (userId, groupId, CISRcvNew)
