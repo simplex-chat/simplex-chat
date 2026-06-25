@@ -423,7 +423,7 @@
     <string name="snd_group_event_group_profile_updated">profilo del gruppo aggiornato</string>
     <string name="invite_prohibited">Impossibile invitare il contatto!</string>
     <string name="change_verb">Cambia</string>
-    <string name="change_member_role_question">Cambiare il ruolo del gruppo\?</string>
+    <string name="change_member_role_question">Cambiare il ruolo del gruppo?</string>
     <string name="clear_contacts_selection_button">Svuota</string>
     <string name="group_member_status_complete">completo</string>
     <string name="group_member_status_connecting">in connessione</string>
