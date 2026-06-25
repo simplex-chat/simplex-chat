@@ -1259,7 +1259,7 @@ private fun ChannelMembersButton(rhId: Long?, groupInfo: GroupInfo, showMemberIn
   val title = if (groupInfo.isOwner) {
     stringResource(MR.strings.channel_members_title_subscribers)
   } else {
-    stringResource(MR.strings.channel_members_section_contributors)
+    stringResource(MR.strings.channel_members_section_owners)
   }
   SettingsActionItem(
     painterResource(MR.images.ic_group),

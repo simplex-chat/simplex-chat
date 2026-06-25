@@ -131,10 +131,13 @@ public func subscriberCountStr(_ count: Int64) -> String {
         : String.localizedStringWithFormat(NSLocalizedString("%d subscribers", comment: "channel subscriber count"), count)
 }
 
-public func contributorsCountStr(_ count: Int) -> String {
-    count == 1
-        ? String.localizedStringWithFormat(NSLocalizedString("%d contributor", comment: "channel contributor count"), count)
-        : String.localizedStringWithFormat(NSLocalizedString("%d contributors", comment: "channel contributor count"), count)
+public func ownersContributorsCountStr(_ count: Int, withContributors: Bool) -> String {
+    if withContributors {
+        return String.localizedStringWithFormat(NSLocalizedString("%d owners & contributors", comment: "channel members count"), count)
+    }
+    return count == 1
+        ? String.localizedStringWithFormat(NSLocalizedString("%d owner", comment: "channel owners count"), count)
+        : String.localizedStringWithFormat(NSLocalizedString("%d owners", comment: "channel owners count"), count)
 }
 
 struct ChatInfoToolbar_Previews: PreviewProvider {

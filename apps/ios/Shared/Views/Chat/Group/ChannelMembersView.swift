@@ -35,8 +35,10 @@ struct ChannelMembersView: View {
         } else {
             let contributors = members.filter { $0.wrapped.memberRole >= .member && $0.wrapped.memberStatus != .memUnknown }
             let contributorCount = contributors.count + (groupInfo.membership.memberRole >= .member ? 1 : 0)
+            let withContributors = contributors.contains { $0.wrapped.memberRole < .owner }
+                || groupInfo.membership.memberRole >= .member
             List {
-                Section(header: Text(contributorsCountStr(contributorCount)).foregroundColor(theme.colors.secondary)) {
+                Section(header: Text(ownersContributorsCountStr(contributorCount, withContributors: withContributors)).foregroundColor(theme.colors.secondary)) {
                     if groupInfo.membership.memberRole >= .member {
                         memberRow(GMember(groupInfo.membership), user: true, showRole: true)
                     }

@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.contributorCountStr
+import chat.simplex.common.views.chat.ownersContributorsCountStr
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -40,7 +40,7 @@ fun ChannelMembersView(
     val title = if (groupInfo.isOwner) {
       generalGetString(MR.strings.channel_members_title_subscribers)
     } else {
-      generalGetString(MR.strings.channel_members_section_contributors)
+      generalGetString(MR.strings.channel_members_section_owners)
     }
     AppBarTitle(title)
 
@@ -64,7 +64,9 @@ fun ChannelMembersView(
     } else {
       val contributors = members.filter { it.memberRole >= GroupMemberRole.Member && it.memberStatus != GroupMemberStatus.MemUnknown }
       val contributorCount = contributors.size + if (groupInfo.membership.memberRole >= GroupMemberRole.Member) 1 else 0
-      SectionView(title = contributorCountStr(contributorCount)) {
+      val withContributors = contributors.any { it.memberRole < GroupMemberRole.Owner } ||
+          groupInfo.membership.memberRole >= GroupMemberRole.Member
+      SectionView(title = ownersContributorsCountStr(contributorCount, withContributors)) {
         if (groupInfo.membership.memberRole >= GroupMemberRole.Member) {
           SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             ChannelMemberRow(groupInfo.membership, user = true, showRole = true, isChannel = groupInfo.isChannel)
