@@ -1,59 +1,50 @@
 # Roster catch-up for channel subscribers
 
-Date: 2026-06-22. Builds on the public-groups roster work (privileged roster, member keys, the `VersionRoster` monotonic gate, and the task-047 enrichment of `XGrpMemRole`/`XGrpMemDel` with `Maybe VersionRoster`).
+Continues the public-groups roster work (privileged roster, member keys, `VersionRoster` monotonic gate, task-047's `Maybe VersionRoster` on `XGrpMemRole`/`XGrpMemDel`).
 
 ## Problem
 
-In a channel a subscriber learns the full roster once — served by the relay on join and re-served on resume (QCONT/SENT, `serveRoster`, Subscriber.hs:1174/1269) — and thereafter tracks it only through forwarded `XGrpMemRole`/`XGrpMemDel` deltas, each carrying an incrementing `VersionRoster`. The subscriber's monotonic gate (`applyAtRosterVersion`, Subscriber.hs:3248) accepts any delta at version `v >= cur` and advances `roster_version` to `v`.
+A channel subscriber learns the full roster only on join and on resume (`serveRoster`, Subscriber.hs:1174/1269), then tracks it via forwarded `XGrpMemRole`/`XGrpMemDel` deltas, each carrying an incrementing `VersionRoster`. The gate (`applyAtRosterVersion`, Subscriber.hs:3248) accepts any delta at `v >= cur` and advances to `v`.
 
-If the subscriber misses intermediate deltas (a scope-limited or dropped forward, divergence between two relays, a delivery hiccup) but then receives a delta at a version more than one above its known version, it advances the gate to `v` and applies that one change — but the roster changes carried by the skipped versions (other members' promotions, removals, keys) are silently lost until the next join or resume re-serve. A subscriber can then reject a legitimately-promoted member's signed action (`RGEMsgBadSignature`) because it never learned that member's key.
+If the subscriber misses intermediate deltas and then receives one at a version more than one above its known version, it advances to `v` and applies that one change — but the roster changes carried by the skipped versions (other members' roles, removals, keys) are lost until the next resume. The subscriber can then reject a freshly-promoted member's signed action (`RGEMsgBadSignature`) for a key it never learned.
 
-Catch-up makes this self-healing: when a subscriber detects a version gap, it asks its relay(s) to re-serve the full roster, which carries the complete privileged set and their keys at the relay's current version.
+Catch-up: on detecting a gap, the subscriber asks the relay that forwarded the delta to re-serve the full roster, which carries the complete set and keys.
 
 ## Design
 
-Three pieces, no schema change, no new store function.
+Four pieces. No schema change, no new store function.
 
-### 1. New chat event `XGrpRosterRequest` (Protocol.hs)
+### 1. Owner sends the roster before the delta (the enabler)
 
-A directed control message a subscriber sends to a relay, mirroring `XGrpRosterAck` (also a directed subscriber→relay message, also unsigned, also not forwarded).
+Today the owner sends `XGrpMemRole`/`XGrpMemDel` first, then `broadcastRoster` (Commands.hs:2754/2885). The relay forwards the delta to subscribers *before* its own roster-blob transfer completes, so for the whole transfer its stored `roster_blob` lags its `roster_version`. A catch-up request in that window serves a stale blob the subscriber rejects (`notBelowRoster`) — which is the common case, not an edge.
+
+Fix: in `APIMembersRole` / `APIRemoveMembers`, reorder to **apply the change to the owner's members → `broadcastRoster v` → send the delta**. This restructures `changeRoleCurrentMems` / `deleteMemsSend` to separate "apply to owner DB" from "send delta to relays" (the roster is still built after the change, so it reflects the new roles / excludes the removed member).
+
+Effect, relying on FIFO order of the owner→relay connection (a guarantee the roster design already assumes): the relay applies and stores the blob at `v` (`setGroupLiveRoster`) before it processes and forwards the delta at `v`. So a relay's `roster_version` always reflects its stored blob, and any request triggered by a forwarded delta finds a current blob. The now-redundant delta hits the existing no-op suppression (`fromRole == memRole`, Subscriber.hs:3298, added in task-047) and is still forwarded to subscribers — no new relay logic, subscribers still see the delta.
+
+Behavioral change to core delivery (all relays/subscribers) → its own commit. Implementation must confirm FIFO holds owner→relay (the test will expose a violation). Residual: a failed roster send (rare; already `catchAllErrors`) leaves that relay's gate briefly above its blob until the next change — heals on resume.
+
+### 2. New event `XGrpRosterRequest VersionRoster` (Protocol.hs)
+
+A directed subscriber→relay control message carrying the subscriber's pre-gap version, so the relay can skip serving when it holds nothing newer.
 
 ```haskell
 XGrpRosterRequest :: VersionRoster -> ChatMsgEvent 'Json
 ```
 
-It carries the subscriber's currently-known roster version (the pre-gap `cur`), so the relay can skip serving when it holds nothing newer. Wire plumbing follows `XGrpRosterAck` exactly:
+Wire plumbing (standard single-`VersionRoster` `'Json` event): GADT constructor; `CMEventTag` `XGrpRosterRequest_`; `strEncode` `"x.grp.roster.request"`; `strP` case; `toCMEventTag`; `appJsonToCM` (`XGrpRosterRequest <$> p "version"`); `chatToAppMessage` (`o ["version" .= v]`). NOT in `isForwardedGroupMsg` (point-to-point). NOT in `requiresSignature` (subscribers/observers have no key).
 
-- `ChatMsgEvent` GADT constructor (after `XGrpRosterAck`).
-- `CMEventTag` constructor `XGrpRosterRequest_`.
-- `strEncode`: `XGrpRosterRequest_ -> "x.grp.roster.request"`.
-- `strP` (`ACMEventTag` parser): `"x.grp.roster.request" -> XGrpRosterRequest_`.
-- `toCMEventTag`: `XGrpRosterRequest {} -> XGrpRosterRequest_`.
-- `appJsonToCM`: `XGrpRosterRequest_ -> XGrpRosterRequest <$> p "version"`.
-- `chatToAppMessage` params: `XGrpRosterRequest v -> o ["version" .= v]`.
-- NOT added to `isForwardedGroupMsg` — it is point-to-point, never forwarded into the group.
-- NOT added to `requiresSignature` — subscribers (observers) have no member key.
+### 3. Subscriber detects the gap and requests (Subscriber.hs, `applyAtRosterVersion`)
 
-### 2. Subscriber detects the gap and requests (Subscriber.hs, `applyAtRosterVersion`)
+`applyAtRosterVersion` already reads `cur`, compares `v >= cur`, advances the gate — the one path shared by `xGrpMemRole` and `xGrpMemDel`. In its accepting branch, when the receiver is a subscriber (`not (isUserGrpFwdRelay gInfo)`) and `cur = Just c` with `v > c + 1`, send `XGrpRosterRequest c` to the relay that forwarded the delta, then run the action unchanged (the delta is still applied; the roster heals `c+1 .. v-1`).
 
-`applyAtRosterVersion` already reads `cur`, compares `v >= cur`, and advances the gate. Add gap detection in the same place — it is the one path both `xGrpMemRole` and `xGrpMemDel` share, and it already holds both versions.
+To target the forwarding relay, thread it as `Maybe GroupMember` through `xGrpMemRole` / `xGrpMemDel` / `applyAtRosterVersion`: `Just m` on the forwarded path (`m` in scope in `processForwardedMsg`, Subscriber.hs:3804/3806), `Nothing` on the direct path (1092/1096; the receiver there is a relay and never requests). Send via `sendGroupMessage' user gInfo [relay] (XGrpRosterRequest c)`.
 
-In the accepting branch, when the receiver is a subscriber (`not (isUserGrpFwdRelay gInfo)`) and `cur = Just c` with `v > c + 1`, send `XGrpRosterRequest c` to the subscriber's relay members and then proceed with the action unchanged. The delta is a valid owner-signed monotonic change and is still applied (the gate advances to `v`); the requested roster heals the members skipped between `c` and `v`.
+One forwarding relay only, not all relays: avoids N² requests under concurrent multi-relay gaps, and the owner-signed roster needs no cross-relay verification. The gate advances to `v` on the first gap in a batch, so later `+1` deltas aren't gaps — normally one request per batch.
 
-Send target and idiom reuse the existing subscriber pattern (Subscriber.hs:3938):
+### 4. Relay serves on request (Subscriber.hs, `processEvent` + new `xGrpRosterRequest`)
 
-```haskell
-relays <- withStore' $ \db -> getGroupRelayMembers db cxt user gInfo
-unless (null relays) $ void $ sendGroupMessage' user gInfo relays (XGrpRosterRequest c)
-```
-
-Sending to all of the subscriber's relays (not just the one that forwarded the triggering delta) is deliberate: the forwarding relay is not in scope here, relays are few, and a single relay may itself be the stale one. The responses are de-duplicated downstream — each relay's re-serve is an independent per-source transfer, superseded by `cleanupRosterTransfer`, and gated by `notBelowRoster` so only a blob at or above the current version is applied.
-
-Within one event batch the gate advances to `v` on the first gap event, so subsequent `v+1` deltas in the same batch are not gaps — normally at most one request per batch.
-
-### 3. Relay serves on request (Subscriber.hs, `processEvent` + new `xGrpRosterRequest`)
-
-The request arrives at the relay on the direct member connection, handled in the direct `processEvent` dispatch next to `XGrpRosterAck` (Subscriber.hs:1103):
+The request arrives on the direct member connection, dispatched in `processEvent` (alongside other direct group events, ~Subscriber.hs:1103):
 
 ```haskell
 XGrpRosterRequest reqVer -> Nothing <$ xGrpRosterRequest gInfo' m'' reqVer
@@ -67,40 +58,26 @@ xGrpRosterRequest gInfo m reqVer =
     when (maybe True (> reqVer) cur) $ serveRoster user gInfo m
 ```
 
-This reuses `serveRoster` as-is (the stated intent): it reads the persisted signed roster + blob (`getGroupRoster`) and sends the signed header plus inline blob chunks to the one requesting member — the same per-member path used on join and QCONT resume. The version check serves only when the relay's gate is newer than the requester's known version, which both avoids redundant serves and rate-limits a member that requests at its current version. `serveRoster` is already a no-op when there is no persisted roster, so a non-relay receiving this message does nothing.
-
-## Why the heal is sound, and its bound
-
-The owner re-broadcasts the full signed roster to relays on every privileged change (`broadcastRoster`, called after role-change/removal commands at Commands.hs:2776/2909), so a relay's persisted `roster_blob` tracks the latest version. When a subscriber requests at `c`, the relay serves its current blob (version `>= v` in the steady state), the subscriber's `notBelowRoster` guard accepts it, and `rosterCompletion` applies the full privileged set and keys — healing every member skipped between `c` and `v`.
-
-Bound (documented, not engineered around): there is a narrow race where a relay has applied a delta at `v` (gate `= v`) but its matching full-roster blob transfer from the owner has not yet completed (blob `< v`). A serve in that window delivers a blob below the subscriber's gate and is rejected by `notBelowRoster`, making the request a no-op. Because the owner broadcasts a fresh full roster on every subsequent change — and the relay re-serves on the subscriber's next QCONT/SENT resume — the gap heals at the next change or reconnect regardless. This is strictly better than today (skipped deltas persist until the next join/resume), and the residual window is best-effort by design.
+Reuses `serveRoster` unchanged (signed header + inline blob chunks to the one requester — the join/resume path). The version check serves only when the relay holds something newer than the requester, rate-limiting same-version spam. With piece 1, the served blob is current, so the subscriber accepts it (`notBelowRoster`) and `rosterCompletion` heals the skipped set and keys. `serveRoster` is a no-op without a stored roster.
 
 ## Files touched
 
-- `src/Simplex/Chat/Protocol.hs` — new event, end to end (7 edit sites above).
-- `src/Simplex/Chat/Library/Subscriber.hs` — gap detection in `applyAtRosterVersion`; new `xGrpRosterRequest`; one `processEvent` dispatch line. No change to `processForwardedMsg` (the request is never forwarded).
-- No schema change (reuses `roster_version`, `roster_blob`). No new store function (reuses `getGroupRosterVersion`, `getGroupRelayMembers`, `getGroupRoster`, `serveRoster`).
-- `tests/ChatTests/` — one channel catch-up test (below).
+- `src/Simplex/Chat/Library/Commands.hs` — reorder owner sends in `APIMembersRole`/`APIRemoveMembers` (restructure `changeRoleCurrentMems`/`deleteMemsSend`).
+- `src/Simplex/Chat/Protocol.hs` — new event, end to end.
+- `src/Simplex/Chat/Library/Subscriber.hs` — gap detection + request in `applyAtRosterVersion`; thread forwarding relay through `xGrpMemRole`/`xGrpMemDel`; new `xGrpRosterRequest`; one `processEvent` dispatch line.
+- No schema change, no new store fn (reuses `getGroupRosterVersion`, `getGroupRelayMembers`, `getGroupRoster`, `serveRoster`).
+- `tests/ChatTests/` — one channel catch-up test.
 
 ## Tests
 
-Add a `channels` test asserting that a subscriber which observes a version gap recovers the skipped privileged set. The genuinely hard part is staging a deterministic gap, because normal FIFO forwarding does not drop deltas — the test must construct one. Candidate approach to validate during implementation:
+A `channels` test asserting a subscriber that observes a version gap recovers the skipped set. The hard part is staging a deterministic gap (FIFO forwarding doesn't drop deltas). Candidate: two relays where an intermediate delta reaches only one path, so the subscriber receives a later delta at a jumped version; assert it emits exactly one `XGrpRosterRequest`, the relay re-serves, and a member promoted in the skipped interval is afterwards known (its signed action accepted, no `RGEMsgBadSignature`). Confirm the gap is reliably reproducible before finalizing; fall back to asserting "a forwarded delta at a jumped version triggers one request + re-serve" if the two-relay setup is flaky. Iterate with `-m "channels"`.
 
-- Two relays. A subscriber receives a later delta from relay B while its gate still reflects an earlier version because an intermediate delta reached only relay A's path (e.g. a member-scoped removal not delivered to this subscriber). Assert the subscriber emits `XGrpRosterRequest`, the relay re-serves, and a member promoted in the skipped interval is afterwards known — verified by that member's signed action being accepted (no `RGEMsgBadSignature`) or by the other-subscriber role line resolving.
+## Commits
 
-If a reliable two-relay gap proves too flaky in the harness, fall back to a focused assertion that a forwarded delta at a jumped version triggers exactly one request and a re-serve. Treat the test design as the riskiest item and confirm it before finalizing. Iterate with `-m "channels"` per the project's minimize-scope convention; add `-m "image"` only if inline-file machinery changes (it should not here).
+1. Reorder owner sends (roster before delta) — relay blob is current before it forwards deltas.
+2. Protocol: add `XGrpRosterRequest`.
+3. Relay: `xGrpRosterRequest` + `processEvent` dispatch.
+4. Subscriber: gap detection + request to the forwarding relay.
+5. Test + schema/plan regen.
 
-## Open decisions (recommendation in brackets)
-
-1. Request payload — carry `VersionRoster` so the relay can skip redundant serves and rate-limit, vs. an empty request that always re-serves. [Carry it — small, mirrors `XGrpRosterAck`, defends against a small-request → large-blob amplification.]
-2. Send to all of the subscriber's relays vs. only the forwarding relay. [All — relays are few, the forwarding relay is out of scope at the detection point, and a single relay may be the stale one; responses self-dedupe.]
-3. Accept the narrow relay-blob-lag race as best-effort (healed on next change/resume) vs. adding machinery to guarantee a blob `>= v` at request time. [Accept — the guarantee would add cost to the roster/serve path for a self-healing window.]
-
-## Commit split
-
-1. Protocol: add `XGrpRosterRequest` end to end. Builds; no behavior change yet.
-2. Subscriber: relay handler `xGrpRosterRequest` + `processEvent` dispatch (relay can serve on request).
-3. Subscriber: gap detection + request send in `applyAtRosterVersion` (subscriber drives catch-up).
-4. Test + schema/plan regen.
-
-Build and run `-m "channels"` after each step.
+Build and run `-m "channels"` after each.
