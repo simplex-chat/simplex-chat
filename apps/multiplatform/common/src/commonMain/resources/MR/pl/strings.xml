@@ -696,7 +696,7 @@
     <string name="invite_prohibited_description">Próbujesz zaprosić osobę, z którą masz wspólny profil incognito do grupy, w której używasz swojego głównego profilu</string>
     <string name="group_info_member_you">ty: %1$s</string>
     <string name="change_verb">Zmień</string>
-    <string name="change_member_role_question">Zmienić rolę grupy\?</string>
+    <string name="change_member_role_question">Zmienić rolę grupy?</string>
     <string name="change_role">Zmień rolę</string>
     <string name="info_row_connection">Połączenie</string>
     <string name="info_row_database_id">ID bazy danych</string>
