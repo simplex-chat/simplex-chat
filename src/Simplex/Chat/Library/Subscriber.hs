@@ -3071,8 +3071,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ msg brokerTs = do
-      let fromRelay = useRelays' gInfo && isRelay m
-      unless fromRelay $ checkHostRole m memRole
+      unless (useRelays' gInfo) $ checkHostRole m memRole
       if sameMemberId memId (membership gInfo)
         then pure Nothing
         else
@@ -3081,7 +3080,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- roster-established privileged member: the relay may update the profile only,
               -- never the role or key (those are owner-authoritative via the roster, and
               -- XGrpMemNew is unsigned)
-              | fromRelay && isRosterRole (memberRole' unknownMember) -> do
+              | useRelays' gInfo && isPrivilegedRole (memberRole' unknownMember) -> do
                   -- a member's key is immutable per memberId and identical across relays; mismatch
                   -- is unambiguous relay misbehavior (role can legitimately differ across relays
                   -- under multi-relay skew, so we deliberately don't warn on role)
@@ -3095,8 +3094,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
                   memberAnnouncedToView updatedMember gInfo'
                   pure $ deliveryJobScope updatedMember
-              -- asserted privileged but NOT roster-established: relay conjuring a moderator
-              | fromRelay && isRosterRole memRole ->
+              -- asserted privileged but NOT roster-established: relay conjuring a privileged member
+              | useRelays' gInfo && isPrivilegedRole memRole ->
                   messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
               | otherwise -> do
                   (updatedMember, gInfo') <- withStore $ \db -> do
@@ -3114,8 +3113,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               | useRelays' gInfo -> logInfo "x.grp.mem.new: member already created via another relay" $> Nothing
               | otherwise -> messageError "x.grp.mem.new error: member already exists" $> Nothing
             Left _
-              -- a privileged member absent from the roster is a relay conjuring a moderator
-              | fromRelay && isRosterRole memRole -> messageError "x.grp.mem.new: privileged member not established by roster" $> Nothing
+              -- a privileged member absent from the roster is a relay conjuring one
+              | useRelays' gInfo && isPrivilegedRole memRole -> messageError "x.grp.mem.new: privileged member not established by roster" $> Nothing
               | otherwise -> do
                   (newMember, gInfo') <- withStore $ \db -> do
                     newMember <- createNewGroupMember db cxt user gInfo m memInfo GCPostMember initialStatus
@@ -3266,7 +3265,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | membershipMemId == memId =
           applyAtRosterVersion gInfo m rosterVer_ $
             let gInfo' = gInfo {membership = membership {memberRole = memRole}}
-             in changeMemberRole gInfo' membership False (\db -> updateGroupMemberRole db user membership memRole) $ RGEUserRole memRole
+             in changeMemberRole gInfo' membership False (\db -> updateGroupMemberRole db user membership memRole) (RGEUserRole memRole) True
       | otherwise = applyAtRosterVersion gInfo m rosterVer_ $ do
           defaultRole <- unknownMemberRole gInfo
           -- an owner-signed event with a key TOFU-creates an unknown member only for a roster role; else a plain lookup
@@ -3276,11 +3275,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- just created (keyless, and allowCreate ensured the event carries its key): pin key + role
               | created, Just (MemberKey pubKey) <- memberKey_ ->
                   let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-                   in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent
+                   in changeMemberRole gInfo member created (\db -> void $ applyMemberKeyRole db member pubKey memRole) gEvent (not $ useRelays' gInfo)
               -- known member: apply the role (its key is established via roster/intro; the event's key is ignored)
               | otherwise ->
                   let gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-                   in changeMemberRole gInfo member created (\db -> updateGroupMemberRole db user member memRole) gEvent
+                   in changeMemberRole gInfo member created (\db -> updateGroupMemberRole db user member memRole) gEvent (not $ useRelays' gInfo)
             -- in relay groups the roster may deliver role update for previously-unknown privileged members
             _ | useRelays' gInfo -> pure Nothing
               | otherwise -> messageError "x.grp.mem.role with unknown member ID" $> Nothing
@@ -3288,7 +3287,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         GroupMember {memberId = membershipMemId} = membership
         -- applyMember writes the change (role, or role + pinned key for a freshly TOFU-created member);
         -- the delivery scope (relay forwarding) is computed on the pre-change role
-        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent
+        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} created applyMember gEvent createItem
           | senderRole < maximum ([GRAdmin, fromRole, memRole] :: [GroupMemberRole]) =
               messageError "x.grp.mem.role with insufficient member permissions" $> Nothing
           | useRelays' gInfo && (isRosterRole memRole || isRosterRole fromRole) && senderRole /= GROwner =
@@ -3298,9 +3297,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | useRelays' gInfo && not created && fromRole == memRole = pure $ memberEventDeliveryScope member
           | otherwise = do
               withStore' applyMember
-              (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
-              (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
-              groupMsgToView cInfo ci
+              (gInfo'', m') <-
+                if createItem
+                  then do
+                    (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
+                    (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
+                    groupMsgToView cInfo ci
+                    pure (gInfo'', m')
+                  else pure (gInfo', m)
               toView CEvtMemberRole {user, groupInfo = gInfo'', byMember = m', member = member {memberRole = memRole}, fromRole, toRole = memRole, msgSigned}
               pure $ memberEventDeliveryScope member
 
@@ -3411,8 +3415,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       Just k
         | k /= pubKey -> pure (Left (memberId' m))
         | memberRole' m == role -> pure (Right Nothing)
-        | otherwise -> updateGroupMemberRole db user m role $> Right (Just (m {memberRole = role}, memberRole' m))
-      Nothing -> setGroupMemberKeyRole db m pubKey role $> Right (Just (m {memberRole = role}, memberRole' m))
+        | otherwise -> updateGroupMemberRole db user m role $> Right (Just ((m :: GroupMember) {memberRole = role}, memberRole' m))
+      Nothing -> setGroupMemberKeyRole db m pubKey role $> Right (Just ((m :: GroupMember) {memberRole = role}, memberRole' m))
 
     -- TOFU apply: pin each member's key on first use, then update roles.
     processRosterEntries :: DB.Connection -> GroupInfo -> GroupMemberRole -> [RosterMember] -> ExceptT StoreError IO ([MemberId], [(GroupMember, GroupMemberRole, Bool)])

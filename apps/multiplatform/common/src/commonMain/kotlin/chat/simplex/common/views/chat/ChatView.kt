@@ -1547,6 +1547,11 @@ fun subscriberCountStr(count: Long): String =
   if (count == 1L) String.format(generalGetString(MR.strings.channel_subscriber_count_singular), count)
   else String.format(generalGetString(MR.strings.channel_subscriber_count_plural), count)
 
+fun ownersContributorsCountStr(count: Int, withContributors: Boolean): String =
+  if (withContributors) String.format(generalGetString(MR.strings.channel_owners_contributors_count), count)
+  else if (count == 1) String.format(generalGetString(MR.strings.channel_owner_count_singular), count)
+  else String.format(generalGetString(MR.strings.channel_owner_count_plural), count)
+
 @Composable
 fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
