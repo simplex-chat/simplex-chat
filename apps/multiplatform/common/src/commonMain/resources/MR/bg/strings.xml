@@ -182,7 +182,7 @@
     <string name="invite_prohibited">Не може да покани контакта!</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">адреса за изпращане е променен</string>
     <string name="change_verb">Промени</string>
-    <string name="change_member_role_question">Промяна на груповата роля\?</string>
+    <string name="change_member_role_question">Промяна на груповата роля?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Все още ще получавате обаждания и известия от заглушени профили, когато са активни.</string>
     <string name="allow_disappearing_messages_only_if">Позволи изчезващи съобщения само ако вашият контакт ги разрешава.</string>
     <string name="allow_your_contacts_irreversibly_delete">Позволи на вашите контакти да изтриват необратимо изпратените съобщения. (24 часа)</string>
@@ -476,7 +476,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Изпращането на потвърждениe за доставка ще бъде активирано за всички контакти във всички видими чат профили.</string>
     <string name="send_receipts">Изпращане на потвърждениe за доставка</string>
     <string name="you_can_enable_delivery_receipts_later">Можете да активирате по-късно през Настройки</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Можете да ги активирате по-късно през настройките за "Поверителност и сигурност" на приложението.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Можете да ги активирате по-късно през настройките за Поверителност и сигурност на приложението.</string>
     <string name="database_downgrade_warning">Предупреждение: Може да загубите някои данни!</string>
     <string name="enter_correct_passphrase">Въведи правилна парола.</string>
     <string name="feature_enabled_for_you">активирано за вас</string>
