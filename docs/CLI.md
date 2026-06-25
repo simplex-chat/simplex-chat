@@ -13,6 +13,7 @@ revision: 31.01.2023
 - [Installation](#🚀-installation)
   - [Download chat client](#download-chat-client)
     - [Linux and MacOS](#linux-and-macos)
+    - [Ubuntu Repository](#ubuntu-repository)
     - [Windows](#windows)
   - [Build from source](#build-from-source)
     - [Using Docker](#using-docker)
@@ -76,6 +77,40 @@ mv <binary> ~/.local/bin/simplex-chat
 (or any other preferred location on `PATH`).
 
 On MacOS you also need to [allow Gatekeeper to run it](https://support.apple.com/en-us/HT202491).
+
+#### Ubuntu repository
+
+1. Install necessary dependencies:
+
+    ```sh
+    sudo apt update && sudo apt install -y curl gpg apt-transport-https
+    ```
+
+2. Setup SimpleX repository key:
+
+    ```sh
+    curl -sSL https://app.simplex.chat/deb-repo.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/simplex-archive-keyring.gpg > /dev/null
+    ```
+
+3. Setup SimpleX repository:
+
+    ```sh
+    . /etc/os-release; printf "deb [signed-by=/usr/share/keyrings/simplex-archive-keyring.gpg] https://app.simplex.chat/deb ${VERSION_CODENAME} main" | sudo tee /etc/apt/sources.list.d/simplex.list
+    ```
+
+4. Install SimpleX Chat:
+
+    - CLI:
+
+      ```sh
+      sudo apt update && sudo apt install simplex-chat
+      ```
+
+    - Desktop:
+
+      ```sh
+      sudo apt update && sudo apt install simplex
+      ```
 
 #### Windows
 
