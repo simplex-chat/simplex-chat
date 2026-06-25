@@ -709,7 +709,7 @@
     <string name="error_creating_link_for_group">Erreur lors de la création du lien du groupe</string>
     <string name="only_group_owners_can_change_prefs">Seuls les propriétaires du groupe peuvent modifier les préférences du groupe.</string>
     <string name="section_title_for_console">Pour terminal</string>
-    <string name="change_member_role_question">Changer le rôle du groupe \?</string>
+    <string name="change_member_role_question">Changer le rôle du groupe ?</string>
     <string name="member_role_will_be_changed_with_notification">Son rôle est désormais %s. Tous les membres du groupe en seront informés.</string>
     <string name="icon_descr_contact_checked">Contact vérifié⸱e</string>
     <string name="clear_contacts_selection_button">Effacer</string>
