@@ -1,6 +1,6 @@
 # Plan: optional signing of channel content messages (`XMsgNew` / `XMsgUpdate`)
 
-Anchored on `master` (line numbers verified there; re-confirm by symbol before editing). The public-groups roster already provides everything this builds on: `GroupKeys {publicGroupId, memberPrivKey}` (`Types.hs:465`), `verifyGroupSig` (`Subscriber.hs:116`), per-member public-key distribution via the signed roster, and optional signing of group-state events (`requiresSignature`, `Protocol.hs:1334`). Content messages are *not* signed today.
+Anchored on branch `f/msg-signing` (master merged in); all symbols re-verified 2026-06-25 — see **§Verification status** at the end for the current line map and the few mislabeled anchors. Re-confirm by symbol before editing; line numbers are advisory. The public-groups roster already provides everything this builds on: `GroupKeys {publicGroupId, memberPrivKey}` (`Types.hs:465`), `verifyGroupSig` (`Subscriber.hs:116`), per-member public-key distribution via the signed roster, and optional signing of group-state events (`requiresSignature`, `Protocol.hs:1334`). Content messages are *not* signed today.
 
 **PR 1** (this plan): a member can optionally sign their own channel posts and edits so recipients holding the signed roster can verify authorship + integrity. Signed deletes with recipient enforcement are **PR 2** (sketched at the end).
 
@@ -110,7 +110,7 @@ An owner may sign an as-channel post (no gate on `showGroupAsSender`). Three pie
   ```
   (`chatBinding_`/`sigs_` are already in scope here for `verifiedMsg`; `isNothing chatBinding_` ⇔ unsigned. Non-as-channel posts already use `FwdMember`, unchanged.)
 - **Display**: the recipient already derives "as channel" from the signed `asGroup` flag, independent of `fwdSender` — `newGroupContentMessage` `sentAsGroup = asGroup_ == Just True` (`Subscriber.hs:2177`), `groupMessageUpdate` `showGroupAsSender = fromMaybe (isNothing m_) asGroup_` (`:2235`). So a `FwdMember` + `asGroup=True` post verifies against the owner and renders as the channel with the verified badge.
-- **Owner guard (security, MUST)**: the forwarded `XMsgNew` path (`Subscriber.hs:3771` → `newGroupContentMessage` `:3791`) MUST reject as-channel display unless the verified author is an owner — parity with `groupMessageUpdate` (`:2282`) and the direct path (`:1064`); reuse the `validSender … CIChannelRcv == GROwner` pattern (`:2135`). Without it a non-owner's signed `asGroup=True` post renders as "from the channel".
+- **Owner guard (security, MUST)**: the forwarded `XMsgNew` path (`xGrpMsgForward` `Subscriber.hs:3771` → `FwdMember` branch `:3775` → `withVerifiedMsg` `:3784` → `newGroupContentMessage` `:3795`) MUST reject as-channel display unless the verified author is an owner — parity with `groupMessageUpdate`'s owner guards (`:2236` send-time, `:2282` store-time) and the direct send path's `checkSendAsGroup` (`Subscriber.hs:1057`, `asGroup == Just True && memberRole' m'' < GROwner ⇒ messageError`); reuse the `validSender … CIChannelRcv ⇒ GROwner` pattern (`:2135`). Without it a non-owner's signed `asGroup=True` post renders as "from the channel". **Note**: this guard checks the author's role against the *recipient's current roster*; an owner whose `GROwner` role has not propagated to the recipient (see the known channel role-propagation issue) makes a legitimately-signed as-channel post fail the guard — fold into the as-channel edge-case test.
 - **Invariant**: `FwdChannel` never carries a signature (signed posts always route via `FwdMember`). Assert this in `encodeFwdElement` (`Batch.hs:108`) as a regression guard.
 
 `sendGroupContentMessages_` passes the API `sign` straight through (no `&& not showGroupAsSender` gate). The owner's own as-channel item is marked signed/verified like any signed send.
@@ -212,3 +212,75 @@ Honest limit: enforcement protects a post a recipient already holds verified; a 
 - Group-level "required signing" owner setting — rejects unsigned messages group-wide, closing the optional-downgrade gap.
 - **Verifiable-anonymous as-channel** — a channel-level signature (ring signature over the owner set, or a shared/authorization-chain channel key) that proves "a valid owner" without revealing which, so an as-channel post is verifiable *and* keeps sender anonymity. This PR's per-member signing cannot do both; signing an as-channel post reveals the owner (§5).
 - Signing reactions; signing auto-reply content; verifiable reports (signed `MCReport`).
+
+## Verification status (2026-06-25, branch `f/msg-signing`)
+
+Every symbol the plan names was located and its logic re-checked against current code. **No logic drift** was found in any anchored function — the plan's described behavior still holds everywhere. Three classes of correction below: mislabeled anchors (fix before relying on them), one structural clarification (threading is slightly larger than the prose implies), and a current line map (most anchors moved a little; re-confirm by symbol regardless).
+
+### Mislabeled / materially-moved anchors
+
+- `MsgSigStatus` is defined in **`src/Simplex/Chat/Types/Shared.hs:134`** (`MSSVerified | MSSSignedNoKey`), not in `Types.hs`/`Messages.hs`. DB encoding: `verified` / `no_key`; JSON tags (`enumJSON $ dropPrefix "MSS"`): `verified` / `signedNoKey`. The JSON/DB divergence the app section (§A) relies on is confirmed. Any core edit to the type itself targets `Types/Shared.hs`.
+- §5 "the direct path (`:1064`)" is wrong: the non-forwarded as-channel owner enforcement lives in **`checkSendAsGroup` (`Subscriber.hs:1057`)**; `:1064` is just the `XMsgNew → newGroupContentMessage` dispatch (fixed inline in §5).
+- §6 wording "add `msgSigned` to the pattern" — confirmed the own-item `CIMeta` pattern at `Commands.hs:739` does **not** bind `msgSigned` today; it must be added to the record pattern (the field exists on `CIMeta`, `Messages.hs:520`).
+- §3 "`sendGroupMessage` … 6 callers" — there are **7** `sendGroupMessage` sites; the 7th is the edit path itself (`Commands.hs:751`, the only variable-`sign` one). The six that pass `False`: `Commands.hs:908,2719,3325,3873,3876,3880`.
+- `signatureOptional` is at `Subscriber.hs:3848` (plan said ~:3844); `RGEMsgBadSignature` creation at `:3828` (plan said :3824). Behavior unchanged.
+
+### Structural clarification (affects §2/§3 threading)
+
+`groupMsgSigning` is invoked at **three** sites, two of them inside functions that do **not** currently receive any as-channel/sign flag:
+
+- `Internal.hs:2122` — inside `sendGroupMemberMessages` (hardcode `False`).
+- `Internal.hs:2367` — inside `sendGroupMessages_`.
+- `Commands.hs:3017` — direct `XGrpLeave` via `createSndMessages` (hardcode `False`).
+
+`sendGroupMessages_` has **no** `ShowGroupAsSender`/`asGroup` parameter, and `sendGroupMessages` (`:2332`) consumes its `ShowGroupAsSender` only for `shouldSendProfileUpdate` — it does **not** pass it down. So threading `sign` to the `groupMsgSigning` call inside `sendGroupMessages_` is genuinely new wiring: `sendGroupContentMessages_`/`sendGroupMessage` → `sendGroupMessages` → **(new param)** → `sendGroupMessages_` → `groupMsgSigning sign …`. The plan's §3 list already includes all these functions; this note just flags that the param add to `sendGroupMessages_` is load-bearing, not a pass-through that already exists.
+
+### Current line map (re-confirm by symbol)
+
+| Symbol | File:line |
+|---|---|
+| `requiresSignature` (insert `signableContent` next to it) | Protocol.hs:1334 |
+| `MsgSigning` (4-field record, applied positionally) | Protocol.hs:469 |
+| `encodeChatBinding` / `CBGroup` / `signChatMsgBody` | Protocol.hs:476 / 442 / 479 |
+| `FwdSender` (`FwdMember MemberId ContactName` / `FwdChannel`) | Protocol.hs:372 |
+| `groupMsgSigning` | Internal.hs:2113 (calls: 2122, 2367, Commands.hs:3017) |
+| `sendGroupMessages` / `_` | Internal.hs:2332 / 2365 |
+| `sendGroupMessage` / `'` | Internal.hs:2258 / 2264 |
+| `sendGroupMemberMessages` | Internal.hs:2119 |
+| `sndMessageMBR` (non-batched; never hit in relay groups) | Internal.hs:2431 (`memberSendAction` 2455, `MSASendBatched` 2453) |
+| `sendHistory` / `processContentItem` (as-channel → `FwdChannel` at 1375) | Internal.hs:1281 / 1352 |
+| `createNewSndMessage` (`signedMsg_`) | Store/Messages.hs:235 |
+| `APISendMessages` ctor | Controller.hs:382 |
+| `/_send` parser / `onOffP` | Commands.hs:5111 / 5490 |
+| 9 positional `APISendMessages` ctors (add `False`; `:2449` passes `live=True`) | Commands.hs:2392,2401,2421,2441,2449,2494,3236,3277,3286 |
+| `APISendMessages` handler / group send | Commands.hs:654 / 667 |
+| `sendGroupContentMessages` / `_` | Commands.hs:4447 / 4456 (callers 667, 698, 994) |
+| group edit (own-item pattern / send) | Commands.hs:739 / 751 |
+| `XGrpLeave` group send (`sendGroupMessage'`) | Commands.hs:3027 |
+| `verifyGroupSig` / `withVerifiedMsg` / `signatureOptional` | Subscriber.hs:116 / 3823 / 3848 |
+| `RGEMsgBadSignature` | Subscriber.hs:3828 |
+| forwarded `XMsgNew`: `xGrpMsgForward` / `FwdMember` / `withVerifiedMsg` / `newGroupContentMessage` / `FwdChannel→VMUnsigned` | Subscriber.hs:3771 / 3775 / 3784 / 3795 / 3787 |
+| `newGroupContentMessage` (`sentAsGroup` 2177) / `groupMessageUpdate` (owner guards 2236, 2282) | Subscriber.hs:2142 / 2225 |
+| `validSender` (`CIChannelRcv ⇒ GROwner`) / `checkSendAsGroup` | Subscriber.hs:2135 / 1057 |
+| `updateGroupChatItem` / `_` / `UPDATE` / `updatedChatItem` | Store/Messages.hs:2749 / 2758 / 2766 / 2547 |
+| §7 `updateGroupChatItem` callers (all 5) | Commands.hs:757; Subscriber.hs:1200,1566,2258,2298 |
+| `createNewSndChatItem` (`MSSVerified <$ signedMsg_`) / `createNewRcvChatItem` / `createNewChatItem_` (`msg_signed`) / `mkCIMeta` | Store/Messages.hs:548 / 562 / 614 / Messages.hs:528 |
+| `Store/Delivery.hs` `fwdSender` / `VMSigned` reconstruction | Delivery.hs:158 / 162–164 |
+| `sigStatusStr` | View.hs:389 |
+| iOS `CIMeta` / composer menu / `ciMetaText` / `/_send` build | ChatTypes.swift:3825 / SendMessageView.swift:238 / CIMetaView.swift:93 / AppAPITypes.swift:243 |
+| Kotlin `CIMeta` / composer menu / `CIMetaText` + `reserveSpaceForMeta` / `/_send` build | ChatModel.kt:3529 / SendMsgView.kt:198 / CIMetaView.kt:67 + 118 / SimpleXAPI.kt:3870 |
+| channels-overview.md anchors (:103,:159,:198,:214,:221,:237) | all confirmed |
+
+## Open design questions (2026-06-25)
+
+These are decisions the plan currently makes implicitly or defers; they want an explicit team answer before implementation.
+
+1. **Key-mismatch on signed content: drop (fail-closed) vs downgrade-to-unsigned-display.** The plan inherits `withVerifiedMsg`'s behavior: a content message that carries a signature *and* the recipient holds a roster key for the author, but the signature does not verify against that key, is **dropped** + `RGEMsgBadSignature`. The trigger set is {genuine forgery/tamper} ∪ {honest author key-rotation with a stale/lagging recipient roster} ∪ {TOFU mismatch}. For rare state events, drop is right. For content — the actual high-volume conversation — this PR newly enables a path where an honest member's posts go **silently missing** on a recipient whose roster lags, and a relay that can induce roster lag gains a censorship channel. This sits in tension with the plan's own stated invariant ("absence of a badge is not proof of forgery; only a verified badge is a guarantee"): under that invariant, "signed-but-key-mismatch" and "unsigned" both give the recipient *zero* verification guarantee, yet we drop the former and display the latter — which is backwards against a censoring relay (strip the signature → delivered and shown; leave a stale-key signature → dropped). **Question for the team: should signed content that fails verification on key-mismatch be dropped, or displayed unsigned (no badge) with the failure logged?** Downgrade-to-unsigned preserves availability and is internally consistent with the badge-only-is-guarantee stance, but it diverges from state-event handling and requires touching `withVerifiedMsg`/`signatureOptional` (larger diff than the current "reuse the existing drop path"). Advisor lean: downgrade-to-unsigned for `signableContent` tags specifically, because silent content loss is a worse failure than displaying already-unverifiable content. Needs an explicit threat-model ruling either way; whichever is chosen, the edge-case test and help note must match it.
+
+2. **How the app learns signing is available (the §B `memberSigningAvailable` hand-wave).** Offering "Sign message" requires both `useRelays'` *and* the membership holding a signing key (`groupKeys = Just …` with `memberPrivKey`). `memberPrivKey` is a private key and must never enter app JSON. So core must expose a derived **non-secret boolean** (e.g. `GroupInfo.membership.memberSigningKey :: Bool`, or a top-level `canSignMessages`), added to the JSON with `omittedField`/optional decode for forward-compat. The plan should name the concrete field and its JSON location rather than "if needed", since the composer gate (§B) depends on it and the field must ship in the same release as the app change. **Question: confirm a derived boolean on `GroupInfo`/`GroupMember` is acceptable, and pick its name/shape.**
+
+3. **`sign :: Bool` joining two adjacent Bools (`showGroupAsSender`, `live`) in the send signatures.** The plan mitigates transposition by placement only. Per the boolean-blindness concern, the safer move is a named type — at minimum `type SignMessages = Bool` (parity with the existing `ShowGroupAsSender` alias), better a `newtype`. This is optional hardening, not a blocker, but cheap at introduction and it makes the nine positional `APISendMessages` constructor edits self-checking. **Question: introduce a `SignMessages` alias/newtype, or keep raw `Bool` for consistency with `live`?**
+
+4. **As-channel owner-guard timing (called out inline in §5).** The forwarded as-channel guard checks the author's `GROwner` role against the recipient's *current* roster at receive time. An owner demoted/removed between send and a late/ reordered delivery — or whose `GROwner` role simply hasn't propagated to this recipient yet (the known role-propagation issue) — causes a legitimately-signed as-channel post to fail the guard. **Question: what is the intended outcome in that case — drop, render-as-member-instead-of-channel, or error?** The plan should specify, and the as-channel edge-case test should cover it.
+
+5. **Per-send `sign` granularity vs batched events (low risk, confirm only).** One `APISendMessages` carries a `NonEmpty ComposedMessage` → a batch of `XMsgNew` events that all share the single `sign` flag. `signableContent` filters to `XMsgNew`/`XMsgUpdate`, and content sends don't mix in non-signable events, so a per-batch flag is correct. Flagged only so the team confirms no content-send path interleaves signable and non-signable events under one flag.
