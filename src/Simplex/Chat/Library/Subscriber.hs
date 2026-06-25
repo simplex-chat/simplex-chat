@@ -3071,8 +3071,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ msg brokerTs = do
-      let fromRelay = useRelays' gInfo && isRelay m
-      unless fromRelay $ checkHostRole m memRole
+      unless (useRelays' gInfo) $ checkHostRole m memRole
       if sameMemberId memId (membership gInfo)
         then pure Nothing
         else
@@ -3081,7 +3080,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- roster-established privileged member: the relay may update the profile only,
               -- never the role or key (those are owner-authoritative via the roster, and
               -- XGrpMemNew is unsigned)
-              | fromRelay && isRosterRole (memberRole' unknownMember) -> do
+              | useRelays' gInfo && isPrivilegedRole (memberRole' unknownMember) -> do
                   -- a member's key is immutable per memberId and identical across relays; mismatch
                   -- is unambiguous relay misbehavior (role can legitimately differ across relays
                   -- under multi-relay skew, so we deliberately don't warn on role)
@@ -3095,8 +3094,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
                   memberAnnouncedToView updatedMember gInfo'
                   pure $ deliveryJobScope updatedMember
-              -- asserted privileged but NOT roster-established: relay conjuring a moderator
-              | fromRelay && isRosterRole memRole ->
+              -- asserted privileged but NOT roster-established: relay conjuring a privileged member
+              | useRelays' gInfo && isPrivilegedRole memRole ->
                   messageError "x.grp.mem.new: privileged role not established by roster" $> Nothing
               | otherwise -> do
                   (updatedMember, gInfo') <- withStore $ \db -> do
@@ -3114,8 +3113,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               | useRelays' gInfo -> logInfo "x.grp.mem.new: member already created via another relay" $> Nothing
               | otherwise -> messageError "x.grp.mem.new error: member already exists" $> Nothing
             Left _
-              -- a privileged member absent from the roster is a relay conjuring a moderator
-              | fromRelay && isRosterRole memRole -> messageError "x.grp.mem.new: privileged member not established by roster" $> Nothing
+              -- a privileged member absent from the roster is a relay conjuring one
+              | useRelays' gInfo && isPrivilegedRole memRole -> messageError "x.grp.mem.new: privileged member not established by roster" $> Nothing
               | otherwise -> do
                   (newMember, gInfo') <- withStore $ \db -> do
                     newMember <- createNewGroupMember db cxt user gInfo m memInfo GCPostMember initialStatus
