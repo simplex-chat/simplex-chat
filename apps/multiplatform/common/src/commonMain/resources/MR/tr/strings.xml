@@ -438,7 +438,7 @@
     <string name="info_row_deleted_at">Şu tarihte silindi</string>
     <string name="share_text_deleted_at">Şu tarihte silindi: %s</string>
     <string name="item_info_current">(güncel)</string>
-    <string name="change_member_role_question">Grup yetkisini değiştir\?</string>
+    <string name="change_member_role_question">Grup yetkisini değiştir?</string>
     <string name="chat_preferences_default">varsayılan (%s)</string>
     <string name="v5_1_custom_themes_descr">Renk temalarını kişiselleştir ve paylaş</string>
     <string name="v5_1_custom_themes">Kişiselleştirilmiş temalar</string>
