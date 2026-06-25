@@ -243,7 +243,7 @@
     <string name="ttl_min">%d मिनट</string>
     <string name="settings_section_title_device">उपकरण</string>
     <string name="group_member_status_creator">रचनाकार</string>
-    <string name="change_member_role_question">समूह भूमिका बदलें\?</string>
+    <string name="change_member_role_question">समूह भूमिका बदलें?</string>
     <string name="ttl_week">%d सप्ताह</string>
     <string name="v4_2_auto_accept_contact_requests">संपर्क अनुरोधों को स्वत: स्वीकार करें</string>
     <string name="integrity_msg_bad_hash">खराब संदेश हैश</string>
