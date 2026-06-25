@@ -821,6 +821,13 @@ fun ComposeView(
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<CryptoFile> = ArrayList()
       val remoteHost = chatModel.currentRemoteHost.value
+      // Temp files holding metadata-stripped media for the remote-host upload path.
+      // Deleted in the `finally` below, after storeRemoteFile uploads them to the controlled host.
+      val stripperTmpFiles = mutableListOf<File>()
+      // Wrap a strip-to-tmp result for upload: register the tmp file for cleanup, return a plain CryptoFile.
+      fun trackedCryptoFile(tmp: File?): CryptoFile? =
+        tmp?.also { stripperTmpFiles.add(it) }?.let { CryptoFile.plain(it.absolutePath) }
+      try {
       when (val preview = cs.preview) {
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
@@ -838,10 +845,10 @@ fun ComposeView(
                 else desktopSaveImageInTmp(it.uri)
               is UploadContent.AnimatedImage ->
                 if (remoteHost == null) saveAnimImage(it.uri)
-                else CryptoFile.desktopPlain(it.uri)
+                else trackedCryptoFile(stripAnimImageToTmpFile(it.uri))
               is UploadContent.Video ->
-                if (remoteHost == null) saveFileFromUri(it.uri, hiddenFileNamePrefix = "video")
-                else CryptoFile.desktopPlain(it.uri)
+                if (remoteHost == null) saveVideoFromUri(it.uri)
+                else trackedCryptoFile(stripVideoToTmpFile(it.uri))
             }
             if (file != null) {
               files.add(file)
@@ -856,6 +863,22 @@ fun ComposeView(
         is ComposePreview.VoicePreview -> {
           val tmpFile = File(preview.voice)
           AudioPlayer.stop(tmpFile.absolutePath)
+          // The recorder writes an MPEG-4 container with mvhd/tkhd/mdhd `creation_time`
+          // atoms set to the UTC second of the recording. Strip in place before send so the
+          // recipient does not learn when the message was recorded.
+          val strippedTmp = File(tmpFile.parentFile, tmpFile.name + ".stripped")
+          val strippedOk = try {
+            stripVideoMetadata(tmpFile.absolutePath, strippedTmp.absolutePath)
+            Files.move(strippedTmp.toPath(), tmpFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            true
+          } catch (e: Exception) {
+            Log.e(TAG, "Failed to strip voice metadata: ${e.stackTraceToString()}")
+            AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error))
+            tmpFile.delete()
+            strippedTmp.delete()
+            false
+          }
+          if (strippedOk) {
           if (remoteHost == null) {
             val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderInterface.extension, "")))
             val file = withContext(Dispatchers.IO) {
@@ -886,8 +909,11 @@ fun ComposeView(
             filesToDelete.remove(tmpFile)
             msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
           }
+          }
         }
         is ComposePreview.FilePreview -> {
+          // Generic "Attach a file" path: verbatim copy/upload. Metadata stripping happens
+          // only when the user explicitly chose "Send image" or "Send video" (MediaPreview branch).
           val file = if (remoteHost == null) {
             saveFileFromUri(preview.uri)
           } else {
@@ -925,6 +951,9 @@ fun ComposeView(
           // it's the last message in the series so if it fails, restore it in ComposeView for editing
           lastMessageFailedToSend = constructFailedMessage(cs)
         }
+      }
+      } finally {
+        stripperTmpFiles.forEach { it.delete() }
       }
     }
     val wasForwarding = cs.forwarding
