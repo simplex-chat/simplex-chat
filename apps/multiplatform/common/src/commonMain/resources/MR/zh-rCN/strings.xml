@@ -149,7 +149,7 @@
     <string name="rcv_group_event_changed_member_role">将 %s 的角色更改为 %s</string>
     <string name="rcv_group_event_changed_your_role">将你的角色更改为 %s</string>
     <string name="change_role">改变角色</string>
-    <string name="change_member_role_question">更改群角色？</string>
+    <string name="change_member_role_question">更改角色？</string>
     <string name="icon_descr_cancel_link_preview">取消链接预览</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">正在为 %s 更改地址……</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">更改地址中……</string>
@@ -702,7 +702,7 @@
     <string name="reject_contact_button">拒绝</string>
     <string name="reply_verb">回复</string>
     <string name="network_options_reset_to_defaults">重置为默认</string>
-    <string name="run_chat_section">运行聊天程序</string>
+    <string name="run_chat_section">运行聊天</string>
     <string name="scan_code">扫码</string>
     <string name="scan_code_from_contacts_app">从你联系人的应用程序中扫描安全码。</string>
     <string name="security_code">安全码</string>
@@ -1298,7 +1298,7 @@
     <string name="v5_2_disappear_one_message_descr">即使在对话中禁用。</string>
     <string name="use_random_passphrase">使用随机密码</string>
     <string name="system_restricted_background_in_call_title">无后台通话</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">你可以稍后通过应用程序隐私和安全设置启用它们。</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">你可以稍后通过应用程序的你的隐私设置启用它们。</string>
     <string name="save_passphrase_in_settings">在设置中保存密码</string>
     <string name="enable_receipts_all">启用</string>
     <string name="send_receipts_disabled_alert_msg">该群成员超过 %1$d ，未发送送达回执。</string>
@@ -2610,7 +2610,7 @@
     <string name="connect_plan_open_channel">打开频道</string>
     <string name="connect_plan_open_new_channel">打开新频道</string>
     <string name="member_info_section_title_owner">所有者</string>
-    <string name="channel_members_section_owners">所有者</string>
+    <string name="channel_members_section_owners">所有者和贡献者</string>
     <string name="preset_relay_address">预设中继地址</string>
     <string name="preset_relay_name">预设中继名</string>
     <string name="group_member_role_relay">中继</string>
@@ -2803,10 +2803,10 @@
     <string name="button_remove_relay_question">删除中继？</string>
     <string name="select_relays">选择中继</string>
     <string name="close_behavior_dialog_text">如果选择关闭将不会接收消息。\n可以之后在外观设置中更改。</string>
-    <string name="appearance_minimize_to_tray_desc">保持 SimpleX 在后台运行以接收消息。</string>
+    <string name="appearance_minimize_to_tray_desc">在后台运行以接收消息</string>
     <string name="close_behavior_dialog_minimize">最小化到托盘</string>
     <string name="close_behavior_dialog_title">最小化到托盘？</string>
-    <string name="appearance_minimize_to_tray">关闭窗口时最小化到托盘</string>
+    <string name="appearance_minimize_to_tray">关闭窗口到托盘</string>
     <string name="tray_quit">退出 SimpleX</string>
     <string name="tray_show">显示 SimpleX</string>
     <string name="tray_tooltip">SimpleX</string>
@@ -2819,4 +2819,7 @@
     <string name="relay_status_rejected">被拒绝</string>
     <string name="member_info_relay_status_rejected_by_operator">被中继运营方拒绝</string>
     <string name="member_info_status">状态</string>
+    <string name="webpage_code_footer">将此代码添加到您的网页。他会展示您频道/群组的预览。</string>
+    <string name="badge_unknown_key_desc">此徽章用了这个版本的 SimpleX Chat 无法识别的密钥进行签名。更新 SimpleX Chat 以验证此徽章。</string>
+    <string name="webpage_info">创建网页在访客订阅前向其展示你的频道预览。自行托管或使用任何静态托管服务。</string>
 </resources>
