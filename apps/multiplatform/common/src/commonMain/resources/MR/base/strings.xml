@@ -2976,9 +2976,12 @@
 
   <!-- ChannelMembersView.kt -->
   <string name="channel_members_title_subscribers">Subscribers</string>
-  <string name="channel_members_section_owners">Owners</string>
+  <string name="channel_members_section_owners">Owners &amp; contributors</string>
   <string name="channel_subscriber_count_singular">%1$d subscriber</string>
   <string name="channel_subscriber_count_plural">%1$d subscribers</string>
+  <string name="channel_owner_count_singular">%1$d owner</string>
+  <string name="channel_owner_count_plural">%1$d owners</string>
+  <string name="channel_owners_contributors_count">%1$d owners &amp; contributors</string>
   <string name="channel_member_you">you</string>
 
   <!-- ChatRelayView.kt -->
