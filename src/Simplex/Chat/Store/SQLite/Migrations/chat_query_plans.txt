@@ -7033,6 +7033,11 @@ Query: SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?
+Plan:
+SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
+SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
+
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?)
@@ -7233,6 +7238,10 @@ Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
 
+Query: SELECT member_id FROM group_members WHERE member_role = ? LIMIT 1
+Plan:
+SCAN group_members
+
 Query: SELECT member_pub_key FROM group_members WHERE local_display_name = ?
 Plan:
 SCAN group_members
@@ -7250,6 +7259,10 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT member_role FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
+Query: SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?
 Plan:
 SCAN group_members
 
