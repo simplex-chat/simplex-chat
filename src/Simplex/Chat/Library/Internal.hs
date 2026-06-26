@@ -1256,6 +1256,9 @@ redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDes
 isRosterRole :: GroupMemberRole -> Bool
 isRosterRole r = r == GRMember || r == GRModerator || r == GRAdmin
 
+isPrivilegedRole :: GroupMemberRole -> Bool
+isPrivilegedRole r = r >= GRMember
+
 -- Drop non-privileged-role entries and de-duplicate by memberId, keeping the first.
 -- Runs on the parsed roster blob.
 validateGroupRoster :: [RosterMember] -> [RosterMember]
