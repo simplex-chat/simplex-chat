@@ -50,6 +50,8 @@ module Simplex.Chat.Store.Profiles
     getUserAddressConnection,
     deleteUserAddress,
     getUserAddress,
+    getUserAddressSigKey,
+    setUserSimplexName,
     getUserContactLinkById,
     getGroupLinkInfo,
     getUserContactLinkByConnReq,
@@ -161,7 +163,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing)
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -387,6 +389,17 @@ setUserBadge db user@User {userId, profile = p@LocalProfile {profileId}} localBa
   DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (ts, userId)
   pure (user :: User) {profile = p {localBadge}, userMemberProfileUpdatedAt = Just ts}
 
+-- set the user's own broadcast name (contact_profiles.contact_domain) out of band (see updateUserProfileFields_').
+-- The verifiable proof is not stored here; it is generated fresh when the address link data is re-saved.
+setUserSimplexName :: DB.Connection -> User -> Maybe SimplexNameInfo -> IO User
+setUserSimplexName db user@User {userId, profile = p@LocalProfile {profileId}} name_ = do
+  ts <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?"
+    (name_, ts, userId, profileId)
+  pure (user :: User) {profile = p {contactDomain = name_}}
+
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
 setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do
   ts <- getCurrentTime
@@ -416,17 +429,17 @@ getUserContactProfiles db User {userId} =
       (Only userId)
   where
     toContactProfile :: (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe SimplexNameInfo, Maybe Preferences) -> Profile
-    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, contactDomainRaw, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain = StrJSON <$> contactDomainRaw, peerType, preferences, badge = Nothing}
+    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, contactDomainRaw, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain = StrJSON <$> contactDomainRaw, peerType, preferences, badge = Nothing, contactDomainProof = Nothing}
 
-createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> ExceptT StoreError IO ()
-createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode =
+createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> C.PrivateKeyEd25519 -> ExceptT StoreError IO ()
+createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode linkPrivSigKey =
   checkConstraint SEDuplicateContactLink . liftIO $ do
     currentTs <- getCurrentTime
     let slDataSet = BI (isJust shortLink)
     DB.execute
       db
-      "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (userId, cReq, shortLink, slDataSet, slDataSet, currentTs, currentTs)
+      "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, link_priv_sig_key, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, cReq, shortLink, slDataSet, slDataSet, linkPrivSigKey, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
@@ -514,6 +527,12 @@ getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
 getUserAddress db User {userId} =
   ExceptT . firstRow toUserContactLink SEUserContactLinkNotFound $
     DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL") (Only userId)
+
+-- the contact-address owner signing key, captured at address creation, used to sign the user's name proofs
+getUserAddressSigKey :: DB.Connection -> User -> IO (Maybe C.PrivateKeyEd25519)
+getUserAddressSigKey db User {userId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT link_priv_sig_key FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
 getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupLinkInfo)
 getUserContactLinkById db userId userContactLinkId =

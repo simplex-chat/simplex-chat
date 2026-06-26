@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, signNameProof, verifyBadge)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -1223,13 +1223,14 @@ introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn
       sendGroupMemberMessages user gInfo conn evts
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
-userProfileInGroup user = userProfileInGroup' user . groupUserAllowSimplexLinks
+userProfileInGroup user g = userProfileInGroup' user (Just g)
 {-# INLINE userProfileInGroup #-}
 
-userProfileInGroup' :: User -> Bool -> Maybe Profile -> Profile
-userProfileInGroup' User {profile = p} allowSimplexLinks incognitoProfile =
+-- Nothing group ⇒ no redaction (e.g. joining via a link with no group profile yet).
+userProfileInGroup' :: User -> Maybe GroupInfo -> Maybe Profile -> Profile
+userProfileInGroup' User {profile = p} mg incognitoProfile =
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-   in redactedMemberProfile allowSimplexLinks p'
+   in maybe p' (\g -> redactedMemberProfile g (membership g) p') mg
 
 memberInfo :: GroupInfo -> GroupMember -> MemberInfo
 memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, activeConn} =
@@ -1237,16 +1238,16 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile,
+      profile = redactedMemberProfile g m $ fromLocalProfile memberProfile,
       memberKey = MemberKey <$> memberPubKey
     }
-  where
-    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && groupFeatureMemberAllowed SGFDirectMessages m g
 
-redactedMemberProfile :: Bool -> Profile -> Profile
-redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType, badge, contactDomain} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType, badge, contactDomain}
+redactedMemberProfile :: GroupInfo -> GroupMember -> Profile -> Profile
+redactedMemberProfile g m Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, contactDomain} =
+  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = if allowSimplexLinks then contactLink else Nothing, preferences = Nothing, peerType, badge, contactDomain = if allowDirect then contactDomain else Nothing, contactDomainProof = Nothing}
   where
+    allowDirect = groupFeatureMemberAllowed SGFDirectMessages m g
+    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
     removeSimplexLink s
       | allowSimplexLinks = Just s
       | hasObfuscatedSimplexLink s = Nothing
@@ -2050,6 +2051,14 @@ presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p =
           Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p
 
+-- Add the user's name-claim proof to an outgoing address/invite profile: sign (name, link context)
+-- with the address root key (linkOwnerId = Nothing — the sole-owner contact-address case), bound to
+-- the link the profile is saved to. No-op without a name, key, or link.
+signAddressNameProof :: Maybe AConnShortLink -> Maybe C.PrivateKeyEd25519 -> Maybe SimplexNameInfo -> Profile -> Profile
+signAddressNameProof (Just lnk) (Just rootKey) (Just name) p =
+  p {contactDomainProof = Just $ signNameProof rootKey Nothing name (PHSimplexLink lnk)}
+signAddressNameProof _ _ _ p = p
+
 -- receiving side of contact/invitation link data: verify the badge proof from the link profile
 -- and set the crypto-free display badge for the UI (the raw proof stays in profile for APIPrepareContact)
 linkDataBadge :: ContactShortLinkData -> CM ContactShortLinkData
@@ -2349,9 +2358,8 @@ sendGroupMessages user gInfo scope asGroup members events = do
             _ -> False
     sendProfileUpdate = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
-          allowSimplexLinks = groupUserAllowSimplexLinks gInfo
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
-      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
+      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
@@ -3092,7 +3100,8 @@ simplexTeamContactProfile =
       contactDomain = Nothing,
       peerType = Nothing,
       preferences = Nothing,
-      badge = Nothing
+      badge = Nothing,
+      contactDomainProof = Nothing
     }
 
 simplexStatusContactProfile :: Profile
@@ -3106,7 +3115,8 @@ simplexStatusContactProfile =
       contactDomain = Nothing,
       peerType = Just CPTBot,
       preferences = Nothing,
-      badge = Nothing
+      badge = Nothing,
+      contactDomainProof = Nothing
     }
 
 timeItToView :: String -> CM' a -> CM' a

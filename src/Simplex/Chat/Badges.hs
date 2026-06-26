@@ -29,6 +29,10 @@ module Simplex.Chat.Badges
     maxFileSizeLegend,
     ProofPresHeaderTag (..),
     ProofPresHeader (..),
+    ClaimProof (..),
+    signNameProof,
+    verifyNameProofSig,
+    proofPresHeaderLink,
     BadgePurchase (..),
     BadgeMasterKey (..),
     BadgeRequest (..),
@@ -65,11 +69,14 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
 import Simplex.FileTransfer.Description (gb, maxFileSize)
+import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), OwnerId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
+import Simplex.Messaging.SimplexName (SimplexNameInfo)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.ToField (ToField (..))
@@ -197,36 +204,88 @@ maxXFTPFileSize = \case
 -- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
 -- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
 
-data ProofPresHeaderTag = PHTestTag | PHUnknownTag Char
+data ProofPresHeaderTag = PHTestTag | PHSimplexLinkTag | PHUnknownTag Char
 
 instance StrEncoding ProofPresHeaderTag where
   strEncode = B.singleton . \case
     PHTestTag -> 'T'
+    PHSimplexLinkTag -> 'L'
     PHUnknownTag c -> c
   strP = tag <$> A.anyChar
     where
       tag = \case
         'T' -> PHTestTag
+        'L' -> PHSimplexLinkTag
         c -> PHUnknownTag c
 
+-- PHSimplexLink binds the proof to the link it is presented through (a 1-time
+-- invitation or a contact address), making it non-replayable across links.
 data ProofPresHeader
   = PHTest ByteString
+  | PHSimplexLink AConnShortLink
   | PHUnknown Char ByteString
+  deriving (Eq, Show)
 
 instance StrEncoding ProofPresHeader where
   strEncode = \case
     PHTest nonce -> strEncode PHTestTag <> nonce
+    PHSimplexLink lnk -> strEncode PHSimplexLinkTag <> strEncode lnk
     PHUnknown c b -> strEncode (PHUnknownTag c) <> b
   strP =
     strP >>= \case
       PHTestTag -> PHTest <$> A.takeByteString
+      PHSimplexLinkTag -> PHSimplexLink <$> strP
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
 -- v6.5.x accepts both; v7 will reject PHTest/PHUnknown
 proofPresHeaderAccepted :: ProofPresHeader -> Bool
 proofPresHeaderAccepted = \case
   PHTest _ -> True
+  PHSimplexLink _ -> True
   PHUnknown _ _ -> True
+
+instance ToJSON ProofPresHeader where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromJSON ProofPresHeader where
+  parseJSON = strParseJSON "ProofPresHeader"
+
+-- A name claim proof: signed by the address owner's key (linkOwnerId = Just oid for a
+-- channel's delegated owner, Nothing = the address root key) over
+-- strEncode name <> strEncode presHeader, bound to the presentation context (the link).
+data ClaimProof = ClaimProof
+  { linkOwnerId :: Maybe (StrJSON "OwnerId" OwnerId),
+    presHeader :: ProofPresHeader,
+    signature :: C.Signature 'C.Ed25519
+  }
+  deriving (Eq, Show)
+
+-- the bytes a name proof signs over: the claimed name bound to its presentation context
+nameProofPayload :: SimplexNameInfo -> ProofPresHeader -> ByteString
+nameProofPayload name presHeader = strEncode name <> strEncode presHeader
+
+-- mint a name proof: sign (name, presentation context) with the address owner key.
+-- linkOwnerId names the signing owner in the link's owner chain (Nothing = root key, the contact-address case).
+signNameProof :: C.PrivateKeyEd25519 -> Maybe OwnerId -> SimplexNameInfo -> ProofPresHeader -> ClaimProof
+signNameProof key linkOwnerId name presHeader =
+  ClaimProof
+    { linkOwnerId = StrJSON <$> linkOwnerId,
+      presHeader,
+      signature = C.sign' key (nameProofPayload name presHeader)
+    }
+
+-- verify a name proof's signature against the resolved address owner key. The caller must
+-- SEPARATELY check the proof's presHeader link is the link it is presented through (anti-replay).
+verifyNameProofSig :: C.PublicKeyEd25519 -> SimplexNameInfo -> ClaimProof -> Bool
+verifyNameProofSig ownerKey name ClaimProof {presHeader, signature} =
+  C.verify' ownerKey signature (nameProofPayload name presHeader)
+
+-- the link a proof is bound to (its anti-replay context), if any
+proofPresHeaderLink :: ProofPresHeader -> Maybe AConnShortLink
+proofPresHeaderLink = \case
+  PHSimplexLink lnk -> Just lnk
+  _ -> Nothing
 
 -- Payment proof
 
@@ -391,6 +450,13 @@ $(JQ.deriveJSON defaultJSON ''BadgeRequest)
 $(JQ.deriveJSON defaultJSON ''BadgeCredential)
 
 $(JQ.deriveJSON defaultJSON ''BadgeProof)
+
+$(JQ.deriveJSON defaultJSON ''ClaimProof)
+
+-- ClaimProof is stored as JSON in contact_profiles.contact_domain_proof (like a badge proof)
+instance ToField ClaimProof where toField = toField . encodeJSON
+
+instance FromField ClaimProof where fromField = fromTextField_ decodeJSON
 
 -- LocalBadge is sent to the UI/clients WITHOUT crypto - only disclosed info + status. The credential/proof
 -- bytes stay core-side. FromJSON reconstructs a display-only badge (empty proof) for read-only consumers

@@ -222,7 +222,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Badges (BadgeRow, badgeToRow, verifyBadge_)
+import Simplex.Chat.Badges (BadgeRow, ClaimProof, badgeToRow, verifyBadge_)
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol hiding (Binary)
@@ -255,11 +255,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. (Maybe SimplexNameInfo, Maybe BoolInt)) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. (Maybe SimplexNameInfo, Maybe BoolInt, Maybe ClaimProof)) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
 
 toMaybeGroupMember :: UTCTime -> Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactDomainVerification)) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
-  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactDomainVerification)) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
+toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactDomainVerification, profileContactDomainProof)) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
+  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactDomainVerification, profileContactDomainProof)) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
 toMaybeGroupMember _ _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -399,9 +399,9 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
           INSERT INTO group_profiles
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
-             group_web_page, group_domain, domain_web_page, allow_embedding,
+             group_web_page, group_domain, domain_web_page, allow_embedding, group_domain_proof,
              user_id, preferences, member_admission, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. publicGroupAccessRow publicGroup
           :. (userId, groupPreferences, memberAdmission, currentTs, currentTs))
@@ -905,9 +905,9 @@ createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus p
           INSERT INTO group_profiles
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
-             group_web_page, group_domain, domain_web_page, allow_embedding,
+             group_web_page, group_domain, domain_web_page, allow_embedding, group_domain_proof,
              user_id, preferences, member_admission, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. publicGroupAccessRow publicGroup
           :. (userId, groupPreferences, memberAdmission, currentTs, currentTs))
@@ -1956,7 +1956,7 @@ getRelayPublishableGroups db User {userId, userContactId} =
       db
       [sql|
         SELECT g.group_id, gp.public_group_id,
-               gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding
+               gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id AND mu.contact_id = ?
@@ -2682,7 +2682,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
           UPDATE group_profiles
           SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
               group_type = ?, group_link = ?,
-              group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?,
+              group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?, group_domain_proof = ?,
               preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
@@ -2738,7 +2738,7 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
             [sql|
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
                    gp.group_type, gp.group_link, gp.public_group_id,
-                   gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
+                   gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
                    gp.preferences, gp.member_admission
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
