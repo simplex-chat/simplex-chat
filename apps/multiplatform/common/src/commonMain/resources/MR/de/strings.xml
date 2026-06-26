@@ -1005,8 +1005,8 @@
     <string name="v4_5_reduced_battery_usage_descr">Weitere Verbesserungen sind bald verfügbar!</string>
     <string name="v4_5_multiple_chat_profiles_descr">Unterschiedliche Namen, Avatare und Transport-Isolation.</string>
     <string name="v4_5_transport_isolation">Transport-Isolation</string>
-    <string name="v4_5_italian_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
-    <string name="v4_4_french_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="v4_5_italian_interface_descr">Dank der Nutzer - Wirken Sie per Weblate mit!</string>
+    <string name="v4_4_french_interface_descr">Dank der Nutzer - Wirken Sie per Weblate mit!</string>
     <string name="v4_5_private_filenames_descr">Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.</string>
     <string name="moderated_description">Moderiert</string>
     <string name="moderated_item_description">Von %s moderiert</string>
@@ -1051,7 +1051,7 @@
     <string name="v4_6_reduced_battery_usage">Weiter reduzierter Batterieverbrauch</string>
     <string name="v4_6_reduced_battery_usage_descr">Weitere Verbesserungen sind bald verfügbar!</string>
     <string name="v4_6_group_welcome_message_descr">Definieren Sie eine Begrüßungsmeldung, die neuen Mitgliedern angezeigt wird!</string>
-    <string name="v4_6_chinese_spanish_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Dank der Nutzer - Wirken Sie per Weblate mit!</string>
     <string name="v4_6_group_moderation">Gruppenmoderation</string>
     <string name="v4_6_hidden_chat_profiles">Verborgene Chat-Profile</string>
     <string name="user_hide">Verberge</string>
@@ -1172,7 +1172,7 @@
     <string name="v5_0_large_files_support_descr">Schnell und ohne zu warten, bis der Kontakt online ist!</string>
     <string name="v5_0_polish_interface">Polnische Bedienoberfläche</string>
     <string name="v5_0_app_passcode_descr">Anstelle der System-Authentifizierung festlegen.</string>
-    <string name="v5_0_polish_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="v5_0_polish_interface_descr">Dank der Nutzer - Wirken Sie per Weblate mit!</string>
     <string name="only_your_contact_can_make_calls">Nur Ihr Kontakt kann Anrufe tätigen.</string>
     <string name="v5_0_app_passcode">App-Zugangscode</string>
     <string name="calls_prohibited_with_this_contact">Audio-/Video-Anrufe sind nicht erlaubt.</string>
@@ -1287,7 +1287,7 @@
     <string name="v5_1_japanese_portuguese_interface">Japanische und portugiesische Bedienoberfläche</string>
     <string name="custom_time_unit_minutes">Minuten</string>
     <string name="custom_time_unit_seconds">Sekunden</string>
-    <string name="whats_new_thanks_to_users_contribute_weblate">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Dank der Nutzer - Wirken Sie per Weblate mit!</string>
     <string name="v5_1_better_messages">Verbesserungen bei Nachrichten</string>
     <string name="v5_1_custom_themes_descr">Farbdesigns anpassen und weitergeben.</string>
     <string name="custom_time_unit_days">Tage</string>
@@ -2694,7 +2694,7 @@
     <string name="connect_plan_open_channel">Kanal öffnen</string>
     <string name="connect_plan_open_new_channel">Neuen Kanal öffnen</string>
     <string name="member_info_section_title_owner">Eigentümer</string>
-    <string name="channel_members_section_owners">Eigentümer &amp; Beitragende</string>
+    <string name="channel_members_section_owners">Eigentümer &amp; Mitwirkende</string>
     <string name="preset_relay_address">Voreingestellte Relais-Adresse</string>
     <string name="preset_relay_name">Voreingestellter Relais-Name</string>
     <string name="group_member_role_relay">Relais</string>
@@ -2923,7 +2923,7 @@
     <string name="channel_name_requires_newer_app_version">Die Verbindung über den Kanalnamen erfordert eine neuere App‑Version.</string>
     <string name="contact_name_requires_newer_app_version">Die Verbindung über den Kontaktnamen erfordert eine neuere App‑Version.</string>
     <string name="settings_section_title_contact">Kontakt</string>
-    <string name="group_member_role_member_channel">Beitragende</string>
+    <string name="group_member_role_member_channel">Mitwirkender</string>
     <string name="copy_code">Code kopieren</string>
     <string name="webpage_info">Erstellen Sie eine Webseite, die Besuchern Ihren Kanal als Vorschau zeigt, bevor sie ihn abonnieren. Hosten Sie die Seite selbst oder nutzen Sie beliebiges statisches Hosting.</string>
     <string name="enter_webpage_url">URL der Webseite eingeben</string>
