@@ -47,7 +47,7 @@ fun AddGroupRelayView(
 
   LaunchedEffect(Unit) {
     try {
-      val servers = ChatController.getUserServers(null)
+      val servers = ChatController.getUserServers(rhId)
       if (servers != null) {
         val relays = mutableListOf<AvailableRelay>()
         for (op in servers) {
