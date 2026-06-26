@@ -20,6 +20,7 @@ module Simplex.Chat.Store.Files
     createSndFileTransferXFTP,
     createSndFTDescrXFTP,
     setSndFTPrivateSndDescr,
+    getSndFTPrivateSndDescr,
     updateSndFTDescrXFTP,
     createExtraSndFTDescrs,
     updateSndFTDeliveryXFTP,
@@ -208,6 +209,15 @@ setSndFTPrivateSndDescr db User {userId} fileId sfdText = do
     db
     "UPDATE files SET private_snd_file_descr = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
     (sfdText, currentTs, userId, fileId)
+
+getSndFTPrivateSndDescr :: DB.Connection -> User -> FileTransferId -> IO (Maybe Text)
+getSndFTPrivateSndDescr db User {userId} fileId =
+  fmap (maybe Nothing fromOnly) $
+    maybeFirstRow id $
+      DB.query
+        db
+        "SELECT private_snd_file_descr FROM files WHERE user_id = ? AND file_id = ?"
+        (userId, fileId)
 
 updateSndFTDescrXFTP :: DB.Connection -> User -> SndFileTransfer -> Text -> IO ()
 updateSndFTDescrXFTP db user@User {userId} sft@SndFileTransfer {fileId, fileDescrId} rfdText = do

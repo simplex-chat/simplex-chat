@@ -195,6 +195,9 @@ struct ChatItemInfoView: View {
                     }
                 }
             }
+            if ci.file != nil, let servers = chatItemInfo?.fileXftpServers, !servers.isEmpty {
+                infoRow("File servers", servers.map(serverHostname).joined(separator: "\n"))
+            }
         }
     }
 
@@ -516,6 +519,9 @@ struct ChatItemInfoView: View {
             if let file = ci.file {
                 shareText += [String.localizedStringWithFormat(NSLocalizedString("File status: %@", comment: "copied message info"), file.fileStatus.id)]
             }
+        }
+        if ci.file != nil, let servers = chatItemInfo?.fileXftpServers, !servers.isEmpty {
+            shareText += [String.localizedStringWithFormat(NSLocalizedString("File servers: %@", comment: "copied message info"), servers.map(serverHostname).joined(separator: ", "))]
         }
         if let qi = ci.quotedItem {
             shareText += ["", NSLocalizedString("## In reply to", comment: "copied message info")]
