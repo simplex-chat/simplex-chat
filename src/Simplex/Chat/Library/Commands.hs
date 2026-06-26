@@ -2770,8 +2770,9 @@ processChatCommand cxt nm = \case
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && (isRosterRole newRole || anyPrivilegedTarget)
       rosterVer <- if doBumpRoster then Just <$> reserveRosterVersion gInfo else pure Nothing
+      -- roster (with the change projected in) before the delta, so a relay stores the blob at this version before forwarding the delta
+      forM_ rosterVer $ \v -> broadcastRoster user gInfo v (RDRoleChanged newRole currentMems) `catchAllErrors` eToView
       (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g rosterVer currentMems
-      forM_ rosterVer $ \v -> broadcastRoster user gInfo v `catchAllErrors` eToView
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
@@ -2898,13 +2899,14 @@ processChatCommand cxt nm = \case
       let recipients = filter memberCurrent members
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved
       rosterVer <- if doBumpRoster then Just <$> reserveRosterVersion gInfo else pure Nothing
+      -- roster (excluding the removed members) before the delta, so a relay stores the blob at this version before forwarding the delta
+      forM_ rosterVer $ \v -> broadcastRoster user gInfo v (RDRemoved currentMems) `catchAllErrors` eToView
       (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing rosterVer recipients currentMems
       (errs3, deleted3, acis3, signed3) <-
         foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], [], False) pendingApprvMems
       let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
       (errs4, deleted4, acis4, signed4) <-
         foldM (\acc m -> deletePendingMember acc user gInfo (m : moderators) m) ([], [], [], False) pendingRvwMems
-      forM_ rosterVer $ \v -> broadcastRoster user gInfo v `catchAllErrors` eToView
       let acis = acis2 <> acis3 <> acis4
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
