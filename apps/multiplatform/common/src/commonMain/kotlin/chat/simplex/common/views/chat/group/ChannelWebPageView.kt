@@ -81,7 +81,7 @@ fun ChannelWebPageView(
   }
 
   LaunchedEffect(Unit) {
-    val relays = chatModel.controller.apiGetGroupRelays(groupInfo.groupId)
+    val relays = chatModel.controller.apiGetGroupRelays(rhId, groupInfo.groupId)
     groupRelays.clear()
     groupRelays.addAll(relays)
   }

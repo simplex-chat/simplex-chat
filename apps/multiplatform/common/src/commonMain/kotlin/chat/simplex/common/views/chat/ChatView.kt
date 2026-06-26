@@ -208,7 +208,7 @@ fun ChatView(
               withBGApi {
                 setGroupMembers(chatRh, cInfo.groupInfo, chatModel)
                 if (cInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
-                  val relays = chatModel.controller.apiGetGroupRelays(cInfo.groupInfo.groupId)
+                  val relays = chatModel.controller.apiGetGroupRelays(chatRh, cInfo.groupInfo.groupId)
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }

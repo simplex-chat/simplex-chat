@@ -1607,7 +1607,7 @@ object ChatController {
   suspend fun apiPrepareContact(rh: Long?, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData): Chat? {
     val userId = try { currentUserId("apiPrepareContact") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.APIPrepareContact(userId, connLink, contactShortLinkData))
-    if (r is API.Result && r.res is CR.NewPreparedChat) return r.res.chat
+    if (r is API.Result && r.res is CR.NewPreparedChat) return if (rh == null) r.res.chat else r.res.chat.copy(remoteHostId = rh)
     Log.e(TAG, "apiPrepareContact bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_preparing_contact), "${r.responseType}: ${r.details}")
     return null
@@ -1616,7 +1616,7 @@ object ChatController {
   suspend fun apiPrepareGroup(rh: Long?, connLink: CreatedConnLink, directLink: Boolean, groupShortLinkData: GroupShortLinkData): Chat? {
     val userId = try { currentUserId("apiPrepareGroup") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.APIPrepareGroup(userId, connLink, directLink, groupShortLinkData))
-    if (r is API.Result && r.res is CR.NewPreparedChat) return r.res.chat
+    if (r is API.Result && r.res is CR.NewPreparedChat) return if (rh == null) r.res.chat else r.res.chat.copy(remoteHostId = rh)
     Log.e(TAG, "apiPrepareGroup bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_preparing_group), "${r.responseType}: ${r.details}")
     return null
@@ -2172,8 +2172,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGetGroupRelays(groupId: Long): List<GroupRelay> {
-    val r = sendCmd(null, CC.ApiGetGroupRelays(groupId))
+  suspend fun apiGetGroupRelays(rh: Long?, groupId: Long): List<GroupRelay> {
+    val r = sendCmd(rh, CC.ApiGetGroupRelays(groupId))
     if (r is API.Result && r.res is CR.GroupRelays) return r.res.groupRelays
     return emptyList()
   }
@@ -2183,8 +2183,8 @@ object ChatController {
     data class AddFailed(val addRelayResults: List<AddRelayResult>): AddGroupRelaysResult()
   }
 
-  suspend fun apiAddGroupRelays(groupId: Long, relayIds: List<Long>): AddGroupRelaysResult? {
-    val r = sendCmdWithRetry(null, CC.ApiAddGroupRelays(groupId, relayIds))
+  suspend fun apiAddGroupRelays(rh: Long?, groupId: Long, relayIds: List<Long>): AddGroupRelaysResult? {
+    val r = sendCmdWithRetry(rh, CC.ApiAddGroupRelays(groupId, relayIds))
     if (r is API.Result && r.res is CR.GroupRelaysAdded) return AddGroupRelaysResult.Added(r.res.groupInfo, r.res.groupLink, r.res.groupRelays)
     if (r is API.Result && r.res is CR.GroupRelaysAddFailed) return AddGroupRelaysResult.AddFailed(r.res.addRelayResults)
     if (r != null) throw Exception("${r.responseType}: ${r.details}")
