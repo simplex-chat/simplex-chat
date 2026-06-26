@@ -37,6 +37,7 @@
           }
         },
         {
+          "blend-mode" : "normal",
           "hidden" : false,
           "image-name" : "simplex-symbol-dark.svg",
           "name" : "simplex-symbol-dark",
