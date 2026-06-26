@@ -1133,6 +1133,11 @@ shareLinkStr :: Maybe SimplexNameInfo -> B.ByteString -> B.ByteString
 shareLinkStr (Just ni) _ = strEncode ni
 shareLinkStr Nothing fallback = fallback
 
+-- The channel's name (group_domain) for share-link display, if any.
+groupDomainName :: GroupInfo -> Maybe SimplexNameInfo
+groupDomainName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
+  (\(StrJSON n) -> n) <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
+
 -- TODO [short links] show all settings
 viewAddressSettings :: AddressSettings -> [StyledString]
 viewAddressSettings AddressSettings {businessAddress, autoAccept, autoReply} = case autoAccept of
@@ -1147,10 +1152,10 @@ viewAddressSettings AddressSettings {businessAddress, autoAccept, autoReply} = c
   _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> GroupLink -> [StyledString]
-groupLink_ intro g@GroupInfo {simplexName} GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
+groupLink_ intro g GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
   [ intro,
     "",
-    plain $ shareLinkStr simplexName $ maybe cReqStr strEncode shortLink,
+    plain $ shareLinkStr (groupDomainName g) $ maybe cReqStr strEncode shortLink,
     "",
     "Anybody can connect to you and join group as " <> showRole acceptMemberRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
@@ -1224,12 +1229,12 @@ viewGroupRelays g relays =
     <> map showRelay relays
 
 viewGroupLinkRelaysUpdated :: GroupInfo -> GroupLink -> [GroupRelay] -> [StyledString]
-viewGroupLinkRelaysUpdated g@GroupInfo {simplexName} groupLink relays =
+viewGroupLinkRelaysUpdated g groupLink relays =
   [ttyFullGroup g <> ": group link relays updated, current relays:"]
     <> map showRelay relays
     <>
       [ "group link:",
-        plain $ shareLinkStr simplexName $ maybe cReqStr strEncode shortLink
+        plain $ shareLinkStr (groupDomainName g) $ maybe cReqStr strEncode shortLink
       ]
   where
     GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
@@ -1786,11 +1791,11 @@ viewContactBadge = maybe [] $ \lb ->
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge}, activeConn, uiThemes, customData, simplexName} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] viewConnectionStats stats
-    <> maybe [] (\l -> ["contact address: " <> plain (shareLinkStr simplexName (strEncode (simplexChatContact' l)))]) contactLink
+    <> maybe [] (\l -> ["contact address: " <> plain (shareLinkStr contactDomain (strEncode (simplexChatContact' l)))]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -2027,7 +2032,7 @@ viewGroupUpdated
           viewAccess Nothing = " removed"
           viewAccess (Just PublicGroupAccess {groupWebPage, groupDomain, domainWebPage, allowEmbedding}) =
             maybe "" (\u -> " web=" <> plain u) groupWebPage
-              <> maybe "" (\d -> " domain=" <> plain d) groupDomain
+              <> maybe "" (\(StrJSON ni) -> " domain=" <> plain (strEncode ni)) groupDomain
               <> (if domainWebPage then " domain_page=on" else "")
               <> (if allowEmbedding then " embed=on" else "")
 
@@ -2127,7 +2132,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
-    ILPKnown ct@Contact {simplexName = sn}
+    ILPKnown ct@Contact {profile = LocalProfile {contactDomain = sn}}
       | nextConnectPrepared ct -> [invLink ("known prepared contact " <> ttyContact' ct)] <> simplexNameLine sn
       | contactDeleted ct -> [invLink ("known deleted contact " <> ttyContact' ct)] <> simplexNameLine sn
       | otherwise ->
@@ -2145,13 +2150,13 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
-    CAPKnown ct@Contact {simplexName = sn}
+    CAPKnown ct@Contact {profile = LocalProfile {contactDomain = sn}}
       | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> simplexNameLine sn
       | otherwise ->
           [ctAddr ("known contact " <> ttyContact' ct)]
             <> simplexNameLine sn
             <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
-    CAPContactViaAddress ct@Contact {simplexName = sn} -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> simplexNameLine sn
+    CAPContactViaAddress ct@Contact {profile = LocalProfile {contactDomain = sn}} -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> simplexNameLine sn
     where
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
@@ -2168,7 +2173,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
     GLPConnectingProhibit (Just g) -> connecting g
-    GLPKnown g@GroupInfo {preparedGroup, membership = m, simplexName = sn} _ _ _ -> case preparedGroup of
+    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
       Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
         GSMemUnknown
           | connLinkStartedConnection -> connecting g
@@ -2179,6 +2184,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | otherwise -> knownActive
       _ -> knownActive
       where
+        sn = groupDomainName g
         knownActive =
           [knownGroup ""]
             <> simplexNameLine sn

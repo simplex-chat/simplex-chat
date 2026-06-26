@@ -536,10 +536,11 @@ data ChatCommand
   | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe ConnectTarget}
-  | -- Resolves the simplex_name claim on the chat row (contact or group) via
-    -- RSLV and compares the resolved link to the peer's stored connection link.
-    -- Returns CRSimplexNameVerified with the boolean result (a match writes
-    -- simplex_name_verified_at); resolver / agent failures surface as ChatErrorAgent.
+  | -- Resolves the name claim on the chat row (contact or group) via RSLV and
+    -- compares the resolved link to the peer's stored connection link. Returns
+    -- CRSimplexNameVerified with the boolean result (persisted as the 3-state
+    -- contact_domain_verification / group_domain_verification); resolver / agent
+    -- failures surface as ChatErrorAgent.
     APIVerifySimplexName {chatRef :: ChatRef}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)

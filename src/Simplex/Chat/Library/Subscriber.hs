@@ -3055,12 +3055,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
-          -- Consume the transient simplex_name carrier from the connection row
-          -- (set in createConnection_ on the connect-via-plan path) and pass it
-          -- to createDirectContact; after this point contacts.simplex_name is
-          -- the source of truth.
-          let Connection {simplexName} = conn'
-          ct <- withStore $ \db -> createDirectContact db cxt user conn' p simplexName
+          ct <- withStore $ \db -> createDirectContact db cxt user conn' p
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do

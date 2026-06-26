@@ -46,8 +46,7 @@ module Simplex.Chat.Store.Groups
     getGroupViaShortLinkToConnect,
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
-    setGroupSimplexNameVerifiedAt,
-    clearConflictingGroupProfileSimplexName_,
+    setGroupDomainVerified,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -238,6 +237,7 @@ import Simplex.Messaging.Agent.Protocol (ConfirmationId, ConnId, CreatedConnLink
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Encoding (smpDecode, smpEncode)
+import Simplex.Messaging.Encoding.String (StrJSON (..))
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import Simplex.Messaging.Agent.Store.Entity (DBEntityId)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -255,11 +255,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. Only (Maybe Text)) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. (Maybe SimplexNameInfo, Maybe BoolInt)) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
 
 toMaybeGroupMember :: UTCTime -> Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. Only profileSimplexNameRaw) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
-  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. Only profileSimplexNameRaw) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
+toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactDomainVerification)) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
+  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactDomainVerification)) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
 toMaybeGroupMember _ _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -274,7 +274,7 @@ createGroupLink db gVar user@User {userId} groupInfo@GroupInfo {groupId, localDi
       "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
       ((userId, groupId, groupLinkId, groupLinkLDN, cReq, shortLink, slDataSet, slDataSet) :. (memberRole, BI True, currentTs, currentTs))
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode PQSupportOff Nothing
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode PQSupportOff
   getGroupLink db user groupInfo
 
 getGroupLinkConnection :: DB.Connection -> StoreCxt -> User -> GroupInfo -> ExceptT StoreError IO Connection
@@ -286,7 +286,7 @@ getGroupLinkConnection db cxt User {userId} groupInfo@GroupInfo {groupId} =
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
           c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version, c.simplex_name
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
         WHERE c.user_id = ? AND uc.user_id = ? AND uc.group_id = ?
@@ -448,8 +448,7 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing,
           groupKeys,
-          simplexName = Nothing,
-          simplexNameVerifiedAt = Nothing
+          groupDomainVerification = Nothing
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -528,8 +527,7 @@ createGroupInvitation db cxt user@User {userId} contact@Contact {contactId, acti
                   membersRequireAttention = 0,
                   viaGroupLinkUri = Nothing,
                   groupKeys = Nothing,
-                  simplexName = Nothing,
-                  simplexNameVerifiedAt = Nothing
+                  groupDomainVerification = Nothing
                 },
               groupMemberId
             )
@@ -645,11 +643,11 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> Maybe SimplexNameInfo -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
-createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ simplexName = do
+createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
+createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
-  (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ currentTs simplexName
+  (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ currentTs
   hostMemberId_ <-
     if useRelays
       then pure Nothing
@@ -866,7 +864,7 @@ createGroupViaLink'
   business
   membershipStatus = do
     currentTs <- liftIO getCurrentTime
-    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business False Nothing Nothing currentTs Nothing
+    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business False Nothing Nothing currentTs
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
@@ -893,8 +891,8 @@ createGroupViaLink'
             )
           insertedRowId db
 
-createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe (CreatedLinkContact, Maybe SharedMsgId) -> Maybe BusinessChatInfo -> Bool -> Maybe RelayStatus -> Maybe Int64 -> UTCTime -> Maybe SimplexNameInfo -> ExceptT StoreError IO (GroupId, Text)
-createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus publicMemberCount_ currentTs simplexName = ExceptT $ do
+createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe (CreatedLinkContact, Maybe SharedMsgId) -> Maybe BusinessChatInfo -> Bool -> Maybe RelayStatus -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (GroupId, Text)
+createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus publicMemberCount_ currentTs = ExceptT $ do
   let GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission} = groupProfile
       (groupType_, groupLink_, publicGroupId_) = case publicGroup of
         Just PublicGroupProfile {groupType, groupLink, publicGroupId} -> (Just groupType, Just groupLink, Just publicGroupId)
@@ -920,10 +918,10 @@ createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus p
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count, simplex_name)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI useRelays, relayOwnStatus, publicMemberCount_, simplexName))
+        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI useRelays, relayOwnStatus, publicMemberCount_))
       groupId <- insertedRowId db
       pure (groupId, localDisplayName)
 
@@ -1082,25 +1080,20 @@ getGroupInfoBySimplexName db cxt user ni =
     Nothing -> pure Nothing
     Just gId -> Just <$> getGroupInfo db cxt user gId
 
--- | Unlike the parallel 'getContactBySimplexName' lookup (which filters
--- @ct.deleted = 0@ to match the @idx_contacts_simplex_name@ partial index),
--- this query has no soft-delete predicate. The @groups@ table has no
--- @deleted@ column: groups are hard-deleted by 'deleteGroup' (DELETE FROM
--- groups), so there is no row to skip here. The "user removed from group
--- but row retained" case (membership transitioned to
--- 'GSMemRemoved'/'GSMemLeft'/'GSMemGroupDeleted') is handled by the
--- 'memberRemoved' check in 'connectPlanName' / 'gPlan' (Commands.hs) before
--- this lookup result is used as a known-and-reconnectable plan; the index
--- collision only matters for 'createPreparedGroup' inserts, which the
--- 'memberRemoved' branch falls through to via 'resolveAndDispatch'. That
--- collision is currently possible but untriggered in practice; clearing
--- @groups.simplex_name@ on a membership-removed transition (analogous to
--- 'clearConflictingGroupProfileSimplexName_') is the right fix when it
--- becomes reachable.
+-- | Channel lookup by the verified name (group_profiles.group_domain joined with
+-- groups.group_domain_verification = 1); on a miss the caller falls through to
+-- resolve-and-connect.
 getGroupIdBySimplexName :: DB.Connection -> User -> SimplexNameInfo -> IO (Maybe GroupId)
 getGroupIdBySimplexName db User {userId} ni =
   maybeFirstRow fromOnly $
-    DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND simplex_name = ?" (userId, ni)
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verification = 1
+      |]
+      (userId, ni)
 
 getGroupMember :: DB.Connection -> StoreCxt -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db cxt user@User {userId} groupId groupMemberId = do
@@ -1841,11 +1834,10 @@ createRelayRequestGroup db cxt user@User {userId} GroupRelayInvitation {fromMemb
           description = Nothing,
           image = Nothing,
           publicGroup = Nothing,
-          simplexName = Nothing,
           groupPreferences = Nothing,
           memberAdmission = Nothing
         }
-  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just relayStatus) Nothing currentTs Nothing
+  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just relayStatus) Nothing currentTs
   -- Store relay request data for recovery
   liftIO $ setRelayRequestData_ groupId currentTs
   ownerMemberId <- insertOwner_ currentTs groupId
@@ -2090,7 +2082,7 @@ createJoiningMemberConnection
   groupMemberId
   subMode = do
     createdAt <- liftIO getCurrentTime
-    Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV cReqChatVRange Nothing (Just uclId) Nothing 0 createdAt subMode PQSupportOff Nothing
+    Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV cReqChatVRange Nothing (Just uclId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
 
 createBusinessRequestGroup :: DB.Connection -> StoreCxt -> TVar ChaChaDRG -> User -> VersionRangeChat -> Profile -> Int64 -> Text -> GroupPreferences -> ExceptT StoreError IO (GroupInfo, GroupMember)
@@ -2467,7 +2459,7 @@ createNewMember_
           invitedBy,
           invitedByGroupMemberId = memInvitedByGroupMemberId,
           localDisplayName,
-          memberProfile = toLocalProfile memberContactProfileId memberProfile "" createdAt badgeVerified,
+          memberProfile = toLocalProfile memberContactProfileId memberProfile "" createdAt badgeVerified Nothing,
           memberContactId,
           memberContactProfileId,
           activeConn,
@@ -2619,7 +2611,7 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
   Connection {connId = groupConnId} <- createMemberConnection_ db userId groupMemberId groupAgentConnId chatV mcvr viaContactId cLevel currentTs subMode
   setCommandConnId db user groupCmdId groupConnId
   forM_ directConnIds $ \(directCmdId, directAgentConnId) -> do
-    Connection {connId = directConnId} <- createConnection_ db userId ConnContact Nothing directAgentConnId ConnNew chatV mcvr viaContactId Nothing customUserProfileId cLevel currentTs subMode PQSupportOff Nothing
+    Connection {connId = directConnId} <- createConnection_ db userId ConnContact Nothing directAgentConnId ConnNew chatV mcvr viaContactId Nothing customUserProfileId cLevel currentTs subMode PQSupportOff
     setCommandConnId db user directCmdId directConnId
     contactId <- createMemberContact_ directConnId currentTs
     updateMember_ contactId currentTs
@@ -2651,49 +2643,38 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
 
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> VersionChat -> VersionRangeChat -> Maybe Int64 -> Int -> UTCTime -> SubscriptionMode -> IO Connection
 createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange viaContact connLevel currentTs subMode =
-  createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff Nothing
+  createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
 
--- | Updates the group profile, also clearing the simplex_name on any other
--- group_profiles row (for the same user) that already holds the same
--- (user_id, simplex_name) — newer-claim-wins, required by the partial UNIQUE index.
+-- | Updates the group profile, writing the channel name onto group_profiles
+-- (group_domain, via the public-access columns). Resets group_domain_verification
+-- to NULL only when the name changes. No conflict clearing (no UNIQUE index).
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
-updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, simplexName = prevClaim}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, simplexName, groupPreferences, memberAdmission}
+updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, publicGroup = oldPublicGroup}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission}
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
-      profileId_ <- getGroupProfileId_
-      clearConflictingGroupProfileSimplexName_ db userId profileId_ simplexName
       updateGroupProfile_ currentTs
-      clearVerifiedAtIfClaimChanged
+      clearVerificationIfClaimChanged
       pure $ (g' :: GroupInfo) {groupProfile = p', fullGroupPreferences}
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
-        profileId_ <- getGroupProfileId_
-        clearConflictingGroupProfileSimplexName_ db userId profileId_ simplexName
         updateGroupProfile_ currentTs
         updateGroup_ ldn currentTs
-        clearVerifiedAtIfClaimChanged
+        clearVerificationIfClaimChanged
         pure $ Right $ (g' :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
   where
     fullGroupPreferences = mergeGroupPreferences groupPreferences
-    claimChanged = prevClaim /= simplexName
-    g' = if claimChanged then (g :: GroupInfo) {simplexNameVerifiedAt = Nothing} else g
-    -- Mirrors updateContactProfile: clear the verification when
-    -- the peer's claim transitions to/from/between values; prior verification
-    -- was bound to the prior claim.
-    clearVerifiedAtIfClaimChanged =
+    groupClaim pg = (\(StrJSON n) -> n) <$> (pg >>= publicGroupAccess >>= groupDomain)
+    claimChanged = groupClaim oldPublicGroup /= groupClaim publicGroup
+    g' = if claimChanged then (g :: GroupInfo) {groupDomainVerification = Nothing} else g
+    -- Reset the verification when the channel name changes; prior verification
+    -- was bound to the prior name.
+    clearVerificationIfClaimChanged =
       when claimChanged $
-        DB.execute db "UPDATE groups SET simplex_name_verified_at = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
+        DB.execute db "UPDATE groups SET group_domain_verification = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
     (groupType_, groupLink_) = case publicGroup of
       Just PublicGroupProfile {groupType, groupLink} -> (Just groupType, Just groupLink)
       Nothing -> (Nothing, Nothing)
-    -- groups.group_profile_id is ON DELETE SET NULL; treat the row as having
-    -- no profile to exclude (Nothing) when it has been nulled out, so the
-    -- conflict-clear sees every same-user row as a potential collision.
-    getGroupProfileId_ :: IO (Maybe ProfileId)
-    getGroupProfileId_ =
-      fmap (>>= fromOnly) . maybeFirstRow id $
-        DB.query db "SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
     updateGroupProfile_ currentTs =
       DB.execute
         db
@@ -2702,7 +2683,6 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
           SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
               group_type = ?, group_link = ?,
               group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?,
-              simplex_name = ?,
               preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
@@ -2710,7 +2690,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
             WHERE user_id = ? AND group_id = ?
           )
         |]
-        ((newName, fullName, shortDescr, description, image, groupType_, groupLink_) :. publicGroupAccessRow publicGroup :. Only simplexName :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
+        ((newName, fullName, shortDescr, description, image, groupType_, groupLink_) :. publicGroupAccessRow publicGroup :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
     updateGroup_ ldn currentTs = do
       DB.execute
         db
@@ -2718,40 +2698,13 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
 
--- | Mirror of clearConflictingContactProfileSimplexName_ for group_profiles.
--- Pass the group_profile_id being updated to exclude self from the clear;
--- pass Nothing for the pre-INSERT case. The profileId is taken directly
--- (rather than derived from groupId via a NOT IN subquery) because
--- groups.group_profile_id is ON DELETE SET NULL, and NOT IN (NULL)
--- evaluates to UNKNOWN — which would silently no-op the clear.
-clearConflictingGroupProfileSimplexName_ :: DB.Connection -> UserId -> Maybe ProfileId -> Maybe SimplexNameInfo -> IO ()
-clearConflictingGroupProfileSimplexName_ _ _ _ Nothing = pure ()
-clearConflictingGroupProfileSimplexName_ db userId Nothing (Just simplexName) =
+-- | Records the local 3-state verification status of the channel name.
+setGroupDomainVerified :: DB.Connection -> User -> GroupId -> Bool -> IO ()
+setGroupDomainVerified db User {userId} groupId verified =
   DB.execute
     db
-    [sql|
-      UPDATE group_profiles
-      SET simplex_name = NULL
-      WHERE user_id = ? AND simplex_name = ?
-    |]
-    (userId, simplexName)
-clearConflictingGroupProfileSimplexName_ db userId (Just profileId) (Just simplexName) =
-  DB.execute
-    db
-    [sql|
-      UPDATE group_profiles
-      SET simplex_name = NULL
-      WHERE user_id = ? AND simplex_name = ? AND group_profile_id <> ?
-    |]
-    (userId, simplexName, profileId)
-
--- | Mirror of setContactSimplexNameVerifiedAt for groups.
-setGroupSimplexNameVerifiedAt :: DB.Connection -> User -> GroupId -> UTCTime -> IO ()
-setGroupSimplexNameVerifiedAt db User {userId} groupId ts =
-  DB.execute
-    db
-    "UPDATE groups SET simplex_name_verified_at = ? WHERE user_id = ? AND group_id = ?"
-    (ts, userId, groupId)
+    "UPDATE groups SET group_domain_verification = ? WHERE user_id = ? AND group_id = ?"
+    (BI verified, userId, groupId)
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
 updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do
@@ -2786,15 +2739,15 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
                    gp.group_type, gp.group_link, gp.public_group_id,
                    gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding,
-                   gp.simplex_name, gp.preferences, gp.member_admission
+                   gp.preferences, gp.member_admission
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
             WHERE g.group_id = ?
           |]
             (Only groupId)
-    toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (simplexNameRaw, groupPreferences, memberAdmission)) =
+    toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (groupPreferences, memberAdmission)) =
       let publicGroupAccess = toPublicGroupAccess accessRow
-       in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, simplexName = decodeSimplexName simplexNameRaw, groupPreferences, memberAdmission}
+       in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, groupPreferences, memberAdmission}
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> StoreCxt -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db cxt user@User {userId} (cReqSchema1, cReqSchema2) = do
@@ -3236,11 +3189,10 @@ createMemberContact
               pqSndEnabled = Nothing,
               pqRcvEnabled = Nothing,
               authErrCounter = 0,
-              quotaErrCounter = 0,
-              simplexName = Nothing
+              quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing, simplexName = Nothing, simplexNameVerifiedAt = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> StoreCxt -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db cxt user contactId = do
@@ -3378,26 +3330,22 @@ setMemberContactStartedConnection db Contact {contactId} = do
     "UPDATE contacts SET grp_direct_inv_started_connection = ?, updated_at = ? WHERE contact_id = ?"
     (BI True, currentTs, contactId)
 
--- | Updates the member profile, also clearing the simplex_name on any other
--- contact_profiles row in the same user that already holds the same
--- (user_id, simplex_name) — newer-claim-wins, required by the partial UNIQUE index.
+-- | Updates the member profile (the profile writer persists contact_domain).
 updateMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
 updateMemberProfile db cxt user@User {userId} m p' = do
   currentTs <- liftIO getCurrentTime
   badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) (memberProfile m) p'
-  let memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified
+  let memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified Nothing
   updateMemberProfile' currentTs badgeVerified memberProfile
   where
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
-    Profile {displayName = newName, simplexName = profileSimplexName} = p'
+    Profile {displayName = newName} = p'
     updateMemberProfile' currentTs badgeVerified memberProfile
       | displayName == newName = do
-          liftIO $ clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
           liftIO $ updateMemberContactProfileReset_' db userId profileId p' badgeVerified currentTs
           pure m {memberProfile}
       | otherwise =
           ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-            clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
             updateMemberContactProfileReset_' db userId profileId p' badgeVerified currentTs
             DB.execute
               db
@@ -3406,26 +3354,22 @@ updateMemberProfile db cxt user@User {userId} m p' = do
             safeDeleteLDN db user localDisplayName
             pure $ Right m {localDisplayName = ldn, memberProfile}
 
--- | Updates the member's contact profile, also clearing the simplex_name on any
--- other contact_profiles row in the same user that already holds the same
--- (user_id, simplex_name) — newer-claim-wins, required by the partial UNIQUE index.
+-- | Updates the member's contact profile (the profile writer persists contact_domain).
 updateContactMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
 updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} p' = do
   currentTs <- liftIO getCurrentTime
   badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) (memberProfile m) p'
-  let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified
+  let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified Nothing
   updateContactMemberProfile' currentTs badgeVerified profile
   where
     GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
-    Profile {displayName = newName, simplexName = profileSimplexName} = p'
+    Profile {displayName = newName} = p'
     updateContactMemberProfile' currentTs badgeVerified profile
       | displayName == newName = do
-          liftIO $ clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
           liftIO $ updateMemberContactProfile_' db userId profileId p' badgeVerified currentTs
           pure (m {memberProfile = profile}, ct {profile} :: Contact)
       | otherwise =
           ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-            clearConflictingContactProfileSimplexName_ db userId (Just profileId) profileSimplexName
             updateMemberContactProfile_' db userId profileId p' badgeVerified currentTs
             updateContactLDN_ db user contactId localDisplayName ldn currentTs
             pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)

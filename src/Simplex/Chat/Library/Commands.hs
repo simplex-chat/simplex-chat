@@ -2050,7 +2050,7 @@ processChatCommand cxt nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing Nothing
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -2063,7 +2063,7 @@ processChatCommand cxt nm = \case
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
-        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId Nothing
+        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
@@ -2082,7 +2082,7 @@ processChatCommand cxt nm = \case
     let useRelays = not direct
     subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
-    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_ Nothing
+    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -4234,9 +4234,9 @@ processChatCommand cxt nm = \case
                 pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' (BoolDef updated) ov (ListDef glOwners)))
     connectPlanName :: User -> SimplexNameInfo -> CM (ACreatedConnLink, ConnectionPlan)
     connectPlanName user ni@SimplexNameInfo {nameType, nameDomain} = case nameType of
-      -- The discriminator (`@` vs `#`) is encoded into the stored simplex_name
-      -- bytes via strEncode, so an `@contact` lookup can never match a group
-      -- row (and vice versa). Dispatch on nameType up front to skip a probe.
+      -- The discriminator (`@` vs `#`) is encoded into the stored name bytes via
+      -- strEncode, so an `@contact` lookup can never match a group row (and vice
+      -- versa). Dispatch on nameType up front to skip a probe.
       NTContact -> do
         ct_ <- withFastStore $ \db -> getContactBySimplexName db cxt user ni
         case ct_ of
@@ -4711,12 +4711,10 @@ processChatCommand cxt nm = \case
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
 
 -- | Dispatch a resolved NameRecord by eagerly preparing a contact/group row
--- with @simplex_name@ set, then returning the same plan shape ('CAPKnown' /
--- 'GLPKnown') the local-store-hit branch of 'connectPlanName' returns. The
--- prepare-then-CAPKnown semantic threads the resolved name into persistence
--- via the existing 'createPreparedContact' / 'createPreparedGroup' simplex_name
--- parameter (introduced for the local-prepare path, see commit c6f26150), so
--- the resolver hit reuses the same DB write path as a local-prepare hit.
+-- (the resolved link's embedded profile carries contact_domain / group_domain),
+-- then returning the same plan shape ('CAPKnown' / 'GLPKnown') the
+-- local-store-hit branch of 'connectPlanName' returns, so the resolver hit
+-- reuses the same DB write path as a local-prepare hit.
 dispatchResolvedRecord :: StoreCxt -> NetworkRequestMode -> User -> SimplexNameInfo -> NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
 dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrSimplexChannel, nrSimplexContact} = do
   lnk <- liftEither $ firstNameLink nameType nrSimplexChannel nrSimplexContact ni
@@ -4741,7 +4739,7 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
         liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode contact profile from RSLV link") pure
       let ccLink = CCLink cReq (Just l')
           accLink = ACCL SCMContact ccLink
-      ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink Nothing (Just ni)
+      ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink Nothing
       pure (accLink, CPContactAddress (CAPKnown ct))
     prepareGroup :: ConnShortLink 'CMContact -> CM (ACreatedConnLink, ConnectionPlan)
     prepareGroup l = do
@@ -4754,7 +4752,7 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
       subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
       gVar <- asks random
       let ccLink = CCLink cReq (Just l')
-      (g, _hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile False ccLink Nothing useRelays subRole publicMemberCount_ (Just ni)
+      (g, _hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile False ccLink Nothing useRelays subRole publicMemberCount_
       pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
     -- Mirror the inline 'serverShortLink' helper defined in 'processChatCommand'
     -- where this dispatch is invoked: RSLV-supplied short links may carry the
@@ -4800,9 +4798,9 @@ linksMatch resolved stored = case strDecode (encodeUtf8 resolved) :: Either Stri
       CLShort (CSLContact _ ct srv linkKey) ->
         strEncode (CSLContact SLSServer ct srv linkKey :: ConnShortLink 'CMContact)
 
--- | Resolves the chat row's simplex_name claim via RSLV (the agent picks a
--- names server) and compares the resolved per-type link to the peer's stored
--- connection link. On match, timestamps the contact/group row. Returns
+-- | Resolves the chat row's name claim via RSLV (the agent picks a names
+-- server) and compares the resolved per-type link to the peer's stored
+-- connection link. Persists the 3-state verification result. Returns
 -- CRSimplexNameVerified with the boolean result (mirrors CRConnectionVerified);
 -- resolver / agent failures propagate as the usual ChatErrorAgent.
 -- Throws a command error when the row has no claim to verify.
@@ -4821,30 +4819,29 @@ apiVerifySimplexName user nm chatRef = do
       -- The peer's stored link verifies if it matches ANY advertised link
       -- (primary or fallback); an empty list never matches.
       verified = any (`linksMatch` storedLink) resolvedLinks
-  when verified $ do
-    ts <- liftIO getCurrentTime
-    withStore' $ \db -> persistVerified db ts
+  withStore' $ \db -> persistVerified db verified
   pure $ CRSimplexNameVerified user chatRef claim verified
   where
     -- Returns the claim to verify, the peer's stored link, and a callback that
-    -- persists the verified_at timestamp to the appropriate table. Throws a
+    -- persists the 3-state verification result to the appropriate table. Throws a
     -- command error when the row has no claim or no link (nothing to verify).
-    loadClaimAndLink :: StoreCxt -> CM (SimplexNameInfo, ConnLinkContact, DB.Connection -> UTCTime -> IO ())
+    loadClaimAndLink :: StoreCxt -> CM (SimplexNameInfo, ConnLinkContact, DB.Connection -> Bool -> IO ())
     loadClaimAndLink cxt = case chatRef of
       ChatRef CTDirect cId _ -> do
         ct <- withFastStore $ \db -> getContact db cxt user cId
-        let Contact {contactId, simplexName = ctSimplexName, profile = LocalProfile {contactLink}} = ct
-        claim <- maybe (throwCmdError "contact has no simplex_name to verify") pure ctSimplexName
+        let Contact {contactId, profile = LocalProfile {contactLink, contactDomain}} = ct
+        claim <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
         lnk <- maybe (throwCmdError "contact has no stored link to verify against") pure contactLink
-        pure (claim, lnk, \db ts -> setContactSimplexNameVerifiedAt db user contactId ts)
+        pure (claim, lnk, \db verified -> setContactDomainVerified db user contactId verified)
       ChatRef CTGroup gId _ -> do
         g <- withFastStore $ \db -> getGroupInfo db cxt user gId
-        let GroupInfo {groupId, simplexName = gSimplexName, preparedGroup} = g
-        claim <- maybe (throwCmdError "group has no simplex_name to verify") pure gSimplexName
+        let GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, preparedGroup} = g
+            gName = (\(StrJSON n) -> n) <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
+        claim <- maybe (throwCmdError "group has no name to verify") pure gName
         PreparedGroup {connLinkToConnect = CCLink cReq shortLink_} <-
           maybe (throwCmdError "group has no stored link to verify against") pure preparedGroup
         let lnk = maybe (CLFull cReq) CLShort shortLink_
-        pure (claim, lnk, \db ts -> setGroupSimplexNameVerifiedAt db user groupId ts)
+        pure (claim, lnk, \db verified -> setGroupDomainVerified db user groupId verified)
       _ -> throwCmdError "APIVerifySimplexName supports only direct and group chat refs"
 
 data ConnectViaContactResult
@@ -5668,7 +5665,7 @@ chatCommandP =
     onOffP = ("on" $> True) <|> ("off" $> False)
     publicGroupAccessP = do
       groupWebPage <- optional (" web=" *> (safeDecodeUtf8 <$> A.takeTill A.isSpace))
-      groupDomain <- optional (" domain=" *> (safeDecodeUtf8 <$> A.takeTill A.isSpace))
+      groupDomain <- optional (" domain=" *> (StrJSON <$> strP))
       domainWebPage <- (" domain_page=" *> onOffP) <|> pure False
       allowEmbedding <- (" embed=" *> onOffP) <|> pure False
       pure PublicGroupAccess {groupWebPage, groupDomain, domainWebPage, allowEmbedding}
@@ -5692,7 +5689,7 @@ chatCommandP =
     newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
       service <- (" service=" *> onOffP) <|> pure False
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, simplexName = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
@@ -5701,7 +5698,7 @@ chatCommandP =
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, simplexName = Nothing}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
@@ -5713,7 +5710,7 @@ chatCommandP =
                 { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
-      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, publicGroup = Nothing, simplexName = Nothing, groupPreferences, memberAdmission = Nothing}
+      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences, memberAdmission = Nothing}
     channelProfile = do
       p@GroupProfile {groupPreferences = prefs_} <- groupProfile
       let prefs = (fromMaybe emptyGroupPrefs prefs_) {support  = Just SupportGroupPreference {enable = FEOff}} :: GroupPreferences

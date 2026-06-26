@@ -212,13 +212,7 @@ data Contact = Contact
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
-    customData :: Maybe CustomData,
-    simplexName :: Maybe SimplexNameInfo,
-    -- | Timestamp of the most recent successful RSLV verification of the peer's
-    -- simplex_name claim against this contact's connection link. NULL means the
-    -- claim is unverified (UI should surface an indicator). Cleared back to NULL
-    -- whenever simplex_name changes in updateContactProfile.
-    simplexNameVerifiedAt :: Maybe UTCTime
+    customData :: Maybe CustomData
   }
   deriving (Eq, Show)
 
@@ -500,10 +494,7 @@ data GroupInfo = GroupInfo
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupKeys :: Maybe GroupKeys,
-    simplexName :: Maybe SimplexNameInfo,
-    -- | See 'Contact.simplexNameVerifiedAt'. Verified against the channel link
-    -- stored for the group; cleared by updateGroupProfile.
-    simplexNameVerifiedAt :: Maybe UTCTime
+    groupDomainVerification :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -709,7 +700,7 @@ data Profile = Profile
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
     badge :: Maybe BadgeProof,
-    simplexName :: Maybe SimplexNameInfo
+    contactDomain :: Maybe (StrJSON "SimplexName" SimplexNameInfo)
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -742,7 +733,7 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, simplexName = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -793,22 +784,23 @@ data LocalProfile = LocalProfile
     peerType :: Maybe ChatPeerType,
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
-    simplexName :: Maybe SimplexNameInfo
+    contactDomain :: Maybe SimplexNameInfo,
+    contactDomainVerification :: Maybe Bool
   }
   deriving (Eq, Show)
 
 localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, simplexName} localAlias now verified =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, simplexName}
+toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now verified nameVerified =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain = (\(StrJSON n) -> n) <$> contactDomain, contactDomainVerification = nameVerified}
   where
     localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now verified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, simplexName} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, simplexName}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, contactDomain} =
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = StrJSON <$> contactDomain}
   where
     -- any stored peer proof rides the wire (receivers verify independently); the own credential is presented fresh, and a display-only badge never sends
     wireBadge :: LocalBadge -> Maybe BadgeProof
@@ -854,7 +846,7 @@ instance ToField GroupType where toField = toField . textEncode
 
 data PublicGroupAccess = PublicGroupAccess
   { groupWebPage :: Maybe Text,
-    groupDomain :: Maybe Text,
+    groupDomain :: Maybe (StrJSON "SimplexName" SimplexNameInfo),
     domainWebPage :: Bool,
     allowEmbedding :: Bool
   }
@@ -875,7 +867,6 @@ data GroupProfile = GroupProfile
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
     publicGroup :: Maybe PublicGroupProfile,
-    simplexName :: Maybe SimplexNameInfo,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission
   }
@@ -1829,8 +1820,7 @@ data Connection = Connection
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
     quotaErrCounter :: Int, -- if exceeds limit messages to group members are created as pending; sending to contacts is unaffected by this
-    createdAt :: UTCTime,
-    simplexName :: Maybe SimplexNameInfo
+    createdAt :: UTCTime
   }
   deriving (Eq, Show)
 
