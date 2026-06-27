@@ -2664,7 +2664,7 @@
     <string name="voice_recording_not_supported">La grabación de voz no es compatible con tu plataforma</string>
     <string name="wait_verb">Espera</string>
     <string name="relay_test_step_wait_response">Espera respuesta</string>
-    <string name="channel_member_you">tu</string>
+    <string name="channel_member_you">tú</string>
     <string name="you_are_subscriber">eres suscriptor</string>
     <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Puedes compartir un enlace o código QR. Cualquiera podrá unirse al canal.</string>
     <string name="relay_section_footer_subscriber">Te conectaste al canal mediante este enlace de servidor.</string>
@@ -2683,7 +2683,7 @@
     <string name="why_built_p5">Tus conversaciones te pertenecen, tal como ha sido siempre antes de la llegada de internet. Tu red no es un lugar que visitas. Es un lugar que has creado, te pertenece y nadie te la podrá quitar, ya sea pública o privada.</string>
     <string name="why_built_p6">La libertad más antigua del ser humano, la de hablar con otra persona sin ser observado, materializada sobre una infraestructura que no puede traicionarla.</string>
     <string name="why_built_p7">Porque hemos destruido el poder de saber quien eres. De manera que tu poder nunca se pueda arrebatar.</string>
-    <string name="why_built_tagline">Se libre en tu red.</string>
+    <string name="why_built_tagline">Sé libre en tu red.</string>
     <!-- channel preferences (subscribers) -->
     <string name="group_reports_subscriber_reports">Informes de suscriptores</string>
     <string name="allow_direct_messages_channel">Se permiten mensajes directos entre suscriptores.</string>
@@ -2714,7 +2714,7 @@
     <string name="allow_chat_with_admins_channel">Permitir que los suscriptores chateen con administradores.</string>
     <string name="relay_bar_all_relays_failed">Todos los servidores han fallado</string>
     <string name="relay_bar_all_relays_removed">Todos los servidores eliminados</string>
-    <string name="onboarding_be_free">Se libre\nen tu red</string>
+    <string name="onboarding_be_free">Sé libre\nen tu red</string>
     <string name="chat_link_business_address">Dirección empresarial</string>
     <string name="cant_broadcast_message">no puedes retransmitir</string>
     <string name="channel_no_active_relays_try_later">El canal no tiene servidores activos. Por favor, intenta unirte más tarde.</string>
