@@ -1,25 +1,18 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 
 module ResolveNameTests (resolveNameTests) where
 
 import Data.Text (Text)
-import qualified Data.Text.Encoding as T
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
-import Simplex.Chat.Library.Commands (firstNameLink, linksMatch)
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnShortLink, ConnectionLink (..), ConnectionMode (..), SConnectionMode (..), SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
-import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Chat.Library.Commands (firstNameLink)
+import Simplex.Messaging.Agent.Protocol (SimplexNameDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Test.Hspec
 
--- Name resolution and verification are owned by the agent (resolveSimplexName),
--- and failures flow through ChatErrorAgent — there is no chat-side iteration or
--- error-translation layer to test. These specs cover the two pure helpers that
--- remain in the chat layer: firstNameLink (link selection) and linksMatch
--- (verification comparison).
+-- Name resolution/verification is owned by the agent (resolveSimplexName), and link comparison
+-- uses the agent's sameConnShortLink / sameShortLinkContact. The only pure helper remaining in the
+-- chat layer to cover here is firstNameLink (per-type link selection).
 resolveNameTests :: Spec
-resolveNameTests = do
+resolveNameTests =
   -- firstNameLink is the pure link-picker used by dispatchResolvedRecord:
   -- it selects nrSimplexContact for NTContact, nrSimplexChannel for NTPublicGroup.
   -- An empty link for the queried type collapses to CESimplexNameNotFound so the
@@ -55,52 +48,6 @@ resolveNameTests = do
       case firstNameLink NTContact [channelLink] [] aliceNi of
         Left (ChatError (CESimplexNameNotFound ni)) -> ni `shouldBe` aliceNi
         other -> expectationFailure $ "expected CESimplexNameNotFound, got " <> show other
-  -- linksMatch is the byte-equal-after-normalize comparator that gates
-  -- APIVerifySimplexName. The agent's simplex:/ scheme and the server-hostname
-  -- scheme encode the same link, so a successful verification must accept
-  -- either side using either scheme. A malformed RSLV link (anything that
-  -- doesn't parse as a contact link) is rejected.
-  describe "linksMatch" $ do
-    let storedShort = CLShort sampleShortLinkServer
-    it "matches an RSLV link in server scheme against a stored short-link" $
-      linksMatch sampleShortLinkServerText storedShort `shouldBe` True
-    it "matches across scheme normalization (simplex:/ vs https://)" $
-      linksMatch sampleShortLinkSimplexText storedShort `shouldBe` True
-    it "rejects a non-contact-link RSLV payload" $
-      linksMatch "not-a-link" storedShort `shouldBe` False
-    it "rejects a structurally different short-link" $
-      linksMatch differentShortLinkText storedShort `shouldBe` False
-    it "matches an invitation-shaped link only if both sides parse as contact" $
-      -- invitation-typed RSLV link is not CMContact and must be rejected even
-      -- if the bytes look superficially similar.
-      linksMatch invitationLikeText storedShort `shouldBe` False
-
--- | Known-good short contact link in server-hostname scheme. Mirrors the
--- canonical encoding from simplexmq's ConnectionRequestTests.hs:
--- @CSLContact SLSServer CCTContact srv (LinkKey ...)@.
-sampleShortLinkServerText :: Text
-sampleShortLinkServerText = "https://smp.simplex.im/a#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&p=5223&c=1234-w"
-
--- | The same link as 'sampleShortLinkServerText' but in the agent's
--- simplex:/ scheme. normalize must collapse these to byte-equal forms.
-sampleShortLinkSimplexText :: Text
-sampleShortLinkSimplexText = "simplex:/a#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=smp.simplex.im%2Cjjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&p=5223&c=1234-w"
-
--- | Structurally different short link (different LinkKey). Must NOT match.
-differentShortLinkText :: Text
-differentShortLinkText = "https://smp.simplex.im/a#YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE?h=jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&p=5223&c=1234-w"
-
--- | An invitation-shaped link (path /i not /a). Even if the bytes happen to
--- parse as some AConnectionLink, the SCMContact projection must fail.
-invitationLikeText :: Text
-invitationLikeText = "https://smp.simplex.im/i#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&p=5223&c=1234-w"
-
--- | Parsed form of 'sampleShortLinkServerText' for use as the stored side
--- of the linksMatch comparison.
-sampleShortLinkServer :: ConnShortLink 'CMContact
-sampleShortLinkServer = case strDecode (T.encodeUtf8 sampleShortLinkServerText) of
-  Right (ACL SCMContact (CLShort l)) -> l
-  other -> error $ "ResolveNameTests fixture failed to parse: " <> show other
 
 aliceNi :: SimplexNameInfo
 aliceNi = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])

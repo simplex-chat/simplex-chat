@@ -1503,7 +1503,11 @@ processChatCommand cxt nm = \case
       let SimplexNameInfo {nameDomain = domain} = name
       a <- asks smpAgent
       NameRecord {nrSimplexContact} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) domain) >>= either (throwError . chatErrorAgent) pure
-      unless (any (`linksMatch` ourLink) nrSimplexContact) $ throwCmdError "name is not registered to your address"
+      -- the registry resolves a name to short links; require it to point to our address's short link
+      let resolvesHere resolved = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
+            Right (ACL SCMContact (CLShort sl)) -> maybe False (sameShortLinkContact sl) ourShort_
+            _ -> False
+      unless (any resolvesHere nrSimplexContact) $ throwCmdError "name is not registered to your address"
     -- §4.9 step 3: a name in the profile must carry its address, so write the address short link into contactLink
     -- alongside the name. updateProfile_ then re-publishes the address (signing the proof) and broadcasts to contacts.
     let p' = (fromLocalProfile oldLP :: Profile) {contactDomain = StrJSON <$> name_, contactLink = maybe oldContactLink (const (Just ourLink)) name_}
@@ -3142,7 +3146,10 @@ processChatCommand cxt nm = \case
             let SimplexNameInfo {nameDomain = domain} = name
             a <- asks smpAgent
             NameRecord {nrSimplexChannel} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) domain) >>= either (throwError . chatErrorAgent) pure
-            unless (any (`linksMatch` CLShort groupLink) nrSimplexChannel) $ throwCmdError "name is not registered to this channel"
+            let resolvesHere resolved = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
+                  Right (ACL SCMContact (CLShort sl)) -> sameShortLinkContact sl groupLink
+                  _ -> False
+            unless (any resolvesHere nrSimplexChannel) $ throwCmdError "name is not registered to this channel"
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just (signChannelNameProof gInfo pg access)}}
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -4845,26 +4852,6 @@ firstNameLink nameType simplexChannel simplexContact ni =
       NTPublicGroup -> simplexChannel
       NTContact -> simplexContact
 
--- | Best-effort comparison between an RSLV-resolved link (a 'Text' from the
--- name record) and the peer's stored connection link. Both are normalized via
--- 'strDecode' + 'strEncode' so scheme drift (simplex:/ vs https://simplex.chat)
--- doesn't cause a false negative. If the RSLV text fails to parse as a contact
--- link, we treat it as a mismatch — the resolver returned something we don't
--- understand, which is not a valid verification.
-linksMatch :: Text -> ConnLinkContact -> Bool
-linksMatch resolved stored = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
-  Right (ACL SCMContact resolvedLink) -> normalize resolvedLink == normalize stored
-  _ -> False
-  where
-    -- Mirror the inline 'serverShortLink' helper used elsewhere in this module:
-    -- the agent's simplex:/ scheme and the server-hostname scheme encode the
-    -- same link; verification must be scheme-insensitive.
-    normalize :: ConnLinkContact -> ByteString
-    normalize = \case
-      CLFull cReq -> strEncode cReq
-      CLShort (CSLContact _ ct srv linkKey) ->
-        strEncode (CSLContact SLSServer ct srv linkKey :: ConnShortLink 'CMContact)
-
 -- | Resolves the chat row's name claim via RSLV (the agent picks a names
 -- server) and compares the resolved per-type link to the peer's stored
 -- connection link. Persists the 3-state verification result. Returns
@@ -4928,14 +4915,7 @@ apiVerifySimplexName user nm chatRef = do
     -- the proof must be bound (anti-replay) to the link the peer was connected through
     proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
     proofBoundTo NameClaimProof {presHeader} connLink =
-      (normASL <$> proofPresHeaderLink presHeader) == Just (normASL connLink)
-      where
-        -- compare scheme-insensitively (simplex:/ vs server-hostname), as linksMatch does, so a proof
-        -- minted in one scheme still matches the stored link in the other
-        normASL :: AConnShortLink -> ByteString
-        normASL (ACSL m sl) = strEncode $ ACSL m $ case sl of
-          CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
-          CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
+      maybe False (`sameConnShortLink` connLink) (proofPresHeaderLink presHeader)
     -- verify the proof signature against the resolved name's owner key
     -- Maybe Bool: Just = a determined result for this resolved link; Nothing = couldn't fetch it
     -- (network/agent error) so the result is undetermined — never recorded as a failed verification.
