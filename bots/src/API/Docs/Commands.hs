@@ -414,6 +414,7 @@ undocumentedCommands =
     "APISetServerOperators",
     "APISetUserContactReceipts",
     "APISetUserGroupReceipts",
+    "APISetUserName",
     "APISetUserServers",
     "APISetUserUIThemes",
     "APIShareChatMsgContent",

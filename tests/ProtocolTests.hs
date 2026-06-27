@@ -3,13 +3,14 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ProtocolTests where
 
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
-import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData, redactedMemberProfile, userProfileInGroup')
+import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -25,7 +26,6 @@ import Test.Hspec
 protocolTests :: Spec
 protocolTests = do
   decodeChatMessageTest
-  outgoingProfileSimplexNameTest
   shortLinkDataTests
 
 srv :: SMPServer
@@ -108,10 +108,10 @@ testGroupPreferences :: Maybe GroupPreferences
 testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, commands = Nothing}
 
 testProfile :: Profile
-testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, simplexName = Nothing}
+testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing, contactDomainProof = Nothing}
 
 testGroupProfile :: GroupProfile
-testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, simplexName = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing}
+testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing}
 
 testSimplexName :: SimplexNameInfo
 testSimplexName = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])
@@ -245,12 +245,6 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.info" $
     "{\"v\":\"1\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XInfo testProfile
-  it "x.info with empty full name" $
-    "{\"v\":\"1\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
-      #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = testChatPreferences, badge = Nothing, simplexName = Nothing}
-  it "x.info with simplexName" $
-    "{\"v\":\"1\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"simplexName\":{\"nameType\":\"contact\",\"nameDomain\":{\"nameTLD\":\"simplex\",\"domain\":\"alice\",\"subDomain\":[]}},\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
-      #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = testChatPreferences, badge = Nothing, simplexName = Just testSimplexName}
   it "x.contact with xContactId" $
     "{\"v\":\"1\",\"event\":\"x.contact\",\"params\":{\"contactReqId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XContact testProfile (Just $ XContactId "\1\2\3\4") Nothing Nothing
@@ -269,9 +263,6 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.inv with group link id" $
     "{\"v\":\"1\",\"event\":\"x.grp.inv\",\"params\":{\"groupInvitation\":{\"connRequest\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"invitedMember\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\"},\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"fromMember\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\"}, \"groupLinkId\":\"AQIDBA==\"}}}"
       #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile, business = Nothing, groupLinkId = Just $ GroupLinkId "\1\2\3\4", groupSize = Nothing}
-  it "x.grp.inv with simplexName in groupProfile" $
-    "{\"v\":\"1\",\"event\":\"x.grp.inv\",\"params\":{\"groupInvitation\":{\"connRequest\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"invitedMember\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\"},\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"simplexName\":{\"nameType\":\"publicGroup\",\"nameDomain\":{\"nameTLD\":\"simplex\",\"domain\":\"team\",\"subDomain\":[]}},\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"fromMember\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\"}}}}"
-      #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile {simplexName = Just testGroupSimplexName}, business = Nothing, groupLinkId = Nothing, groupSize = Nothing}
   it "x.grp.acpt without incognito profile" $
     "{\"v\":\"1\",\"event\":\"x.grp.acpt\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
       #==# XGrpAcpt (MemberId "\1\2\3\4")
@@ -346,7 +337,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       ==# XOk
 
 testUser :: Maybe SimplexNameInfo -> User
-testUser sn =
+testUser d =
   User
     { userId = 1,
       agentUserId = AgentUserId 1,
@@ -364,7 +355,9 @@ testUser sn =
             peerType = Nothing,
             localBadge = Nothing,
             localAlias = "",
-            simplexName = sn
+            contactDomain = d,
+            contactDomainProof = Nothing,
+            contactDomainVerification = Nothing
           },
       fullPreferences = fullPreferences' Nothing,
       activeUser = True,
@@ -379,23 +372,3 @@ testUser sn =
       clientService = BoolDef False,
       uiThemes = Nothing
     }
-
-outgoingProfileSimplexNameTest :: Spec
-outgoingProfileSimplexNameTest = describe "outgoing Profile carries User.profile.simplexName" $ do
-  it "userProfileDirect passes simplexName through to wire Profile" $ do
-    let Profile {simplexName = sn} = userProfileDirect (testUser (Just testSimplexName)) Nothing Nothing True
-    sn `shouldBe` Just testSimplexName
-  it "userProfileDirect with Nothing on User.profile leaves wire simplexName Nothing" $ do
-    let Profile {simplexName = sn} = userProfileDirect (testUser Nothing) Nothing Nothing True
-    sn `shouldBe` Nothing
-  it "userProfileDirect with incognito profile suppresses simplexName" $ do
-    let incognito = Profile {displayName = "anon", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, simplexName = Nothing}
-        Profile {simplexName = sn} = userProfileDirect (testUser (Just testSimplexName)) (Just incognito) Nothing True
-    sn `shouldBe` Nothing
-  it "userProfileInGroup' passes simplexName through" $ do
-    let Profile {simplexName = sn} = userProfileInGroup' (testUser (Just testSimplexName)) True Nothing
-    sn `shouldBe` Just testSimplexName
-  it "redactedMemberProfile preserves simplexName" $ do
-    let p0 = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, simplexName = Just testSimplexName}
-        Profile {simplexName = sn} = redactedMemberProfile True p0
-    sn `shouldBe` Just testSimplexName

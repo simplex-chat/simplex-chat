@@ -66,7 +66,7 @@ export type AgentErrorType =
   | AgentErrorType.NTF
   | AgentErrorType.XFTP
   | AgentErrorType.FILE
-  | AgentErrorType.NAME
+  | AgentErrorType.NO_NAME_SERVERS
   | AgentErrorType.PROXY
   | AgentErrorType.RCP
   | AgentErrorType.BROKER
@@ -85,7 +85,7 @@ export namespace AgentErrorType {
     | "NTF"
     | "XFTP"
     | "FILE"
-    | "NAME"
+    | "NO_NAME_SERVERS"
     | "PROXY"
     | "RCP"
     | "BROKER"
@@ -138,9 +138,8 @@ export namespace AgentErrorType {
     fileErr: FileErrorType
   }
 
-  export interface NAME extends Interface {
-    type: "NAME"
-    nameErr: NameErrorType
+  export interface NO_NAME_SERVERS extends Interface {
+    type: "NO_NAME_SERVERS"
   }
 
   export interface PROXY extends Interface {
@@ -1919,7 +1918,6 @@ export interface Connection {
   authErrCounter: number // int
   quotaErrCounter: number // int
   createdAt: string // ISO-8601 timestamp
-  simplexName?: SimplexNameInfo
 }
 
 export type ConnectionEntity = 
@@ -2051,8 +2049,6 @@ export interface Contact {
   uiThemes?: UIThemeEntityOverrides
   chatDeleted: boolean
   customData?: object
-  simplexName?: SimplexNameInfo
-  simplexNameVerifiedAt?: string // ISO-8601 timestamp
 }
 
 export type ContactAddressPlan = 
@@ -2660,8 +2656,7 @@ export interface GroupInfo {
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
-  simplexName?: SimplexNameInfo
-  simplexNameVerifiedAt?: string // ISO-8601 timestamp
+  groupDomainVerification?: boolean
 }
 
 export interface GroupKeys {
@@ -2848,7 +2843,6 @@ export interface GroupProfile {
   description?: string
   image?: string
   publicGroup?: PublicGroupProfile
-  simplexName?: SimplexNameInfo
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
 }
@@ -3035,11 +3029,13 @@ export interface LocalProfile {
   shortDescr?: string
   image?: string
   contactLink?: string
-  simplexName?: SimplexNameInfo
   preferences?: Preferences
   peerType?: ChatPeerType
   localBadge?: LocalBadge
   localAlias: string
+  contactDomain?: SimplexNameInfo
+  contactDomainVerification?: boolean
+  contactDomainProof?: NameClaimProof
 }
 
 export enum MemberCriteria {
@@ -3233,14 +3229,16 @@ export enum MsgSigStatus {
   SignedNoKey = "signedNoKey",
 }
 
-export type NameErrorType = 
-  | NameErrorType.NO_RESOLVER
-  | NameErrorType.NO_NAME
-  | NameErrorType.NO_SERVERS
-  | NameErrorType.RESOLVER
+export interface NameClaimProof {
+  linkOwnerId?: string
+  presHeader: string
+  signature: string
+}
+
+export type NameErrorType = NameErrorType.NO_RESOLVER | NameErrorType.NOT_FOUND | NameErrorType.RESOLVER
 
 export namespace NameErrorType {
-  export type Tag = "NO_RESOLVER" | "NO_NAME" | "NO_SERVERS" | "RESOLVER"
+  export type Tag = "NO_RESOLVER" | "NOT_FOUND" | "RESOLVER"
 
   interface Interface {
     type: Tag
@@ -3250,12 +3248,8 @@ export namespace NameErrorType {
     type: "NO_RESOLVER"
   }
 
-  export interface NO_NAME extends Interface {
-    type: "NO_NAME"
-  }
-
-  export interface NO_SERVERS extends Interface {
-    type: "NO_SERVERS"
+  export interface NOT_FOUND extends Interface {
+    type: "NOT_FOUND"
   }
 
   export interface RESOLVER extends Interface {
@@ -3419,10 +3413,11 @@ export interface Profile {
   shortDescr?: string
   image?: string
   contactLink?: string
-  simplexName?: SimplexNameInfo
   preferences?: Preferences
   peerType?: ChatPeerType
   badge?: BadgeProof
+  contactDomain?: string
+  contactDomainProof?: NameClaimProof
 }
 
 export type ProxyClientError = 
@@ -3484,6 +3479,7 @@ export namespace ProxyError {
 export interface PublicGroupAccess {
   groupWebPage?: string
   groupDomain?: string
+  groupDomainProof?: NameClaimProof
   domainWebPage: boolean
   allowEmbedding: boolean
 }

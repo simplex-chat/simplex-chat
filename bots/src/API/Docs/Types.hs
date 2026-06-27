@@ -34,7 +34,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), BadgeType (..), JSONBadge (..))
+import Simplex.Chat.Badges
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -322,6 +322,7 @@ chatTypesDocsData =
     (sti @MsgReaction, STUnion, "MR", [], "", ""),
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
+    (sti @NameClaimProof, STRecord, "", [], "", ""),
     (sti @NameErrorType, STUnion, "", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
@@ -551,6 +552,7 @@ deriving instance Generic MsgFilter
 deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
+deriving instance Generic NameClaimProof
 deriving instance Generic NameErrorType
 deriving instance Generic NetworkError
 deriving instance Generic NewUser

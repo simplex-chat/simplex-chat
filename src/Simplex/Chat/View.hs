@@ -1136,7 +1136,7 @@ shareLinkStr Nothing fallback = fallback
 -- The channel's name (group_domain) for share-link display, if any.
 groupDomainName :: GroupInfo -> Maybe SimplexNameInfo
 groupDomainName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
-  (\(StrJSON n) -> n) <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
+  unStrJSON <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
 
 -- TODO [short links] show all settings
 viewAddressSettings :: AddressSettings -> [StyledString]

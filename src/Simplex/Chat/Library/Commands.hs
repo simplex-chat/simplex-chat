@@ -55,7 +55,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), ClaimProof (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, proofPresHeaderLink, signNameProof, verifyCredential, verifyNameProofSig)
+import Simplex.Chat.Badges (BadgeCredential (..), NameClaimProof (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, proofPresHeaderLink, signNameProof, verifyCredential, verifyNameProofSig)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -3136,7 +3136,7 @@ processChatCommand cxt nm = \case
         -- §4.9: only when the NAME changes, verify it resolves to this channel's join link
         -- (a web=/embed= edit that leaves the name unchanged triggers no name check, so one command stays clean)
         when (newName_ /= (existingAccess >>= groupDomain)) $
-          forM_ ((\(StrJSON n) -> n) <$> newName_) $ \name -> do
+          forM_ newName_ $ \(StrJSON name) -> do
             let SimplexNameInfo {nameDomain = domain} = name
             a <- asks smpAgent
             NameRecord {nrSimplexChannel} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) domain) >>= either (throwError . chatErrorAgent) pure
@@ -4778,7 +4778,7 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
         liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode contact profile from RSLV link") pure
       -- consent gate: the resolved profile must claim the resolved name, else "name unknown"
       let Profile {contactDomain} = profile
-      unless (((\(StrJSON n) -> n) <$> contactDomain) == Just ni) $ throwChatError $ CESimplexNameNotFound ni
+      unless (contactDomain == Just (StrJSON ni)) $ throwChatError $ CESimplexNameNotFound ni
       let ccLink = CCLink cReq (Just l')
           accLink = ACCL SCMContact ccLink
       ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink Nothing
@@ -4794,7 +4794,7 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
         liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode group profile from RSLV link") pure
       -- consent gate: the resolved group profile must claim the resolved name
       let GroupProfile {publicGroup} = groupProfile
-      unless (((\(StrJSON n) -> n) <$> (publicGroup >>= publicGroupAccess >>= groupDomain)) == Just ni) $ throwChatError $ CESimplexNameNotFound ni
+      unless ((publicGroup >>= publicGroupAccess >>= groupDomain) == Just (StrJSON ni)) $ throwChatError $ CESimplexNameNotFound ni
       let publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
           useRelays = not direct
       subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
@@ -4888,7 +4888,7 @@ apiVerifySimplexName user nm chatRef = do
   pure $ CRSimplexNameVerified user chatRef claim verified
   where
     -- the claim, the link the peer was connected through (the presHeader anchor), the proof, and the 3-state persist callback
-    loadClaimAndLink :: StoreCxt -> CM (SimplexNameInfo, Maybe AConnShortLink, Maybe ClaimProof, DB.Connection -> Bool -> IO ())
+    loadClaimAndLink :: StoreCxt -> CM (SimplexNameInfo, Maybe AConnShortLink, Maybe NameClaimProof, DB.Connection -> Bool -> IO ())
     loadClaimAndLink cxt = case chatRef of
       ChatRef CTDirect cId _ -> do
         ct <- withFastStore $ \db -> getContact db cxt user cId
@@ -4899,19 +4899,19 @@ apiVerifySimplexName user nm chatRef = do
       ChatRef CTGroup gId _ -> do
         g <- withFastStore $ \db -> getGroupInfo db cxt user gId
         let GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, preparedGroup} = g
-            gName = (\(StrJSON n) -> n) <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
+            gName = unStrJSON <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
             gProof = publicGroup >>= publicGroupAccess >>= groupDomainProof
         claim <- maybe (throwCmdError "group has no name to verify") pure gName
         let connLink_ = preparedGroup >>= \PreparedGroup {connLinkToConnect = CCLink _ sLnk_} -> ACSL SCMContact <$> sLnk_
         pure (claim, connLink_, gProof, \db verified -> setGroupDomainVerified db user groupId verified)
       _ -> throwCmdError "APIVerifySimplexName supports only direct and group chat refs"
     -- the proof must be bound (anti-replay) to the link the peer was connected through
-    proofBoundTo :: ClaimProof -> AConnShortLink -> Bool
-    proofBoundTo ClaimProof {presHeader} connLink =
+    proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
+    proofBoundTo NameClaimProof {presHeader} connLink =
       (strEncode <$> proofPresHeaderLink presHeader) == Just (strEncode connLink)
     -- verify the proof signature against the resolved name's owner key
-    verifyProofKey :: SimplexNameInfo -> ClaimProof -> Text -> CM Bool
-    verifyProofKey claim proof@ClaimProof {linkOwnerId} resolvedText =
+    verifyProofKey :: SimplexNameInfo -> NameClaimProof -> Text -> CM Bool
+    verifyProofKey claim proof@NameClaimProof {linkOwnerId} resolvedText =
       case strDecode (encodeUtf8 resolvedText) :: Either String AConnectionLink of
         Right (ACL SCMContact (CLShort sLnk)) ->
           tryAllErrors (getShortLinkConnReq nm user sLnk) >>= \case

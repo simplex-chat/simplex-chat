@@ -140,6 +140,7 @@ This file is generated automatically.
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
+- [NameClaimProof](#nameclaimproof)
 - [NameErrorType](#nameerrortype)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
@@ -315,9 +316,8 @@ FILE:
 - type: "FILE"
 - fileErr: [FileErrorType](#fileerrortype)
 
-NAME:
-- type: "NAME"
-- nameErr: [NameErrorType](#nameerrortype)
+NO_NAME_SERVERS:
+- type: "NO_NAME_SERVERS"
 
 PROXY:
 - type: "PROXY"
@@ -1697,7 +1697,6 @@ Name:
 - authErrCounter: int
 - quotaErrCounter: int
 - createdAt: UTCTime
-- simplexName: [SimplexNameInfo](#simplexnameinfo)?
 
 
 ---
@@ -1804,8 +1803,6 @@ Error:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatDeleted: bool
 - customData: JSONObject?
-- simplexName: [SimplexNameInfo](#simplexnameinfo)?
-- simplexNameVerifiedAt: UTCTime?
 
 
 ---
@@ -2368,8 +2365,7 @@ MemberSupport:
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?
-- simplexName: [SimplexNameInfo](#simplexnameinfo)?
-- simplexNameVerifiedAt: UTCTime?
+- groupDomainVerification: bool?
 
 
 ---
@@ -2584,7 +2580,6 @@ UpdateRequired:
 - description: string?
 - image: string?
 - publicGroup: [PublicGroupProfile](#publicgroupprofile)?
-- simplexName: [SimplexNameInfo](#simplexnameinfo)?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
 
@@ -2790,11 +2785,13 @@ Unknown:
 - shortDescr: string?
 - image: string?
 - contactLink: string?
-- simplexName: [SimplexNameInfo](#simplexnameinfo)?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
+- contactDomain: [SimplexNameInfo](#simplexnameinfo)?
+- contactDomainVerification: bool?
+- contactDomainProof: [NameClaimProof](#nameclaimproof)?
 
 
 ---
@@ -2972,6 +2969,16 @@ Unknown:
 
 ---
 
+## NameClaimProof
+
+**Record type**:
+- linkOwnerId: string?
+- presHeader: string
+- signature: string
+
+
+---
+
 ## NameErrorType
 
 **Discriminated union type**:
@@ -2979,11 +2986,8 @@ Unknown:
 NO_RESOLVER:
 - type: "NO_RESOLVER"
 
-NO_NAME:
-- type: "NO_NAME"
-
-NO_SERVERS:
-- type: "NO_SERVERS"
+NOT_FOUND:
+- type: "NOT_FOUND"
 
 RESOLVER:
 - type: "RESOLVER"
@@ -3157,10 +3161,11 @@ count=<count>
 - shortDescr: string?
 - image: string?
 - contactLink: string?
-- simplexName: [SimplexNameInfo](#simplexnameinfo)?
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
 - badge: [BadgeProof](#badgeproof)?
+- contactDomain: string?
+- contactDomainProof: [NameClaimProof](#nameclaimproof)?
 
 
 ---
@@ -3210,6 +3215,7 @@ NO_SESSION:
 **Record type**:
 - groupWebPage: string?
 - groupDomain: string?
+- groupDomainProof: [NameClaimProof](#nameclaimproof)?
 - domainWebPage: bool
 - allowEmbedding: bool
 

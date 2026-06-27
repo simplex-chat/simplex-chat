@@ -29,7 +29,9 @@ CREATE TABLE contact_profiles(
   badge_master_key BLOB,
   badge_signature BLOB,
   badge_key_idx INTEGER,
-  simplex_name TEXT
+  contact_domain TEXT,
+  contact_domain_verification INTEGER,
+  contact_domain_proof TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -102,8 +104,6 @@ CREATE TABLE contacts(
   grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
-  simplex_name TEXT,
-  simplex_name_verified_at TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -143,7 +143,7 @@ CREATE TABLE group_profiles(
   group_domain TEXT,
   domain_web_page INTEGER,
   allow_embedding INTEGER,
-  simplex_name TEXT
+  group_domain_proof TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -204,8 +204,7 @@ CREATE TABLE groups(
   roster_sending_owner_gm_id INTEGER,
   roster_broker_ts TEXT,
   roster_blob BLOB,
-  simplex_name TEXT,
-  simplex_name_verified_at TEXT, -- received
+  group_domain_verification INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -377,7 +376,6 @@ CREATE TABLE connections(
   via_short_link_contact BLOB,
   via_contact_uri BLOB,
   relay_test INTEGER NOT NULL DEFAULT 0,
-  simplex_name TEXT,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -400,6 +398,7 @@ CREATE TABLE user_contact_links(
   short_link_contact BLOB,
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
   short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
+  link_priv_sig_key BLOB,
   UNIQUE(user_id, local_display_name)
 ) STRICT;
 CREATE TABLE contact_requests(
@@ -1362,30 +1361,6 @@ CREATE INDEX idx_files_group_id_shared_msg_id ON files(
   shared_msg_id
 );
 CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
-CREATE UNIQUE INDEX idx_contacts_simplex_name
-ON contacts(
-  user_id,
-  simplex_name
-)
-WHERE simplex_name IS NOT NULL AND deleted = 0;
-CREATE UNIQUE INDEX idx_groups_simplex_name
-ON groups(
-  user_id,
-  simplex_name
-)
-WHERE simplex_name IS NOT NULL;
-CREATE UNIQUE INDEX idx_contact_profiles_simplex_name
-ON contact_profiles(
-  user_id,
-  simplex_name
-)
-WHERE simplex_name IS NOT NULL;
-CREATE UNIQUE INDEX idx_group_profiles_simplex_name
-ON group_profiles(
-  user_id,
-  simplex_name
-)
-WHERE simplex_name IS NOT NULL;
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

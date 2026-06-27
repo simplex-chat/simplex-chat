@@ -573,10 +573,10 @@ updateContactProfile db cxt user@User {userId} c p' = do
       profile = toLocalProfile profileId p'' localAlias currentTs badgeVerified nameVerified
   updateContactProfile' currentTs badgeVerified profile
   where
-    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, contactDomain = prevClaim, contactDomainVerification = prevVerification, contactDomainProof = prevProof}, userPreferences} = c
-    Profile {displayName = newName, contactDomain = profileContactDomain, preferences} = p'
+    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, contactDomain = prevDomain, contactDomainVerification = prevVerification, contactDomainProof = prevProof}, userPreferences} = c
+    Profile {displayName = newName, contactDomain, preferences} = p'
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
-    claimChanged = prevClaim /= ((\(StrJSON n) -> n) <$> profileContactDomain)
+    claimChanged = prevDomain /= (unStrJSON <$> contactDomain)
     -- a name proof never rides an XInfo peer-send (we never mint or accept a PHTest name proof):
     -- keep the stored proof when the name is unchanged, drop it when the name changes (then it's unverified)
     p'' = (p' :: Profile) {contactDomainProof = if claimChanged then Nothing else prevProof}
@@ -749,7 +749,7 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, short
           contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. (((\(StrJSON n) -> n) <$> contactDomain), contactDomainProof) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. ((unStrJSON <$> contactDomain), contactDomainProof) :. (userId, profileId))
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
 updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
@@ -769,7 +769,7 @@ updateMemberContactProfileReset_' db userId profileId Profile {displayName, full
           contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (((\(StrJSON n) -> n) <$> contactDomain), contactDomainProof) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. ((unStrJSON <$> contactDomain), contactDomainProof) :. (userId, profileId))
 
 -- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
 updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
@@ -789,7 +789,7 @@ updateMemberContactProfile_' db userId profileId Profile {displayName, fullName,
           contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (((\(StrJSON n) -> n) <$> contactDomain), contactDomainProof) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. ((unStrJSON <$> contactDomain), contactDomainProof) :. (userId, profileId))
 
 updateContactLDN_ :: DB.Connection -> User -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt = do

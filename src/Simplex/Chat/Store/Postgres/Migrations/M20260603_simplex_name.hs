@@ -15,7 +15,7 @@ import Text.RawString.QQ (r)
 -- are the local 3-state verification status (NULL = not attempted, 0 = failed,
 -- 1 = verified), reset to NULL when the claimed name changes.
 --
--- contact_profiles.contact_domain_proof holds the peer's name ClaimProof (JSON).
+-- contact_profiles.contact_domain_proof holds the peer's name NameClaimProof (JSON).
 -- user_contact_links.link_priv_sig_key is the contact-address owner signing key
 -- (captured at short-link creation) used to sign the user's own name proofs.
 --

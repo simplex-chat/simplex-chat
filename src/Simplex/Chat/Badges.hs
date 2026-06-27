@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -29,7 +30,7 @@ module Simplex.Chat.Badges
     maxFileSizeLegend,
     ProofPresHeaderTag (..),
     ProofPresHeader (..),
-    ClaimProof (..),
+    NameClaimProof (..),
     signNameProof,
     verifyNameProofSig,
     proofPresHeaderLink,
@@ -225,6 +226,7 @@ data ProofPresHeader
   | PHSimplexLink AConnShortLink
   | PHUnknown Char ByteString
   deriving (Eq, Show)
+  deriving (ToJSON, FromJSON) via (StrJSON "ProofPresHeader" ProofPresHeader)
 
 instance StrEncoding ProofPresHeader where
   strEncode = \case
@@ -244,17 +246,10 @@ proofPresHeaderAccepted = \case
   PHSimplexLink _ -> True
   PHUnknown _ _ -> True
 
-instance ToJSON ProofPresHeader where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
-
-instance FromJSON ProofPresHeader where
-  parseJSON = strParseJSON "ProofPresHeader"
-
 -- A name claim proof: signed by the address owner's key (linkOwnerId = Just oid for a
 -- channel's delegated owner, Nothing = the address root key) over
 -- strEncode name <> strEncode presHeader, bound to the presentation context (the link).
-data ClaimProof = ClaimProof
+data NameClaimProof = NameClaimProof
   { linkOwnerId :: Maybe (StrJSON "OwnerId" OwnerId),
     presHeader :: ProofPresHeader,
     signature :: C.Signature 'C.Ed25519
@@ -267,9 +262,9 @@ nameProofPayload name presHeader = strEncode name <> strEncode presHeader
 
 -- mint a name proof: sign (name, presentation context) with the address owner key.
 -- linkOwnerId names the signing owner in the link's owner chain (Nothing = root key, the contact-address case).
-signNameProof :: C.PrivateKeyEd25519 -> Maybe OwnerId -> SimplexNameInfo -> ProofPresHeader -> ClaimProof
+signNameProof :: C.PrivateKeyEd25519 -> Maybe OwnerId -> SimplexNameInfo -> ProofPresHeader -> NameClaimProof
 signNameProof key linkOwnerId name presHeader =
-  ClaimProof
+  NameClaimProof
     { linkOwnerId = StrJSON <$> linkOwnerId,
       presHeader,
       signature = C.sign' key (nameProofPayload name presHeader)
@@ -277,8 +272,8 @@ signNameProof key linkOwnerId name presHeader =
 
 -- verify a name proof's signature against the resolved address owner key. The caller must
 -- SEPARATELY check the proof's presHeader link is the link it is presented through (anti-replay).
-verifyNameProofSig :: C.PublicKeyEd25519 -> SimplexNameInfo -> ClaimProof -> Bool
-verifyNameProofSig ownerKey name ClaimProof {presHeader, signature} =
+verifyNameProofSig :: C.PublicKeyEd25519 -> SimplexNameInfo -> NameClaimProof -> Bool
+verifyNameProofSig ownerKey name NameClaimProof {presHeader, signature} =
   C.verify' ownerKey signature (nameProofPayload name presHeader)
 
 -- the link a proof is bound to (its anti-replay context), if any
@@ -451,12 +446,12 @@ $(JQ.deriveJSON defaultJSON ''BadgeCredential)
 
 $(JQ.deriveJSON defaultJSON ''BadgeProof)
 
-$(JQ.deriveJSON defaultJSON ''ClaimProof)
+$(JQ.deriveJSON defaultJSON ''NameClaimProof)
 
--- ClaimProof is stored as JSON in contact_profiles.contact_domain_proof (like a badge proof)
-instance ToField ClaimProof where toField = toField . encodeJSON
+-- NameClaimProof is stored as JSON in contact_profiles.contact_domain_proof (like a badge proof)
+instance ToField NameClaimProof where toField = toField . encodeJSON
 
-instance FromField ClaimProof where fromField = fromTextField_ decodeJSON
+instance FromField NameClaimProof where fromField = fromTextField_ decodeJSON
 
 -- LocalBadge is sent to the UI/clients WITHOUT crypto - only disclosed info + status. The credential/proof
 -- bytes stay core-side. FromJSON reconstructs a display-only badge (empty proof) for read-only consumers

@@ -482,8 +482,7 @@ CREATE TABLE test_chat_schema.connections (
     short_link_inv bytea,
     via_short_link_contact bytea,
     via_contact_uri bytea,
-    relay_test smallint DEFAULT 0 NOT NULL,
-    simplex_name text
+    relay_test smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -542,7 +541,9 @@ CREATE TABLE test_chat_schema.contact_profiles (
     badge_master_key bytea,
     badge_signature bytea,
     badge_key_idx bigint,
-    simplex_name text
+    contact_domain text,
+    contact_domain_verification smallint,
+    contact_domain_proof text
 );
 
 
@@ -623,9 +624,7 @@ CREATE TABLE test_chat_schema.contacts (
     grp_direct_inv_from_group_id bigint,
     grp_direct_inv_from_group_member_id bigint,
     grp_direct_inv_from_member_conn_id bigint,
-    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL,
-    simplex_name text,
-    simplex_name_verified_at timestamp with time zone
+    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -871,7 +870,7 @@ CREATE TABLE test_chat_schema.group_profiles (
     group_domain text,
     domain_web_page bigint,
     allow_embedding bigint,
-    simplex_name text
+    group_domain_proof text
 );
 
 
@@ -985,7 +984,7 @@ CREATE TABLE test_chat_schema.groups (
     public_member_count bigint,
     relay_request_retries bigint DEFAULT 0 NOT NULL,
     relay_request_delay bigint DEFAULT 0 NOT NULL,
-    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 04:00:00+04'::timestamp with time zone NOT NULL,
+    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 01:00:00+01'::timestamp with time zone NOT NULL,
     relay_inactive_at timestamp with time zone,
     relay_sent_web_domain text,
     roster_version bigint,
@@ -995,8 +994,7 @@ CREATE TABLE test_chat_schema.groups (
     roster_sending_owner_gm_id bigint,
     roster_broker_ts timestamp with time zone,
     roster_blob bytea,
-    simplex_name text,
-    simplex_name_verified_at timestamp with time zone
+    group_domain_verification smallint
 );
 
 
@@ -1462,7 +1460,8 @@ CREATE TABLE test_chat_schema.user_contact_links (
     business_address smallint DEFAULT 0,
     short_link_contact bytea,
     short_link_data_set smallint DEFAULT 0 NOT NULL,
-    short_link_large_data_set smallint DEFAULT 0 NOT NULL
+    short_link_large_data_set smallint DEFAULT 0 NOT NULL,
+    link_priv_sig_key bytea
 );
 
 
@@ -2195,10 +2194,6 @@ CREATE INDEX idx_contact_profiles_contact_link ON test_chat_schema.contact_profi
 
 
 
-CREATE UNIQUE INDEX idx_contact_profiles_simplex_name ON test_chat_schema.contact_profiles USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
-
-
-
 CREATE INDEX idx_contact_profiles_user_id ON test_chat_schema.contact_profiles USING btree (user_id);
 
 
@@ -2252,10 +2247,6 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON test_chat_schem
 
 
 CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_member_conn_id);
-
-
-
-CREATE UNIQUE INDEX idx_contacts_simplex_name ON test_chat_schema.contacts USING btree (user_id, simplex_name) WHERE ((simplex_name IS NOT NULL) AND (deleted = 0));
 
 
 
@@ -2391,10 +2382,6 @@ CREATE INDEX idx_group_members_user_id_local_display_name ON test_chat_schema.gr
 
 
 
-CREATE UNIQUE INDEX idx_group_profiles_simplex_name ON test_chat_schema.group_profiles USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
-
-
-
 CREATE INDEX idx_group_profiles_user_id ON test_chat_schema.group_profiles USING btree (user_id);
 
 
@@ -2444,10 +2431,6 @@ CREATE INDEX idx_groups_inv_queue_info ON test_chat_schema.groups USING btree (i
 
 
 CREATE INDEX idx_groups_relay_request_group_link ON test_chat_schema.groups USING btree (user_id, relay_request_group_link) WHERE (relay_request_group_link IS NOT NULL);
-
-
-
-CREATE UNIQUE INDEX idx_groups_simplex_name ON test_chat_schema.groups USING btree (user_id, simplex_name) WHERE (simplex_name IS NOT NULL);
 
 
 

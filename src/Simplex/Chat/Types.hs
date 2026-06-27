@@ -48,7 +48,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), ClaimProof (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), NameClaimProof (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -695,7 +695,7 @@ data Profile = Profile
     peerType :: Maybe ChatPeerType,
     badge :: Maybe BadgeProof,
     contactDomain :: Maybe (StrJSON "SimplexName" SimplexNameInfo),
-    contactDomainProof :: Maybe ClaimProof
+    contactDomainProof :: Maybe NameClaimProof
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -781,7 +781,7 @@ data LocalProfile = LocalProfile
     localAlias :: LocalAlias,
     contactDomain :: Maybe SimplexNameInfo,
     contactDomainVerification :: Maybe Bool,
-    contactDomainProof :: Maybe ClaimProof
+    contactDomainProof :: Maybe NameClaimProof
   }
   deriving (Eq, Show)
 
@@ -790,7 +790,7 @@ localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain, contactDomainProof} localAlias now verified nameVerified =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain = (\(StrJSON n) -> n) <$> contactDomain, contactDomainVerification = nameVerified, contactDomainProof}
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain = unStrJSON <$> contactDomain, contactDomainVerification = nameVerified, contactDomainProof}
   where
     localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now verified info)) <$> badge
 
@@ -844,7 +844,7 @@ instance ToField GroupType where toField = toField . textEncode
 data PublicGroupAccess = PublicGroupAccess
   { groupWebPage :: Maybe Text,
     groupDomain :: Maybe (StrJSON "SimplexName" SimplexNameInfo),
-    groupDomainProof :: Maybe ClaimProof,
+    groupDomainProof :: Maybe NameClaimProof,
     domainWebPage :: Bool,
     allowEmbedding :: Bool
   }

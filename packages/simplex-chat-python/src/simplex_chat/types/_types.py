@@ -78,9 +78,8 @@ class AgentErrorType_FILE(TypedDict):
     type: Literal["FILE"]
     fileErr: "FileErrorType"
 
-class AgentErrorType_NAME(TypedDict):
-    type: Literal["NAME"]
-    nameErr: "NameErrorType"
+class AgentErrorType_NO_NAME_SERVERS(TypedDict):
+    type: Literal["NO_NAME_SERVERS"]
 
 class AgentErrorType_PROXY(TypedDict):
     type: Literal["PROXY"]
@@ -127,7 +126,7 @@ AgentErrorType = (
     | AgentErrorType_NTF
     | AgentErrorType_XFTP
     | AgentErrorType_FILE
-    | AgentErrorType_NAME
+    | AgentErrorType_NO_NAME_SERVERS
     | AgentErrorType_PROXY
     | AgentErrorType_RCP
     | AgentErrorType_BROKER
@@ -138,7 +137,7 @@ AgentErrorType = (
     | AgentErrorType_INACTIVE
 )
 
-AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FILE", "NAME", "PROXY", "RCP", "BROKER", "AGENT", "NOTICE", "INTERNAL", "CRITICAL", "INACTIVE"]
+AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FILE", "NO_NAME_SERVERS", "PROXY", "RCP", "BROKER", "AGENT", "NOTICE", "INTERNAL", "CRITICAL", "INACTIVE"]
 
 class AutoAccept(TypedDict):
     acceptIncognito: bool
@@ -1342,7 +1341,6 @@ class Connection(TypedDict):
     authErrCounter: int  # int
     quotaErrCounter: int  # int
     createdAt: str  # ISO-8601 timestamp
-    simplexName: NotRequired["SimplexNameInfo"]
 
 class ConnectionEntity_rcvDirectMsgConnection(TypedDict):
     type: Literal["rcvDirectMsgConnection"]
@@ -1443,8 +1441,6 @@ class Contact(TypedDict):
     uiThemes: NotRequired["UIThemeEntityOverrides"]
     chatDeleted: bool
     customData: NotRequired[dict[str, object]]
-    simplexName: NotRequired["SimplexNameInfo"]
-    simplexNameVerifiedAt: NotRequired[str]  # ISO-8601 timestamp
 
 class ContactAddressPlan_ok(TypedDict):
     type: Literal["ok"]
@@ -1865,8 +1861,7 @@ class GroupInfo(TypedDict):
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
     groupKeys: NotRequired["GroupKeys"]
-    simplexName: NotRequired["SimplexNameInfo"]
-    simplexNameVerifiedAt: NotRequired[str]  # ISO-8601 timestamp
+    groupDomainVerification: NotRequired[bool]
 
 class GroupKeys(TypedDict):
     publicGroupId: str
@@ -1994,7 +1989,6 @@ class GroupProfile(TypedDict):
     description: NotRequired[str]
     image: NotRequired[str]
     publicGroup: NotRequired["PublicGroupProfile"]
-    simplexName: NotRequired["SimplexNameInfo"]
     groupPreferences: NotRequired["GroupPreferences"]
     memberAdmission: NotRequired["GroupMemberAdmission"]
 
@@ -2125,11 +2119,13 @@ class LocalProfile(TypedDict):
     shortDescr: NotRequired[str]
     image: NotRequired[str]
     contactLink: NotRequired[str]
-    simplexName: NotRequired["SimplexNameInfo"]
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
     localBadge: NotRequired["LocalBadge"]
     localAlias: str
+    contactDomain: NotRequired["SimplexNameInfo"]
+    contactDomainVerification: NotRequired[bool]
+    contactDomainProof: NotRequired["NameClaimProof"]
 
 MemberCriteria = Literal["all"]
 
@@ -2262,27 +2258,24 @@ MsgReceiptStatus = Literal["ok", "badMsgHash"]
 
 MsgSigStatus = Literal["verified", "signedNoKey"]
 
+class NameClaimProof(TypedDict):
+    linkOwnerId: NotRequired[str]
+    presHeader: str
+    signature: str
+
 class NameErrorType_NO_RESOLVER(TypedDict):
     type: Literal["NO_RESOLVER"]
 
-class NameErrorType_NO_NAME(TypedDict):
-    type: Literal["NO_NAME"]
-
-class NameErrorType_NO_SERVERS(TypedDict):
-    type: Literal["NO_SERVERS"]
+class NameErrorType_NOT_FOUND(TypedDict):
+    type: Literal["NOT_FOUND"]
 
 class NameErrorType_RESOLVER(TypedDict):
     type: Literal["RESOLVER"]
     resolverErr: str
 
-NameErrorType = (
-    NameErrorType_NO_RESOLVER
-    | NameErrorType_NO_NAME
-    | NameErrorType_NO_SERVERS
-    | NameErrorType_RESOLVER
-)
+NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorType_RESOLVER
 
-NameErrorType_Tag = Literal["NO_RESOLVER", "NO_NAME", "NO_SERVERS", "RESOLVER"]
+NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
 
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
@@ -2400,10 +2393,11 @@ class Profile(TypedDict):
     shortDescr: NotRequired[str]
     image: NotRequired[str]
     contactLink: NotRequired[str]
-    simplexName: NotRequired["SimplexNameInfo"]
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
     badge: NotRequired["BadgeProof"]
+    contactDomain: NotRequired[str]
+    contactDomainProof: NotRequired["NameClaimProof"]
 
 class ProxyClientError_protocolError(TypedDict):
     type: Literal["protocolError"]
@@ -2446,6 +2440,7 @@ ProxyError_Tag = Literal["PROTOCOL", "BROKER", "BASIC_AUTH", "NO_SESSION"]
 class PublicGroupAccess(TypedDict):
     groupWebPage: NotRequired[str]
     groupDomain: NotRequired[str]
+    groupDomainProof: NotRequired["NameClaimProof"]
     domainWebPage: bool
     allowEmbedding: bool
 
