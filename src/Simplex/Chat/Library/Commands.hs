@@ -55,7 +55,8 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), NameClaimProof (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, proofPresHeaderLink, signNameProof, verifyCredential, verifyNameProofSig)
+import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, proofPresHeaderLink, verifyCredential)
+import Simplex.Chat.Names (NameClaimProof (..), signNameProof, verifyNameProofSig)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))

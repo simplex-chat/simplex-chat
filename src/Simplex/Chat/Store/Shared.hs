@@ -33,7 +33,8 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
-import Simplex.Chat.Badges (BadgeRow, NameClaimProof, badgeToRow, rowToBadge, verifyBadge_)
+import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, verifyBadge_)
+import Simplex.Chat.Names (NameClaimProof)
 import Simplex.Chat.Messages
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types

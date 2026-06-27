@@ -53,7 +53,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, signNameProof, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Names (signNameProof)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
