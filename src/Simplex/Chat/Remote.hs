@@ -564,9 +564,17 @@ handleRecv time events = do
 
 -- TODO this command could remember stored files and return IDs to allow removing files that are not needed.
 -- Also, there should be some process removing unused files uploaded to remote host (possibly, all unused files).
-handleStoreFile :: C.SbKeyNonce -> FilePath -> Word32 -> FileDigest -> GetChunk -> CM' RemoteResponse
+handleStoreFile ::
+  C.SbKeyNonce ->
+  FilePath ->
+  Word32 ->
+  FileDigest ->
+  GetChunk ->
+  CM' RemoteResponse
 handleStoreFile rfKN fileName fileSize fileDigest getChunk =
-  either RRProtocolError RRFileStored <$> (chatReadVar' filesFolder >>= storeFile)
+  if isValidRemoteStoreFileName fileName
+    then either RRProtocolError RRFileStored <$> (chatReadVar' filesFolder >>= storeFile)
+    else pure $ RRProtocolError RPEInvalidFileName
   where
     storeFile :: Maybe FilePath -> CM' (Either RemoteProtocolError FilePath)
     storeFile = \case
@@ -577,6 +585,14 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
       filePath <- liftIO $ dir `uniqueCombine` fileName
       receiveEncryptedFile rfKN getChunk fileSize fileDigest filePath
       pure filePath
+
+isValidRemoteStoreFileName :: FilePath -> Bool
+isValidRemoteStoreFileName fileName =
+  not (null fileName)
+    && fileName /= "."
+    && fileName /= ".."
+    && fileName == takeFileName fileName
+    && not (any (`elem` (['/', '\\', ':', '\0'] :: [Char])) fileName)
 
 handleGetFile :: User -> RemoteFile -> Respond -> CM ()
 handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do
