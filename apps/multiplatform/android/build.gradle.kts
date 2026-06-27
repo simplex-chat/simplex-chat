@@ -84,6 +84,7 @@ android {
     android.defaultConfig.resourceConfigurations += listOf(
         "en",
         "ar",
+        "az",
         "bg",
         "ca",
         "cs",

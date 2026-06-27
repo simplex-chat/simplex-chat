@@ -78,9 +78,17 @@ V systému MacOS musíte také [povolit spuštění nástroje Gatekeeper](https:
 
 #### Windows
 
-```sh
-move <binary> %APPDATA%/local/bin/simplex-chat.exe
-```
+1. Create a directory for the binary (for example, `%APPDATA%\local\bin`) and move the downloaded binary there:
+   ```cmd
+   mkdir "%APPDATA%\local\bin"
+   move simplex-chat-windows-x86-64.exe "%APPDATA%\local\bin\simplex-chat.exe"
+   ```
+2. Make sure this directory is added to your account's `Path` environment variable.
+3. SimpleX Chat CLI requires **OpenSSL 3.x** to run on Windows. If you don't have it, you can install it using [winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/):
+   ```cmd
+   winget install ShiningLight.OpenSSL
+   ```
+   *Note: If you run into missing DLL errors (such as `libcrypto-3-x64.dll` or `libssl-3-x64.dll`), copy those DLL files from your OpenSSL installation directory (typically `C:\Program Files\OpenSSL-Win64\bin`) into the same directory where `simplex-chat.exe` is located.*
 
 ### Sestavení ze zdrojových kódů
 

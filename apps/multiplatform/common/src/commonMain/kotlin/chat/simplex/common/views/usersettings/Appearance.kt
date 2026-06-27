@@ -1105,6 +1105,7 @@ object AppearanceScope {
       "system" to generalGetString(MR.strings.language_system),
       "en" to "English",
       "ar" to "العربية",
+      "az" to "Azərbaycan dili",
       "bg" to "Български",
       "ca" to "Català",
       "cs" to "Čeština",
