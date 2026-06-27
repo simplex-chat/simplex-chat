@@ -694,7 +694,7 @@ data Profile = Profile
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
     badge :: Maybe BadgeProof,
-    contactDomain :: Maybe (StrJSON "SimplexName" SimplexNameInfo),
+    contactDomain :: Maybe (StrJSON "SimplexNameInfo" SimplexNameInfo),
     contactDomainProof :: Maybe NameClaimProof
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
