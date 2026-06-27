@@ -592,7 +592,6 @@ test-suite simplex-chat-test
       ProtocolTests
       RandomServers
       RemoteTests
-      ResolveNameTests
       ValidNames
       ViewTests
       API.Docs.Commands

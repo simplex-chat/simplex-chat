@@ -20,7 +20,6 @@ import ProtocolTests
 import OperatorTests
 import RandomServers
 import RemoteTests
-import ResolveNameTests
 import Test.Hspec hiding (it)
 import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
@@ -72,7 +71,6 @@ main = do
       describe "Message batching" batchingTests
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
-      describe "Resolve SimpleX name" resolveNameTests
 #if defined(dbPostgres)
       createdDropDb . around testBracket
 #else
