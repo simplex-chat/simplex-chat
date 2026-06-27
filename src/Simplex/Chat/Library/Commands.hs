@@ -1492,9 +1492,11 @@ processChatCommand cxt nm = \case
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
   APISetUserName userId name_ -> withUserId userId $ \user@User {profile = oldLP@LocalProfile {contactLink = oldContactLink}} -> do
-    -- require an address with a short link: the name needs a verifiable link context to attach to
-    UserContactLink {shortLinkDataSet, connLinkContact = CCLink ourFull_ ourShort_} <- withFastStore $ \db -> getUserAddress db user
-    unless shortLinkDataSet $ throwCmdError "create your address short link before setting a name"
+    -- §4.9 steps 1-2: getUserAddress fails if there is no address; if the address is long-link only,
+    -- create the short link (names resolve to short links), reusing the APIAddMyAddressShortLink path
+    ucl0@UserContactLink {shortLinkDataSet} <- withFastStore $ \db -> getUserAddress db user
+    UserContactLink {connLinkContact = CCLink ourFull_ ourShort_} <-
+      if shortLinkDataSet then pure ucl0 else setMyAddressData user ucl0
     let ourLink = maybe (CLFull ourFull_) CLShort ourShort_
     -- §4.9: names are pre-registered out of band; verify the name resolves to THIS address before setting it
     forM_ name_ $ \name -> do
@@ -4279,11 +4281,18 @@ processChatCommand cxt nm = \case
       NTContact -> do
         ct_ <- withFastStore $ \db -> getContactBySimplexName db cxt user ni
         case ct_ of
-          Just ct -> case preparedContact ct of
+          Just ct@Contact {profile = LocalProfile {contactLink = ctLink_}} -> case preparedContact ct of
             Just PreparedContact {connLinkToConnect} -> pure (connLinkToConnect, CPContactAddress (CAPKnown ct))
-            -- Row exists but carries no reconnect link (e.g. created via XInfo, not via prepare).
-            -- The name resolves; the device just lacks the connection material to re-establish.
-            Nothing -> throwChatError $ CESimplexNameUnprepared ni
+            -- A verified contact essentially always has preparedContact; if it's somehow absent, still return
+            -- the KNOWN contact (as the link-known path does), reusing its advertised address link rather than erroring.
+            Nothing -> case ctLink_ of
+              Just (CLFull cReq) -> pure (ACCL SCMContact (CCLink cReq Nothing), CPContactAddress (CAPKnown ct))
+              Just (CLShort sLnk) ->
+                let l' = serverShortLink sLnk
+                 in withFastStore (\db -> getContactViaShortLinkToConnect db cxt user l') >>= \case
+                      Just (cReq, ct') | not (contactDeleted ct') -> pure (ACCL SCMContact (CCLink cReq (Just l')), CPContactAddress (CAPKnown ct'))
+                      _ -> resolveAndDispatch
+              Nothing -> resolveAndDispatch
           Nothing -> resolveAndDispatch
       NTPublicGroup -> do
         g_ <- withFastStore $ \db -> getGroupInfoBySimplexName db cxt user ni
@@ -4291,10 +4300,17 @@ processChatCommand cxt nm = \case
           -- Mirror gPlan at line ~4133 in the link-based path: a removed member is not a
           -- known-and-reconnectable group; treat as "not found" so the caller can try elsewhere.
           Just g | memberRemoved (membership g) -> resolveAndDispatch
-          Just g -> case preparedGroup g of
+          Just g@GroupInfo {groupProfile = GroupProfile {publicGroup}} -> case preparedGroup g of
             Just PreparedGroup {connLinkToConnect = ccLink} ->
               pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
-            Nothing -> throwChatError $ CESimplexNameUnprepared ni
+            -- as for contacts: still return the KNOWN channel via its join link rather than erroring
+            Nothing -> case publicGroup of
+              Just PublicGroupProfile {groupLink} ->
+                let l' = serverShortLink groupLink
+                 in withFastStore (\db -> getGroupViaShortLinkToConnect db cxt user l') >>= \case
+                      Just (cReq, g') | not (memberRemoved (membership g')) -> pure (ACCL SCMContact (CCLink cReq (Just l')), CPGroupLink (GLPKnown g' (BoolDef False) Nothing (ListDef [])))
+                      _ -> resolveAndDispatch
+              Nothing -> resolveAndDispatch
           Nothing -> resolveAndDispatch
       where
         resolveAndDispatch :: CM (ACreatedConnLink, ConnectionPlan)
@@ -4880,12 +4896,16 @@ apiVerifySimplexName user nm chatRef = do
   -- linkOwnerId — root key for Nothing, owner-chain key for a channel's Just oid) AND the proof's
   -- presHeader is the link the peer was actually connected through (anti-replay). The key comes from
   -- *resolving the name* (the address), not the connected link — for a 1-time invite they differ.
+  -- Maybe Bool: Nothing = not attempted (no proof / no link anchor) — leave the stored status untouched;
+  -- Just b = a verdict to persist. A network/agent error fetching a resolved link propagates so the
+  -- UI-triggered verify surfaces it for retry (as a resolveSimplexName failure already does), not a false verdict.
   verified <- case (proof_, connLink_) of
     (Just proof, Just connLink)
-      | proofBoundTo proof connLink -> or <$> mapM (verifyProofKey claim proof) resolvedLinks
-    _ -> pure False
-  withStore' $ \db -> persistVerified db verified
-  pure $ CRSimplexNameVerified user chatRef claim verified
+      | proofBoundTo proof connLink -> Just . or <$> mapM (verifyProofKey claim proof) resolvedLinks
+      | otherwise -> pure (Just False)
+    _ -> pure Nothing
+  forM_ verified $ \v -> withStore' $ \db -> persistVerified db v
+  pure $ CRSimplexNameVerified user chatRef claim (verified == Just True)
   where
     -- the claim, the link the peer was connected through (the presHeader anchor), the proof, and the 3-state persist callback
     loadClaimAndLink :: StoreCxt -> CM (SimplexNameInfo, Maybe AConnShortLink, Maybe NameClaimProof, DB.Connection -> Bool -> IO ())
@@ -4908,19 +4928,27 @@ apiVerifySimplexName user nm chatRef = do
     -- the proof must be bound (anti-replay) to the link the peer was connected through
     proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
     proofBoundTo NameClaimProof {presHeader} connLink =
-      (strEncode <$> proofPresHeaderLink presHeader) == Just (strEncode connLink)
+      (normASL <$> proofPresHeaderLink presHeader) == Just (normASL connLink)
+      where
+        -- compare scheme-insensitively (simplex:/ vs server-hostname), as linksMatch does, so a proof
+        -- minted in one scheme still matches the stored link in the other
+        normASL :: AConnShortLink -> ByteString
+        normASL (ACSL m sl) = strEncode $ ACSL m $ case sl of
+          CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
+          CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
     -- verify the proof signature against the resolved name's owner key
+    -- Maybe Bool: Just = a determined result for this resolved link; Nothing = couldn't fetch it
+    -- (network/agent error) so the result is undetermined — never recorded as a failed verification.
+    -- getShortLinkConnReq's network/agent error propagates (UI can retry), not recorded as a verdict
     verifyProofKey :: SimplexNameInfo -> NameClaimProof -> Text -> CM Bool
     verifyProofKey claim proof@NameClaimProof {linkOwnerId} resolvedText =
       case strDecode (encodeUtf8 resolvedText) :: Either String AConnectionLink of
-        Right (ACL SCMContact (CLShort sLnk)) ->
-          tryAllErrors (getShortLinkConnReq nm user sLnk) >>= \case
-            Right (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}) ->
-              let key_ = case linkOwnerId of
-                    Nothing -> Just rootKey
-                    Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
-               in pure $ maybe False (\key -> verifyNameProofSig key claim proof) key_
-            _ -> pure False
+        Right (ACL SCMContact (CLShort sLnk)) -> do
+          (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}) <- getShortLinkConnReq nm user sLnk
+          let key_ = case linkOwnerId of
+                Nothing -> Just rootKey
+                Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
+          pure $ maybe False (\key -> verifyNameProofSig key claim proof) key_
         _ -> pure False
 
 data ConnectViaContactResult
