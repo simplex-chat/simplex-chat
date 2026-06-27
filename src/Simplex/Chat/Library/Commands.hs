@@ -4305,7 +4305,7 @@ processChatCommand cxt nm = \case
           let (candidates, ctType) = case nameType of
                 NTContact -> (nrSimplexContact, CCTContact)
                 NTPublicGroup -> (nrSimplexChannel, CCTChannel)
-          sLnk <- maybe (throwChatError $ CESimplexNameError ni SNENoValidLink) pure $ firstNameLink ctType candidates
+          sLnk <- maybe (throwChatError $ CESimplexName ni SNENoValidLink) pure $ firstNameLink ctType candidates
           (ccLink, plan) <- connectPlan user (CTLink (ACL SCMContact (CLShort sLnk))) False Nothing
           case plan of
             CPContactAddress (CAPOk (Just ContactShortLinkData {profile}) _) -> do
@@ -4320,13 +4320,13 @@ processChatCommand cxt nm = \case
             _ -> pure (ccLink, plan)
         verifiedContactPlan :: ACreatedConnLink -> Contact -> CM (ACreatedConnLink, ConnectionPlan)
         verifiedContactPlan ccLink Contact {contactId, profile = LocalProfile {contactDomain}} = do
-          unless (contactDomain == Just ni) $ throwChatError $ CESimplexNameError ni SNEUnknownName
+          unless (contactDomain == Just ni) $ throwChatError $ CESimplexName ni SNEUnknownName
           withStore' $ \db -> setContactDomainVerified db user contactId True
           ct' <- withFastStore $ \db -> getContact db cxt user contactId
           pure (ccLink, CPContactAddress (CAPKnown ct'))
         verifiedGroupPlan :: ACreatedConnLink -> GroupInfo -> CM (ACreatedConnLink, ConnectionPlan)
         verifiedGroupPlan ccLink GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}} = do
-          unless ((publicGroup >>= publicGroupAccess >>= groupDomain) == Just (StrJSON ni)) $ throwChatError $ CESimplexNameError ni SNEUnknownName
+          unless ((publicGroup >>= publicGroupAccess >>= groupDomain) == Just (StrJSON ni)) $ throwChatError $ CESimplexName ni SNEUnknownName
           withStore' $ \db -> setGroupDomainVerified db user groupId True
           g' <- withFastStore $ \db -> getGroupInfo db cxt user groupId
           pure (ccLink, CPGroupLink (GLPKnown g' (BoolDef False) Nothing (ListDef [])))

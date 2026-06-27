@@ -58,7 +58,6 @@ This file is generated automatically.
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
 - [APISetUserAutoAcceptMemberContacts](#apisetuserautoacceptmembercontacts)
-- [APIVerifySimplexName](#apiverifysimplexname)
 
 [User profile commands](#user-profile-commands)
 - [ShowActiveUser](#showactiveuser)
@@ -1852,45 +1851,6 @@ Set auto-accept member contacts.
 CmdOk: Ok.
 - type: "cmdOk"
 - user_: [User](./TYPES.md#user)?
-
-ChatCmdError: Command error (only used in WebSockets API).
-- type: "chatCmdError"
-- chatError: [ChatError](./TYPES.md#chaterror)
-
----
-
-
-### APIVerifySimplexName
-
-Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
-
-*Network usage*: interactive.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-
-**Syntax**:
-
-```
-/_verify simplex name <str(chatRef)>
-```
-
-```javascript
-'/_verify simplex name ' + ChatRef.cmdString(chatRef) // JavaScript
-```
-
-```python
-'/_verify simplex name ' + ChatRef_cmd_string(chatRef) # Python
-```
-
-**Responses**:
-
-SimplexNameVerified: Result of SimpleX name verification (`verified`: whether the RSLV-resolved link matches the peer's stored link).
-- type: "simplexNameVerified"
-- user: [User](./TYPES.md#user)
-- chatRef: [ChatRef](./TYPES.md#chatref)
-- simplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)
-- verified: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

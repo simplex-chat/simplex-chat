@@ -681,20 +681,6 @@ export namespace APISetUserAutoAcceptMemberContacts {
   }
 }
 
-// Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
-// Network usage: interactive.
-export interface APIVerifySimplexName {
-  chatRef: T.ChatRef
-}
-
-export namespace APIVerifySimplexName {
-  export type Response = CR.SimplexNameVerified | CR.ChatCmdError
-
-  export function cmdString(self: APIVerifySimplexName): string {
-    return '/_verify simplex name ' + T.ChatRef.cmdString(self.chatRef)
-  }
-}
-
 // User profile commands
 // Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).
 

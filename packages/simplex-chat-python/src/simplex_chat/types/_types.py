@@ -788,13 +788,10 @@ class ChatErrorType_chatStoreChanged(TypedDict):
 class ChatErrorType_invalidConnReq(TypedDict):
     type: Literal["invalidConnReq"]
 
-class ChatErrorType_simplexNameNotFound(TypedDict):
-    type: Literal["simplexNameNotFound"]
+class ChatErrorType_simplexName(TypedDict):
+    type: Literal["simplexName"]
     simplexName: "SimplexNameInfo"
-
-class ChatErrorType_simplexNameUnprepared(TypedDict):
-    type: Literal["simplexNameUnprepared"]
-    simplexName: "SimplexNameInfo"
+    simplexNameError: "SimplexNameError"
 
 class ChatErrorType_unsupportedConnReq(TypedDict):
     type: Literal["unsupportedConnReq"]
@@ -1026,8 +1023,7 @@ ChatErrorType = (
     | ChatErrorType_chatNotStopped
     | ChatErrorType_chatStoreChanged
     | ChatErrorType_invalidConnReq
-    | ChatErrorType_simplexNameNotFound
-    | ChatErrorType_simplexNameUnprepared
+    | ChatErrorType_simplexName
     | ChatErrorType_unsupportedConnReq
     | ChatErrorType_connReqMessageProhibited
     | ChatErrorType_contactNotReady
@@ -1084,7 +1080,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexNameNotFound", "simplexNameUnprepared", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexName", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -2789,6 +2785,16 @@ class SimplexNameDomain(TypedDict):
     nameTLD: "SimplexTLD"
     domain: str
     subDomain: list[str]
+
+class SimplexNameError_noValidLink(TypedDict):
+    type: Literal["noValidLink"]
+
+class SimplexNameError_unknownName(TypedDict):
+    type: Literal["unknownName"]
+
+SimplexNameError = SimplexNameError_noValidLink | SimplexNameError_unknownName
+
+SimplexNameError_Tag = Literal["noValidLink", "unknownName"]
 
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"

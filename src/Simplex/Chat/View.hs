@@ -2681,7 +2681,7 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexNameError ni nameErr ->
+    CESimplexName ni nameErr ->
       let reason = case nameErr of
             SNENoValidLink -> "has no usable connection link"
             SNEUnknownName -> "is not included in the connection link's profile"

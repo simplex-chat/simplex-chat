@@ -1244,9 +1244,11 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     }
 
 redactedMemberProfile :: GroupInfo -> GroupMember -> Profile -> Profile
-redactedMemberProfile g m Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, contactDomain} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = if allowSimplexLinks then contactLink else Nothing, preferences = Nothing, peerType, badge, contactDomain = if allowDirect then contactDomain else Nothing, contactDomainProof = Nothing}
+redactedMemberProfile g m Profile {displayName, fullName, shortDescr, image, contactLink = lnk, peerType, badge, contactDomain = d} =
+  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink, preferences = Nothing, peerType, badge, contactDomain, contactDomainProof = Nothing}
   where
+    contactLink = if allowSimplexLinks then lnk else Nothing
+    contactDomain = if allowDirect then d else Nothing
     allowDirect = groupFeatureMemberAllowed SGFDirectMessages m g
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
     removeSimplexLink s

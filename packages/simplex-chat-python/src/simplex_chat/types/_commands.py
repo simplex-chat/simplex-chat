@@ -596,18 +596,6 @@ def APISetUserAutoAcceptMemberContacts_cmd_string(self: APISetUserAutoAcceptMemb
 APISetUserAutoAcceptMemberContacts_Response = CR.CmdOk | CR.ChatCmdError
 
 
-# Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
-# Network usage: interactive.
-class APIVerifySimplexName(TypedDict):
-    chatRef: "T.ChatRef"
-
-
-def APIVerifySimplexName_cmd_string(self: APIVerifySimplexName) -> str:
-    return '/_verify simplex name ' + T.ChatRef_cmd_string(self['chatRef'])
-
-APIVerifySimplexName_Response = CR.SimplexNameVerified | CR.ChatCmdError
-
-
 # User profile commands
 # Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).
 

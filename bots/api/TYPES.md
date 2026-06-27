@@ -177,6 +177,7 @@ This file is generated automatically.
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
 - [SimplexNameDomain](#simplexnamedomain)
+- [SimplexNameError](#simplexnameerror)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -1110,13 +1111,10 @@ ChatStoreChanged:
 InvalidConnReq:
 - type: "invalidConnReq"
 
-SimplexNameNotFound:
-- type: "simplexNameNotFound"
+SimplexName:
+- type: "simplexName"
 - simplexName: [SimplexNameInfo](#simplexnameinfo)
-
-SimplexNameUnprepared:
-- type: "simplexNameUnprepared"
-- simplexName: [SimplexNameInfo](#simplexnameinfo)
+- simplexNameError: [SimplexNameError](#simplexnameerror)
 
 UnsupportedConnReq:
 - type: "unsupportedConnReq"
@@ -3619,6 +3617,19 @@ A_QUEUE:
 - nameTLD: [SimplexTLD](#simplextld)
 - domain: string
 - subDomain: [string]
+
+
+---
+
+## SimplexNameError
+
+**Discriminated union type**:
+
+NoValidLink:
+- type: "noValidLink"
+
+UnknownName:
+- type: "unknownName"
 
 
 ---

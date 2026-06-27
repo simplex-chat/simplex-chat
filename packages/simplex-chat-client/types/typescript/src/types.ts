@@ -1042,8 +1042,7 @@ export type ChatErrorType =
   | ChatErrorType.ChatNotStopped
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
-  | ChatErrorType.SimplexNameNotFound
-  | ChatErrorType.SimplexNameUnprepared
+  | ChatErrorType.SimplexName
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1121,8 +1120,7 @@ export namespace ChatErrorType {
     | "chatNotStopped"
     | "chatStoreChanged"
     | "invalidConnReq"
-    | "simplexNameNotFound"
-    | "simplexNameUnprepared"
+    | "simplexName"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1277,14 +1275,10 @@ export namespace ChatErrorType {
     type: "invalidConnReq"
   }
 
-  export interface SimplexNameNotFound extends Interface {
-    type: "simplexNameNotFound"
+  export interface SimplexName extends Interface {
+    type: "simplexName"
     simplexName: SimplexNameInfo
-  }
-
-  export interface SimplexNameUnprepared extends Interface {
-    type: "simplexNameUnprepared"
-    simplexName: SimplexNameInfo
+    simplexNameError: SimplexNameError
   }
 
   export interface UnsupportedConnReq extends Interface {
@@ -3994,6 +3988,24 @@ export interface SimplexNameDomain {
   nameTLD: SimplexTLD
   domain: string
   subDomain: string[]
+}
+
+export type SimplexNameError = SimplexNameError.NoValidLink | SimplexNameError.UnknownName
+
+export namespace SimplexNameError {
+  export type Tag = "noValidLink" | "unknownName"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NoValidLink extends Interface {
+    type: "noValidLink"
+  }
+
+  export interface UnknownName extends Interface {
+    type: "unknownName"
+  }
 }
 
 export interface SimplexNameInfo {

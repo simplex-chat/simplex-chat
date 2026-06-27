@@ -35,6 +35,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
+import Simplex.Chat.Names
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -358,6 +359,7 @@ chatTypesDocsData =
     (sti @SimplePreference, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
     (sti @SimplexNameDomain, STRecord, "", [], "", ""),
+    (sti @SimplexNameError, STUnion, "SNE", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
@@ -586,6 +588,7 @@ deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexLinkType
 deriving instance Generic SimplexNameDomain
+deriving instance Generic SimplexNameError
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
 deriving instance Generic SimplexTLD

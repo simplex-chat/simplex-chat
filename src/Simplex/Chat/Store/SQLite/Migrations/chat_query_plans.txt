@@ -5254,6 +5254,20 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+      UPDATE group_profiles
+      SET preferences = ?, updated_at = ?
+      WHERE group_profile_id IN (
+        SELECT group_profile_id
+        FROM groups
+        WHERE user_id = ? AND group_id = ?
+      )
+    
+Plan:
+SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
       UPDATE group_relays
       SET base_web_url = ?, updated_at = ?
       WHERE group_member_id = ?
