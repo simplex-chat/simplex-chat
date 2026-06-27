@@ -50,6 +50,7 @@ fun ChannelWebPageView(
       val newAccess = PublicGroupAccess(
         groupWebPage = trimmedPage.ifEmpty { null },
         groupDomain = access?.groupDomain,
+        groupDomainProof = access?.groupDomainProof,
         domainWebPage = access?.domainWebPage ?: false,
         allowEmbedding = allowEmbedding.value
       )

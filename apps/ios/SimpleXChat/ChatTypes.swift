@@ -161,7 +161,10 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         preferences: Preferences? = nil,
         peerType: ChatPeerType? = nil,
         localBadge: LocalBadge? = nil,
-        localAlias: String
+        localAlias: String,
+        contactDomain: SimplexNameInfo? = nil,
+        contactDomainProof: NameClaimProof? = nil,
+        contactDomainVerification: Bool? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -173,6 +176,9 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.peerType = peerType
         self.localBadge = localBadge
         self.localAlias = localAlias
+        self.contactDomain = contactDomain
+        self.contactDomainProof = contactDomainProof
+        self.contactDomainVerification = contactDomainVerification
     }
 
     public var profileId: Int64
@@ -185,6 +191,9 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var peerType: ChatPeerType?
     public var localBadge: LocalBadge?
     public var localAlias: String
+    public var contactDomain: SimplexNameInfo?
+    public var contactDomainProof: NameClaimProof?
+    public var contactDomainVerification: Bool?
 
     var profileViewName: String {
         localAlias == ""
@@ -2534,6 +2543,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var localAlias: String
+    public var groupDomainVerification: Bool?
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -2614,15 +2624,17 @@ public enum GroupType: Codable, Hashable {
 }
 
 public struct PublicGroupAccess: Codable, Hashable {
-    public init(groupWebPage: String? = nil, groupDomain: String? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
+    public init(groupWebPage: String? = nil, groupDomain: String? = nil, groupDomainProof: NameClaimProof? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
         self.groupWebPage = groupWebPage
         self.groupDomain = groupDomain
+        self.groupDomainProof = groupDomainProof
         self.domainWebPage = domainWebPage
         self.allowEmbedding = allowEmbedding
     }
 
     public var groupWebPage: String?
     public var groupDomain: String?
+    public var groupDomainProof: NameClaimProof?
     public var domainWebPage: Bool = false
     public var allowEmbedding: Bool = false
 }
@@ -5258,26 +5270,98 @@ public enum SimplexLinkType: String, Decodable, Hashable {
     }
 }
 
-public struct SimplexNameInfo: Decodable, Equatable, Hashable {
+public struct SimplexNameInfo: Codable, Equatable, Hashable {
     public var nameType: SimplexNameType
     public var nameDomain: SimplexNameDomain
+
+    // prefix-less domain for prefilling the set-name field (mirrors shortName without the @/# prefix)
+    public var editDomain: String {
+        if nameType == .publicGroup, nameDomain.nameTLD == .simplex, nameDomain.subDomain.isEmpty {
+            return nameDomain.domain
+        }
+        return nameDomain.fullDomainName
+    }
+
+    // user-facing display string, mirrors backend shortNameInfoStr
+    public var shortName: String {
+        (nameType == .publicGroup ? "#" : "@") + editDomain
+    }
+
+    // decode the encoded form (e.g. "simplex:/name#myteam.simplex") stored in groupDomain
+    public init?(parsing s0: String) {
+        var s = Substring(s0)
+        if s.hasPrefix("simplex:/name") { s = s.dropFirst("simplex:/name".count) }
+        let type: SimplexNameType
+        if s.first == "@" { type = .contact; s = s.dropFirst() }
+        else if s.first == "#" { type = .publicGroup; s = s.dropFirst() }
+        else { type = .publicGroup }
+        guard let dom = SimplexNameDomain(parsing: String(s)) else { return nil }
+        self.init(nameType: type, nameDomain: dom)
+    }
+
+    public init(nameType: SimplexNameType, nameDomain: SimplexNameDomain) {
+        self.nameType = nameType
+        self.nameDomain = nameDomain
+    }
 }
 
-public struct SimplexNameDomain: Decodable, Equatable, Hashable {
+public struct SimplexNameDomain: Codable, Equatable, Hashable {
     public var nameTLD: SimplexTLD
     public var domain: String
     public var subDomain: [String]
+
+    // mirrors backend fullDomainName: reverse(subDomain) ++ [domain] ++ tld
+    public var fullDomainName: String {
+        let tld: [String]
+        switch nameTLD {
+        case .simplex: tld = ["simplex"]
+        case .testing: tld = ["testing"]
+        case .web: tld = []
+        }
+        return (subDomain.reversed() + [domain] + tld).joined(separator: ".")
+    }
+
+    public init(nameTLD: SimplexTLD, domain: String, subDomain: [String]) {
+        self.nameTLD = nameTLD
+        self.domain = domain
+        self.subDomain = subDomain
+    }
+
+    // mirrors backend mkDomain (reverse labels = tld : name : sub)
+    public init?(parsing s: String) {
+        let labels = s.split(separator: ".", omittingEmptySubsequences: false).map(String.init)
+        guard !labels.contains(where: { $0.isEmpty }) else { return nil }
+        let rev = Array(labels.reversed())
+        switch rev.count {
+        case 0: return nil
+        case 1: self.init(nameTLD: .simplex, domain: rev[0], subDomain: [])
+        default:
+            let name = rev[1], sub = Array(rev[2...])
+            switch rev[0] {
+            case "simplex": self.init(nameTLD: .simplex, domain: name, subDomain: sub)
+            case "testing": self.init(nameTLD: .testing, domain: name, subDomain: sub)
+            default: self.init(nameTLD: .web, domain: labels.joined(separator: "."), subDomain: [])
+            }
+        }
+    }
 }
 
-public enum SimplexTLD: String, Decodable, Hashable {
+public enum SimplexTLD: String, Codable, Hashable {
     case simplex
     case testing
     case web
 }
 
-public enum SimplexNameType: String, Decodable, Hashable {
+public enum SimplexNameType: String, Codable, Hashable {
     case publicGroup
     case contact
+}
+
+// peer's signed name claim; UI only checks presence
+public struct NameClaimProof: Codable, Hashable {
+    public var presHeader: String
+    public var signature: String
+    public var linkOwnerId: String?
 }
 
 public enum FormatColor: String, Decodable, Hashable {

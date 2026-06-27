@@ -2068,7 +2068,10 @@ data class LocalProfile(
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
   val peerType: ChatPeerType? = null,
-  val localBadge: LocalBadge? = null
+  val localBadge: LocalBadge? = null,
+  val contactDomain: SimplexNameInfo? = null,
+  val contactDomainProof: NameClaimProof? = null,
+  val contactDomainVerification: Boolean? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
@@ -2198,6 +2201,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
+  val groupDomainVerification: Boolean? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -2323,6 +2327,7 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 data class PublicGroupAccess(
   val groupWebPage: String? = null,
   val groupDomain: String? = null,
+  val groupDomainProof: NameClaimProof? = null,
   val domainWebPage: Boolean = false,
   val allowEmbedding: Boolean = false
 )
@@ -4875,14 +4880,71 @@ enum class SimplexLinkType(val linkType: String) {
 data class SimplexNameInfo(
   val nameType: SimplexNameType,
   val nameDomain: SimplexNameDomain
-)
+) {
+  // prefix-less domain for prefilling the set-name field (shortName without the @/# prefix)
+  val editDomain: String
+    get() = if (nameType == SimplexNameType.publicGroup && nameDomain.nameTLD == SimplexTLD.simplex && nameDomain.subDomain.isEmpty())
+      nameDomain.domain
+    else nameDomain.fullDomainName
+
+  // user-facing display string, mirrors backend shortNameInfoStr
+  val shortName: String
+    get() = (if (nameType == SimplexNameType.publicGroup) "#" else "@") + editDomain
+
+  companion object {
+    // decode the encoded form (e.g. "simplex:/name#myteam.simplex") stored in groupDomain
+    fun parse(s0: String): SimplexNameInfo? {
+      var s = s0
+      if (s.startsWith("simplex:/name")) s = s.removePrefix("simplex:/name")
+      val type = when {
+        s.startsWith("@") -> { s = s.drop(1); SimplexNameType.contact }
+        s.startsWith("#") -> { s = s.drop(1); SimplexNameType.publicGroup }
+        else -> SimplexNameType.publicGroup
+      }
+      val dom = SimplexNameDomain.parse(s) ?: return null
+      return SimplexNameInfo(type, dom)
+    }
+  }
+}
 
 @Serializable
 data class SimplexNameDomain(
   val nameTLD: SimplexTLD,
   val domain: String,
   val subDomain: List<String>
-)
+) {
+  // mirrors backend fullDomainName: reverse(subDomain) + [domain] + tld
+  val fullDomainName: String
+    get() {
+      val tld = when (nameTLD) {
+        SimplexTLD.simplex -> listOf("simplex")
+        SimplexTLD.testing -> listOf("testing")
+        SimplexTLD.web -> emptyList()
+      }
+      return (subDomain.reversed() + domain + tld).joinToString(".")
+    }
+
+  companion object {
+    // mirrors backend mkDomain (reverse labels = tld : name : sub)
+    fun parse(s: String): SimplexNameDomain? {
+      val labels = s.split(".")
+      if (labels.any { it.isEmpty() }) return null
+      val rev = labels.reversed()
+      return when (rev.size) {
+        1 -> SimplexNameDomain(SimplexTLD.simplex, rev[0], emptyList())
+        else -> {
+          val name = rev[1]
+          val sub = rev.drop(2)
+          when (rev[0]) {
+            "simplex" -> SimplexNameDomain(SimplexTLD.simplex, name, sub)
+            "testing" -> SimplexNameDomain(SimplexTLD.testing, name, sub)
+            else -> SimplexNameDomain(SimplexTLD.web, labels.joinToString("."), emptyList())
+          }
+        }
+      }
+    }
+  }
+}
 
 @Serializable
 enum class SimplexTLD {
@@ -4896,6 +4958,14 @@ enum class SimplexNameType {
   @SerialName("publicGroup") publicGroup,
   @SerialName("contact") contact
 }
+
+// peer's signed name claim; UI only checks presence
+@Serializable
+data class NameClaimProof(
+  val presHeader: String,
+  val signature: String,
+  val linkOwnerId: String? = null
+)
 
 @Serializable
 enum class FormatColor(val color: String) {
