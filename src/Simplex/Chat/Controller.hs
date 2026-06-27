@@ -537,12 +537,12 @@ data ChatCommand
   | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe ConnectTarget}
-  | -- Resolves the name claim on the chat row (contact or group) via RSLV and
-    -- compares the resolved link to the peer's stored connection link. Returns
-    -- CRSimplexNameVerified with the boolean result (persisted as the 3-state
-    -- contact_domain_verification / group_domain_verification); resolver / agent
-    -- failures surface as ChatErrorAgent.
-    APIVerifySimplexName {chatRef :: ChatRef}
+  | -- Verify a contact's / channel's claimed name (§4.6): resolve it, check the stored proof is signed
+    -- by the resolved name owner and bound to the connected link, persist the 3-state status, and
+    -- return the updated entity plus a Nothing/Just-reason result. Resolver/agent failures surface as
+    -- ChatErrorAgent (retryable).
+    APIVerifyContactName {contactId :: ContactId}
+  | APIVerifyPublicGroupName {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
@@ -781,7 +781,8 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
-  | CRSimplexNameVerified {user :: User, chatRef :: ChatRef, simplexName :: SimplexNameInfo, verified :: Bool}
+  | CRContactNameVerified {user :: User, contact :: Contact, verificationResult :: Maybe Text}
+  | CRGroupNameVerified {user :: User, groupInfo :: GroupInfo, verificationResult :: Maybe Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
@@ -1429,7 +1430,6 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CESimplexNameNotFound {simplexName :: SimplexNameInfo}
-  | CESimplexNameUnprepared {simplexName :: SimplexNameInfo}
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited

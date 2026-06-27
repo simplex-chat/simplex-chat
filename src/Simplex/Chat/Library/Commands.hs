@@ -1492,25 +1492,26 @@ processChatCommand cxt nm = \case
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
   APISetUserName userId name_ -> withUserId userId $ \user@User {profile = oldLP@LocalProfile {contactLink = oldContactLink}} -> do
-    -- §4.9 steps 1-2: getUserAddress fails if there is no address; if the address is long-link only,
-    -- create the short link (names resolve to short links), reusing the APIAddMyAddressShortLink path
-    ucl0@UserContactLink {shortLinkDataSet} <- withFastStore $ \db -> getUserAddress db user
-    UserContactLink {connLinkContact = CCLink ourFull_ ourShort_} <-
-      if shortLinkDataSet then pure ucl0 else setMyAddressData user ucl0
-    let ourLink = maybe (CLFull ourFull_) CLShort ourShort_
-    -- §4.9: names are pre-registered out of band; verify the name resolves to THIS address before setting it
-    forM_ name_ $ \name -> do
-      let SimplexNameInfo {nameDomain = domain} = name
-      a <- asks smpAgent
-      NameRecord {nrSimplexContact} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) domain) >>= either (throwError . chatErrorAgent) pure
-      -- the registry resolves a name to short links; require it to point to our address's short link
-      let resolvesHere resolved = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
-            Right (ACL SCMContact (CLShort sl)) -> maybe False (sameShortLinkContact sl) ourShort_
-            _ -> False
-      unless (any resolvesHere nrSimplexContact) $ throwCmdError "name is not registered to your address"
-    -- §4.9 step 3: a name in the profile must carry its address, so write the address short link into contactLink
-    -- alongside the name. updateProfile_ then re-publishes the address (signing the proof) and broadcasts to contacts.
-    let p' = (fromLocalProfile oldLP :: Profile) {contactDomain = StrJSON <$> name_, contactLink = maybe oldContactLink (const (Just ourLink)) name_}
+    -- When SETTING a name (§4.9 steps 1-4): require an address (getUserAddress fails if none; a long-link-only
+    -- address gets a short link created, reusing the APIAddMyAddressShortLink path), verify the name resolves to
+    -- it, and write the address short link into contactLink. When CLEARING (Nothing): just drop the name — no
+    -- address fetch or short-link creation.
+    contactLink' <- case name_ of
+      Nothing -> pure oldContactLink
+      Just name -> do
+        ucl0@UserContactLink {shortLinkDataSet} <- withFastStore $ \db -> getUserAddress db user
+        UserContactLink {connLinkContact = CCLink ourFull_ ourShort_} <-
+          if shortLinkDataSet then pure ucl0 else setMyAddressData user ucl0
+        let SimplexNameInfo {nameDomain = domain} = name
+        a <- asks smpAgent
+        NameRecord {nrSimplexContact} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) domain) >>= either (throwError . chatErrorAgent) pure
+        -- the registry resolves a name to short links; require it to point to our address's short link
+        let resolvesHere resolved = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
+              Right (ACL SCMContact (CLShort sl)) -> maybe False (sameShortLinkContact sl) ourShort_
+              _ -> False
+        unless (any resolvesHere nrSimplexContact) $ throwCmdError "name is not registered to your address"
+        pure $ Just $ maybe (CLFull ourFull_) CLShort ourShort_
+    let p' = (fromLocalProfile oldLP :: Profile) {contactDomain = StrJSON <$> name_, contactLink = contactLink'}
     updateProfile_ user p' True $ withFastStore $ \db -> do
       user' <- updateUserProfile db user p'
       liftIO $ setUserSimplexName db user' name_
@@ -2301,7 +2302,8 @@ processChatCommand cxt nm = \case
       _ -> throwError e
     connectWithPlan user incognito ccLink plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
-  APIVerifySimplexName chatRef -> withUser $ \user -> apiVerifySimplexName user nm chatRef
+  APIVerifyContactName contactId -> withUser $ \user -> apiVerifyContactName user nm contactId
+  APIVerifyPublicGroupName groupId -> withUser $ \user -> apiVerifyPublicGroupName user nm groupId
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db cxt user contactId
     ccLink <- case contactLink of
@@ -4852,12 +4854,6 @@ firstNameLink nameType simplexChannel simplexContact ni =
       NTPublicGroup -> simplexChannel
       NTContact -> simplexContact
 
--- | Resolves the chat row's name claim via RSLV (the agent picks a names
--- server) and compares the resolved per-type link to the peer's stored
--- connection link. Persists the 3-state verification result. Returns
--- CRSimplexNameVerified with the boolean result (mirrors CRConnectionVerified);
--- resolver / agent failures propagate as the usual ChatErrorAgent.
--- Throws a command error when the row has no claim to verify.
 -- sign the channel's name claim with the owner's member key, bound to the channel link
 -- (linkOwnerId = Just memberId — channels have delegated owners). No-op without a name or keys.
 signChannelNameProof :: GroupInfo -> PublicGroupProfile -> PublicGroupAccess -> PublicGroupAccess
@@ -4867,69 +4863,101 @@ signChannelNameProof GroupInfo {groupKeys, membership = GroupMember {memberId = 
       access {groupDomainProof = Just $ signNameProof memberPrivKey (Just mid) name (PHSimplexLink (ACSL SCMContact groupLink))}
     _ -> access
 
-apiVerifySimplexName :: User -> NetworkRequestMode -> ChatRef -> CM ChatResponse
-apiVerifySimplexName user nm chatRef = do
+-- | The outcome of verifying a name claim: verified, a determinate failure (persist Just False), or
+-- inconclusive (can't verify — leave the stored status untouched). The Text is a human-readable reason
+-- for the UI; name-verification failures are rare, so the reason is a string rather than a typed enum
+-- the clients would have to switch on.
+data NameVerifyOutcome = NVOVerified | NVOFailed Text | NVOInconclusive Text
+
+-- §4.6: a name verifies when the proof's presHeader is the link the peer was actually connected through
+-- (anti-replay) AND the proof is signed by the key the name resolves to (the address root key, or the
+-- channel owner's key selected by linkOwnerId). The key comes from *resolving the name* (the address),
+-- not the connected link — for a 1-time invite they differ. A network/agent error propagates as
+-- ChatErrorAgent so a UI-triggered verify can retry, rather than recording a false verdict.
+verifyName :: User -> NetworkRequestMode -> SimplexNameInfo -> Maybe AConnShortLink -> Maybe NameClaimProof -> CM NameVerifyOutcome
+verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
+  (Nothing, _) -> pure $ NVOInconclusive "no name proof to verify"
+  (_, Nothing) -> pure $ NVOInconclusive "no connection link to check the name proof against"
+  (Just proof, Just connLink)
+    | not (proofBoundTo proof connLink) ->
+        pure $ NVOFailed "the name proof is bound to a different link than the one used to connect"
+    | otherwise -> do
+        let SimplexNameInfo {nameType, nameDomain} = claim
+        a <- asks smpAgent
+        NameRecord {nrSimplexContact, nrSimplexChannel} <-
+          liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) nameDomain) >>= either (throwError . chatErrorAgent) pure
+        let resolvedLinks = case nameType of
+              NTContact -> nrSimplexContact
+              NTPublicGroup -> nrSimplexChannel
+        if null resolvedLinks
+          then pure $ NVOFailed "the name is not registered (it does not resolve to any address)"
+          else do
+            ok <- or <$> mapM (verifyProofKey nm user claim proof) resolvedLinks
+            pure $
+              if ok
+                then NVOVerified
+                else NVOFailed "the name resolves to a different address — its owner did not sign this name proof"
+
+-- the proof must be bound (anti-replay) to the link the peer was connected through
+proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
+proofBoundTo NameClaimProof {presHeader} connLink =
+  maybe False (`sameConnShortLink` connLink) (proofPresHeaderLink presHeader)
+
+-- verify the proof signature against the resolved name's owner key;
+-- getShortLinkConnReq's network/agent error propagates (UI can retry), not recorded as a verdict
+verifyProofKey :: NetworkRequestMode -> User -> SimplexNameInfo -> NameClaimProof -> Text -> CM Bool
+verifyProofKey nm user claim proof@NameClaimProof {linkOwnerId} resolvedText =
+  case strDecode (encodeUtf8 resolvedText) :: Either String AConnectionLink of
+    Right (ACL SCMContact (CLShort sLnk)) -> do
+      (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}) <- getShortLinkConnReq nm user sLnk
+      let key_ = case linkOwnerId of
+            Nothing -> Just rootKey
+            Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
+      pure $ maybe False (\key -> verifyNameProofSig key claim proof) key_
+    _ -> pure False
+
+-- the boolean to persist (Nothing = inconclusive — leave the stored status untouched)
+nameVerifyVerdict :: NameVerifyOutcome -> Maybe Bool
+nameVerifyVerdict = \case
+  NVOVerified -> Just True
+  NVOFailed _ -> Just False
+  NVOInconclusive _ -> Nothing
+
+-- the human-readable failure reason for the UI (Nothing = verified)
+nameVerifyReason :: NameVerifyOutcome -> Maybe Text
+nameVerifyReason = \case
+  NVOVerified -> Nothing
+  NVOFailed r -> Just r
+  NVOInconclusive r -> Just r
+
+-- | Verify a contact's claimed name (§4.6): persist the 3-state status and return the updated contact
+-- with a Nothing/Just-reason result. Network/resolver failures surface as ChatErrorAgent (retryable).
+apiVerifyContactName :: User -> NetworkRequestMode -> ContactId -> CM ChatResponse
+apiVerifyContactName user nm contactId = do
   cxt <- chatStoreCxt
-  (claim, connLink_, proof_, persistVerified) <- loadClaimAndLink cxt
-  let SimplexNameInfo {nameType = nameType', nameDomain = domain} = claim
-      User {userId} = user
-  a <- asks smpAgent
-  NameRecord {nrSimplexContact, nrSimplexChannel} <-
-    liftIO (runExceptT $ resolveSimplexName a nm userId domain) >>= either (throwError . chatErrorAgent) pure
-  let resolvedLinks = case nameType' of
-        NTContact -> nrSimplexContact
-        NTPublicGroup -> nrSimplexChannel
-  -- §4.6: a name verifies when its proof is signed by the resolved name's owner key (selected by
-  -- linkOwnerId — root key for Nothing, owner-chain key for a channel's Just oid) AND the proof's
-  -- presHeader is the link the peer was actually connected through (anti-replay). The key comes from
-  -- *resolving the name* (the address), not the connected link — for a 1-time invite they differ.
-  -- Maybe Bool: Nothing = not attempted (no proof / no link anchor) — leave the stored status untouched;
-  -- Just b = a verdict to persist. A network/agent error fetching a resolved link propagates so the
-  -- UI-triggered verify surfaces it for retry (as a resolveSimplexName failure already does), not a false verdict.
-  verified <- case (proof_, connLink_) of
-    (Just proof, Just connLink)
-      | proofBoundTo proof connLink -> Just . or <$> mapM (verifyProofKey claim proof) resolvedLinks
-      | otherwise -> pure (Just False)
-    _ -> pure Nothing
-  forM_ verified $ \v -> withStore' $ \db -> persistVerified db v
-  pure $ CRSimplexNameVerified user chatRef claim (verified == Just True)
-  where
-    -- the claim, the link the peer was connected through (the presHeader anchor), the proof, and the 3-state persist callback
-    loadClaimAndLink :: StoreCxt -> CM (SimplexNameInfo, Maybe AConnShortLink, Maybe NameClaimProof, DB.Connection -> Bool -> IO ())
-    loadClaimAndLink cxt = case chatRef of
-      ChatRef CTDirect cId _ -> do
-        ct <- withFastStore $ \db -> getContact db cxt user cId
-        let Contact {contactId, profile = LocalProfile {contactDomain, contactDomainProof}, preparedContact} = ct
-        claim <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
-        let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
-        pure (claim, connLink_, contactDomainProof, \db verified -> setContactDomainVerified db user contactId verified)
-      ChatRef CTGroup gId _ -> do
-        g <- withFastStore $ \db -> getGroupInfo db cxt user gId
-        let GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, preparedGroup} = g
-            gName = unStrJSON <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
-            gProof = publicGroup >>= publicGroupAccess >>= groupDomainProof
-        claim <- maybe (throwCmdError "group has no name to verify") pure gName
-        let connLink_ = preparedGroup >>= \PreparedGroup {connLinkToConnect = CCLink _ sLnk_} -> ACSL SCMContact <$> sLnk_
-        pure (claim, connLink_, gProof, \db verified -> setGroupDomainVerified db user groupId verified)
-      _ -> throwCmdError "APIVerifySimplexName supports only direct and group chat refs"
-    -- the proof must be bound (anti-replay) to the link the peer was connected through
-    proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
-    proofBoundTo NameClaimProof {presHeader} connLink =
-      maybe False (`sameConnShortLink` connLink) (proofPresHeaderLink presHeader)
-    -- verify the proof signature against the resolved name's owner key
-    -- Maybe Bool: Just = a determined result for this resolved link; Nothing = couldn't fetch it
-    -- (network/agent error) so the result is undetermined — never recorded as a failed verification.
-    -- getShortLinkConnReq's network/agent error propagates (UI can retry), not recorded as a verdict
-    verifyProofKey :: SimplexNameInfo -> NameClaimProof -> Text -> CM Bool
-    verifyProofKey claim proof@NameClaimProof {linkOwnerId} resolvedText =
-      case strDecode (encodeUtf8 resolvedText) :: Either String AConnectionLink of
-        Right (ACL SCMContact (CLShort sLnk)) -> do
-          (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}) <- getShortLinkConnReq nm user sLnk
-          let key_ = case linkOwnerId of
-                Nothing -> Just rootKey
-                Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
-          pure $ maybe False (\key -> verifyNameProofSig key claim proof) key_
-        _ -> pure False
+  ct <- withFastStore $ \db -> getContact db cxt user contactId
+  let Contact {profile = LocalProfile {contactDomain, contactDomainProof}, preparedContact} = ct
+      connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
+  claim <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
+  outcome <- verifyName user nm claim connLink_ contactDomainProof
+  forM_ (nameVerifyVerdict outcome) $ \v -> withStore' $ \db -> setContactDomainVerified db user contactId v
+  ct' <- withFastStore $ \db -> getContact db cxt user contactId
+  pure $ CRContactNameVerified user ct' (nameVerifyReason outcome)
+
+-- | Verify a public group's (channel's) claimed name (§4.6).
+apiVerifyPublicGroupName :: User -> NetworkRequestMode -> GroupId -> CM ChatResponse
+apiVerifyPublicGroupName user nm groupId = do
+  cxt <- chatStoreCxt
+  g <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+  let GroupInfo {groupProfile = GroupProfile {publicGroup}, preparedGroup} = g
+      gName = unStrJSON <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
+      gProof = publicGroup >>= publicGroupAccess >>= groupDomainProof
+      connLink_ = preparedGroup >>= \PreparedGroup {connLinkToConnect = CCLink _ sLnk_} -> ACSL SCMContact <$> sLnk_
+  claim <- maybe (throwCmdError "group has no name to verify") pure gName
+  outcome <- verifyName user nm claim connLink_ gProof
+  forM_ (nameVerifyVerdict outcome) $ \v -> withStore' $ \db -> setGroupDomainVerified db user groupId v
+  g' <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+  pure $ CRGroupNameVerified user g' (nameVerifyReason outcome)
 
 data ConnectViaContactResult
   = CVRConnectedContact Contact
@@ -5577,7 +5605,8 @@ chatCommandP =
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
-      "/_verify simplex name " *> (APIVerifySimplexName <$> chatRefP),
+      "/_verify name @" *> (APIVerifyContactName <$> A.decimal),
+      "/_verify name #" *> (APIVerifyPublicGroupName <$> A.decimal),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,

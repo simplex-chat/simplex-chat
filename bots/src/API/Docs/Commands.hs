@@ -151,8 +151,7 @@ chatCommandsDocsData =
         ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode"),
         ("APISetGroupCustomData", [], "Set group custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom #" <> Param "groupId" <> Optional "" (" " <> Json "$0") "customData"),
         ("APISetContactCustomData", [], "Set contact custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom @" <> Param "contactId" <> Optional "" (" " <> Json "$0") "customData"),
-        ("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "onOff"),
-        ("APIVerifySimplexName", [], "Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.", ["CRSimplexNameVerified", "CRChatCmdError"], [], Just UNInteractive, "/_verify simplex name " <> Param "chatRef")
+        ("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "onOff")
         -- ("APIChatItemsRead", [], "Mark items as read.", ["CRItemsReadForChat"], [], Nothing, ""),
         -- ("APIChatRead", [], "Mark chat as read.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIChatUnread", [], "Mark chat as unread.", ["CRCmdOk"], [], Nothing, ""),
@@ -434,7 +433,9 @@ undocumentedCommands =
     "APIUserRead",
     "APIValidateServers",
     "APIVerifyContact",
+    "APIVerifyContactName",
     "APIVerifyGroupMember",
+    "APIVerifyPublicGroupName",
     "APIVerifyToken",
     "CheckChatRunning",
     "ConfirmRemoteCtrl",

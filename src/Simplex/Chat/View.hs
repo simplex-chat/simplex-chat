@@ -147,7 +147,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
-  CRSimplexNameVerified u _chatRef ni verified -> ttyUser u ["simplex name " <> plain (shortNameInfoStr ni) <> if verified then " verified" else " not verified"]
+  CRContactNameVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewNameVerified contactDomain result
+  CRGroupNameVerified u g result -> ttyUser u $ viewNameVerified (groupDomainName g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
   CRNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz testView
@@ -1138,6 +1139,28 @@ groupDomainName :: GroupInfo -> Maybe SimplexNameInfo
 groupDomainName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
   unStrJSON <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
 
+-- §4.7: the name-verification result line — "verified", or "not verified" with the reason.
+viewNameVerified :: Maybe SimplexNameInfo -> Maybe Text -> [StyledString]
+viewNameVerified name_ result =
+  let nameStr = maybe "name" (\ni -> "simplex name " <> shortNameInfoStr ni) name_
+   in case result of
+        Nothing -> [plain nameStr <> " verified"]
+        Just reason -> [plain nameStr <> " not verified: " <> plain reason]
+
+-- §4.7: show a peer's claimed name only with its verification context — "verified" / "verification
+-- failed" when a status is recorded, "unverified" when there is a proof but no status yet, and nothing
+-- at all when there is neither (an unproven, unverifiable claim is not shown).
+simplexNameStatus :: Maybe SimplexNameInfo -> Maybe Bool -> Bool -> [StyledString]
+simplexNameStatus Nothing _ _ = []
+simplexNameStatus (Just ni) status hasProof = case status of
+  Just True -> [line "verified"]
+  Just False -> [line "verification failed"]
+  Nothing
+    | hasProof -> [line "unverified"]
+    | otherwise -> []
+  where
+    line s = "simplex name: " <> plain (shortNameInfoStr ni) <> " (" <> s <> ")"
+
 -- TODO [short links] show all settings
 viewAddressSettings :: AddressSettings -> [StyledString]
 viewAddressSettings AddressSettings {businessAddress, autoAccept, autoReply} = case autoAccept of
@@ -1791,11 +1814,12 @@ viewContactBadge = maybe [] $ \lb ->
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerification, contactDomainProof}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] viewConnectionStats stats
-    <> maybe [] (\l -> ["contact address: " <> plain (shareLinkStr contactDomain (strEncode (simplexChatContact' l)))]) contactLink
+    <> maybe [] (\l -> ["contact address: " <> plain (strEncode (simplexChatContact' l))]) contactLink
+    <> simplexNameStatus contactDomain contactDomainVerification (isJust contactDomainProof)
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -2132,12 +2156,12 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
-    ILPKnown ct@Contact {profile = LocalProfile {contactDomain = sn}}
-      | nextConnectPrepared ct -> [invLink ("known prepared contact " <> ttyContact' ct)] <> simplexNameLine sn
-      | contactDeleted ct -> [invLink ("known deleted contact " <> ttyContact' ct)] <> simplexNameLine sn
+    ILPKnown ct
+      | nextConnectPrepared ct -> [invLink ("known prepared contact " <> ttyContact' ct)] <> contactNameLine ct
+      | contactDeleted ct -> [invLink ("known deleted contact " <> ttyContact' ct)] <> contactNameLine ct
       | otherwise ->
           [invLink ("known contact " <> ttyContact' ct)]
-            <> simplexNameLine sn
+            <> contactNameLine ct
             <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
     where
       invLink = ("invitation link: " <>)
@@ -2150,13 +2174,13 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
-    CAPKnown ct@Contact {profile = LocalProfile {contactDomain = sn}}
-      | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> simplexNameLine sn
+    CAPKnown ct
+      | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> contactNameLine ct
       | otherwise ->
           [ctAddr ("known contact " <> ttyContact' ct)]
-            <> simplexNameLine sn
+            <> contactNameLine ct
             <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
-    CAPContactViaAddress ct@Contact {profile = LocalProfile {contactDomain = sn}} -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> simplexNameLine sn
+    CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactNameLine ct
     where
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
@@ -2177,17 +2201,16 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
         GSMemUnknown
           | connLinkStartedConnection -> connecting g
-          | otherwise -> [knownGroup "prepared "] <> simplexNameLine sn
+          | otherwise -> [knownGroup "prepared "] <> groupNameLine g
         GSMemAccepted -> connecting g
         _
-          | memberRemoved m -> [knownGroup "deleted "] <> simplexNameLine sn -- it should not get here, as this plan is returned as GLPOk
+          | memberRemoved m -> [knownGroup "deleted "] <> groupNameLine g -- it should not get here, as this plan is returned as GLPOk
           | otherwise -> knownActive
       _ -> knownActive
       where
-        sn = groupDomainName g
         knownActive =
           [knownGroup ""]
-            <> simplexNameLine sn
+            <> groupNameLine g
             <> ["use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"]
         knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
     GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
@@ -2206,8 +2229,12 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
-    simplexNameLine :: Maybe SimplexNameInfo -> [StyledString]
-    simplexNameLine = maybe [] (\ni -> ["simplex name: " <> plain (shortNameInfoStr ni)])
+    contactNameLine :: Contact -> [StyledString]
+    contactNameLine Contact {profile = LocalProfile {contactDomain, contactDomainVerification, contactDomainProof}} =
+      simplexNameStatus contactDomain contactDomainVerification (isJust contactDomainProof)
+    groupNameLine :: GroupInfo -> [StyledString]
+    groupNameLine g'@GroupInfo {groupDomainVerification, groupProfile = GroupProfile {publicGroup}} =
+      simplexNameStatus (groupDomainName g') groupDomainVerification (isJust (publicGroup >>= publicGroupAccess >>= groupDomainProof))
     viewSigVerification = \case
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
@@ -2660,7 +2687,6 @@ viewChatError isCmd logLevel testView = \case
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
     CESimplexNameNotFound ni -> ["no contact or group with simplex name " <> plain (shortNameInfoStr ni)]
-    CESimplexNameUnprepared ni -> [plain (shortNameInfoStr ni) <> " is a known contact/group but has no link to reconnect via"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $
