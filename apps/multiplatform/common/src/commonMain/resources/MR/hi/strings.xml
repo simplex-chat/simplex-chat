@@ -285,4 +285,10 @@
     <string name="group_member_role_member">सदस्य</string>
     <string name="search_verb">खोजें</string>
     <string name="la_mode_off">बंद है</string>
+    <string name="connect_via_contact_link">कनेक्ट via कॉन्टैक्ट एड्रेस?</string>
+    <string name="connect_via_invitation_link">कनेक्ट via वन-टाइम लिंक?</string>
+    <string name="connect_via_group_link">समूह में शामिल?</string>
+    <string name="connect_use_current_profile">Use करेंट प्रोफाइल</string>
+    <string name="connect_use_new_incognito_profile">Use न्यू इनकग्निटो profile</string>
+    <string name="connect_use_incognito_profile">Use इनकग्निटो profile</string>
 </resources>
