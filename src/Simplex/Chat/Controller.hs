@@ -1404,6 +1404,12 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
+-- why a resolved simplex name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
+data SimplexNameError
+  = SNENoValidLink -- the name's record has no usable contact/channel link
+  | SNEUnknownName -- the resolved link's profile has no name, or a different name
+  deriving (Eq, Show)
+
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
@@ -1425,7 +1431,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CESimplexNameNotFound {simplexName :: SimplexNameInfo}
+  | CESimplexNameError {simplexName :: SimplexNameInfo, simplexNameError :: SimplexNameError}
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited
@@ -1756,6 +1762,8 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkOwner)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SNE") ''SimplexNameError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 

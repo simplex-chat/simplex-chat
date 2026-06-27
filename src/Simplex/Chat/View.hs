@@ -2681,7 +2681,11 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexNameNotFound ni -> ["no contact or group with simplex name " <> plain (shortNameInfoStr ni)]
+    CESimplexNameError ni nameErr ->
+      let reason = case nameErr of
+            SNENoValidLink -> "has no usable connection link"
+            SNEUnknownName -> "is not included in the connection link's profile"
+       in ["simplex name " <> plain (shortNameInfoStr ni) <> " " <> reason]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $

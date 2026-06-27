@@ -1502,13 +1502,9 @@ processChatCommand cxt nm = \case
             ucl0@UserContactLink {shortLinkDataSet} <- withFastStore (`getUserAddress` user)
             UserContactLink {connLinkContact = CCLink fl sl} <-
               if shortLinkDataSet then pure ucl0 else setMyAddressData user ucl0
-            a <- asks smpAgent
-            NameRecord {nrSimplexContact} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) nameDomain) >>= either (throwError . chatErrorAgent) pure
+            NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
             -- the registry resolves a name to short links; require it to point to our address's short link
-            let resolvesToUser resolved = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
-                  Right (ACL SCMContact (CLShort sl')) -> maybe False (sameShortLinkContact sl') sl
-                  _ -> False
-            unless (any resolvesToUser nrSimplexContact) $ throwCmdError "name is not registered to your address"
+            unless (maybe False (`nameResolvesTo` nrSimplexContact) sl) $ throwCmdError "name is not registered to your address"
             pure $ Just $ maybe (CLFull fl) CLShort sl
         let p' = (fromLocalProfile oldLP :: Profile) {contactDomain = StrJSON <$> name_, contactLink = contactLink'}
         updateProfile_ user p' True $ withFastStore $ \db -> do
@@ -2104,13 +2100,9 @@ processChatCommand cxt nm = \case
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink direct groupSLinkData -> withUserId userId $ \user -> do
-    let GroupShortLinkData {groupProfile = gp@GroupProfile {description}, publicGroupData = publicGroupData_} = groupSLinkData
-        publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
+    let GroupShortLinkData {groupProfile = GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
-    let useRelays = not direct
-    subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
-    gVar <- asks random
-    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_
+    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -3139,12 +3131,8 @@ processChatCommand cxt nm = \case
         when (newName_ /= (existingAccess >>= groupDomain)) $
           forM_ newName_ $ \(StrJSON name) -> do
             let SimplexNameInfo {nameDomain = domain} = name
-            a <- asks smpAgent
-            NameRecord {nrSimplexChannel} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) domain) >>= either (throwError . chatErrorAgent) pure
-            let resolvesHere resolved = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
-                  Right (ACL SCMContact (CLShort sl)) -> sameShortLinkContact sl groupLink
-                  _ -> False
-            unless (any resolvesHere nrSimplexChannel) $ throwCmdError "name is not registered to this channel"
+            NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwCmdError "name is not registered to this channel"
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just (signChannelNameProof gInfo pg access)}}
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -4306,13 +4294,41 @@ processChatCommand cxt nm = \case
               Nothing -> resolveAndDispatch
           Nothing -> resolveAndDispatch
       where
+        -- resolve the name to its first contact/channel short link and plan it through connectPlan, like a
+        -- pasted link; then create the prepared contact/group from the link data, check its profile claims
+        -- this name, and mark it verified.
         resolveAndDispatch :: CM (ACreatedConnLink, ConnectionPlan)
         resolveAndDispatch = do
-          a <- asks smpAgent
-          let User {userId} = user
-          liftIO (runExceptT $ resolveSimplexName a nm userId nameDomain) >>= \case
-            Right nr -> dispatchResolvedRecord cxt nm user ni nr
-            Left e -> throwError $ chatErrorAgent e
+          NameRecord {nrSimplexContact, nrSimplexChannel} <-
+            withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
+          let (candidates, ctType) = case nameType of
+                NTContact -> (nrSimplexContact, CCTContact)
+                NTPublicGroup -> (nrSimplexChannel, CCTChannel)
+          sLnk <- maybe (throwChatError $ CESimplexNameError ni SNENoValidLink) pure $ firstNameLink ctType candidates
+          (ccLink, plan) <- connectPlan user (CTLink (ACL SCMContact (CLShort sLnk))) False Nothing
+          case plan of
+            CPContactAddress (CAPOk (Just ContactShortLinkData {profile}) _) -> do
+              ct <- withStore $ \db -> createPreparedContact db cxt user profile ccLink Nothing
+              verifiedContactPlan ccLink ct
+            CPContactAddress (CAPKnown ct) -> verifiedContactPlan ccLink ct
+            CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct}) (Just gld) _)
+              | ACCL SCMContact ccl <- ccLink -> do
+                  (g, _) <- preparedGroupFromLink user ccl direct gld Nothing
+                  verifiedGroupPlan ccLink g
+            CPGroupLink (GLPKnown g _ _ _) -> verifiedGroupPlan ccLink g
+            _ -> pure (ccLink, plan)
+        verifiedContactPlan :: ACreatedConnLink -> Contact -> CM (ACreatedConnLink, ConnectionPlan)
+        verifiedContactPlan ccLink Contact {contactId, profile = LocalProfile {contactDomain}} = do
+          unless (contactDomain == Just ni) $ throwChatError $ CESimplexNameError ni SNEUnknownName
+          withStore' $ \db -> setContactDomainVerified db user contactId True
+          ct' <- withFastStore $ \db -> getContact db cxt user contactId
+          pure (ccLink, CPContactAddress (CAPKnown ct'))
+        verifiedGroupPlan :: ACreatedConnLink -> GroupInfo -> CM (ACreatedConnLink, ConnectionPlan)
+        verifiedGroupPlan ccLink GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}} = do
+          unless ((publicGroup >>= publicGroupAccess >>= groupDomain) == Just (StrJSON ni)) $ throwChatError $ CESimplexNameError ni SNEUnknownName
+          withStore' $ \db -> setGroupDomainVerified db user groupId True
+          g' <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+          pure (ccLink, CPGroupLink (GLPKnown g' (BoolDef False) Nothing (ListDef [])))
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
@@ -4753,73 +4769,37 @@ processChatCommand cxt nm = \case
         gInfo <- withFastStore $ \db -> getGroupInfo db cxt user gId
         a $ SRGroup gId scope (sendAsGroup' gInfo scope)
       _ -> throwCmdError "not supported"
+    preparedGroupFromLink :: User -> CreatedLinkContact -> DirectLink -> GroupShortLinkData -> Maybe SharedMsgId -> CM (GroupInfo, Maybe GroupMember)
+    preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId = do
+      let GroupShortLinkData {groupProfile = gp, publicGroupData = publicGroupData_} = groupSLinkData
+          publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
+          useRelays = not direct
+      subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
+      gVar <- asks random
+      withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_
+
     getSharedMsgId :: CM SharedMsgId
     getSharedMsgId = do
       gVar <- asks random
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
 
-dispatchResolvedRecord :: StoreCxt -> NetworkRequestMode -> User -> SimplexNameInfo -> NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
-dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrSimplexChannel, nrSimplexContact} = do
-  lnk <- liftEither $ firstNameLink nameType nrSimplexChannel nrSimplexContact ni
-  acl <- liftEither $ first (chatErrorAgent . AGENT . A_LINK) $ strDecode (encodeUtf8 lnk)
-  prepareAndPlan acl
-  where
-    prepareAndPlan :: AConnShortLink -> CM (ACreatedConnLink, ConnectionPlan)
-    prepareAndPlan (ACSL SCMInvitation _) =
-      throwError $ chatErrorAgent $ AGENT $ A_LINK "RSLV returned an invitation link"
-    prepareAndPlan (ACSL SCMContact l) = case l of
-      CSLContact _ CCTContact _ _ | nameType == NTContact -> prepareContact l
-      CSLContact _ CCTChannel _ _ | nameType == NTPublicGroup -> prepareGroup l
-      CSLContact _ CCTGroup _ _ | nameType == NTPublicGroup -> prepareGroup l
-      _ -> throwError $ chatErrorAgent $ AGENT $ A_LINK "RSLV link kind does not match name type"
-    prepareContact :: ConnShortLink 'CMContact -> CM (ACreatedConnLink, ConnectionPlan)
-    prepareContact l = do
-      let l' = serverShortLink' l
-      (FixedLinkData {linkConnReq = cReq}, cData) <- getShortLinkConnReq nm user l'
-      ContactShortLinkData {profile} <-
-        liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode contact profile from RSLV link") pure
-      -- the resolved profile must actually claim this name, otherwise "name unknown"
-      let Profile {contactDomain} = profile
-      unless (contactDomain == Just (StrJSON ni)) $ throwChatError $ CESimplexNameNotFound ni
-      let ccLink = CCLink cReq (Just l')
-          accLink = ACCL SCMContact ccLink
-      ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink Nothing
-      let Contact {contactId = cId} = ct
-      withStore' $ \db -> setContactDomainVerified db user cId True
-      pure (accLink, CPContactAddress (CAPKnown ct))
-    prepareGroup :: ConnShortLink 'CMContact -> CM (ACreatedConnLink, ConnectionPlan)
-    prepareGroup l = do
-      let l' = serverShortLink' l
-      (FixedLinkData {linkConnReq = cReq}, cData@(ContactLinkData _ UserContactData {direct})) <- getShortLinkConnReq' nm user l'
-      GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_} <-
-        liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode group profile from RSLV link") pure
-      -- the resolved group profile must actually claim this name
-      let GroupProfile {publicGroup} = groupProfile
-      unless ((publicGroup >>= publicGroupAccess >>= groupDomain) == Just (StrJSON ni)) $ throwChatError $ CESimplexNameNotFound ni
-      let publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
-          useRelays = not direct
-      subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
-      gVar <- asks random
-      let ccLink = CCLink cReq (Just l')
-      (g, _hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile False ccLink Nothing useRelays subRole publicMemberCount_
-      let GroupInfo {groupId} = g
-      withStore' $ \db -> setGroupDomainVerified db user groupId True
-      pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
-    -- RSLV short links may use the agent's simplex:/ scheme; prepared rows and link lookups use the hostname form
-    serverShortLink' :: ConnShortLink m -> ConnShortLink m
-    serverShortLink' = \case
-      CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
-      CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
+-- a resolved name link decoded as a contact short link, if it is one
+resolvedShortLink :: Text -> Maybe (ConnShortLink 'CMContact)
+resolvedShortLink t = case strDecode (encodeUtf8 t) :: Either String AConnectionLink of
+  Right (ACL SCMContact (CLShort sl)) -> Just sl
+  _ -> Nothing
 
-firstNameLink :: SimplexNameType -> [Text] -> [Text] -> SimplexNameInfo -> Either ChatError Text
-firstNameLink nameType simplexChannel simplexContact ni =
-  case filter (not . T.null) links of
-    lnk : _ -> Right lnk
-    [] -> Left $ ChatError $ CESimplexNameNotFound ni
+-- the first candidate that decodes as a contact short link of exactly this kind
+firstNameLink :: ContactConnType -> [Text] -> Maybe (ConnShortLink 'CMContact)
+firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
   where
-    links = case nameType of
-      NTPublicGroup -> simplexChannel
-      NTContact -> simplexContact
+    nameLink t = case resolvedShortLink t of
+      Just sl@(CSLContact _ ct _ _) | ct == ctType -> Just sl
+      _ -> Nothing
+
+-- True if any resolved name link is this contact short link (set-name checks the name points to our own link)
+nameResolvesTo :: ConnShortLink 'CMContact -> [Text] -> Bool
+nameResolvesTo sLnk = any (maybe False (sameShortLinkContact sLnk) . resolvedShortLink)
 
 -- sign the channel's name claim with the owner's member key, tied to the channel link
 -- (linkOwnerId = Just memberId — a channel is signed by its owner, not by the address itself).
@@ -4851,9 +4831,8 @@ verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
         pure $ NVOFailed "the name proof is bound to a different link than the one used to connect"
     | otherwise -> do
         let SimplexNameInfo {nameType, nameDomain} = claim
-        a <- asks smpAgent
         NameRecord {nrSimplexContact, nrSimplexChannel} <-
-          liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) nameDomain) >>= either (throwError . chatErrorAgent) pure
+          withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
         let resolvedLinks = case nameType of
               NTContact -> nrSimplexContact
               NTPublicGroup -> nrSimplexChannel
