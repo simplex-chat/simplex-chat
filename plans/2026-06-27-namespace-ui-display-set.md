@@ -4,9 +4,14 @@ Branch: `sh/namespace-ui` (rebased onto core `fc0582cf0` — the finalized verif
 displaying a contact's / channel's SimpleX name with verification state, verifying names (manual + auto),
 and two screens for setting the user's own name and a channel's name.
 
-**Upstream sync (2026-06-27):** core `sh/namespace` is at `fc0582cf0` ("split verify API for contacts
-and public groups"). UI branch rebased onto it (backup tag `backup-namespace-ui-pre-rebase2`). The 5 UI
-commits are pure frontend; the rebase was clean.
+**Upstream sync (2026-06-27):** core `sh/namespace` is at `5008b4e62` ("refactor setting user name" +
+test/comment cleanup, on top of the verify-API split `fc0582cf0`). UI branch rebased onto it (backup tag
+`backup-namespace-ui-pre-rebase5`); pure-frontend, rebase clean. All dep-touching changes across these
+syncs were **wire-neutral**: cosmetic StrJSON label on `Profile.contactDomain`; `APISetUserName` handler
+refactor (constructor `{userId, simplexName}`, `/_set_name` parser, `CRUserProfileUpdated`/`NoChange`
+response unchanged); `Internal.hs` record-field reordering in bot profiles; store/view/test cleanup.
+`Types.hs` model fields/JSON, verify/set commands, responses, `NameVerifyOutcome`, `NameClaimProof`, and
+`SimplexNameInfo` are unchanged. **No UI code change required.**
 
 ## Scope
 
