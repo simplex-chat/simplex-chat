@@ -56,7 +56,7 @@
     <string name="acknowledged">Anerkendt</string>
     <string name="acknowledgement_errors">Bekræftelsesfejl</string>
     <string name="servers_info_subscriptions_connections_subscribed">Aktive forbindelser</string>
-    <string name="add_address_to_your_profile">Tilføj adresse til din profil, så dine kontakter kan dele den med andre. Profilopdateringen sendes til dine kontakter.</string>
+    <string name="add_address_to_your_profile">Tilføj en adresse til din profil, så dine SimpleX-kontakter kan dele den med andre. Dine kontakter vil modtage din opdaterede profil.</string>
     <string name="add_contact_tab">Tilføj kontakt</string>
     <string name="operator_added_xftp_servers">Tilføjede medie- og filservere</string>
     <string name="operator_added_message_servers">Tilføjede beskedservere</string>
@@ -720,7 +720,7 @@
     <string name="allow_your_contacts_to_send_files_and_media">Lad dine kontakter sende filer og medier.</string>
     <string name="appearance_settings">Udseende</string>
     <string name="v5_3_encrypt_local_files_descr">App krypterer nye lokale filer (undtagen videoer).</string>
-    <string name="settings_section_title_icon">Appikon</string>
+    <string name="settings_section_title_icon">App ikon</string>
     <string name="migrate_to_device_apply_onion">Anvende</string>
     <string name="chat_theme_apply_to_mode">Ansøg på</string>
     <string name="la_app_passcode">App adgangskode</string>
@@ -861,4 +861,25 @@
     <string name="group_member_status_introduced">Tilslutning (introduceret)</string>
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Vælg <i>Overfør fra en anden enhed</i> på den nye enhed og scan QR-koden.]]></string>
     <string name="migrate_from_another_device">Overfør fra en anden enhed</string>
+    <string name="relay_bar_active">%1$d%2$d relays aktive</string>
+    <string name="relay_bar_active_with_errors">%1$d%2$d relays aktive, %3$d fejl</string>
+    <string name="relay_bar_active_with_failures">%1$d%2$d relays aktive, %3$d fejlet</string>
+    <string name="relay_bar_active_with_removed">%1$d%2$d relays aktive, %3$d fjernet</string>
+    <string name="relay_bar_connected">%1$d%2$d relays forbundet</string>
+    <string name="relay_bar_connected_with_errors">%1$d%2$d relays forbundet, %3$d fejl</string>
+    <string name="relay_bar_connected_with_failures">%1$d%2$d relays forbundet, %3$d fejl</string>
+    <string name="relay_bar_connected_with_removed">%1$d%2$d relays forbundet, %3$d fjernet</string>
+    <string name="channel_owner_count_singular">%1$d ejer</string>
+    <string name="channel_owner_count_plural">%1$d ejere</string>
+    <string name="relay_status_active">aktiv</string>
+    <string name="add_button">Tilføj</string>
+    <string name="add_relay_button">Tilføj relay</string>
+    <string name="add_relays_title">Tilføj relays</string>
+    <string name="relay_bar_owner_no_delivery">Tilføj relays for at genoprette beskedleveringen.</string>
+    <string name="webpage_code_footer">Tilføj denne kode til din hjemmeside. Den viser en forhåndsvisning af din kanal eller gruppe.</string>
+    <string name="advanced_options">Avancerede indstillinger</string>
+    <string name="advanced_settings">Avancerede indstillinger</string>
+    <string name="another_instance_title">Appen kører allerede</string>
+    <string name="app_update_required">App\'en skal opdateres</string>
+    <string name="chat_link_business_address">Virksomhedsadresse</string>
 </resources>
