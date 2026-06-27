@@ -202,13 +202,6 @@ testAgentCfg =
   where
     RetryInterval2 {riFast, riSlow} = messageRetryInterval aCfg
 
-testAgentCfgNoShortLinks :: AgentConfig
-testAgentCfgNoShortLinks =
-  testAgentCfg
-    { smpClientVRange = mkVersionRange (Version 1) sndAuthKeySMPClientVersion, -- v3
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion (Version 14)} -- before shortLinksSMPVersion
-    }
-
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
@@ -220,9 +213,6 @@ testCfg =
       channelSubscriberRole = GRObserver,
       confirmMigrations = MCYesUp
     }
-
-testCfgNoShortLinks :: ChatConfig
-testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
