@@ -922,9 +922,6 @@ marked deleted chat item preview text */
 "calling…" = "dzwonie…";
 
 /* No comment provided by engineer. */
-"Calls" = "Połączenia";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Połączenia zakazane!";
 
 /* No comment provided by engineer. */
@@ -1839,13 +1836,10 @@ alert button */
 "Details" = "Szczegóły";
 
 /* No comment provided by engineer. */
-"Develop" = "Deweloperskie";
+"Developer" = "Narzędzia deweloperskie";
 
 /* No comment provided by engineer. */
 "Developer options" = "Opcje deweloperskie";
-
-/* No comment provided by engineer. */
-"Developer" = "Narzędzia deweloperskie";
 
 /* No comment provided by engineer. */
 "Device" = "Urządzenie";
@@ -3173,7 +3167,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Duży plik!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Dowiedz się więcej";
 
 /* swipe action */
@@ -4129,9 +4123,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "Wcześniej połączone serwery";
-
-/* No comment provided by engineer. */
-"Your privacy" = "Prywatność i bezpieczeństwo";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Prywatność dla Twoich klientów.";
@@ -5270,9 +5261,6 @@ report reason */
 "Subscriptions ignored" = "Subskrypcje zignorowane";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Wspieraj SimpleX Chat";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Przełączanie audio i wideo podczas połączenia.";
 
 /* No comment provided by engineer. */
@@ -5856,9 +5844,6 @@ server test failure */
 "v%@" = "v%@";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify code with desktop" = "Zweryfikuj kod z komputera";
 
 /* No comment provided by engineer. */
@@ -6135,9 +6120,6 @@ server test failure */
 "You can enable later via Settings" = "Możesz włączyć później w Ustawieniach";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "Możesz je włączyć później w ustawieniach Prywatności i Bezpieczeństwa aplikacji.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Możesz spróbować ponownie.";
 
 /* No comment provided by engineer. */
@@ -6301,9 +6283,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Twoje połączenia";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Twoja baza danych czatu";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Baza danych czatu nie jest szyfrowana - ustaw hasło, aby ją zaszyfrować.";

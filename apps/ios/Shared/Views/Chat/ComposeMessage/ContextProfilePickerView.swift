@@ -163,10 +163,13 @@ struct ContextProfilePickerView: View {
         } label: {
             HStack {
                 ProfileImage(imageStr: user.image, size: 38)
-                Text(user.chatViewName)
-                    .fontWeight(selectedUser == user && !incognitoDefault ? .medium : .regular)
-                    .foregroundColor(theme.colors.onBackground)
-                    .lineLimit(1)
+                NameWithBadge(
+                    Text(user.chatViewName)
+                        .fontWeight(selectedUser == user && !incognitoDefault ? .medium : .regular)
+                        .foregroundColor(theme.colors.onBackground),
+                    user.profile.localBadge
+                )
+                .lineLimit(1)
 
                 Spacer()
 

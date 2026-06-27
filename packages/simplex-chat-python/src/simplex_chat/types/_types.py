@@ -1662,6 +1662,8 @@ class FileTransferMeta(TypedDict):
     chunkSize: int  # int64
     cancelled: bool
 
+FileType = Literal["normal", "roster"]
+
 class Format_bold(TypedDict):
     type: Literal["bold"]
 
@@ -1822,6 +1824,7 @@ class GroupInfo(TypedDict):
     uiThemes: NotRequired["UIThemeEntityOverrides"]
     customData: NotRequired[dict[str, object]]
     groupSummary: "GroupSummary"
+    rosterVersion: NotRequired[int]  # int64
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
     groupKeys: NotRequired["GroupKeys"]
@@ -2550,6 +2553,7 @@ class RcvFileTransfer(TypedDict):
     xftpRcvFile: NotRequired["XFTPRcvFile"]
     fileInvitation: "FileInvitation"
     fileStatus: "RcvFileStatus"
+    fileType: "FileType"
     rcvFileInline: NotRequired["InlineFileMode"]
     senderDisplayName: str
     chunkSize: int  # int64
@@ -2667,7 +2671,7 @@ class RelayProfile(TypedDict):
     shortDescr: NotRequired[str]
     image: NotRequired[str]
 
-RelayStatus = Literal["new", "invited", "accepted", "active", "inactive", "rejected"]
+RelayStatus = Literal["new", "invited", "accepted", "acknowledgedRoster", "active", "inactive", "rejected"]
 
 ReportReason = Literal["spam", "content", "community", "profile", "other"]
 

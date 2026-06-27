@@ -170,6 +170,7 @@ toTypeInfo tr =
       "DBEntityId'" -> ST TInt64 []
       "Integer" -> ST TInt64 []
       "Version" -> ST TInt []
+      "VersionRoster" -> ST TInt64 []
       "BoolDef" -> ST TBool []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
