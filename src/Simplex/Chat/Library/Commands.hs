@@ -1492,10 +1492,7 @@ processChatCommand cxt nm = \case
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
   APISetUserName userId name_ -> withUserId userId $ \user@User {profile = oldLP@LocalProfile {contactLink = oldContactLink}} -> do
-    -- When SETTING a name (§4.9 steps 1-4): require an address (getUserAddress fails if none; a long-link-only
-    -- address gets a short link created, reusing the APIAddMyAddressShortLink path), verify the name resolves to
-    -- it, and write the address short link into contactLink. When CLEARING (Nothing): just drop the name — no
-    -- address fetch or short-link creation.
+    -- setting a name needs an address (creating its short link if missing) that the name resolves to; clearing just drops it
     contactLink' <- case name_ of
       Nothing -> pure oldContactLink
       Just name -> do
@@ -2014,8 +2011,6 @@ processChatCommand cxt nm = \case
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
     conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' Nothing ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
-    -- a non-incognito invite from a user with a name + address: re-save the link data with an address-key proof bound to the invite link
-    -- (1-time invites have no two-stage primitive, so the link is only known after creation — hence the re-save)
     unless (isJust incognitoProfile) $ do
       addressKey_ <- withFastStore' $ \db -> getUserAddressSigKey db user
       let CCLink _ inviteSLnk_ = ccLink'
@@ -2334,8 +2329,6 @@ processChatCommand cxt nm = \case
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
     gVar <- asks random
-    -- generate the address root key client-side so the address has a stable signing key for name proofs;
-    -- prepareConnectionLink makes no network call, so the link is known before its data is built (two-stage, as for channels)
     rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
     let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
     (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing
@@ -3141,8 +3134,6 @@ processChatCommand cxt nm = \case
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
         let PublicGroupAccess {groupDomain = newName_} = access
-        -- §4.9: only when the NAME changes, verify it resolves to this channel's join link
-        -- (a web=/embed= edit that leaves the name unchanged triggers no name check, so one command stays clean)
         when (newName_ /= (existingAccess >>= groupDomain)) $
           forM_ newName_ $ \(StrJSON name) -> do
             let SimplexNameInfo {nameDomain = domain} = name
@@ -3881,7 +3872,6 @@ processChatCommand cxt nm = \case
     setMyAddressData user@User {userChatRelay, profile = LocalProfile {contactDomain = userName_}} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
       rootKey_ <- withFastStore' $ \db -> getUserAddressSigKey db user
-      -- sign the user's name claim (if set) with the stored address root key, bound to the address link
       shortLinkProfile <- signAddressNameProof (ACSL SCMContact <$> sLnk_) rootKey_ userName_ <$> presentUserBadge user Nothing (userProfileDirect user Nothing Nothing True)
       -- TODO [short links] do not save address to server if data did not change, spinners, error handling
       let userData
@@ -4284,16 +4274,11 @@ processChatCommand cxt nm = \case
                 pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' (BoolDef updated) ov (ListDef glOwners)))
     connectPlanName :: User -> SimplexNameInfo -> CM (ACreatedConnLink, ConnectionPlan)
     connectPlanName user ni@SimplexNameInfo {nameType, nameDomain} = case nameType of
-      -- The discriminator (`@` vs `#`) is encoded into the stored name bytes via
-      -- strEncode, so an `@contact` lookup can never match a group row (and vice
-      -- versa). Dispatch on nameType up front to skip a probe.
       NTContact -> do
         ct_ <- withFastStore $ \db -> getContactBySimplexName db cxt user ni
         case ct_ of
           Just ct@Contact {profile = LocalProfile {contactLink = ctLink_}} -> case preparedContact ct of
             Just PreparedContact {connLinkToConnect} -> pure (connLinkToConnect, CPContactAddress (CAPKnown ct))
-            -- A verified contact essentially always has preparedContact; if it's somehow absent, still return
-            -- the KNOWN contact (as the link-known path does), reusing its advertised address link rather than erroring.
             Nothing -> case ctLink_ of
               Just (CLFull cReq) -> pure (ACCL SCMContact (CCLink cReq Nothing), CPContactAddress (CAPKnown ct))
               Just (CLShort sLnk) ->
@@ -4306,13 +4291,10 @@ processChatCommand cxt nm = \case
       NTPublicGroup -> do
         g_ <- withFastStore $ \db -> getGroupInfoBySimplexName db cxt user ni
         case g_ of
-          -- Mirror gPlan at line ~4133 in the link-based path: a removed member is not a
-          -- known-and-reconnectable group; treat as "not found" so the caller can try elsewhere.
           Just g | memberRemoved (membership g) -> resolveAndDispatch
           Just g@GroupInfo {groupProfile = GroupProfile {publicGroup}} -> case preparedGroup g of
             Just PreparedGroup {connLinkToConnect = ccLink} ->
               pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
-            -- as for contacts: still return the KNOWN channel via its join link rather than erroring
             Nothing -> case publicGroup of
               Just PublicGroupProfile {groupLink} ->
                 let l' = serverShortLink groupLink
@@ -4774,11 +4756,6 @@ processChatCommand cxt nm = \case
       gVar <- asks random
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
 
--- | Dispatch a resolved NameRecord by eagerly preparing a contact/group row
--- (the resolved link's embedded profile has contact_domain / group_domain),
--- then returning the same plan shape ('CAPKnown' / 'GLPKnown') the
--- local-store-hit branch of 'connectPlanName' returns, so the resolver hit
--- reuses the same DB write path as a local-prepare hit.
 dispatchResolvedRecord :: StoreCxt -> NetworkRequestMode -> User -> SimplexNameInfo -> NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
 dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrSimplexChannel, nrSimplexContact} = do
   lnk <- liftEither $ firstNameLink nameType nrSimplexChannel nrSimplexContact ni
@@ -4787,8 +4764,6 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
   where
     prepareAndPlan :: AConnShortLink -> CM (ACreatedConnLink, ConnectionPlan)
     prepareAndPlan (ACSL SCMInvitation _) =
-      -- The resolver returns long-term contact/channel links; an invitation
-      -- link in a NameRecord is malformed for this flow.
       throwError $ chatErrorAgent $ AGENT $ A_LINK "RSLV returned an invitation link"
     prepareAndPlan (ACSL SCMContact l) = case l of
       CSLContact _ CCTContact _ _ | nameType == NTContact -> prepareContact l
@@ -4807,7 +4782,6 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
       let ccLink = CCLink cReq (Just l')
           accLink = ACCL SCMContact ccLink
       ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink Nothing
-      -- created as verified — connecting by the resolved name verifies it
       let Contact {contactId = cId} = ct
       withStore' $ \db -> setContactDomainVerified db user cId True
       pure (accLink, CPContactAddress (CAPKnown ct))
@@ -4826,24 +4800,15 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
       gVar <- asks random
       let ccLink = CCLink cReq (Just l')
       (g, _hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile False ccLink Nothing useRelays subRole publicMemberCount_
-      -- created as verified — connecting by the resolved name verifies it
       let GroupInfo {groupId} = g
       withStore' $ \db -> setGroupDomainVerified db user groupId True
       pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
-    -- Mirror the inline 'serverShortLink' helper defined in 'processChatCommand'
-    -- where this dispatch is invoked: RSLV-supplied short links may use the
-    -- agent's simplex:/ scheme, but the prepared row stores hostname-scheme,
-    -- and the connect-plan / known-link lookups assume the hostname form.
+    -- RSLV short links may use the agent's simplex:/ scheme; prepared rows and link lookups use the hostname form
     serverShortLink' :: ConnShortLink m -> ConnShortLink m
     serverShortLink' = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
 
--- | Pick the primary link from the @NameRecord@ matching the queried name type.
--- Each per-type field is a list of links (primary first, fallbacks after); the
--- prepare flow uses the first non-empty entry. An empty list (record exists but
--- advertises no link of this kind) is treated as "not found" — same UX as a
--- local-store miss.
 firstNameLink :: SimplexNameType -> [Text] -> [Text] -> SimplexNameInfo -> Either ChatError Text
 firstNameLink nameType simplexChannel simplexContact ni =
   case filter (not . T.null) links of
@@ -4899,7 +4864,6 @@ verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
                 then NVOVerified
                 else NVOFailed "the name resolves to a different address — its owner did not sign this name proof"
 
--- the proof must be tied to the link the peer connected through, so it can't be reused on a different link
 proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
 proofBoundTo NameClaimProof {presHeader} connLink =
   maybe False (`sameConnShortLink` connLink) (proofPresHeaderLink presHeader)
@@ -4917,22 +4881,18 @@ verifyProofKey nm user claim proof@NameClaimProof {linkOwnerId} resolvedText =
       pure $ maybe False (\key -> verifyNameProofSig key claim proof) key_
     _ -> pure False
 
--- the boolean to persist (Nothing = inconclusive — leave the stored status untouched)
 nameVerifyVerdict :: NameVerifyOutcome -> Maybe Bool
 nameVerifyVerdict = \case
   NVOVerified -> Just True
   NVOFailed _ -> Just False
   NVOInconclusive _ -> Nothing
 
--- the human-readable failure reason for the UI (Nothing = verified)
 nameVerifyReason :: NameVerifyOutcome -> Maybe Text
 nameVerifyReason = \case
   NVOVerified -> Nothing
   NVOFailed r -> Just r
   NVOInconclusive r -> Just r
 
--- | Verify a contact's claimed name (§4.6): persist the 3-state status and return the updated contact
--- with a Nothing/Just-reason result. Network/resolver failures are reported as ChatErrorAgent (retryable).
 apiVerifyContactName :: User -> NetworkRequestMode -> ContactId -> CM ChatResponse
 apiVerifyContactName user nm contactId = do
   cxt <- chatStoreCxt
@@ -4945,7 +4905,6 @@ apiVerifyContactName user nm contactId = do
   ct' <- withFastStore $ \db -> getContact db cxt user contactId
   pure $ CRContactNameVerified user ct' (nameVerifyReason outcome)
 
--- | Verify a public group's (channel's) claimed name (§4.6).
 apiVerifyPublicGroupName :: User -> NetworkRequestMode -> GroupId -> CM ChatResponse
 apiVerifyPublicGroupName user nm groupId = do
   cxt <- chatStoreCxt

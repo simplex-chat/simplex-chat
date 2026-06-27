@@ -356,9 +356,6 @@ updateUserProfile db user p'
     userMemberProfileChanged = newName /= displayName || fn' /= fullName || d' /= shortDescr || img' /= image
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, localBadge, localAlias}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = fn', shortDescr = d', image = img', preferences} = p'
-    -- contact_profiles.contact_domain (the broadcast name) is set out of band via the
-    -- set-name API, not through a regular profile edit; updateUserProfileFields_'
-    -- deliberately does not write it.
     fullPreferences = fullPreferences' preferences
 
 -- own profile field update; leaves the badge columns alone (the credential is owned by setUserBadge/addUserBadge)
@@ -389,8 +386,6 @@ setUserBadge db user@User {userId, profile = p@LocalProfile {profileId}} localBa
   DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (ts, userId)
   pure (user :: User) {profile = p {localBadge}, userMemberProfileUpdatedAt = Just ts}
 
--- set the user's own broadcast name (contact_profiles.contact_domain) out of band (see updateUserProfileFields_').
--- The verifiable proof is not stored here; it is generated fresh when the address link data is re-saved.
 setUserSimplexName :: DB.Connection -> User -> Maybe SimplexNameInfo -> IO User
 setUserSimplexName db user@User {userId, profile = p@LocalProfile {profileId}} name_ = do
   ts <- getCurrentTime
@@ -528,7 +523,6 @@ getUserAddress db User {userId} =
   ExceptT . firstRow toUserContactLink SEUserContactLinkNotFound $
     DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL") (Only userId)
 
--- the contact-address owner signing key, captured at address creation, used to sign the user's name proofs
 getUserAddressSigKey :: DB.Connection -> User -> IO (Maybe C.PrivateKeyEd25519)
 getUserAddressSigKey db User {userId} =
   fmap join . maybeFirstRow fromOnly $
@@ -858,7 +852,6 @@ toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, BI en
     }
   where
     serverRolesSMP (BI storage, BI proxy, BI names) = ServerRoles {storage, proxy, names}
-    -- XFTP has no names role; the column is SMP-only.
     serverRolesXFTP (BI storage, BI proxy) = ServerRoles {storage, proxy, names = False}
 
 getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance

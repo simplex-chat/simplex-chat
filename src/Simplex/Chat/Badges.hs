@@ -256,12 +256,10 @@ data NameClaimProof = NameClaimProof
   }
   deriving (Eq, Show)
 
--- the bytes a name proof signs over: the claimed name together with the link it is shown through
 nameProofPayload :: SimplexNameInfo -> ProofPresHeader -> ByteString
 nameProofPayload name presHeader = strEncode name <> strEncode presHeader
 
--- make a name proof: sign (the name and the link it is shown through) with the address owner key.
--- linkOwnerId names the signing owner in the link's owner chain (Nothing = root key, used for a contact address).
+-- linkOwnerId names the signing owner in the link's owner chain (Nothing = root key for a contact address).
 signNameProof :: C.PrivateKeyEd25519 -> Maybe OwnerId -> SimplexNameInfo -> ProofPresHeader -> NameClaimProof
 signNameProof key linkOwnerId name presHeader =
   NameClaimProof
@@ -277,7 +275,6 @@ verifyNameProofSig :: C.PublicKeyEd25519 -> SimplexNameInfo -> NameClaimProof ->
 verifyNameProofSig ownerKey name NameClaimProof {presHeader, signature} =
   C.verify' ownerKey signature (nameProofPayload name presHeader)
 
--- the link a proof is tied to (the one it can be checked against), if any
 proofPresHeaderLink :: ProofPresHeader -> Maybe AConnShortLink
 proofPresHeaderLink = \case
   PHSimplexLink lnk -> Just lnk

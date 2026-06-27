@@ -272,7 +272,6 @@ toMaybeConnection cxt ((Just connId, Just agentConnId, Just connLevel, viaContac
   Just $ toConnection cxt ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled_, pqRcvEnabled_, authErrCounter, quotaErrCounter, connChatVersion, minVer, maxVer))
 toMaybeConnection _ _ = Nothing
 
--- | Creates a new connection row.
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQSupport -> IO Connection
 createConnection_ db userId connType entityId acId connStatus connChatVersion peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode pqSup = do
   viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
@@ -416,7 +415,6 @@ createContact db cxt user profile = do
   currentTs <- liftIO getCurrentTime
   void $ createContact_ db cxt user profile emptyChatPrefs Nothing "" currentTs
 
--- | Inserts a new contact and its profile, returning the new contactId.
 createContact_ :: DB.Connection -> StoreCxt -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
 createContact_ db cxt User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain, contactDomainProof, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
@@ -495,8 +493,6 @@ type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe
 
 type ContactRow = Only ContactId :. ContactRow'
 
--- cp.contact_domain -> LocalProfile.contactDomain (peer's broadcast name claim);
--- cp.contact_domain_verification -> LocalProfile.contactDomainVerification
 toContact :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
 toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. (cpContactDomain, cpContactDomainVerification, cpContactDomainProof)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, contactDomain = cpContactDomain, contactDomainVerification = unBI <$> cpContactDomainVerification, contactDomainProof = cpContactDomainProof, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
@@ -784,7 +780,6 @@ toBusinessChatInfo _ = Nothing
 groupInfoQuery :: Query
 groupInfoQuery = groupInfoQueryFields <> " " <> groupInfoQueryFrom
 
--- Mirrored in Store/Connections.hs getGroupAndMember_ — keep column lists in sync.
 groupInfoQueryFields :: Query
 groupInfoQueryFields =
   [sql|

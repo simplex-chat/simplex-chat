@@ -138,7 +138,6 @@ getConnectionEntity db cxt user@User {userId, userContactId} agentConnId = do
       gm <-
         ExceptT $
           firstRow (toGroupAndMember currentTs c) (SEInternalError "referenced group member not found") $
-            -- Mirrors Store/Shared.hs groupInfoQueryFields — keep column lists in sync.
             DB.query
               db
               [sql|

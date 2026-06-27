@@ -1127,19 +1127,14 @@ simplexChatContact' = \case
   CLFull (CRContactUri crData) -> CLFull $ CRContactUri crData {crScheme = simplexChat}
   l@(CLShort _) -> l
 
--- Prefer the canonical "simplex:/name@..." / "#..." URI when a
--- SimplexNameInfo is present on the entity; fall back to the raw
--- connection-link bytes.
 shareLinkStr :: Maybe SimplexNameInfo -> B.ByteString -> B.ByteString
 shareLinkStr (Just ni) _ = strEncode ni
 shareLinkStr Nothing fallback = fallback
 
--- The channel's name (group_domain) for share-link display, if any.
 groupDomainName :: GroupInfo -> Maybe SimplexNameInfo
 groupDomainName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
   unStrJSON <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
 
--- §4.7: the name-verification result line — "verified", or "not verified" with the reason.
 viewNameVerified :: Maybe SimplexNameInfo -> Maybe Text -> [StyledString]
 viewNameVerified name_ result =
   let nameStr = maybe "name" (\ni -> "simplex name " <> shortNameInfoStr ni) name_

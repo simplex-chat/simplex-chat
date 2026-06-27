@@ -1080,9 +1080,6 @@ getGroupInfoBySimplexName db cxt user ni =
     Nothing -> pure Nothing
     Just gId -> Just <$> getGroupInfo db cxt user gId
 
--- | Channel lookup by the verified name (group_profiles.group_domain joined with
--- groups.group_domain_verification = 1); on a miss the caller falls through to
--- resolve-and-connect.
 getGroupIdBySimplexName :: DB.Connection -> User -> SimplexNameInfo -> IO (Maybe GroupId)
 getGroupIdBySimplexName db User {userId} ni =
   maybeFirstRow fromOnly $
@@ -2645,9 +2642,6 @@ createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> Version
 createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange viaContact connLevel currentTs subMode =
   createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
 
--- | Updates the group profile, writing the channel name onto group_profiles
--- (group_domain, via the public-access columns). Resets group_domain_verification
--- to NULL only when the name changes. No conflict clearing (no UNIQUE index).
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
 updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, publicGroup = oldPublicGroup}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission}
   | displayName == newName = liftIO $ do
@@ -2667,8 +2661,6 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
     groupClaim pg = unStrJSON <$> (pg >>= publicGroupAccess >>= groupDomain)
     claimChanged = groupClaim oldPublicGroup /= groupClaim publicGroup
     g' = if claimChanged then (g :: GroupInfo) {groupDomainVerification = Nothing} else g
-    -- Reset the verification when the channel name changes; prior verification
-    -- was bound to the prior name.
     clearVerificationIfClaimChanged =
       when claimChanged $
         DB.execute db "UPDATE groups SET group_domain_verification = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
@@ -2698,7 +2690,6 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
 
--- | Records the local 3-state verification status of the channel name.
 setGroupDomainVerified :: DB.Connection -> User -> GroupId -> Bool -> IO ()
 setGroupDomainVerified db User {userId} groupId verified =
   DB.execute
