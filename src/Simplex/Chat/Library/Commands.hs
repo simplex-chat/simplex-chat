@@ -1491,27 +1491,29 @@ processChatCommand cxt nm = \case
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
-  APISetUserName userId name_ -> withUserId userId $ \user@User {profile = oldLP@LocalProfile {contactLink = oldContactLink}} -> do
-    -- setting a name needs an address (creating its short link if missing) that the name resolves to; clearing just drops it
-    contactLink' <- case name_ of
-      Nothing -> pure oldContactLink
-      Just name -> do
-        ucl0@UserContactLink {shortLinkDataSet} <- withFastStore $ \db -> getUserAddress db user
-        UserContactLink {connLinkContact = CCLink ourFull_ ourShort_} <-
-          if shortLinkDataSet then pure ucl0 else setMyAddressData user ucl0
-        let SimplexNameInfo {nameDomain = domain} = name
-        a <- asks smpAgent
-        NameRecord {nrSimplexContact} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) domain) >>= either (throwError . chatErrorAgent) pure
-        -- the registry resolves a name to short links; require it to point to our address's short link
-        let resolvesHere resolved = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
-              Right (ACL SCMContact (CLShort sl)) -> maybe False (sameShortLinkContact sl) ourShort_
-              _ -> False
-        unless (any resolvesHere nrSimplexContact) $ throwCmdError "name is not registered to your address"
-        pure $ Just $ maybe (CLFull ourFull_) CLShort ourShort_
-    let p' = (fromLocalProfile oldLP :: Profile) {contactDomain = StrJSON <$> name_, contactLink = contactLink'}
-    updateProfile_ user p' True $ withFastStore $ \db -> do
-      user' <- updateUserProfile db user p'
-      liftIO $ setUserSimplexName db user' name_
+  APISetUserName userId name_ -> withUserId userId $ \user@User {profile = oldLP@LocalProfile {contactLink, contactDomain}} ->
+    if contactDomain == name_
+      then pure $ CRUserProfileNoChange user
+      else do
+        -- setting a name needs an address (creating its short link if missing) that the name resolves to; clearing just drops it
+        contactLink' <- case name_ of
+          Nothing -> pure contactLink
+          Just SimplexNameInfo {nameDomain} -> do
+            ucl0@UserContactLink {shortLinkDataSet} <- withFastStore (`getUserAddress` user)
+            UserContactLink {connLinkContact = CCLink fl sl} <-
+              if shortLinkDataSet then pure ucl0 else setMyAddressData user ucl0
+            a <- asks smpAgent
+            NameRecord {nrSimplexContact} <- liftIO (runExceptT $ resolveSimplexName a nm (aUserId user) nameDomain) >>= either (throwError . chatErrorAgent) pure
+            -- the registry resolves a name to short links; require it to point to our address's short link
+            let resolvesToUser resolved = case strDecode (encodeUtf8 resolved) :: Either String AConnectionLink of
+                  Right (ACL SCMContact (CLShort sl')) -> maybe False (sameShortLinkContact sl') sl
+                  _ -> False
+            unless (any resolvesToUser nrSimplexContact) $ throwCmdError "name is not registered to your address"
+            pure $ Just $ maybe (CLFull fl) CLShort sl
+        let p' = (fromLocalProfile oldLP :: Profile) {contactDomain = StrJSON <$> name_, contactLink = contactLink'}
+        updateProfile_ user p' True $ withFastStore $ \db -> do
+          user' <- updateUserProfile db user p'
+          liftIO $ setUserSimplexName db user' name_
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
     ct <- withFastStore $ \db -> getContact db cxt user contactId
     updateContactPrefs user ct prefs'
