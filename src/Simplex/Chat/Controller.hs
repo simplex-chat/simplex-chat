@@ -537,11 +537,7 @@ data ChatCommand
   | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe ConnectTarget}
-  | -- Verify a contact's / channel's claimed name (§4.6): resolve it, check the stored proof is signed
-    -- by the resolved name owner and bound to the connected link, persist the 3-state status, and
-    -- return the updated entity plus a Nothing/Just-reason result. Resolver/agent failures surface as
-    -- ChatErrorAgent (retryable).
-    APIVerifyContactName {contactId :: ContactId}
+  | APIVerifyContactName {contactId :: ContactId}
   | APIVerifyPublicGroupName {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
