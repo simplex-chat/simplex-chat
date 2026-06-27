@@ -789,22 +789,21 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain, contactDomainProof} localAlias now verified nameVerified =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain = unStrJSON <$> contactDomain, contactDomainVerification = nameVerified, contactDomainProof}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain, contactDomainProof} localAlias now badgeVerified contactDomainVerification =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain = unStrJSON <$> contactDomain, contactDomainVerification, contactDomainProof}
   where
-    localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now verified info)) <$> badge
+    localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, contactDomain} =
-  -- contactDomainProof is generated fresh at send (presentUserBadge) / dropped by redaction, never copied from the stored profile
+  -- contactDomainProof is generated on send
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = StrJSON <$> contactDomain, contactDomainProof = Nothing}
   where
-    -- any stored peer proof rides the wire (receivers verify independently); the own credential is presented fresh, and a display-only badge never sends
     wireBadge :: LocalBadge -> Maybe BadgeProof
     wireBadge = \case
-      PeerBadge b _ -> Just b
-      OwnBadge _ _ -> Nothing
-      ShownBadge _ _ -> Nothing
+      PeerBadge b _ -> Just b -- stored peer proof sent as is
+      OwnBadge _ _ -> Nothing -- the own credential is not sent, proof is generated on send
+      ShownBadge _ _ -> Nothing -- a display-only badge is not sent
 
 profileBadgeVerified :: Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
 profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
