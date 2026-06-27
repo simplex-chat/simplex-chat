@@ -11455,8 +11455,9 @@ time to disappear</note>
         <source>removed (%d attempts)</source>
         <note>receive error chat item</note>
       </trans-unit>
-      <trans-unit id="removed by operator" xml:space="preserve">
+      <trans-unit id="removed by operator" xml:space="preserve" approved="no">
         <source>removed by operator</source>
+        <target state="translated">已被删除</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="removed contact address" xml:space="preserve">
@@ -11613,8 +11614,9 @@ last received msg: %2$@</source>
         <target>未受保护</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="updated channel profile" xml:space="preserve">
+      <trans-unit id="updated channel profile" xml:space="preserve" approved="no">
         <source>updated channel profile</source>
+        <target state="translated">频道更新了频道资料</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
