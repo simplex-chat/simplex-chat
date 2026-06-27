@@ -1344,6 +1344,29 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
     }
 }
 
+// name is the encoded SimplexName (e.g. "@alice.simplex"); nil clears it
+func apiSetUserName(_ name: String?) async throws -> User {
+    let userId = try currentUserId("apiSetUserName")
+    let r: ChatResponse1 = try await chatSendCmd(.apiSetUserName(userId: userId, name: name))
+    switch r {
+    case let .userProfileUpdated(user, _, _, _): return user
+    case let .userProfileNoChange(user): return user
+    default: throw r.unexpected
+    }
+}
+
+func apiVerifyContactName(_ contactId: Int64) async throws -> (Contact, String?) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyContactName(contactId: contactId))
+    if case let .contactNameVerified(_, contact, verificationResult) = r { return (contact, verificationResult) }
+    throw r.unexpected
+}
+
+func apiVerifyPublicGroupName(_ groupId: Int64) async throws -> (GroupInfo, String?) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyPublicGroupName(groupId: groupId))
+    if case let .groupNameVerified(_, groupInfo, verificationResult) = r { return (groupInfo, verificationResult) }
+    throw r.unexpected
+}
+
 func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
     let r: ChatResponse1 = try await chatSendCmd(.apiSetContactPrefs(contactId: contactId, preferences: preferences))
     if case let .contactPrefsUpdated(_, _, toContact) = r { return toContact }

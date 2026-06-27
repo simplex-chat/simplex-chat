@@ -1790,6 +1790,31 @@ object ChatController {
     }
   }
 
+  // name is the encoded SimplexName (e.g. "@alice.simplex"); null clears it. Throws on rejection.
+  suspend fun apiSetUserName(rh: Long?, name: String?): User {
+    val userId = currentUserId("apiSetUserName")
+    val r = sendCmd(rh, CC.ApiSetUserName(userId, name))
+    return when {
+      r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
+      r is API.Result && r.res is CR.UserProfileNoChange -> r.res.user.updateRemoteHostId(rh)
+      else -> throw Exception("failed to set SimpleX name: ${r.responseType} ${r.details}")
+    }
+  }
+
+  suspend fun apiVerifyContactName(rh: Long?, contactId: Long): Pair<Contact, String?>? {
+    val r = sendCmd(rh, CC.ApiVerifyContactName(contactId))
+    if (r is API.Result && r.res is CR.ContactNameVerified) return r.res.contact to r.res.verificationResult
+    Log.e(TAG, "apiVerifyContactName bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiVerifyPublicGroupName(rh: Long?, groupId: Long): Pair<GroupInfo, String?>? {
+    val r = sendCmd(rh, CC.ApiVerifyPublicGroupName(groupId))
+    if (r is API.Result && r.res is CR.GroupNameVerified) return r.res.groupInfo to r.res.verificationResult
+    Log.e(TAG, "apiVerifyPublicGroupName bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiSetContactPrefs(rh: Long?, contactId: Long, prefs: ChatPreferences): Contact? {
     val r = sendCmd(rh, CC.ApiSetContactPrefs(contactId, prefs))
     if (r is API.Result && r.res is CR.ContactPrefsUpdated) return r.res.toContact
@@ -3803,6 +3828,9 @@ sealed class CC {
   class ApiShowMyAddress(val userId: Long): CC()
   class ApiAddMyAddressShortLink(val userId: Long): CC()
   class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
+  class ApiSetUserName(val userId: Long, val name: String?): CC()
+  class ApiVerifyContactName(val contactId: Long): CC()
+  class ApiVerifyPublicGroupName(val groupId: Long): CC()
   class ApiSetAddressSettings(val userId: Long, val addressSettings: AddressSettings): CC()
   class ApiGetCallInvitations: CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
@@ -4011,6 +4039,9 @@ sealed class CC {
     is ApiShowMyAddress -> "/_show_address $userId"
     is ApiAddMyAddressShortLink -> "/_short_link_address $userId"
     is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
+    is ApiSetUserName -> "/_set_name $userId" + (if (name != null) " $name" else "")
+    is ApiVerifyContactName -> "/_verify name @$contactId"
+    is ApiVerifyPublicGroupName -> "/_verify name #$groupId"
     is ApiSetAddressSettings -> "/_address_settings $userId ${json.encodeToString(addressSettings)}"
     is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
@@ -4192,6 +4223,9 @@ sealed class CC {
     is ApiShowMyAddress -> "apiShowMyAddress"
     is ApiAddMyAddressShortLink -> "apiAddMyAddressShortLink"
     is ApiSetProfileAddress -> "apiSetProfileAddress"
+    is ApiSetUserName -> "apiSetUserName"
+    is ApiVerifyContactName -> "apiVerifyContactName"
+    is ApiVerifyPublicGroupName -> "apiVerifyPublicGroupName"
     is ApiSetAddressSettings -> "apiSetAddressSettings"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
@@ -6498,6 +6532,8 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
+  @Serializable @SerialName("contactNameVerified") class ContactNameVerified(val user: UserRef, val contact: Contact, val verificationResult: String? = null): CR()
+  @Serializable @SerialName("groupNameVerified") class GroupNameVerified(val user: UserRef, val groupInfo: GroupInfo, val verificationResult: String? = null): CR()
   @Serializable @SerialName("groupLinkDataUpdated") class GroupLinkDataUpdated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>, val relaysChanged: Boolean): CR()
   @Serializable @SerialName("groupRelayUpdated") class GroupRelayUpdated(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val groupRelay: GroupRelay): CR()
   @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
@@ -6689,6 +6725,8 @@ sealed class CR {
     is JoinedGroupMember -> "joinedGroupMember"
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupUpdated -> "groupUpdated"
+    is ContactNameVerified -> "contactNameVerified"
+    is GroupNameVerified -> "groupNameVerified"
     is GroupLinkDataUpdated -> "groupLinkDataUpdated"
     is GroupRelayUpdated -> "groupRelayUpdated"
     is GroupLinkCreated -> "groupLinkCreated"
@@ -6873,6 +6911,8 @@ sealed class CR {
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
+    is ContactNameVerified -> withUser(user, "contact: ${json.encodeToString(contact)}\nverificationResult: $verificationResult")
+    is GroupNameVerified -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nverificationResult: $verificationResult")
     is GroupLinkDataUpdated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays\nrelaysChanged: $relaysChanged")
     is GroupRelayUpdated -> withUser(user, "groupInfo: $groupInfo\nmember: $member\ngroupRelay: $groupRelay")
     is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
