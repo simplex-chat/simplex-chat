@@ -557,16 +557,12 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
     currUserWarns = noChatRelaysWarns Nothing curr <> noNamesServersWarns Nothing curr
     otherUserWarns (user, uss) = noChatRelaysWarns (Just user) uss <> noNamesServersWarns (Just user) uss
     noChatRelaysWarns :: UserServersClass u => Maybe User -> [u] -> [UserServersWarning]
-    noChatRelaysWarns user uss
-      | noChatRelays opEnabled = [USWNoChatRelays user]
-      | otherwise = []
+    noChatRelaysWarns user uss = [USWNoChatRelays user | noChatRelays opEnabled]
       where
         noChatRelays cond = not $ any relayEnabled $ userChatRelays $ filter cond uss
         relayEnabled (AUCR _ UserChatRelay {deleted, enabled}) = enabled && not deleted
     noNamesServersWarns :: UserServersClass u => Maybe User -> [u] -> [UserServersWarning]
-    noNamesServersWarns user uss
-      | noNamesServers = [USWNoNamesServers user]
-      | otherwise = []
+    noNamesServersWarns user uss = [USWNoNamesServers user | noNamesServers]
       where
         noNamesServers = not $ any srvEnabled $ userServers SPSMP $ filter namesEnabled uss
         srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
