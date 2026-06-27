@@ -796,7 +796,7 @@ toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, cont
 
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, contactDomain} =
-  -- contactDomainProof is generated fresh at send (presentUserBadge) / dropped by redaction, never carried from the stored profile
+  -- contactDomainProof is generated fresh at send (presentUserBadge) / dropped by redaction, never copied from the stored profile
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = StrJSON <$> contactDomain, contactDomainProof = Nothing}
   where
     -- any stored peer proof rides the wire (receivers verify independently); the own credential is presented fresh, and a display-only badge never sends

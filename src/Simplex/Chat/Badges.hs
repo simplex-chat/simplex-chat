@@ -246,9 +246,9 @@ proofPresHeaderAccepted = \case
   PHSimplexLink _ -> True
   PHUnknown _ _ -> True
 
--- A name claim proof: signed by the address owner's key (linkOwnerId = Just oid for a
--- channel's delegated owner, Nothing = the address root key) over
--- strEncode name <> strEncode presHeader, bound to the presentation context (the link).
+-- A name claim proof: signed by the address owner's key (linkOwnerId = Just oid when a channel
+-- owner other than the address signs, Nothing when the address's own root key signs) over
+-- strEncode name <> strEncode presHeader, tied to the link it is shown through.
 data NameClaimProof = NameClaimProof
   { linkOwnerId :: Maybe (StrJSON "OwnerId" OwnerId),
     presHeader :: ProofPresHeader,
@@ -256,12 +256,12 @@ data NameClaimProof = NameClaimProof
   }
   deriving (Eq, Show)
 
--- the bytes a name proof signs over: the claimed name bound to its presentation context
+-- the bytes a name proof signs over: the claimed name together with the link it is shown through
 nameProofPayload :: SimplexNameInfo -> ProofPresHeader -> ByteString
 nameProofPayload name presHeader = strEncode name <> strEncode presHeader
 
--- mint a name proof: sign (name, presentation context) with the address owner key.
--- linkOwnerId names the signing owner in the link's owner chain (Nothing = root key, the contact-address case).
+-- make a name proof: sign (the name and the link it is shown through) with the address owner key.
+-- linkOwnerId names the signing owner in the link's owner chain (Nothing = root key, used for a contact address).
 signNameProof :: C.PrivateKeyEd25519 -> Maybe OwnerId -> SimplexNameInfo -> ProofPresHeader -> NameClaimProof
 signNameProof key linkOwnerId name presHeader =
   NameClaimProof
@@ -271,12 +271,13 @@ signNameProof key linkOwnerId name presHeader =
     }
 
 -- verify a name proof's signature against the resolved address owner key. The caller must
--- SEPARATELY check the proof's presHeader link is the link it is presented through (anti-replay).
+-- SEPARATELY check the proof's presHeader link is the one it was shown through, so a proof made
+-- for one link can't be reused on another.
 verifyNameProofSig :: C.PublicKeyEd25519 -> SimplexNameInfo -> NameClaimProof -> Bool
 verifyNameProofSig ownerKey name NameClaimProof {presHeader, signature} =
   C.verify' ownerKey signature (nameProofPayload name presHeader)
 
--- the link a proof is bound to (its anti-replay context), if any
+-- the link a proof is tied to (the one it can be checked against), if any
 proofPresHeaderLink :: ProofPresHeader -> Maybe AConnShortLink
 proofPresHeaderLink = \case
   PHSimplexLink lnk -> Just lnk

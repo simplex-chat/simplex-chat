@@ -12,7 +12,7 @@ Reduce the feature to the minimum coherent, secure shape:
   typed `Maybe SimplexNameInfo`. No second "locally-known" copy on the entity row.
 - A local **verification status** as a 3-state `Maybe Bool` (not a timestamp):
   not-attempted / failed / verified. A failed check never blocks connecting.
-- Connect-by-name gated by **consent** and **born verified**.
+- Connect-by-name requires the entity to claim the name, and the result is created as verified.
 - The **proof** (address-key signature, context-bound) is **in scope for link
   contexts** — connect-by-name, 1-time invitations, contact addresses, channel
   join links — so those names are verifiable in this release. Only a name with
@@ -27,17 +27,17 @@ timestamps.
 ## 2. Why (trust model)
 
 A name resolves to a link via the agent (`resolveSimplexName`); a `NameRecord`
-carries **lists** of links (`nrSimplexContact`, `nrSimplexChannel`), so
+has **lists** of links (`nrSimplexContact`, `nrSimplexChannel`), so
 verification matches against **any** of them. "Match any" is safe **only because
 the namespace is an on-chain, ENS-style registry**: `nrOwner`/`nrResolver` are
 Ethereum addresses (`Names/Record.hs:22-23,36`), so each name has a **single
 owner** who sets all its links. An attacker can register *their* name → your
-address (the offensive-name case, handled by the consent gate below) but **cannot
-add a link to your name** — on-chain ownership blocks impersonation. This premise
-is load-bearing; if names were not single-owner, "match any" would be exploitable.
+address (the offensive-name case, handled by the claim check below) but **cannot
+add a link to your name** — on-chain ownership blocks impersonation. Everything
+here depends on that; if names were not single-owner, "match any" would be exploitable.
 
 The registrant of a name controls what it points to, with no proof that the
-target address consents — anyone can publish `@offensive → your address` or
+target address agreed to it — anyone can publish `@offensive → your address` or
 `#offensive → your channel`. Therefore:
 
 - One-directional verification ("does `resolve(name)` equal a stored link") is
@@ -46,11 +46,11 @@ target address consents — anyone can publish `@offensive → your address` or
   copy a link into a profile. **Control of a link is proven only by an actual
   connection/join through it.**
 - Sound verification is the intersection: `resolve(name) → link`, **and** the
-  entity advertises that name in its profile (consent), **and** that link is one
+  entity advertises that name in its profile (it claims the name), **and** that link is one
   we connected/joined through (control-proven).
 - Verifying a name without having connected through its link needs a **signature
   by the address key over the name, bound to the presentation context** (§4.8).
-  This is **in scope** for link contexts: a 1-time invitation carries such a proof
+  This is **in scope** for link contexts: a 1-time invitation includes such a proof
   bound to the invite, so resolving the name → address → address key verifies it.
 
 Consequence: names are verifiable in this release for **channels** (join link),
@@ -130,7 +130,7 @@ soft-decode** (`decodeSimplexName` dropped for the name columns).
   `Profile.simplexName`.)
 - `Profile.contactDomainProof :: Maybe ClaimProof` — NEW; a flat sibling of
   `contactDomain`/`contactLink`, a **wire profile field like `Profile.badge`**. The
-  **stored** own profile (`contact_profiles`) carries the name but **no proof**; the
+  **stored** own profile (`contact_profiles`) has the name but **no proof**; the
   proof is generated and **added to the outgoing profile at send/save** (§4.8), exactly
   as the badge is. `PHSimplexLink` (verifiable) when the profile is saved to a contact
   address / 1-time invite; `PHTest` over an established connection (the gap).
@@ -142,21 +142,21 @@ soft-decode** (`decodeSimplexName` dropped for the name columns).
 - `PublicGroupAccess.groupDomain :: Maybe (StrJSON "SimplexName" SimplexNameInfo)`
   — RETYPE from `Maybe Text` (`Types.hs:857`); JSON string, wire-identical to the
   released text (§4.1). Owner-set, broadcast in `XGrpInfo`. **Only public, relay-backed
-  groups** (`groups.use_relays`) can carry a name — they have a channel join link to
+  groups** (`groups.use_relays`) can have a name — they have a channel join link to
   resolve to and an owner key (`groups.member_priv_key`, `chat_schema.sql:193`) to sign
   with; p2p groups have neither. (`contactDomain` on a member is a contact attribute, unaffected.)
 - `GroupInfo.groupDomainVerification :: Maybe Bool` — local status, read from the
   `groups` table (there is no `LocalGroupProfile`, and `GroupProfile` is the wire
-  type, so the status cannot ride the profile).
+  type, so the status cannot be sent with the profile).
 - DROP `Contact.simplexName`, `GroupInfo.simplexName`, `Connection.simplexName`,
   and both `*VerifiedAt` timestamps.
 
 Asymmetry, intentional: contact name + status both live on `contact_profiles`
-(surfaced via `LocalProfile`); the group name lives on `group_profiles`
-(surfaced via `GroupProfile`/`PublicGroupAccess`) but its status lives on
-`groups` (surfaced via `GroupInfo`). This is forced — `group_profiles` is the
+(exposed via `LocalProfile`); the group name lives on `group_profiles`
+(exposed via `GroupProfile`/`PublicGroupAccess`) but its status lives on
+`groups` (exposed via `GroupInfo`). This is forced — `group_profiles` is the
 shared wire profile with no local columns, while `contact_profiles` already
-carries local state (`local_alias`).
+holds local state (`local_alias`).
 
 ### 4.3 Schema — rewrite `M20260603_simplex_name` (branch unreleased)
 
@@ -196,14 +196,14 @@ Verification column decode: `Maybe BoolInt → Maybe Bool` (`NULL` = not attempt
   argument and the `connections.simplex_name` carrier param on `createConnection_`.
 - `updateContactProfile` / `updateGroupProfile`: write `contact_domain` /
   `group_domain` from the received profile. Reset the verification to `NULL`
-  (not-attempted) **only when the name changes**; an XInfo/XGrpInfo carrying the
+  (not-attempted) **only when the name changes**; an XInfo/XGrpInfo with the
   **same** name keeps the existing status (a verified name stays verified), exactly as
   a badge does. No conflict clearing (no UNIQUE index).
 - `getContactBySimplexName` / `getGroupIdBySimplexName`: look up by the **verified**
   profile name (the name column joined with verification = `Just True`); on a miss
   or unverified, fall through to resolve-and-connect. Consistent with the existing
   by-address lookup `getContactViaShortLinkToConnect` (`Direct.hs:963`), which
-  matches the link with no verified gate — a link is the identity, a name is a
+  matches the link with no verification check — a link is the identity, a name is a
   claim that only becomes a usable pointer once verified.
 
 ### 4.5 Redaction (`Library/Internal.hs:1246`)
@@ -217,14 +217,14 @@ redactedMemberProfile g m Profile {…, contactLink, contactDomain} =
               , shortDescr         = removeSimplexLink =<< shortDescr       -- via allowSimplexLinks
               , contactLink        = if allowSimplexLinks then contactLink   else Nothing
               , contactDomain      = if allowDirect       then contactDomain else Nothing
-              , contactDomainProof = Nothing }  -- member profiles are contextless; never carry a proof
+              , contactDomainProof = Nothing }  -- member profiles are contextless; never include a proof
 ```
 
 - `allowDirect` is the single primitive (the `DirectMessages` permission); it
-  gates the name and is reused inside `allowSimplexLinks`. No `allowName` flag,
+  controls the name and is reused inside `allowSimplexLinks`. No `allowName` flag,
   no second lookup.
 - **Behavior changes vs current:** `contactLink` flips from unconditionally
-  dropped to gated on `allowSimplexLinks` (a member's contact address becomes
+  dropped to controlled by `allowSimplexLinks` (a member's contact address becomes
   visible whenever links+DMs are allowed — the meaning of "links allowed"); the
   name follows the looser `allowDirect`. Rationale: a link is one-tap-to-connect
   (low friction), a name only resolves if the recipient deliberately looks it up
@@ -237,23 +237,23 @@ redactedMemberProfile g m Profile {…, contactLink, contactDomain} =
   (both reduce to `groupFeatureMemberAllowed' f (memberRole (membership g))
   (fullGroupPreferences g)`, `Types.hs:646–652`).
 - Collapses `groupUserAllowSimplexLinks` (`Types.hs:656`) and the pre-computed
-  `allowSimplexLinks` plumbing at the call sites (`Internal.hs:1244`,
+  `allowSimplexLinks` wiring at the call sites (`Internal.hs:1244`,
   `Subscriber.hs:842,2817,3239`, `Commands.hs:3748,4057`). `Commands.hs:3748`
   has `Maybe GroupInfo` → "no group ⇒ no redaction" at the call site.
 
 ### 4.6 Resolution + verification (`Library/Commands.hs`)
 
-Two regimes that differ in whether verification can *fail*:
+Two cases that differ in whether verification can *fail*:
 
 **Connect-by-name** (`connectPlanName` / `dispatchResolvedRecord`) — verification is
 a **precondition** of connecting. After decoding the resolved short link's embedded
-profile, **add the consent gate**: require that profile's `contactDomain` /
+profile, **add the claim check**: require that profile's `contactDomain` /
 `groupDomain` to equal the resolved name, else fail with `CESimplexNameNotFound`
 ("name unknown") and **do not connect**. (The current branch decodes the profile but
 never compares the name — this is the missing check.) On success the prepared
 contact/group is created with the name on the profile, `connLinkToConnect` = the
-resolved link, verification = `Just True` (**born verified**). There is no "failed"
-outcome here — failing to resolve/consent just means no connection.
+resolved link, verification = `Just True` (**created as verified**). There is no "failed"
+outcome here — failing to resolve or to claim the name just means no connection.
 
 **Connected NOT by name** (via an address link or a 1-time link) — the peer's profile
 may *claim* a name; it starts **unverified** (`Nothing`). Verification is **post-hoc
@@ -264,10 +264,10 @@ and non-blocking**: keep `apiVerifySimplexName` (`/_verify simplex name`).
     the usual contact-address case), check the `ClaimProof` signature over
     `name <> presHeader`, and check the proof's `presHeader` link ==
     `preparedContact.connLinkToConnect` (**not** `profile.contactLink` — the branch bug).
-    Contact addresses and 1-time invites both carry the proof.
+    Contact addresses and 1-time invites both include the proof.
   - **Channels** verify by **presence / link-match**: `resolve(#name)` includes
     `preparedGroup.connLinkToConnect` (the join link), whose owner-signed data already
-    carries `groupDomain` (no `ClaimProof` — §4.8).
+    has `groupDomain` (no `ClaimProof` — §4.8).
   Result is `Just True` (holds) or `Just False` (fails) — and **`Just False` must NOT
   prevent the connection**, exactly as a failed *badge* verification doesn't. **This is
   why the status must be 3-state** (`Nothing` not attempted / `Just False` failed /
@@ -284,7 +284,7 @@ Keep the pure helpers `firstNameLink` (per-type link pick, cross-type rejection)
 ### 4.7 Display (`View.hs`)
 
 A name is shown **when there is a proof to verify**, together with its status —
-verified, failed, or not-yet-verified. All three states are surfaced (a failed or
+verified, failed, or not-yet-verified. All three states are shown (a failed or
 pending check still shows the name, flagged), so the user sees the name and its
 trust level rather than a silent omission. Rendering those three states is **out of
 scope for this PR** (UI work), but the core stores the data — the 3-state status and
@@ -295,10 +295,10 @@ name on an `XInfo` profile over an established connection — is **not shown**.
 
 A name resolves to a **contact address** (the persistent identity link). The proof
 asserts "the owner of that address asserts this name", so it is **signed by the
-address's key** (the key the resolved address carries) — **not** by the
-per-connection or 1-time-link key. Every proof is **bound to a presentation
-context** (anti-replay), so a proof minted for one context cannot be replayed in
-another; these are distinct proofs. Carry the context in a presentation header:
+address's key** (the resolved address's own key) — **not** by the
+per-connection or 1-time-link key. Every proof is **tied to the link it's shown
+through**, so a proof made for one link can't be reused on another; these are
+distinct proofs. Store the link in a presentation header:
 **rename `BadgePresHeader` (`Badges.hs:212`) → `ProofPresHeader`** (now shared by
 badge and name proofs) and add a **`PHSimplexLink AConnShortLink`** constructor.
 `AConnShortLink` (`Agent.Protocol.hs:1536`,
@@ -320,11 +320,11 @@ variant.
       }
 
 The signature is by the key of the signer's **owner identity** in the link's owner
-chain (`OwnerAuth`, `Agent/Protocol.hs:1829`); `ClaimProof` carries
+chain (`OwnerAuth`, `Agent/Protocol.hs:1829`); `ClaimProof` has
 **`linkOwnerId :: Maybe OwnerId`** (`OwnerId`, `:1827`) to name it, so the verifier
 checks exactly that key (no iterating the owner list):
 
-- **Channels** (which can have delegated owners) sign with the user's **owner key**,
+- **Channels** (which can have owners other than the address) sign with the user's **owner key**,
   `linkOwnerId = Just oid` — **not** the root key — `groups.member_priv_key`
   (`chat_schema.sql:193`).
 - A **contact address** has a single owner = its creator, so it signs with the **root
@@ -349,46 +349,46 @@ Per presentation context:
   proof-for-invites. The address can also serve as the **badge** proof's context.
 - **1-time invitation**: include a proof **signed by the address key, bound to the
   1-time link** as context. Feasible **now** — the 1-time link is a unique,
-  single-use anti-replay context; no general mechanism required. This is what makes
+  single-use context; no general mechanism required. This is what makes
   a 1-time-invite contact verifiable.
-- **`XInfo` over an established connection**: no link context → the augmentation stamps
-  `PHTest` (unbound) → unverifiable → not shown. The deferred gap, same as the badge's
+- **`XInfo` over an established connection**: no link context → the step that adds the proof sets
+  `PHTest` (unbound) → unverifiable → not shown. Left for later, same as the badge's
   `PHTest`. (For **group members** the proof is dropped entirely by redaction, §4.5.)
 
 Home: **inside the profile** — `Profile.contactDomainProof :: Maybe ClaimProof`, a flat
 sibling of `contactDomain`/`contactLink`, exactly like `Profile.badge`. It is **not**
 stored on the own profile; like the badge, it is **generated fresh and added to the
 outgoing profile at send/save** — when the profile is sent to a peer (`XInfo`) or saved
-to a link — by signing `name <> presHeader` with the address root key and stamping the
+to a link — by signing `name <> presHeader` with the address root key and setting the
 **destination as the `presHeader` context**. Because `presentUserBadge`
-(`Internal.hs:2037`) already augments the outgoing profile with the badge proof at *both*
-peer-sends and link-data writes, the name-proof augmentation belongs in the **same
+(`Internal.hs:2037`) already adds the badge proof to the outgoing profile at *both*
+peer-sends and link-data writes, the name-proof step belongs in the **same
 function**. The context decides whether a proof is useful: saving to a contact address /
-1-time invite stamps `PHSimplexLink(that link)` (verifiable — the in-scope cases); an
-established-connection peer-send stamps `PHTest` (unbound — the deferred gap, same as the
+1-time invite sets `PHSimplexLink(that link)` (verifiable — the in-scope cases); an
+established-connection peer-send sets `PHTest` (unbound — left for later, same as the
 badge). The receiver verifies and stores the 3-state status on
-`LocalProfile.contactDomainVerification`, as `localBadge` carries the badge status.
-Connect-by-name is **born verified**.
+`LocalProfile.contactDomainVerification`, as `localBadge` holds the badge status.
+Connect-by-name is **created as verified**.
 
-**Scope:** the **useful** (`PHSimplexLink`) proofs — stamped when the profile is saved to
+**Scope:** the **useful** (`PHSimplexLink`) proofs — set when the profile is saved to
 a contact address or 1-time invite — are in this change; the verifier resolves the name →
 address → address key → checks the signature and the `presHeader` link. Channels use
 presence (below). The contextless established-connection case (a `PHTest` name proof) and
-group members are the deferred gap.
+group members are left for later.
 
 Badges stay **in the profile** — person-scoped, presented per connection
 (`presentUserBadge`, `Internal.hs:2037`), including over established connections via
 `XInfo`. They share the presentation-header context type with name proofs but sign
 with the **badge credential key**, not the address key. Two scopes, two homes.
 
-The shared augmentation stamps **both** proof kinds the same way: `PHSimplexLink(link)`
+The shared step sets **both** proof kinds the same way: `PHSimplexLink(link)`
 when the destination is a link (contact address, 1-time invite — verifiable), `PHTest`
 over an established connection (unbound — the gap). So name proofs and badges both use
 `PHTest` only for the contextless established-connection case.
 
 No group proof field: a channel is always joined via its **join link** (its own
-address), whose owner-signed data already carries `groupDomain`, and there is no
-"carrying link ≠ resolved address" case for channels — so channels verify by
+address), whose owner-signed data already has `groupDomain`, and there is no
+"advertised link ≠ resolved address" case for channels — so channels verify by
 presence/link-match and need no `ClaimProof`. (If full symmetry is wanted later, add
 `GroupProfile.groupDomainProof` the same way.)
 
@@ -410,7 +410,7 @@ add/change/remove their own name from the UI; the branch has no command for the
      address).
   5. Set `LocalProfile.contactDomain` and **re-publish the contact-address link data**.
      The `ClaimProof` is added when the profile is saved to that link (the send/save
-     augmentation, §4.8) — **not** produced by the API itself. (Steps 1–4 are the verify;
+     proof-adding step, §4.8) — **not** produced by the API itself. (Steps 1–4 are the verify;
      this step is set + re-publish.)
   Needs a `ChatCommand` constructor + parser + handler.
 - **Channel name** (public, relay-backed groups only) — a **separate**
@@ -423,8 +423,8 @@ add/change/remove their own name from the UI; the branch has no command for the
   verified path; factor out the shared `GroupProfile`-update + `XGrpInfo` broadcast so
   both commands reuse it. Verify is **TLD-dependent**: resolve+compare for `TLDSimplex`,
   a different/no check for `TLDWeb` (web domains don't resolve through the namespace).
-- The own name carries **no stored verification status** — the verify step checks it at
-  add time; the 3-state status is only for peers' names. No RNAME plumbing (out of scope).
+- The own name has **no stored verification status** — the verify step checks it at
+  add time; the 3-state status is only for peers' names. No RNAME wiring (out of scope).
 
 ## 5. Removal checklist (from the current branch)
 
@@ -456,9 +456,9 @@ b. **Lookup (§4.4):** re-point `getContactBySimplexName` (its one caller is
 c. **Proof (§4.8):** a flat **`Profile.contactDomainProof :: Maybe ClaimProof`**, a wire
    profile field like `Profile.badge`. Not stored on the own profile; **generated fresh and
    added to the outgoing profile at send/save** (peer `XInfo` or save-to-link) by the
-   **same augmentation function** as the badge (`presentUserBadge`, which already runs at
+   **same function** as the badge (`presentUserBadge`, which already runs at
    peer-sends *and* link-data writes). Signed by the signer's **owner-identity key** — a
-   channel's delegated **owner key** (`groups.member_priv_key`, `linkOwnerId = Just oid`)
+   channel's **owner key** (`groups.member_priv_key`, `linkOwnerId = Just oid`)
    or a contact address's **root key** (sole owner, `linkOwnerId = Nothing`) — over
    `name <> presHeader`; `linkOwnerId` selects the verification key (`Nothing` = root,
    allowed at validation). `PHSimplexLink` for address/invite saves, `PHTest` over
@@ -472,17 +472,17 @@ d. **`redactedMemberProfile` contactLink exposure (§4.5):** intended — a memb
 e. **Verify command + status (§4.6):** keep `apiVerifySimplexName` — required to
    verify a claimed name for entities connected **not** by name (address / 1-time
    link). Status is **3-state** because a failed name (or badge) verification must
-   **not** block the connection; connect-by-name is the only born-verified path
-   (and there a resolve/consent failure means no connection, not a failed state).
+   **not** block the connection; connect-by-name is the only created-as-verified path
+   (and there a failure to resolve or to claim the name means no connection, not a failed state).
    **Auto-verify on connect** (vs. on-demand only) is left open; it doesn't change
    the 3-state requirement.
 
 ## 7. Rollout & scope
 
-The **consent gate** (§4.6) — a name resolves only if the **resolved link's own
+The **claim check** (§4.6) — a name resolves only if the **resolved link's own
 data claims it** — is the anti-stray-names protection and **must ship regardless**:
 a name someone registers against a real address must not "work" without that
-address owner's consent. It needs no signature (the address-case presence suffices),
+address owner's agreement. It needs no signature (the address-case presence suffices),
 so it lands with the core change.
 
 The signed proof (§4.8) can ship in the **same** release (add + verify together) or
@@ -497,10 +497,10 @@ context ripples through the badge code — accepted, and bounded:
   (`:200, :212, :216, :226`); add the `PHSimplexLink AConnShortLink`
   tag/constructor/`StrEncoding`/accepted-case; `badgeProof` (`:314`) takes the
   renamed type.
-- `presentUserBadge` (`Internal.hs:2037`) + its ~15 call sites — the **shared profile-
-  augmentation** point (already runs at peer-sends *and* link-data writes): generalize it
-  to stamp **both** the badge proof and the name `ClaimProof` onto the outgoing profile,
+- `presentUserBadge` (`Internal.hs:2037`) + its ~15 call sites — the **shared point that adds
+  proofs to the outgoing profile** (already runs at peer-sends *and* link-data writes): generalize it
+  to set **both** the badge proof and the name `ClaimProof` onto the outgoing profile,
   using `PHSimplexLink link` where the destination is a link, `PHTest` otherwise.
 
 The pure rename can land as a **standalone prep commit** ahead of the proof; the
-`PHSimplexLink` plumbing + name proof land with the proof work.
+`PHSimplexLink` wiring + name proof land with the proof work.

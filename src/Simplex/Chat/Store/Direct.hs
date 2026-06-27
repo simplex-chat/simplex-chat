@@ -563,7 +563,7 @@ deleteUnusedProfile_ db userId profileId =
 -- | Updates the contact profile, writing the peer's contact_domain claim onto
 -- the profile. Resets contact_domain_verification to NULL only when the claimed
 -- name changes (the prior verification was tied to the prior claim); an XInfo
--- carrying the same name keeps the existing status, exactly as a badge does. No
+-- with the same name keeps the existing status, exactly as a badge does. No
 -- conflict clearing (no UNIQUE index).
 updateContactProfile :: DB.Connection -> StoreCxt -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db cxt user@User {userId} c p' = do
@@ -577,7 +577,7 @@ updateContactProfile db cxt user@User {userId} c p' = do
     Profile {displayName = newName, contactDomain, preferences} = p'
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
     claimChanged = prevDomain /= (unStrJSON <$> contactDomain)
-    -- a name proof never rides an XInfo peer-send (we never mint or accept a PHTest name proof):
+    -- a name proof is never sent in a profile update (XInfo) from the peer (we never make or accept a PHTest name proof):
     -- keep the stored proof when the name is unchanged, drop it when the name changes (then it's unverified)
     p'' = (p' :: Profile) {contactDomainProof = if claimChanged then Nothing else prevProof}
     clearVerificationIfClaimChanged =

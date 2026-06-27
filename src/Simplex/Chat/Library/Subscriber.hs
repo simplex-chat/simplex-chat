@@ -382,7 +382,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
   -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
   -- as in this case no need to ACK message - we can't process messages for this connection anyway.
   -- SEDBBusyError will be re-thrown as CRITICAL (via `critical`) as it indicates a transient lock/IO
-  -- condition that usually resolves after app restart. Other SEDBException flavours surface as
+  -- condition that usually resolves after app restart. Other SEDBException kinds show up as
   -- non-CRITICAL store errors.
   entity <- critical agentConnId $ withStore (\db -> getConnectionEntity db cxt user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of

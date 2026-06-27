@@ -4775,7 +4775,7 @@ processChatCommand cxt nm = \case
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
 
 -- | Dispatch a resolved NameRecord by eagerly preparing a contact/group row
--- (the resolved link's embedded profile carries contact_domain / group_domain),
+-- (the resolved link's embedded profile has contact_domain / group_domain),
 -- then returning the same plan shape ('CAPKnown' / 'GLPKnown') the
 -- local-store-hit branch of 'connectPlanName' returns, so the resolver hit
 -- reuses the same DB write path as a local-prepare hit.
@@ -4801,13 +4801,13 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
       (FixedLinkData {linkConnReq = cReq}, cData) <- getShortLinkConnReq nm user l'
       ContactShortLinkData {profile} <-
         liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode contact profile from RSLV link") pure
-      -- consent gate: the resolved profile must claim the resolved name, else "name unknown"
+      -- the resolved profile must actually claim this name, otherwise "name unknown"
       let Profile {contactDomain} = profile
       unless (contactDomain == Just (StrJSON ni)) $ throwChatError $ CESimplexNameNotFound ni
       let ccLink = CCLink cReq (Just l')
           accLink = ACCL SCMContact ccLink
       ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink Nothing
-      -- born verified: connecting via the resolved name verifies it
+      -- created as verified — connecting by the resolved name verifies it
       let Contact {contactId = cId} = ct
       withStore' $ \db -> setContactDomainVerified db user cId True
       pure (accLink, CPContactAddress (CAPKnown ct))
@@ -4817,7 +4817,7 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
       (FixedLinkData {linkConnReq = cReq}, cData@(ContactLinkData _ UserContactData {direct})) <- getShortLinkConnReq' nm user l'
       GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_} <-
         liftIO (decodeLinkUserData cData) >>= maybe (throwError $ chatErrorAgent $ AGENT $ A_LINK "could not decode group profile from RSLV link") pure
-      -- consent gate: the resolved group profile must claim the resolved name
+      -- the resolved group profile must actually claim this name
       let GroupProfile {publicGroup} = groupProfile
       unless ((publicGroup >>= publicGroupAccess >>= groupDomain) == Just (StrJSON ni)) $ throwChatError $ CESimplexNameNotFound ni
       let publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
@@ -4826,12 +4826,12 @@ dispatchResolvedRecord cxt nm user ni@SimplexNameInfo {nameType} NameRecord {nrS
       gVar <- asks random
       let ccLink = CCLink cReq (Just l')
       (g, _hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile False ccLink Nothing useRelays subRole publicMemberCount_
-      -- born verified: connecting via the resolved name verifies it
+      -- created as verified — connecting by the resolved name verifies it
       let GroupInfo {groupId} = g
       withStore' $ \db -> setGroupDomainVerified db user groupId True
       pure (ACCL SCMContact ccLink, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
     -- Mirror the inline 'serverShortLink' helper defined in 'processChatCommand'
-    -- where this dispatch is invoked: RSLV-supplied short links may carry the
+    -- where this dispatch is invoked: RSLV-supplied short links may use the
     -- agent's simplex:/ scheme, but the prepared row stores hostname-scheme,
     -- and the connect-plan / known-link lookups assume the hostname form.
     serverShortLink' :: ConnShortLink m -> ConnShortLink m
@@ -4854,8 +4854,9 @@ firstNameLink nameType simplexChannel simplexContact ni =
       NTPublicGroup -> simplexChannel
       NTContact -> simplexContact
 
--- sign the channel's name claim with the owner's member key, bound to the channel link
--- (linkOwnerId = Just memberId — channels have delegated owners). No-op without a name or keys.
+-- sign the channel's name claim with the owner's member key, tied to the channel link
+-- (linkOwnerId = Just memberId — a channel is signed by its owner, not by the address itself).
+-- Does nothing without a name or keys.
 signChannelNameProof :: GroupInfo -> PublicGroupProfile -> PublicGroupAccess -> PublicGroupAccess
 signChannelNameProof GroupInfo {groupKeys, membership = GroupMember {memberId = MemberId mid}} PublicGroupProfile {groupLink} access@PublicGroupAccess {groupDomain} =
   case (groupDomain, groupKeys) of
@@ -4870,7 +4871,7 @@ signChannelNameProof GroupInfo {groupKeys, membership = GroupMember {memberId = 
 data NameVerifyOutcome = NVOVerified | NVOFailed Text | NVOInconclusive Text
 
 -- §4.6: a name verifies when the proof's presHeader is the link the peer was actually connected through
--- (anti-replay) AND the proof is signed by the key the name resolves to (the address root key, or the
+-- (so the proof can't be reused on a different link) AND the proof is signed by the key the name resolves to (the address root key, or the
 -- channel owner's key selected by linkOwnerId). The key comes from *resolving the name* (the address),
 -- not the connected link — for a 1-time invite they differ. A network/agent error propagates as
 -- ChatErrorAgent so a UI-triggered verify can retry, rather than recording a false verdict.
@@ -4898,7 +4899,7 @@ verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
                 then NVOVerified
                 else NVOFailed "the name resolves to a different address — its owner did not sign this name proof"
 
--- the proof must be bound (anti-replay) to the link the peer was connected through
+-- the proof must be tied to the link the peer connected through, so it can't be reused on a different link
 proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
 proofBoundTo NameClaimProof {presHeader} connLink =
   maybe False (`sameConnShortLink` connLink) (proofPresHeaderLink presHeader)
@@ -4931,7 +4932,7 @@ nameVerifyReason = \case
   NVOInconclusive r -> Just r
 
 -- | Verify a contact's claimed name (§4.6): persist the 3-state status and return the updated contact
--- with a Nothing/Just-reason result. Network/resolver failures surface as ChatErrorAgent (retryable).
+-- with a Nothing/Just-reason result. Network/resolver failures are reported as ChatErrorAgent (retryable).
 apiVerifyContactName :: User -> NetworkRequestMode -> ContactId -> CM ChatResponse
 apiVerifyContactName user nm contactId = do
   cxt <- chatStoreCxt
