@@ -1660,9 +1660,6 @@ sealed class ChatInfo: SomeChat, NamedChat {
           if (groupInfo.membership.memberActive) {
             when (groupChatScope) {
               null -> {
-                if (allRelaysBroken && groupInfo.useRelays) {
-                  return generalGetString(MR.strings.cant_broadcast_message) to null
-                }
                 if (groupInfo.membership.memberPending) {
                   return generalGetString(MR.strings.reviewed_by_admins) to generalGetString(MR.strings.observer_cant_send_message_desc)
                 }
@@ -1672,6 +1669,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
                   } else {
                     generalGetString(MR.strings.observer_cant_send_message_title) to generalGetString(MR.strings.observer_cant_send_message_desc)
                   }
+                }
+                if (allRelaysBroken && groupInfo.useRelays) {
+                  return generalGetString(MR.strings.cant_broadcast_message) to null
                 }
                 return null
               }

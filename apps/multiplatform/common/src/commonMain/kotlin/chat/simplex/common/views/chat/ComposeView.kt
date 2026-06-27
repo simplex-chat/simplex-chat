@@ -1203,8 +1203,9 @@ fun ComposeView(
   }
 
   val ownerRelayState = ownerRelayState(chat, chatModel)
+  val subscriberRelayState = subscriberRelayState(chat, chatModel)
 
-  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason(ownerRelayState?.noActiveRelays == true))
+  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason((ownerRelayState?.noActiveRelays ?: subscriberRelayState?.noActiveRelays) == true))
   val sendMsgEnabled = rememberUpdatedState(userCantSendReason.value == null)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
@@ -1575,18 +1576,12 @@ fun ComposeView(
           }
         }
       } else {
-        val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
-        val relayMembers = chatModel.groupMembers.value
-          .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus !in listOf(GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) }
-          .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
-        val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
-        val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }
-        val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
-        val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
-        val resolvedCount = connectedCount + removedCount + failedCount
-        val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
-        if (total == 0 || removedCount + failedCount > 0 || resolvedCount < total) {
-          SubscriberChannelRelayBar(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, showProgress, relayListExpanded)
+        subscriberRelayState?.let { s ->
+          val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
+          val resolvedCount = s.connectedCount + s.removedCount + s.failedCount
+          if (s.total == 0 || s.removedCount + s.failedCount > 0 || resolvedCount < s.total) {
+            SubscriberChannelRelayBar(s.hostnames, s.relayMembers, s.connectedCount, s.removedCount, s.failedCount, s.total, showProgress, relayListExpanded)
+          }
         }
       }
     }
@@ -2049,6 +2044,33 @@ private data class OwnerRelayState(
   val activeCount: Int,
   val failedCount: Int,
   val removedCount: Int,
+  val noActiveRelays: Boolean
+)
+
+private fun subscriberRelayState(chat: Chat, chatModel: ChatModel): SubscriberRelayState? {
+  val gInfo = (chat.chatInfo as? ChatInfo.Group)?.groupInfo ?: return null
+  if (!gInfo.useRelays || gInfo.membership.memberRole == GroupMemberRole.Owner ||
+    gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemRejected, GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+  ) return null
+  val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
+  val relayMembers = chatModel.groupMembers.value
+    .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus !in listOf(GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) }
+    .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
+  val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }
+  val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
+  val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
+  val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
+  val noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
+  return SubscriberRelayState(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
+}
+
+private data class SubscriberRelayState(
+  val hostnames: List<String>,
+  val relayMembers: List<GroupMember>,
+  val connectedCount: Int,
+  val removedCount: Int,
+  val failedCount: Int,
+  val total: Int,
   val noActiveRelays: Boolean
 )
 
