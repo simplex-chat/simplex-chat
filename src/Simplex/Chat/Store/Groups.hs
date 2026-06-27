@@ -50,11 +50,10 @@ module Simplex.Chat.Store.Groups
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
-    getGroupIdBySimplexName,
     getGroupMemberIdByName,
     getActiveMembersByName,
     getGroupInfoByName,
-    getGroupInfoBySimplexName,
+    getGroupToConnect,
     getGroupMember,
     getHostMember,
     getMentionedGroupMember,
@@ -234,7 +233,7 @@ import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRel
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConfirmationId, ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConfirmationId, ConnId, ConnectionLink (..), ConnectTarget (..), CreatedConnLink (..), InvitationId, OwnerAuth (..), SConnectionMode (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Encoding (smpDecode, smpEncode)
@@ -1075,23 +1074,22 @@ getGroupInfoByName db cxt user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db cxt user gId
 
-getGroupInfoBySimplexName :: DB.Connection -> StoreCxt -> User -> SimplexNameInfo -> ExceptT StoreError IO (Maybe GroupInfo)
-getGroupInfoBySimplexName db cxt user ni =
-  liftIO (getGroupIdBySimplexName db user ni) >>= \case
-    Nothing -> pure Nothing
-    Just gId -> Just <$> getGroupInfo db cxt user gId
-
-getGroupIdBySimplexName :: DB.Connection -> User -> SimplexNameInfo -> IO (Maybe GroupId)
-getGroupIdBySimplexName db User {userId} ni =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
+-- a group to connect to, found by the connect target: by its address short link, or by its verified name
+getGroupToConnect :: DB.Connection -> StoreCxt -> User -> ConnectTarget -> ExceptT StoreError IO (Maybe (ConnReqContact, GroupInfo))
+getGroupToConnect db cxt user@User {userId} = \case
+  CTLink (ACL SCMContact (CLShort sl)) -> getGroupViaShortLinkToConnect db cxt user sl
+  CTName ni ->
+    liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, ni)) >>= \case
+      Just (gId :: Int64, Just cReq) -> Just . (cReq,) <$> getGroupInfo db cxt user gId
+      _ -> pure Nothing
+  _ -> pure Nothing
+  where
+    byNameQuery =
       [sql|
-        SELECT g.group_id FROM groups g
+        SELECT g.group_id, g.conn_full_link_to_connect FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verification = 1
       |]
-      (userId, ni)
 
 getGroupMember :: DB.Connection -> StoreCxt -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db cxt user@User {userId} groupId groupMemberId = do

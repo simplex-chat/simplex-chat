@@ -46,11 +46,10 @@ module Simplex.Chat.Store.Direct
     deleteContactWithoutGroups,
     getDeletedContacts,
     getContactByName,
-    getContactBySimplexName,
+    getContactToConnect,
     getContact,
     getContactViaShortLinkToConnect,
     getContactIdByName,
-    getContactIdBySimplexName,
     updateContactProfile,
     setContactDomainVerified,
     updateContactUserPreferences,
@@ -114,7 +113,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionLink (..), ConnectionModeI (..), ConnectionRequestUri, ConnectTarget (..), CreatedConnLink (..), SConnectionMode (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Encoding.String (StrJSON (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
@@ -799,23 +798,23 @@ getContactByName db cxt user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
   getContact db cxt user cId
 
-getContactBySimplexName :: DB.Connection -> StoreCxt -> User -> SimplexNameInfo -> ExceptT StoreError IO (Maybe Contact)
-getContactBySimplexName db cxt user ni =
-  liftIO (getContactIdBySimplexName db user ni) >>= \case
-    Nothing -> pure Nothing
-    Just cId -> Just <$> getContact db cxt user cId
-
-getContactIdBySimplexName :: DB.Connection -> User -> SimplexNameInfo -> IO (Maybe Int64)
-getContactIdBySimplexName db User {userId} ni =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
+-- a contact to connect to, found by the connect target: by its address short link, or by its verified name
+getContactToConnect :: DB.Connection -> StoreCxt -> User -> ConnectTarget -> ExceptT StoreError IO (Maybe (ConnReqContact, Contact))
+getContactToConnect db cxt user@User {userId} = \case
+  CTLink (ACL SCMContact (CLShort sl)) -> getContactViaShortLinkToConnect db cxt user sl
+  CTName ni ->
+    liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, ni)) >>= \case
+      Just (ctId :: Int64, Just (ACR cMode cReq)) | Just Refl <- testEquality cMode SCMContact ->
+        Just . (cReq,) <$> getContact db cxt user ctId
+      _ -> pure Nothing
+  _ -> pure Nothing
+  where
+    byNameQuery =
       [sql|
-        SELECT ct.contact_id FROM contacts ct
+        SELECT ct.contact_id, ct.conn_full_link_to_connect FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
         WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verification = 1 AND ct.deleted = 0
       |]
-      (userId, ni)
 
 getUserContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]
 getUserContacts db cxt user@User {userId} = do
