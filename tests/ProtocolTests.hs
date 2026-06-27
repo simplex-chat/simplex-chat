@@ -113,12 +113,6 @@ testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = N
 testGroupProfile :: GroupProfile
 testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing}
 
-testSimplexName :: SimplexNameInfo
-testSimplexName = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])
-
-testGroupSimplexName :: SimplexNameInfo
-testGroupSimplexName = SimplexNameInfo NTPublicGroup (SimplexNameDomain TLDSimplex "team" [])
-
 shortLinkDataTests :: Spec
 shortLinkDataTests = describe "Short link data encoding/decoding" $ do
   it "decodes compressed short-link user data below the decompressed size limit" $ do
@@ -245,6 +239,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.info" $
     "{\"v\":\"1\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XInfo testProfile
+  it "x.info with empty full name" $
+    "{\"v\":\"1\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing, contactDomainProof = Nothing}
   it "x.contact with xContactId" $
     "{\"v\":\"1\",\"event\":\"x.contact\",\"params\":{\"contactReqId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XContact testProfile (Just $ XContactId "\1\2\3\4") Nothing Nothing
@@ -335,40 +332,3 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.ok" $
     "{\"v\":\"1\",\"event\":\"x.ok\",\"params\":{}}"
       ==# XOk
-
-testUser :: Maybe SimplexNameInfo -> User
-testUser d =
-  User
-    { userId = 1,
-      agentUserId = AgentUserId 1,
-      userContactId = 1,
-      localDisplayName = "alice",
-      profile =
-        LocalProfile
-          { profileId = 1,
-            displayName = "alice",
-            fullName = "Alice",
-            shortDescr = Nothing,
-            image = Nothing,
-            contactLink = Nothing,
-            preferences = Nothing,
-            peerType = Nothing,
-            localBadge = Nothing,
-            localAlias = "",
-            contactDomain = d,
-            contactDomainProof = Nothing,
-            contactDomainVerification = Nothing
-          },
-      fullPreferences = fullPreferences' Nothing,
-      activeUser = True,
-      activeOrder = 1,
-      viewPwdHash = Nothing,
-      showNtfs = True,
-      sendRcptsContacts = True,
-      sendRcptsSmallGroups = True,
-      autoAcceptMemberContacts = False,
-      userMemberProfileUpdatedAt = Nothing,
-      userChatRelay = BoolDef False,
-      clientService = BoolDef False,
-      uiThemes = Nothing
-    }
