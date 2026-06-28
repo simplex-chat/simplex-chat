@@ -438,7 +438,7 @@ APIAddContact_Response = CR.Invitation | CR.ChatCmdError
 # Network usage: interactive.
 class APIConnectPlan(TypedDict):
     userId: int  # int64
-    connectTarget: NotRequired["T.ConnectTarget"]
+    connectTarget: NotRequired["T.AConnectTarget"]
     resolveKnown: bool
     linkOwnerSig: NotRequired["T.LinkOwnerSig"]
 
@@ -467,7 +467,7 @@ APIConnect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInv
 # Network usage: interactive.
 class Connect(TypedDict):
     incognito: bool
-    connTarget_: NotRequired["T.ConnectTarget"]
+    connTarget_: NotRequired["T.AConnectTarget"]
 
 
 def Connect_cmd_string(self: Connect) -> str:

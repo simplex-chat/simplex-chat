@@ -5,6 +5,7 @@ This file is generated automatically.
 - [ACIReaction](#acireaction)
 - [AChat](#achat)
 - [AChatItem](#achatitem)
+- [AConnectTarget](#aconnecttarget)
 - [AddRelayResult](#addrelayresult)
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
@@ -61,7 +62,6 @@ This file is generated automatically.
 - [ComposedMessage](#composedmessage)
 - [ConnStatus](#connstatus)
 - [ConnType](#conntype)
-- [ConnectTarget](#connecttarget)
 - [Connection](#connection)
 - [ConnectionEntity](#connectionentity)
 - [ConnectionErrorType](#connectionerrortype)
@@ -239,6 +239,23 @@ This file is generated automatically.
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatItem: [ChatItem](#chatitem)
+
+
+---
+
+## AConnectTarget
+
+Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
+
+**Discriminated union type**:
+
+Name:
+- type: "name"
+- : [SimplexNameInfo](#simplexnameinfo)
+
+Link:
+- type: "link"
+- : string
 
 
 ---
@@ -1647,23 +1664,6 @@ Failed:
 - "contact"
 - "member"
 - "user_contact"
-
-
----
-
-## ConnectTarget
-
-Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
-
-**Discriminated union type**:
-
-Link:
-- type: "link"
-- : string
-
-Name:
-- type: "name"
-- : [SimplexNameInfo](#simplexnameinfo)
 
 
 ---

@@ -16,6 +16,20 @@ class AChatItem(TypedDict):
     chatInfo: "ChatInfo"
     chatItem: "ChatItem"
 
+# Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
+
+class AConnectTarget_name(TypedDict):
+    type: Literal["name"]
+    : "SimplexNameInfo"
+
+class AConnectTarget_link(TypedDict):
+    type: Literal["link"]
+    : str
+
+AConnectTarget = AConnectTarget_name | AConnectTarget_link
+
+AConnectTarget_Tag = Literal["name", "link"]
+
 class AddRelayResult(TypedDict):
     relay: "UserChatRelay"
     relayError: NotRequired["ChatError"]
@@ -1297,20 +1311,6 @@ ConnStatus = (
 ConnStatus_Tag = Literal["new", "prepared", "joined", "requested", "accepted", "sndReady", "ready", "deleted", "failed"]
 
 ConnType = Literal["contact", "member", "user_contact"]
-
-# Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
-
-class ConnectTarget_link(TypedDict):
-    type: Literal["link"]
-    : str
-
-class ConnectTarget_name(TypedDict):
-    type: Literal["name"]
-    : "SimplexNameInfo"
-
-ConnectTarget = ConnectTarget_link | ConnectTarget_name
-
-ConnectTarget_Tag = Literal["link", "name"]
 
 class Connection(TypedDict):
     connId: int  # int64

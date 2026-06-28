@@ -1369,7 +1369,7 @@ Determine SimpleX link type and if the bot is already connected via this link or
 
 **Parameters**:
 - userId: int64
-- connectTarget: [ConnectTarget](./TYPES.md#connecttarget)?
+- connectTarget: [AConnectTarget](./TYPES.md#aconnecttarget)?
 - resolveKnown: bool
 - linkOwnerSig: [LinkOwnerSig](./TYPES.md#linkownersig)?
 
@@ -1461,7 +1461,7 @@ Connect via SimpleX link or name as string in the active user profile.
 
 **Parameters**:
 - incognito: bool
-- connTarget_: [ConnectTarget](./TYPES.md#connecttarget)?
+- connTarget_: [AConnectTarget](./TYPES.md#aconnecttarget)?
 
 **Syntax**:
 

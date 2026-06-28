@@ -16,6 +16,27 @@ export interface AChatItem {
   chatInfo: ChatInfo
   chatItem: ChatItem
 }
+// Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
+
+export type AConnectTarget = AConnectTarget.Name | AConnectTarget.Link
+
+export namespace AConnectTarget {
+  export type Tag = "name" | "link"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Name extends Interface {
+    type: "name"
+    : SimplexNameInfo
+  }
+
+  export interface Link extends Interface {
+    type: "link"
+    : string
+  }
+}
 
 export interface AddRelayResult {
   relay: UserChatRelay
@@ -1864,27 +1885,6 @@ export enum ConnType {
   Contact = "contact",
   Member = "member",
   User_contact = "user_contact",
-}
-// Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
-
-export type ConnectTarget = ConnectTarget.Link | ConnectTarget.Name
-
-export namespace ConnectTarget {
-  export type Tag = "link" | "name"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Link extends Interface {
-    type: "link"
-    : string
-  }
-
-  export interface Name extends Interface {
-    type: "name"
-    : SimplexNameInfo
-  }
 }
 
 export interface Connection {

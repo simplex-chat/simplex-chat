@@ -499,7 +499,7 @@ export namespace APIAddContact {
 // Network usage: interactive.
 export interface APIConnectPlan {
   userId: number // int64
-  connectTarget?: T.ConnectTarget
+  connectTarget?: T.AConnectTarget
   resolveKnown: boolean
   linkOwnerSig?: T.LinkOwnerSig
 }
@@ -532,7 +532,7 @@ export namespace APIConnect {
 // Network usage: interactive.
 export interface Connect {
   incognito: boolean
-  connTarget_?: T.ConnectTarget
+  connTarget_?: T.AConnectTarget
 }
 
 export namespace Connect {
