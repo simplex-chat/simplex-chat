@@ -662,7 +662,7 @@ createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile b
   hostMember_ <- forM hostMemberId_ $ getGroupMember db cxt user groupId
   forM_ hostMember_ $ \hostMember ->
     when business $ liftIO $ setGroupBusinessChatInfo groupId membership hostMember
-  forM_ domainVerified $ \v -> liftIO $ setGroupDomainVerified db user groupId v
+  liftIO $ mapM_ (setGroupDomainVerified db user groupId) domainVerified
   g <- getGroupInfo db cxt user groupId
   pure (g, hostMember_)
   where

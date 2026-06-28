@@ -407,7 +407,7 @@ createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId domainV
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
   contactId <- createContact_ db cxt user p ctUserPreferences prepared "" currentTs
-  forM_ domainVerified $ \v -> liftIO $ setContactDomainVerified db user contactId v
+  liftIO $ mapM_ (setContactDomainVerified db user contactId) domainVerified
   getContact db cxt user contactId
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
