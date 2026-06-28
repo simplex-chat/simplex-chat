@@ -1500,9 +1500,10 @@ processChatCommand cxt nm = \case
         cl' <- case name_ of
           Nothing -> pure contactLink
           Just SimplexNameInfo {nameDomain} -> do
-            ucl0@UserContactLink {shortLinkDataSet} <- withFastStore (`getUserAddress` user)
-            UserContactLink {connLinkContact = CCLink fl sl} <-
-              if shortLinkDataSet then pure ucl0 else setMyAddressData user ucl0
+            -- the name is registered to an existing short link and resolves to it, so the short link
+            -- is a precondition, not something to create here
+            UserContactLink {shortLinkDataSet, connLinkContact = CCLink fl sl} <- withFastStore (`getUserAddress` user)
+            unless shortLinkDataSet $ throwCmdError "create the address short link before setting a name"
             NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
             -- the registry resolves a name to short links; require it to point to our address's short link
             unless (maybe False (`nameResolvesTo` nrSimplexContact) sl) $ throwCmdError "name is not registered to your address"
@@ -1999,22 +2000,19 @@ processChatCommand cxt nm = \case
   EnableGroupMember gName mName -> withMemberName gName mName $ \gId mId -> APIEnableGroupMember gId mId
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
-  APIAddContact userId incognito -> withUserId userId $ \user@User {profile = LocalProfile {simplexName}} -> do
+  APIAddContact userId incognito -> withUserId userId $ \user -> do
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    linkProfile <- presentUserBadge user incognitoProfile $ userProfileDirect user incognitoProfile Nothing True
-    let userData = contactShortLinkData linkProfile Nothing
+    -- 1-time invite: plain profile, no badge or name claim -- a link-bound claim needs a second write
+    -- to the freshly-minted link, and that extra round-trip leaks that the user has a name.
+    let linkProfile = (userProfileDirect user incognitoProfile Nothing True :: Profile) {simplexName = Nothing, badge = Nothing}
+        userData = contactShortLinkData linkProfile Nothing
         userLinkData = UserInvLinkData userData
     (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation (Just userLinkData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
     conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' Nothing ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
-    unless (isJust incognitoProfile) $ do
-      addressKey_ <- withFastStore' $ \db -> getUserAddressSigKey db user
-      let CCLink _ inviteSLnk_ = ccLink'
-          proofProfile = signAddressNameProof (ACSL SCMInvitation <$> inviteSLnk_) addressKey_ (claimName <$> simplexName) linkProfile
-      when (proofProfile /= linkProfile) $ void $ updatePCCShortLinkData conn proofProfile
     pure $ CRInvitation user ccLink' conn
   AddContact incognito -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APIAddContact userId incognito
