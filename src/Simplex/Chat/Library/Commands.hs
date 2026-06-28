@@ -3139,14 +3139,13 @@ processChatCommand cxt nm = \case
       getGroupIdByName db user gName >>= getGroupInfo db cxt user
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
-        let PublicGroupAccess {simplexName = newClaim_} = access
-            newName_ = claimName <$> newClaim_
+        let PublicGroupAccess {simplexName} = access
+            newName_ = claimName <$> simplexName
         when (newName_ /= (claimName <$> (existingAccess >>= publicGroupClaim))) $
-          forM_ newName_ $ \name -> do
-            let SimplexNameInfo {nameDomain = domain} = name
-            NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+          forM_ newName_ $ \SimplexNameInfo {nameDomain} -> do
+            NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
             unless (nameResolvesTo groupLink nrSimplexChannel) $ throwCmdError "name is not registered to this channel"
-        runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just (signChannelNameProof gInfo pg access)}}
+        runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}}
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
     gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
@@ -4757,7 +4756,6 @@ processChatCommand cxt nm = \case
       gVar <- asks random
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
 
--- the first candidate that decodes as a contact short link of exactly this kind
 firstNameLink :: ContactConnType -> [Text] -> Maybe (ConnShortLink 'CMContact)
 firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
   where
@@ -4765,21 +4763,9 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
       Right sl@(CSLContact _ ct _ _) | ct == ctType -> Just sl
       _ -> Nothing
 
--- True if any resolved name link is this contact short link (set-name checks the name points to our own link)
 nameResolvesTo :: ConnShortLink 'CMContact -> [Text] -> Bool
 nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . strDecode . encodeUtf8)
 
--- sign the channel's name claim with the owner's member key, tied to the channel link
--- (linkOwnerId = Just memberId — a channel is signed by its owner, not by the address itself).
--- Does nothing without a name or keys.
-signChannelNameProof :: GroupInfo -> PublicGroupProfile -> PublicGroupAccess -> PublicGroupAccess
-signChannelNameProof GroupInfo {groupKeys, membership = GroupMember {memberId = MemberId mid}} PublicGroupProfile {groupLink} access@PublicGroupAccess {simplexName} =
-  case (simplexName, groupKeys) of
-    (Just (SimplexNameClaim name _), Just GroupKeys {memberPrivKey}) ->
-      access {simplexName = Just $ SimplexNameClaim name (Just $ signNameProof memberPrivKey (Just mid) name (PHSimplexLink (ACSL SCMContact groupLink)))}
-    _ -> access
-
--- returns (verdict to persist, reason for the UI); Nothing verdict = inconclusive, leave the stored status
 verifyName :: User -> NetworkRequestMode -> SimplexNameInfo -> Maybe AConnShortLink -> Maybe NameClaimProof -> CM (Maybe Bool, Maybe Text)
 verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
   (Nothing, _) -> pure (Nothing, Just "no name proof to verify")

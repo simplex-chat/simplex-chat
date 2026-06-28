@@ -777,8 +777,8 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
-  | CRContactNameVerified {user :: User, contact :: Contact, verificationResult :: Maybe Text}
-  | CRGroupNameVerified {user :: User, groupInfo :: GroupInfo, verificationResult :: Maybe Text}
+  | CRContactNameVerified {user :: User, contact :: Contact, verificationFailure :: Maybe Text}
+  | CRGroupNameVerified {user :: User, groupInfo :: GroupInfo, verificationFailure :: Maybe Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
