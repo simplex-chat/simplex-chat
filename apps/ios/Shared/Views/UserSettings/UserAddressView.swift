@@ -192,6 +192,28 @@ struct UserAddressView: View {
         }
 
         Section {
+            NavigationLink {
+                SetSimplexNameView(
+                    titleKey: "Set SimpleX name",
+                    footer: "Set a SimpleX name so people can connect to you using @yourname instead of a link. The name must already be registered to your address.",
+                    prefix: "@",
+                    nameText: chatModel.currentUser?.profile.contactDomain?.shortName ?? "",
+                    save: { name in
+                        do {
+                            let u = try await apiSetUserName(name)
+                            await MainActor.run { chatModel.updateUser(u) }
+                            return nil
+                        } catch {
+                            return responseError(error)
+                        }
+                    }
+                )
+            } label: {
+                Label("Set SimpleX name", systemImage: "checkmark.shield")
+            }
+        }
+
+        Section {
             createOneTimeLinkButton()
         } header: {
             Text("Or to share privately")
@@ -685,6 +707,66 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
         } catch let error {
             logger.error("apiSetUserAddressSettings error: \(responseError(error))")
         }
+    }
+}
+
+// Set the user's own (prefix "@") or a channel's (prefix "#") SimpleX name.
+// The field is prefilled with the full prefixed name; `save` receives the encoded name (or nil to
+// clear) and returns a failure message (nil on success). The prefix is normalised on save.
+struct SetSimplexNameView: View {
+    let titleKey: LocalizedStringKey
+    let footer: LocalizedStringKey
+    let prefix: String
+    @State var nameText: String
+    let save: (String?) async -> String?
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var theme: AppTheme
+    @State private var saving = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+
+    var body: some View {
+        List {
+            Section {
+                TextField(prefix + "name.simplex", text: $nameText)
+                    .autocorrectionDisabled(true)
+                    .textInputAutocapitalization(.never)
+            } footer: {
+                Text(footer).foregroundColor(theme.colors.secondary)
+            }
+            Section {
+                Button {
+                    saving = true
+                    Task {
+                        let err = await save(normalized())
+                        await MainActor.run {
+                            saving = false
+                            if let err {
+                                alertMessage = err
+                                showAlert = true
+                            } else {
+                                dismiss()
+                            }
+                        }
+                    }
+                } label: {
+                    Text("Save")
+                }
+                .disabled(saving)
+            }
+        }
+        .navigationTitle(titleKey)
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Error saving SimpleX name"), message: Text(alertMessage))
+        }
+    }
+
+    // ensure the correct type prefix so a contact name is not parsed as a group (or vice versa)
+    private func normalized() -> String? {
+        let s = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.isEmpty { return nil }
+        if s.hasPrefix("@") || s.hasPrefix("#") { return prefix + s.dropFirst() }
+        return prefix + s
     }
 }
 

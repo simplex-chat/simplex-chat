@@ -22,7 +22,7 @@ enum UserPickerSheet: Identifiable {
 
     var navigationTitle: LocalizedStringKey {
         switch self {
-        case .address: "SimpleX address"
+        case .address: "SimpleX address and name"
         case .chatPreferences: "Your preferences"
         case .chatProfiles: "Your chat profiles"
         case .currentProfile: "Your current profile"

@@ -33,6 +33,8 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.res.MR
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun UserAddressView(
@@ -354,6 +356,32 @@ private fun UserAddressLayout(
             // ShareViaEmailButton { sendEmail(userAddress) }
             BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
             AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
+            SettingsActionItem(
+              painterResource(MR.images.ic_verified_user),
+              stringResource(MR.strings.set_simplex_name),
+              click = {
+                ModalManager.start.showCustomModal { close ->
+                  SetSimplexNameView(
+                    title = generalGetString(MR.strings.set_simplex_name),
+                    footer = generalGetString(MR.strings.set_user_simplex_name_footer),
+                    prefix = "@",
+                    initial = user.value?.profile?.contactDomain?.shortName ?: "",
+                    save = { name ->
+                      try {
+                        val u = chatModel.controller.apiSetUserName(user.value?.remoteHostId, name)
+                        withContext(Dispatchers.Main) { chatModel.updateUser(u) }
+                        true
+                      } catch (e: Exception) {
+                        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), e.message ?: "")
+                        false
+                      }
+                    },
+                    close = close
+                  )
+                }
+              },
+              iconColor = MaterialTheme.colors.secondary
+            )
           }
           if (addressSettingsState.value.businessAddress) {
             SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))

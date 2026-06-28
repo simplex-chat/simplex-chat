@@ -936,10 +936,15 @@
   <string name="paste_link">Paste link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
-  <string name="simplex_address">SimpleX address</string>
+  <string name="simplex_address">SimpleX address and name</string>
   <string name="verify_simplex_name_action">Verify name</string>
   <string name="verify_simplex_names">Verify SimpleX names</string>
   <string name="simplex_name_not_verified">SimpleX name not verified</string>
+  <string name="set_simplex_name">Set SimpleX name</string>
+  <string name="simplex_name_placeholder">name.simplex</string>
+  <string name="error_saving_simplex_name">Error saving SimpleX name</string>
+  <string name="set_user_simplex_name_footer">Set a SimpleX name so people can connect to you using @yourname instead of a link. The name must already be registered to your address.</string>
+  <string name="set_channel_simplex_name_footer">Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel\'s address.</string>
   <string name="or_show_this_qr_code">Or show this code</string>
   <string name="full_link_button_text">Full link</string>
   <string name="short_link_button_text">Short link</string>

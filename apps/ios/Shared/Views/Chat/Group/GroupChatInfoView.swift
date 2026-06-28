@@ -247,6 +247,39 @@ struct GroupChatInfoView: View {
                     if groupInfo.useRelays && groupInfo.isOwner {
                         Section(header: Text("Advanced options").foregroundColor(theme.colors.secondary)) {
                             channelWebAccessButton()
+                            if groupInfo.groupProfile.publicGroup?.publicGroupAccess != nil {
+                                NavigationLink {
+                                    SetSimplexNameView(
+                                        titleKey: "Set SimpleX name",
+                                        footer: "Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel's address.",
+                                        prefix: "#",
+                                        nameText: SimplexNameInfo(parsing: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomain ?? "")?.shortName ?? "",
+                                        save: { name in
+                                            do {
+                                                // core has no dedicated set-channel-name command (unlike apiSetUserName
+                                                // for the user's own name), so set it by re-sending the cloned profile
+                                                var gp = groupInfo.groupProfile
+                                                if var pg = gp.publicGroup {
+                                                    var access = pg.publicGroupAccess ?? PublicGroupAccess()
+                                                    access.groupDomain = name
+                                                    pg.publicGroupAccess = access
+                                                    gp.publicGroup = pg
+                                                }
+                                                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
+                                                await MainActor.run {
+                                                    chatModel.updateGroup(gInfo)
+                                                    groupInfo = gInfo
+                                                }
+                                                return nil
+                                            } catch {
+                                                return responseError(error)
+                                            }
+                                        }
+                                    )
+                                } label: {
+                                    Label("Set SimpleX name", systemImage: "checkmark.shield")
+                                }
+                            }
                         }
                     }
 
