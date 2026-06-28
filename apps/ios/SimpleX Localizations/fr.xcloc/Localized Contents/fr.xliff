@@ -207,8 +207,9 @@ channel subscriber relay bar</note>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d relays removed" xml:space="preserve">
+      <trans-unit id="%d relays removed" xml:space="preserve" approved="no">
         <source>%d relays removed</source>
+        <target state="needs-translation">%d relais supprimé(s)</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
