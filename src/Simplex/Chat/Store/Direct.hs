@@ -110,6 +110,7 @@ import Data.Type.Equality
 import Simplex.Chat.Badges (badgeToRow)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Names (claimName, claimProof, mkSimplexNameClaim, setClaimProof)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
@@ -568,11 +569,11 @@ updateContactProfile db cxt user@User {userId} c p' = do
       profile = toLocalProfile profileId p'' localAlias currentTs badgeVerified nameVerified
   updateContactProfile' currentTs badgeVerified profile
   where
-    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, contactDomain = prevDomain, contactDomainVerification = prevVerification, contactDomainProof = prevProof}, userPreferences} = c
-    Profile {displayName = newName, contactDomain, preferences} = p'
+    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, simplexName = prevClaim, contactDomainVerification = prevVerification}, userPreferences} = c
+    Profile {displayName = newName, simplexName, preferences} = p'
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
-    claimChanged = prevDomain /= (unStrJSON <$> contactDomain)
-    p'' = (p' :: Profile) {contactDomainProof = if claimChanged then Nothing else prevProof}
+    claimChanged = (claimName <$> prevClaim) /= (claimName <$> simplexName)
+    p'' = (p' :: Profile) {simplexName = setClaimProof (if claimChanged then Nothing else claimProof =<< prevClaim) <$> simplexName}
     clearVerificationIfClaimChanged =
       when claimChanged $
         DB.execute db "UPDATE contact_profiles SET contact_domain_verification = NULL WHERE user_id = ? AND contact_profile_id = ?" (userId, profileId)
@@ -729,7 +730,7 @@ updateContactProfile_ db userId profileId profile badgeVerified = do
   updateContactProfile_' db userId profileId profile badgeVerified currentTs
 
 updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
-updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain, contactDomainProof, preferences, peerType, badge} badgeVerified updatedAt =
+updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, simplexName, preferences, peerType, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
@@ -740,7 +741,7 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, short
           contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. ((unStrJSON <$> contactDomain), contactDomainProof) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. (claimName <$> simplexName, claimProof =<< simplexName) :. (userId, profileId))
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
 updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
@@ -749,7 +750,7 @@ updateMemberContactProfileReset_ db userId profileId profile badgeVerified = do
   updateMemberContactProfileReset_' db userId profileId profile badgeVerified currentTs
 
 updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
-updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactDomain, contactDomainProof, badge} badgeVerified updatedAt =
+updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, simplexName, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
@@ -760,7 +761,7 @@ updateMemberContactProfileReset_' db userId profileId Profile {displayName, full
           contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. ((unStrJSON <$> contactDomain), contactDomainProof) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (claimName <$> simplexName, claimProof =<< simplexName) :. (userId, profileId))
 
 -- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
 updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
@@ -769,7 +770,7 @@ updateMemberContactProfile_ db userId profileId profile badgeVerified = do
   updateMemberContactProfile_' db userId profileId profile badgeVerified currentTs
 
 updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
-updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactDomain, contactDomainProof, badge} badgeVerified updatedAt =
+updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, simplexName, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
@@ -780,7 +781,7 @@ updateMemberContactProfile_' db userId profileId Profile {displayName, fullName,
           contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. ((unStrJSON <$> contactDomain), contactDomainProof) :. (userId, profileId))
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (claimName <$> simplexName, claimProof =<< simplexName) :. (userId, profileId))
 
 updateContactLDN_ :: DB.Connection -> User -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt = do

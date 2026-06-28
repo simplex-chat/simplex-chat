@@ -34,7 +34,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
 import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, verifyBadge_)
-import Simplex.Chat.Names (NameClaimProof)
+import Simplex.Chat.Names (NameClaimProof, claimName, claimProof, mkSimplexNameClaim)
 import Simplex.Chat.Messages
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
@@ -417,13 +417,13 @@ createContact db cxt user profile = do
   void $ createContact_ db cxt user profile emptyChatPrefs Nothing "" currentTs
 
 createContact_ :: DB.Connection -> StoreCxt -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
-createContact_ db cxt User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain, contactDomainProof, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
+createContact_ db cxt User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, simplexName, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     badgeVerified <- verifyBadge_ (badgeKeys cxt) badge
     DB.execute
       db
       "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, chat_peer_type, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, contact_domain, contact_domain_proof) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-      ((displayName, fullName, shortDescr, image, contactLink, peerType) :. (userId, localAlias, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified :. ((unStrJSON <$> contactDomain), contactDomainProof))
+      ((displayName, fullName, shortDescr, image, contactLink, peerType) :. (userId, localAlias, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified :. (claimName <$> simplexName, claimProof =<< simplexName))
     profileId <- insertedRowId db
     DB.execute
       db
@@ -496,7 +496,7 @@ type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
 toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. (cpContactDomain, cpContactDomainVerification, cpContactDomainProof)) :. connRow) =
-  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, contactDomain = cpContactDomain, contactDomainVerification = unBI <$> cpContactDomainVerification, contactDomainProof = cpContactDomainProof, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
+  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim cpContactDomain cpContactDomainProof, contactDomainVerification = unBI <$> cpContactDomainVerification, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
       activeConn = toMaybeConnection cxt connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
@@ -539,7 +539,7 @@ type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Maybe
 
 toContactRequest :: UTCTime -> ContactRequestRow -> UserContactRequest
 toContactRequest now ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, preferences, createdAt, updatedAt, minVer, maxVer) :. badgeRow :. (contactDomain, contactDomainVerification, contactDomainProof)) = do
-  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, contactDomain, contactDomainVerification = unBI <$> contactDomainVerification, contactDomainProof, peerType, preferences, localBadge = rowToBadge now badgeRow, localAlias}
+  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactDomainVerification = unBI <$> contactDomainVerification, peerType, preferences, localBadge = rowToBadge now badgeRow, localAlias}
       cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
    in UserContactRequest {contactRequestId, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, createdAt, updatedAt}
 
@@ -558,7 +558,7 @@ toUser :: UTCTime -> (UserId, UserId, ContactId, ProfileId, BoolInt, Int64) :. (
 toUser now ((userId, auId, userContactId, profileId, BI activeUser, activeOrder) :. (displayName, fullName, shortDescr, image, contactLink, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, BI userChatRelay, BI clientService, uiThemes) :. badgeRow :. (contactDomain, contactDomainVerification, contactDomainProof)) =
   User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptMemberContacts, viewPwdHash, userMemberProfileUpdatedAt, userChatRelay = BoolDef userChatRelay, clientService = BoolDef clientService, uiThemes}
   where
-    profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, contactDomain, contactDomainVerification = unBI <$> contactDomainVerification, contactDomainProof, peerType, localBadge = rowToBadge now badgeRow, preferences = userPreferences, localAlias = ""}
+    profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactDomainVerification = unBI <$> contactDomainVerification, peerType, localBadge = rowToBadge now badgeRow, preferences = userPreferences, localAlias = ""}
     fullPreferences = fullPreferences' userPreferences
     viewPwdHash = UserPwdHash <$> viewPwdHash_ <*> viewPwdSalt_
 
@@ -772,7 +772,7 @@ toContactMember now cxt User {userContactId} (memberRow :. connRow) =
 
 rowToLocalProfile :: UTCTime -> ProfileRow -> LocalProfile
 rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, preferences) :. badgeRow :. (contactDomain, contactDomainVerification, contactDomainProof)) =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, contactDomain, contactDomainVerification = unBI <$> contactDomainVerification, contactDomainProof, peerType, localBadge = rowToBadge now badgeRow, localAlias, preferences}
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactDomainVerification = unBI <$> contactDomainVerification, peerType, localBadge = rowToBadge now badgeRow, localAlias, preferences}
 
 toBusinessChatInfo :: BusinessChatInfoRow -> Maybe BusinessChatInfo
 toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId}

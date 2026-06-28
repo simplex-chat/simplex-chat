@@ -52,7 +52,7 @@ import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
-import Simplex.Chat.Names (NameClaimProof (..))
+import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim, setClaimProof)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -698,8 +698,7 @@ data Profile = Profile
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
     badge :: Maybe BadgeProof,
-    contactDomain :: Maybe (StrJSON "SimplexNameInfo" SimplexNameInfo),
-    contactDomainProof :: Maybe NameClaimProof
+    simplexName :: Maybe SimplexNameClaim
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -732,7 +731,7 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing, contactDomainProof = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, simplexName = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -745,8 +744,9 @@ profilesMatch
 -- so compare badges by disclosed info (not proof bytes) - a re-presentation of the same badge is a no-op
 sameProfileContent :: Profile -> Profile -> Bool
 sameProfileContent p@Profile {badge = b} p'@Profile {badge = b'} =
-  p {badge = Nothing, contactDomainProof = Nothing} == p' {badge = Nothing, contactDomainProof = Nothing} && (proofInfo <$> b) == (proofInfo <$> b')
+  clearProofs p == clearProofs p' && (proofInfo <$> b) == (proofInfo <$> b')
   where
+    clearProofs pr@Profile {simplexName} = pr {badge = Nothing, simplexName = setClaimProof Nothing <$> simplexName}
     proofInfo :: BadgeProof -> BadgeInfo
     proofInfo (BadgeProof _ _ _ info) = info
 
@@ -783,9 +783,8 @@ data LocalProfile = LocalProfile
     peerType :: Maybe ChatPeerType,
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
-    contactDomain :: Maybe SimplexNameInfo,
-    contactDomainVerification :: Maybe Bool,
-    contactDomainProof :: Maybe NameClaimProof
+    simplexName :: Maybe SimplexNameClaim,
+    contactDomainVerification :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -793,15 +792,15 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain, contactDomainProof} localAlias now badgeVerified contactDomainVerification =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain = unStrJSON <$> contactDomain, contactDomainVerification, contactDomainProof}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, simplexName} localAlias now badgeVerified contactDomainVerification =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, simplexName, contactDomainVerification}
   where
     localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, contactDomain} =
-  -- contactDomainProof is generated on send
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = StrJSON <$> contactDomain, contactDomainProof = Nothing}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, simplexName} =
+  -- the name proof is re-signed on each send
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, simplexName = setClaimProof Nothing <$> simplexName}
   where
     wireBadge :: LocalBadge -> Maybe BadgeProof
     wireBadge = \case

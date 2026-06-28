@@ -8,7 +8,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Names
-  ( NameClaimProof (..),
+  ( SimplexNameClaim (..),
+    mkSimplexNameClaim,
+    claimName,
+    claimProof,
+    setClaimProof,
+    NameClaimProof (..),
     signNameProof,
     verifyNameProofSig,
   )
@@ -67,3 +72,23 @@ $(JQ.deriveJSON defaultJSON ''NameClaimProof)
 instance ToField NameClaimProof where toField = toField . encodeJSON
 
 instance FromField NameClaimProof where fromField = fromTextField_ decodeJSON
+
+data SimplexNameClaim = SimplexNameClaim
+  { name :: SimplexNameInfo,
+    proof :: Maybe NameClaimProof
+  }
+  deriving (Eq, Show)
+
+mkSimplexNameClaim :: Maybe SimplexNameInfo -> Maybe NameClaimProof -> Maybe SimplexNameClaim
+mkSimplexNameClaim name_ proof_ = (`SimplexNameClaim` proof_) <$> name_
+
+claimName :: SimplexNameClaim -> SimplexNameInfo
+claimName (SimplexNameClaim n _) = n
+
+claimProof :: SimplexNameClaim -> Maybe NameClaimProof
+claimProof (SimplexNameClaim _ p) = p
+
+setClaimProof :: Maybe NameClaimProof -> SimplexNameClaim -> SimplexNameClaim
+setClaimProof p (SimplexNameClaim n _) = SimplexNameClaim n p
+
+$(JQ.deriveJSON defaultJSON ''SimplexNameClaim)

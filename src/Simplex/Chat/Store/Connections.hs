@@ -35,6 +35,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Names (mkSimplexNameClaim)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', fromOnlyBI, maybeFirstRow)
@@ -125,7 +126,7 @@ getConnectionEntity db cxt user@User {userId, userContactId} agentConnId = do
           (userId, contactId, CSActive)
     toContact' :: UTCTime -> Int64 -> Connection -> [ChatTagId] -> ContactRow' -> Contact
     toContact' currentTs contactId conn chatTags ((profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. (cpContactDomain, cpContactDomainVerification, cpContactDomainProof)) =
-      let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, contactDomain = cpContactDomain, contactDomainVerification = unBI <$> cpContactDomainVerification, contactDomainProof = cpContactDomainProof, peerType, localBadge = rowToBadge currentTs badgeRow, preferences, localAlias}
+      let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim cpContactDomain cpContactDomainProof, contactDomainVerification = unBI <$> cpContactDomainVerification, peerType, localBadge = rowToBadge currentTs badgeRow, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn

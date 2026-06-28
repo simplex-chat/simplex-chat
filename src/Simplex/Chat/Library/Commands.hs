@@ -56,7 +56,7 @@ import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, proofPresHeaderLink, verifyCredential)
-import Simplex.Chat.Names (NameClaimProof (..), signNameProof, verifyNameProofSig)
+import Simplex.Chat.Names (NameClaimProof (..), claimName, claimProof, mkSimplexNameClaim, signNameProof, verifyNameProofSig)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1492,8 +1492,8 @@ processChatCommand cxt nm = \case
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
-  APISetUserName userId name_ -> withUserId userId $ \user@User {profile = oldLP@LocalProfile {contactLink, contactDomain}} ->
-    if contactDomain == name_
+  APISetUserName userId name_ -> withUserId userId $ \user@User {profile = oldLP@LocalProfile {contactLink, simplexName}} ->
+    if (claimName <$> simplexName) == name_
       then pure $ CRUserProfileNoChange user
       else do
         -- setting a name needs an address (creating its short link if missing) that the name resolves to; clearing just drops it
@@ -1507,7 +1507,7 @@ processChatCommand cxt nm = \case
             -- the registry resolves a name to short links; require it to point to our address's short link
             unless (maybe False (`nameResolvesTo` nrSimplexContact) sl) $ throwCmdError "name is not registered to your address"
             pure $ Just $ maybe (CLFull fl) CLShort sl
-        let p' = (fromLocalProfile oldLP :: Profile) {contactDomain = StrJSON <$> name_, contactLink = contactLink'}
+        let p' = (fromLocalProfile oldLP :: Profile) {simplexName = mkSimplexNameClaim name_ Nothing, contactLink = contactLink'}
         updateProfile_ user p' True $ withFastStore $ \db -> do
           user' <- updateUserProfile db user p'
           liftIO $ setUserSimplexName db user' name_
@@ -1999,7 +1999,7 @@ processChatCommand cxt nm = \case
   EnableGroupMember gName mName -> withMemberName gName mName $ \gId mId -> APIEnableGroupMember gId mId
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
-  APIAddContact userId incognito -> withUserId userId $ \user@User {profile = LocalProfile {contactDomain = userName_}} -> do
+  APIAddContact userId incognito -> withUserId userId $ \user@User {profile = LocalProfile {simplexName}} -> do
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
@@ -2013,7 +2013,7 @@ processChatCommand cxt nm = \case
     unless (isJust incognitoProfile) $ do
       addressKey_ <- withFastStore' $ \db -> getUserAddressSigKey db user
       let CCLink _ inviteSLnk_ = ccLink'
-          proofProfile = signAddressNameProof (ACSL SCMInvitation <$> inviteSLnk_) addressKey_ userName_ linkProfile
+          proofProfile = signAddressNameProof (ACSL SCMInvitation <$> inviteSLnk_) addressKey_ (claimName <$> simplexName) linkProfile
       when (proofProfile /= linkProfile) $ void $ updatePCCShortLinkData conn proofProfile
     pure $ CRInvitation user ccLink' conn
   AddContact incognito -> withUser $ \User {userId} ->
@@ -3861,10 +3861,10 @@ processChatCommand cxt nm = \case
               fmap $ \SndMessage {msgId, msgBody} ->
                 (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
     setMyAddressData :: User -> UserContactLink -> CM UserContactLink
-    setMyAddressData user@User {userChatRelay, profile = LocalProfile {contactDomain = userName_}} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink sLnk_, addressSettings} = do
+    setMyAddressData user@User {userChatRelay, profile = LocalProfile {simplexName}} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
       rootKey_ <- withFastStore' $ \db -> getUserAddressSigKey db user
-      shortLinkProfile <- signAddressNameProof (ACSL SCMContact <$> sLnk_) rootKey_ userName_ <$> presentUserBadge user Nothing (userProfileDirect user Nothing Nothing True)
+      shortLinkProfile <- signAddressNameProof (ACSL SCMContact <$> sLnk_) rootKey_ (claimName <$> simplexName) <$> presentUserBadge user Nothing (userProfileDirect user Nothing Nothing True)
       -- TODO [short links] do not save address to server if data did not change, spinners, error handling
       let userData
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
@@ -4206,8 +4206,8 @@ processChatCommand cxt nm = \case
                         ov = verifyLinkOwner rootKey owners l' sig_
                     plan <- contactRequestPlan user cReq contactSLinkData_ ov
                     case (nl, plan) of
-                      (CTName ni, CPContactAddress (CAPOk (Just ContactShortLinkData {profile = p@Profile {contactDomain = cd, contactDomainProof = cdp}}) _)) -> do
-                        domainVerified <- verifyNameClaim ni (unStrJSON <$> cd) cdp (ACSL SCMContact l') rootKey owners
+                      (CTName ni, CPContactAddress (CAPOk (Just ContactShortLinkData {profile = p@Profile {simplexName}}) _)) -> do
+                        domainVerified <- verifyNameClaim ni (claimName <$> simplexName) (claimProof =<< simplexName) (ACSL SCMContact l') rootKey owners
                         ct <- withStore $ \db -> createPreparedContact db cxt user p (con l' cReq) Nothing domainVerified
                         pure (con l' cReq, CPContactAddress (CAPKnown ct))
                       _ -> pure (con l' cReq, plan)
@@ -4859,9 +4859,9 @@ verifyEntityName user nm claim_ connLink_ proof_ noNameErr persist = do
 apiVerifyContactName :: User -> NetworkRequestMode -> ContactId -> CM ChatResponse
 apiVerifyContactName user nm contactId = do
   cxt <- chatStoreCxt
-  Contact {profile = LocalProfile {contactDomain, contactDomainProof}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
+  Contact {profile = LocalProfile {simplexName}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
   let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
-  reason <- verifyEntityName user nm contactDomain connLink_ contactDomainProof "contact has no name to verify" $
+  reason <- verifyEntityName user nm (claimName <$> simplexName) connLink_ (claimProof =<< simplexName) "contact has no name to verify" $
     \v -> withStore' $ \db -> setContactDomainVerified db user contactId v
   ct' <- withFastStore $ \db -> getContact db cxt user contactId
   pure $ CRContactNameVerified user ct' reason
@@ -5724,7 +5724,7 @@ chatCommandP =
     newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
       service <- (" service=" *> onOffP) <|> pure False
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing, contactDomainProof = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, simplexName = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
@@ -5733,7 +5733,7 @@ chatCommandP =
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing, contactDomainProof = Nothing}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, simplexName = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

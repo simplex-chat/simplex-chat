@@ -52,6 +52,7 @@ import Simplex.Chat.Remote.AppVersion (AppVersion (..), pattern AppVersionRange)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AddressSettings (..), AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
+import Simplex.Chat.Names (claimName, claimProof)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -147,7 +148,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
-  CRContactNameVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewNameVerified contactDomain result
+  CRContactNameVerified u (Contact {profile = LocalProfile {simplexName}}) result -> ttyUser u $ viewNameVerified (claimName <$> simplexName) result
   CRGroupNameVerified u g result -> ttyUser u $ viewNameVerified (groupDomainName g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
@@ -1809,12 +1810,12 @@ viewContactBadge = maybe [] $ \lb ->
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerification, contactDomainProof}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, simplexName, contactDomainVerification}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> plain (strEncode (simplexChatContact' l))]) contactLink
-    <> simplexNameStatus contactDomain contactDomainVerification (isJust contactDomainProof)
+    <> simplexNameStatus (claimName <$> simplexName) contactDomainVerification (isJust (claimProof =<< simplexName))
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -2225,8 +2226,8 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
     contactNameLine :: Contact -> [StyledString]
-    contactNameLine Contact {profile = LocalProfile {contactDomain, contactDomainVerification, contactDomainProof}} =
-      simplexNameStatus contactDomain contactDomainVerification (isJust contactDomainProof)
+    contactNameLine Contact {profile = LocalProfile {simplexName, contactDomainVerification}} =
+      simplexNameStatus (claimName <$> simplexName) contactDomainVerification (isJust (claimProof =<< simplexName))
     groupNameLine :: GroupInfo -> [StyledString]
     groupNameLine g'@GroupInfo {groupDomainVerification, groupProfile = GroupProfile {publicGroup}} =
       simplexNameStatus (groupDomainName g') groupDomainVerification (isJust (publicGroup >>= publicGroupAccess >>= groupDomainProof))

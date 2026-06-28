@@ -107,6 +107,7 @@ import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Names (claimName, mkSimplexNameClaim)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -393,7 +394,7 @@ setUserSimplexName db user@User {userId, profile = p@LocalProfile {profileId}} n
     db
     "UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?"
     (name_, ts, userId, profileId)
-  pure (user :: User) {profile = p {contactDomain = name_}}
+  pure (user :: User) {profile = p {simplexName = mkSimplexNameClaim name_ Nothing}}
 
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
 setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do
@@ -424,7 +425,7 @@ getUserContactProfiles db User {userId} =
       (Only userId)
   where
     toContactProfile :: (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe SimplexNameInfo, Maybe Preferences) -> Profile
-    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, contactDomain, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, contactDomain = StrJSON <$> contactDomain, peerType, preferences, badge = Nothing, contactDomainProof = Nothing}
+    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, contactDomain, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain Nothing, peerType, preferences, badge = Nothing}
 
 createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> C.PrivateKeyEd25519 -> ExceptT StoreError IO ()
 createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode linkPrivSigKey =
@@ -563,12 +564,12 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
     DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND conn_req_contact IN (?,?)") (userId, cReqSchema1, cReqSchema2)
 
 getUserContactLinkViaTarget :: DB.Connection -> User -> ContactNameOrLink -> IO (Maybe UserContactLink)
-getUserContactLinkViaTarget db User {userId, profile = LocalProfile {contactDomain}} = \case
+getUserContactLinkViaTarget db User {userId, profile = LocalProfile {simplexName}} = \case
   CTLink shortLink ->
     maybeFirstRow toUserContactLink $
       DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND short_link_contact = ?") (userId, shortLink)
   CTName ni
-    | contactDomain == Just ni ->
+    | (claimName <$> simplexName) == Just ni ->
         maybeFirstRow toUserContactLink $
           DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND group_id IS NULL AND short_link_contact IS NOT NULL") (Only userId)
     | otherwise -> pure Nothing
