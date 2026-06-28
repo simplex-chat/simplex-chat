@@ -474,6 +474,7 @@ fun ChatItemView(
                         showMenu.value = false
                       })
                     }
+                    RemindMessageItemActions(showMenu, cInfo, cItem, live)
                     ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                     if (revealed.value) {
                       HideItemAction(revealed, showMenu, reveal)
