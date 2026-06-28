@@ -921,6 +921,12 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
+  val allReminders by chatModel.reminderRepository.reminders.collectAsState()
+  val laterReminders = remember(allReminders, chatModel.currentUser.value?.userId) {
+    val userId = chatModel.currentUser.value?.userId ?: return@remember emptyList<MessageReminder>()
+    allReminders.filter { !it.isComplete && it.userId == userId }.sortedBy { it.dueAt }
+  }
+  val reminderScope = rememberCoroutineScope()
   LazyColumnWithScrollBar(
     if (!oneHandUI.value) Modifier.imePadding() else Modifier,
     listState,
@@ -961,14 +967,41 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         }
       }
     }
-    val allReminders by chatModel.reminderRepository.reminders.collectAsState()
-    val laterReminders = remember(allReminders, chatModel.currentUser.value?.userId) {
-      val userId = chatModel.currentUser.value?.userId ?: return@remember emptyList<MessageReminder>()
-      allReminders.filter { !it.isComplete && it.userId == userId }.sortedBy { it.dueAt }
-    }
     if (laterReminders.isNotEmpty()) {
-      item(key = "later_reminders") {
-        LaterRemindersSection(laterReminders)
+      stickyHeader(key = "later_reminders_header") {
+        Column(
+          Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colors.background)
+        ) {
+          LaterSectionHeader()
+        }
+      }
+      items(laterReminders, key = { it.id }) { reminder ->
+        LaterReminderListItem(
+          reminder = reminder,
+          onOpen = {
+            reminderScope.launch {
+              val chat = chatModel.getChat(reminder.chatId)
+              if (chat != null) {
+                chatModel.openAroundItemId.value = reminder.itemId
+                openChat(
+                  secondaryChatsCtx = null,
+                  rhId = chat.remoteHostId,
+                  chat.chatInfo.chatType,
+                  chat.chatInfo.apiId,
+                  openAroundItemId = reminder.itemId,
+                )
+              }
+            }
+          },
+          onComplete = {
+            withBGApi { chatModel.reminderRepository.completeReminder(reminder.id) }
+          },
+        )
+      }
+      item(key = "later_reminders_divider") {
+        Divider(Modifier.padding(horizontal = DEFAULT_PADDING))
       }
     }
     if (!oneHandUICardShown.value) {

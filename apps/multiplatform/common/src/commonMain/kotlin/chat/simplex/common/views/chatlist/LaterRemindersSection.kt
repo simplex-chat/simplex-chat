@@ -28,17 +28,31 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 @Composable
+fun LaterSectionHeader() {
+  Text(
+    stringResource(MR.strings.later_section),
+    Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+    fontSize = 14.sp,
+    fontWeight = FontWeight.SemiBold,
+    color = MaterialTheme.colors.secondary,
+  )
+}
+
+@Composable
+fun LaterReminderListItem(
+  reminder: MessageReminder,
+  onOpen: () -> Unit,
+  onComplete: () -> Unit,
+) {
+  LaterReminderRow(reminder = reminder, onOpen = onOpen, onComplete = onComplete)
+}
+
+@Composable
 fun LaterRemindersSection(reminders: List<MessageReminder>) {
   if (reminders.isEmpty()) return
   val scope = rememberCoroutineScope()
   Column(Modifier.fillMaxWidth()) {
-    Text(
-      stringResource(MR.strings.later_section),
-      Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
-      fontSize = 14.sp,
-      fontWeight = FontWeight.SemiBold,
-      color = MaterialTheme.colors.secondary,
-    )
+    LaterSectionHeader()
     reminders.forEach { reminder ->
       LaterReminderRow(
         reminder = reminder,

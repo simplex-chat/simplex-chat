@@ -3,6 +3,7 @@ package chat.simplex.common.model
 import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
 import java.util.UUID
+import kotlin.time.Duration.Companion.hours
 
 /** Client-local message reminder (issue #7135). */
 @Serializable

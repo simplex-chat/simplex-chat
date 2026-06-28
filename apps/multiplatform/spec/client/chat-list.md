@@ -39,6 +39,9 @@ ChatListView
 |   |   |-- stickyHeader
 |   |   |   |-- ChatListSearchBar (search input + filter toggle)
 |   |   |   +-- TagsView          (preset + custom tag chips)
+|   |   |-- stickyHeader (when reminders present)
+|   |   |   +-- LaterSectionHeader ("Later")
+|   |   |-- LaterReminderListItem[] (incomplete reminders for current user)
 |   |   |-- ChatListNavLinkView[] (per-chat row items)
 |   |   +-- ChatListFeatureCards  (one-hand UI card, address card)
 |   +-- EmptyState text

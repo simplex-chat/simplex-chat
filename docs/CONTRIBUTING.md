@@ -15,6 +15,14 @@ We do not make code changes to improve code - any change must address a specific
 
 Please discuss the problem you want to solve and your detailed implementation plan with the project team prior to contributing, to avoid wasted time and additional changes. Acceptance of your contribution depends on your willingness and ability to iterate the proposed contribution to achieve the required quality level, coding style, test coverage, and alignment with user requirements as they are understood by the project team.
 
+## Contributor License Agreement (CLA)
+
+Pull requests require every commit author to sign the [Contributor License Agreement](https://github.com/simplex-chat/cla/blob/master/CLA.md). On the pull request, post a comment with exactly:
+
+`I have read the CLA Document and I hereby sign the CLA`
+
+If the **CLA Assistant** check does not update after signing, comment `recheck` on the same pull request. Signatures are stored in the [simplex-chat/cla](https://github.com/simplex-chat/cla) repository; this cannot be satisfied by changes in the application codebase alone.
+
 ## Follow project structure, coding style and approaches
 
 ./contributing/PROJECT.md has information about the structure of this `simplex-chat` repository.
