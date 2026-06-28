@@ -42,7 +42,7 @@ module Simplex.Chat.Store.Groups
     setGroupInvitationChatItemId,
     getGroup,
     getGroupInfoByUserContactLinkConnReq,
-    getGroupInfoViaUserShortLink,
+    getGroupInfoViaUserTarget,
     getGroupViaShortLinkToConnect,
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
@@ -2753,21 +2753,34 @@ getGroupInfoByUserContactLinkConnReq db cxt user@User {userId} (cReqSchema1, cRe
         (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db cxt user) groupId_
 
-getGroupInfoViaUserShortLink :: DB.Connection -> StoreCxt -> User -> ShortLinkContact -> IO (Maybe (ConnReqContact, GroupInfo))
-getGroupInfoViaUserShortLink db cxt user@User {userId} shortLink = fmap eitherToMaybe $ runExceptT $ do
+-- own hosted group found by the target: by its address short link, or (for a name) by the group's registered name
+getGroupInfoViaUserTarget :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> IO (Maybe (ConnReqContact, GroupInfo))
+getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe $ runExceptT $ do
   (cReq, groupId) <- ExceptT getConnReqGroup
   (cReq,) <$> getGroupInfo db cxt user groupId
   where
     getConnReqGroup =
-      firstRow' toConnReqGroupId (SEInternalError "group link not found") $
-        DB.query
-          db
-          [sql|
-            SELECT conn_req_contact, group_id
-            FROM user_contact_links
-            WHERE user_id = ? AND short_link_contact = ?
-          |]
-          (userId, shortLink)
+      firstRow' toConnReqGroupId (SEInternalError "group link not found") $ case target of
+        CTLink shortLink ->
+          DB.query
+            db
+            [sql|
+              SELECT conn_req_contact, group_id
+              FROM user_contact_links
+              WHERE user_id = ? AND short_link_contact = ?
+            |]
+            (userId, shortLink)
+        CTName ni ->
+          DB.query
+            db
+            [sql|
+              SELECT ucl.conn_req_contact, ucl.group_id
+              FROM user_contact_links ucl
+              JOIN groups g ON g.group_id = ucl.group_id
+              JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+              WHERE ucl.user_id = ? AND gp.group_domain = ?
+            |]
+            (userId, ni)
     toConnReqGroupId = \case
       -- cReq is "not null", group_id is nullable
       (cReq, Just groupId) -> Right (cReq, groupId)

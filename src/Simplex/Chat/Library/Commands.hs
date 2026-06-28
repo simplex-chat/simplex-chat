@@ -4208,18 +4208,12 @@ processChatCommand cxt nm = \case
                     verified (con sl cReq, plan)
             where
               knownLinkPlans = withFastStore $ \db ->
-                ownLinkPlan db >>= \case
-                  Just r -> pure (Just r)
+                liftIO (getUserContactLinkViaTarget db user nameOrLink') >>= \case
+                  Just UserContactLink {connLinkContact = CCLink cReq _} -> pure $ Just (knownCon cReq, CPContactAddress CAPOwnLink)
                   Nothing ->
                     getContactToConnect db cxt user nameOrLink' >>= \case
                       Just (cReq, ct') -> pure $ if contactDeleted ct' then Nothing else Just (knownCon cReq, CPContactAddress (CAPKnown ct'))
                       Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nameOrLink'
-              ownLinkPlan db = case nameOrLink' of
-                CTLink sl ->
-                  liftIO (getUserContactLinkViaShortLink db user sl) >>= \case
-                    Just UserContactLink {connLinkContact = CCLink cReq _} -> pure $ Just (knownCon cReq, CPContactAddress CAPOwnLink)
-                    Nothing -> pure Nothing
-                CTName _ -> pure Nothing
           CCTGroup -> groupShortLinkPlan
           CCTChannel -> groupShortLinkPlan
           CCTRelay -> throwCmdError "chat relay links are not supported in this version"
@@ -4271,15 +4265,9 @@ processChatCommand cxt nm = \case
                 Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
                 _ -> False
               knownLinkPlans = withFastStore $ \db ->
-                ownGroupLinkPlan db >>= \case
-                  Just r -> pure (Just r)
+                liftIO (getGroupInfoViaUserTarget db cxt user nameOrLink') >>= \case
+                  Just (cReq, g) -> pure $ Just (knownCon cReq, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nameOrLink'
-              ownGroupLinkPlan db = case nameOrLink' of
-                CTLink sl ->
-                  liftIO (getGroupInfoViaUserShortLink db cxt user sl) >>= \case
-                    Just (cReq, g) -> pure $ Just (knownCon cReq, CPGroupLink (GLPOwnLink g))
-                    Nothing -> pure Nothing
-                CTName _ -> pure Nothing
               resolveKnownGroup g = do
                 sl <- resolveSLink
                 (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user sl
