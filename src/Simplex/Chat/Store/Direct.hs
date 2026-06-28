@@ -798,19 +798,18 @@ getContactByName db cxt user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
   getContact db cxt user cId
 
--- a contact to connect to, found by the target: by its address short link, or by its verified name
-getContactToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (ConnReqContact, Contact))
+getContactToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (CreatedLinkContact, Contact))
 getContactToConnect db cxt user@User {userId} = \case
-  CTLink sl -> getContactViaShortLinkToConnect db cxt user sl
+  CTLink sl -> fmap (fmap (\(cReq, ct) -> (CCLink cReq (Just sl), ct))) (getContactViaShortLinkToConnect db cxt user sl)
   CTName ni ->
     liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, ni)) >>= \case
-      Just (ctId :: Int64, Just (ACR cMode cReq)) | Just Refl <- testEquality cMode SCMContact ->
-        Just . (cReq,) <$> getContact db cxt user ctId
+      Just (ctId :: Int64, Just (ACR cMode cReq), Just (sLnk :: ShortLinkContact)) | Just Refl <- testEquality cMode SCMContact ->
+        Just . (CCLink cReq (Just sLnk),) <$> getContact db cxt user ctId
       _ -> pure Nothing
   where
     byNameQuery =
       [sql|
-        SELECT ct.contact_id, ct.conn_full_link_to_connect FROM contacts ct
+        SELECT ct.contact_id, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
         WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verification = 1 AND ct.deleted = 0
       |]

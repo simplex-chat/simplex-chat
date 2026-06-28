@@ -562,7 +562,6 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
   maybeFirstRow toUserContactLink $
     DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND conn_req_contact IN (?,?)") (userId, cReqSchema1, cReqSchema2)
 
--- own contact address found by the target: by its short link, or (for a name) when it is this user's own registered address name
 getUserContactLinkViaTarget :: DB.Connection -> User -> ContactNameOrLink -> IO (Maybe UserContactLink)
 getUserContactLinkViaTarget db User {userId, profile = LocalProfile {contactDomain}} = \case
   CTLink shortLink ->
@@ -571,7 +570,7 @@ getUserContactLinkViaTarget db User {userId, profile = LocalProfile {contactDoma
   CTName ni
     | contactDomain == Just ni ->
         maybeFirstRow toUserContactLink $
-          DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND group_id IS NULL") (Only userId)
+          DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND group_id IS NULL AND short_link_contact IS NOT NULL") (Only userId)
     | otherwise -> pure Nothing
 
 userContactLinkQuery :: Query

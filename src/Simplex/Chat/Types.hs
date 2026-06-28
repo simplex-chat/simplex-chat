@@ -1787,14 +1787,11 @@ type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
 
--- what the user is connecting to: a contact/group by full address link, by short address link or registered name, or a one-time invitation link
--- CTFullContact is its own case because full address links are legacy; keeping them separate makes dropping them later a localized change (remove the constructor, its connectPlan branch, and the parser alternative)
 data ConnectTarget (m :: ConnectionMode) where
   CTFullContact :: ConnectionRequestUri 'CMContact -> ConnectTarget 'CMContact
   CTShortContact :: ContactNameOrLink -> ConnectTarget 'CMContact
   CTInv :: ConnectionLink 'CMInvitation -> ConnectTarget 'CMInvitation
 
--- a short contact address link or a registered name; resolving a name produces a short link, i.e. turns CTName into CTLink
 data ContactNameOrLink = CTName SimplexNameInfo | CTLink (ConnShortLink 'CMContact)
   deriving (Eq, Show)
 

@@ -4209,10 +4209,10 @@ processChatCommand cxt nm = \case
             where
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getUserContactLinkViaTarget db user nameOrLink') >>= \case
-                  Just UserContactLink {connLinkContact = CCLink cReq _} -> pure $ Just (knownCon cReq, CPContactAddress CAPOwnLink)
+                  Just UserContactLink {connLinkContact} -> pure $ Just (ACCL SCMContact connLinkContact, CPContactAddress CAPOwnLink)
                   Nothing ->
                     getContactToConnect db cxt user nameOrLink' >>= \case
-                      Just (cReq, ct') -> pure $ if contactDeleted ct' then Nothing else Just (knownCon cReq, CPContactAddress (CAPKnown ct'))
+                      Just (ccl, ct') -> pure $ if contactDeleted ct' then Nothing else Just (ACCL SCMContact ccl, CPContactAddress (CAPKnown ct'))
                       Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nameOrLink'
           CCTGroup -> groupShortLinkPlan
           CCTChannel -> groupShortLinkPlan
@@ -4229,10 +4229,7 @@ processChatCommand cxt nm = \case
             CTLink sl -> pure sl
             CTName ni -> serverShortLink <$> resolveNameLink user ni
           con sl cReq = ACCL SCMContact $ CCLink cReq (Just sl)
-          knownCon cReq = ACCL SCMContact $ CCLink cReq $ case nameOrLink' of
-            CTLink sl -> Just sl
-            CTName _ -> Nothing
-          gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (knownCon cReq, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
+          gPlan (ccl, g) = if memberRemoved (membership g) then Nothing else Just (ACCL SCMContact ccl, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
           verified r = case nameOrLink of
             CTName ni -> verifyConnectedName user ni (fst r) (snd r)
             CTLink _ -> pure r
@@ -4266,7 +4263,7 @@ processChatCommand cxt nm = \case
                 _ -> False
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getGroupInfoViaUserTarget db cxt user nameOrLink') >>= \case
-                  Just (cReq, g) -> pure $ Just (knownCon cReq, CPGroupLink (GLPOwnLink g))
+                  Just (ccl, g) -> pure $ Just (ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nameOrLink'
               resolveKnownGroup g = do
                 sl <- resolveSLink

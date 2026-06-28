@@ -1074,18 +1074,17 @@ getGroupInfoByName db cxt user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db cxt user gId
 
--- a group to connect to, found by the target: by its address short link, or by its verified name
-getGroupToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (ConnReqContact, GroupInfo))
+getGroupToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (CreatedLinkContact, GroupInfo))
 getGroupToConnect db cxt user@User {userId} = \case
-  CTLink sl -> getGroupViaShortLinkToConnect db cxt user sl
+  CTLink sl -> fmap (fmap (\(cReq, g) -> (CCLink cReq (Just sl), g))) (getGroupViaShortLinkToConnect db cxt user sl)
   CTName ni ->
     liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, ni)) >>= \case
-      Just (gId :: Int64, Just cReq) -> Just . (cReq,) <$> getGroupInfo db cxt user gId
+      Just (gId :: Int64, Just cReq, Just (sLnk :: ShortLinkContact)) -> Just . (CCLink cReq (Just sLnk),) <$> getGroupInfo db cxt user gId
       _ -> pure Nothing
   where
     byNameQuery =
       [sql|
-        SELECT g.group_id, g.conn_full_link_to_connect FROM groups g
+        SELECT g.group_id, g.conn_full_link_to_connect, g.conn_short_link_to_connect FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verification = 1
       |]
@@ -2753,11 +2752,10 @@ getGroupInfoByUserContactLinkConnReq db cxt user@User {userId} (cReqSchema1, cRe
         (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db cxt user) groupId_
 
--- own hosted group found by the target: by its address short link, or (for a name) by the group's registered name
-getGroupInfoViaUserTarget :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> IO (Maybe (ConnReqContact, GroupInfo))
+getGroupInfoViaUserTarget :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> IO (Maybe (CreatedLinkContact, GroupInfo))
 getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe $ runExceptT $ do
-  (cReq, groupId) <- ExceptT getConnReqGroup
-  (cReq,) <$> getGroupInfo db cxt user groupId
+  (cReq, sLnk, groupId) <- ExceptT getConnReqGroup
+  (CCLink cReq (Just sLnk),) <$> getGroupInfo db cxt user groupId
   where
     getConnReqGroup =
       firstRow' toConnReqGroupId (SEInternalError "group link not found") $ case target of
@@ -2765,7 +2763,7 @@ getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe 
           DB.query
             db
             [sql|
-              SELECT conn_req_contact, group_id
+              SELECT conn_req_contact, short_link_contact, group_id
               FROM user_contact_links
               WHERE user_id = ? AND short_link_contact = ?
             |]
@@ -2774,7 +2772,7 @@ getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe 
           DB.query
             db
             [sql|
-              SELECT ucl.conn_req_contact, ucl.group_id
+              SELECT ucl.conn_req_contact, ucl.short_link_contact, ucl.group_id
               FROM user_contact_links ucl
               JOIN groups g ON g.group_id = ucl.group_id
               JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -2783,7 +2781,7 @@ getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe 
             (userId, ni)
     toConnReqGroupId = \case
       -- cReq is "not null", group_id is nullable
-      (cReq, Just groupId) -> Right (cReq, groupId)
+      (cReq, Just (sLnk :: ShortLinkContact), Just groupId) -> Right (cReq, sLnk, groupId)
       _ -> Left $ SEInternalError "no conn req or group ID"
 
 getGroupViaShortLinkToConnect :: DB.Connection -> StoreCxt -> User -> ShortLinkContact -> ExceptT StoreError IO (Maybe (ConnReqContact, GroupInfo))
