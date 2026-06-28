@@ -19,6 +19,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -34,6 +35,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Attoparsec.Combinator (lookAhead)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
@@ -46,6 +48,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
+import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
@@ -56,7 +59,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -1783,6 +1786,58 @@ data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkE
 type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
+
+-- what the user is connecting to: a contact/group by full address link, by short address link or registered name, or a one-time invitation link
+-- CTFullContact is its own case because full address links are legacy; keeping them separate makes dropping them later a localized change (remove the constructor, its connectPlan branch, and the parser alternative)
+data ConnectTarget (m :: ConnectionMode) where
+  CTFullContact :: ConnectionRequestUri 'CMContact -> ConnectTarget 'CMContact
+  CTShortContact :: ContactNameOrLink -> ConnectTarget 'CMContact
+  CTInv :: ConnectionLink 'CMInvitation -> ConnectTarget 'CMInvitation
+
+-- a short contact address link or a registered name; resolving a name produces a short link, i.e. turns CTName into CTLink
+data ContactNameOrLink = CTName SimplexNameInfo | CTLink (ConnShortLink 'CMContact)
+  deriving (Eq, Show)
+
+deriving instance Eq (ConnectTarget m)
+
+deriving instance Show (ConnectTarget m)
+
+data AConnectTarget = forall m. ConnectionModeI m => ACTarget (SConnectionMode m) (ConnectTarget m)
+
+instance Eq AConnectTarget where
+  ACTarget m t == ACTarget m' t' = case testEquality m m' of
+    Just Refl -> t == t'
+    _ -> False
+
+deriving instance Show AConnectTarget
+
+instance StrEncoding AConnectTarget where
+  strEncode (ACTarget _ t) = case t of
+    CTFullContact cr -> strEncode cr
+    CTShortContact (CTName n) -> strEncode n
+    CTShortContact (CTLink sl) -> strEncode sl
+    CTInv l -> strEncode l
+  strP =
+    (ACTarget SCMContact . CTShortContact . CTName <$> (lookAhead nameStart *> strP))
+      <|> ((\(ACL m cl) -> aConnectTarget m cl) <$> strP)
+    where
+      nameStart = "@" <|> "#" <|> "simplex:/name"
+
+aConnectTarget :: SConnectionMode m -> ConnectionLink m -> AConnectTarget
+aConnectTarget m cl = case (m, cl) of
+  (SCMContact, CLFull cr) -> ACTarget SCMContact (CTFullContact cr)
+  (SCMContact, CLShort sl) -> ACTarget SCMContact (CTShortContact (CTLink sl))
+  (SCMInvitation, _) -> ACTarget SCMInvitation (CTInv cl)
+
+aConnectTargetLink :: AConnectionLink -> AConnectTarget
+aConnectTargetLink (ACL m cl) = aConnectTarget m cl
+
+instance ToJSON AConnectTarget where
+  toEncoding = strToJEncoding
+  toJSON = strToJSON
+
+instance FromJSON AConnectTarget where
+  parseJSON = strParseJSON "AConnectTarget"
 
 type CreatedLinkInvitation = CreatedConnLink 'CMInvitation
 

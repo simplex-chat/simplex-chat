@@ -65,7 +65,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatError, serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ACreatedConnLink (..), AgentErrorType (..), ConnectTarget (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ACreatedConnLink (..), AgentErrorType (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (ErrorType (..))
@@ -552,7 +552,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                     <> ".\nIt is hidden from the directory until approved."
                 notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
                 sendToApprove g' gr' n'
-          sendChatCmd cc (APIConnectPlan userId (Just (CTLink link)) True Nothing) >>= \case
+          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTargetLink link)) True Nothing) >>= \case
             Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}))) ->
               case dbOwnerMemberId gr of
                 Just ownerGMId ->
@@ -797,7 +797,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         forM_ pg_ $ \pg@PublicGroupProfile {groupLink} ->
           when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $ do
             let link = ACL SCMContact $ CLShort groupLink
-            sendChatCmd cc (APIConnectPlan userId (Just (CTLink link)) True Nothing) >>= \case
+            sendChatCmd cc (APIConnectPlan userId (Just (aConnectTargetLink link)) True Nothing) >>= \case
               Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated = BoolDef updated, linkOwners = ListDef owners}))) ->
                 checkValidOwner dbOwnerMemberId owners $ do
                   when updated $ reapprove pg gr groupRegStatus g'
@@ -933,7 +933,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let link = ACL SCMContact $ CLShort connLink
               mId = MemberId oIdBytes
               gt' = groupTypeStr gt
-          sendChatCmd cc (APIConnectPlan userId (Just (CTLink link)) True (Just ownerSig)) >>= \case
+          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTargetLink link)) True (Just ownerSig)) >>= \case
             Right (CRConnectionPlan _ (ACCL SCMContact ccLink) plan) ->
               handleGroupLinkPlan ct ccLink mId ownerSig gt' plan
             _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."

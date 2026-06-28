@@ -233,7 +233,7 @@ import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRel
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConfirmationId, ConnId, ConnectionLink (..), ConnectTarget (..), CreatedConnLink (..), InvitationId, OwnerAuth (..), SConnectionMode (..), SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConfirmationId, ConnId, ConnectionLink (..), CreatedConnLink (..), InvitationId, OwnerAuth (..), SConnectionMode (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Encoding (smpDecode, smpEncode)
@@ -1074,15 +1074,14 @@ getGroupInfoByName db cxt user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db cxt user gId
 
--- a group to connect to, found by the connect target: by its address short link, or by its verified name
-getGroupToConnect :: DB.Connection -> StoreCxt -> User -> ConnectTarget -> ExceptT StoreError IO (Maybe (ConnReqContact, GroupInfo))
+-- a group to connect to, found by the target: by its address short link, or by its verified name
+getGroupToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (ConnReqContact, GroupInfo))
 getGroupToConnect db cxt user@User {userId} = \case
-  CTLink (ACL SCMContact (CLShort sl)) -> getGroupViaShortLinkToConnect db cxt user sl
+  CTLink sl -> getGroupViaShortLinkToConnect db cxt user sl
   CTName ni ->
     liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, ni)) >>= \case
       Just (gId :: Int64, Just cReq) -> Just . (cReq,) <$> getGroupInfo db cxt user gId
       _ -> pure Nothing
-  _ -> pure Nothing
   where
     byNameQuery =
       [sql|

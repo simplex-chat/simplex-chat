@@ -113,7 +113,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionLink (..), ConnectionModeI (..), ConnectionRequestUri, ConnectTarget (..), CreatedConnLink (..), SConnectionMode (..), SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionLink (..), ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Encoding.String (StrJSON (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
@@ -798,16 +798,15 @@ getContactByName db cxt user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
   getContact db cxt user cId
 
--- a contact to connect to, found by the connect target: by its address short link, or by its verified name
-getContactToConnect :: DB.Connection -> StoreCxt -> User -> ConnectTarget -> ExceptT StoreError IO (Maybe (ConnReqContact, Contact))
+-- a contact to connect to, found by the target: by its address short link, or by its verified name
+getContactToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (ConnReqContact, Contact))
 getContactToConnect db cxt user@User {userId} = \case
-  CTLink (ACL SCMContact (CLShort sl)) -> getContactViaShortLinkToConnect db cxt user sl
+  CTLink sl -> getContactViaShortLinkToConnect db cxt user sl
   CTName ni ->
     liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, ni)) >>= \case
       Just (ctId :: Int64, Just (ACR cMode cReq)) | Just Refl <- testEquality cMode SCMContact ->
         Just . (cReq,) <$> getContact db cxt user ctId
       _ -> pure Nothing
-  _ -> pure Nothing
   where
     byNameQuery =
       [sql|
