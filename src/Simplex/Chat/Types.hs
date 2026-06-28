@@ -845,12 +845,15 @@ instance ToField GroupType where toField = toField . textEncode
 
 data PublicGroupAccess = PublicGroupAccess
   { groupWebPage :: Maybe Text,
-    groupDomain :: Maybe (StrJSON "SimplexName" SimplexNameInfo),
-    groupDomainProof :: Maybe NameClaimProof,
+    simplexName :: Maybe SimplexNameClaim,
     domainWebPage :: Bool,
     allowEmbedding :: Bool
   }
   deriving (Eq, Show)
+
+-- selector disambiguated from Profile/LocalProfile simplexName
+publicGroupClaim :: PublicGroupAccess -> Maybe SimplexNameClaim
+publicGroupClaim PublicGroupAccess {simplexName} = simplexName
 
 data PublicGroupProfile = PublicGroupProfile
   { groupType :: GroupType,

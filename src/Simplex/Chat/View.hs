@@ -1134,7 +1134,7 @@ shareLinkStr Nothing fallback = fallback
 
 groupDomainName :: GroupInfo -> Maybe SimplexNameInfo
 groupDomainName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
-  unStrJSON <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
+  claimName <$> (publicGroup >>= publicGroupAccess >>= publicGroupClaim)
 
 viewNameVerified :: Maybe SimplexNameInfo -> Maybe Text -> [StyledString]
 viewNameVerified name_ result =
@@ -2050,9 +2050,9 @@ viewGroupUpdated
           access = pg >>= publicGroupAccess
           access' = pg' >>= publicGroupAccess
           viewAccess Nothing = " removed"
-          viewAccess (Just PublicGroupAccess {groupWebPage, groupDomain, domainWebPage, allowEmbedding}) =
+          viewAccess (Just PublicGroupAccess {groupWebPage, simplexName, domainWebPage, allowEmbedding}) =
             maybe "" (\u -> " web=" <> plain u) groupWebPage
-              <> maybe "" (\(StrJSON ni) -> " domain=" <> plain (strEncode ni)) groupDomain
+              <> maybe "" (\ni -> " domain=" <> plain (strEncode ni)) (claimName <$> simplexName)
               <> (if domainWebPage then " domain_page=on" else "")
               <> (if allowEmbedding then " embed=on" else "")
 
@@ -2230,7 +2230,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       simplexNameStatus (claimName <$> simplexName) contactDomainVerification (isJust (claimProof =<< simplexName))
     groupNameLine :: GroupInfo -> [StyledString]
     groupNameLine g'@GroupInfo {groupDomainVerification, groupProfile = GroupProfile {publicGroup}} =
-      simplexNameStatus (groupDomainName g') groupDomainVerification (isJust (publicGroup >>= publicGroupAccess >>= groupDomainProof))
+      simplexNameStatus (groupDomainName g') groupDomainVerification (isJust (claimProof =<< (publicGroup >>= publicGroupAccess >>= publicGroupClaim)))
     viewSigVerification = \case
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]

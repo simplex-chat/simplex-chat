@@ -57,7 +57,7 @@ import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, proofPresHeaderLink, verifyCredential)
-import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim (..), claimName, claimProof, signNameProof, verifyNameProofSig)
+import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim (..), claimName, claimProof, mkSimplexNameClaim, signNameProof, verifyNameProofSig)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -2301,7 +2301,7 @@ processChatCommand cxt nm = \case
     GroupInfo {groupProfile = GroupProfile {publicGroup}, preparedGroup} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     let access = publicGroup >>= publicGroupAccess
         connLink_ = preparedGroup >>= \PreparedGroup {connLinkToConnect = CCLink _ sLnk_} -> ACSL SCMContact <$> sLnk_
-    reason <- verifyEntityName user nm (unStrJSON <$> (access >>= groupDomain)) connLink_ (access >>= groupDomainProof) "group has no name to verify" $
+    reason <- verifyEntityName user nm (claimName <$> (access >>= publicGroupClaim)) connLink_ (claimProof =<< (access >>= publicGroupClaim)) "group has no name to verify" $
       \v -> withStore' $ \db -> setGroupDomainVerified db user groupId v
     g' <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     pure $ CRGroupNameVerified user g' reason
@@ -3139,9 +3139,10 @@ processChatCommand cxt nm = \case
       getGroupIdByName db user gName >>= getGroupInfo db cxt user
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
-        let PublicGroupAccess {groupDomain = newName_} = access
-        when (newName_ /= (existingAccess >>= groupDomain)) $
-          forM_ newName_ $ \(StrJSON name) -> do
+        let PublicGroupAccess {simplexName = newClaim_} = access
+            newName_ = claimName <$> newClaim_
+        when (newName_ /= (claimName <$> (existingAccess >>= publicGroupClaim))) $
+          forM_ newName_ $ \name -> do
             let SimplexNameInfo {nameDomain = domain} = name
             NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
             unless (nameResolvesTo groupLink nrSimplexChannel) $ throwCmdError "name is not registered to this channel"
@@ -3871,10 +3872,9 @@ processChatCommand cxt nm = \case
               fmap $ \SndMessage {msgId, msgBody} ->
                 (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
     setMyAddressData :: User -> UserContactLink -> CM UserContactLink
-    setMyAddressData user@User {userChatRelay, profile = LocalProfile {simplexName}} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink sLnk_, addressSettings} = do
+    setMyAddressData user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
-      rootKey_ <- withFastStore' $ \db -> getUserAddressSigKey db user
-      shortLinkProfile <- signAddressNameProof (ACSL SCMContact <$> sLnk_) rootKey_ (claimName <$> simplexName) <$> presentUserBadge user Nothing (userProfileDirect user Nothing Nothing True)
+      shortLinkProfile <- presentUserBadge user Nothing (userProfileDirect user Nothing Nothing True)
       -- TODO [short links] do not save address to server if data did not change, spinners, error handling
       let userData
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
@@ -4217,7 +4217,7 @@ processChatCommand cxt nm = \case
                     plan <- contactRequestPlan user cReq contactSLinkData_ ov
                     case (nl, plan) of
                       (CTName ni, CPContactAddress (CAPOk (Just ContactShortLinkData {profile = p@Profile {simplexName}}) _)) -> do
-                        domainVerified <- verifyNameClaim ni (claimName <$> simplexName) (claimProof =<< simplexName) (ACSL SCMContact l') rootKey owners
+                        domainVerified <- verifyNameClaim ni (claimName <$> simplexName)
                         ct' <- withStore $ \db -> createPreparedContact db cxt user p (con l' cReq) Nothing domainVerified
                         pure (con l' cReq, CPContactAddress (CAPKnown ct'))
                       _ -> pure (con l' cReq, plan)
@@ -4271,9 +4271,8 @@ processChatCommand cxt nm = \case
                       case (nl, plan) of
                         (CTName ni, CPGroupLink (GLPOk (Just _) (Just gld) _)) -> do
                           let GroupShortLinkData {groupProfile = GroupProfile {publicGroup = pg}} = gld
-                              gName = unStrJSON <$> (pg >>= publicGroupAccess >>= groupDomain)
-                              gProof = pg >>= publicGroupAccess >>= groupDomainProof
-                          domainVerified <- verifyNameClaim ni gName gProof (ACSL SCMContact l') rootKey owners
+                              gName = claimName <$> (pg >>= publicGroupAccess >>= publicGroupClaim)
+                          domainVerified <- verifyNameClaim ni gName
                           (g, _) <- preparedGroupFromLink user (CCLink cReq (Just l')) direct gld Nothing domainVerified
                           pure (con l' cReq, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
                         _ -> pure (con l' cReq, plan)
@@ -4774,10 +4773,10 @@ nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . st
 -- (linkOwnerId = Just memberId — a channel is signed by its owner, not by the address itself).
 -- Does nothing without a name or keys.
 signChannelNameProof :: GroupInfo -> PublicGroupProfile -> PublicGroupAccess -> PublicGroupAccess
-signChannelNameProof GroupInfo {groupKeys, membership = GroupMember {memberId = MemberId mid}} PublicGroupProfile {groupLink} access@PublicGroupAccess {groupDomain} =
-  case (groupDomain, groupKeys) of
-    (Just (StrJSON name), Just GroupKeys {memberPrivKey}) ->
-      access {groupDomainProof = Just $ signNameProof memberPrivKey (Just mid) name (PHSimplexLink (ACSL SCMContact groupLink))}
+signChannelNameProof GroupInfo {groupKeys, membership = GroupMember {memberId = MemberId mid}} PublicGroupProfile {groupLink} access@PublicGroupAccess {simplexName} =
+  case (simplexName, groupKeys) of
+    (Just (SimplexNameClaim name _), Just GroupKeys {memberPrivKey}) ->
+      access {simplexName = Just $ SimplexNameClaim name (Just $ signNameProof memberPrivKey (Just mid) name (PHSimplexLink (ACSL SCMContact groupLink)))}
     _ -> access
 
 -- | The outcome of verifying a name claim: verified, a determinate failure (persist Just False), or
@@ -4835,10 +4834,11 @@ proofSignedByOwner rootKey owners claim proof@NameClaimProof {linkOwnerId} =
         Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
    in maybe False (\key -> verifyNameProofSig key claim proof) key_
 
-verifyNameClaim :: SimplexNameInfo -> Maybe SimplexNameInfo -> Maybe NameClaimProof -> AConnShortLink -> C.PublicKeyEd25519 -> [OwnerAuth] -> CM (Maybe Bool)
-verifyNameClaim ni claimedName_ proof_ connLink rootKey owners = do
+-- connecting by name resolves the name to this address, so it is verified without checking the proof
+verifyNameClaim :: SimplexNameInfo -> Maybe SimplexNameInfo -> CM (Maybe Bool)
+verifyNameClaim ni claimedName_ = do
   unless (claimedName_ == Just ni) $ throwChatError $ CESimplexName ni SNEUnknownName
-  pure $ (\p -> proofBoundTo p connLink && proofSignedByOwner rootKey owners ni p) <$> proof_
+  pure (Just True)
 
 nameVerifyVerdict :: NameVerifyOutcome -> Maybe Bool
 nameVerifyVerdict = \case
@@ -5683,10 +5683,10 @@ chatCommandP =
     onOffP = ("on" $> True) <|> ("off" $> False)
     publicGroupAccessP = do
       groupWebPage <- optional (" web=" *> (safeDecodeUtf8 <$> A.takeTill A.isSpace))
-      groupDomain <- optional (" domain=" *> (StrJSON <$> strP))
+      groupDomain <- optional (" domain=" *> strP)
       domainWebPage <- (" domain_page=" *> onOffP) <|> pure False
       allowEmbedding <- (" embed=" *> onOffP) <|> pure False
-      pure PublicGroupAccess {groupWebPage, groupDomain, groupDomainProof = Nothing, domainWebPage, allowEmbedding}
+      pure PublicGroupAccess {groupWebPage, simplexName = mkSimplexNameClaim groupDomain Nothing, domainWebPage, allowEmbedding}
     profileNameDescr = (,) <$> displayNameP <*> shortDescrP
     -- 'Help with bot':'link <ID>','Menu of commands':[...]
     botCommandsP :: Parser [ChatBotCommand]

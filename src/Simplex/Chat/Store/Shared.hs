@@ -708,14 +708,14 @@ toPublicGroupProfile _ _ _ _ = Nothing
 
 publicGroupAccessRow :: Maybe PublicGroupProfile -> PublicGroupAccessRow
 publicGroupAccessRow pgp = case pgp >>= publicGroupAccess of
-  Just PublicGroupAccess {groupWebPage, groupDomain, groupDomainProof, domainWebPage, allowEmbedding} ->
-    (groupWebPage, unStrJSON <$> groupDomain, Just (BI domainWebPage), Just (BI allowEmbedding), groupDomainProof)
+  Just PublicGroupAccess {groupWebPage, simplexName, domainWebPage, allowEmbedding} ->
+    (groupWebPage, claimName <$> simplexName, Just (BI domainWebPage), Just (BI allowEmbedding), claimProof =<< simplexName)
   Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing)
 
 toPublicGroupAccess :: PublicGroupAccessRow -> Maybe PublicGroupAccess
 toPublicGroupAccess (groupWebPage, groupDomain, domainWebPage_, allowEmbedding_, groupDomainProof)
   | isJust groupWebPage || isJust groupDomain || domainWebPage || allowEmbedding =
-      Just PublicGroupAccess {groupWebPage, groupDomain = StrJSON <$> groupDomain, groupDomainProof, domainWebPage, allowEmbedding}
+      Just PublicGroupAccess {groupWebPage, simplexName = mkSimplexNameClaim groupDomain groupDomainProof, domainWebPage, allowEmbedding}
   | otherwise = Nothing
   where
     domainWebPage = maybe False unBI domainWebPage_

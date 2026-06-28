@@ -2054,13 +2054,6 @@ presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p =
           Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p
 
--- Add the user's name-claim proof to an outgoing address/invite profile: sign (name, link context)
--- with the address root key (linkOwnerId = Nothing — the sole-owner contact-address case), bound to
--- the link the profile is saved to. No-op without a name, key, or link.
-signAddressNameProof :: Maybe AConnShortLink -> Maybe C.PrivateKeyEd25519 -> Maybe SimplexNameInfo -> Profile -> Profile
-signAddressNameProof (Just lnk) (Just rootKey) (Just name) p =
-  p {simplexName = Just $ SimplexNameClaim name (Just $ signNameProof rootKey Nothing name (PHSimplexLink lnk))}
-signAddressNameProof _ _ _ p = p
 
 -- receiving side of contact/invitation link data: verify the badge proof from the link profile
 -- and set the crypto-free display badge for the UI (the raw proof stays in profile for APIPrepareContact)

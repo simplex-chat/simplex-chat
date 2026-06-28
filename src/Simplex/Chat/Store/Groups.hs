@@ -222,7 +222,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeRow, badgeToRow, verifyBadge_)
-import Simplex.Chat.Names (NameClaimProof)
+import Simplex.Chat.Names (NameClaimProof, claimName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol hiding (Binary)
@@ -2656,7 +2656,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         pure $ Right $ (g' :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
   where
     fullGroupPreferences = mergeGroupPreferences groupPreferences
-    groupClaim pg = unStrJSON <$> (pg >>= publicGroupAccess >>= groupDomain)
+    groupClaim pg = claimName <$> (pg >>= publicGroupAccess >>= publicGroupClaim)
     claimChanged = groupClaim oldPublicGroup /= groupClaim publicGroup
     g' = if claimChanged then (g :: GroupInfo) {groupDomainVerification = Nothing} else g
     clearVerificationIfClaimChanged =
