@@ -937,6 +937,8 @@
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>
+  <string name="verify_simplex_name_action">Verify name</string>
+  <string name="simplex_name_not_verified">SimpleX name not verified</string>
   <string name="or_show_this_qr_code">Or show this code</string>
   <string name="full_link_button_text">Full link</string>
   <string name="short_link_button_text">Short link</string>

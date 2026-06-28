@@ -392,6 +392,26 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
+            if let contactDomain = contact.profile.contactDomain, contact.profile.contactDomainProof != nil {
+                SimplexNameView(
+                    name: contactDomain,
+                    verification: contact.profile.contactDomainVerification,
+                    autoVerify: false,
+                    verify: {
+                        do {
+                            let (ct, reason) = try await apiVerifyContactName(contact.contactId)
+                            await MainActor.run {
+                                chatModel.updateContact(ct)
+                                contact = ct
+                            }
+                            return (ct.profile.contactDomainVerification, reason)
+                        } catch {
+                            logger.error("apiVerifyContactName: \(responseError(error))")
+                            return nil
+                        }
+                    }
+                )
+            }
             if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
                 let r = markdownText(descr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
                 msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
@@ -1359,6 +1379,74 @@ private func deleteNotReadyContact(
         ),
         id: "deleteNotReadyContact"
     ))
+}
+
+// Renders a contact's / channel's SimpleX name with its 3-state verification indicator.
+// verification: nil = not attempted, false = failed, true = verified.
+// verify runs the verify API, updates the model and returns (newVerification, failureReason);
+// nil on network error. With autoVerify, it runs once on appear when state is nil.
+struct SimplexNameView: View {
+    let name: SimplexNameInfo
+    let verification: Bool?
+    let autoVerify: Bool
+    let verify: () async -> (Bool?, String?)?
+    @EnvironmentObject var theme: AppTheme
+    @State private var inFlight = false
+    @State private var showSpinner = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(name.shortName)
+                .font(verification == true ? .subheadline : .system(.subheadline, design: .monospaced))
+                .foregroundColor(verification == true ? theme.colors.primary : theme.colors.secondary)
+            indicator()
+        }
+        .padding(.bottom, 2)
+        .onAppear { if autoVerify && verification == nil { runVerify(manual: false) } }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("SimpleX name not verified"), message: Text(alertMessage))
+        }
+    }
+
+    @ViewBuilder private func indicator() -> some View {
+        if showSpinner {
+            ProgressView()
+        } else if verification == true {
+            Image(systemName: "checkmark")
+        } else if verification == false {
+            Image(systemName: "xmark")
+                .foregroundColor(.red)
+                .onTapGesture { runVerify(manual: true) }
+        } else {
+            Button { runVerify(manual: true) } label: {
+                Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+            }
+        }
+    }
+
+    private func runVerify(manual: Bool) {
+        if inFlight { return }
+        inFlight = true
+        // delay the spinner so a fast result on appear doesn't flash it
+        Task {
+            try? await Task.sleep(nanoseconds: 300_000000)
+            await MainActor.run { if inFlight { showSpinner = true } }
+        }
+        Task {
+            let res = await verify()
+            await MainActor.run {
+                inFlight = false
+                showSpinner = false
+                // show the reason on a manual run, or on an inconclusive auto run (state stayed nil)
+                if let (newV, reason) = res, let reason, manual || newV == nil {
+                    alertMessage = reason
+                    showAlert = true
+                }
+            }
+        }
+    }
 }
 
 struct ChatInfoView_Previews: PreviewProvider {

@@ -945,6 +945,22 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
+    val groupName = access?.groupDomain?.let { SimplexNameInfo.parse(it) }
+    if (groupName != null && access.groupDomainProof != null) {
+      SimplexNameView(
+        name = groupName,
+        verification = groupInfo.groupDomainVerification,
+        autoVerify = false,
+        verify = {
+          val rhId = chatModel.remoteHostId()
+          chatModel.controller.apiVerifyPublicGroupName(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
+            chatModel.chatsContext.updateGroup(rhId, gInfo)
+            gInfo.groupDomainVerification to reason
+          }
+        }
+      )
+    }
     val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
     if (webPage != null) {
       val uriHandler = LocalUriHandler.current

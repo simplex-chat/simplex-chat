@@ -331,6 +331,29 @@ struct GroupChatInfoView: View {
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
+               let encoded = access.groupDomain,
+               let groupName = SimplexNameInfo(parsing: encoded),
+               access.groupDomainProof != nil {
+                SimplexNameView(
+                    name: groupName,
+                    verification: groupInfo.groupDomainVerification,
+                    autoVerify: false,
+                    verify: {
+                        do {
+                            let (gInfo, reason) = try await apiVerifyPublicGroupName(groupInfo.groupId)
+                            await MainActor.run {
+                                chatModel.updateGroup(gInfo)
+                                groupInfo = gInfo
+                            }
+                            return (gInfo.groupDomainVerification, reason)
+                        } catch {
+                            logger.error("apiVerifyPublicGroupName: \(responseError(error))")
+                            return nil
+                        }
+                    }
+                )
+            }
             if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage,
                let url = URL(string: webPage) {
                 Link(destination: url) {
