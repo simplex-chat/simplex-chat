@@ -1,11 +1,19 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -14,6 +22,7 @@ import chat.simplex.common.model.Format
 import chat.simplex.common.model.FormatColor
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.views.helpers.openExternalLink
 import chat.simplex.res.MR
 
 @Composable
@@ -30,11 +39,15 @@ fun MarkdownHelpView() {
     val equation = stringResource(MR.strings.a_plus_b)
     val colored = stringResource(MR.strings.colored_text)
     val secret = stringResource(MR.strings.secret_text)
+    val small = stringResource(MR.strings.small_text)
+    val link = stringResource(MR.strings.link_text)
+    val uriHandler = LocalUriHandler.current
 
     MdFormat("*$bold*", bold, Format.Bold())
     MdFormat("_${italic}_", italic, Format.Italic())
     MdFormat("~$strikethrough~", strikethrough, Format.StrikeThrough())
     MdFormat("`$equation`", equation, Format.Snippet())
+    MdFormat("!- $small!", small, Format.Small())
     Row {
       MdSyntax("!1 $colored!")
       Text(buildAnnotatedString {
@@ -48,13 +61,25 @@ fun MarkdownHelpView() {
         appendColor(this, "6", FormatColor.magenta, ")")
       })
     }
+    var secretRevealed by remember { mutableStateOf(false) }
     Row {
       MdSyntax("#$secret#")
-      SelectionContainer {
-        Text(buildAnnotatedString {
-          withStyle(Format.Secret().style) { append(secret) }
-        })
-      }
+      Text(
+        buildAnnotatedString {
+          if (secretRevealed) append(secret)
+          else withStyle(Format.Secret().style) { append(secret) }
+        },
+        mdClickable { secretRevealed = !secretRevealed }
+      )
+    }
+    Row {
+      MdSyntax("[$link](https://simplex.chat)")
+      Text(
+        buildAnnotatedString {
+          withStyle(Format.HyperLink(link, "https://simplex.chat").style) { append(link) }
+        },
+        mdClickable { uriHandler.openExternalLink("https://simplex.chat") }
+      )
     }
     SectionBottomSpacer()
   }
@@ -66,6 +91,13 @@ fun MdSyntax(markdown: String) {
     .width(120.dp)
     .padding(bottom = 4.dp))
 }
+
+// hand cursor on hover, no click highlight - matches how secret text and links behave in chat
+@Composable
+fun mdClickable(onClick: () -> Unit): Modifier =
+  Modifier
+    .pointerHoverIcon(PointerIcon.Hand)
+    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
 
 @Composable
 fun MdFormat(markdown: String, example: String, format: Format) {
