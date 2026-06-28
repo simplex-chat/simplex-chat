@@ -2294,6 +2294,9 @@ struct ChatView: View {
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && chat.chatInfo.sendMsgEnabled {
                     replyButton
                 }
+                if canSetMessageReminder(ci, chat, live: live) {
+                    remindMenu(ci)
+                }
                 let fileSource = getLoadedFileSource(ci.file)
                 let fileExists = if let fs = fileSource, FileManager.default.fileExists(atPath: getAppFilePath(fs.filePath).path) { true } else { false }
                 let copyAndShareAllowed = !ci.content.text.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
@@ -2387,6 +2390,30 @@ struct ChatView: View {
                 Label(
                     NSLocalizedString("Reply", comment: "chat item action"),
                     systemImage: "arrowshape.turn.up.left"
+                )
+            }
+        }
+
+        @ViewBuilder
+        private func remindMenu(_ ci: ChatItem) -> some View {
+            Menu {
+                ForEach(ReminderPreset.allCases, id: \.rawValue) { preset in
+                    Button {
+                        ReminderStore.shared.createReminder(
+                            chatId: chat.id,
+                            itemId: ci.id,
+                            preset: preset,
+                            messagePreview: messageReminderPreview(ci, chat),
+                            chatDisplayName: chat.chatInfo.chatViewName
+                        )
+                    } label: {
+                        Text(preset.menuTitle)
+                    }
+                }
+            } label: {
+                Label(
+                    NSLocalizedString("Remind me", comment: "chat item action"),
+                    systemImage: "bell"
                 )
             }
         }

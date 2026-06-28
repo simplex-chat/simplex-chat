@@ -2210,6 +2210,7 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+    ReminderStore.shared.load()
 }
 
 func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {

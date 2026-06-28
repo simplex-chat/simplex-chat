@@ -156,6 +156,7 @@ struct ChatListView: View {
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
+    @StateObject private var reminderStore = ReminderStore.shared
     @State private var scrollToItemId: ChatItem.ID? = nil
 
     // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
@@ -400,6 +401,10 @@ struct ChatListView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, oneHandUI ? 8 : 0)
                         .id("searchBar")
+                    }
+                    let laterReminders = reminderStore.remindersForCurrentUser()
+                    if !laterReminders.isEmpty {
+                        LaterRemindersSection(reminderStore: reminderStore, reminders: laterReminders)
                     }
                     if !oneHandUICardShown {
                         OneHandUICard()

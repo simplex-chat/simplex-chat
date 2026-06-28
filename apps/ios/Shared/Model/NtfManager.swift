@@ -18,6 +18,8 @@ let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
 
 private let ntfTimeInterval: TimeInterval = 1
 
+private let messageReminderUserInfoKeys = (chatId: "chatId", itemId: "itemId", reminderId: "reminderId", userId: "userId")
+
 enum NtfCallAction {
     case accept
     case reject
@@ -74,6 +76,13 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             } else {
                 chatModel.ntfCallInvitationAction = (chatId, ntfAction)
             }
+        } else if content.categoryIdentifier == ntfCategoryMessageReminder {
+            if action == ntfActionCompleteMessageReminder,
+               let reminderId = content.userInfo[messageReminderUserInfoKeys.reminderId] as? String {
+                ReminderStore.shared.completeReminder(reminderId: reminderId)
+            } else if action == UNNotificationDefaultActionIdentifier {
+                openChatFromMessageReminder(content, chatModel)
+            }
         } else {
             if let chatId = content.targetContentIdentifier {
                 self.navigatingToChat = true
@@ -94,6 +103,24 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             }
         }
         return nil
+    }
+
+    private func openChatFromMessageReminder(_ content: UNNotificationContent, _ chatModel: ChatModel) {
+        guard let chatId = content.userInfo[messageReminderUserInfoKeys.chatId] as? String else { return }
+        let itemId = content.userInfo[messageReminderUserInfoKeys.itemId] as? Int64
+        self.navigatingToChat = true
+        if let itemId {
+            chatModel.openAroundItemId = itemId
+            ItemsModel.shared.loadOpenChatNoWait(chatId, itemId)
+        } else {
+            ItemsModel.shared.loadOpenChat(chatId) {
+                self.navigatingToChat = false
+            }
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.navigatingToChat = false
+        }
     }
 
     // Handle notification when the app is in foreground
@@ -207,6 +234,18 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("New events", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryMessageReminder,
+                actions: [
+                    UNNotificationAction(
+                        identifier: ntfActionCompleteMessageReminder,
+                        title: NSLocalizedString("Mark complete", comment: "message reminder notification action"),
+                        options: []
+                    )
+                ],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("Message reminder", comment: "notification")
             )
         ])
     }
@@ -286,6 +325,66 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         if settings.authorizationStatus == .authorized {
             nc.removeAllPendingNotificationRequests()
             nc.removeAllDeliveredNotifications()
+        }
+    }
+
+    func scheduleMessageReminder(_ reminder: MessageReminder) {
+        guard granted, !reminder.isComplete else { return }
+        let content = UNMutableNotificationContent()
+        content.categoryIdentifier = ntfCategoryMessageReminder
+        content.title = NSLocalizedString("Message reminder", comment: "notification")
+        let preview = reminder.messagePreview.trimmingCharacters(in: .whitespacesAndNewlines)
+        if preview.isEmpty {
+            content.body = NSLocalizedString("You asked to be reminded about a message", comment: "notification")
+        } else {
+            content.body = preview
+        }
+        if !reminder.chatDisplayName.isEmpty {
+            content.subtitle = reminder.chatDisplayName
+        }
+        content.targetContentIdentifier = reminder.chatId
+        content.userInfo = [
+            messageReminderUserInfoKeys.chatId: reminder.chatId,
+            messageReminderUserInfoKeys.itemId: reminder.itemId,
+            messageReminderUserInfoKeys.reminderId: reminder.id,
+            messageReminderUserInfoKeys.userId: reminder.userId,
+        ]
+        content.sound = .default
+
+        let due = reminder.dueAt
+        let now = Date.now
+        let trigger: UNNotificationTrigger?
+        if due <= now {
+            trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(ntfTimeInterval, 1), repeats: false)
+        } else {
+            let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: due)
+            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        }
+        guard let trigger else { return }
+        let request = UNNotificationRequest(
+            identifier: messageReminderNotificationId(reminder.id),
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error { logger.error("scheduleMessageReminder error: \(error.localizedDescription)") }
+        }
+    }
+
+    func cancelMessageReminder(_ reminderId: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [messageReminderNotificationId(reminderId)])
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [messageReminderNotificationId(reminderId)])
+    }
+
+    func rescheduleMessageReminders(_ reminders: [MessageReminder]) {
+        let nc = UNUserNotificationCenter.current()
+        nc.getPendingNotificationRequests { requests in
+            let prefix = "chat.simplex.app.messageReminder."
+            let ids = requests.map(\.identifier).filter { $0.hasPrefix(prefix) }
+            nc.removePendingNotificationRequests(withIdentifiers: ids)
+            for reminder in reminders {
+                self.scheduleMessageReminder(reminder)
+            }
         }
     }
 }

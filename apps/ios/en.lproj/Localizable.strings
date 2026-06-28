@@ -24,3 +24,15 @@
 
 /* No comment provided by engineer. */
 "No group!" = "Group not found!";
+
+/* Message reminders (issue #7135) */
+"Remind me" = "Remind me";
+"Later" = "Later";
+"In 1 hour" = "In 1 hour";
+"In 3 hours" = "In 3 hours";
+"Tomorrow" = "Tomorrow";
+"Next week" = "Next week";
+"Overdue" = "Overdue";
+"Mark complete" = "Mark complete";
+"Message reminder" = "Message reminder";
+"You asked to be reminded about a message" = "You asked to be reminded about a message";

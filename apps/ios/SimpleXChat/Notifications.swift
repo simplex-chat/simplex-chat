@@ -18,8 +18,15 @@ public let ntfCategoryCallInvitation = "NTF_CAT_CALL_INVITATION"
 public let ntfCategoryConnectionEvent = "NTF_CAT_CONNECTION_EVENT"
 public let ntfCategoryManyEvents = "NTF_CAT_MANY_EVENTS"
 public let ntfCategoryCheckMessage = "NTF_CAT_CHECK_MESSAGE"
+public let ntfCategoryMessageReminder = "NTF_CAT_MESSAGE_REMINDER"
+
+public let ntfActionCompleteMessageReminder = "NTF_ACT_COMPLETE_MESSAGE_REMINDER"
 
 public let appNotificationId = "chat.simplex.app.notification"
+
+public func messageReminderNotificationId(_ reminderId: String) -> String {
+    "chat.simplex.app.messageReminder.\(reminderId)"
+}
 
 let contactHidden = NSLocalizedString("Contact hidden:", comment: "notification")
 
