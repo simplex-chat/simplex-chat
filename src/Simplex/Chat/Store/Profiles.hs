@@ -392,7 +392,7 @@ setUserSimplexName db user@User {userId, profile = p@LocalProfile {profileId}} n
   ts <- getCurrentTime
   DB.execute
     db
-    "UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?"
+    "UPDATE contact_profiles SET simplex_name = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?"
     (name_, ts, userId, profileId)
   pure (user :: User) {profile = p {simplexName = mkSimplexNameClaim name_ Nothing}}
 
@@ -418,7 +418,7 @@ getUserContactProfiles db User {userId} =
     <$> DB.query
       db
       [sql|
-        SELECT display_name, full_name, short_descr, image, contact_link, chat_peer_type, contact_domain, preferences
+        SELECT display_name, full_name, short_descr, image, contact_link, chat_peer_type, simplex_name, preferences
         FROM contact_profiles
         WHERE user_id = ?
       |]

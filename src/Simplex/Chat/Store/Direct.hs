@@ -325,7 +325,7 @@ getContactByConnReqHash db cxt user@User {userId} cReqHash1 cReqHash2 = do
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
             ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-            cp.contact_domain, cp.contact_domain_verification, cp.contact_domain_proof,
+            cp.simplex_name, cp.simplex_name_verification, cp.simplex_name_proof,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
             c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -576,7 +576,7 @@ updateContactProfile db cxt user@User {userId} c p' = do
     p'' = (p' :: Profile) {simplexName = setClaimProof (if claimChanged then Nothing else claimProof =<< prevClaim) <$> simplexName}
     clearVerificationIfClaimChanged =
       when claimChanged $
-        DB.execute db "UPDATE contact_profiles SET contact_domain_verification = NULL WHERE user_id = ? AND contact_profile_id = ?" (userId, profileId)
+        DB.execute db "UPDATE contact_profiles SET simplex_name_verification = NULL WHERE user_id = ? AND contact_profile_id = ?" (userId, profileId)
     updateContactProfile' currentTs badgeVerified profile
       | displayName == newName = do
           liftIO $ updateContactProfile_' db userId profileId p'' badgeVerified currentTs
@@ -594,7 +594,7 @@ setContactDomainVerified db User {userId} contactId verified =
   DB.execute
     db
     [sql|
-      UPDATE contact_profiles SET contact_domain_verification = ?
+      UPDATE contact_profiles SET simplex_name_verification = ?
       WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
     |]
     (BI verified, userId, contactId)
@@ -737,8 +737,8 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, short
       UPDATE contact_profiles
       SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
-          contact_domain = ?,
-          contact_domain_proof = ?
+          simplex_name = ?,
+          simplex_name_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
     ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. (claimName <$> simplexName, claimProof =<< simplexName) :. (userId, profileId))
@@ -757,8 +757,8 @@ updateMemberContactProfileReset_' db userId profileId Profile {displayName, full
       UPDATE contact_profiles
       SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = NULL, preferences = NULL, updated_at = ?,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
-          contact_domain = ?,
-          contact_domain_proof = ?
+          simplex_name = ?,
+          simplex_name_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
     ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (claimName <$> simplexName, claimProof =<< simplexName) :. (userId, profileId))
@@ -777,8 +777,8 @@ updateMemberContactProfile_' db userId profileId Profile {displayName, fullName,
       UPDATE contact_profiles
       SET display_name = ?, full_name = ?, short_descr = ?, image = ?, updated_at = ?,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
-          contact_domain = ?,
-          contact_domain_proof = ?
+          simplex_name = ?,
+          simplex_name_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
     ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (claimName <$> simplexName, claimProof =<< simplexName) :. (userId, profileId))
@@ -813,7 +813,7 @@ getContactToConnect db cxt user@User {userId} = \case
       [sql|
         SELECT ct.contact_id, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
-        WHERE ct.user_id = ? AND cp.contact_domain = ? AND cp.contact_domain_verification = 1 AND ct.deleted = 0
+        WHERE ct.user_id = ? AND cp.simplex_name = ? AND cp.simplex_name_verification = 1 AND ct.deleted = 0
       |]
 
 getUserContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]
@@ -856,7 +856,7 @@ contactRequestQuery =
       cr.created_at, cr.updated_at,
       cr.peer_chat_min_version, cr.peer_chat_max_version,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
-      p.contact_domain, p.contact_domain_verification, p.contact_domain_proof
+      p.simplex_name, p.simplex_name_verification, p.simplex_name_proof
     FROM contact_requests cr
     JOIN contact_profiles p USING (contact_profile_id)
   |]
@@ -977,7 +977,7 @@ getContact_ db cxt user@User {userId} contactId deleted = do
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
           ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-          cp.contact_domain, cp.contact_domain_verification, cp.contact_domain_proof,
+          cp.simplex_name, cp.simplex_name_verification, cp.simplex_name_proof,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,

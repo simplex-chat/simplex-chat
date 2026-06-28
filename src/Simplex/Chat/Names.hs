@@ -68,7 +68,7 @@ verifyNameProofSig ownerKey name NameClaimProof {presHeader, signature} =
 
 $(JQ.deriveJSON defaultJSON ''NameClaimProof)
 
--- stored as JSON in contact_profiles.contact_domain_proof
+-- stored as JSON in contact_profiles.simplex_name_proof
 instance ToField NameClaimProof where toField = toField . encodeJSON
 
 instance FromField NameClaimProof where fromField = fromTextField_ decodeJSON

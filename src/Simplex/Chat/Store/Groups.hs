@@ -399,7 +399,7 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
           INSERT INTO group_profiles
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
-             group_web_page, group_domain, domain_web_page, allow_embedding, group_domain_proof,
+             group_web_page, simplex_name, domain_web_page, allow_embedding, simplex_name_proof,
              user_id, preferences, member_admission, created_at, updated_at)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
@@ -906,7 +906,7 @@ createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus p
           INSERT INTO group_profiles
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
-             group_web_page, group_domain, domain_web_page, allow_embedding, group_domain_proof,
+             group_web_page, simplex_name, domain_web_page, allow_embedding, simplex_name_proof,
              user_id, preferences, member_admission, created_at, updated_at)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
@@ -1087,7 +1087,7 @@ getGroupToConnect db cxt user@User {userId} = \case
       [sql|
         SELECT g.group_id, g.conn_full_link_to_connect, g.conn_short_link_to_connect FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-        WHERE g.user_id = ? AND gp.group_domain = ? AND g.group_domain_verification = 1
+        WHERE g.user_id = ? AND gp.simplex_name = ? AND g.simplex_name_verification = 1
       |]
 
 getGroupMember :: DB.Connection -> StoreCxt -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
@@ -1951,7 +1951,7 @@ getRelayPublishableGroups db User {userId, userContactId} =
       db
       [sql|
         SELECT g.group_id, gp.public_group_id,
-               gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof
+               gp.group_web_page, gp.simplex_name, gp.domain_web_page, gp.allow_embedding, gp.simplex_name_proof
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id AND mu.contact_id = ?
@@ -2661,7 +2661,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
     g' = if claimChanged then (g :: GroupInfo) {groupDomainVerification = Nothing} else g
     clearVerificationIfClaimChanged =
       when claimChanged $
-        DB.execute db "UPDATE groups SET group_domain_verification = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
+        DB.execute db "UPDATE groups SET simplex_name_verification = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
     (groupType_, groupLink_) = case publicGroup of
       Just PublicGroupProfile {groupType, groupLink} -> (Just groupType, Just groupLink)
       Nothing -> (Nothing, Nothing)
@@ -2672,7 +2672,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
           UPDATE group_profiles
           SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
               group_type = ?, group_link = ?,
-              group_web_page = ?, group_domain = ?, domain_web_page = ?, allow_embedding = ?, group_domain_proof = ?,
+              group_web_page = ?, simplex_name = ?, domain_web_page = ?, allow_embedding = ?, simplex_name_proof = ?,
               preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
@@ -2692,7 +2692,7 @@ setGroupDomainVerified :: DB.Connection -> User -> GroupId -> Bool -> IO ()
 setGroupDomainVerified db User {userId} groupId verified =
   DB.execute
     db
-    "UPDATE groups SET group_domain_verification = ? WHERE user_id = ? AND group_id = ?"
+    "UPDATE groups SET simplex_name_verification = ? WHERE user_id = ? AND group_id = ?"
     (BI verified, userId, groupId)
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
@@ -2727,7 +2727,7 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
             [sql|
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
                    gp.group_type, gp.group_link, gp.public_group_id,
-                   gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+                   gp.group_web_page, gp.simplex_name, gp.domain_web_page, gp.allow_embedding, gp.simplex_name_proof,
                    gp.preferences, gp.member_admission
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
@@ -2777,7 +2777,7 @@ getGroupInfoViaUserTarget db cxt user@User {userId} target = fmap eitherToMaybe 
               FROM user_contact_links ucl
               JOIN groups g ON g.group_id = ucl.group_id
               JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-              WHERE ucl.user_id = ? AND gp.group_domain = ?
+              WHERE ucl.user_id = ? AND gp.simplex_name = ?
             |]
             (userId, ni)
     toConnReqGroupId = \case
@@ -3331,7 +3331,7 @@ setMemberContactStartedConnection db Contact {contactId} = do
     "UPDATE contacts SET grp_direct_inv_started_connection = ?, updated_at = ? WHERE contact_id = ?"
     (BI True, currentTs, contactId)
 
--- | Updates the member profile (the profile writer persists contact_domain).
+-- | Updates the member profile (the profile writer persists simplex_name).
 updateMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
 updateMemberProfile db cxt user@User {userId} m p' = do
   currentTs <- liftIO getCurrentTime
@@ -3355,7 +3355,7 @@ updateMemberProfile db cxt user@User {userId} m p' = do
             safeDeleteLDN db user localDisplayName
             pure $ Right m {localDisplayName = ldn, memberProfile}
 
--- | Updates the member's contact profile (the profile writer persists contact_domain).
+-- | Updates the member's contact profile (the profile writer persists simplex_name).
 updateContactMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
 updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} p' = do
   currentTs <- liftIO getCurrentTime
