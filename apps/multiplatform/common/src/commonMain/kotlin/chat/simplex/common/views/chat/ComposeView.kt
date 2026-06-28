@@ -776,6 +776,10 @@ fun ComposeView(
         if (updatedItem != null) {
           withContext(Dispatchers.Main) {
             chatsCtx.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+            // a member-support edit reaches only the active context; also update primary so the preview reflects it
+            if (chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext) {
+              chatModel.chatsContext.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+            }
           }
         }
         return updatedItem?.chatItem
