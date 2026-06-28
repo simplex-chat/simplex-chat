@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
@@ -231,7 +229,7 @@ private fun CustomRelay(
   }
 
   SectionView(
-    stringResource(MR.strings.your_relay_address).uppercase(),
+    stringResource(MR.strings.your_relay_address),
     icon = painterResource(MR.images.ic_error),
     iconTint = if (!validAddress.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
@@ -244,34 +242,22 @@ private fun CustomRelay(
   }
   SectionDividerSpaced(maxTopPadding = true)
 
-  Column {
-    val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
-    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-      Text(
-        stringResource(MR.strings.your_relay_name).uppercase(),
-        color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp
-      )
-      IconButton(
-        onClick = { if (!validName.value) showInvalidRelayNameAlert(relayName) },
-        enabled = !validName.value,
-        modifier = Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize)
-      ) {
-        Icon(
-          painterResource(MR.images.ic_error), null,
-          tint = if (!validName.value) MaterialTheme.colors.error else Color.Transparent
-        )
-      }
-    }
-    SectionView {
-      TextEditor(
-        relayName,
-        Modifier,
-        placeholder = generalGetString(MR.strings.enter_relay_name),
-        contentPadding = PaddingValues(),
-        shape = SectionCardShape,
-        enabled = relay.value.tested != true
-      )
-    }
+  SectionView(
+    stringResource(MR.strings.your_relay_name),
+    icon = painterResource(MR.images.ic_error),
+    iconTint = if (!validName.value) MaterialTheme.colors.error else Color.Transparent,
+    onIconClick = if (!validName.value) {
+      { showInvalidRelayNameAlert(relayName) }
+    } else null
+  ) {
+    TextEditor(
+      relayName,
+      Modifier,
+      placeholder = generalGetString(MR.strings.enter_relay_name),
+      contentPadding = PaddingValues(),
+      shape = SectionCardShape,
+      enabled = relay.value.tested != true
+    )
   }
   if (relay.value.tested != true) {
     SectionTextFooter(annotatedStringResource(MR.strings.test_relay_to_retrieve_name))
