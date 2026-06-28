@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
@@ -958,6 +959,16 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           TagsView(searchText)
           Divider()
         }
+      }
+    }
+    val allReminders by chatModel.reminderRepository.reminders.collectAsState()
+    val laterReminders = remember(allReminders, chatModel.currentUser.value?.userId) {
+      val userId = chatModel.currentUser.value?.userId ?: return@remember emptyList<MessageReminder>()
+      allReminders.filter { !it.isComplete && it.userId == userId }.sortedBy { it.dueAt }
+    }
+    if (laterReminders.isNotEmpty()) {
+      item(key = "later_reminders") {
+        LaterRemindersSection(laterReminders)
       }
     }
     if (!oneHandUICardShown.value) {

@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.ReminderPreset
+import chat.simplex.common.model.canSetMessageReminder
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
@@ -30,11 +31,7 @@ fun RemindMessageItemActions(
   live: Boolean,
 ) {
   val showRemindPresets = remember { mutableStateOf(false) }
-  val canRemind =
-    cItem.meta.itemDeleted == null &&
-      !live &&
-      !cItem.isLiveDummy &&
-      cItem.id >= 0
+  val canRemind = canSetMessageReminder(cInfo, cItem, live)
 
   if (canRemind) {
     ItemAction(

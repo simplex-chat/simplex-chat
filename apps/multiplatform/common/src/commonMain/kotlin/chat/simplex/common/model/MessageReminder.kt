@@ -45,4 +45,14 @@ fun ReminderPreset.dueAt(now: Instant = Clock.System.now(), timeZone: TimeZone =
     }
   }
 
+
+
+fun canSetMessageReminder(cInfo: ChatInfo, cItem: ChatItem, live: Boolean): Boolean {
+  if (!cInfo.sendMsgEnabled) return false
+  if (cItem.meta.itemDeleted != null || cItem.isReport || cItem.localNote || cItem.isLiveDummy || live || cItem.meta.isLive) return false
+  if (cItem.content.msgContent == null && cItem.text(cInfo.isChannel).isEmpty()) return false
+  if (cItem.chatDir is CIDirection.ChannelRcv) return false
+  return cItem.id >= 0
+}
+
 fun newMessageReminderId(): String = UUID.randomUUID().toString()

@@ -54,7 +54,7 @@ final class ReminderStore: ObservableObject {
             messagePreview: String(messagePreview.prefix(200)),
             chatDisplayName: chatDisplayName
         )
-        reminders.append(reminder)
+        reminders = reminders + [reminder]
         persist()
         NtfManager.shared.scheduleMessageReminder(reminder)
         return reminder
