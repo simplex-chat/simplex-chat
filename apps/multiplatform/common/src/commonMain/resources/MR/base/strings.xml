@@ -1129,6 +1129,19 @@
   <string name="app_check_for_updates_installed_successfully_desc">Please restart the app.</string>
   <string name="app_check_for_updates_canceled">Update download canceled</string>
   <string name="app_check_for_updates_button_remind_later">Remind later</string>
+
+  <!-- Message reminders (issue #7135) -->
+  <string name="remind_me">Remind me</string>
+  <string name="later_section">Later</string>
+  <string name="remind_in_1_hour">In 1 hour</string>
+  <string name="remind_in_3_hours">In 3 hours</string>
+  <string name="remind_tomorrow">Tomorrow</string>
+  <string name="remind_next_week">Next week</string>
+  <string name="reminder_overdue">Overdue</string>
+  <string name="mark_reminder_complete">Mark complete</string>
+  <string name="message_reminder_notification_title">Message reminder</string>
+  <string name="message_reminder_notification_body">You asked to be reminded about a message</string>
+
   <string name="app_check_for_updates_notice_title">Check for updates</string>
   <string name="app_check_for_updates_notice_desc">To be notified about the new releases, turn on periodic check for Stable or Beta versions.</string>
   <string name="app_check_for_updates_notice_disable">Disable</string>

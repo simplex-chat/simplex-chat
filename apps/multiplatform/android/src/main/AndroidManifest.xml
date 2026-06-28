@@ -168,6 +168,11 @@
         android:enabled="true"
         android:exported="false" />
 
+    <receiver
+        android:name=".model.ReminderNotificationReceiver"
+        android:enabled="true"
+        android:exported="false" />
+
     <!-- SimplexService foreground service -->
     <service
         android:name=".SimplexService"

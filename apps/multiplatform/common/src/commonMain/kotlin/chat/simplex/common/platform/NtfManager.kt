@@ -10,7 +10,8 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
-  ACCEPT_CONTACT_REQUEST
+  ACCEPT_CONTACT_REQUEST,
+  COMPLETE_MESSAGE_REMINDER,
 }
 
 // Spec: spec/services/notifications.md#ntfManager
@@ -35,6 +36,23 @@ abstract class NtfManager {
     )
   )
 
+  fun notifyMessageReminder(reminder: MessageReminder) {
+    val user = chatModel.getUser(reminder.userId) ?: ReminderNotificationUser(reminder.userId)
+    val title = reminder.chatDisplayName.ifEmpty { generalGetString(MR.strings.message_reminder_notification_title) }
+    val body = reminder.messagePreview.ifEmpty { generalGetString(MR.strings.message_reminder_notification_body) }
+    displayNotification(
+      user = user,
+      chatId = reminder.chatId,
+      displayName = title,
+      msgText = body,
+      actions = listOf(
+        NotificationAction.COMPLETE_MESSAGE_REMINDER to { completeReminderAction(reminder.id) }
+      ),
+      reminderId = reminder.id,
+      itemId = reminder.itemId,
+    )
+  }
+
   fun notifyMessageReceived(rhId: Long?, user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
     if (
       cItem.showNotification &&
@@ -56,7 +74,7 @@ abstract class NtfManager {
     cancelNotificationsForChat(chatId)
   }
 
-  fun openChatAction(userId: Long?, chatId: ChatId) {
+  fun openChatAction(userId: Long?, chatId: ChatId, itemId: Long? = null) {
     withLongRunningApi {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
@@ -65,10 +83,17 @@ abstract class NtfManager {
           chatModel.controller.changeActiveUser(null, userId, null)
         }
       }
+      if (itemId != null) {
+        chatModel.openAroundItemId.value = itemId
+      }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
       if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(secondaryChatsCtx = null, rhId = null, cInfo)
     }
+  }
+
+  fun completeReminderAction(reminderId: String) {
+    chatModel.reminderRepository.completeReminder(reminderId)
   }
 
   fun showChatsAction(userId: Long?) {
@@ -99,7 +124,16 @@ abstract class NtfManager {
   abstract fun hasNotificationsForChat(chatId: String): Boolean
   abstract fun cancelNotificationsForChat(chatId: String)
   abstract fun cancelNotificationsForUser(userId: Long)
-  abstract fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
+  abstract fun displayNotification(
+    user: UserLike,
+    chatId: String,
+    displayName: String,
+    msgText: String,
+    image: String? = null,
+    actions: List<Pair<NotificationAction, () -> Unit>> = emptyList(),
+    reminderId: String? = null,
+    itemId: Long? = null,
+  )
   abstract fun cancelCallNotification()
   abstract fun cancelAllNotifications()
   abstract fun showMessage(title: String, text: String)
@@ -118,6 +152,12 @@ abstract class NtfManager {
       }
     }
   }
+
+  private data class ReminderNotificationUser(
+    override val userId: Long,
+    override val activeUser: Boolean = false,
+    override val showNtfs: Boolean = true,
+  ) : UserLike
 
   private fun hideSecrets(cItem: ChatItem, isChannel: Boolean = false): String {
     val md = cItem.formattedText

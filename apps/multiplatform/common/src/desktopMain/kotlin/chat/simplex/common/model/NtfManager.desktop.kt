@@ -17,6 +17,7 @@ import javax.imageio.ImageIO
 
 object NtfManager {
   private val prevNtfs = arrayListOf<Pair<Pair<Long, ChatId>, Slice>>()
+  private val prevReminderNtfs = mutableMapOf<String, Slice>()
   private val prevNtfsMutex: Mutex = Mutex()
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
@@ -90,11 +91,29 @@ object NtfManager {
     withBGApi {
       prevNtfsMutex.withLock {
         prevNtfs.clear()
+        prevReminderNtfs.clear()
       }
     }
   }
 
-  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
+  fun cancelReminderNotification(reminderId: String) {
+    withBGApi {
+      prevNtfsMutex.withLock {
+        prevReminderNtfs.remove(reminderId)
+      }
+    }
+  }
+
+  fun displayNotification(
+    user: UserLike,
+    chatId: String,
+    displayName: String,
+    msgText: String,
+    image: String?,
+    actions: List<Pair<NotificationAction, () -> Unit>>,
+    reminderId: String? = null,
+    itemId: Long? = null,
+  ) {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
     val previewMode = appPreferences.notificationPreviewMode.get()
@@ -106,8 +125,16 @@ object NtfManager {
       else -> base64ToBitmap(image)
     }
 
-    displayNotificationViaLib(user.userId, chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
-      ntfManager.openChatAction(user.userId, chatId)
+    val libActions = actions.map { (action, handler) ->
+      val label = when (action) {
+        NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(MR.strings.accept)
+        NotificationAction.COMPLETE_MESSAGE_REMINDER -> generalGetString(MR.strings.mark_reminder_complete)
+      }
+      label to handler
+    }
+
+    displayNotificationViaLib(user.userId, chatId, title, content, prepareIconPath(largeIcon), libActions, reminderId) {
+      ntfManager.openChatAction(user.userId, chatId, itemId)
     }
   }
 
@@ -118,6 +145,7 @@ object NtfManager {
     text: String,
     iconPath: String?,
     actions: List<Pair<String, () -> Unit>>,
+    reminderId: String? = null,
     defaultAction: (() -> Unit)?
   ) {
     val builder = Toast.builder()
@@ -135,7 +163,12 @@ object NtfManager {
     try {
       withBGApi {
         prevNtfsMutex.withLock {
-          prevNtfs.add(Pair(userId, chatId) to builder.toast())
+          val slice = builder.toast()
+          if (reminderId != null) {
+            prevReminderNtfs[reminderId] = slice
+          } else {
+            prevNtfs.add(Pair(userId, chatId) to slice)
+          }
         }
       }
     } catch (e: Throwable) {

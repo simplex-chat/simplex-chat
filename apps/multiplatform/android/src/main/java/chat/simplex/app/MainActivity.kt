@@ -137,9 +137,10 @@ fun processNotificationIntent(intent: Intent?) {
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
       val chatId = intent.getStringExtra("chatId")
+      val itemId = intent.getLongExtra(NtfManager.ItemIdKey, -1L).let { if (it == -1L) null else it }
       Log.d(TAG, "processNotificationIntent: OpenChatAction $chatId")
       if (chatId != null) {
-        ntfManager.openChatAction(userId, chatId)
+        ntfManager.openChatAction(userId, chatId, itemId)
       }
     }
     NtfManager.ShowChatsAction -> {

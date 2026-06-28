@@ -36,8 +36,10 @@ object NtfManager {
   const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
   const val EndCallAction: String = "chat.simplex.app.END_CALL"
   const val CallNotificationId: Int = -1
-  private const val UserIdKey: String = "userId"
-  private const val ChatIdKey: String = "chatId"
+  const val UserIdKey: String = "userId"
+  const val ChatIdKey: String = "chatId"
+  const val ReminderIdKey: String = "reminderId"
+  const val ItemIdKey: String = "itemId"
   private val appPreferences: AppPreferences = ChatController.appPrefs
   private val context: Context
     get() = SimplexApp.context
@@ -99,7 +101,7 @@ object NtfManager {
     }
   }
 
-  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
+  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList(), reminderId: String? = null, itemId: Long? = null) {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
     val now = Clock.System.now().toEpochMilliseconds()
@@ -124,7 +126,7 @@ object NtfManager {
       .setColor(0x88FFFF)
       .setAutoCancel(true)
       .setVibrate(if (actions.isEmpty()) null else longArrayOf(0, 250, 250, 250))
-      .setContentIntent(chatPendingIntent(OpenChatAction, user.userId, chatId))
+      .setContentIntent(chatPendingIntent(OpenChatAction, user.userId, chatId, itemId = itemId))
       .setSilent(if (actions.isEmpty()) recentNotification else false)
 
     for (action in actions) {
@@ -133,9 +135,13 @@ object NtfManager {
       actionIntent.action = action.name
       actionIntent.putExtra(UserIdKey, user.userId)
       actionIntent.putExtra(ChatIdKey, chatId)
-      val actionPendingIntent: PendingIntent = PendingIntent.getBroadcast(SimplexApp.context, 0, actionIntent, flags)
+      if (reminderId != null) actionIntent.putExtra(ReminderIdKey, reminderId)
+      if (itemId != null) actionIntent.putExtra(ItemIdKey, itemId)
+      val requestCode = (reminderId ?: chatId).hashCode()
+      val actionPendingIntent: PendingIntent = PendingIntent.getBroadcast(SimplexApp.context, requestCode, actionIntent, flags)
       val actionButton = when (action) {
         NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(MR.strings.accept)
+        NotificationAction.COMPLETE_MESSAGE_REMINDER -> generalGetString(MR.strings.mark_reminder_complete)
       }
       builder.addAction(0, actionButton, actionPendingIntent)
     }
@@ -149,10 +155,12 @@ object NtfManager {
       .build()
 
     with(NotificationManagerCompat.from(context)) {
-      // using cInfo.id only shows one notification per chat and updates it when the message arrives
       if (ActivityCompat.checkSelfPermission(SimplexApp.context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-        notify(chatId.hashCode(), builder.build())
-        notify(0, summary)
+        val ntfId = if (reminderId != null) reminderNotificationId(reminderId) else chatId.hashCode()
+        notify(ntfId, builder.build())
+        if (reminderId == null) {
+          notify(0, summary)
+        }
       }
     }
   }
@@ -266,9 +274,15 @@ object NtfManager {
     manager.cancelAll()
   }
 
+  fun reminderNotificationId(reminderId: String): Int = ("reminder:" + reminderId).hashCode()
+
+  fun cancelReminderNotification(reminderId: String) {
+    manager.cancel(reminderNotificationId(reminderId))
+  }
+
   fun hasNotificationsForChat(chatId: String): Boolean = manager.activeNotifications.any { it.id == chatId.hashCode() }
 
-  private fun chatPendingIntent(intentAction: String, userId: Long?, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
+  private fun chatPendingIntent(intentAction: String, userId: Long?, chatId: String? = null, broadcast: Boolean = false, itemId: Long? = null): PendingIntent {
     Log.d(TAG, "chatPendingIntent for $intentAction")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
     var intent = Intent(context, if (!broadcast) MainActivity::class.java else NtfActionReceiver::class.java)
@@ -276,6 +290,7 @@ object NtfManager {
       .setAction(intentAction)
       .putExtra(UserIdKey, userId)
     if (chatId != null) intent = intent.putExtra(ChatIdKey, chatId)
+    if (itemId != null) intent = intent.putExtra(ItemIdKey, itemId)
     return if (!broadcast) {
       TaskStackBuilder.create(context).run {
         addNextIntentWithParentStack(intent)
@@ -311,11 +326,19 @@ object NtfManager {
   class NtfActionReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
       val userId = getUserIdFromIntent(intent)
-      val chatId = intent?.getStringExtra(ChatIdKey) ?: return
+      val chatId = intent?.getStringExtra(ChatIdKey)
       val m = SimplexApp.context.chatModel
       when (intent.action) {
-        NotificationAction.ACCEPT_CONTACT_REQUEST.name -> ntfManager.acceptContactRequestAction(userId, incognito = false, chatId)
+        NotificationAction.COMPLETE_MESSAGE_REMINDER.name -> {
+          val reminderId = intent?.getStringExtra(ReminderIdKey) ?: return
+          ntfManager.completeReminderAction(reminderId)
+        }
+        NotificationAction.ACCEPT_CONTACT_REQUEST.name -> {
+          if (chatId == null) return
+          ntfManager.acceptContactRequestAction(userId, incognito = false, chatId)
+        }
         RejectCallAction -> {
+          if (chatId == null) return
           val invitation = m.callInvitations[chatId]
           if (invitation != null) {
             m.callManager.endCall(invitation = invitation)

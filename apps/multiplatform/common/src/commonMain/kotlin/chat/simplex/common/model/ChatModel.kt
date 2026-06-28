@@ -109,6 +109,7 @@ object ChannelRelaysModel {
 @Stable
 object ChatModel {
   val controller: ChatController = ChatController
+  val reminderRepository = MessageReminderRepository()
   val setDeliveryReceipts = mutableStateOf(false)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
