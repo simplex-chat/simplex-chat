@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
+import SectionCardShape
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
@@ -236,7 +237,9 @@ private fun CustomRelay(
   ) {
     TextEditor(
       relayAddress,
-      Modifier.height(144.dp)
+      Modifier.height(144.dp),
+      contentPadding = PaddingValues(),
+      shape = SectionCardShape
     )
   }
   SectionDividerSpaced(maxTopPadding = true)
@@ -259,11 +262,13 @@ private fun CustomRelay(
         )
       }
     }
-    Column(Modifier.fillMaxWidth()) {
+    SectionView {
       TextEditor(
         relayName,
         Modifier,
         placeholder = generalGetString(MR.strings.enter_relay_name),
+        contentPadding = PaddingValues(),
+        shape = SectionCardShape,
         enabled = relay.value.tested != true
       )
     }
