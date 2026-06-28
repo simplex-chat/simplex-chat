@@ -338,7 +338,7 @@ struct GroupChatInfoView: View {
                 SimplexNameView(
                     name: groupName,
                     verification: groupInfo.groupDomainVerification,
-                    autoVerify: false,
+                    autoVerify: UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES),
                     verify: {
                         do {
                             let (gInfo, reason) = try await apiVerifyPublicGroupName(groupInfo.groupId)

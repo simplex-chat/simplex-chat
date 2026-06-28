@@ -396,7 +396,7 @@ struct ChatInfoView: View {
                 SimplexNameView(
                     name: contactDomain,
                     verification: contact.profile.contactDomainVerification,
-                    autoVerify: false,
+                    autoVerify: UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES),
                     verify: {
                         do {
                             let (ct, reason) = try await apiVerifyContactName(contact.contactId)

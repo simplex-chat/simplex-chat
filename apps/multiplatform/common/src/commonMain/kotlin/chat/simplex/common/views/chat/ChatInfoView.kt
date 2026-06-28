@@ -762,7 +762,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       SimplexNameView(
         name = contactDomain,
         verification = contact.profile.contactDomainVerification,
-        autoVerify = false,
+        autoVerify = chatModel.controller.appPrefs.privacyVerifySimplexNames.get(),
         verify = {
           val rhId = chatModel.remoteHostId()
           chatModel.controller.apiVerifyContactName(rhId, contact.contactId)?.let { (ct, reason) ->
