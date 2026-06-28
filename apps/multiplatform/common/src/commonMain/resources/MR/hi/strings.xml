@@ -291,4 +291,15 @@
     <string name="connect_use_current_profile">Use करेंट प्रोफाइल</string>
     <string name="connect_use_new_incognito_profile">Use न्यू इनकग्निटो profile</string>
     <string name="connect_use_incognito_profile">Use इनकग्निटो profile</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">योर प्रोफाइल will be सेंट to the कॉन्टैक्ट that यू received this लिंक from।</string>
+    <string name="you_will_join_group">आप सभी ग्रुप मेंबर्स से कनेक्ट होंगे।</string>
+    <string name="connect_via_link_incognito">इनकॉग्निटो कनेक्ट करें</string>
+    <string name="connect_plan_open_chat">चैट खोलें</string>
+    <string name="connect_plan_open_new_group">नया ग्रुप खोलें</string>
+    <string name="error_parsing_uri_title">यह लिंक मान्य नहीं है</string>
+    <string name="error_parsing_uri_desc">कृपया जांच लें कि SimpleX लिंक सही है।</string>
+    <string name="opening_database">डेटाबेस खुल रहा है…</string>
+    <string name="database_migration_in_progress">डेटाबेस माइग्रेशन जारी है।\nइसमें कुछ मिनट लग सकते हैं।</string>
+    <string name="non_content_uri_alert_title">अमान्य फ़ाइल पथ</string>
+    <string name="non_content_uri_alert_text">आपने एक अमान्य फ़ाइल पथ साझा किया है। कृपया इस समस्या की सूचना ऐप डेवलपर्स को दें।</string>
 </resources>
