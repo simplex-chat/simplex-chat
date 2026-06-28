@@ -445,6 +445,14 @@ Plan:
 SEARCH operator_usage_conditions USING INDEX idx_operator_usage_conditions_server_operator_id (server_operator_id=?)
 
 Query: 
+              SELECT conn_req_contact, short_link_contact, group_id
+              FROM user_contact_links
+              WHERE user_id = ? AND short_link_contact = ?
+            
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
+
+Query: 
               SELECT timed_ttl
               FROM chat_items
               WHERE user_id = ? AND contact_id = ? AND item_status = ? AND chat_item_id = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
@@ -908,14 +916,6 @@ Query:
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-            SELECT conn_req_contact, group_id
-            FROM user_contact_links
-            WHERE user_id = ? AND short_link_contact = ?
-          
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query: 
             SELECT conn_req_contact, group_id

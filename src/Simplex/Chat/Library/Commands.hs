@@ -56,7 +56,7 @@ import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, proofPresHeaderLink, verifyCredential)
-import Simplex.Chat.Names (NameClaimProof (..), claimName, claimProof, mkSimplexNameClaim, signNameProof, verifyNameProofSig)
+import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim (..), claimName, claimProof, signNameProof, verifyNameProofSig)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -92,7 +92,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (liftIOEither, zipWith3')
 import qualified Simplex.Chat.Util as U
 import Simplex.Chat.Web (webPreviewWorker)
-import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
+import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSizeHard)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol hiding (ConnectTarget (..))
@@ -106,7 +106,7 @@ import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQEncOff, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
@@ -382,14 +382,14 @@ processChatCommand cxt nm = \case
     user <- withFastStore $ \db -> do
       user <- createUserRecordAt db (AgentUserId auId) (isTrue userChatRelay) service p True ts
       mapM_ (setUserServers db user ts) uss
-      createPresetContactCards db cxt user `catchAllErrors` \_ -> pure ()
+      createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
       pure user
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
-      createPresetContactCards :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO ()
-      createPresetContactCards db cxt user = do
+      createPresetContactCards :: DB.Connection -> User -> ExceptT StoreError IO ()
+      createPresetContactCards db user = do
         createContact db cxt user simplexStatusContactProfile
         createContact db cxt user simplexTeamContactProfile
       chooseServers :: Maybe User -> CM ([UpdatedUserOperatorServers], (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP)))
@@ -1492,12 +1492,12 @@ processChatCommand cxt nm = \case
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
-  APISetUserName userId name_ -> withUserId userId $ \user@User {profile = oldLP@LocalProfile {contactLink, simplexName}} ->
+  APISetUserName userId name_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, simplexName}} ->
     if (claimName <$> simplexName) == name_
       then pure $ CRUserProfileNoChange user
       else do
         -- setting a name needs an address (creating its short link if missing) that the name resolves to; clearing just drops it
-        contactLink' <- case name_ of
+        cl' <- case name_ of
           Nothing -> pure contactLink
           Just SimplexNameInfo {nameDomain} -> do
             ucl0@UserContactLink {shortLinkDataSet} <- withFastStore (`getUserAddress` user)
@@ -1507,7 +1507,7 @@ processChatCommand cxt nm = \case
             -- the registry resolves a name to short links; require it to point to our address's short link
             unless (maybe False (`nameResolvesTo` nrSimplexContact) sl) $ throwCmdError "name is not registered to your address"
             pure $ Just $ maybe (CLFull fl) CLShort sl
-        let p' = (fromLocalProfile oldLP :: Profile) {simplexName = mkSimplexNameClaim name_ Nothing, contactLink = contactLink'}
+        let p' = (fromLocalProfile p :: Profile) {simplexName = (`SimplexNameClaim` Nothing) <$> name_, contactLink = cl'}
         updateProfile_ user p' True $ withFastStore $ \db -> do
           user' <- updateUserProfile db user p'
           liftIO $ setUserSimplexName db user' name_
@@ -1849,7 +1849,7 @@ processChatCommand cxt nm = \case
   APIGroupInfo gId -> withUser $ \user ->
     CRGroupInfo user <$> withFastStore (\db -> getGroupInfo db cxt user gId)
   APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
-    gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+    gInfo@GroupInfo {groupProfile = p} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     case p of
       GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk}} | useRelays' gInfo -> do
         (_, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks})) <- getShortLinkConnReq' nm user sLnk
@@ -2568,7 +2568,7 @@ processChatCommand cxt nm = \case
           then throwError e
           else do
             let relayResults = map toRelayResult results
-                toRelayResult (r, Left e) = AddRelayResult r (Just e)
+                toRelayResult (r, Left e') = AddRelayResult r (Just e')
                 toRelayResult (r, Right _) = AddRelayResult r Nothing
             pure $ CRPublicGroupCreationFailed user relayResults
     where
@@ -3854,8 +3854,8 @@ processChatCommand cxt nm = \case
             -- non-incognito (filtered above), so the user's badge is presented; a profile update keeps the badge instead of clearing it
             ctSndEvent :: ChangedProfileContact -> CM (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
             ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = do
-              p <- presentUserBadge user' Nothing mergedProfile'
-              pure (ConnectionId connId, Nothing, XInfo p)
+              p'' <- presentUserBadge user' Nothing mergedProfile'
+              pure (ConnectionId connId, Nothing, XInfo p'')
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
@@ -4196,7 +4196,7 @@ processChatCommand cxt nm = \case
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
-                l' <- resolveSLink nl'
+                l' <- resolveSLink
                 (FixedLinkData {linkConnReq = cReq, rootKey}, cData) <- getShortLinkConnReq nm user l'
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'))
@@ -4208,8 +4208,8 @@ processChatCommand cxt nm = \case
                     case (nl, plan) of
                       (CTName ni, CPContactAddress (CAPOk (Just ContactShortLinkData {profile = p@Profile {simplexName}}) _)) -> do
                         domainVerified <- verifyNameClaim ni (claimName <$> simplexName) (claimProof =<< simplexName) (ACSL SCMContact l') rootKey owners
-                        ct <- withStore $ \db -> createPreparedContact db cxt user p (con l' cReq) Nothing domainVerified
-                        pure (con l' cReq, CPContactAddress (CAPKnown ct))
+                        ct' <- withStore $ \db -> createPreparedContact db cxt user p (con l' cReq) Nothing domainVerified
+                        pure (con l' cReq, CPContactAddress (CAPKnown ct'))
                       _ -> pure (con l' cReq, plan)
             where
               knownLinkPlans = withFastStore $ \db ->
@@ -4230,9 +4230,9 @@ processChatCommand cxt nm = \case
             CTLink (CSLContact _ t _ _) -> t
             CTName SimplexNameInfo {nameType = NTContact} -> CCTContact
             CTName SimplexNameInfo {nameType = NTPublicGroup} -> CCTChannel
-          resolveSLink nl' = case nl' of
+          resolveSLink = case nl' of
             CTLink l' -> pure l'
-            CTName ni -> serverShortLink <$> resolveNameLink user ni
+            CTName n -> serverShortLink <$> resolveNameLink user n
           con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
           gPlan (ccl, g) = if memberRemoved (membership g) then Nothing else Just (ACCL SCMContact ccl, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
           groupShortLinkPlan =
@@ -4241,7 +4241,7 @@ processChatCommand cxt nm = \case
                 | resolveKnown -> resolveKnownGroup g
               Just r -> pure r
               Nothing -> do
-                l' <- resolveSLink nl'
+                l' <- resolveSLink
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 if
@@ -4276,7 +4276,7 @@ processChatCommand cxt nm = \case
                   Just (ccl, g) -> pure $ Just (ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
               resolveKnownGroup g = do
-                l' <- resolveSLink nl'
+                l' <- resolveSLink
                 (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let ov = verifyLinkOwner rk owners l' sig_

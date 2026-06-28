@@ -107,7 +107,7 @@ import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Names (claimName, mkSimplexNameClaim)
+import Simplex.Chat.Names (SimplexNameClaim (..), claimName, mkSimplexNameClaim)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -394,7 +394,7 @@ setUserSimplexName db user@User {userId, profile = p@LocalProfile {profileId}} n
     db
     "UPDATE contact_profiles SET simplex_name = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?"
     (name_, ts, userId, profileId)
-  pure (user :: User) {profile = p {simplexName = mkSimplexNameClaim name_ Nothing}}
+  pure (user :: User) {profile = p {simplexName = (`SimplexNameClaim` Nothing) <$> name_}}
 
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
 setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do
