@@ -358,6 +358,7 @@ chatTypesDocsData =
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
+    (sti @SimplexNameClaim, STRecord, "", [], "", ""),
     (sti @SimplexNameDomain, STRecord, "", [], "", ""),
     (sti @SimplexNameError, STUnion, "SNE", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
@@ -587,6 +588,7 @@ deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexLinkType
+deriving instance Generic SimplexNameClaim
 deriving instance Generic SimplexNameDomain
 deriving instance Generic SimplexNameError
 deriving instance Generic SimplexNameInfo

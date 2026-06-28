@@ -176,6 +176,7 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameClaim](#simplexnameclaim)
 - [SimplexNameDomain](#simplexnamedomain)
 - [SimplexNameError](#simplexnameerror)
 - [SimplexNameInfo](#simplexnameinfo)
@@ -2787,9 +2788,8 @@ Unknown:
 - peerType: [ChatPeerType](#chatpeertype)?
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
-- contactDomain: [SimplexNameInfo](#simplexnameinfo)?
+- simplexName: [SimplexNameClaim](#simplexnameclaim)?
 - contactDomainVerification: bool?
-- contactDomainProof: [NameClaimProof](#nameclaimproof)?
 
 
 ---
@@ -3162,8 +3162,7 @@ count=<count>
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
 - badge: [BadgeProof](#badgeproof)?
-- contactDomain: string?
-- contactDomainProof: [NameClaimProof](#nameclaimproof)?
+- simplexName: [SimplexNameClaim](#simplexnameclaim)?
 
 
 ---
@@ -3607,6 +3606,15 @@ A_QUEUE:
 - "group"
 - "channel"
 - "relay"
+
+
+---
+
+## SimplexNameClaim
+
+**Record type**:
+- name: [SimplexNameInfo](#simplexnameinfo)
+- proof: [NameClaimProof](#nameclaimproof)?
 
 
 ---

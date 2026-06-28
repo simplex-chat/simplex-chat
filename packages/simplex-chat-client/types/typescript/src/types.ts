@@ -3027,9 +3027,8 @@ export interface LocalProfile {
   peerType?: ChatPeerType
   localBadge?: LocalBadge
   localAlias: string
-  contactDomain?: SimplexNameInfo
+  simplexName?: SimplexNameClaim
   contactDomainVerification?: boolean
-  contactDomainProof?: NameClaimProof
 }
 
 export enum MemberCriteria {
@@ -3410,8 +3409,7 @@ export interface Profile {
   preferences?: Preferences
   peerType?: ChatPeerType
   badge?: BadgeProof
-  contactDomain?: string
-  contactDomainProof?: NameClaimProof
+  simplexName?: SimplexNameClaim
 }
 
 export type ProxyClientError = 
@@ -3982,6 +3980,11 @@ export enum SimplexLinkType {
   Group = "group",
   Channel = "channel",
   Relay = "relay",
+}
+
+export interface SimplexNameClaim {
+  name: SimplexNameInfo
+  proof?: NameClaimProof
 }
 
 export interface SimplexNameDomain {

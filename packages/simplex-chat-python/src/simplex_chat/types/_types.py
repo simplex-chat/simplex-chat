@@ -2119,9 +2119,8 @@ class LocalProfile(TypedDict):
     peerType: NotRequired["ChatPeerType"]
     localBadge: NotRequired["LocalBadge"]
     localAlias: str
-    contactDomain: NotRequired["SimplexNameInfo"]
+    simplexName: NotRequired["SimplexNameClaim"]
     contactDomainVerification: NotRequired[bool]
-    contactDomainProof: NotRequired["NameClaimProof"]
 
 MemberCriteria = Literal["all"]
 
@@ -2392,8 +2391,7 @@ class Profile(TypedDict):
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
     badge: NotRequired["BadgeProof"]
-    contactDomain: NotRequired[str]
-    contactDomainProof: NotRequired["NameClaimProof"]
+    simplexName: NotRequired["SimplexNameClaim"]
 
 class ProxyClientError_protocolError(TypedDict):
     type: Literal["protocolError"]
@@ -2780,6 +2778,10 @@ class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
+
+class SimplexNameClaim(TypedDict):
+    name: "SimplexNameInfo"
+    proof: NotRequired["NameClaimProof"]
 
 class SimplexNameDomain(TypedDict):
     nameTLD: "SimplexTLD"
