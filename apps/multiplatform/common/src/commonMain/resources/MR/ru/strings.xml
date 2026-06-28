@@ -749,7 +749,7 @@
     <string name="invite_prohibited_description">Вы пытаетесь пригласить контакт, который знает Ваш профиль инкогнито, в группу, где Вы используете основной профиль</string>
     <!-- GroupChatInfoView.kt -->
     <string name="button_add_members">Пригласить в группу</string>
-    <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВ ГРУППЫ</string>
+    <string name="group_info_section_title_num_members">%1$s Членов группы</string>
     <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
@@ -2879,4 +2879,9 @@
     <string name="add_relays_title">Добавить релеи</string>
     <string name="button_cancel_and_delete_channel">Отменить и удалить канал</string>
     <string name="close_behavior_dialog_close">Закрыть приложение</string>
+    <string name="channel_owner_count_singular">владелец</string>
+    <string name="channel_owner_count_plural">владельцев</string>
+    <string name="channel_owners_contributors_count">владельцев и участников проекта</string>
+    <string name="badge_supported_simplex">поддерживал SimpleX Chat. Срок действия бейджа истек в</string>
+    <string name="settings_section_title_about">О приложении</string>
 </resources>
