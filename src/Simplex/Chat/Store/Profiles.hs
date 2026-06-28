@@ -50,7 +50,6 @@ module Simplex.Chat.Store.Profiles
     getUserAddressConnection,
     deleteUserAddress,
     getUserAddress,
-    getUserAddressSigKey,
     setUserSimplexName,
     getUserContactLinkById,
     getGroupLinkInfo,
@@ -523,11 +522,6 @@ getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
 getUserAddress db User {userId} =
   ExceptT . firstRow toUserContactLink SEUserContactLinkNotFound $
     DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL") (Only userId)
-
-getUserAddressSigKey :: DB.Connection -> User -> IO (Maybe C.PrivateKeyEd25519)
-getUserAddressSigKey db User {userId} =
-  fmap join . maybeFirstRow fromOnly $
-    DB.query db "SELECT link_priv_sig_key FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
 getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupLinkInfo)
 getUserContactLinkById db userId userContactLinkId =

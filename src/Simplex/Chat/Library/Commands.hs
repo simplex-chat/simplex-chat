@@ -4779,24 +4779,14 @@ signChannelNameProof GroupInfo {groupKeys, membership = GroupMember {memberId = 
       access {simplexName = Just $ SimplexNameClaim name (Just $ signNameProof memberPrivKey (Just mid) name (PHSimplexLink (ACSL SCMContact groupLink)))}
     _ -> access
 
--- | The outcome of verifying a name claim: verified, a determinate failure (persist Just False), or
--- inconclusive (can't verify — leave the stored status untouched). The Text is a human-readable reason
--- for the UI; name-verification failures are rare, so the reason is a string rather than a typed enum
--- the clients would have to switch on.
-data NameVerifyOutcome = NVOVerified | NVOFailed Text | NVOInconclusive Text
-
--- §4.6: a name verifies when the proof's presHeader is the link the peer was actually connected through
--- (so the proof can't be reused on a different link) AND the proof is signed by the key the name resolves to (the address root key, or the
--- channel owner's key selected by linkOwnerId). The key comes from *resolving the name* (the address),
--- not the connected link — for a 1-time invite they differ. A network/agent error propagates as
--- ChatErrorAgent so a UI-triggered verify can retry, rather than recording a false verdict.
-verifyName :: User -> NetworkRequestMode -> SimplexNameInfo -> Maybe AConnShortLink -> Maybe NameClaimProof -> CM NameVerifyOutcome
+-- returns (verdict to persist, reason for the UI); Nothing verdict = inconclusive, leave the stored status
+verifyName :: User -> NetworkRequestMode -> SimplexNameInfo -> Maybe AConnShortLink -> Maybe NameClaimProof -> CM (Maybe Bool, Maybe Text)
 verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
-  (Nothing, _) -> pure $ NVOInconclusive "no name proof to verify"
-  (_, Nothing) -> pure $ NVOInconclusive "no connection link to check the name proof against"
+  (Nothing, _) -> pure (Nothing, Just "no name proof to verify")
+  (_, Nothing) -> pure (Nothing, Just "no connection link to check the name proof against")
   (Just proof, Just connLink)
     | not (proofBoundTo proof connLink) ->
-        pure $ NVOFailed "the name proof is bound to a different link than the one used to connect"
+        pure (Just False, Just "the name proof is bound to a different link than the one used to connect")
     | otherwise -> do
         let SimplexNameInfo {nameType, nameDomain} = claim
         NameRecord {nrSimplexContact, nrSimplexChannel} <-
@@ -4805,13 +4795,13 @@ verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
               NTContact -> nrSimplexContact
               NTPublicGroup -> nrSimplexChannel
         if null resolvedLinks
-          then pure $ NVOFailed "the name is not registered (it does not resolve to any address)"
+          then pure (Just False, Just "the name is not registered (it does not resolve to any address)")
           else do
             ok <- or <$> mapM (verifyProofKey nm user claim proof) resolvedLinks
             pure $
               if ok
-                then NVOVerified
-                else NVOFailed "the name resolves to a different address — its owner did not sign this name proof"
+                then (Just True, Nothing)
+                else (Just False, Just "the name resolves to a different address — its owner did not sign this name proof")
 
 proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
 proofBoundTo NameClaimProof {presHeader} connLink =
@@ -4840,25 +4830,12 @@ verifyNameClaim ni claimedName_ = do
   unless (claimedName_ == Just ni) $ throwChatError $ CESimplexName ni SNEUnknownName
   pure (Just True)
 
-nameVerifyVerdict :: NameVerifyOutcome -> Maybe Bool
-nameVerifyVerdict = \case
-  NVOVerified -> Just True
-  NVOFailed _ -> Just False
-  NVOInconclusive _ -> Nothing
-
-nameVerifyReason :: NameVerifyOutcome -> Maybe Text
-nameVerifyReason = \case
-  NVOVerified -> Nothing
-  NVOFailed r -> Just r
-  NVOInconclusive r -> Just r
-
--- claim-check, verify the proof, persist the verdict; returns the human-readable failure reason for the UI
 verifyEntityName :: User -> NetworkRequestMode -> Maybe SimplexNameInfo -> Maybe AConnShortLink -> Maybe NameClaimProof -> String -> (Bool -> CM ()) -> CM (Maybe Text)
 verifyEntityName user nm claim_ connLink_ proof_ noNameErr persist = do
   claim <- maybe (throwCmdError noNameErr) pure claim_
-  outcome <- verifyName user nm claim connLink_ proof_
-  forM_ (nameVerifyVerdict outcome) persist
-  pure $ nameVerifyReason outcome
+  (verdict, reason) <- verifyName user nm claim connLink_ proof_
+  forM_ verdict persist
+  pure reason
 
 data ConnectViaContactResult
   = CVRConnectedContact Contact
