@@ -3134,15 +3134,13 @@ processChatCommand cxt nm = \case
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
     CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db cxt user gName)
-  SetPublicGroupAccess gName access -> withUser $ \user -> do
+  SetPublicGroupAccess gName access@PublicGroupAccess {simplexName} -> withUser $ \user -> do
     gInfo@GroupInfo {groupProfile = p@GroupProfile {publicGroup}} <- withStore $ \db ->
       getGroupIdByName db user gName >>= getGroupInfo db cxt user
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
-        let PublicGroupAccess {simplexName} = access
-            newName_ = claimName <$> simplexName
-        when (newName_ /= (claimName <$> (existingAccess >>= publicGroupClaim))) $
-          forM_ newName_ $ \SimplexNameInfo {nameDomain} -> do
+        forM_ (claimName <$> simplexName) $ \newName@SimplexNameInfo {nameDomain} ->
+          when (Just newName /= (claimName <$> (existingAccess >>= publicGroupClaim))) $ do
             NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
             unless (nameResolvesTo groupLink nrSimplexChannel) $ throwCmdError "name is not registered to this channel"
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}}
