@@ -208,19 +208,25 @@ actual fun GetImageBottomSheet(
 
 class PickFromGallery: ActivityResultContract<Int, Uri?>() {
   override fun createIntent(context: Context, input: Int) =
-    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
-      type = "image/*"
-    }
+    Intent.createChooser(
+      Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
+        type = "image/*"
+      },
+      null
+    )
 
   override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data
 }
 
 class PickMultipleImagesFromGallery: ActivityResultContract<Int, List<Uri>>() {
   override fun createIntent(context: Context, input: Int) =
-    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
-      putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-      type = "image/*"
-    }
+    Intent.createChooser(
+      Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
+        putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        type = "image/*"
+      },
+      null
+    )
 
   override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> =
     if (intent?.data != null)
@@ -244,10 +250,13 @@ class PickMultipleImagesFromGallery: ActivityResultContract<Int, List<Uri>>() {
 
 class PickMultipleVideosFromGallery: ActivityResultContract<Int, List<Uri>>() {
   override fun createIntent(context: Context, input: Int) =
-    Intent(Intent.ACTION_PICK, MediaStore.Video.Media.INTERNAL_CONTENT_URI).apply {
-      putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-      type = "video/*"
-    }
+    Intent.createChooser(
+      Intent(Intent.ACTION_PICK, MediaStore.Video.Media.INTERNAL_CONTENT_URI).apply {
+        putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        type = "video/*"
+      },
+      null
+    )
 
   override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> =
     if (intent?.data != null)
