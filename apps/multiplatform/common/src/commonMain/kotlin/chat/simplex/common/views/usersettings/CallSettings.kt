@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.res.MR
 
 @Composable
@@ -38,12 +39,14 @@ fun CallSettingsLayout(
 ) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_calls))
-    val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     SectionView(stringResource(MR.strings.settings_section_title_settings)) {
       SectionItemView(editIceServers) { Text(stringResource(MR.strings.webrtc_ice_servers)) }
 
-      val enabled = remember { mutableStateOf(true) }
-      LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it })
+      if (appPlatform.isAndroid) {
+        val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
+        val enabled = remember { mutableStateOf(true) }
+        LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it })
+      }
       SettingsPreferenceItem(null, stringResource(MR.strings.always_use_relay), webrtcPolicyRelay)
     }
     SectionTextFooter(

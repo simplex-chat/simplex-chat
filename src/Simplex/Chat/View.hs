@@ -52,6 +52,7 @@ import Simplex.Chat.Remote.AppVersion (AppVersion (..), pattern AppVersionRange)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AddressSettings (..), AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
+import Simplex.Chat.Names (claimName, claimProof)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -147,7 +148,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
-  CRContactNameVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewNameVerified contactDomain result
+  CRContactNameVerified u (Contact {profile = LocalProfile {simplexName}}) result -> ttyUser u $ viewNameVerified (claimName <$> simplexName) result
   CRGroupNameVerified u g result -> ttyUser u $ viewNameVerified (groupDomainName g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
@@ -1133,7 +1134,7 @@ shareLinkStr Nothing fallback = fallback
 
 groupDomainName :: GroupInfo -> Maybe SimplexNameInfo
 groupDomainName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
-  unStrJSON <$> (publicGroup >>= publicGroupAccess >>= groupDomain)
+  claimName <$> (publicGroup >>= publicGroupAccess >>= publicGroupClaim)
 
 viewNameVerified :: Maybe SimplexNameInfo -> Maybe Text -> [StyledString]
 viewNameVerified name_ result =
@@ -1809,12 +1810,12 @@ viewContactBadge = maybe [] $ \lb ->
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerification, contactDomainProof}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, simplexName, contactDomainVerification}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> plain (strEncode (simplexChatContact' l))]) contactLink
-    <> simplexNameStatus contactDomain contactDomainVerification (isJust contactDomainProof)
+    <> simplexNameStatus (claimName <$> simplexName) contactDomainVerification (isJust (claimProof =<< simplexName))
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -2049,9 +2050,9 @@ viewGroupUpdated
           access = pg >>= publicGroupAccess
           access' = pg' >>= publicGroupAccess
           viewAccess Nothing = " removed"
-          viewAccess (Just PublicGroupAccess {groupWebPage, groupDomain, domainWebPage, allowEmbedding}) =
+          viewAccess (Just PublicGroupAccess {groupWebPage, simplexName, domainWebPage, allowEmbedding}) =
             maybe "" (\u -> " web=" <> plain u) groupWebPage
-              <> maybe "" (\(StrJSON ni) -> " domain=" <> plain (strEncode ni)) groupDomain
+              <> maybe "" (\ni -> " domain=" <> plain (strEncode ni)) (claimName <$> simplexName)
               <> (if domainWebPage then " domain_page=on" else "")
               <> (if allowEmbedding then " embed=on" else "")
 
@@ -2165,7 +2166,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
+    CAPOk contactSLinkData ov _ -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -2183,7 +2184,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
   CPGroupLink glp -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData ov ->
+    GLPOk groupSLinkInfo_ groupSLinkData ov _ ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
        in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
             <> viewSigVerification ov
@@ -2225,11 +2226,11 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
     contactNameLine :: Contact -> [StyledString]
-    contactNameLine Contact {profile = LocalProfile {contactDomain, contactDomainVerification, contactDomainProof}} =
-      simplexNameStatus contactDomain contactDomainVerification (isJust contactDomainProof)
+    contactNameLine Contact {profile = LocalProfile {simplexName, contactDomainVerification}} =
+      simplexNameStatus (claimName <$> simplexName) contactDomainVerification (isJust (claimProof =<< simplexName))
     groupNameLine :: GroupInfo -> [StyledString]
     groupNameLine g'@GroupInfo {groupDomainVerification, groupProfile = GroupProfile {publicGroup}} =
-      simplexNameStatus (groupDomainName g') groupDomainVerification (isJust (publicGroup >>= publicGroupAccess >>= groupDomainProof))
+      simplexNameStatus (groupDomainName g') groupDomainVerification (isJust (claimProof =<< (publicGroup >>= publicGroupAccess >>= publicGroupClaim)))
     viewSigVerification = \case
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
@@ -2681,7 +2682,11 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexNameNotFound ni -> ["no contact or group with simplex name " <> plain (shortNameInfoStr ni)]
+    CESimplexName ni nameErr ->
+      let reason = case nameErr of
+            SNENoValidLink -> "has no usable connection link"
+            SNEUnknownName -> "is not included in the connection link's profile"
+       in ["simplex name " <> plain (shortNameInfoStr ni) <> " " <> reason]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $

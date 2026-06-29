@@ -541,9 +541,9 @@ CREATE TABLE test_chat_schema.contact_profiles (
     badge_master_key bytea,
     badge_signature bytea,
     badge_key_idx bigint,
-    contact_domain text,
-    contact_domain_verification smallint,
-    contact_domain_proof text
+    simplex_name text,
+    simplex_name_verification smallint,
+    simplex_name_proof text
 );
 
 
@@ -867,10 +867,10 @@ CREATE TABLE test_chat_schema.group_profiles (
     group_link bytea,
     public_group_id bytea,
     group_web_page text,
-    group_domain text,
     domain_web_page bigint,
     allow_embedding bigint,
-    group_domain_proof text
+    simplex_name text,
+    simplex_name_proof text
 );
 
 
@@ -994,7 +994,7 @@ CREATE TABLE test_chat_schema.groups (
     roster_sending_owner_gm_id bigint,
     roster_broker_ts timestamp with time zone,
     roster_blob bytea,
-    group_domain_verification smallint
+    simplex_name_verification smallint
 );
 
 

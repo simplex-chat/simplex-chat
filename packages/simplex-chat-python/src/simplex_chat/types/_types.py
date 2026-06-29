@@ -16,6 +16,20 @@ class AChatItem(TypedDict):
     chatInfo: "ChatInfo"
     chatItem: "ChatItem"
 
+# Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
+
+class AConnectTarget_name(TypedDict):
+    type: Literal["name"]
+    : "SimplexNameInfo"
+
+class AConnectTarget_link(TypedDict):
+    type: Literal["link"]
+    : str
+
+AConnectTarget = AConnectTarget_name | AConnectTarget_link
+
+AConnectTarget_Tag = Literal["name", "link"]
+
 class AddRelayResult(TypedDict):
     relay: "UserChatRelay"
     relayError: NotRequired["ChatError"]
@@ -788,13 +802,10 @@ class ChatErrorType_chatStoreChanged(TypedDict):
 class ChatErrorType_invalidConnReq(TypedDict):
     type: Literal["invalidConnReq"]
 
-class ChatErrorType_simplexNameNotFound(TypedDict):
-    type: Literal["simplexNameNotFound"]
+class ChatErrorType_simplexName(TypedDict):
+    type: Literal["simplexName"]
     simplexName: "SimplexNameInfo"
-
-class ChatErrorType_simplexNameUnprepared(TypedDict):
-    type: Literal["simplexNameUnprepared"]
-    simplexName: "SimplexNameInfo"
+    simplexNameError: "SimplexNameError"
 
 class ChatErrorType_unsupportedConnReq(TypedDict):
     type: Literal["unsupportedConnReq"]
@@ -1026,8 +1037,7 @@ ChatErrorType = (
     | ChatErrorType_chatNotStopped
     | ChatErrorType_chatStoreChanged
     | ChatErrorType_invalidConnReq
-    | ChatErrorType_simplexNameNotFound
-    | ChatErrorType_simplexNameUnprepared
+    | ChatErrorType_simplexName
     | ChatErrorType_unsupportedConnReq
     | ChatErrorType_connReqMessageProhibited
     | ChatErrorType_contactNotReady
@@ -1084,7 +1094,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexNameNotFound", "simplexNameUnprepared", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexName", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -1302,20 +1312,6 @@ ConnStatus_Tag = Literal["new", "prepared", "joined", "requested", "accepted", "
 
 ConnType = Literal["contact", "member", "user_contact"]
 
-# Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
-
-class ConnectTarget_link(TypedDict):
-    type: Literal["link"]
-    : str
-
-class ConnectTarget_name(TypedDict):
-    type: Literal["name"]
-    : "SimplexNameInfo"
-
-ConnectTarget = ConnectTarget_link | ConnectTarget_name
-
-ConnectTarget_Tag = Literal["link", "name"]
-
 class Connection(TypedDict):
     connId: int  # int64
     agentConnId: str
@@ -1446,6 +1442,7 @@ class ContactAddressPlan_ok(TypedDict):
     type: Literal["ok"]
     contactSLinkData_: NotRequired["ContactShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
+    verifiedName: NotRequired["SimplexNameInfo"]
 
 class ContactAddressPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -1885,6 +1882,7 @@ class GroupLinkPlan_ok(TypedDict):
     groupSLinkInfo_: NotRequired["GroupShortLinkInfo"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
+    verifiedName: NotRequired["SimplexNameInfo"]
 
 class GroupLinkPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -2123,9 +2121,8 @@ class LocalProfile(TypedDict):
     peerType: NotRequired["ChatPeerType"]
     localBadge: NotRequired["LocalBadge"]
     localAlias: str
-    contactDomain: NotRequired["SimplexNameInfo"]
+    simplexName: NotRequired["SimplexNameClaim"]
     contactDomainVerification: NotRequired[bool]
-    contactDomainProof: NotRequired["NameClaimProof"]
 
 MemberCriteria = Literal["all"]
 
@@ -2396,8 +2393,7 @@ class Profile(TypedDict):
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
     badge: NotRequired["BadgeProof"]
-    contactDomain: NotRequired[str]
-    contactDomainProof: NotRequired["NameClaimProof"]
+    simplexName: NotRequired["SimplexNameClaim"]
 
 class ProxyClientError_protocolError(TypedDict):
     type: Literal["protocolError"]
@@ -2439,8 +2435,7 @@ ProxyError_Tag = Literal["PROTOCOL", "BROKER", "BASIC_AUTH", "NO_SESSION"]
 
 class PublicGroupAccess(TypedDict):
     groupWebPage: NotRequired[str]
-    groupDomain: NotRequired[str]
-    groupDomainProof: NotRequired["NameClaimProof"]
+    simplexName: NotRequired["SimplexNameClaim"]
     domainWebPage: bool
     allowEmbedding: bool
 
@@ -2785,10 +2780,24 @@ class SimplePreference(TypedDict):
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
 
+class SimplexNameClaim(TypedDict):
+    name: "SimplexNameInfo"
+    proof: NotRequired["NameClaimProof"]
+
 class SimplexNameDomain(TypedDict):
     nameTLD: "SimplexTLD"
     domain: str
     subDomain: list[str]
+
+class SimplexNameError_noValidLink(TypedDict):
+    type: Literal["noValidLink"]
+
+class SimplexNameError_unknownName(TypedDict):
+    type: Literal["unknownName"]
+
+SimplexNameError = SimplexNameError_noValidLink | SimplexNameError_unknownName
+
+SimplexNameError_Tag = Literal["noValidLink", "unknownName"]
 
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"

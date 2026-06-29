@@ -35,13 +35,14 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
+import Simplex.Chat.Names
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Transport
 import Simplex.FileTransfer.Types hiding (RcvFileStatus) -- the type with the same name is used in simplex-chat.
-import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Protocol hiding (ConnectTarget (..))
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
@@ -250,7 +251,7 @@ chatTypesDocsData =
     (sti @ConnectionErrorType, STUnion, "", [], "", ""),
     (sti @ConnectionMode, (STEnum' $ take 3 . consLower "CM"), "", [], "", ""),
     (sti @ConnectionPlan, STUnion, "CP", [], "", ""),
-    (sti @ConnectTarget, STUnion, "CT", [], "", "Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names."),
+    ((sti @ContactNameOrLink) {typeName = "AConnectTarget"}, STUnion, "CT", [], "", "Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names."),
     (sti @ConnStatus, STUnion, "Conn", [], "", ""),
     (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", [], "", ""),
     (sti @Contact, STRecord, "", [], "", ""),
@@ -357,7 +358,9 @@ chatTypesDocsData =
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
+    (sti @SimplexNameClaim, STRecord, "", [], "", ""),
     (sti @SimplexNameDomain, STRecord, "", [], "", ""),
+    (sti @SimplexNameError, STUnion, "SNE", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
@@ -473,7 +476,7 @@ deriving instance Generic ConnectionEntity
 deriving instance Generic ConnectionErrorType
 deriving instance Generic ConnectionMode
 deriving instance Generic ConnectionPlan
-deriving instance Generic ConnectTarget
+deriving instance Generic ContactNameOrLink
 deriving instance Generic ConnStatus
 deriving instance Generic ConnType
 deriving instance Generic Contact
@@ -585,7 +588,9 @@ deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexLinkType
+deriving instance Generic SimplexNameClaim
 deriving instance Generic SimplexNameDomain
+deriving instance Generic SimplexNameError
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
 deriving instance Generic SimplexTLD

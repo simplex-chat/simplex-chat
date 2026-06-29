@@ -53,7 +53,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, signNameProof, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Names (SimplexNameClaim (..), claimName, mkSimplexNameClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -1243,9 +1244,11 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     }
 
 redactedMemberProfile :: GroupInfo -> GroupMember -> Profile -> Profile
-redactedMemberProfile g m Profile {displayName, fullName, shortDescr, image, contactLink, peerType, badge, contactDomain} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = if allowSimplexLinks then contactLink else Nothing, preferences = Nothing, peerType, badge, contactDomain = if allowDirect then contactDomain else Nothing, contactDomainProof = Nothing}
+redactedMemberProfile g m Profile {displayName, fullName, shortDescr, image, contactLink = lnk, peerType, badge, simplexName} =
+  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink, preferences = Nothing, peerType, badge, simplexName = redactedName}
   where
+    contactLink = if allowSimplexLinks then lnk else Nothing
+    redactedName = mkSimplexNameClaim (if allowDirect then claimName <$> simplexName else Nothing) Nothing
     allowDirect = groupFeatureMemberAllowed SGFDirectMessages m g
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
     removeSimplexLink s
@@ -2051,13 +2054,6 @@ presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p =
           Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p
 
--- Add the user's name-claim proof to an outgoing address/invite profile: sign (name, link context)
--- with the address root key (linkOwnerId = Nothing — the sole-owner contact-address case), bound to
--- the link the profile is saved to. No-op without a name, key, or link.
-signAddressNameProof :: Maybe AConnShortLink -> Maybe C.PrivateKeyEd25519 -> Maybe SimplexNameInfo -> Profile -> Profile
-signAddressNameProof (Just lnk) (Just rootKey) (Just name) p =
-  p {contactDomainProof = Just $ signNameProof rootKey Nothing name (PHSimplexLink lnk)}
-signAddressNameProof _ _ _ p = p
 
 -- receiving side of contact/invitation link data: verify the badge proof from the link profile
 -- and set the crypto-free display badge for the UI (the raw proof stays in profile for APIPrepareContact)
@@ -3100,8 +3096,7 @@ simplexTeamContactProfile =
       peerType = Nothing,
       preferences = Nothing,
       badge = Nothing,
-      contactDomain = Nothing,
-      contactDomainProof = Nothing
+      simplexName = Nothing
     }
 
 simplexStatusContactProfile :: Profile
@@ -3115,8 +3110,7 @@ simplexStatusContactProfile =
       peerType = Just CPTBot,
       preferences = Nothing,
       badge = Nothing,
-      contactDomain = Nothing,
-      contactDomainProof = Nothing
+      simplexName = Nothing
     }
 
 timeItToView :: String -> CM' a -> CM' a

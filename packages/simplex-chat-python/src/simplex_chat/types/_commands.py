@@ -438,7 +438,7 @@ APIAddContact_Response = CR.Invitation | CR.ChatCmdError
 # Network usage: interactive.
 class APIConnectPlan(TypedDict):
     userId: int  # int64
-    connectTarget: NotRequired["T.ConnectTarget"]
+    connectTarget: NotRequired["T.AConnectTarget"]
     resolveKnown: bool
     linkOwnerSig: NotRequired["T.LinkOwnerSig"]
 
@@ -467,7 +467,7 @@ APIConnect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInv
 # Network usage: interactive.
 class Connect(TypedDict):
     incognito: bool
-    connTarget_: NotRequired["T.ConnectTarget"]
+    connTarget_: NotRequired["T.AConnectTarget"]
 
 
 def Connect_cmd_string(self: Connect) -> str:
@@ -594,18 +594,6 @@ def APISetUserAutoAcceptMemberContacts_cmd_string(self: APISetUserAutoAcceptMemb
     return '/_set accept member contacts ' + str(self['userId']) + ' ' + ('on' if self['onOff'] else 'off')
 
 APISetUserAutoAcceptMemberContacts_Response = CR.CmdOk | CR.ChatCmdError
-
-
-# Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
-# Network usage: interactive.
-class APIVerifySimplexName(TypedDict):
-    chatRef: "T.ChatRef"
-
-
-def APIVerifySimplexName_cmd_string(self: APIVerifySimplexName) -> str:
-    return '/_verify simplex name ' + T.ChatRef_cmd_string(self['chatRef'])
-
-APIVerifySimplexName_Response = CR.SimplexNameVerified | CR.ChatCmdError
 
 
 # User profile commands

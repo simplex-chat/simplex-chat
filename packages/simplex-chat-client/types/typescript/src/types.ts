@@ -16,6 +16,27 @@ export interface AChatItem {
   chatInfo: ChatInfo
   chatItem: ChatItem
 }
+// Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
+
+export type AConnectTarget = AConnectTarget.Name | AConnectTarget.Link
+
+export namespace AConnectTarget {
+  export type Tag = "name" | "link"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Name extends Interface {
+    type: "name"
+    : SimplexNameInfo
+  }
+
+  export interface Link extends Interface {
+    type: "link"
+    : string
+  }
+}
 
 export interface AddRelayResult {
   relay: UserChatRelay
@@ -1042,8 +1063,7 @@ export type ChatErrorType =
   | ChatErrorType.ChatNotStopped
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
-  | ChatErrorType.SimplexNameNotFound
-  | ChatErrorType.SimplexNameUnprepared
+  | ChatErrorType.SimplexName
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1121,8 +1141,7 @@ export namespace ChatErrorType {
     | "chatNotStopped"
     | "chatStoreChanged"
     | "invalidConnReq"
-    | "simplexNameNotFound"
-    | "simplexNameUnprepared"
+    | "simplexName"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1277,14 +1296,10 @@ export namespace ChatErrorType {
     type: "invalidConnReq"
   }
 
-  export interface SimplexNameNotFound extends Interface {
-    type: "simplexNameNotFound"
+  export interface SimplexName extends Interface {
+    type: "simplexName"
     simplexName: SimplexNameInfo
-  }
-
-  export interface SimplexNameUnprepared extends Interface {
-    type: "simplexNameUnprepared"
-    simplexName: SimplexNameInfo
+    simplexNameError: SimplexNameError
   }
 
   export interface UnsupportedConnReq extends Interface {
@@ -1871,27 +1886,6 @@ export enum ConnType {
   Member = "member",
   User_contact = "user_contact",
 }
-// Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
-
-export type ConnectTarget = ConnectTarget.Link | ConnectTarget.Name
-
-export namespace ConnectTarget {
-  export type Tag = "link" | "name"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Link extends Interface {
-    type: "link"
-    : string
-  }
-
-  export interface Name extends Interface {
-    type: "name"
-    : SimplexNameInfo
-  }
-}
 
 export interface Connection {
   connId: number // int64
@@ -2076,6 +2070,7 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
+    verifiedName?: SimplexNameInfo
   }
 
   export interface OwnLink extends Interface {
@@ -2707,6 +2702,7 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
+    verifiedName?: SimplexNameInfo
   }
 
   export interface OwnLink extends Interface {
@@ -3033,9 +3029,8 @@ export interface LocalProfile {
   peerType?: ChatPeerType
   localBadge?: LocalBadge
   localAlias: string
-  contactDomain?: SimplexNameInfo
+  simplexName?: SimplexNameClaim
   contactDomainVerification?: boolean
-  contactDomainProof?: NameClaimProof
 }
 
 export enum MemberCriteria {
@@ -3416,8 +3411,7 @@ export interface Profile {
   preferences?: Preferences
   peerType?: ChatPeerType
   badge?: BadgeProof
-  contactDomain?: string
-  contactDomainProof?: NameClaimProof
+  simplexName?: SimplexNameClaim
 }
 
 export type ProxyClientError = 
@@ -3478,8 +3472,7 @@ export namespace ProxyError {
 
 export interface PublicGroupAccess {
   groupWebPage?: string
-  groupDomain?: string
-  groupDomainProof?: NameClaimProof
+  simplexName?: SimplexNameClaim
   domainWebPage: boolean
   allowEmbedding: boolean
 }
@@ -3990,10 +3983,33 @@ export enum SimplexLinkType {
   Relay = "relay",
 }
 
+export interface SimplexNameClaim {
+  name: SimplexNameInfo
+  proof?: NameClaimProof
+}
+
 export interface SimplexNameDomain {
   nameTLD: SimplexTLD
   domain: string
   subDomain: string[]
+}
+
+export type SimplexNameError = SimplexNameError.NoValidLink | SimplexNameError.UnknownName
+
+export namespace SimplexNameError {
+  export type Tag = "noValidLink" | "unknownName"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NoValidLink extends Interface {
+    type: "noValidLink"
+  }
+
+  export interface UnknownName extends Interface {
+    type: "unknownName"
+  }
 }
 
 export interface SimplexNameInfo {

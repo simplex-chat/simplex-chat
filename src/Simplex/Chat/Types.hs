@@ -19,6 +19,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -34,6 +35,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Attoparsec.Combinator (lookAhead)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
@@ -46,16 +48,18 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
+import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), NameClaimProof (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim, setClaimProof)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -694,8 +698,7 @@ data Profile = Profile
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
     badge :: Maybe BadgeProof,
-    contactDomain :: Maybe (StrJSON "SimplexNameInfo" SimplexNameInfo),
-    contactDomainProof :: Maybe NameClaimProof
+    simplexName :: Maybe SimplexNameClaim
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -728,7 +731,7 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing, contactDomainProof = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, simplexName = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -741,8 +744,9 @@ profilesMatch
 -- so compare badges by disclosed info (not proof bytes) - a re-presentation of the same badge is a no-op
 sameProfileContent :: Profile -> Profile -> Bool
 sameProfileContent p@Profile {badge = b} p'@Profile {badge = b'} =
-  p {badge = Nothing, contactDomainProof = Nothing} == p' {badge = Nothing, contactDomainProof = Nothing} && (proofInfo <$> b) == (proofInfo <$> b')
+  clearProofs p == clearProofs p' && (proofInfo <$> b) == (proofInfo <$> b')
   where
+    clearProofs pr@Profile {simplexName} = pr {badge = Nothing, simplexName = setClaimProof Nothing <$> simplexName}
     proofInfo :: BadgeProof -> BadgeInfo
     proofInfo (BadgeProof _ _ _ info) = info
 
@@ -779,9 +783,8 @@ data LocalProfile = LocalProfile
     peerType :: Maybe ChatPeerType,
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
-    contactDomain :: Maybe SimplexNameInfo,
-    contactDomainVerification :: Maybe Bool,
-    contactDomainProof :: Maybe NameClaimProof
+    simplexName :: Maybe SimplexNameClaim,
+    contactDomainVerification :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -789,22 +792,21 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain, contactDomainProof} localAlias now verified nameVerified =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain = unStrJSON <$> contactDomain, contactDomainVerification = nameVerified, contactDomainProof}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, simplexName} localAlias now badgeVerified contactDomainVerification =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, simplexName, contactDomainVerification}
   where
-    localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now verified info)) <$> badge
+    localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, contactDomain} =
-  -- contactDomainProof is generated fresh at send (presentUserBadge) / dropped by redaction, never copied from the stored profile
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = StrJSON <$> contactDomain, contactDomainProof = Nothing}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, simplexName} =
+  -- the name proof is re-signed on each send
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, simplexName = setClaimProof Nothing <$> simplexName}
   where
-    -- any stored peer proof rides the wire (receivers verify independently); the own credential is presented fresh, and a display-only badge never sends
     wireBadge :: LocalBadge -> Maybe BadgeProof
     wireBadge = \case
-      PeerBadge b _ -> Just b
-      OwnBadge _ _ -> Nothing
-      ShownBadge _ _ -> Nothing
+      PeerBadge b _ -> Just b -- stored peer proof sent as is
+      OwnBadge _ _ -> Nothing -- the own credential is not sent, proof is generated on send
+      ShownBadge _ _ -> Nothing -- a display-only badge is not sent
 
 profileBadgeVerified :: Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
 profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
@@ -843,12 +845,15 @@ instance ToField GroupType where toField = toField . textEncode
 
 data PublicGroupAccess = PublicGroupAccess
   { groupWebPage :: Maybe Text,
-    groupDomain :: Maybe (StrJSON "SimplexName" SimplexNameInfo),
-    groupDomainProof :: Maybe NameClaimProof,
+    simplexName :: Maybe SimplexNameClaim,
     domainWebPage :: Bool,
     allowEmbedding :: Bool
   }
   deriving (Eq, Show)
+
+-- selector disambiguated from Profile/LocalProfile simplexName
+publicGroupClaim :: PublicGroupAccess -> Maybe SimplexNameClaim
+publicGroupClaim PublicGroupAccess {simplexName} = simplexName
 
 data PublicGroupProfile = PublicGroupProfile
   { groupType :: GroupType,
@@ -1783,6 +1788,55 @@ data RcvChunkStatus = RcvChunkOk | RcvChunkFinal | RcvChunkDuplicate | RcvChunkE
 type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
+
+data ConnectTarget (m :: ConnectionMode) where
+  CTFullContact :: ConnectionRequestUri 'CMContact -> ConnectTarget 'CMContact
+  CTShortContact :: ContactNameOrLink -> ConnectTarget 'CMContact
+  CTInv :: ConnectionLink 'CMInvitation -> ConnectTarget 'CMInvitation
+
+data ContactNameOrLink = CTName SimplexNameInfo | CTLink (ConnShortLink 'CMContact)
+  deriving (Eq, Show)
+
+deriving instance Eq (ConnectTarget m)
+
+deriving instance Show (ConnectTarget m)
+
+data AConnectTarget = forall m. ConnectionModeI m => ACTarget (SConnectionMode m) (ConnectTarget m)
+
+instance Eq AConnectTarget where
+  ACTarget m t == ACTarget m' t' = case testEquality m m' of
+    Just Refl -> t == t'
+    _ -> False
+
+deriving instance Show AConnectTarget
+
+instance StrEncoding AConnectTarget where
+  strEncode (ACTarget _ t) = case t of
+    CTFullContact cr -> strEncode cr
+    CTShortContact (CTName n) -> strEncode n
+    CTShortContact (CTLink sl) -> strEncode sl
+    CTInv l -> strEncode l
+  strP =
+    (ACTarget SCMContact . CTShortContact . CTName <$> (lookAhead nameStart *> strP))
+      <|> ((\(ACL m cl) -> aConnectTarget m cl) <$> strP)
+    where
+      nameStart = "@" <|> "#" <|> "simplex:/name"
+
+aConnectTarget :: SConnectionMode m -> ConnectionLink m -> AConnectTarget
+aConnectTarget m cl = case (m, cl) of
+  (SCMContact, CLFull cr) -> ACTarget SCMContact (CTFullContact cr)
+  (SCMContact, CLShort sl) -> ACTarget SCMContact (CTShortContact (CTLink sl))
+  (SCMInvitation, _) -> ACTarget SCMInvitation (CTInv cl)
+
+aConnectTargetLink :: AConnectionLink -> AConnectTarget
+aConnectTargetLink (ACL m cl) = aConnectTarget m cl
+
+instance ToJSON AConnectTarget where
+  toEncoding = strToJEncoding
+  toJSON = strToJSON
+
+instance FromJSON AConnectTarget where
+  parseJSON = strParseJSON "AConnectTarget"
 
 type CreatedLinkInvitation = CreatedConnLink 'CMInvitation
 

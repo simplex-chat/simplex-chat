@@ -499,7 +499,7 @@ export namespace APIAddContact {
 // Network usage: interactive.
 export interface APIConnectPlan {
   userId: number // int64
-  connectTarget?: T.ConnectTarget
+  connectTarget?: T.AConnectTarget
   resolveKnown: boolean
   linkOwnerSig?: T.LinkOwnerSig
 }
@@ -532,7 +532,7 @@ export namespace APIConnect {
 // Network usage: interactive.
 export interface Connect {
   incognito: boolean
-  connTarget_?: T.ConnectTarget
+  connTarget_?: T.AConnectTarget
 }
 
 export namespace Connect {
@@ -678,20 +678,6 @@ export namespace APISetUserAutoAcceptMemberContacts {
 
   export function cmdString(self: APISetUserAutoAcceptMemberContacts): string {
     return '/_set accept member contacts ' + self.userId + ' ' + (self.onOff ? 'on' : 'off')
-  }
-}
-
-// Verify a contact's or group's claimed SimpleX name by RSLV-resolving the claim and comparing the resolved link to the peer's stored connection link. Returns `CRSimplexNameVerified` with a boolean `verified` (a match also writes the verification timestamp); resolver / agent failures are reported as `CRChatCmdError`.
-// Network usage: interactive.
-export interface APIVerifySimplexName {
-  chatRef: T.ChatRef
-}
-
-export namespace APIVerifySimplexName {
-  export type Response = CR.SimplexNameVerified | CR.ChatCmdError
-
-  export function cmdString(self: APIVerifySimplexName): string {
-    return '/_verify simplex name ' + T.ChatRef.cmdString(self.chatRef)
   }
 }
 

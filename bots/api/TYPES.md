@@ -5,6 +5,7 @@ This file is generated automatically.
 - [ACIReaction](#acireaction)
 - [AChat](#achat)
 - [AChatItem](#achatitem)
+- [AConnectTarget](#aconnecttarget)
 - [AddRelayResult](#addrelayresult)
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
@@ -61,7 +62,6 @@ This file is generated automatically.
 - [ComposedMessage](#composedmessage)
 - [ConnStatus](#connstatus)
 - [ConnType](#conntype)
-- [ConnectTarget](#connecttarget)
 - [Connection](#connection)
 - [ConnectionEntity](#connectionentity)
 - [ConnectionErrorType](#connectionerrortype)
@@ -176,7 +176,9 @@ This file is generated automatically.
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameClaim](#simplexnameclaim)
 - [SimplexNameDomain](#simplexnamedomain)
+- [SimplexNameError](#simplexnameerror)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -238,6 +240,23 @@ This file is generated automatically.
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatItem: [ChatItem](#chatitem)
+
+
+---
+
+## AConnectTarget
+
+Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
+
+**Discriminated union type**:
+
+Name:
+- type: "name"
+- : [SimplexNameInfo](#simplexnameinfo)
+
+Link:
+- type: "link"
+- : string
 
 
 ---
@@ -1110,13 +1129,10 @@ ChatStoreChanged:
 InvalidConnReq:
 - type: "invalidConnReq"
 
-SimplexNameNotFound:
-- type: "simplexNameNotFound"
+SimplexName:
+- type: "simplexName"
 - simplexName: [SimplexNameInfo](#simplexnameinfo)
-
-SimplexNameUnprepared:
-- type: "simplexNameUnprepared"
-- simplexName: [SimplexNameInfo](#simplexnameinfo)
+- simplexNameError: [SimplexNameError](#simplexnameerror)
 
 UnsupportedConnReq:
 - type: "unsupportedConnReq"
@@ -1653,23 +1669,6 @@ Failed:
 
 ---
 
-## ConnectTarget
-
-Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
-
-**Discriminated union type**:
-
-Link:
-- type: "link"
-- : string
-
-Name:
-- type: "name"
-- : [SimplexNameInfo](#simplexnameinfo)
-
-
----
-
 ## Connection
 
 **Record type**:
@@ -1815,6 +1814,7 @@ Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- verifiedName: [SimplexNameInfo](#simplexnameinfo)?
 
 OwnLink:
 - type: "ownLink"
@@ -2411,6 +2411,7 @@ Ok:
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- verifiedName: [SimplexNameInfo](#simplexnameinfo)?
 
 OwnLink:
 - type: "ownLink"
@@ -2789,9 +2790,8 @@ Unknown:
 - peerType: [ChatPeerType](#chatpeertype)?
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
-- contactDomain: [SimplexNameInfo](#simplexnameinfo)?
+- simplexName: [SimplexNameClaim](#simplexnameclaim)?
 - contactDomainVerification: bool?
-- contactDomainProof: [NameClaimProof](#nameclaimproof)?
 
 
 ---
@@ -3164,8 +3164,7 @@ count=<count>
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
 - badge: [BadgeProof](#badgeproof)?
-- contactDomain: string?
-- contactDomainProof: [NameClaimProof](#nameclaimproof)?
+- simplexName: [SimplexNameClaim](#simplexnameclaim)?
 
 
 ---
@@ -3214,8 +3213,7 @@ NO_SESSION:
 
 **Record type**:
 - groupWebPage: string?
-- groupDomain: string?
-- groupDomainProof: [NameClaimProof](#nameclaimproof)?
+- simplexName: [SimplexNameClaim](#simplexnameclaim)?
 - domainWebPage: bool
 - allowEmbedding: bool
 
@@ -3613,12 +3611,34 @@ A_QUEUE:
 
 ---
 
+## SimplexNameClaim
+
+**Record type**:
+- name: [SimplexNameInfo](#simplexnameinfo)
+- proof: [NameClaimProof](#nameclaimproof)?
+
+
+---
+
 ## SimplexNameDomain
 
 **Record type**:
 - nameTLD: [SimplexTLD](#simplextld)
 - domain: string
 - subDomain: [string]
+
+
+---
+
+## SimplexNameError
+
+**Discriminated union type**:
+
+NoValidLink:
+- type: "noValidLink"
+
+UnknownName:
+- type: "unknownName"
 
 
 ---

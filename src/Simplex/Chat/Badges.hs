@@ -30,9 +30,6 @@ module Simplex.Chat.Badges
     maxFileSizeLegend,
     ProofPresHeaderTag (..),
     ProofPresHeader (..),
-    NameClaimProof (..),
-    signNameProof,
-    verifyNameProofSig,
     proofPresHeaderLink,
     BadgePurchase (..),
     BadgeMasterKey (..),
@@ -246,35 +243,6 @@ proofPresHeaderAccepted = \case
   PHSimplexLink _ -> True
   PHUnknown _ _ -> True
 
--- A name claim proof: signed by the address owner's key (linkOwnerId = Just oid when a channel
--- owner other than the address signs, Nothing when the address's own root key signs) over
--- strEncode name <> strEncode presHeader, tied to the link it is shown through.
-data NameClaimProof = NameClaimProof
-  { linkOwnerId :: Maybe (StrJSON "OwnerId" OwnerId),
-    presHeader :: ProofPresHeader,
-    signature :: C.Signature 'C.Ed25519
-  }
-  deriving (Eq, Show)
-
-nameProofPayload :: SimplexNameInfo -> ProofPresHeader -> ByteString
-nameProofPayload name presHeader = strEncode name <> strEncode presHeader
-
--- linkOwnerId names the signing owner in the link's owner chain (Nothing = root key for a contact address).
-signNameProof :: C.PrivateKeyEd25519 -> Maybe OwnerId -> SimplexNameInfo -> ProofPresHeader -> NameClaimProof
-signNameProof key linkOwnerId name presHeader =
-  NameClaimProof
-    { linkOwnerId = StrJSON <$> linkOwnerId,
-      presHeader,
-      signature = C.sign' key (nameProofPayload name presHeader)
-    }
-
--- verify a name proof's signature against the resolved address owner key. The caller must
--- SEPARATELY check the proof's presHeader link is the one it was shown through, so a proof made
--- for one link can't be reused on another.
-verifyNameProofSig :: C.PublicKeyEd25519 -> SimplexNameInfo -> NameClaimProof -> Bool
-verifyNameProofSig ownerKey name NameClaimProof {presHeader, signature} =
-  C.verify' ownerKey signature (nameProofPayload name presHeader)
-
 proofPresHeaderLink :: ProofPresHeader -> Maybe AConnShortLink
 proofPresHeaderLink = \case
   PHSimplexLink lnk -> Just lnk
@@ -443,13 +411,6 @@ $(JQ.deriveJSON defaultJSON ''BadgeRequest)
 $(JQ.deriveJSON defaultJSON ''BadgeCredential)
 
 $(JQ.deriveJSON defaultJSON ''BadgeProof)
-
-$(JQ.deriveJSON defaultJSON ''NameClaimProof)
-
--- NameClaimProof is stored as JSON in contact_profiles.contact_domain_proof (like a badge proof)
-instance ToField NameClaimProof where toField = toField . encodeJSON
-
-instance FromField NameClaimProof where fromField = fromTextField_ decodeJSON
 
 -- LocalBadge is sent to the UI/clients WITHOUT crypto - only disclosed info + status. The credential/proof
 -- bytes stay core-side. FromJSON reconstructs a display-only badge (empty proof) for read-only consumers
