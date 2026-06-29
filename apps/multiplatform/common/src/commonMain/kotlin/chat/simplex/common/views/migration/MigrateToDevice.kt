@@ -522,9 +522,16 @@ private fun ProgressView() {
 
 private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
   return if (strHasSimplexFileLink(link.trim())) {
-    val data = MigrationFileLinkData.readFromLink(link)
-    val hasProxyConfigured = data?.networkConfig?.hasProxyConfigured() ?: false
-    val networkConfig = data?.networkConfig?.transformToPlatformSupported()
+    val (data, linkError) = MigrationFileLinkData.readFromLink(link)
+    if (data == null) {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.invalid_file_link),
+        text = linkError ?: generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
+      )
+      return false
+    }
+    val hasProxyConfigured = data.networkConfig?.hasProxyConfigured() ?: false
+    val networkConfig = data.networkConfig?.transformToPlatformSupported()
     // If any of iOS or Android had onion enabled, show onion screen
     if (hasProxyConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null) {
       state = MigrationToState.Onion(link.trim(), networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
@@ -606,15 +613,16 @@ private fun MutableState<MigrationToState?>.startDownloading(
             state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
           }
           msg is API.Error -> {
-            if (msg.err is ChatError.ChatErrorChat && msg.err.errorType is ChatErrorType.NoRcvFileUser) {
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.migrate_to_device_download_failed),
-                generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
-              )
-              state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
+            val text = if (msg.err is ChatError.ChatErrorChat && msg.err.errorType is ChatErrorType.NoRcvFileUser) {
+              generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
             } else {
-              Log.d(TAG, "unsupported error: ${msg.responseType}, ${json.encodeToString(msg.err)}")
+              ChatController.apiResponseErrorMessage(msg)
             }
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.migrate_to_device_download_failed),
+              text
+            )
+            state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
           }
           else -> Log.d(TAG, "unsupported event: ${msg.responseType}")
         }
@@ -624,9 +632,14 @@ private fun MutableState<MigrationToState?>.startDownloading(
     val (res, error) = controller.downloadStandaloneFile(user, link, CryptoFile.plain(File(archivePath).path), ctrl)
     if (res == null) {
       state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
+      val text = when {
+        error == null -> generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
+        error.contains("noRcvFileUser") -> generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
+        else -> error
+      }
       AlertManager.shared.showAlertMsg(
         generalGetString(MR.strings.migrate_to_device_error_downloading_archive),
-        error
+        text
       )
     }
   }

@@ -69,14 +69,8 @@ data class MigrationFileLinkData(
   fun addToLink(link: String) = link + "&data=" + URLEncoder.encode(jsonShort.encodeToString(this), "UTF-8")
 
   companion object {
-    suspend fun readFromLink(link: String): MigrationFileLinkData? =
-      try {
-        // val data = link.substringAfter("&data=").substringBefore("&")
-        // json.decodeFromString(URLDecoder.decode(data, "UTF-8"))
-        controller.standaloneFileInfo(link)
-      } catch (e: Exception) {
-        null
-      }
+    suspend fun readFromLink(link: String): Pair<MigrationFileLinkData?, String?> =
+      controller.standaloneFileInfo(link)
   }
 }
 
