@@ -37,7 +37,7 @@ fun ChannelRelaysView(
   LaunchedEffect(Unit) {
     setGroupMembers(rhId, groupInfo, chatModel)
     if (groupInfo.isOwner) {
-      val relays = chatModel.controller.apiGetGroupRelays(groupInfo.groupId)
+      val relays = chatModel.controller.apiGetGroupRelays(rhId, groupInfo.groupId)
       ChannelRelaysModel.set(groupId = groupInfo.groupId, groupRelays = relays)
     }
   }
@@ -114,6 +114,7 @@ private fun ChannelRelaysLayout(
           val existingRelayIds = groupRelays.mapNotNull { it.userChatRelay.chatRelayId }.toSet()
           ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
             AddGroupRelayView(
+              rhId = rhId,
               groupInfo = groupInfo,
               existingRelayIds = existingRelayIds,
               onRelayAdded = { withBGApi { setGroupMembers(rhId, groupInfo, chatModel) } },
