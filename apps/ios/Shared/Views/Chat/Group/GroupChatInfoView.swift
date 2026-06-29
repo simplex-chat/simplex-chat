@@ -253,13 +253,13 @@ struct GroupChatInfoView: View {
                                         titleKey: "Set SimpleX name",
                                         footer: "Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel's address.",
                                         prefix: "#",
-                                        nameText: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.name?.shortName ?? "",
+                                        nameText: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.name.shortName ?? "",
                                         save: { name in
                                             do {
                                                 let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
                                                 let gInfo = try await apiSetPublicGroupAccess(
                                                     groupInfo.localDisplayName,
-                                                    domain: name.isEmpty ? nil : name,
+                                                    domain: name?.isEmpty == true ? nil : name,
                                                     webPage: access?.groupWebPage,
                                                     domainPage: access?.domainWebPage ?? false,
                                                     allowEmbedding: access?.allowEmbedding ?? false

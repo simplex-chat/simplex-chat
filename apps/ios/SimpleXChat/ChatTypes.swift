@@ -2513,7 +2513,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     public var useRelays: Bool
     public var relayOwnStatus: RelayStatus? = nil
-    var localDisplayName: GroupName
+    public var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var businessChat: BusinessChatInfo?
     public var fullGroupPreferences: FullGroupPreferences
