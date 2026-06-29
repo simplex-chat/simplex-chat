@@ -26,6 +26,7 @@ actual class RecorderNative: RecorderInterface {
   override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
     VideoPlayerHolder.stopAll()
     AudioPlayer.stop()
+    tmpDir.mkdirs()
     val fileToSave = File.createTempFile(generateNewFileName("voice", "${RecorderInterface.extension}_", tmpDir), ".tmp", tmpDir)
     fileToSave.deleteOnExit()
     val path = fileToSave.absolutePath
@@ -271,6 +272,7 @@ actual object SoundPlayer: SoundPlayerInterface {
   var playing = false
 
   override fun start(scope: CoroutineScope, sound: Boolean) {
+    tmpDir.mkdirs()
     val tmpFile = File(tmpDir, UUID.randomUUID().toString())
     tmpFile.deleteOnExit()
     SoundPlayer::class.java.getResource("/media/ring_once.mp3")!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
@@ -294,6 +296,7 @@ actual object CallSoundsPlayer: CallSoundsPlayerInterface {
 
   private fun start(soundPath: String, delay: Long, scope: CoroutineScope) {
     playingJob?.cancel()
+    tmpDir.mkdirs()
     val tmpFile = File(tmpDir, UUID.randomUUID().toString())
     tmpFile.deleteOnExit()
     SoundPlayer::class.java.getResource(soundPath)!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
