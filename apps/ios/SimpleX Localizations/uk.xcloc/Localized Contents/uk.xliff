@@ -1081,8 +1081,9 @@ swipe action</note>
         <target>Дозволити спільний доступ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow subscribers to chat with admins." xml:space="preserve">
+      <trans-unit id="Allow subscribers to chat with admins." xml:space="preserve" approved="no">
         <source>Allow subscribers to chat with admins.</source>
+        <target state="translated">Дозволяє абонентам спілкуватися з адміністраторами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -1140,8 +1141,9 @@ swipe action</note>
         <target>Дозвольте своїм контактам надсилати зникаючі повідомлення.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send files and media." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send files and media." xml:space="preserve" approved="no">
         <source>Allow your contacts to send files and media.</source>
+        <target state="translated">Дозволяє абонентам спілкуватися з адміністраторами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
@@ -1189,8 +1191,9 @@ swipe action</note>
         <target>Відповісти на дзвінок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Any webpage can show the preview." xml:space="preserve">
+      <trans-unit id="Any webpage can show the preview." xml:space="preserve" approved="no">
         <source>Any webpage can show the preview.</source>
+        <target state="translated">Будь-яка веб-сторінка може відображати попередній огляд.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
@@ -1233,8 +1236,9 @@ swipe action</note>
         <target>Сесія програми</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App update required" xml:space="preserve">
+      <trans-unit id="App update required" xml:space="preserve" approved="no">
         <source>App update required</source>
+        <target state="translated">Потрібно оновити додаток</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -1327,8 +1331,9 @@ swipe action</note>
         <target>Аудіо та відеодзвінки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio call" xml:space="preserve">
+      <trans-unit id="Audio call" xml:space="preserve" approved="no">
         <source>Audio call</source>
+        <target state="translated">Аудіодзвінок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio/video calls" xml:space="preserve">
