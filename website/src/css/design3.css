@@ -1607,7 +1607,7 @@ section.page.footer {
     font-size: calc(var(--sec-vwu) * 12);
     line-height: 0.9;
     letter-spacing: -0.025em;
-    color: #023789;
+    color: #1187fe;
 }
 
 .dark .cf-hero .content h1 {
