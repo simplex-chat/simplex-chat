@@ -21,7 +21,7 @@ CREATE INDEX idx_chat_items_note_folder_msg_content_tag_created_at ON chat_items
   note_folder_id,
   msg_content_tag,
   created_at
-);  
+);
 |]
 
 down_m20260108_chat_indices :: Text
