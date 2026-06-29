@@ -80,6 +80,22 @@ fun copyBytesToFile(bytes: ByteArrayInputStream, to: URI, finally: () -> Unit) {
 
 fun getMigrationTempFilesDirectory(): File = File(dataDir, "migration_temp_files")
 
+/** Copy a user-selected archive URI into [destDir]; returns absolute path or null on failure. */
+fun copyArchiveFromUri(importedArchiveURI: URI, destDir: File): String? {
+  return try {
+    val inputStream = importedArchiveURI.inputStream() ?: return null
+    destDir.mkdirs()
+    val archiveName = getFileName(importedArchiveURI) ?: "simplex-chat-import.zip"
+    val destFile = File(destDir, archiveName)
+    Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    destFile.absolutePath
+  } catch (e: Exception) {
+    Log.e(TAG, "copyArchiveFromUri error: ${e.stackTraceToString()}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_database), e.message ?: e.toString())
+    null
+  }
+}
+
 fun getAppFilePath(fileName: String): String {
   val rh = chatModel.currentRemoteHost.value
   val s = File.separator

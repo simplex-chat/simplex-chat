@@ -72,7 +72,7 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
 importArchive :: ArchiveConfig -> CM' [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
   (`E.catch` archiveImportFatal) $ withTempDir cfg "simplex-chat." $ \dir -> do
-    liftIO $ unpackArchive archivePath dir
+    liftIO $ Z.withArchive archivePath $ Z.unpackInto dir
     validateArchiveContents dir
     fs@StorageFiles {chatStore, agentStore, filesPath, assetsPath} <- storageFiles
     liftIO $ closeDBStore `withStores` fs
@@ -100,10 +100,6 @@ importArchive cfg@ArchiveConfig {archivePath} =
           `E.catch` \(e :: E.SomeException) -> pure [AEImport $ show e]
       _ -> pure []
 
-unpackArchive :: FilePath -> FilePath -> IO ()
-unpackArchive archivePath dir =
-  Z.withArchive archivePath $ Z.unpackInto dir
-
 validateArchiveContents :: FilePath -> CM' ()
 validateArchiveContents dir = do
   forM_ [archiveChatDbFile, archiveAgentDbFile] $ \f -> do
@@ -123,13 +119,11 @@ throwArchiveImportFatal msg = throwIO $ ChatError $ CEException msg
 
 archiveImportErrorMessage :: E.SomeException -> String
 archiveImportErrorMessage e =
-  let s = show e
-   in if | "does not exist" `isInfixOf` s || "not found" `isInfixOf` s -> "archive file not found"
-         | "not a zip" `isInfixOf` s || ("invalid" `isInfixOf` s && "zip" `isInfixOf` s) -> "archive is invalid or corrupt"
-         | "CRC" `isInfixOf` s || "corrupt" `isInfixOf` s || "truncated" `isInfixOf` s -> "archive is invalid or corrupt"
-         | otherwise -> "archive import failed: " <> s
-  where
-    isInfixOf needle haystack = needle `T.isInfixOf` T.pack haystack
+  let s = T.pack $ show e
+   in if | "does not exist" `T.isInfixOf` s || "not found" `T.isInfixOf` s -> "archive file not found"
+         | "not a zip" `T.isInfixOf` s || ("invalid" `T.isInfixOf` s && "zip" `T.isInfixOf` s) -> "archive is invalid or corrupt"
+         | "CRC" `T.isInfixOf` s || "corrupt" `T.isInfixOf` s || "truncated" `T.isInfixOf` s -> "archive is invalid or corrupt"
+         | otherwise -> "archive import failed: " <> T.unpack s
 
 withTempDir :: ArchiveConfig -> (String -> (FilePath -> CM' a) -> CM' a)
 withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
