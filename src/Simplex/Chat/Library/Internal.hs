@@ -1186,8 +1186,9 @@ serveRoster :: User -> GroupInfo -> GroupMember -> CM ()
 serveRoster user gInfo member =
   when (member `supportsVersion` groupRosterVersion) $ do
     cxt <- chatStoreCxt
-    withStore' (\db -> getGroupRoster db gInfo) >>= \case
-      Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
+    -- read the served version with the blob, so the recorded served version matches what is served
+    withStore' (\db -> (,) <$> getGroupRoster db gInfo <*> getGroupRosterVersion db gInfo) >>= \case
+      (Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_), rosterVer_) ->
         case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
           Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
           Right chatMsg@ChatMessage {msgId} ->
@@ -1197,8 +1198,10 @@ serveRoster user gInfo member =
                 sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
                 forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
                   sendInlineBlobChunks user gInfo [member] sid blob
+                -- record the served version so a member can't re-trigger a full serve at a version it already got
+                forM_ rosterVer_ $ \v -> withStore' $ \db -> setMemberRosterServedVersion db member v
               Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
-      Nothing -> pure ()
+      (Nothing, _) -> pure ()
 
 -- Used in groups with relays to introduce moderators and above to a new member,
 -- and to announce the new member to moderators and above.

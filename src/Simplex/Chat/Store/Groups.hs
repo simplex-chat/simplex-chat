@@ -90,6 +90,8 @@ module Simplex.Chat.Store.Groups
     getPublishableGroupRelays,
     setGroupRosterVersion,
     getGroupRosterVersion,
+    setMemberRosterServedVersion,
+    getMemberRosterServedVersion,
     getGroupRoster,
     RcvRosterTransfer (..),
     createRosterTransfer,
@@ -1477,6 +1479,18 @@ getGroupRosterVersion :: DB.Connection -> GroupInfo -> IO (Maybe VersionRoster)
 getGroupRosterVersion db GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT roster_version FROM groups WHERE group_id = ?" (Only groupId)
+
+-- The newest roster version a relay re-served to this member on its catch-up request: bounds reflected
+-- amplification, so a member can't re-trigger a full serve at a version it was already served.
+setMemberRosterServedVersion :: DB.Connection -> GroupMember -> VersionRoster -> IO ()
+setMemberRosterServedVersion db GroupMember {groupMemberId} v = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE group_members SET roster_served_version = ?, updated_at = ? WHERE group_member_id = ?" (v, currentTs, groupMemberId)
+
+getMemberRosterServedVersion :: DB.Connection -> GroupMember -> IO (Maybe VersionRoster)
+getMemberRosterServedVersion db GroupMember {groupMemberId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT roster_served_version FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
 
 -- The live roster header a relay re-serves to joiners, with the completed blob served alongside it
 -- (both are written together at completion, so the blob is present whenever the header is).

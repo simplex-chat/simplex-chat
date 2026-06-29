@@ -3497,13 +3497,16 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         _ -> pure ()
 
     -- A relay re-serves the full roster to a subscriber that detected a version gap, but only when it holds
-    -- something newer than the requester's pre-gap version (rate-limiting same-version requests). serveRoster
-    -- is the join/resume path: signed header + inline blob chunks to the one requester; a no-op without a roster.
+    -- something newer than BOTH the requester's claimed version and the version it last served this member -
+    -- the latter bounds reflected amplification (a member can't re-trigger a full serve with reqVer = 0).
+    -- serveRoster records the served version (on all serve paths) and is a no-op without a roster.
     xGrpRosterRequest :: GroupInfo -> GroupMember -> VersionRoster -> CM ()
     xGrpRosterRequest gInfo m reqVer =
       when (isUserGrpFwdRelay gInfo) $ do
-        cur <- withStore' $ \db -> getGroupRosterVersion db gInfo
-        when (maybe True (> reqVer) cur) $ serveRoster user gInfo m
+        (cur_, served_) <- withStore' $ \db ->
+          (,) <$> getGroupRosterVersion db gInfo <*> getMemberRosterServedVersion db m
+        forM_ cur_ $ \cur ->
+          when (cur > reqVer && maybe True (cur >) served_) $ serveRoster user gInfo m
 
     checkHostRole :: GroupMember -> GroupMemberRole -> CM ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
