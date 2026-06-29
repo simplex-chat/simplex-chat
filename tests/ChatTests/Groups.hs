@@ -36,7 +36,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -332,6 +332,8 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
+      it "should sign member message and reuse signature on edit" testChannelMemberMessageSign
+      it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -12068,6 +12070,136 @@ testChannelMemberMessageDelete ps =
                 dan <# "#team cath> [marked deleted] hello",
                 eve <# "#team cath> [marked deleted] hello"
               ]
+
+testChannelMemberMessageSign :: HasCallStack => TestParams -> IO ()
+testChannelMemberMessageSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- member sends a signed message
+            cath ##> "/_send #1 sign=on text signed hello"
+            cath <# "#team signed hello"
+            bob <# "#team cath> signed hello"
+            concurrentlyN_
+              [ alice <# "#team cath> signed hello [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> signed hello [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> signed hello [>>]"
+              ]
+            -- sender and recipient hold it signed
+            cath #$> ("/_get chat #1 count=1", chat, [(1, "signed hello (signed)")])
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "signed hello (signed)")])
+
+            -- editing a signed item reuses the signature
+            cathMsgId <- lastItemId cath
+            cath ##> ("/_update item #1 " <> cathMsgId <> " text signed hello edited")
+            cath <# "#team [edited] signed hello edited"
+            bob <# "#team cath> [edited] signed hello edited"
+            concurrentlyN_
+              [ alice <# "#team cath> [edited] signed hello edited",
+                dan <# "#team cath> [edited] signed hello edited",
+                eve <# "#team cath> [edited] signed hello edited"
+              ]
+            cath #$> ("/_get chat #1 count=1", chat, [(1, "signed hello edited (signed)")])
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "signed hello edited (signed)")])
+
+            -- default send is unsigned, and holds no signature
+            cath #> "#team plain hello"
+            bob <# "#team cath> plain hello"
+            concurrentlyN_
+              [ alice <# "#team cath> plain hello [>>]",
+                dan <# "#team cath> plain hello [>>]",
+                eve <# "#team cath> plain hello [>>]"
+              ]
+            cath #$> ("/_get chat #1 count=1", chat, [(1, "plain hello")])
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "plain hello")])
+
+testChannelMemberUpdateEnforcement :: HasCallStack => TestParams -> IO ()
+testChannelMemberUpdateEnforcement ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath posts a signed message; dan holds it verified
+            cath ##> "/_send #1 sign=on text secret"
+            cath <# "#team secret"
+            bob <# "#team cath> secret"
+            concurrentlyN_
+              [ alice <# "#team cath> secret [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> secret [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> secret [>>]"
+              ]
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "secret (signed)")])
+
+            -- the malicious relay forges an unsigned XMsgUpdate of cath's signed item to dan
+            cathMemId <- memberIdByName bob "cath"
+            sharedId <- itemSharedMsgId cath
+            connId <- relayConnIdToMember bob "dan"
+            ts <- getCurrentTime
+            let ChatController {smpAgent = bobAgent} = chatController bob
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing)
+                fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
+                body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+            sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+            either (fail . show) (const $ pure ()) sent
+            -- dan rejects the unsigned mutation of the held-signed item (RGEMsgBadSignature, stored not shown live),
+            -- and the original signed content is not overwritten
+            threadDelay 2000000
+            dan #$> ("/_get chat #1 count=2", chat, [(0, "secret (signed)"), (0, "message rejected: bad signature")])
+
+            -- a legitimate signed edit by cath is accepted
+            cathMsgId <- lastItemId cath
+            cath ##> ("/_update item #1 " <> cathMsgId <> " text secret edited")
+            cath <# "#team [edited] secret edited"
+            bob <# "#team cath> [edited] secret edited"
+            concurrentlyN_
+              [ alice <# "#team cath> [edited] secret edited",
+                dan <# "#team cath> [edited] secret edited",
+                eve <# "#team cath> [edited] secret edited"
+              ]
+            dan #$> ("/_get chat #1 count=2", chat, [(0, "secret edited (signed)"), (0, "message rejected: bad signature")])
+  where
+    memberIdByName :: TestCC -> T.Text -> IO MemberId
+    memberIdByName cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
+      case rows of
+        (Only mid : _) -> pure (MemberId mid)
+        _ -> fail $ "no member " <> T.unpack name
+    relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
+    relayConnIdToMember cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
+          (Only name) ::
+          IO [Only ByteString]
+      case rows of
+        (Only connId : _) -> pure connId
+        _ -> fail $ "no relay connection to member " <> T.unpack name
+    itemSharedMsgId :: TestCC -> IO SharedMsgId
+    itemSharedMsgId cc = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only ByteString]
+      case rows of
+        (Only smid : _) -> pure (SharedMsgId smid)
+        _ -> fail "no shared_msg_id"
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =
