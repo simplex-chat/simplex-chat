@@ -1423,7 +1423,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                               allRelayMembers
                           events = XGrpRelayNew <$> newlyActive
                       unless (null recipients) $
-                        void $ sendGroupMessages user gInfo Nothing False recipients events
+                        void $ sendGroupMessages user gInfo Nothing False recipients False events
                   where
                     updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId]) -> IO ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId])
                     updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks, newlyActiveGMIds) =

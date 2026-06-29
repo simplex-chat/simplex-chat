@@ -2114,16 +2114,19 @@ createSndMessages idsEvents = do
         encodeMessage sharedMsgId =
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
-groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
-groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {publicGroupId, memberPrivKey}} evt
-  | useRelays' gInfo && requiresSignature (toCMEventTag evt) =
+groupMsgSigning :: Bool -> GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
+groupMsgSigning sign gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {publicGroupId, memberPrivKey}} evt
+  | useRelays' gInfo && shouldSign =
       Just $ MsgSigning CBGroup (smpEncode (publicGroupId, memberId)) KRMember memberPrivKey
-groupMsgSigning _ _ = Nothing
+  where
+    tag = toCMEventTag evt
+    shouldSign = requiresSignature tag || (sign && signableContent tag)
+groupMsgSigning _ _ _ = Nothing
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
 sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning gInfo evt, evt)) events
+  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning False gInfo evt, evt)) events
       mode = if useRelays' gInfo then BMBinary else BMJson
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CEvtChatErrors errs
@@ -2259,15 +2262,15 @@ deliverMessagesB msgReqs = do
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
 
-sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
-sendGroupMessage user gInfo gcScope members chatMsgEvent = do
-  sendGroupMessages user gInfo gcScope False members (chatMsgEvent :| []) >>= \case
+sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> [GroupMember] -> Bool -> ChatMsgEvent e -> CM SndMessage
+sendGroupMessage user gInfo gcScope members sign chatMsgEvent = do
+  sendGroupMessages user gInfo gcScope False members sign (chatMsgEvent :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage: expected 1 message"
 
 sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
 sendGroupMessage' user gInfo members chatMsgEvent =
-  sendGroupMessages_ user gInfo members (chatMsgEvent :| []) >>= \case
+  sendGroupMessages_ user gInfo members False (chatMsgEvent :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
@@ -2348,12 +2351,12 @@ sendRelayCapIfNeeded user gInfo = do
       void $ sendGroupMessage' user gInfo capableOwners (XGrpRelayCap RelayCapabilities {webDomain = currentWebDomain})
       withStore' $ \db -> updateRelaySentWebDomain db gInfo currentWebDomain
 
-sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages user gInfo scope asGroup members events = do
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupMessages user gInfo scope asGroup members sign events = do
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchAllErrors` eToView
-  sendGroupMessages_ user gInfo members events
+  sendGroupMessages_ user gInfo members sign events
   where
     User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
@@ -2381,9 +2384,12 @@ data GroupSndResult = GroupSndResult
     forwarded :: [GroupMember]
   }
 
-sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
-  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning gInfo evt, evt)) events
+sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupMessages_ _user gInfo recipientMembers sign events =
+  sendGroupSignedMessages_ gInfo recipientMembers $ L.map (\evt -> (groupMsgSigning sign gInfo evt, evt)) events
+
+sendGroupSignedMessages_ :: MsgEncodingI e => GroupInfo -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents = do
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
@@ -2404,6 +2410,8 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
       pending = zipWith3 (\mId pReq r -> (mId, fmap snd pReq, r)) pendingMemIds pendingReqs stored
   pure (sndMsgs_, GroupSndResult {sentTo, pending, forwarded})
   where
+    events = L.map snd signedEvents
+    idsEvts = L.map (\(signing, evt) -> (GroupId groupId, signing, evt)) signedEvents
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
       let (adminMs, otherMs) = partition isAdmin ms
