@@ -40,6 +40,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.max
 
+private const val MIGRATION_DOWNLOAD_TIMEOUT_MS = 3_600_000L
+
 @Serializable
 sealed class MigrationToDeviceState {
   @Serializable @SerialName("onion") data class Onion(val link: String, val socksProxy: String?, val networkProxy: NetworkProxy?, val hostMode: HostMode, val requiredHostMode: Boolean): MigrationToDeviceState()
@@ -215,7 +217,7 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
       SectionSpacer()
 
       SectionView(stringResource(MR.strings.chat_archive).uppercase()) {
-        ArchiveImportView(progressIndicator, close)
+        ArchiveImportFromFileView(progressIndicator, close)
       }
     }
     if (progressIndicator.value)
@@ -235,19 +237,17 @@ private fun MutableState<MigrationToState?>.PasteLinkView() {
 }
 
 @Composable
-private fun ArchiveImportView(progressIndicator: MutableState<Boolean>, close: () -> Unit) {
+private fun MutableState<MigrationToState?>.ArchiveImportFromFileView(progressIndicator: MutableState<Boolean>, close: () -> Unit) {
+  val migrationState = this
   val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
     if (to != null) {
       withLongRunningApi {
-        val success = importArchive(to, mutableStateOf(0 to 0), progressIndicator, true)
-        if (success) {
-          startChat(
-            chatModel,
-            mutableStateOf(Clock.System.now()),
-            chatModel.chatDbChanged,
-            progressIndicator
-          )
-          hideView(close)
+        progressIndicator.value = true
+        val archivePath = copyArchiveFromUri(to, getMigrationTempFilesDirectory())
+        progressIndicator.value = false
+        if (archivePath != null) {
+          val netCfg = getNetCfg()
+          migrationState.state = MigrationToState.ArchiveImport(archivePath, netCfg, null)
         }
       }
     }
@@ -349,7 +349,17 @@ private fun MutableState<MigrationToState?>.LinkDownloadingView(
     ProgressView()
   }
   LaunchedEffect(Unit) {
-    startDownloading(0, ctrl, user, tempDatabaseFile, chatReceiver, link, archivePath, netCfg, networkProxy)
+    val timedOut = withTimeoutOrNull(MIGRATION_DOWNLOAD_TIMEOUT_MS) {
+      startDownloading(0, ctrl, user, tempDatabaseFile, chatReceiver, link, archivePath, netCfg, networkProxy)
+    }
+    if (timedOut == null && value is MigrationToState.LinkDownloading) {
+      chatReceiver.value?.stopAndCleanUp()
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.migrate_to_device_download_failed),
+        generalGetString(MR.strings.migrate_to_device_try_again)
+      )
+      state = MigrationToState.DownloadFailed(0, link, archivePath, netCfg, networkProxy)
+    }
   }
 }
 
@@ -522,9 +532,16 @@ private fun ProgressView() {
 
 private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
   return if (strHasSimplexFileLink(link.trim())) {
-    val data = MigrationFileLinkData.readFromLink(link)
-    val hasProxyConfigured = data?.networkConfig?.hasProxyConfigured() ?: false
-    val networkConfig = data?.networkConfig?.transformToPlatformSupported()
+    val (data, linkError) = MigrationFileLinkData.readFromLink(link)
+    if (data == null) {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.invalid_file_link),
+        text = linkError ?: generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
+      )
+      return false
+    }
+    val hasProxyConfigured = data.networkConfig?.hasProxyConfigured() ?: false
+    val networkConfig = data.networkConfig?.transformToPlatformSupported()
     // If any of iOS or Android had onion enabled, show onion screen
     if (hasProxyConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null) {
       state = MigrationToState.Onion(link.trim(), networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
@@ -598,23 +615,26 @@ private fun MutableState<MigrationToState?>.startDownloading(
               MigrationToDeviceState.save(MigrationToDeviceState.ArchiveImport(File(archivePath).name, netCfg, networkProxy))
             }
           }
-          r is CR.RcvFileError -> {
+          r is CR.RcvFileError || r is CR.RcvFileCancelled -> {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.migrate_to_device_download_failed),
               generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
             )
             state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
           }
+          r is CR.RcvFileWarning -> Log.w(TAG, "MigrateToDevice download warning: ${r.agentError.string}")
+          r is CR.RcvStandaloneFileCreated -> Log.d(TAG, "MigrateToDevice: standalone file download started")
           msg is API.Error -> {
-            if (msg.err is ChatError.ChatErrorChat && msg.err.errorType is ChatErrorType.NoRcvFileUser) {
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.migrate_to_device_download_failed),
-                generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
-              )
-              state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
+            val text = if (msg.err is ChatError.ChatErrorChat && msg.err.errorType is ChatErrorType.NoRcvFileUser) {
+              generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
             } else {
-              Log.d(TAG, "unsupported error: ${msg.responseType}, ${json.encodeToString(msg.err)}")
+              ChatController.apiResponseErrorMessage(msg)
             }
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.migrate_to_device_download_failed),
+              text
+            )
+            state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
           }
           else -> Log.d(TAG, "unsupported event: ${msg.responseType}")
         }
@@ -624,9 +644,14 @@ private fun MutableState<MigrationToState?>.startDownloading(
     val (res, error) = controller.downloadStandaloneFile(user, link, CryptoFile.plain(File(archivePath).path), ctrl)
     if (res == null) {
       state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
+      val text = when {
+        error == null -> generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
+        error.contains("noRcvFileUser") -> generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
+        else -> error
+      }
       AlertManager.shared.showAlertMsg(
         generalGetString(MR.strings.migrate_to_device_error_downloading_archive),
-        error
+        text
       )
     }
   }
@@ -641,7 +666,7 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
       controller.apiDeleteStorage()
       wallpapersDir.mkdirs()
       try {
-        val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
+        val config = ArchiveConfig(archivePath, parentTempDirectory = getMigrationTempFilesDirectory().absolutePath)
         val archiveErrors = controller.apiImportArchive(config)
         if (archiveErrors.isNotEmpty()) {
           showArchiveImportedWithErrorsAlert(archiveErrors)
@@ -650,11 +675,11 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
         MigrationToDeviceState.save(MigrationToDeviceState.Passphrase(netCfg, networkProxy))
       } catch (e: Exception) {
         state = MigrationToState.ArchiveImportFailed(archivePath, netCfg, networkProxy)
-        AlertManager.shared.showAlertMsg (generalGetString(MR.strings.error_importing_database), e.stackTraceToString())
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.message ?: e.toString())
       }
     } catch (e: Exception) {
       state = MigrationToState.ArchiveImportFailed(archivePath, netCfg, networkProxy)
-      AlertManager.shared.showAlertMsg (generalGetString(MR.strings.error_deleting_database), e.stackTraceToString())
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.message ?: e.toString())
     }
   }
 }
@@ -724,7 +749,7 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   chatModel.migrationState.value = null
 }
 
-private fun strHasSimplexFileLink(text: String): Boolean =
+internal fun strHasSimplexFileLink(text: String): Boolean =
   text.startsWith("simplex:/file") || text.startsWith("https://simplex.chat/file")
 
 private fun fileForTemporaryDatabase(): File =

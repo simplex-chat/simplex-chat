@@ -705,25 +705,8 @@ suspend fun importArchive(
   return false
 }
 
-private fun saveArchiveFromURI(importedArchiveURI: URI): String? {
-  return try {
-    val inputStream = importedArchiveURI.inputStream()
-    val archiveName = getFileName(importedArchiveURI)
-    if (inputStream != null && archiveName != null) {
-      val archivePath = "$databaseExportDir${File.separator}$archiveName"
-      val destFile = File(archivePath)
-      Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-      archivePath
-    } else {
-      Log.e(TAG, "saveArchiveFromURI null inputStream")
-      null
-    }
-  } catch (e: Exception) {
-    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_database), e.stackTraceToString())
-    Log.e(TAG, "saveArchiveFromURI error: ${e.stackTraceToString()}")
-    null
-  }
-}
+private fun saveArchiveFromURI(importedArchiveURI: URI): String? =
+  copyArchiveFromUri(importedArchiveURI, databaseExportDir)
 
 private fun deleteChatAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
