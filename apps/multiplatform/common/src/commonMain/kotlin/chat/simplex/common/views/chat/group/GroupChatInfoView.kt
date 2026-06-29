@@ -190,7 +190,7 @@ fun ModalData.GroupChatInfoView(
                 val gInfo = chatModel.controller.apiSetPublicGroupAccess(
                   rhId,
                   groupInfo.localDisplayName,
-                  name.ifEmpty { null },
+                  name,
                   access?.groupWebPage,
                   access?.domainWebPage ?: false,
                   access?.allowEmbedding ?: false
@@ -1487,6 +1487,7 @@ fun PreviewGroupChatInfoLayout() {
       manageGroupLink = {},
       manageWebPage = {},
       onSearchClicked = {},
+      setSimplexName = {},
       deletingItems = remember { mutableStateOf(true) }
     )
   }

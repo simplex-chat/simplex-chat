@@ -40,7 +40,7 @@ fun SetSimplexNameView(
     }
   }
 
-  val doSave = {
+  val doSave: () -> Unit = {
     withBGApi {
       saving.value = true
       val ok = try { save(normalized()) } catch (e: Exception) {

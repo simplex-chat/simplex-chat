@@ -5312,18 +5312,6 @@ public struct SimplexNameInfo: Codable, Equatable, Hashable {
         (nameType == .publicGroup ? "#" : "@") + editDomain
     }
 
-    // decode the encoded form (e.g. "simplex:/name#myteam.simplex") stored in groupDomain
-    public init?(parsing s0: String) {
-        var s = Substring(s0)
-        if s.hasPrefix("simplex:/name") { s = s.dropFirst("simplex:/name".count) }
-        let type: SimplexNameType
-        if s.first == "@" { type = .contact; s = s.dropFirst() }
-        else if s.first == "#" { type = .publicGroup; s = s.dropFirst() }
-        else { type = .publicGroup }
-        guard let dom = SimplexNameDomain(parsing: String(s)) else { return nil }
-        self.init(nameType: type, nameDomain: dom)
-    }
-
     public init(nameType: SimplexNameType, nameDomain: SimplexNameDomain) {
         self.nameType = nameType
         self.nameDomain = nameDomain
@@ -5350,24 +5338,6 @@ public struct SimplexNameDomain: Codable, Equatable, Hashable {
         self.nameTLD = nameTLD
         self.domain = domain
         self.subDomain = subDomain
-    }
-
-    // mirrors backend mkDomain (reverse labels = tld : name : sub)
-    public init?(parsing s: String) {
-        let labels = s.split(separator: ".", omittingEmptySubsequences: false).map(String.init)
-        guard !labels.contains(where: { $0.isEmpty }) else { return nil }
-        let rev = Array(labels.reversed())
-        switch rev.count {
-        case 0: return nil
-        case 1: self.init(nameTLD: .simplex, domain: rev[0], subDomain: [])
-        default:
-            let name = rev[1], sub = Array(rev[2...])
-            switch rev[0] {
-            case "simplex": self.init(nameTLD: .simplex, domain: name, subDomain: sub)
-            case "testing": self.init(nameTLD: .testing, domain: name, subDomain: sub)
-            default: self.init(nameTLD: .web, domain: labels.joined(separator: "."), subDomain: [])
-            }
-        }
     }
 }
 

@@ -4894,21 +4894,6 @@ data class SimplexNameInfo(
   // user-facing display string, mirrors backend shortNameInfoStr
   val shortName: String
     get() = (if (nameType == SimplexNameType.publicGroup) "#" else "@") + editDomain
-
-  companion object {
-    // decode the encoded form (e.g. "simplex:/name#myteam.simplex") stored in groupDomain
-    fun parse(s0: String): SimplexNameInfo? {
-      var s = s0
-      if (s.startsWith("simplex:/name")) s = s.removePrefix("simplex:/name")
-      val type = when {
-        s.startsWith("@") -> { s = s.drop(1); SimplexNameType.contact }
-        s.startsWith("#") -> { s = s.drop(1); SimplexNameType.publicGroup }
-        else -> SimplexNameType.publicGroup
-      }
-      val dom = SimplexNameDomain.parse(s) ?: return null
-      return SimplexNameInfo(type, dom)
-    }
-  }
 }
 
 @Serializable
@@ -4927,27 +4912,6 @@ data class SimplexNameDomain(
       }
       return (subDomain.reversed() + domain + tld).joinToString(".")
     }
-
-  companion object {
-    // mirrors backend mkDomain (reverse labels = tld : name : sub)
-    fun parse(s: String): SimplexNameDomain? {
-      val labels = s.split(".")
-      if (labels.any { it.isEmpty() }) return null
-      val rev = labels.reversed()
-      return when (rev.size) {
-        1 -> SimplexNameDomain(SimplexTLD.simplex, rev[0], emptyList())
-        else -> {
-          val name = rev[1]
-          val sub = rev.drop(2)
-          when (rev[0]) {
-            "simplex" -> SimplexNameDomain(SimplexTLD.simplex, name, sub)
-            "testing" -> SimplexNameDomain(SimplexTLD.testing, name, sub)
-            else -> SimplexNameDomain(SimplexTLD.web, labels.joinToString("."), emptyList())
-          }
-        }
-      }
-    }
-  }
 }
 
 @Serializable
