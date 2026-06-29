@@ -1266,7 +1266,7 @@ processChatCommand cxt nm = \case
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
         updateCIGroupInvitationStatus user gInfo CIGISRejected `catchAllErrors` \_ -> pure ()
-        withFastStore' $ \db -> deleteGroupChatItems db user gInfo
+        withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
         withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
         withFastStore' $ \db -> deleteGroupMembers db user gInfo
         withFastStore' $ \db -> deleteGroup db user gInfo

@@ -64,6 +64,7 @@ chatGroupTests = do
     it "create group with incognito membership" testNewGroupIncognito
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
+    it "left member deletes local group copy without FK error" testLeftMemberDeleteGroupLocalCleanup
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
     it "re-add member in status invited" testGroupReAddInvited
@@ -798,6 +799,42 @@ testGroupDelete =
       (bob </)
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
+
+testLeftMemberDeleteGroupLocalCleanup :: HasCallStack => TestParams -> IO ()
+testLeftMemberDeleteGroupLocalCleanup =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath <# "#team alice> hello")
+      bob ##> "/leave #team"
+      concurrentlyN_
+        [ bob <## "#team: you left the group",
+          alice <## "#team: bob left the group",
+          cath <## "#team: bob left the group"
+        ]
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      withCCTransaction bob $ \db -> do
+        [Only n] <-
+          DB.query
+            db
+            [sql|
+              SELECT
+                (SELECT COUNT(*) FROM groups WHERE local_display_name = 'team')
+              + (SELECT COUNT(*) FROM messages m
+                 WHERE m.group_id IN (SELECT group_id FROM groups WHERE local_display_name = 'team'))
+              + (SELECT COUNT(*) FROM chat_items ci
+                 WHERE ci.group_id IN (SELECT group_id FROM groups WHERE local_display_name = 'team'))
+            |]
+            :: IO [Only Int]
+        n `shouldBe` 0
+      alice #> "#team still here"
+      concurrently_
+        (cath <# "#team alice> still here")
+        (bob </)
 
 testGroupSameName :: HasCallStack => TestParams -> IO ()
 testGroupSameName =
