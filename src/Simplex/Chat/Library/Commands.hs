@@ -2061,7 +2061,7 @@ processChatCommand cxt nm = \case
   APIConnectPlan userId (Just ct) resolveKnown linkOwnerSig_ -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user ct resolveKnown linkOwnerSig_
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
-  APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
+  APIPrepareContact userId accLink contactSLinkData verifiedName -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
     case accLink of
@@ -2084,7 +2084,7 @@ processChatCommand cxt nm = \case
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
-        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId Nothing
+        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId (True <$ verifiedName)
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
@@ -2096,10 +2096,10 @@ processChatCommand cxt nm = \case
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
-  APIPrepareGroup userId ccLink direct groupSLinkData -> withUserId userId $ \user -> do
+  APIPrepareGroup userId ccLink direct groupSLinkData verifiedName -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
-    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId Nothing
+    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId (True <$ verifiedName)
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2320,7 +2320,7 @@ processChatCommand cxt nm = \case
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
       throwError e
   ConnectSimplex incognito -> withUser $ \user -> do
-    plan <- contactRequestPlan user adminContactReq Nothing Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing))
+    plan <- contactRequestPlan user adminContactReq Nothing Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing Nothing))
     connectWithPlan user incognito (ACCL SCMContact (CCLink adminContactReq Nothing)) plan
   DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
   ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
@@ -4213,10 +4213,9 @@ processChatCommand cxt nm = \case
                         ov = verifyLinkOwner rootKey owners l' sig_
                     plan <- contactRequestPlan user cReq contactSLinkData_ ov
                     case (nl, plan) of
-                      (CTName ni, CPContactAddress (CAPOk (Just ContactShortLinkData {profile = p@Profile {simplexName}}) _)) -> do
-                        domainVerified <- verifyNameClaim ni (claimName <$> simplexName)
-                        ct' <- withStore $ \db -> createPreparedContact db cxt user p (con l' cReq) Nothing domainVerified
-                        pure (con l' cReq, CPContactAddress (CAPKnown ct'))
+                      (CTName ni, CPContactAddress cap@(CAPOk (Just ContactShortLinkData {profile = Profile {simplexName}}) _ _)) -> do
+                        _ <- verifyNameClaim ni (claimName <$> simplexName)
+                        pure (con l' cReq, CPContactAddress cap {verifiedName = Just ni})
                       _ -> pure (con l' cReq, plan)
             where
               knownLinkPlans = withFastStore $ \db ->
@@ -4266,12 +4265,11 @@ processChatCommand cxt nm = \case
                       let ov = verifyLinkOwner rootKey owners l' sig_
                       plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
                       case (nl, plan) of
-                        (CTName ni, CPGroupLink (GLPOk (Just _) (Just gld) _)) -> do
+                        (CTName ni, CPGroupLink glp@(GLPOk (Just _) (Just gld) _ _)) -> do
                           let GroupShortLinkData {groupProfile = GroupProfile {publicGroup = pg}} = gld
                               gName = claimName <$> (pg >>= publicGroupAccess >>= publicGroupClaim)
-                          domainVerified <- verifyNameClaim ni gName
-                          (g, _) <- preparedGroupFromLink user (CCLink cReq (Just l')) direct gld Nothing domainVerified
-                          pure (con l' cReq, CPGroupLink (GLPKnown g (BoolDef False) Nothing (ListDef [])))
+                          _ <- verifyNameClaim ni gName
+                          pure (con l' cReq, CPGroupLink glp {verifiedName = Just ni})
                         _ -> pure (con l' cReq, plan)
             where
               unsupportedGroupType = \case
@@ -4307,13 +4305,13 @@ processChatCommand cxt nm = \case
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
               processChatCommand cxt nm $ APIConnectContactViaAddress userId incognito contactId
-            CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _)
-              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld
+            CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _ vName)
+              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld vName
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink plan
       where
-        joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
-        joinChannelViaRelays ccl gld = do
+        joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> Maybe SimplexNameInfo -> CM ChatResponse
+        joinChannelViaRelays ccl gld vName = do
           GroupInfo {groupId} <- prepareChannelGroup
           processChatCommand cxt nm APIConnectPreparedGroup {groupId, incognito, ownerContact = Nothing, msgContent_ = Nothing}
             `catchAllErrors` \e -> do
@@ -4321,7 +4319,7 @@ processChatCommand cxt nm = \case
               throwError e
           where
             prepareChannelGroup =
-              processChatCommand cxt nm (APIPrepareGroup userId ccl False gld) >>= \case
+              processChatCommand cxt nm (APIPrepareGroup userId ccl False gld vName) >>= \case
                 CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _)) -> pure gInfo
                 _ -> throwChatError $ CEException "joinChannelViaRelays: unexpected response from APIPrepareGroup"
             deletePreparedChannel groupId = do
@@ -4367,13 +4365,13 @@ processChatCommand cxt nm = \case
             Nothing ->
               withFastStore' (\db -> getContactWithoutConnViaAddress db cxt user cReqSchemas) >>= \case
                 Just ct | not (contactDeleted ct) -> pure $ CPContactAddress (CAPContactViaAddress ct)
-                _ -> pure $ CPContactAddress (CAPOk cld ov)
+                _ -> pure $ CPContactAddress (CAPOk cld ov Nothing)
             Just (RcvDirectMsgConnection Connection {connStatus} Nothing)
-              | connStatus == ConnPrepared -> pure $ CPContactAddress (CAPOk cld ov)
+              | connStatus == ConnPrepared -> pure $ CPContactAddress (CAPOk cld ov Nothing)
               | otherwise -> pure $ CPContactAddress CAPConnectingConfirmReconnect
             Just (RcvDirectMsgConnection _ (Just ct))
               | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
-              | contactDeleted ct -> pure $ CPContactAddress (CAPOk cld ov)
+              | contactDeleted ct -> pure $ CPContactAddress (CAPOk cld ov Nothing)
               | otherwise -> pure $ CPContactAddress (CAPKnown ct)
             -- TODO [short links] RcvGroupMsgConnection branch is deprecated? (old group link protocol?)
             Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing Nothing Nothing
@@ -4388,12 +4386,12 @@ processChatCommand cxt nm = \case
           connEnt_ <- withFastStore' $ \db -> getContactConnEntityByConnReqHash db cxt user cReqHashes
           gInfo_ <- withFastStore' $ \db -> getGroupInfoByGroupLinkHash db cxt user cReqHashes
           case (gInfo_, connEnt_) of
-            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk linkInfo gld ov)
+            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk linkInfo gld ov Nothing)
             -- TODO [short links] RcvDirectMsgConnection branches are deprecated? (old group link protocol?)
             (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
             (Nothing, Just (RcvDirectMsgConnection _ (Just ct)))
               | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
-              | otherwise -> pure $ CPGroupLink (GLPOk linkInfo gld ov)
+              | otherwise -> pure $ CPGroupLink (GLPOk linkInfo gld ov Nothing)
             (Nothing, Just _) -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
             (Just gInfo, _) -> groupPlan gInfo linkInfo gld ov
     groupPlan :: GroupInfo -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
@@ -4402,7 +4400,7 @@ processChatCommand cxt nm = \case
       | not (memberActive membership) && not (memberRemoved membership) =
           pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
       | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo (BoolDef False) ov (ListDef []))
-      | otherwise = pure $ CPGroupLink (GLPOk linkInfo gld ov)
+      | otherwise = pure $ CPGroupLink (GLPOk linkInfo gld ov Nothing)
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
       ( CRContactUri crData {crScheme = SSSimplex},
@@ -5455,8 +5453,8 @@ chatCommandP =
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> ((" resolve=" *> onOffP) <|> pure False) <*> optional (" sig=" *> jsonP)),
-      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
-      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <* A.space <*> jsonP),
+      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP <*> optional (A.space *> strP)),
+      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <* A.space <*> jsonP <*> optional (A.space *> strP)),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),

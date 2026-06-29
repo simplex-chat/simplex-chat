@@ -31,29 +31,13 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
       alice ##> "/_set_name 1 @alice.simplex"
       alice <## "new contact address set"
       bob ##> "/c @alice.simplex"
-      bob <## "contact address: known prepared contact alice"
-      bob <## "simplex name: @alice.simplex (verified)"
-      bob ##> "/_connect contact @2 text hello"
-      bob
-        <### [ "alice: connection started",
-               WithTime "@alice hello"
-             ]
-      alice
-        <### [ "bob (Bob) wants to connect to you!",
-               WithTime "bob> hello"
-             ]
-      alice <## "to accept: /ac bob"
-      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice <#? bob
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
-      -- the name is bound to the link profile (verified on connect) but the contact address
-      -- carries no proof, so on-demand proof verification is inconclusive
-      bob ##> "/_verify name @2"
-      bob <## "simplex name @alice.simplex not verified: no name proof to verify"
 
 testConnectByNameNotClaimed :: HasCallStack => TestParams -> IO ()
 testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
