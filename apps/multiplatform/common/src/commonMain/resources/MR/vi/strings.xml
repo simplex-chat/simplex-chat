@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d tin nhắn không thể giải mã.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">Không thể giải mã %1$d tin nhắn.</string>
     <string name="moderated_items_description">%1$d tin nhắn đã bị xóa bởi %2$s</string>
-    <string name="group_info_section_title_num_members">%1$s THÀNH VIÊN</string>
+    <string name="group_info_section_title_num_members">%1$s thành viên</string>
     <string name="learn_more_about_address">Thông tin về địa chỉ SimpleX</string>
     <string name="address_section_title">Địa chỉ</string>
     <string name="abort_switch_receiving_address_confirm">Hủy bỏ</string>
@@ -18,7 +18,7 @@
     <string name="accept">Chấp nhận</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d tin nhắn đã bị bỏ qua.</string>
     <string name="users_add">Thêm hồ sơ</string>
-    <string name="integrity_msg_skipped">%1$d tin nhắn bị bỏ qua</string>
+    <string name="integrity_msg_skipped">%1$d tin nhắn đã bị bỏ qua</string>
     <string name="send_disappearing_message_1_minute">1 phút</string>
     <string name="send_disappearing_message_5_minutes">5 phút</string>
     <string name="accept_feature">Chấp nhận</string>
@@ -805,16 +805,15 @@
     <string name="network_proxy_incorrect_config_title">Lỗi lưu proxy</string>
     <string name="icon_descr_flip_camera">Đổi máy ảnh</string>
     <string name="appearance_font_size">Kích thước font</string>
-    <string name="n_other_file_errors">%1$d lỗi tệp khác.</string>
+    <string name="n_other_file_errors">%1$d tệp bị lỗi khác.</string>
     <string name="error_forwarding_messages">Lỗi chuyển tiếp tin nhắn</string>
     <string name="forward_files_failed_to_receive_desc">%1$d tệp tải không thành công.</string>
     <string name="forward_files_missing_desc">%1$d tệp đã bị xóa.</string>
-    <string name="forward_files_not_accepted_desc">%1$d tệp đã không được tải xuống.</string>
+    <string name="forward_files_not_accepted_desc">%1$d tệp không được tải xuống.</string>
     <string name="forward_files_not_accepted_receive_files">Tải xuống</string>
     <string name="forward_alert_title_messages_to_forward">Chuyển tiếp %1$s tin nhắn?</string>
     <string name="forward_multiple">Chuyển tiếp tin nhắn…</string>
-    <string name="n_file_errors">%1$d lỗi tệp:
-\n%2$s</string>
+    <string name="n_file_errors">%1$d tệp bị lỗi: \n%2$s</string>
     <string name="forward_files_in_progress_desc">%1$d tệp đang được tải xuống.</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s tin nhắn không được chuyển tiếp</string>
     <string name="compose_forward_messages_n">Đang chuyển tiếp %1$s tin nhắn</string>
@@ -2493,4 +2492,34 @@
     <string name="relay_bar_active_with_removed">%1$d/%2$d thiết bị hoạt động, %3$d bị xóa</string>
     <string name="relay_bar_connected">%1$d/%2$d thiết bị đã kết nối</string>
     <string name="relay_bar_connected_with_errors">%1$d/%2$d %1$d/%2$d thiết bị đã kết nối, %3$d lỗi</string>
+    <string name="relay_bar_connected_with_failures">%1$d/%2$d thiết bị đã kết nối, %3$d thất bại</string>
+    <string name="relay_bar_connected_with_removed">%1$d/%2$d thiết bị đã kết nối, %3$d bị xóa</string>
+    <string name="channel_owner_count_singular">%1$d chủ sở hữu</string>
+    <string name="channel_owner_count_plural">%1$d chủ sở hữu</string>
+    <string name="channel_owners_contributors_count">%1$d chủ sở hữu và người đóng góp</string>
+    <string name="relay_bar_relays_failed">%1$d thiết bị thất bại</string>
+    <string name="relay_bar_relays_not_active">%1$d thiết bị không hoạt động</string>
+    <string name="relay_bar_relays_removed">%1$d thiết bị đã bị loại bỏ</string>
+    <string name="channel_subscriber_count_singular">%1$d người theo dõi</string>
+    <string name="channel_subscriber_count_plural">%1$d người theo dõi</string>
+    <string name="badge_supported_simplex">%1$s được hỗ trợ bởi SimpleX Chat. Huy hiệu này sẽ hết hạn lúc %2$s.</string>
+    <string name="v6_4_1_new_interface_languages">4 ngôn ngữ giao diện mới</string>
+    <string name="webpage_code_footer">Hãy thêm đoạn mã này vào trang web của bạn. Nó sẽ hiển thị bản xem trước (preview) cho kênh hoặc nhóm của bạn.</string>
+    <string name="advanced_settings">Cài đặt nâng cao</string>
+    <string name="a_link_for_one_person">Một đường dẫn cho một người kết nối</string>
+    <string name="allow_files_and_media_only_if">Chỉ cho phép tệp và phương tiện nếu bạn cho phép họ làm điều đó.</string>
+    <string name="allow_chat_with_admins">\"Cho phép thành viên trò chuyện với quản trị viên.</string>
+    <string name="allow_direct_messages_channel">\"Cho phép gửi tin nhắn trực tiếp cho người theo dõi.</string>
+    <string name="relay_bar_all_relays_removed">Toàn bộ thiết bị đã bị xóa</string>
+    <string name="another_instance_not_responding">Một phiên bản khác của ứng dụng có thể đang chạy hoặc chưa thoát đúng cách. Bạn có muốn tiếp tục không?</string>
+    <string name="embed_any_webpage_can_show">Bất kỳ trang web nào cũng có thể hiển thị bản xem trước.</string>
+    <string name="another_instance_title">Ứng dụng đang được mở</string>
+    <string name="badge_unknown_key_title">Không thể xác nhận huy hiệu</string>
+    <string name="why_built_p7">Vì chúng ta đã loại bỏ hoàn toàn khả năng nhận biết bạn là ai. Vì vậy bạn có thể thực hiện những việc thầm kín.</string>
+    <string name="onboarding_be_free">Dân chủ\ntrong chính cộng đồng của bạn</string>
+    <string name="why_built_tagline">Dân chủ trong chính cộng đồng của bạn.</string>
+    <string name="chat_banner_bot">Bot ảo</string>
+    <string name="both_you_and_your_contact_can_send_files">Cho phép bạn và đối tác của bạn có thể gửi tệp và hình ảnh.</string>
+    <string name="one_hand_ui_bottom_bar">Thanh công cụ dưới</string>
+    <string name="compose_view_broadcast">Phát sóng</string>
 </resources>
