@@ -4305,6 +4305,7 @@ processChatCommand cxt nm = \case
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
               processChatCommand cxt nm $ APIConnectContactViaAddress userId incognito contactId
+            CPContactAddress (CAPOk (Just sld) _ vName@(Just _)) -> connectContactViaName sld vName
             CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _ vName)
               | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld vName
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
@@ -4326,6 +4327,12 @@ processChatCommand cxt nm = \case
               gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
               deleteGroupConnections user gInfo False
               withFastStore' $ \db -> deleteGroup db user gInfo
+        connectContactViaName :: ContactShortLinkData -> Maybe SimplexNameInfo -> CM ChatResponse
+        connectContactViaName sld vName =
+          processChatCommand cxt nm (APIPrepareContact userId ccLink sld vName) >>= \case
+            CRNewPreparedChat _ (AChat SCTDirect (Chat (DirectChat Contact {contactId}) _ _)) ->
+              processChatCommand cxt nm (APIConnectPreparedContact contactId incognito Nothing)
+            _ -> throwChatError $ CEException "connectContactViaName: unexpected response from APIPrepareContact"
     invitationRequestPlan :: User -> ConnReqInvitation -> Maybe ContactShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
     invitationRequestPlan user cReq cld ov = do
       maybe (CPInvitationLink (ILPOk cld ov)) (invitationEntityPlan cld ov)

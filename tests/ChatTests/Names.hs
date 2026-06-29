@@ -31,7 +31,10 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
       alice ##> "/_set_name 1 @alice.simplex"
       alice <## "new contact address set"
       bob ##> "/c @alice.simplex"
-      alice <#? bob
+      bob <## "alice: connection started"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
