@@ -36,7 +36,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -334,6 +334,8 @@ chatGroupTests = do
       it "should delete member message in channel" testChannelMemberMessageDelete
       it "should sign member message and reuse signature on edit" testChannelMemberMessageSign
       it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
+      it "should sign as-channel post and keep it displayed as the channel" testChannelAsGroupSign
+      it "should reject a non-owner posting as the channel" testChannelAsGroupSpoof
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -12200,6 +12202,89 @@ testChannelMemberUpdateEnforcement ps =
       case rows of
         (Only smid : _) -> pure (SharedMsgId smid)
         _ -> fail "no shared_msg_id"
+
+testChannelAsGroupSign :: HasCallStack => TestParams -> IO ()
+testChannelAsGroupSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner posts as the channel, signed: verifiable AND displayed as the channel
+            alice ##> "/_send #1(as_group=on) sign=on text signed channel post"
+            alice <# "#team signed channel post"
+            bob <# "#team> signed channel post"
+            [cath, dan, eve] *<# "#team> signed channel post [>>]"
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "signed channel post (signed)")])
+            cath #$> ("/_get chat #1 count=1", chat, [(0, "signed channel post (signed)")])
+
+            -- owner posts as the channel, unsigned: anonymous (FwdChannel), no signature, still as the channel
+            alice ##> "/_send #1(as_group=on) text plain channel post"
+            alice <# "#team plain channel post"
+            bob <# "#team> plain channel post"
+            [cath, dan, eve] *<# "#team> plain channel post [>>]"
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "plain channel post")])
+            cath #$> ("/_get chat #1 count=1", chat, [(0, "plain channel post")])
+
+testChannelAsGroupSpoof :: HasCallStack => TestParams -> IO ()
+testChannelAsGroupSpoof ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath posts legitimately (introduces cath to dan as a member)
+            cath #> "#team hi from cath"
+            bob <# "#team cath> hi from cath"
+            concurrentlyN_
+              [ alice <# "#team cath> hi from cath [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> hi from cath [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> hi from cath [>>]"
+              ]
+
+            -- the relay forges an asGroup=True post attributed to non-owner cath; dan rejects (owner guard, §2)
+            cathMemId <- memberIdByName bob "cath"
+            connId <- relayConnIdToMember bob "dan"
+            ts <- getCurrentTime
+            let ChatController {smpAgent = bobAgent} = chatController bob
+                container = (mcSimple (MCText "fake channel announcement")) {asGroup = Just True}
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgNew container)
+                fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
+                body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+            sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+            either (fail . show) (const $ pure ()) sent
+            dan <##. "error: x.msg.new: member is not allowed to send as group"
+            -- not rendered as the channel: dan still holds only the legitimate member message
+            threadDelay 1000000
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "hi from cath")])
+  where
+    memberIdByName :: TestCC -> T.Text -> IO MemberId
+    memberIdByName cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
+      case rows of
+        (Only mid : _) -> pure (MemberId mid)
+        _ -> fail $ "no member " <> T.unpack name
+    relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
+    relayConnIdToMember cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
+          (Only name) ::
+          IO [Only ByteString]
+      case rows of
+        (Only connId : _) -> pure connId
+        _ -> fail $ "no relay connection to member " <> T.unpack name
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =

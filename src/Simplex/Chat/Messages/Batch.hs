@@ -105,7 +105,10 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
 
 -- | Encode a batch element for relay groups: ><GrpMsgForward>[/<sigs>]<body>.
 encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString
-encodeFwdElement fwd verifiedMsg = ">" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
+encodeFwdElement fwd@GrpMsgForward {fwdSender} verifiedMsg
+  | FwdChannel <- fwdSender, isJust signedMsg_ =
+      error "encodeFwdElement: signed message must forward as FwdMember, not FwdChannel"
+  | otherwise = ">" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
   where
     (_, signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
 
