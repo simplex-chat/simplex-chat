@@ -2643,25 +2643,9 @@ public struct SimplexNameClaim: Codable, Hashable {
     public var proof: NameClaimProof?
 }
 
-public enum SimplexNameError: Codable, Hashable {
+public enum SimplexNameError: Decodable, Hashable {
     case noValidLink
     case unknownName
-
-    enum CodingKeys: String, CodingKey { case type }
-    public init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        switch try c.decode(String.self, forKey: .type) {
-        case "noValidLink": self = .noValidLink
-        default: self = .unknownName
-        }
-    }
-    public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        switch self {
-        case .noValidLink: try c.encode("noValidLink", forKey: .type)
-        case .unknownName: try c.encode("unknownName", forKey: .type)
-        }
-    }
 }
 
 public struct RelayCapabilities: Codable, Hashable {
