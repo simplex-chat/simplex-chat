@@ -205,3 +205,4 @@ If you have to run your bot on another machine, you need to secure access to bot
 - [Moderation bot](https://github.com/NCalex42/simplex-bot) (Java)
 - [Matterbridge bot](https://github.com/UnkwUsr/matterbridge-simplex) (JavaScript)
 - [Nodify](https://nodify.ie) (Low-Code)
+- [simplex-ai-bot](https://github.com/JnanaSrota/simplex-ai-bot) - AI assistant bot powered by Groq, with per-contact history and /reset.
