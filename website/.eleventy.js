@@ -99,7 +99,7 @@ module.exports = function (ty) {
   // Selects which hero index.html renders; "default" = the current site, untouched.
   ty.addGlobalData("homeHero", "testing-water")
   // testing-water "Reserve now" -> the testing-the-waters interest form
-  ty.addGlobalData("reserveUrl", "https://wefunder.com/simplex.chat")
+  ty.addGlobalData("reserveUrl", "https://simplexchat.typeform.com/crowdfunding")
   // crowdfunding-full "Invest" CTA -- placeholder until the Wefunder campaign page is live
   ty.addGlobalData("wefunderUrl", "https://wefunder.com/")
 
