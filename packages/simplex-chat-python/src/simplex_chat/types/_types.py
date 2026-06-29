@@ -2433,8 +2433,7 @@ ProxyError_Tag = Literal["PROTOCOL", "BROKER", "BASIC_AUTH", "NO_SESSION"]
 
 class PublicGroupAccess(TypedDict):
     groupWebPage: NotRequired[str]
-    groupDomain: NotRequired[str]
-    groupDomainProof: NotRequired["NameClaimProof"]
+    simplexName: NotRequired["SimplexNameClaim"]
     domainWebPage: bool
     allowEmbedding: bool
 

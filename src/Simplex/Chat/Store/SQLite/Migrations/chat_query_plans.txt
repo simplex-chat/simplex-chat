@@ -3698,6 +3698,15 @@ SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT ct.contact_id, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect FROM contacts ct
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        WHERE ct.user_id = ? AND cp.simplex_name = ? AND cp.simplex_name_verification = 1 AND ct.deleted = 0
+      
+Plan:
+SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete
         FROM xftp_file_descriptions d
         JOIN rcv_files f ON f.file_descr_id = d.file_descr_id
@@ -3771,6 +3780,15 @@ Query:
       
 Plan:
 SEARCH files USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT g.group_id, g.conn_full_link_to_connect, g.conn_short_link_to_connect FROM groups g
+        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        WHERE g.user_id = ? AND gp.simplex_name = ? AND g.simplex_name_verification = 1
+      
+Plan:
+SEARCH g USING INDEX sqlite_autoindex_groups_2 (user_id=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT g.group_id, gp.public_group_id,
@@ -5151,6 +5169,15 @@ Query:
     
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE contact_profiles SET simplex_name_verification = ?
+      WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
+    
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE contacts
@@ -7245,10 +7272,6 @@ Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
 
-Query: SELECT link_priv_sig_key FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-
 Query: SELECT local_display_name FROM group_members
 Plan:
 SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
@@ -7448,6 +7471,10 @@ SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE contact_profiles SET image = ? WHERE display_name = ?
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
+
+Query: UPDATE contact_profiles SET simplex_name = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contact_requests SET business_group_id = ? WHERE contact_request_id = ?
 Plan:
