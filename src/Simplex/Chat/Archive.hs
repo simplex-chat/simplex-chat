@@ -71,18 +71,26 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
 
 importArchive :: ArchiveConfig -> CM' [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
-  withTempDir cfg "simplex-chat." $ \dir -> do
-    Z.withArchive archivePath $ Z.unpackInto dir
+  (`E.catch` archiveImportFatal) $ withTempDir cfg "simplex-chat." $ \dir -> do
+    liftIO $ unpackArchive archivePath dir
+    validateArchiveContents dir
     fs@StorageFiles {chatStore, agentStore, filesPath, assetsPath} <- storageFiles
     liftIO $ closeDBStore `withStores` fs
     backup `withDBs` fs
-    copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
-    copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
+    copyArchiveDbs dir fs
     errs <- copyFiles (dir </> archiveFilesFolder) filesPath
     errs' <- copyFiles (dir </> archiveAssetsFolder </> wallpapersFolder) ((</> wallpapersFolder) <$> assetsPath)
     pure $ errs <> errs'
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
+    copyArchiveDbs dir fs@StorageFiles {chatStore, agentStore} =
+      liftIO $
+        copyFile (dir </> archiveChatDbFile) (dbFilePath chatStore)
+          >> copyFile (dir </> archiveAgentDbFile) (dbFilePath agentStore)
+          `E.catch` \(e :: E.SomeException) -> restoreDbs fs >> E.throwIO e
+    restoreDbs fs = restore `withDBs` fs
+      where
+        restore f = whenM (doesFileExist $ f <> ".bak") $ copyFile (f <> ".bak") f
     copyFiles fromDir = \case
       Just fp ->
         ifM
@@ -91,6 +99,37 @@ importArchive cfg@ArchiveConfig {archivePath} =
           (pure [])
           `E.catch` \(e :: E.SomeException) -> pure [AEImport $ show e]
       _ -> pure []
+
+unpackArchive :: FilePath -> FilePath -> IO ()
+unpackArchive archivePath dir =
+  Z.withArchive archivePath $ Z.unpackInto dir
+
+validateArchiveContents :: FilePath -> CM' ()
+validateArchiveContents dir = do
+  forM_ [archiveChatDbFile, archiveAgentDbFile] $ \f -> do
+    let path = dir </> f
+    exists <- liftIO $ doesFileExist path
+    unless exists . liftIO . throwArchiveImportFatal $
+      "archive is missing required file: " <> f
+
+archiveImportFatal :: E.SomeException -> CM' [ArchiveError]
+archiveImportFatal e =
+  case E.fromException e of
+    Just (ChatError (CEException msg)) -> liftIO $ throwIO $ ChatError $ CEException msg
+    _ -> liftIO . throwArchiveImportFatal $ archiveImportErrorMessage e
+
+throwArchiveImportFatal :: String -> IO a
+throwArchiveImportFatal msg = throwIO $ ChatError $ CEException msg
+
+archiveImportErrorMessage :: E.SomeException -> String
+archiveImportErrorMessage e =
+  let s = show e
+   in if | "does not exist" `isInfixOf` s || "not found" `isInfixOf` s -> "archive file not found"
+         | "not a zip" `isInfixOf` s || ("invalid" `isInfixOf` s && "zip" `isInfixOf` s) -> "archive is invalid or corrupt"
+         | "CRC" `isInfixOf` s || "corrupt" `isInfixOf` s || "truncated" `isInfixOf` s -> "archive is invalid or corrupt"
+         | otherwise -> "archive import failed: " <> s
+  where
+    isInfixOf needle haystack = needle `T.isInfixOf` T.pack haystack
 
 withTempDir :: ArchiveConfig -> (String -> (FilePath -> CM' a) -> CM' a)
 withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of

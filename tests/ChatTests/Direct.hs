@@ -40,11 +40,12 @@ import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
-import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 #else
+import Codec.Archive.Zip (addEntryToArchive, emptyArchive, fromArchive)
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Options.DB
 import System.FilePath ((</>))
@@ -103,6 +104,8 @@ chatDirectTests = do
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
+    it "reject corrupt archive import" testMaintenanceModeImportCorruptArchive
+    it "reject archive missing required database files" testMaintenanceModeImportArchiveMissingDbs
     it "encrypt/decrypt database" testDatabaseEncryption
 #endif
   describe "connections synchronization" $ do
@@ -1440,6 +1443,35 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
     -- works after full restart
     withTestChat ps "alice" $ \alice -> testChatWorking alice bob
+
+testMaintenanceModeImportCorruptArchive :: HasCallStack => TestParams -> IO ()
+testMaintenanceModeImportCorruptArchive ps =
+  withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
+    alice ##> "/_start"
+    alice <## "chat started"
+    createDirectoryIfMissing True "./tests/tmp"
+    B.writeFile "./tests/tmp/corrupt-chat.zip" "not a zip archive"
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_db import {\"archivePath\": \"./tests/tmp/corrupt-chat.zip\"}"
+    alice <### [Predicate $ \l -> "error: exception:" `isPrefixOf` l && ("archive is invalid or corrupt" `isInfixOf` l || "archive import failed" `isInfixOf` l)]
+    alice ##> "/_start"
+    alice <## "chat started"
+
+testMaintenanceModeImportArchiveMissingDbs :: HasCallStack => TestParams -> IO ()
+testMaintenanceModeImportArchiveMissingDbs ps =
+  withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
+    alice ##> "/_start"
+    alice <## "chat started"
+    createDirectoryIfMissing True "./tests/tmp"
+    let archive = addEntryToArchive emptyArchive "readme.txt" B.empty
+    B.writeFile "./tests/tmp/empty-chat.zip" . LB.toStrict $ fromArchive archive
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_db import {\"archivePath\": \"./tests/tmp/empty-chat.zip\"}"
+    alice <### [Predicate $ \l -> "error: exception:" `isPrefixOf` l && "archive is missing required file" `isInfixOf` l]
+    alice ##> "/_start"
+    alice <## "chat started"
 
 #if !defined(dbPostgres)
 testDatabaseEncryption :: HasCallStack => TestParams -> IO ()
