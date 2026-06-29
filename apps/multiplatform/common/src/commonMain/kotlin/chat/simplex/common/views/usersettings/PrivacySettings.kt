@@ -665,46 +665,46 @@ fun SimplexLockView(
           }
         }
       }
-      if (performLA.value && laMode.value == LAMode.PASSCODE) {
-        SectionDividerSpaced()
-        SectionView(stringResource(MR.strings.self_destruct_passcode)) {
-          val openInfo = {
-            ModalManager.start.showModal {
-              SelfDestructInfoView()
-            }
+    }
+    if (performLA.value && laMode.value == LAMode.PASSCODE) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.self_destruct_passcode)) {
+        val openInfo = {
+          ModalManager.start.showModal {
+            SelfDestructInfoView()
           }
-          SettingsActionItemWithContent(null, null, click = openInfo) {
-            SharedPreferenceToggleWithIcon(
-              stringResource(MR.strings.enable_self_destruct),
-              painterResource(MR.images.ic_info),
-              openInfo,
-              remember { selfDestructPref.state }.value
-            ) {
-              toggleSelfDestruct(selfDestructPref)
-            }
+        }
+        SettingsActionItemWithContent(null, null, click = openInfo) {
+          SharedPreferenceToggleWithIcon(
+            stringResource(MR.strings.enable_self_destruct),
+            painterResource(MR.images.ic_info),
+            openInfo,
+            remember { selfDestructPref.state }.value
+          ) {
+            toggleSelfDestruct(selfDestructPref)
           }
+        }
 
-          if (remember { selfDestructPref.state }.value) {
-            Column(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
-              Text(
-                stringResource(MR.strings.self_destruct_new_display_name),
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-              )
-              ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
-              LaunchedEffect(selfDestructDisplayName.value) {
-                val new = selfDestructDisplayName.value
-                if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
-                  selfDestructDisplayNamePref.set(new)
-                }
+        if (remember { selfDestructPref.state }.value) {
+          Column(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
+            Text(
+              stringResource(MR.strings.self_destruct_new_display_name),
+              fontSize = 16.sp,
+              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+            )
+            ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
+            LaunchedEffect(selfDestructDisplayName.value) {
+              val new = selfDestructDisplayName.value
+              if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
+                selfDestructDisplayNamePref.set(new)
               }
             }
-            SectionItemView({ changeSelfDestructPassword() }) {
-              Text(
-                stringResource(MR.strings.change_self_destruct_passcode),
-                color = MaterialTheme.colors.primary
-              )
-            }
+          }
+          SectionItemView({ changeSelfDestructPassword() }) {
+            Text(
+              stringResource(MR.strings.change_self_destruct_passcode),
+              color = MaterialTheme.colors.primary
+            )
           }
         }
       }
