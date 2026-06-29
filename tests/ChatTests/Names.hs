@@ -41,6 +41,11 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+      bob ##> "/i alice"
+      bob <## "contact ID: 2"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      bob <## "simplex name: @alice.simplex (verified)"
 
 testConnectByNameNotClaimed :: HasCallStack => TestParams -> IO ()
 testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
