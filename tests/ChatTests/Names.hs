@@ -5,6 +5,7 @@ module ChatTests.Names where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Groups (prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
 import qualified Data.Text as T
@@ -18,6 +19,7 @@ chatNamesTests = do
   it "connect by name not claimed in link profile is rejected" testConnectByNameNotClaimed
   it "connect by unregistered name fails to resolve" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
+  it "connect by channel name" testConnectByChannelName
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
 testConnectByName ps = withSmpServerAndNames $ \reg ->
@@ -45,7 +47,13 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
       bob <## "contact ID: 2"
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
+      _ <- getTermLine bob
       bob <## "simplex name: @alice.simplex (verified)"
+      bob <## "you've shared main profile with this contact"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## "quantum resistant end-to-end encryption"
+      _ <- getTermLine bob
+      pure ()
 
 testConnectByNameNotClaimed :: HasCallStack => TestParams -> IO ()
 testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
@@ -80,3 +88,33 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       _ <- getContactLinks alice True
       alice ##> "/_set_name 1 @alice.simplex"
       alice <## "bad chat command: name does not point to your address"
+
+testConnectByChannelName :: HasCallStack => TestParams -> IO ()
+testConnectByChannelName ps = withSmpServerAndNames $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        (shortLink, _) <- prepareChannel1Relay "team" alice cath
+        registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
+        alice ##> "/public group access #team domain=team.simplex"
+        alice <## "updated public group access: domain=simplex:/name#team.simplex"
+        cath <## "alice updated group #team: (signed)"
+        cath <## "updated public group access: domain=simplex:/name#team.simplex"
+        bob ##> "/c #team.simplex"
+        bob <## "#team: connection started"
+        concurrentlyN_
+          [ bob
+              <### [ "#team: joining the group (connecting to relay cath)...",
+                     "#team: you joined the group (connected to relay cath)"
+                   ]
+          , do
+              cath <## "bob (Bob): accepting request to join group #team..."
+              cath <## "#team: bob joined the group"
+          , alice <### [EndsWith "introduced bob (Bob) in the channel"]
+          ]
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "group link: known group #team"
+        bob <## "simplex name: #team (verified)"
+        bob <## "use #team <message> to send messages"
+  where
+    teamName = SimplexNameInfo NTPublicGroup (SimplexNameDomain TLDSimplex "team" [])
