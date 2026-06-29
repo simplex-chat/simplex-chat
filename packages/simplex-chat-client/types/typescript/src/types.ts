@@ -2070,6 +2070,7 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
+    verifiedName?: SimplexNameInfo
   }
 
   export interface OwnLink extends Interface {
@@ -2701,6 +2702,7 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
+    verifiedName?: SimplexNameInfo
   }
 
   export interface OwnLink extends Interface {

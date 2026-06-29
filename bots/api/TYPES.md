@@ -1814,6 +1814,7 @@ Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- verifiedName: [SimplexNameInfo](#simplexnameinfo)?
 
 OwnLink:
 - type: "ownLink"
@@ -2410,6 +2411,7 @@ Ok:
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- verifiedName: [SimplexNameInfo](#simplexnameinfo)?
 
 OwnLink:
 - type: "ownLink"
