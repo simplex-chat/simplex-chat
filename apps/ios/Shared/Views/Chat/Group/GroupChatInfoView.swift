@@ -253,19 +253,17 @@ struct GroupChatInfoView: View {
                                         titleKey: "Set SimpleX name",
                                         footer: "Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel's address.",
                                         prefix: "#",
-                                        nameText: SimplexNameInfo(parsing: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomain ?? "")?.shortName ?? "",
+                                        nameText: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.name?.shortName ?? "",
                                         save: { name in
                                             do {
-                                                // core has no dedicated set-channel-name command (unlike apiSetUserName
-                                                // for the user's own name), so set it by re-sending the cloned profile
-                                                var gp = groupInfo.groupProfile
-                                                if var pg = gp.publicGroup {
-                                                    var access = pg.publicGroupAccess ?? PublicGroupAccess()
-                                                    access.groupDomain = name
-                                                    pg.publicGroupAccess = access
-                                                    gp.publicGroup = pg
-                                                }
-                                                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
+                                                let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
+                                                let gInfo = try await apiSetPublicGroupAccess(
+                                                    groupInfo.localDisplayName,
+                                                    domain: name.isEmpty ? nil : name,
+                                                    webPage: access?.groupWebPage,
+                                                    domainPage: access?.domainWebPage ?? false,
+                                                    allowEmbedding: access?.allowEmbedding ?? false
+                                                )
                                                 await MainActor.run {
                                                     chatModel.updateGroup(gInfo)
                                                     groupInfo = gInfo
@@ -365,9 +363,8 @@ struct GroupChatInfoView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
-               let encoded = access.groupDomain,
-               let groupName = SimplexNameInfo(parsing: encoded),
-               access.groupDomainProof != nil {
+               let groupName = access.simplexName?.name,
+               access.simplexName?.proof != nil {
                 SimplexNameView(
                     name: groupName,
                     verification: groupInfo.groupDomainVerification,

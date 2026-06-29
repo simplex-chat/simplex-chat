@@ -184,14 +184,17 @@ fun ModalData.GroupChatInfoView(
               title = generalGetString(MR.strings.set_simplex_name),
               footer = generalGetString(MR.strings.set_channel_simplex_name_footer),
               prefix = "#",
-              initial = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomain?.let { SimplexNameInfo.parse(it)?.shortName } ?: "",
+              initial = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.name?.shortName ?: "",
               save = { name ->
-                // core has no dedicated set-channel-name command (unlike APISetUserName for the user's
-                // own name), so the channel name is set by re-sending the cloned profile via apiUpdateGroup
                 val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
-                val newAccess = access?.copy(groupDomain = name) ?: PublicGroupAccess(groupDomain = name)
-                val gp = groupInfo.groupProfile.copy(publicGroup = groupInfo.groupProfile.publicGroup?.copy(publicGroupAccess = newAccess))
-                val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, gp, groupInfo.isChannel)
+                val gInfo = chatModel.controller.apiSetPublicGroupAccess(
+                  rhId,
+                  groupInfo.localDisplayName,
+                  name.ifEmpty { null },
+                  access?.groupWebPage,
+                  access?.domainWebPage ?: false,
+                  access?.allowEmbedding ?: false
+                )
                 if (gInfo != null) {
                   withContext(Dispatchers.Main) { chatModel.chatsContext.updateGroup(rhId, gInfo) }
                   true
@@ -978,8 +981,8 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
     val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
-    val groupName = access?.groupDomain?.let { SimplexNameInfo.parse(it) }
-    if (groupName != null && access.groupDomainProof != null) {
+    val groupName = access?.simplexName?.name
+    if (groupName != null && access.simplexName?.proof != null) {
       SimplexNameView(
         name = groupName,
         verification = groupInfo.groupDomainVerification,

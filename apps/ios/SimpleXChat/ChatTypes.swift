@@ -162,8 +162,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         peerType: ChatPeerType? = nil,
         localBadge: LocalBadge? = nil,
         localAlias: String,
-        contactDomain: SimplexNameInfo? = nil,
-        contactDomainProof: NameClaimProof? = nil,
+        simplexName: SimplexNameClaim? = nil,
         contactDomainVerification: Bool? = nil
     ) {
         self.profileId = profileId
@@ -176,8 +175,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.peerType = peerType
         self.localBadge = localBadge
         self.localAlias = localAlias
-        self.contactDomain = contactDomain
-        self.contactDomainProof = contactDomainProof
+        self.simplexName = simplexName
         self.contactDomainVerification = contactDomainVerification
     }
 
@@ -191,8 +189,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var peerType: ChatPeerType?
     public var localBadge: LocalBadge?
     public var localAlias: String
-    public var contactDomain: SimplexNameInfo?
-    public var contactDomainProof: NameClaimProof?
+    public var simplexName: SimplexNameClaim?
     public var contactDomainVerification: Bool?
 
     var profileViewName: String {
@@ -2624,19 +2621,47 @@ public enum GroupType: Codable, Hashable {
 }
 
 public struct PublicGroupAccess: Codable, Hashable {
-    public init(groupWebPage: String? = nil, groupDomain: String? = nil, groupDomainProof: NameClaimProof? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
+    public init(groupWebPage: String? = nil, simplexName: SimplexNameClaim? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
         self.groupWebPage = groupWebPage
-        self.groupDomain = groupDomain
-        self.groupDomainProof = groupDomainProof
+        self.simplexName = simplexName
         self.domainWebPage = domainWebPage
         self.allowEmbedding = allowEmbedding
     }
 
     public var groupWebPage: String?
-    public var groupDomain: String?
-    public var groupDomainProof: NameClaimProof?
+    public var simplexName: SimplexNameClaim?
     public var domainWebPage: Bool = false
     public var allowEmbedding: Bool = false
+}
+
+public struct SimplexNameClaim: Codable, Hashable {
+    public init(name: SimplexNameInfo, proof: NameClaimProof? = nil) {
+        self.name = name
+        self.proof = proof
+    }
+    public var name: SimplexNameInfo
+    public var proof: NameClaimProof?
+}
+
+public enum SimplexNameError: Codable, Hashable {
+    case noValidLink
+    case unknownName
+
+    enum CodingKeys: String, CodingKey { case type }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        switch try c.decode(String.self, forKey: .type) {
+        case "noValidLink": self = .noValidLink
+        default: self = .unknownName
+        }
+    }
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .noValidLink: try c.encode("noValidLink", forKey: .type)
+        case .unknownName: try c.encode("unknownName", forKey: .type)
+        }
+    }
 }
 
 public struct RelayCapabilities: Codable, Hashable {

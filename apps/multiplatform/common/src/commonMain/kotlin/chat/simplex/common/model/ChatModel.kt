@@ -2069,8 +2069,7 @@ data class LocalProfile(
   val preferences: ChatPreferences? = null,
   val peerType: ChatPeerType? = null,
   val localBadge: LocalBadge? = null,
-  val contactDomain: SimplexNameInfo? = null,
-  val contactDomainProof: NameClaimProof? = null,
+  val simplexName: SimplexNameClaim? = null,
   val contactDomainVerification: Boolean? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
@@ -2324,10 +2323,15 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 }
 
 @Serializable
+data class SimplexNameClaim(
+  val name: SimplexNameInfo,
+  val proof: NameClaimProof? = null
+)
+
+@Serializable
 data class PublicGroupAccess(
   val groupWebPage: String? = null,
-  val groupDomain: String? = null,
-  val groupDomainProof: NameClaimProof? = null,
+  val simplexName: SimplexNameClaim? = null,
   val domainWebPage: Boolean = false,
   val allowEmbedding: Boolean = false
 )

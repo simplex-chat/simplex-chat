@@ -84,6 +84,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
+    case apiSetPublicGroupAccess(groupName: String, domain: String?, webPage: String?, domainPage: Bool, allowEmbedding: Bool)
     case apiCreateGroupLink(groupId: Int64, memberRole: GroupMemberRole)
     case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
@@ -374,6 +375,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiSetAddressSettings(userId, addressSettings): return "/_address_settings \(userId) \(encodeJSON(addressSettings))"
             case let .apiSetUserName(userId, name): return "/_set_name \(userId)" + (name.map { " " + $0 } ?? "")
+            case let .apiSetPublicGroupAccess(groupName, domain, webPage, domainPage, allowEmbedding): return "/public group access #\(groupName)" + (webPage.map { " web=" + $0 } ?? "") + (domain.map { " domain=" + $0 } ?? "") + " domain_page=\(domainPage ? "on" : "off") embed=\(allowEmbedding ? "on" : "off")"
             case let .apiVerifyContactName(contactId): return "/_verify name @\(contactId)"
             case let .apiVerifyPublicGroupName(groupId): return "/_verify name #\(groupId)"
             case let .apiAcceptContact(incognito, contactReqId): return "/_accept incognito=\(onOff(incognito)) \(contactReqId)"
@@ -487,6 +489,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiLeaveGroup: return "apiLeaveGroup"
             case .apiListMembers: return "apiListMembers"
             case .apiUpdateGroupProfile: return "apiUpdateGroupProfile"
+            case .apiSetPublicGroupAccess: return "apiSetPublicGroupAccess"
             case .apiCreateGroupLink: return "apiCreateGroupLink"
             case .apiGroupLinkMemberRole: return "apiGroupLinkMemberRole"
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
@@ -966,8 +969,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case membersRoleUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], toRole: GroupMemberRole)
     case membersBlockedForAllUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], blocked: Bool)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
-    case contactNameVerified(user: UserRef, contact: Contact, verificationResult: String?)
-    case groupNameVerified(user: UserRef, groupInfo: GroupInfo, verificationResult: String?)
+    case contactNameVerified(user: UserRef, contact: Contact, verificationFailure: String?)
+    case groupNameVerified(user: UserRef, groupInfo: GroupInfo, verificationFailure: String?)
     case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink)
     case groupLink(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink)
     case groupLinkDeleted(user: UserRef, groupInfo: GroupInfo)
@@ -1076,8 +1079,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .membersRoleUser(u, groupInfo, members, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\ntoRole: \(toRole)")
         case let .membersBlockedForAllUser(u, groupInfo, members, blocked): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(members)\nblocked: \(blocked)")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
-        case let .contactNameVerified(u, contact, verificationResult): return withUser(u, "contact: \(contact)\nverificationResult: \(verificationResult ?? "ok")")
-        case let .groupNameVerified(u, groupInfo, verificationResult): return withUser(u, "groupInfo: \(groupInfo)\nverificationResult: \(verificationResult ?? "ok")")
+        case let .contactNameVerified(u, contact, verificationFailure): return withUser(u, "contact: \(contact)\nverificationFailure: \(verificationFailure ?? "ok")")
+        case let .groupNameVerified(u, groupInfo, verificationFailure): return withUser(u, "groupInfo: \(groupInfo)\nverificationFailure: \(verificationFailure ?? "ok")")
         case let .groupLinkCreated(u, groupInfo, groupLink): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)")
         case let .groupLink(u, groupInfo, groupLink): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)")
         case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))
@@ -1395,7 +1398,7 @@ enum InvitationLinkPlan: Decodable, Hashable {
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?, verifiedName: SimplexNameInfo?)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1410,7 +1413,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?, verifiedName: SimplexNameInfo?)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)

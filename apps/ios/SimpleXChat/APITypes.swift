@@ -741,7 +741,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case chatNotStopped
     case chatStoreChanged
     case invalidConnReq
-    case simplexNameNotFound(simplexName: SimplexNameInfo)
+    case simplexName(simplexName: SimplexNameInfo, simplexNameError: SimplexNameError)
     case simplexNameUnprepared(simplexName: SimplexNameInfo)
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)

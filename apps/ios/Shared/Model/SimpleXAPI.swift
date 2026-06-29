@@ -1083,7 +1083,7 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             title: "Unsupported connection link",
             message: "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
         )
-    case let .error(.simplexNameNotFound(name)):
+    case let .error(.simplexName(name, _)):
         mkAlert(
             title: name.nameType == .contact ? "Contact name not found" : "Channel name not found",
             message: "There is no contact or group registered with this SimpleX name."
@@ -1357,13 +1357,13 @@ func apiSetUserName(_ name: String?) async throws -> User {
 
 func apiVerifyContactName(_ contactId: Int64) async throws -> (Contact, String?) {
     let r: ChatResponse2 = try await chatSendCmd(.apiVerifyContactName(contactId: contactId))
-    if case let .contactNameVerified(_, contact, verificationResult) = r { return (contact, verificationResult) }
+    if case let .contactNameVerified(_, contact, verificationFailure) = r { return (contact, verificationFailure) }
     throw r.unexpected
 }
 
 func apiVerifyPublicGroupName(_ groupId: Int64) async throws -> (GroupInfo, String?) {
     let r: ChatResponse2 = try await chatSendCmd(.apiVerifyPublicGroupName(groupId: groupId))
-    if case let .groupNameVerified(_, groupInfo, verificationResult) = r { return (groupInfo, verificationResult) }
+    if case let .groupNameVerified(_, groupInfo, verificationFailure) = r { return (groupInfo, verificationFailure) }
     throw r.unexpected
 }
 
@@ -2029,6 +2029,12 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
 
 func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws -> GroupInfo {
     let r: ChatResponse2 = try await chatSendCmd(.apiUpdateGroupProfile(groupId: groupId, groupProfile: groupProfile))
+    if case let .groupUpdated(_, toGroup) = r { return toGroup }
+    throw r.unexpected
+}
+
+func apiSetPublicGroupAccess(_ groupName: String, domain: String?, webPage: String?, domainPage: Bool, allowEmbedding: Bool) async throws -> GroupInfo {
+    let r: ChatResponse2 = try await chatSendCmd(.apiSetPublicGroupAccess(groupName: groupName, domain: domain, webPage: webPage, domainPage: domainPage, allowEmbedding: allowEmbedding))
     if case let .groupUpdated(_, toGroup) = r { return toGroup }
     throw r.unexpected
 }
