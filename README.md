@@ -6,7 +6,9 @@
 
 | 30/03/2023 | EN, [FR](/docs/lang/fr/README.md), [CZ](/docs/lang/cs/README.md), [PL](/docs/lang/pl/README.md) |
 
-<img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
+<img src="images/github-banner.jpg" alt="SimpleX logo" width="100%">
+
+Invest in SimpleX Chat. [Register now](https://simplexchat.typeform.com/crowdfunding).
 
 # SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!
 
