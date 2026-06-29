@@ -1559,21 +1559,20 @@ object ChatController {
       }
       r is API.Error && r.err is ChatError.ChatErrorChat
           && r.err.errorType is ChatErrorType.SimplexName -> {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.simplex_name_not_found),
-          generalGetString(MR.strings.simplex_name_not_found_desc)
-        )
-      }
-      r is API.Error && r.err is ChatError.ChatErrorChat
-          && r.err.errorType is ChatErrorType.SimplexNameUnprepared -> {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.cannot_reconnect_via_simplex_name),
-          generalGetString(MR.strings.simplex_name_unprepared_desc)
-        )
+        if (r.err.errorType.simplexNameError is SimplexNameError.NoValidLink) {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.cannot_reconnect_via_simplex_name),
+            generalGetString(MR.strings.simplex_name_unprepared_desc)
+          )
+        } else {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.simplex_name_not_found),
+            generalGetString(MR.strings.simplex_name_not_found_desc)
+          )
+        }
       }
       r is API.Error && r.err is ChatError.ChatErrorAgent
-          && r.err.agentError is AgentErrorType.NAME
-          && r.err.agentError.nameErr is NameErrorType.NO_SERVERS -> {
+          && r.err.agentError is AgentErrorType.NO_NAME_SERVERS -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.simplex_name_resolution_unavailable),
           generalGetString(MR.strings.simplex_name_resolver_unavailable_desc)
@@ -1617,10 +1616,10 @@ object ChatController {
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.UnsupportedConnReq ->
       generalGetString(MR.strings.unsupported_connection_link)
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexName ->
-      generalGetString(MR.strings.simplex_name_not_found)
-    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexNameUnprepared ->
-      generalGetString(MR.strings.cannot_reconnect_via_simplex_name)
-    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.NAME && e.agentError.nameErr is NameErrorType.NO_SERVERS ->
+      if (e.errorType.simplexNameError is SimplexNameError.NoValidLink)
+        generalGetString(MR.strings.cannot_reconnect_via_simplex_name)
+      else generalGetString(MR.strings.simplex_name_not_found)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.NO_NAME_SERVERS ->
       generalGetString(MR.strings.simplex_name_resolution_unavailable)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH ->
       generalGetString(MR.strings.connection_error_auth)
@@ -7400,7 +7399,6 @@ sealed class ChatErrorType {
       is ConnectionPlanChatError -> "connectionPlan"
       is InvalidConnReq -> "invalidConnReq"
       is SimplexName -> "simplexName"
-      is SimplexNameUnprepared -> "simplexNameUnprepared"
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
@@ -7484,7 +7482,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("simplexName") class SimplexName(val simplexName: SimplexNameInfo, val simplexNameError: SimplexNameError): ChatErrorType()
-  @Serializable @SerialName("simplexNameUnprepared") class SimplexNameUnprepared(val simplexName: SimplexNameInfo): ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()
@@ -7753,7 +7750,7 @@ sealed class AgentErrorType {
     is INTERNAL -> "INTERNAL $internalErr"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
     is INACTIVE -> "INACTIVE"
-    is NAME -> "NAME ${nameErr.string}"
+    is NO_NAME_SERVERS -> "NO_NAME_SERVERS"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType, val errContext: String): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType, val errContext: String): AgentErrorType()
@@ -7768,20 +7765,18 @@ sealed class AgentErrorType {
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
   @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
-  @Serializable @SerialName("NAME") class NAME(val nameErr: NameErrorType): AgentErrorType()
+  @Serializable @SerialName("NO_NAME_SERVERS") object NO_NAME_SERVERS: AgentErrorType()
 }
 
 @Serializable
 sealed class NameErrorType {
   val string: String get() = when (this) {
     is NO_RESOLVER -> "NO_RESOLVER"
-    is NO_NAME -> "NO_NAME"
-    is NO_SERVERS -> "NO_SERVERS"
+    is NOT_FOUND -> "NOT_FOUND"
     is RESOLVER -> "RESOLVER $resolverErr"
   }
   @Serializable @SerialName("NO_RESOLVER") object NO_RESOLVER: NameErrorType()
-  @Serializable @SerialName("NO_NAME") object NO_NAME: NameErrorType()
-  @Serializable @SerialName("NO_SERVERS") object NO_SERVERS: NameErrorType()
+  @Serializable @SerialName("NOT_FOUND") object NOT_FOUND: NameErrorType()
   @Serializable @SerialName("RESOLVER") class RESOLVER(val resolverErr: String): NameErrorType()
 }
 

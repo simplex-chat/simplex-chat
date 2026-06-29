@@ -742,7 +742,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case chatStoreChanged
     case invalidConnReq
     case simplexName(simplexName: SimplexNameInfo, simplexNameError: SimplexNameError)
-    case simplexNameUnprepared(simplexName: SimplexNameInfo)
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case connReqMessageProhibited
@@ -898,13 +897,12 @@ public enum AgentErrorType: Decodable, Hashable {
     case INTERNAL(internalErr: String)
     case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
-    case NAME(nameErr: NameErrorType)
+    case NO_NAME_SERVERS
 }
 
 public enum NameErrorType: Decodable, Hashable {
     case NO_RESOLVER
-    case NO_NAME
-    case NO_SERVERS
+    case NOT_FOUND
     case RESOLVER(resolverErr: String)
 }
 

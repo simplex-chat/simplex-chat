@@ -1083,17 +1083,20 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             title: "Unsupported connection link",
             message: "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
         )
-    case let .error(.simplexName(name, _)):
-        mkAlert(
-            title: name.nameType == .contact ? "Contact name not found" : "Channel name not found",
-            message: "There is no contact or group registered with this SimpleX name."
-        )
-    case .error(.simplexNameUnprepared):
-        mkAlert(
-            title: "Cannot reconnect via name",
-            message: "This SimpleX name is known but has no saved link to reconnect via."
-        )
-    case .errorAgent(.NAME(.NO_SERVERS)):
+    case let .error(.simplexName(name, err)):
+        switch err {
+        case .noValidLink:
+            mkAlert(
+                title: "Cannot reconnect via name",
+                message: "This SimpleX name is known but has no saved link to reconnect via."
+            )
+        case .unknownName:
+            mkAlert(
+                title: name.nameType == .contact ? "Contact name not found" : "Channel name not found",
+                message: "There is no contact or group registered with this SimpleX name."
+            )
+        }
+    case .errorAgent(.NO_NAME_SERVERS):
         mkAlert(
             title: "Name resolution unavailable",
             message: "None of your SMP servers support resolving SimpleX names. Add a server that does, or use a connection link."
