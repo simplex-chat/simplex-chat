@@ -461,6 +461,18 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+              SELECT ucl.conn_req_contact, ucl.short_link_contact, ucl.group_id
+              FROM user_contact_links ucl
+              JOIN groups g ON g.group_id = ucl.group_id
+              JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+              WHERE ucl.user_id = ? AND gp.simplex_name = ?
+            
+Plan:
+SEARCH ucl USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
               UPDATE chat_items
               SET user_id = ?, updated_at = ?
               WHERE group_id = ?
@@ -7719,6 +7731,14 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE groups SET send_rcpts = NULL
 Plan:
 SCAN groups
+
+Query: UPDATE groups SET simplex_name_verification = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET simplex_name_verification = NULL WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:

@@ -443,6 +443,7 @@ data ChatCommand
   | APILeaveGroup {groupId :: GroupId}
   | APIListMembers {groupId :: GroupId}
   | APIUpdateGroupProfile {groupId :: GroupId, groupProfile :: GroupProfile}
+  | APISetPublicGroupAccess GroupId PublicGroupAccess
   | APICreateGroupLink {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIGroupLinkMemberRole {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIDeleteGroupLink {groupId :: GroupId}
