@@ -4225,6 +4225,14 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">%@, %@ και %lld άλλα μέλη συνδέθηκαν</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve" approved="no">
+        <source>%1$@ supported SimpleX Chat. The badge expired on %2$@.</source>
+        <target state="translated">%1$@ υποστήριζε το SimpleX Chat. Η ισχύς του σήματος έληξε στις %2$@.</target>
+      </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+        <source>%@ downloaded</source>
+        <target state="translated">%@ κατεβασμένο</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="el" datatype="plaintext">
