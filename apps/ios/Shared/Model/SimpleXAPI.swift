@@ -2036,8 +2036,8 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
     throw r.unexpected
 }
 
-func apiSetPublicGroupAccess(_ groupName: String, domain: String?, webPage: String?, domainPage: Bool, allowEmbedding: Bool) async throws -> GroupInfo {
-    let r: ChatResponse2 = try await chatSendCmd(.apiSetPublicGroupAccess(groupName: groupName, domain: domain, webPage: webPage, domainPage: domainPage, allowEmbedding: allowEmbedding))
+func apiSetPublicGroupAccess(_ groupId: Int64, access: PublicGroupAccess) async throws -> GroupInfo {
+    let r: ChatResponse2 = try await chatSendCmd(.apiSetPublicGroupAccess(groupId: groupId, access: access))
     if case let .groupUpdated(_, toGroup) = r { return toGroup }
     throw r.unexpected
 }

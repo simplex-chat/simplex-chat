@@ -186,15 +186,8 @@ fun ModalData.GroupChatInfoView(
               prefix = "#",
               initial = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.name?.shortName ?: "",
               save = { name ->
-                val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
-                val gInfo = chatModel.controller.apiSetPublicGroupAccess(
-                  rhId,
-                  groupInfo.localDisplayName,
-                  name,
-                  access?.groupWebPage,
-                  access?.domainWebPage ?: false,
-                  access?.allowEmbedding ?: false
-                )
+                val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?: PublicGroupAccess()
+                val gInfo = chatModel.controller.apiSetPublicGroupAccess(rhId, groupInfo.groupId, access)
                 if (gInfo != null) {
                   withContext(Dispatchers.Main) { chatModel.chatsContext.updateGroup(rhId, gInfo) }
                   true

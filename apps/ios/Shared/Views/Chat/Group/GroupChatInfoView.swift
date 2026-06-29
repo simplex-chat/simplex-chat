@@ -256,14 +256,9 @@ struct GroupChatInfoView: View {
                                         nameText: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.name.shortName ?? "",
                                         save: { name in
                                             do {
-                                                let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
-                                                let gInfo = try await apiSetPublicGroupAccess(
-                                                    groupInfo.localDisplayName,
-                                                    domain: name?.isEmpty == true ? nil : name,
-                                                    webPage: access?.groupWebPage,
-                                                    domainPage: access?.domainWebPage ?? false,
-                                                    allowEmbedding: access?.allowEmbedding ?? false
-                                                )
+                                                var access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?? PublicGroupAccess()
+                                                access.simplexName = name
+                                                let gInfo = try await apiSetPublicGroupAccess(groupInfo.groupId, access: access)
                                                 await MainActor.run {
                                                     chatModel.updateGroup(gInfo)
                                                     groupInfo = gInfo

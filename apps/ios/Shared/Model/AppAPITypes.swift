@@ -84,7 +84,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
-    case apiSetPublicGroupAccess(groupName: String, domain: String?, webPage: String?, domainPage: Bool, allowEmbedding: Bool)
+    case apiSetPublicGroupAccess(groupId: Int64, access: PublicGroupAccess)
     case apiCreateGroupLink(groupId: Int64, memberRole: GroupMemberRole)
     case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
@@ -375,7 +375,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiSetAddressSettings(userId, addressSettings): return "/_address_settings \(userId) \(encodeJSON(addressSettings))"
             case let .apiSetUserName(userId, name): return "/_set_name \(userId)" + (name.map { " " + $0 } ?? "")
-            case let .apiSetPublicGroupAccess(groupName, domain, webPage, domainPage, allowEmbedding): return "/public group access #\(groupName)" + (webPage.map { " web=" + $0 } ?? "") + (domain.map { " domain=" + $0 } ?? "") + " domain_page=\(domainPage ? "on" : "off") embed=\(allowEmbedding ? "on" : "off")"
+            case let .apiSetPublicGroupAccess(groupId, access): return "/_public group access #\(groupId) \(encodeJSON(access))"
             case let .apiVerifyContactName(contactId): return "/_verify name @\(contactId)"
             case let .apiVerifyPublicGroupName(groupId): return "/_verify name #\(groupId)"
             case let .apiAcceptContact(incognito, contactReqId): return "/_accept incognito=\(onOff(incognito)) \(contactReqId)"

@@ -2343,7 +2343,7 @@ object ChatController {
     return when {
       r is API.Result && r.res is CR.GroupUpdated -> r.res.toGroup
       r is API.Error -> {
-        AlertManager.shared.showAlertMsg(generalGetString(errorTitle), "${r.err.string}")
+        AlertManager.shared.showAlertMsg(generalGetString(errorTitle), r.err.string)
         null
       }
       else -> {
@@ -2357,12 +2357,12 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetPublicGroupAccess(rh: Long?, groupName: String, domain: String?, webPage: String?, domainPage: Boolean, allowEmbedding: Boolean): GroupInfo? {
-    val r = sendCmd(rh, CC.ApiSetPublicGroupAccess(groupName, domain, webPage, domainPage, allowEmbedding))
+  suspend fun apiSetPublicGroupAccess(rh: Long?, groupId: Long, access: PublicGroupAccess): GroupInfo? {
+    val r = sendCmd(rh, CC.ApiSetPublicGroupAccess(groupId, access))
     return when {
       r is API.Result && r.res is CR.GroupUpdated -> r.res.toGroup
       r is API.Error -> {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), "${r.err.string}")
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), r.err.string)
         null
       }
       else -> {
@@ -3774,7 +3774,7 @@ sealed class CC {
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
-  class ApiSetPublicGroupAccess(val groupName: String, val domain: String?, val webPage: String?, val domainPage: Boolean, val allowEmbedding: Boolean): CC()
+  class ApiSetPublicGroupAccess(val groupId: Long, val access: PublicGroupAccess): CC()
   class APICreateGroupLink(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
@@ -4057,7 +4057,7 @@ sealed class CC {
     is ApiAddMyAddressShortLink -> "/_short_link_address $userId"
     is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
     is ApiSetUserName -> "/_set_name $userId" + (if (name != null) " $name" else "")
-    is ApiSetPublicGroupAccess -> "/public group access #$groupName" + (if (webPage != null) " web=$webPage" else "") + (if (domain != null) " domain=$domain" else "") + " domain_page=${onOff(domainPage)} embed=${onOff(allowEmbedding)}"
+    is ApiSetPublicGroupAccess -> "/_public group access #$groupId ${json.encodeToString(access)}"
     is ApiVerifyContactName -> "/_verify name @$contactId"
     is ApiVerifyPublicGroupName -> "/_verify name #$groupId"
     is ApiSetAddressSettings -> "/_address_settings $userId ${json.encodeToString(addressSettings)}"
