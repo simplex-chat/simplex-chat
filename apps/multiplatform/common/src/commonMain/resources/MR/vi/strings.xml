@@ -2476,4 +2476,21 @@
     <string name="let_someone_connect_to_you">Để ai đó kết nối với bạn</string>
     <string name="action_button_channel_link">Đường dẫn</string>
     <string name="loading_profile">Đang tải hồ sơ…</string>
+    <string name="settings_section_title_about">Giới thiệu</string>
+    <string name="accept_contact_request">Đồng ý yêu cầu kết nối</string>
+    <string name="chat_banner_accept_contact_request">Đồng ý yêu cầu kết nối</string>
+    <string name="relay_status_accepted">đã chấp nhận</string>
+    <string name="relay_status_acknowledged_roster">danh sách đã xác nhận</string>
+    <string name="relay_status_active">đang hoạt động</string>
+    <string name="add_button">Thêm mới</string>
+    <string name="compose_view_add_message">Thêm mới tin nhắn</string>
+    <string name="add_relay_button">Thêm thiết bị</string>
+    <string name="add_relays_title">Thêm mới thiết bị</string>
+    <string name="relay_bar_owner_no_delivery">Thêm thiết bị để khôi phục việc gửi tin nhắn</string>
+    <string name="relay_bar_active">%1$d/%2$d thiết bị hoạt động</string>
+    <string name="relay_bar_active_with_errors">%1$d/%2$d thiết bị hoạt động, %3$d lỗi</string>
+    <string name="relay_bar_active_with_failures">%1$d/%2$d thiết bị hoạt động, %3$d thất bại</string>
+    <string name="relay_bar_active_with_removed">%1$d/%2$d thiết bị hoạt động, %3$d bị xóa</string>
+    <string name="relay_bar_connected">%1$d/%2$d thiết bị đã kết nối</string>
+    <string name="relay_bar_connected_with_errors">%1$d/%2$d %1$d/%2$d thiết bị đã kết nối, %3$d lỗi</string>
 </resources>
