@@ -9804,6 +9804,8 @@ testChannelRemovedModeratorRefreshesRoster ps =
               threadDelay 1000000
               alice ##> "/rm #team cath"
               alice <## "#team: you removed cath from the group (signed)"
+              -- the relay applies the removal via the roster (revert to observer) before the delete delta
+              bob <## "#team: alice changed the role of cath from moderator to observer (signed)"
               bob <## "#team: alice removed cath from the group (signed)"
               cath <## "#team: alice removed you from the group (signed)"
               cath <## "use /d #team to delete the group"
@@ -10024,6 +10026,8 @@ testChannelRemoveMemberSigned ps =
             threadDelay 1000000
             alice ##> "/rm #team eve"
             alice <## "#team: you removed eve from the group (signed)"
+            -- the relay applies the removal via the roster (revert to observer) before the delete delta
+            bob <## "#team: alice changed the role of eve from member to observer (signed)"
             bob <## "#team: alice removed eve from the group (signed)"
             concurrentlyN_
               [ cath <## "#team: alice removed eve from the group (signed)",

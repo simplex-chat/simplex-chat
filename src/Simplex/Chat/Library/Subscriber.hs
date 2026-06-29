@@ -3442,18 +3442,22 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             `catchAllErrors` \_ -> pure (cs, as)
 
     emitRosterResults :: GroupInfo -> GroupMember -> UTCTime -> ([MemberId], [(GroupMember, GroupMemberRole, Bool)]) -> CM ()
-    emitRosterResults gInfo author rosterBrokerTs (conflicts, applied) = do
+    emitRosterResults gInfo@GroupInfo {membership} author rosterBrokerTs (conflicts, applied) = do
       forM_ conflicts $ \mid' ->
         messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode mid')
       forM_ applied $ \(member, fromRole, created) ->
-        unless created $ createItems member fromRole
+        unless created $ emitRoleChange member fromRole
       where
-        createItems member fromRole = do
+        emitRoleChange member fromRole = do
           let toRole = memberRole' member
-              gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) toRole
-          (gInfo', author', scopeInfo) <- mkGroupChatScope gInfo author
-          ci <- createChatItem user (CDGroupRcv gInfo' scopeInfo author') False (CIRcvGroupEvent gEvent) Nothing (Just MSSVerified) (Just rosterBrokerTs)
-          toView $ CEvtNewChatItems user [ci]
+          (gInfo', author') <-
+            if sameMemberId (memberId' membership) member
+              then do
+                (gInfo', author', scopeInfo) <- mkGroupChatScope gInfo author
+                ci <- createChatItem user (CDGroupRcv gInfo' scopeInfo author') False (CIRcvGroupEvent $ RGEUserRole toRole) Nothing (Just MSSVerified) (Just rosterBrokerTs)
+                toView $ CEvtNewChatItems user [ci]
+                pure (gInfo', author')
+              else pure (gInfo, author)
           toView CEvtMemberRole {user, groupInfo = gInfo', byMember = author', member, fromRole, toRole, msgSigned = Just MSSVerified}
 
     sendRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
