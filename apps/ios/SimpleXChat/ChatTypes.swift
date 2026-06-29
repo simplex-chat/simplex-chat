@@ -136,6 +136,8 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var contactLink: String?
     public var preferences: Preferences?
     public var peerType: ChatPeerType?
+    // the badge proof from the wire profile - opaque to the UI, round-tripped to the core (apiPrepareContact)
+    public var badge: BadgeProof?
     public var localAlias: String { get { "" } }
 
     var profileViewName: String {
@@ -158,6 +160,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         contactLink: String? = nil,
         preferences: Preferences? = nil,
         peerType: ChatPeerType? = nil,
+        localBadge: LocalBadge? = nil,
         localAlias: String
     ) {
         self.profileId = profileId
@@ -168,6 +171,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.contactLink = contactLink
         self.preferences = preferences
         self.peerType = peerType
+        self.localBadge = localBadge
         self.localAlias = localAlias
     }
 
@@ -179,6 +183,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var contactLink: String?
     public var preferences: Preferences?
     public var peerType: ChatPeerType?
+    public var localBadge: LocalBadge?
     public var localAlias: String
 
     var profileViewName: String {
@@ -199,6 +204,70 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
 public enum ChatPeerType: String, Codable {
     case human
     case bot
+}
+
+// Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
+// Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
+public enum BadgeType: Hashable {
+    case supporter
+    case legend
+    case investor
+    case unknown(String)
+
+    // the disclosed (signed) type name, shown to the user for verified badges
+    public var text: String {
+        switch self {
+        case .supporter: "supporter"
+        case .legend: "legend"
+        case .investor: "investor"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension BadgeType: Codable {
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "supporter": self = .supporter
+        case "legend": self = .legend
+        case "investor": self = .investor
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
+    }
+}
+
+public enum BadgeStatus: String, Codable {
+    case active
+    case expired
+    // expired over a month ago - the badge is not shown at all
+    case expiredOld
+    case failed
+    // signed with a key index this app version does not know - shown as a warning
+    case unknownKey
+}
+
+public struct BadgeInfo: Codable, Hashable {
+    public var badgeType: BadgeType
+    public var badgeExpiry: Date?
+    public var badgeExtra: String
+}
+
+public struct LocalBadge: Codable, Hashable {
+    public var badge: BadgeInfo
+    public var status: BadgeStatus
+}
+
+// the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
+public struct BadgeProof: Codable, Hashable {
+    public var badgeKeyIdx: Int
+    public var presHeader: String
+    public var proof: String
+    public var badgeInfo: BadgeInfo
 }
 
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
@@ -1459,6 +1528,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    // the badge shown for a chat's name: an active contact's or a contact request's (groups have none)
+    public var nameBadge: LocalBadge? {
+        get {
+            switch self {
+            case let .direct(contact): return contact.active ? contact.profile.localBadge : nil
+            case let .contactRequest(contactRequest): return contactRequest.profile.localBadge
+            default: return nil
+            }
+        }
+    }
+
     public var displayName: String {
         get {
             switch self {
@@ -1640,11 +1720,11 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 if groupInfo.membership.memberActive {
                     switch(groupChatScope) {
                     case .none:
-                        if allRelaysBroken && groupInfo.useRelays { return ("can't broadcast", nil) }
                         if groupInfo.membership.memberPending { return ("reviewed by admins", "Please contact group admin.") }
                         if groupInfo.membership.memberRole == .observer {
                             return groupInfo.useRelays ? ("you are subscriber", nil) : ("you are observer", "Please contact group admin.")
                         }
+                        if allRelaysBroken && groupInfo.useRelays { return ("can't broadcast", nil) }
                         return nil
                     case let .some(.memberSupport(groupMember_: .some(supportMember))):
                         if supportMember.versionRange.maxVersion < GROUP_KNOCKING_VERSION && !supportMember.memberPending {
@@ -2265,7 +2345,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public var userContactLinkId_: Int64?
     public var cReqChatVRange: VersionRange
     var localDisplayName: ContactName
-    var profile: Profile
+    public var profile: LocalProfile
     var createdAt: Date
     public var updatedAt: Date
 
@@ -2283,7 +2363,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
         userContactLinkId_: 1,
         cReqChatVRange: VersionRange(1, 1),
         localDisplayName: "alice",
-        profile: Profile.sampleData,
+        profile: LocalProfile.sampleData,
         createdAt: .now,
         updatedAt: .now
     )
@@ -2534,6 +2614,13 @@ public enum GroupType: Codable, Hashable {
 }
 
 public struct PublicGroupAccess: Codable, Hashable {
+    public init(groupWebPage: String? = nil, groupDomain: String? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
+        self.groupWebPage = groupWebPage
+        self.groupDomain = groupDomain
+        self.domainWebPage = domainWebPage
+        self.allowEmbedding = allowEmbedding
+    }
+
     public var groupWebPage: String?
     public var groupDomain: String?
     public var domainWebPage: Bool = false
@@ -2627,6 +2714,8 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: MsgContent?
     public var business: Bool
+    // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
+    public var localBadge: LocalBadge?
 }
 
 public struct GroupSummary: Decodable, Hashable {
@@ -2652,6 +2741,7 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case new
     case invited
     case accepted
+    case acknowledgedRoster
     case active
     case inactive
     case rejected
@@ -2727,6 +2817,7 @@ extension RelayStatus {
         case .new: "new"
         case .invited: "invited"
         case .accepted: "accepted"
+        case .acknowledgedRoster: "acknowledged roster"
         case .active: "active"
         case .inactive: "inactive"
         case .rejected: "rejected"
@@ -2783,6 +2874,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
     public var contactLink: String? { get { memberProfile.contactLink } }
+    public var nameBadge: LocalBadge? { memberProfile.localBadge }
     public var verified: Bool { activeConn?.connectionCode != nil }
     public var blocked: Bool { blockedByAdmin || !memberSettings.showMessages }
 
@@ -2889,8 +2981,16 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if memberRole == .relay || !canBeRemoved(groupInfo: groupInfo) || memberStatus == .memRemoved || memberStatus == .memLeft || memberPending { return nil }
+        if groupInfo.useRelays && !groupInfo.isOwner { return nil }
         let userRole = groupInfo.membership.memberRole
-        return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
+        if groupInfo.useRelays {
+            // TODO [relays]: for now owners can only set observer/member in channels.
+            //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
+            // return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
+            return [.observer, .member]
+        } else {
+            return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
+        }
     }
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
@@ -2978,12 +3078,16 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .moderator, .admin, .owner]
 
-    public var text: String {
+    public func text(isChannel: Bool) -> String {
         switch self {
         case .relay: return NSLocalizedString("relay", comment: "member role")
-        case .observer: return NSLocalizedString("observer", comment: "member role")
+        case .observer: return isChannel
+            ? NSLocalizedString("subscriber", comment: "member role")
+            : NSLocalizedString("observer", comment: "member role")
         case .author: return NSLocalizedString("author", comment: "member role")
-        case .member: return NSLocalizedString("member", comment: "member role")
+        case .member: return isChannel
+            ? NSLocalizedString("contributor", comment: "member role")
+            : NSLocalizedString("member", comment: "member role")
         case .moderator: return NSLocalizedString("moderator", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
@@ -5504,7 +5608,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .userAccepted: return NSLocalizedString("accepted you", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberRole(_, profile, role):
-            return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text)
+            return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text(isChannel: isChannel))
         case let .memberBlocked(_, profile, blocked):
             if blocked {
                 return String.localizedStringWithFormat(NSLocalizedString("blocked %@", comment: "rcv group event chat item"), profile.profileViewName)
@@ -5512,7 +5616,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
                 return String.localizedStringWithFormat(NSLocalizedString("unblocked %@", comment: "rcv group event chat item"), profile.profileViewName)
             }
         case let .userRole(role):
-            return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text)
+            return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text(isChannel: isChannel))
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
@@ -5558,9 +5662,9 @@ public enum SndGroupEvent: Decodable, Hashable {
     func text(isChannel: Bool) -> String {
         switch self {
         case let .memberRole(_, profile, role):
-            return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
+            return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text(isChannel: isChannel))
         case let .userRole(role):
-            return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text)
+            return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text(isChannel: isChannel))
         case let .memberBlocked(_, profile, blocked):
             if blocked {
                 return String.localizedStringWithFormat(NSLocalizedString("you blocked %@", comment: "snd group event chat item"), profile.profileViewName)

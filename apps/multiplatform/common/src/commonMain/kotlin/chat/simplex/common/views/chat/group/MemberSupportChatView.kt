@@ -137,8 +137,8 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
         if (member.verified) {
           MemberVerifiedShield()
         }
-        Text(
-          member.displayName, fontWeight = FontWeight.SemiBold,
+        NameWithBadge(
+          member.displayName, member.nameBadge, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
       }

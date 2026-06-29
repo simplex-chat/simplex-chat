@@ -38,6 +38,50 @@
   </description>
 
   <releases>
+    <release version="6.5.6" date="2026-06-22">
+      <url type="details">https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html</url>
+      <description>
+        <p>New in v6.5.6:</p>
+        <p>Public channels - speak freely!</p>
+        <ul>
+          <li>Reliability: many relays per channel.</li>
+          <li>Ownership: you can run your own relays.</li>
+          <li>Security: owners hold channel keys.</li>
+          <li>Privacy: for owners and subscribers.</li>
+        </ul>
+        <p>Easier to invite your friends: we made connecting simpler for new users.</p>
+        <p>Safe web links:</p>
+        <ul>
+          <li>opt-in to send link previews.</li>
+          <li>use SOCKS proxy for previews (if enabled).</li>
+          <li>prevent hyperlink phishing.</li>
+          <li>remove link tracking.</li>
+        </ul>
+        <p>Non-profit governance: to make SimpleX Network last.</p>
+      </description>
+    </release>
+    <release version="6.5.5" date="2026-06-17">
+      <url type="details">https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html</url>
+      <description>
+        <p>New in v6.5.5:</p>
+        <p>Public channels - speak freely!</p>
+        <ul>
+          <li>Reliability: many relays per channel.</li>
+          <li>Ownership: you can run your own relays.</li>
+          <li>Security: owners hold channel keys.</li>
+          <li>Privacy: for owners and subscribers.</li>
+        </ul>
+        <p>Easier to invite your friends: we made connecting simpler for new users.</p>
+        <p>Safe web links:</p>
+        <ul>
+          <li>opt-in to send link previews.</li>
+          <li>use SOCKS proxy for previews (if enabled).</li>
+          <li>prevent hyperlink phishing.</li>
+          <li>remove link tracking.</li>
+        </ul>
+        <p>Non-profit governance: to make SimpleX Network last.</p>
+      </description>
+    </release>
     <release version="6.5.4" date="2026-06-02">
       <url type="details">https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html</url>
       <description>

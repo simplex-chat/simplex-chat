@@ -23,6 +23,7 @@ struct ComposeFileView: View {
                 .foregroundColor(Color(uiColor: .tertiaryLabel))
                 .padding(.leading, 4)
             Text(fileName)
+                .lineLimit(1)
             Spacer()
             if cancelEnabled {
                 Button { cancelFile() } label: {

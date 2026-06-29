@@ -883,9 +883,6 @@ marked deleted chat item preview text */
 "calling…" = "bellen…";
 
 /* No comment provided by engineer. */
-"Calls" = "Oproepen";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Bellen niet toegestaan!";
 
 /* No comment provided by engineer. */
@@ -1767,13 +1764,10 @@ alert button */
 "Details" = "Details";
 
 /* No comment provided by engineer. */
-"Develop" = "Ontwikkelen";
+"Developer" = "Ontwikkel gereedschap";
 
 /* No comment provided by engineer. */
 "Developer options" = "Ontwikkelaars opties";
-
-/* No comment provided by engineer. */
-"Developer" = "Ontwikkel gereedschap";
 
 /* No comment provided by engineer. */
 "Device" = "Apparaat";
@@ -3040,7 +3034,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "Groot bestand!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Kom meer te weten";
 
 /* swipe action */
@@ -3927,9 +3921,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "Eerder verbonden servers";
-
-/* No comment provided by engineer. */
-"Your privacy" = "Privacy en beveiliging";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Privacy voor uw klanten.";
@@ -4990,9 +4981,6 @@ report reason */
 "Subscriptions ignored" = "Subscriptions genegeerd";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Ondersteuning van SimpleX Chat";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "Wisselen tussen audio en video tijdens het gesprek.";
 
 /* No comment provided by engineer. */
@@ -5510,9 +5498,6 @@ server test failure */
 "v%@" = "v%@";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify code with desktop" = "Code verifiëren met desktop";
 
 /* No comment provided by engineer. */
@@ -5777,9 +5762,6 @@ server test failure */
 "You can enable later via Settings" = "U kunt later inschakelen via Instellingen";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Your privacy settings." = "U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.";
-
-/* No comment provided by engineer. */
 "You can give another try." = "Je kunt het nog een keer proberen.";
 
 /* No comment provided by engineer. */
@@ -5934,9 +5916,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Uw oproepen";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Uw chat database";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Uw chat database is niet versleuteld, stel een wachtwoord in om deze te versleutelen.";

@@ -392,38 +392,31 @@ struct ComposeView: View {
             }
 
             let ownerState = ownerRelayState
+            let subscriberState = subscriberRelayState
             if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
                ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
                     if let s = ownerState, s.relays.isEmpty || s.activeCount < s.relays.count {
                         ownerChannelRelayBar(relays: s.relays, activeCount: s.activeCount, failedCount: s.failedCount, removedCount: s.removedCount)
                     }
-                } else {
-                    let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
-                    let relayMembers = chatModel.groupMembers
-                        .filter { $0.wrapped.memberRole == .relay && ![.memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) }
-                        .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
+                } else if let s = subscriberState {
                     let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
-                    let removedCount = relayMembers.filter { relayMemberRemoved($0.wrapped.memberStatus) }.count
-                    let connectedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
-                    let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
-                    let resolvedCount = connectedCount + removedCount + failedCount
-                    let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
-                    if total == 0 || removedCount + failedCount > 0 || resolvedCount < total {
+                    let resolvedCount = s.connectedCount + s.removedCount + s.failedCount
+                    if s.total == 0 || s.removedCount + s.failedCount > 0 || resolvedCount < s.total {
                         subscriberChannelRelayBar(
-                            hostnames: hostnames,
-                            relayMembers: relayMembers,
-                            connectedCount: connectedCount,
-                            removedCount: removedCount,
-                            failedCount: failedCount,
-                            total: total,
+                            hostnames: s.hostnames,
+                            relayMembers: s.relayMembers,
+                            connectedCount: s.connectedCount,
+                            removedCount: s.removedCount,
+                            failedCount: s.failedCount,
+                            total: s.total,
                             showProgress: showProgress
                         )
                     }
                 }
             }
 
-            let userCantSendReason = chat.chatInfo.userCantSendReason(allRelaysBroken: ownerState?.noActiveRelays ?? false)
+            let userCantSendReason = chat.chatInfo.userCantSendReason(allRelaysBroken: (ownerState?.noActiveRelays ?? subscriberState?.noActiveRelays) ?? false)
             let composeEnabled = (
                 userCantSendReason == nil ||
                 (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) ||
@@ -748,8 +741,25 @@ struct ComposeView: View {
         return (relays, activeCount, failedCount, removedCount, noActiveRelays)
     }
 
+    private var subscriberRelayState: (hostnames: [String], relayMembers: [GMember], connectedCount: Int, removedCount: Int, failedCount: Int, total: Int, noActiveRelays: Bool)? {
+        guard let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
+              gInfo.membership.memberRole != .owner,
+              ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus)
+        else { return nil }
+        let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
+        let relayMembers = chatModel.groupMembers
+            .filter { $0.wrapped.memberRole == .relay && ![.memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) }
+            .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
+        let removedCount = relayMembers.filter { relayMemberRemoved($0.wrapped.memberStatus) }.count
+        let connectedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
+        let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
+        let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
+        let noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
+        return (hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
+    }
+
     private var disabledText: LocalizedStringKey? {
-        chat.chatInfo.userCantSendReason(allRelaysBroken: ownerRelayState?.noActiveRelays ?? false)?.composeLabel
+        chat.chatInfo.userCantSendReason(allRelaysBroken: (ownerRelayState?.noActiveRelays ?? subscriberRelayState?.noActiveRelays) ?? false)?.composeLabel
     }
 
     @ViewBuilder private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int, removedCount: Int) -> some View {
@@ -1247,7 +1257,9 @@ struct ComposeView: View {
     }
 
     private var maxFileSize: Int64 {
-        getMaxFileSize(.xftp)
+        // the user's active badge raises the limit, but not in incognito chats where no badge is presented
+        let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+        return getMaxFileSize(.xftp, incognito ? nil : chatModel.currentUser?.profile)
     }
 
     // Spec: spec/client/compose.md#sendLiveMessage

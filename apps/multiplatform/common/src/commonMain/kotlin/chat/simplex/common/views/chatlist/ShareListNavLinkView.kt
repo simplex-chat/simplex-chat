@@ -104,8 +104,8 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
       } else {
         ProfileImage(size = 42.dp, chat.chatInfo.image)
       }
-      Text(
-        chat.chatInfo.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+      NameWithBadge(
+        chat.chatInfo.chatViewName, chat.chatInfo.nameBadge, maxLines = 1, overflow = TextOverflow.Ellipsis,
         color = if (disabled) MaterialTheme.colors.secondary else if (chat.chatInfo.incognito) Indigo else Color.Unspecified
       )
     }

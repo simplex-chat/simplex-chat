@@ -37,7 +37,7 @@ fun ChannelRelaysView(
   LaunchedEffect(Unit) {
     setGroupMembers(rhId, groupInfo, chatModel)
     if (groupInfo.isOwner) {
-      val relays = chatModel.controller.apiGetGroupRelays(groupInfo.groupId)
+      val relays = chatModel.controller.apiGetGroupRelays(rhId, groupInfo.groupId)
       ChannelRelaysModel.set(groupId = groupInfo.groupId, groupRelays = relays)
     }
   }
@@ -87,8 +87,6 @@ private fun ChannelRelaysLayout(
             minHeight = 54.dp,
             padding = PaddingValues(horizontal = DEFAULT_PADDING)
           ) {
-            // TODO [relays] re-enable when relay management ships
-            /*
             if (groupInfo.isOwner && member.canBeRemoved(groupInfo)) {
               DefaultDropdownMenu(showMenu) {
                 ItemAction(generalGetString(MR.strings.button_remove_relay), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
@@ -97,7 +95,6 @@ private fun ChannelRelaysLayout(
                 })
               }
             }
-            */
             val statusText = if (groupInfo.isOwner) {
               ownerRelayStatusText(member, groupRelays)
             } else {
@@ -109,8 +106,6 @@ private fun ChannelRelaysLayout(
       }
       SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages))
     }
-    // TODO [relays] re-enable when relay management ships
-    /*
     if (groupInfo.isOwner) {
       SectionView {
         SectionItemView(click = {
@@ -119,6 +114,7 @@ private fun ChannelRelaysLayout(
           val existingRelayIds = groupRelays.mapNotNull { it.userChatRelay.chatRelayId }.toSet()
           ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
             AddGroupRelayView(
+              rhId = rhId,
               groupInfo = groupInfo,
               existingRelayIds = existingRelayIds,
               onRelayAdded = { withBGApi { setGroupMembers(rhId, groupInfo, chatModel) } },
@@ -139,7 +135,6 @@ private fun ChannelRelaysLayout(
         }
       }
     }
-    */
     SectionBottomSpacer()
   }
 }

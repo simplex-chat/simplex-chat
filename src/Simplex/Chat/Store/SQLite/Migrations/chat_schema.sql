@@ -19,7 +19,16 @@ CREATE TABLE contact_profiles(
   preferences TEXT,
   contact_link BLOB,
   short_descr TEXT,
-  chat_peer_type TEXT
+  chat_peer_type TEXT,
+  badge_proof BLOB,
+  badge_pres_header BLOB,
+  badge_expiry TEXT,
+  badge_type TEXT,
+  badge_verified INTEGER,
+  badge_extra TEXT,
+  badge_master_key BLOB,
+  badge_signature BLOB,
+  badge_key_idx INTEGER
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -182,7 +191,15 @@ CREATE TABLE groups(
   relay_request_retries INTEGER NOT NULL DEFAULT 0,
   relay_request_delay INTEGER NOT NULL DEFAULT 0,
   relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
-  relay_inactive_at TEXT, -- received
+  relay_inactive_at TEXT,
+  relay_sent_web_domain TEXT,
+  roster_version INTEGER,
+  roster_msg_body BLOB,
+  roster_msg_chat_binding TEXT,
+  roster_msg_signatures BLOB,
+  roster_sending_owner_gm_id INTEGER,
+  roster_broker_ts TEXT,
+  roster_blob BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -268,7 +285,10 @@ CREATE TABLE files(
   file_crypto_key BLOB,
   file_crypto_nonce BLOB,
   note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
-  redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE
+  redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE,
+  shared_msg_id BLOB,
+  file_type TEXT NOT NULL DEFAULT 'normal',
+  roster_transfer_id INTEGER
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -787,6 +807,20 @@ CREATE TABLE group_relays(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   base_web_url TEXT
+) STRICT;
+CREATE TABLE rcv_roster_transfers(
+  roster_transfer_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  from_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  roster_version INTEGER NOT NULL,
+  roster_digest BLOB NOT NULL,
+  sending_owner_gm_id INTEGER NOT NULL,
+  broker_ts TEXT NOT NULL,
+  roster_msg_body BLOB,
+  roster_msg_chat_binding TEXT,
+  roster_msg_signatures BLOB,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1307,6 +1341,18 @@ ON groups(
   relay_request_group_link
 )
 WHERE relay_request_group_link IS NOT NULL;
+CREATE UNIQUE INDEX idx_rcv_roster_transfers_group_id_from_member_id ON rcv_roster_transfers(
+  group_id,
+  from_member_id
+);
+CREATE INDEX idx_rcv_roster_transfers_from_member_id ON rcv_roster_transfers(
+  from_member_id
+);
+CREATE INDEX idx_files_group_id_shared_msg_id ON files(
+  group_id,
+  shared_msg_id
+);
+CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

@@ -318,7 +318,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/img")
   ty.addPassthroughCopy("src/video")
   ty.addPassthroughCopy("src/css")
-  ty.addPassthroughCopy("src/js")
+  ty.addPassthroughCopy("src/js/**/*.js")
   ty.addPassthroughCopy("src/lottie_file")
   ty.addPassthroughCopy("src/contact/*.js")
   ty.addPassthroughCopy("src/call")
@@ -334,6 +334,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/CNAME")
   ty.addPassthroughCopy("src/.well-known")
   ty.addPassthroughCopy("src/file-assets")
+  ty.addPassthroughCopy("src/credits")
 
   ty.addCollection('blogs', function (collection) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()
