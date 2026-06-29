@@ -9815,14 +9815,14 @@ testChannelSubscriberRosterCatchUp ps =
               recRole `shouldBe` "member"
               recKey `shouldBe` danKey
   where
-    memberId :: HasCallStack => TestCC -> T.Text -> IO ByteString
+    memberId :: TestCC -> T.Text -> IO ByteString
     memberId cc name = do
       rows <- withCCTransaction cc $ \db ->
         DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
       case rows of
         [Only mid] -> pure mid
         _ -> fail $ "expected one group_members row for " <> T.unpack name
-    roleKeyById :: HasCallStack => TestCC -> ByteString -> IO (T.Text, Maybe ByteString)
+    roleKeyById :: TestCC -> ByteString -> IO (T.Text, Maybe ByteString)
     roleKeyById cc mid = do
       rows <- withCCTransaction cc $ \db ->
         DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only mid) :: IO [(T.Text, Maybe ByteString)]

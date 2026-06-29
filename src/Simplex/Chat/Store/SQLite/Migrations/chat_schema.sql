@@ -244,6 +244,7 @@ CREATE TABLE group_members(
   relay_link BLOB,
   member_pub_key BLOB,
   removed_at TEXT,
+  roster_served_version INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
