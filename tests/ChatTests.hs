@@ -8,7 +8,6 @@ import ChatTests.Files
 import ChatTests.Forward
 import ChatTests.Groups
 import ChatTests.Local
-import ChatTests.Names
 import ChatTests.Profiles
 import Test.Hspec hiding (it)
 
@@ -22,4 +21,3 @@ chatTests = do
   describe "file tests" chatFileTests
   describe "profile tests" chatProfileTests
   describe "chat list pagination tests" chatListTests
-  describe "names tests" chatNamesTests

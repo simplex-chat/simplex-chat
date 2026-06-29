@@ -23,8 +23,8 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
     aliceName = SimplexNameInfo NTContact (SimplexNameDomain TLDSimplex "alice" [])
     test reg alice bob = do
       alice ##> "/ad"
-      cLink <- getContactLink alice True
-      registerName reg aliceName (contactNameRecord "alice" (T.pack cLink))
+      (shortLink, _) <- getContactLinks alice True
+      registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
       bob ##> "/c @alice.simplex"
       alice <#? bob
       alice ##> "/ac bob"
