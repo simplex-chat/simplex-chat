@@ -59,6 +59,7 @@ import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
+import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
@@ -589,6 +590,13 @@ withSmpServer = withSmpServer' smpServerCfg
 
 withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
+
+-- | SMP server with a local names resolver attached; the action gets the resolver
+-- registry to map names to the addresses it creates.
+withSmpServerAndNames :: (NameRegistry -> IO a) -> IO a
+withSmpServerAndNames action =
+  withNameResolver $ \port reg ->
+    withSmpServer' smpServerCfg {namesConfig = Just (resolverNamesConfig port)} (action reg)
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"
