@@ -490,9 +490,9 @@ channel relay bar</note>
         <target>Videollamada con **cifrado de extremo a extremo**</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="*bold*" xml:space="preserve">
+      <trans-unit id="*bold*" xml:space="preserve" approved="no">
         <source>\*bold*</source>
-        <target>\*bold*</target>
+        <target state="translated">\*negrita*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
@@ -956,9 +956,9 @@ swipe action</note>
         <target>Todos los mensajes serán eliminados. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
-        <target>Se eliminarán todos los mensajes SOLO para tí. ¡No puede deshacerse!</target>
+        <target state="translated">Se eliminarán todos los mensajes; ¡esta acción no se puede deshacer! Los mensajes se eliminarán SOLO para ti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve">
@@ -2485,9 +2485,9 @@ This is your own one-time link!</source>
         <target>El contacto está eliminado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact name" xml:space="preserve">
+      <trans-unit id="Contact name" xml:space="preserve" approved="no">
         <source>Contact name</source>
-        <target>Contacto</target>
+        <target state="translated">Nombre de contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact preferences" xml:space="preserve">
@@ -2610,9 +2610,9 @@ This is your own one-time link!</source>
         <target>Crear lista</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
-        <target>Crea perfil nuevo en la [aplicación para PC](https://simplex.Descargas/de chat/). 💻</target>
+        <target state="translated">Crea un nuevo perfil en la [aplicación de escritorio](https://simplex.chat/downloads/). 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve">
@@ -5661,9 +5661,9 @@ This is your link for group %@!</source>
         <target>Menciona a miembros 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Menus" xml:space="preserve">
+      <trans-unit id="Menus" xml:space="preserve" approved="no">
         <source>Menus</source>
-        <target>Menus</target>
+        <target state="translated">Menús</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message delivery error" xml:space="preserve">
@@ -9787,7 +9787,7 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       </trans-unit>
       <trans-unit id="Unsupported channel name" xml:space="preserve" approved="no">
         <source>Unsupported channel name</source>
-        <target state="needs-translation">Unsupported channel name</target>
+        <target state="translated">Nombre de canal no admitido</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Unsupported connection link" xml:space="preserve">
