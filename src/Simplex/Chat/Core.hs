@@ -10,6 +10,7 @@ module Simplex.Chat.Core
     sendChatCmdStr,
     sendChatCmd,
     printResponseEvent,
+    logResponseToFile,
   )
 where
 
@@ -38,7 +39,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import Simplex.Messaging.Encoding.String
 import System.Exit (exitFailure)
-import System.IO (hFlush, stdout)
+import System.IO (IOMode (..), hFlush, hPutStr, stdout, withFile)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 
@@ -59,11 +60,15 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       users <- withTransaction chatStore getUsers
       u_ <- selectActiveUser coreOptions chatStore users
       let backgroundMode = maintenance
-      cc <- newChatController db u_ cfg opts backgroundMode
-      forM_ (preStartHook chatHooks) ($ cc)
-      u <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot) pure u_
-      unless testView $ putStrLn $ "Current user: " <> userStr u
-      runSimplexChat cfg opts u cc chat
+      newChatController db u_ cfg opts backgroundMode >>= \case
+        Left e -> do
+          putStrLn $ "Error starting chat: " <> show e
+          exitFailure
+        Right cc -> do
+          forM_ (preStartHook chatHooks) ($ cc)
+          u <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot) pure u_
+          unless testView $ putStrLn $ "Current user: " <> userStr u
+          runSimplexChat cfg opts u cc chat
     noMaintenance = when maintenance $ do
       putStrLn "exiting: no active user in maintenance mode"
       exitFailure
@@ -118,29 +123,27 @@ selectActiveUser CoreChatOpts {chatRelay} st users
 
 createActiveUser :: ChatController -> CoreChatOpts -> Maybe CreateBotOpts -> IO User
 createActiveUser cc CoreChatOpts {chatRelay} = \case
-  Just CreateBotOpts {botDisplayName, allowFiles} -> do
+  Just CreateBotOpts {botDisplayName, allowFiles, clientService} -> do
     let preferences = if allowFiles then Nothing else Just emptyChatPrefs {files = Just FilesPreference {allow = FANo}}
-    createUser exitFailure $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
-  Nothing
-    | chatRelay -> do
-        putStrLn
-          "No chat relay user profile found, it will be created now.\n\
-          \Please choose chat relay display name."
-        loop
-    | otherwise -> do
-        putStrLn
-          "No user profiles found, it will be created now.\n\
-          \Please choose your display name.\n\
-          \It will be sent to your contacts when you connect.\n\
-          \It is only stored on your device and you can change it later."
-        loop
+    createUser exitFailure clientService $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
+  Nothing -> putStrLn noProfile >> loop
+    where
+      noProfile
+        | chatRelay =
+            "No chat relay user profile found, it will be created now.\n\
+            \Please choose chat relay display name."
+        | otherwise =
+            "No user profiles found, it will be created now.\n\
+            \Please choose your display name.\n\
+            \It will be sent to your contacts when you connect.\n\
+            \It is only stored on your device and you can change it later."
+      loop = do
+        displayName <- T.pack <$> withPrompt "display name" getLine
+        createUser loop False $ mkProfile displayName
   where
-    loop = do
-      displayName <- T.pack <$> withPrompt "display name: " getLine
-      createUser loop $ mkProfile displayName
     mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing}
-    createUser onError p =
-      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, userChatRelay = chatRelay}) 0 `runReaderT` cc >>= \case
+    createUser onError clientService p =
+      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, userChatRelay = BoolDef chatRelay, clientService = BoolDef clientService}) 0 `runReaderT` cc >>= \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 
@@ -175,6 +178,15 @@ printResponseEvent hu cfg = \case
 
 printChatError :: ChatConfig -> ChatError -> IO ()
 printChatError cfg e = putStrLn $ serializeChatError True cfg e
+
+-- | Append the events worth logging to the log file, as 'runTerminalOutput' does for the terminal.
+logResponseToFile :: ChatConfig -> Either ChatError ChatEvent -> FilePath -> IO ()
+logResponseToFile cfg r path =
+  when (either (const True) logEventToFile r) $ do
+    ts <- getCurrentTime
+    tz <- getCurrentTimeZone
+    let s = either (serializeChatError False cfg) (serializeChatResponse (Nothing, Nothing) cfg ts tz Nothing) r
+    withFile path AppendMode $ \h -> hPutStr h s
 
 withPrompt :: String -> IO a -> IO a
 withPrompt s a = putStr s >> hFlush stdout >> a

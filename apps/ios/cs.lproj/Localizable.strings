@@ -759,9 +759,6 @@ swipe action */
 "calling…" = "volání…";
 
 /* No comment provided by engineer. */
-"Calls" = "Hovory";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "Volání zakázáno!";
 
 /* No comment provided by engineer. */
@@ -1303,10 +1300,7 @@ alert button */
 "Description" = "Popis";
 
 /* No comment provided by engineer. */
-"Develop" = "Vyvinout";
-
-/* No comment provided by engineer. */
-"Developer tools" = "Nástroje pro vývojáře";
+"Developer" = "Nástroje pro vývojáře";
 
 /* No comment provided by engineer. */
 "Device" = "Zařízení";
@@ -2097,7 +2091,7 @@ server test error */
 /* No comment provided by engineer. */
 "Large file!" = "Velký soubor!";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "Zjistit více";
 
 /* swipe action */
@@ -2576,9 +2570,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Preview" = "Náhled";
-
-/* No comment provided by engineer. */
-"Privacy & security" = "Ochrana osobních údajů a zabezpečení";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Soukromé názvy souborů";
@@ -3131,9 +3122,6 @@ chat item action */
 "Submit" = "Odeslat";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "Podpořte SimpleX Chat";
-
-/* No comment provided by engineer. */
 "System" = "Systém";
 
 /* No comment provided by engineer. */
@@ -3405,9 +3393,6 @@ server test failure */
 "Using SimpleX Chat servers." = "Používat servery SimpleX Chat.";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify connection security" = "Ověření zabezpečení připojení";
 
 /* No comment provided by engineer. */
@@ -3543,9 +3528,6 @@ server test failure */
 "You can enable later via Settings" = "Můžete povolit později v Nastavení";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Můžete je povolit později v nastavení Soukromí & Bezpečnosti aplikace";
-
-/* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.";
 
 /* notification body */
@@ -3658,9 +3640,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "Vaše hovory";
-
-/* No comment provided by engineer. */
-"Your chat database" = "Vaše chatovací databáze";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Vaše chat databáze není šifrována – nastavte přístupovou frázi pro její šifrování.";

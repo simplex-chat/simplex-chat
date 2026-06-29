@@ -38,7 +38,8 @@ import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 
 @Composable
-fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit) {
+fun AddChannelView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
+  val rhId = rh?.remoteHostId
   val view = LocalMultiplatformView()
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
@@ -56,7 +57,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
 
   val gInfo = groupInfo.value
   if (showLinkStep.value && gInfo != null) {
-    LinkStepView(chatModel, gInfo, groupLink, closeAll)
+    LinkStepView(chatModel, rhId, gInfo, groupLink, closeAll)
   } else if (gInfo != null) {
     ProgressStepView(
       chatModel, gInfo, groupRelays, relayListExpanded,
@@ -65,9 +66,9 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
           chatModel.creatingChannelId.value = null
           closeAll()
           withBGApi {
-            openGroupChat(null, gInfo.groupId)
-            ModalManager.end.showModalCloseable(true) { close ->
-              GroupLinkView(chatModel, rhId = null, groupInfo = gInfo, groupLink = groupLink.value, onGroupLinkUpdated = null, creatingGroup = true, isChannel = true, shareGroupInfo = gInfo, close = close)
+            openGroupChat(rhId, gInfo.groupId)
+            ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
+              GroupLinkView(chatModel, rhId = rhId, groupInfo = gInfo, groupLink = groupLink.value, onGroupLinkUpdated = null, creatingGroup = true, isChannel = true, shareGroupInfo = gInfo, close = close)
             }
           }
         }
@@ -80,9 +81,9 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
         closeAll()
         withBGApi {
           try {
-            chatModel.controller.apiDeleteChat(rh = null, type = ChatType.Group, id = gInfo.apiId)
+            chatModel.controller.apiDeleteChat(rh = rhId, type = ChatType.Group, id = gInfo.apiId)
             withContext(Dispatchers.Main) {
-              chatModel.chatsContext.removeChat(null, gInfo.id)
+              chatModel.chatsContext.removeChat(rhId, gInfo.id)
             }
           } catch (e: Exception) {
             Log.e(TAG, "cancelChannelCreation error: ${e.message}")
@@ -93,6 +94,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
   } else {
     ProfileStepView(
       chatModel = chatModel,
+      rhId = rhId,
       displayName = displayName,
       profileImage = profileImage,
       chosenImage = chosenImage,
@@ -120,7 +122,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
         creationInProgress.value = true
         withBGApi {
           try {
-            val enabledRelays = chooseRandomRelays()
+            val enabledRelays = chooseRandomRelays(rhId)
             val relayIds = enabledRelays.mapNotNull { it.chatRelayId }
             if (relayIds.isEmpty()) {
               withContext(Dispatchers.Main) {
@@ -130,7 +132,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
               return@withBGApi
             }
             val result = chatModel.controller.apiNewPublicGroup(
-              rh = null,
+              rh = rhId,
               incognito = false,
               relayIds = relayIds,
               groupProfile = profile
@@ -138,7 +140,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
             when (result) {
               is ChatController.PublicGroupCreationResult.Created -> {
                 withContext(Dispatchers.Main) {
-                  chatModel.chatsContext.updateGroup(rhId = null, result.groupInfo)
+                  chatModel.chatsContext.updateGroup(rhId = rhId, result.groupInfo)
                   chatModel.creatingChannelId.value = result.groupInfo.id
                   groupInfo.value = result.groupInfo
                   groupLink.value = result.groupLink
@@ -178,8 +180,8 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
 
 private const val maxRelays = 3
 
-private suspend fun chooseRandomRelays(): List<UserChatRelay> {
-  val servers = getUserServers(rh = null) ?: return emptyList()
+private suspend fun chooseRandomRelays(rhId: Long?): List<UserChatRelay> {
+  val servers = getUserServers(rh = rhId) ?: return emptyList()
   // Operator relays are grouped per operator; custom relays (null operator)
   // are treated independently to maximize trust distribution.
   val operatorGroups = mutableListOf<List<UserChatRelay>>()
@@ -215,8 +217,8 @@ private suspend fun chooseRandomRelays(): List<UserChatRelay> {
   return selected
 }
 
-private suspend fun checkHasRelays(): Boolean {
-  val servers = try { getUserServers(rh = null) } catch (_: Exception) { null } ?: return false
+private suspend fun checkHasRelays(rhId: Long?): Boolean {
+  val servers = try { getUserServers(rh = rhId) } catch (_: Exception) { null } ?: return false
   return servers.any { op ->
     (op.operator?.enabled ?: true) &&
     op.chatRelays.any { it.enabled && !it.deleted && it.chatRelayId != null }
@@ -226,6 +228,7 @@ private suspend fun checkHasRelays(): Boolean {
 @Composable
 private fun ProfileStepView(
   chatModel: ChatModel,
+  rhId: Long?,
   displayName: MutableState<String>,
   profileImage: MutableState<String?>,
   chosenImage: MutableState<URI?>,
@@ -239,7 +242,7 @@ private fun ProfileStepView(
   createChannel: () -> Unit
 ) {
   LaunchedEffect(Unit) {
-    hasRelays.value = checkHasRelays()
+    hasRelays.value = checkHasRelays(rhId)
   }
 
   ModalBottomSheetLayout(
@@ -553,6 +556,7 @@ private fun RelayRow(relay: GroupRelay, connFailed: Boolean) {
 @Composable
 private fun LinkStepView(
   chatModel: ChatModel,
+  rhId: Long?,
   gInfo: GroupInfo,
   groupLink: MutableState<GroupLink?>,
   closeAll: () -> Unit
@@ -563,14 +567,14 @@ private fun LinkStepView(
       delay(500)
       withContext(Dispatchers.Main) {
         ModalManager.start.closeModals()
-        openGroupChat(null, gInfo.groupId)
+        openGroupChat(rhId, gInfo.groupId)
       }
     }
   }
-  ModalView(close = close, showClose = false) {
+  ModalView(close = close, showClose = false, cardScreen = true) {
     GroupLinkView(
       chatModel = chatModel,
-      rhId = null,
+      rhId = rhId,
       groupInfo = gInfo,
       groupLink = groupLink.value,
       onGroupLinkUpdated = { groupLink.value = it },
@@ -660,6 +664,6 @@ fun RelayProgressIndicator(active: Int, total: Int) {
 @Composable
 fun PreviewAddChannelView() {
   SimpleXTheme {
-    AddChannelView(chatModel = ChatModel, close = {}, closeAll = {})
+    AddChannelView(chatModel = ChatModel, rh = null, close = {}, closeAll = {})
   }
 }

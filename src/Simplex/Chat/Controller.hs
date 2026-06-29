@@ -39,6 +39,7 @@ import Data.Char (ord)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
+import Data.Set (Set)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.String
@@ -162,6 +163,7 @@ data ChatConfig = ChatConfig
     ciExpirationInterval :: Int64, -- microseconds
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
+    webPreviewConfig :: Maybe WebPreviewConfig,
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
     relayChecksInterval :: NominalDiffTime,
     relayInactiveTTL :: NominalDiffTime,
@@ -172,6 +174,43 @@ data ChatConfig = ChatConfig
     remoteCompression :: Bool,
     chatHooks :: ChatHooks
   }
+
+data WebPreviewConfig = WebPreviewConfig
+  { webDomain :: Text,
+    webJsonDir :: FilePath,
+    webCorsFile :: Maybe FilePath,
+    webUpdateInterval :: Int, -- seconds
+    webPreviewItemCount :: Int
+  }
+
+data PublishableGroup = PublishableGroup
+  { pgFileName :: FilePath,
+    pgCorsEntry :: Maybe (Text, CorsOrigin)
+  }
+
+data CorsOrigin = CorsAny | CorsOrigins [Text]
+  deriving (Show)
+
+data WebPreviewState = WebPreviewState
+  { publishableGroupIds :: TVar (Map Int64 PublishableGroup),
+    priorityRender :: TQueue Int64,
+    filesToRemove :: TQueue FilePath,
+    corsNeeded :: TVar Bool,
+    routinePending :: TVar (Set Int64),
+    wakeSignal :: TMVar (),
+    webPreviewWorkerAsync :: TVar (Maybe (Async ()))
+  }
+
+newWebPreviewState :: IO WebPreviewState
+newWebPreviewState = do
+  publishableGroupIds <- newTVarIO mempty
+  priorityRender <- newTQueueIO
+  filesToRemove <- newTQueueIO
+  corsNeeded <- newTVarIO False
+  routinePending <- newTVarIO mempty
+  wakeSignal <- newEmptyTMVarIO
+  webPreviewWorkerAsync <- newTVarIO Nothing
+  pure WebPreviewState {publishableGroupIds, priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal, webPreviewWorkerAsync}
 
 -- | Builds the read-only context threaded through store functions from chat config.
 -- The single construction point, so new store-wide config (e.g. server keys) is added in one place.
@@ -265,11 +304,12 @@ data ChatController = ChatController
     deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
+    relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
+    webPreviewState :: Maybe WebPreviewState,
     chatRelayTests :: TMap ConnId RelayTest,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
-    relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     chatActivated :: TVar Bool,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
@@ -304,6 +344,7 @@ data ChatCommand
   | UnhideUser UserPwd
   | MuteUser
   | UnmuteUser
+  | SetClientService UserId ContactName Bool
   | APIDeleteUser {userId :: UserId, delSMPQueues :: Bool, viewPwd :: Maybe UserPwd}
   | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {mainApp :: Bool, enableSndFiles :: Bool} -- enableSndFiles has no effect when mainApp is True
@@ -554,6 +595,7 @@ data ChatCommand
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
   | ShowGroupDescription GroupName
+  | SetPublicGroupAccess GroupName PublicGroupAccess
   | CreateGroupLink GroupName GroupMemberRole
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
@@ -906,6 +948,7 @@ data ChatEvent
   | CEvtConnectionsDiff {userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CEvtSubscriptionStatus {server :: SMPServer, subscriptionStatus :: SubscriptionStatus, connections :: [AgentConnId]}
+  | CEvtServiceSubStatus {server :: SMPServer, serviceSubEvent :: ServiceSubEvent}
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
@@ -1322,6 +1365,13 @@ data ChatItemDeletion = ChatItemDeletion
   }
   deriving (Show)
 
+data ServiceSubEvent
+  = ServiceSubUp {serviceError :: Maybe Text, queueCount :: Int64}
+  | ServiceSubDown {queueCount :: Int64}
+  | ServiceSubAll
+  | ServiceSubEnd {queueCount :: Int64}
+  deriving (Show)
+  
 data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
   deriving (Eq, Ord, Show)
 
@@ -1355,7 +1405,6 @@ data ChatErrorType
   | CENoSndFileUser {agentSndFileId :: AgentSndFileId}
   | CENoRcvFileUser {agentRcvFileId :: AgentRcvFileId}
   | CEUserUnknown
-  | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
   | CEChatRelayExists
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
@@ -1444,6 +1493,9 @@ data SQLiteError = SQLiteErrorNotADatabase | SQLiteError {dbError :: String}
 
 throwDBError :: DatabaseError -> CM ()
 throwDBError = throwError . ChatErrorDatabase
+
+chatErrorAgent :: AgentErrorType -> ChatError
+chatErrorAgent e = ChatErrorAgent e (AgentConnId B.empty) Nothing
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteHostError
@@ -1676,7 +1728,7 @@ withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
     >>= liftIO . runExceptT . action
-    >>= liftEither . first (\e -> ChatErrorAgent e (AgentConnId "") Nothing)
+    >>= liftEither . first chatErrorAgent
 
 withAgent' :: (AgentClient -> IO a) -> CM' a
 withAgent' action = asks smpAgent >>= liftIO . action
@@ -1740,6 +1792,8 @@ $(JQ.deriveJSON defaultJSON ''ServerAddress)
 $(JQ.deriveJSON defaultJSON ''ParsedServerAddress)
 
 $(JQ.deriveJSON defaultJSON ''ChatItemDeletion)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ServiceSub") ''ServiceSubEvent)
 
 $(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
 

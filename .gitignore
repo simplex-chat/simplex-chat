@@ -54,7 +54,10 @@ website/translations.json
 website/src/img/images/
 website/src/images/
 website/src/js/lottie.min.js
-website/src/js/ethers*
+website/src/js/ethers.*
+website/src/js/directory.js
+website/src/js/channel-preview.js
+website/src/js/simplex-lib.js
 website/src/file-assets/
 website/src/link-images/
 website/src/privacy.md

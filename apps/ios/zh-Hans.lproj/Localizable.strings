@@ -919,9 +919,6 @@ marked deleted chat item preview text */
 "calling…" = "呼叫中……";
 
 /* No comment provided by engineer. */
-"Calls" = "通话";
-
-/* No comment provided by engineer. */
 "Calls prohibited!" = "禁止来电！";
 
 /* No comment provided by engineer. */
@@ -1830,13 +1827,10 @@ alert button */
 "Details" = "详细信息";
 
 /* No comment provided by engineer. */
-"Develop" = "开发";
+"Developer" = "开发者工具";
 
 /* No comment provided by engineer. */
 "Developer options" = "开发者选项";
-
-/* No comment provided by engineer. */
-"Developer tools" = "开发者工具";
 
 /* No comment provided by engineer. */
 "Device" = "设备";
@@ -3155,7 +3149,7 @@ servers warning */
 /* No comment provided by engineer. */
 "Large file!" = "大文件！";
 
-/* No comment provided by engineer. */
+/* badge alert button */
 "Learn more" = "了解更多";
 
 /* swipe action */
@@ -4105,9 +4099,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Previously connected servers" = "以前连接的服务器";
-
-/* No comment provided by engineer. */
-"Privacy & security" = "隐私和安全";
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "客户隐私。";
@@ -5237,9 +5228,6 @@ report reason */
 "Subscriptions ignored" = "忽略订阅";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "支持 SimpleX Chat";
-
-/* No comment provided by engineer. */
 "Switch audio and video during the call." = "通话期间切换音频和视频。";
 
 /* No comment provided by engineer. */
@@ -5814,9 +5802,6 @@ server test failure */
 "v%@" = "v%@";
 
 /* No comment provided by engineer. */
-"v%@ (%@)" = "v%@ (%@)";
-
-/* No comment provided by engineer. */
 "Verify code with desktop" = "用桌面端验证代码";
 
 /* No comment provided by engineer. */
@@ -6093,9 +6078,6 @@ server test failure */
 "You can enable later via Settings" = "您可以稍后在设置中启用它";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "您可以稍后通过应用程序的 \"隐私与安全 \"设置启用它们。";
-
-/* No comment provided by engineer. */
 "You can give another try." = "你可以再试一次。";
 
 /* No comment provided by engineer. */
@@ -6256,9 +6238,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your calls" = "您的通话";
-
-/* No comment provided by engineer. */
-"Your chat database" = "您的聊天数据库";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "您的聊天数据库未加密——设置密码来加密。";

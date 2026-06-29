@@ -74,16 +74,16 @@
     <string name="network_session_mode_user_description"><![CDATA[Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada perfil de bate-papo que você tiver no aplicativo</b>.]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Melhor para bateria</b>. Você receberá notificações apenas quando o aplicativo estiver em execução (SEM o serviço em segundo plano).]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consome mais bateria</b>! O aplicativo em segundo plano está sempre em execução - as notificações são exibidas instantaneamente.]]></string>
-    <string name="settings_section_title_chats">BATE-PAPOS</string>
-    <string name="settings_section_title_icon">ÍCONE DO APLICATIVO</string>
-    <string name="chat_database_section">BANCO DE DADOS DE BATE-PAPO</string>
+    <string name="settings_section_title_chats">Bate-papos</string>
+    <string name="settings_section_title_icon">Ícone do aplicativo</string>
+    <string name="chat_database_section">Banco de dados de bate-papo</string>
     <string name="chat_is_running">O bate-papo está em execução</string>
     <string name="chat_is_stopped">O bate-papo está parado</string>
     <string name="change_database_passphrase_question">Alterar senha do banco de dados\?</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">endereço alterado para você</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Você e seu contato podem enviar mensagens temporárias.</string>
     <string name="full_backup">Backup de dados do aplicativo</string>
-    <string name="settings_section_title_calls">CHAMADAS</string>
+    <string name="settings_section_title_calls">Chamadas</string>
     <string name="v4_2_auto_accept_contact_requests">Aceitar solicitações de contato automaticamente</string>
     <string name="appearance_settings">Aparência</string>
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
@@ -247,7 +247,7 @@
     <string name="connection_timeout">Tempo de conexão esgotado</string>
     <string name="delete_member_message__question">Excluir mensagem do membro\?</string>
     <string name="smp_server_test_delete_queue">Excluir fila</string>
-    <string name="settings_section_title_device">DISPOSITIVO</string>
+    <string name="settings_section_title_device">Dispositivo</string>
     <string name="settings_developer_tools">Ferramentas de desenvolvedor</string>
     <string name="group_member_status_introduced">conectando (introduzido)</string>
     <string name="color_primary">Tonalidade</string>
@@ -378,7 +378,7 @@
     <string name="file_saved">Arquivo salvo</string>
     <string name="group_members_can_send_voice">Os membros podem enviar mensagens de voz.</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">O grupo será excluído para todos os membros - isso não pode ser desfeito!</string>
-    <string name="settings_section_title_help">AJUDA</string>
+    <string name="settings_section_title_help">Ajuda</string>
     <string name="notification_display_mode_hidden_desc">Ocultar contato e mensagem</string>
     <string name="how_to_use_simplex_chat">Como usar</string>
     <string name="how_to_use_markdown">Como usar markdown</string>
@@ -420,7 +420,7 @@
     <string name="enter_one_ICE_server_per_line">Servidores ICE (um por linha)</string>
     <string name="ignore">Ignorar</string>
     <string name="image_will_be_received_when_contact_is_online">A imagem será recebida quando seu contato estiver online, aguarde ou verifique mais tarde!</string>
-    <string name="conn_stats_section_title_servers">SERVIDORES</string>
+    <string name="conn_stats_section_title_servers">Servidores</string>
     <string name="receiving_via">Recebendo via</string>
     <string name="network_status">Status da conexão</string>
     <string name="network_option_seconds_label">seg</string>
@@ -495,8 +495,8 @@
     <string name="network_enable_socks">Usar proxy SOCKS\?</string>
     <string name="icon_descr_call_rejected">Chamada rejeitada</string>
     <string name="restore_database">Restaurar o backup do banco de dados</string>
-    <string name="section_title_for_console">PARA CONSOLE</string>
-    <string name="run_chat_section">EXECUTAR BATE-PAPO</string>
+    <string name="section_title_for_console">Para console</string>
+    <string name="run_chat_section">Executar bate-papo</string>
     <string name="stop_chat_confirmation">Parar</string>
     <string name="set_password_to_export">Definir senha para exportar</string>
     <string name="restart_the_app_to_use_imported_chat_database">Reinicie o aplicativo para usar o banco de dados do chat importado.</string>
@@ -571,7 +571,7 @@
     <string name="snd_group_event_changed_member_role">você mudou o cargo de %s para %s</string>
     <string name="new_member_role">Novo cargo de membro</string>
     <string name="remove_member_confirmation">Remover</string>
-    <string name="member_info_section_title_member">MEMBRO</string>
+    <string name="member_info_section_title_member">Membro</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">O membro será removido do grupo - isso não pode ser desfeito!</string>
     <string name="role_in_group">Cargo</string>
     <string name="sending_via">Enviando via</string>
@@ -663,8 +663,8 @@
     <string name="v4_6_chinese_spanish_interface">Interface chinesa e espanhola</string>
     <string name="v4_6_reduced_battery_usage">Maior redução no uso da bateria</string>
     <string name="v4_6_reduced_battery_usage_descr">Mais melhorias chegarão em breve!</string>
-    <string name="settings_section_title_you">VOCÊ</string>
-    <string name="settings_section_title_messages">MENSAGENS E ARQUIVOS</string>
+    <string name="settings_section_title_you">Você</string>
+    <string name="settings_section_title_messages">Mensagens e arquivos</string>
     <string name="your_chat_database">Seu banco de dados de bate-papo</string>
     <string name="snd_group_event_member_deleted">Você removeu %1$s</string>
     <string name="group_member_status_removed">removido</string>
@@ -800,7 +800,7 @@
     <string name="hide_profile">Ocultar perfil</string>
     <string name="callstate_received_confirmation">confirmação recebida…</string>
     <string name="relay_server_protects_ip">O servidor de relay protege seu endereço IP, mas pode observar a duração da chamada.</string>
-    <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
+    <string name="settings_section_title_experimenta">Experimental</string>
     <string name="snd_conn_event_switch_queue_phase_completed">você alterou o endereço</string>
     <string name="database_upgrade">Atualização do banco de dados</string>
     <string name="member_role_will_be_changed_with_invitation">O cargo será alterado para "%s". O membro receberá um novo convite.</string>
@@ -819,7 +819,7 @@
     <string name="only_group_owners_can_enable_voice">Somente o proprietários de grupo podem ativar mensagens de voz</string>
     <string name="description_you_shared_one_time_link">você compartilhou um link de uso único</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Você será conectado quando sua solicitação de conexão for aceita, aguarde ou verifique mais tarde!</string>
-    <string name="settings_section_title_settings">CONFIGURAÇÕES</string>
+    <string name="settings_section_title_settings">Configurações</string>
     <string name="v4_6_group_welcome_message_descr">Defina a mensagem mostrada aos novos membros!</string>
     <string name="icon_descr_settings">Configurações</string>
     <string name="switch_receiving_address">Alternar endereço de recebimento</string>
@@ -848,7 +848,7 @@
     <string name="la_notice_turn_on">Ligar</string>
     <string name="welcome">Bem-vindo(a)!</string>
     <string name="next_generation_of_private_messaging">O futuro da transmissão de mensagens</string>
-    <string name="settings_section_title_socks">PROXY SOCKS</string>
+    <string name="settings_section_title_socks">Proxy SOCKS</string>
     <string name="database_backup_can_be_restored">A tentativa de alterar a senha do banco de dados não foi concluída.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Pare o bate-papo para exportar, importar ou excluir o banco de dados do chat. Você não poderá receber e enviar mensagens enquanto o chat estiver interrompido.</string>
     <string name="chat_item_ttl_seconds">%s segundo(s)</string>
@@ -887,7 +887,7 @@
     <string name="icon_descr_video_call">chamada de vídeo</string>
     <string name="show_call_on_lock_screen">Mostrar</string>
     <string name="webrtc_ice_servers">Servidores ICE WebRTC</string>
-    <string name="settings_section_title_themes">TEMAS</string>
+    <string name="settings_section_title_themes">Temas</string>
     <string name="update_database">Atualizar</string>
     <string name="periodic_notifications_desc">O app busca novas mensagens periodicamente – ele usa alguns por cento da bateria por dia. O aplicativo não usa notificações por push – os dados do seu dispositivo não são enviados para os servidores.</string>
     <string name="enter_passphrase_notification_desc">Para receber notificações, por favor, digite a senha do banco de dados</string>
@@ -1001,7 +1001,7 @@
     <string name="feature_off">desativado</string>
     <string name="downgrade_and_open_chat">Desatualizar e abrir o bate-papo</string>
     <string name="chat_preferences_off">desativado</string>
-    <string name="settings_section_title_support">APOIE SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">Apoie SimpleX Chat</string>
     <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
     <string name="confirm_database_upgrades">Confirme as atualizações do banco de dados</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens.</string>
@@ -1127,7 +1127,7 @@
     <string name="you_wont_lose_your_contacts_if_delete_address">Você não perderá seus contatos se, posteriormente, excluir seu endereço.</string>
     <string name="simplex_address">Endereço SimpleX</string>
     <string name="you_can_accept_or_reject_connection">Quando as pessoas solicitam uma conexão, você pode aceitá-la ou rejeitá-la.</string>
-    <string name="theme_colors_section_title">CORES DA INTERFACE</string>
+    <string name="theme_colors_section_title">Cores da interface</string>
     <string name="share_with_contacts">compartilhar com os contatos</string>
     <string name="profile_update_will_be_sent_to_contacts">A atualização do perfil será enviada aos seus contatos.</string>
     <string name="save_settings_question">Salvar configurações\?</string>
@@ -1253,7 +1253,7 @@
     <string name="fix_connection_not_supported_by_group_member">Correção não suportada pelo membro do grupo</string>
     <string name="conn_event_ratchet_sync_started">concordando com criptografia…</string>
     <string name="allow_to_send_files">Permitir o envio de arquivos e mídia.</string>
-    <string name="settings_section_title_app">APP</string>
+    <string name="settings_section_title_app">App</string>
     <string name="conn_event_ratchet_sync_ok">criptografia OK</string>
     <string name="conn_event_ratchet_sync_required">renegociação de criptografia necessária</string>
     <string name="snd_conn_event_ratchet_sync_agreed">criptografia concordada para %s</string>
@@ -1284,7 +1284,7 @@
     <string name="receipts_contacts_title_enable">Ativar recibos?</string>
     <string name="v5_2_favourites_filter">Encontrar conversas mais rápido</string>
     <string name="receipts_section_contacts">Contatos</string>
-    <string name="settings_section_title_delivery_receipts">ENVIAR RECIBOS DE ENTREGA PARA</string>
+    <string name="settings_section_title_delivery_receipts">Enviar recibos de entrega para</string>
     <string name="receipts_contacts_override_disabled">Enviar confirmações está desativado para %d contatos.</string>
     <string name="receipts_contacts_override_enabled">Enviar confirmações está ativado para %d contatos.</string>
     <string name="send_receipts">Enviar confirmações</string>
@@ -1862,9 +1862,9 @@
     <string name="audio_device_speaker">Alto falante</string>
     <string name="audio_device_wired_headphones">Headphones</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Sem Tor ou VPN, seu endereço de IP ficará visível para servidores de arquivo.</string>
-    <string name="settings_section_title_files">ARQUIVOS</string>
+    <string name="settings_section_title_files">Arquivos</string>
     <string name="settings_section_title_profile_images">Fotos de perfil</string>
-    <string name="settings_section_title_private_message_routing">ROTEAMENTO DE MENSAGEM PRIVADA</string>
+    <string name="settings_section_title_private_message_routing">Roteamento de mensagem privada</string>
     <string name="conn_event_disabled_pq">criptografia padrão ponta a ponta</string>
     <string name="feature_roles_owners">proprietários</string>
     <string name="migrate_from_device_to_another_device">Migrar para outro dispositivo</string>
@@ -2055,7 +2055,7 @@
     <string name="one_hand_ui">Barras de ferramentas de aplicativos acessível</string>
     <string name="forward_files_failed_to_receive_desc">Falha no baixar de %1$d arquivo(s).</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s mensagens não encaminhadas.</string>
-    <string name="settings_section_title_chat_database">DADOS DO BATE-PAPO</string>
+    <string name="settings_section_title_chat_database">Dados do bate-papo</string>
     <string name="network_proxy_random_credentials">Utilize credenciais aleatórias</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">O arquivo de banco de dados enviado será removido permanentemente dos servidores.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Use credenciais diferentes de proxy para cada conexão.</string>

@@ -668,7 +668,7 @@
     <string name="settings_section_title_device">裝置</string>
     <string name="settings_section_title_help">幫助</string>
     <string name="settings_section_title_settings">設定</string>
-    <string name="settings_section_title_support">幫助 SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">幫助 SimpleX Chat</string>
     <string name="settings_section_title_chats">聊天</string>
     <string name="settings_developer_tools">開發者工具</string>
     <string name="settings_section_title_socks">SOCKS 代理伺服器</string>

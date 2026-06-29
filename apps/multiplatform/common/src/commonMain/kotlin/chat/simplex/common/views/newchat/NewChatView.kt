@@ -497,7 +497,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
     )
     SimpleXCreatedLinkQRCode(connLinkInvitation, short = showShortLink.value, onShare = { chatModel.markShowingInvitationUsed() })
   } else {
-    SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
+    SectionView(stringResource(MR.strings.share_this_1_time_link), headerBottomPadding = 5.dp) {
       LinkTextView(connLinkInvitation.simplexChatUri(short = showShortLink.value), true)
     }
 
@@ -521,7 +521,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
   val currentUser = remember { chatModel.currentUser }.value
 
   if (currentUser != null) {
-    SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase(), headerBottomPadding = 5.dp) {
+    SectionView(stringResource(MR.strings.new_chat_share_profile), headerBottomPadding = 5.dp) {
       SectionItemView(
         padding = PaddingValues(
           top = 0.dp,
@@ -645,14 +645,14 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
     )
   }
 
-  SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
+  SectionView(stringResource(MR.strings.paste_the_link_you_received), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
 
   if (appPlatform.isAndroid) {
     Spacer(Modifier.height(10.dp))
 
-    SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
+    SectionView(stringResource(MR.strings.or_scan_qr_code), headerBottomPadding = 5.dp) {
       QRCodeScanner(showQRCodeScanner) { text ->
         val linkVerified = verifyOnly(text)
         if (!linkVerified) {
