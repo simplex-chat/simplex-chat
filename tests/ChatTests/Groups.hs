@@ -300,6 +300,7 @@ chatGroupTests = do
         it "concurrent fresh invitations both rejected" testRelayRejectRaceConcurrentInvitations
       describe "promoted members roster" $ do
         it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
+        it "subscriber recovers a missed roster member after a version gap" testChannelSubscriberRosterCatchUp
         it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
@@ -9779,6 +9780,55 @@ testChannelModeratorActionViaRoster ps =
       roles <- withCCTransaction cc $ \db ->
         DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
       map (\(Only r) -> r) roles `shouldBe` [expectedRole]
+
+testChannelSubscriberRosterCatchUp :: HasCallStack => TestParams -> IO ()
+testChannelSubscriberRosterCatchUp ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+              forM_ [cath, dan, eve, frank] $ \member ->
+                memberJoinChannel "team" [bob] [alice] shortLink fullLink member
+              -- promote dan (roster v0) then eve (v1) into the owner-signed roster; cath learns both with their keys
+              threadDelay 1000000
+              promoteChannelMember "team" alice bob dan [cath, eve, frank]
+              threadDelay 1000000
+              promoteChannelMember "team" alice bob eve [cath, dan, frank]
+              threadDelay 1000000
+              -- simulate cath having fallen behind and lost dan: capture dan's member id (from the owner, which
+              -- knows the name) and cath's owner-pinned key for dan, then delete dan's record and rewind cath's
+              -- roster_version so the next delta arrives as a gap (v2 > 0+1)
+              danId <- memberId alice "dan"
+              (_, danKey) <- roleKeyById cath danId
+              withCCTransaction cath $ \db -> do
+                DB.execute db "DELETE FROM group_members WHERE member_id = ?" (Only danId)
+                DB.execute db "UPDATE groups SET roster_version = ? WHERE group_id = ?" (0 :: Int64, 1 :: Int64)
+              -- the next privileged change (frank -> v2) reaches cath at a jumped version, triggering catch-up:
+              -- cath requests the roster from the forwarding relay, which re-serves the current snapshot
+              promoteChannelMember "team" alice bob frank [cath, dan, eve]
+              threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
+              -- cath recovered dan from the re-served roster: same member id, role, and owner-pinned key
+              (recRole, recKey) <- roleKeyById cath danId
+              recRole `shouldBe` "member"
+              recKey `shouldBe` danKey
+  where
+    memberId :: HasCallStack => TestCC -> T.Text -> IO ByteString
+    memberId cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
+      case rows of
+        [Only mid] -> pure mid
+        _ -> fail $ "expected one group_members row for " <> T.unpack name
+    roleKeyById :: HasCallStack => TestCC -> ByteString -> IO (T.Text, Maybe ByteString)
+    roleKeyById cc mid = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only mid) :: IO [(T.Text, Maybe ByteString)]
+      case rows of
+        [r] -> pure r
+        _ -> fail "expected one recovered group_members row for dan"
 
 testChannelRemovedModeratorRefreshesRoster :: HasCallStack => TestParams -> IO ()
 testChannelRemovedModeratorRefreshesRoster ps =
