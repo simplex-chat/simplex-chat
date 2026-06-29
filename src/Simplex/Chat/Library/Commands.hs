@@ -738,7 +738,7 @@ processChatCommand cxt nm = \case
           -- TODO [knocking] check chat item scope?
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
           case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender}, content = ciContent} -> do
+            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgSigned}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
                   chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
@@ -750,7 +750,8 @@ processChatCommand cxt nm = \case
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
                           event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
-                      SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients False event
+                          reuseSign = isJust msgSigned
+                      SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients reuseSign event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
@@ -5259,7 +5260,7 @@ chatCommandP =
       "/_get content types " *> (APIGetChatContentTypes <$> chatRefP),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> textP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
-      "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> pure False <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
+      "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> signMessagesP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_create tag " *> (APICreateChatTag <$> jsonP),
       "/_tags " *> (APISetChatTags <$> chatRefP <*> optional _strP),
       "/_delete tag " *> (APIDeleteChatTag <$> A.decimal),
@@ -5637,6 +5638,7 @@ chatCommandP =
       pure [composedMessage Nothing text]
     updatedMessagesTextP = (`UpdatedMessage` []) <$> mcTextP
     liveMessageP = " live=" *> onOffP <|> pure False
+    signMessagesP = " sign=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
     receiptSettings = do
       enable <- onOffP

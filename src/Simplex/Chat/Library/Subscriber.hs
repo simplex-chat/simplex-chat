@@ -2221,7 +2221,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           groupMsgToView cInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
-    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_ asGroup_
+    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned} brokerTs ttl_ live_ asGroup_
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
@@ -2273,15 +2273,22 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   Nothing -> getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId
             (cci,) <$> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
           case cci of
-            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC}
-              | isSender m' -> updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
+            CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive, msgSigned = itemSigned}, content = CIRcvMsgContent oldMC}
+              | isSender m' -> requireSignedMutation (CDGroupRcv gInfo scopeInfo m') itemSigned $ updateCI False ci scopeInfo oldMC itemLive (Just $ memberId' m')
               | otherwise -> messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
-            CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC}
-              | maybe True (\m -> memberRole' m == GROwner) m_ -> updateCI True ci scopeInfo oldMC itemLive Nothing
+            CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, meta = CIMeta {itemLive, msgSigned = itemSigned}, content = CIRcvMsgContent oldMC}
+              | maybe True (\m -> memberRole' m == GROwner) m_ -> requireSignedMutation (CDChannelRcv gInfo scopeInfo) itemSigned $ updateCI True ci scopeInfo oldMC itemLive Nothing
               | otherwise -> messageError "x.msg.update: member attempted to update channel message" $> Nothing
             _ -> messageError "x.msg.update: invalid message update" $> Nothing
           where
             isSender m' = maybe False (\m -> sameMemberId (memberId' m) m') m_
+            -- reject an unsigned XMsgUpdate of a held-signed item (edit-downgrade spoof) fail-closed, mirroring withVerifiedMsg
+            requireSignedMutation :: ChatDirection 'CTGroup 'MDRcv -> Maybe MsgSigStatus -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+            requireSignedMutation cd itemSigned action
+              | isJust itemSigned && isNothing msgSigned = do
+                  createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
+                  pure Nothing
+              | otherwise = action
         updateCI :: ShowGroupAsSender -> ChatItem 'CTGroup 'MDRcv -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe Bool -> Maybe MemberId -> CM (Maybe DeliveryTaskContext)
         updateCI showGroupAsSender ci scopeInfo oldMC itemLive memberId = do
           let changed = mc /= oldMC
