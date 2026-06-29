@@ -2589,4 +2589,6 @@
     <string name="chat_link_channel">Посилання на канал</string>
     <string name="button_channel_members">Учасники каналу</string>
     <string name="channel_display_name_field">Імʼя каналу</string>
+    <string name="channel_preferences">Налаштування каналів</string>
+    <string name="channel_profile_is_stored_on_subscribers_devices">Профіль каналу зберігається на пристроях підписників та на ретрансляторах чату.</string>
 </resources>
