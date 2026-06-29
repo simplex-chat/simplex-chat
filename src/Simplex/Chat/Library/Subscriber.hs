@@ -2146,21 +2146,25 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         createContentItem gInfo Nothing Nothing
         -- no delivery task - message already forwarded by relay
         pure Nothing
-      Just m@GroupMember {memberId} -> do
-        (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m content msgScope_
-        if blockedByAdmin m'
-          then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
-          else case prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False of
-            Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
-            Nothing ->
-              withStore' (\db -> getCIModeration db cxt user gInfo' memberId sharedMsgId_) >>= \case
-                Just ciModeration -> do
-                  applyModeration gInfo' m' scopeInfo ciModeration
-                  withStore' $ \db -> deleteCIModeration db gInfo' memberId sharedMsgId_
-                  pure Nothing
-                Nothing -> do
-                  createContentItem gInfo' (Just m') scopeInfo
-                  pure $ Just $ infoToDeliveryContext gInfo' scopeInfo sentAsGroup
+      Just m@GroupMember {memberId}
+        -- only an owner may post as the channel; a non-owner's signed asGroup post (e.g. relay-injected) must not render as the channel
+        | sentAsGroup && memberRole' m < GROwner ->
+            messageError "x.msg.new: member is not allowed to send as group" $> Nothing
+        | otherwise -> do
+            (gInfo', m', scopeInfo) <- mkGetMessageChatScope cxt user gInfo m content msgScope_
+            if blockedByAdmin m'
+              then createBlockedByAdmin gInfo' (Just m') scopeInfo $> Nothing
+              else case prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False of
+                Just f -> rejected gInfo' (Just m') scopeInfo f $> Nothing
+                Nothing ->
+                  withStore' (\db -> getCIModeration db cxt user gInfo' memberId sharedMsgId_) >>= \case
+                    Just ciModeration -> do
+                      applyModeration gInfo' m' scopeInfo ciModeration
+                      withStore' $ \db -> deleteCIModeration db gInfo' memberId sharedMsgId_
+                      pure Nothing
+                    Nothing -> do
+                      createContentItem gInfo' (Just m') scopeInfo
+                      pure $ Just $ infoToDeliveryContext gInfo' scopeInfo sentAsGroup
       where
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
