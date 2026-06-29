@@ -2769,9 +2769,8 @@ processChatCommand cxt nm = \case
         throwCmdError $ "the number of members, moderators and admins would exceed the limit of " <> show maxGroupRosterSize
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && (isRosterRole newRole || anyPrivilegedTarget)
-      rosterVer <- if doBumpRoster then Just <$> reserveRosterVersion gInfo else pure Nothing
       -- roster (with the change projected in) before the delta, so a relay stores the blob at this version before forwarding the delta
-      forM_ rosterVer $ \v -> broadcastRoster user gInfo v (RDRoleChanged newRole currentMems) `catchAllErrors` eToView
+      rosterVer <- if doBumpRoster then Just <$> broadcastRoster user gInfo (RDRoleChanged newRole currentMems) else pure Nothing
       (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g rosterVer currentMems
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
@@ -2898,9 +2897,8 @@ processChatCommand cxt nm = \case
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
       let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyPrivilegedRemoved
-      rosterVer <- if doBumpRoster then Just <$> reserveRosterVersion gInfo else pure Nothing
       -- roster (excluding the removed members) before the delta, so a relay stores the blob at this version before forwarding the delta
-      forM_ rosterVer $ \v -> broadcastRoster user gInfo v (RDRemoved currentMems) `catchAllErrors` eToView
+      rosterVer <- if doBumpRoster then Just <$> broadcastRoster user gInfo (RDRemoved currentMems) else pure Nothing
       (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing rosterVer recipients currentMems
       (errs3, deleted3, acis3, signed3) <-
         foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], [], False) pendingApprvMems
