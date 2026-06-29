@@ -1,13 +1,15 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
+import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.theme.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,6 +49,7 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
       if (preferences == currentPreferences) close()
       else  showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
+    cardScreen = true,
   ) {
     PreferencesLayout(
       preferences,
@@ -81,27 +84,27 @@ private fun PreferencesLayout(
       onTTLUpdated = onTTLUpdated
     )
 
-    SectionDividerSpaced(true, maxBottomPadding = false)
+    SectionDividerSpaced()
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
     FeatureSection(ChatFeature.FullDelete, allowFullDeletion) {
       applyPrefs(preferences.copy(fullDelete = SimpleChatPreference(allow = it)))
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+    SectionDividerSpaced()
     val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.allow) }
     FeatureSection(ChatFeature.Reactions, allowReactions) {
       applyPrefs(preferences.copy(reactions = SimpleChatPreference(allow = it)))
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+    SectionDividerSpaced()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+    SectionDividerSpaced()
     val allowCalls = remember(preferences) { mutableStateOf(preferences.calls.allow) }
     FeatureSection(ChatFeature.Calls, allowCalls) {
       applyPrefs(preferences.copy(calls = SimpleChatPreference(allow = it)))
     }
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionDividerSpaced()
     ResetSaveButtons(
       reset = reset,
       save = savePrefs,

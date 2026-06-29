@@ -1108,7 +1108,7 @@
   <string name="network_smp_web_port_off">Off</string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
-  <string name="theme_colors_section_title">INTERFACE COLORS</string>
+  <string name="theme_colors_section_title">Interface colors</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
   <string name="app_version_code">App build: %s</string>
@@ -1544,26 +1544,33 @@
   <string name="privacy_chat_list_open_clean_web_link">Open clean link</string>
 
   <!-- Settings sections -->
-  <string name="settings_section_title_you">YOU</string>
-  <string name="settings_section_title_settings">SETTINGS</string>
-  <string name="settings_section_title_chat_database">CHAT DATABASE</string>
-  <string name="settings_section_title_help">HELP</string>
-  <string name="settings_section_title_support">SUPPORT SIMPLEX CHAT</string>
-  <string name="settings_section_title_app">APP</string>
-  <string name="settings_section_title_device">DEVICE</string>
-  <string name="settings_section_title_chats">CHATS</string>
-  <string name="settings_section_title_files">FILES</string>
-  <string name="settings_section_title_delivery_receipts">SEND DELIVERY RECEIPTS TO</string>
-  <string name="settings_section_title_contact_requests_from_groups">CONTACT REQUESTS FROM GROUPS</string>
+  <string name="settings_section_title_you">You</string>
+  <string name="settings_section_title_settings">Settings</string>
+  <string name="settings_section_title_chat_database">Chat database</string>
+  <string name="settings_section_title_help">Help</string>
+  <string name="settings_section_title_support">Support SimpleX Chat</string>
+  <string name="settings_section_title_app">App</string>
+  <string name="settings_section_title_device">Device</string>
+  <string name="settings_section_title_chats">Chats</string>
+  <string name="settings_section_title_files">Files</string>
+  <string name="settings_section_title_delivery_receipts">Send delivery receipts to</string>
+  <string name="settings_section_title_contact_requests_from_groups">Contact requests from groups</string>
+  <string name="settings_section_title_about">About</string>
+  <string name="settings_section_title_contact">Contact</string>
+  <string name="settings_section_title_support_project">Support the project</string>
+  <string name="chat_data">Chat data</string>
+  <string name="help_and_support">Help &amp; support</string>
+  <string name="more_privacy">More privacy</string>
+  <string name="advanced_settings">Advanced settings</string>
   <string name="settings_restart_app">Restart</string>
   <string name="settings_shutdown">Shutdown</string>
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
-  <string name="settings_section_title_socks">SOCKS PROXY</string>
-  <string name="settings_section_title_interface" translatable="false">INTERFACE</string>
+  <string name="settings_section_title_socks">SOCKS proxy</string>
+  <string name="settings_section_title_interface" translatable="false">Interface</string>
   <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
-  <string name="settings_section_title_icon">APP ICON</string>
-  <string name="settings_section_title_themes">THEMES</string>
+  <string name="settings_section_title_icon">App icon</string>
+  <string name="settings_section_title_themes">Themes</string>
   <string name="settings_section_title_profile_images">Profile images</string>
   <string name="settings_section_title_message_shape">Message shape</string>
   <string name="settings_message_shape_corner">Corner</string>
@@ -1571,21 +1578,21 @@
   <string name="settings_section_title_chat_theme">Chat theme</string>
   <string name="settings_section_title_user_theme">Profile theme</string>
   <string name="settings_section_title_chat_colors">Chat colors</string>
-  <string name="settings_section_title_messages">MESSAGES AND FILES</string>
-  <string name="settings_section_title_private_message_routing">PRIVATE MESSAGE ROUTING</string>
-  <string name="settings_section_title_calls">CALLS</string>
+  <string name="settings_section_title_messages">Messages and files</string>
+  <string name="settings_section_title_private_message_routing">Private message routing</string>
+  <string name="settings_section_title_calls">Calls</string>
   <string name="settings_section_title_network_connection">Network connection</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
-  <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
+  <string name="settings_section_title_experimenta">Experimental</string>
   <string name="settings_section_title_use_from_desktop">Use from desktop</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
-  <string name="run_chat_section">RUN CHAT</string>
+  <string name="run_chat_section">Run chat</string>
   <string name="remote_hosts_section">Remote mobiles</string>
   <string name="chat_is_running">Chat is running</string>
   <string name="chat_is_stopped">Chat is stopped</string>
-  <string name="chat_database_section">CHAT DATABASE</string>
+  <string name="chat_database_section">Chat database</string>
   <string name="database_passphrase">Database passphrase</string>
   <string name="export_database">Export database</string>
   <string name="import_database">Import database</string>
@@ -1843,8 +1850,10 @@
 
   <!-- GroupMemberRole -->
   <string name="group_member_role_observer">observer</string>
+  <string name="group_member_role_observer_channel">subscriber</string>
   <string name="group_member_role_author">author</string>
   <string name="group_member_role_member">member</string>
+  <string name="group_member_role_member_channel">contributor</string>
   <string name="group_member_role_moderator">moderator</string>
   <string name="group_member_role_admin">admin</string>
   <string name="group_member_role_owner">owner</string>
@@ -1894,7 +1903,7 @@
   <string name="button_add_members">Invite members</string>
   <string name="button_add_team_members">Add team members</string>
   <string name="button_add_friends">Add friends</string>
-  <string name="group_info_section_title_num_members">%1$s MEMBERS</string>
+  <string name="group_info_section_title_num_members">%1$s members</string>
   <string name="group_info_member_you">you: %1$s</string>
   <string name="button_delete_group">Delete group</string>
   <string name="button_delete_channel">Delete channel</string>
@@ -1918,6 +1927,20 @@
   <string name="button_welcome_message">Welcome message</string>
   <string name="group_link">Group link</string>
   <string name="channel_link">Channel link</string>
+  <string name="channel_webpage">Channel webpage</string>
+  <string name="group_webpage">Group webpage</string>
+  <string name="advanced_options">Advanced options</string>
+  <string name="web_page_url_placeholder">https://</string>
+  <string name="allow_anyone_to_embed">Allow anyone to embed</string>
+  <string name="enter_webpage_url">Enter webpage URL</string>
+  <string name="webpage_url_footer">It will be shown to subscribers and used to allow loading the preview.</string>
+  <string name="webpage_code">Webpage code</string>
+  <string name="webpage_code_footer">Add this code to your webpage. It will display the preview of your channel / group.</string>
+  <string name="copy_code">Copy code</string>
+  <string name="webpage_info">Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting.</string>
+  <string name="relays_no_web_support">Used chat relays do not support webpages.</string>
+  <string name="embed_any_webpage_can_show">Any webpage can show the preview.</string>
+  <string name="embed_only_your_page">Only your page above can show the preview.</string>
   <string name="create_group_link">Create group link</string>
   <string name="button_create_group_link">Create link</string>
   <string name="delete_link_question">Delete link?</string>
@@ -1947,7 +1970,7 @@
   <string name="button_channel_relays">Chat relays</string>
 
   <!-- Chat / Chat item info -->
-  <string name="section_title_for_console">FOR CONSOLE</string>
+  <string name="section_title_for_console">For console</string>
   <string name="info_row_local_name">Local name</string>
   <string name="info_row_database_id">Database ID</string>
   <string name="info_row_debug_delivery">Debug delivery</string>
@@ -2017,14 +2040,15 @@
   <string name="member_info_member_disabled">disabled</string>
   <string name="member_info_member_failed">failed</string>
   <string name="member_info_member_inactive">inactive</string>
-  <string name="member_info_section_title_member">MEMBER</string>
+  <string name="member_info_section_title_member">Member</string>
   <string name="role_in_group">Role</string>
   <string name="change_role">Change role</string>
   <string name="change_verb">Change</string>
   <string name="switch_verb">Switch</string>
-  <string name="change_member_role_question">Change group role?</string>
+  <string name="change_member_role_question">Change role?</string>
   <string name="member_role_will_be_changed_with_notification">The role will be changed to "%s". Everyone in the group will be notified.</string>
   <string name="member_role_will_be_changed_with_notification_chat">The role will be changed to "%s". Everyone in the chat will be notified.</string>
+  <string name="member_role_will_be_changed_with_notification_channel">The role will be changed to "%s". Everyone in the channel will be notified.</string>
   <string name="member_role_will_be_changed_with_invitation">The role will be changed to "%s". The member will receive a new invitation.</string>
   <string name="connect_via_member_address_alert_title">Connect directly?</string>
   <string name="connect_via_member_address_alert_desc">Сonnection request will be sent to this group member.</string>
@@ -2034,7 +2058,7 @@
   <string name="info_row_group">Group</string>
   <string name="info_row_chat">Chat</string>
   <string name="info_row_connection">Connection</string>
-  <string name="info_row_connection_failed">CONNECTION FAILED</string>
+  <string name="info_row_connection_failed">Connection failed</string>
   <string name="conn_level_desc_direct">direct</string>
   <string name="conn_level_desc_indirect">indirect (%1$s)</string>
   <string name="message_queue_info">Message queue info</string>
@@ -2063,7 +2087,7 @@
   <string name="message_too_large">Message too large</string>
 
   <!-- ConnectionStats -->
-  <string name="conn_stats_section_title_servers">SERVERS</string>
+  <string name="conn_stats_section_title_servers">Servers</string>
   <string name="receiving_via">Receiving via</string>
   <string name="sending_via">Sending via</string>
   <string name="network_status">Network status</string>
@@ -2681,7 +2705,7 @@
   <string name="dont_enable_receipts">Don\'t enable</string>
   <string name="you_can_enable_delivery_receipts_later">You can enable later via Settings</string>
   <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
-  <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
+  <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Your privacy settings.</string>
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
 
   <!-- Remote access -->
@@ -2952,9 +2976,12 @@
 
   <!-- ChannelMembersView.kt -->
   <string name="channel_members_title_subscribers">Subscribers</string>
-  <string name="channel_members_section_owners">Owners</string>
+  <string name="channel_members_section_owners">Owners &amp; contributors</string>
   <string name="channel_subscriber_count_singular">%1$d subscriber</string>
   <string name="channel_subscriber_count_plural">%1$d subscribers</string>
+  <string name="channel_owner_count_singular">%1$d owner</string>
+  <string name="channel_owner_count_plural">%1$d owners</string>
+  <string name="channel_owners_contributors_count">%1$d owners &amp; contributors</string>
   <string name="channel_member_you">you</string>
 
   <!-- ChatRelayView.kt -->
@@ -3001,6 +3028,7 @@
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
+  <string name="relay_status_acknowledged_roster">acknowledged roster</string>
   <string name="relay_status_active">active</string>
   <string name="relay_status_inactive">inactive</string>
   <string name="relay_status_rejected">rejected</string>
@@ -3027,9 +3055,9 @@
   <string name="relay_bar_subscriber_waiting">Waiting for channel owner to add relays.</string>
 
   <!-- GroupMemberInfoView.kt channel-related -->
-  <string name="member_info_section_title_relay">RELAY</string>
-  <string name="member_info_section_title_owner">OWNER</string>
-  <string name="member_info_section_title_subscriber">SUBSCRIBER</string>
+  <string name="member_info_section_title_relay">Relay</string>
+  <string name="member_info_section_title_owner">Owner</string>
+  <string name="member_info_section_title_subscriber">Subscriber</string>
   <string name="info_row_channel">Channel</string>
   <string name="info_row_relay_link">Relay link</string>
   <string name="info_row_relay_address">Relay address</string>

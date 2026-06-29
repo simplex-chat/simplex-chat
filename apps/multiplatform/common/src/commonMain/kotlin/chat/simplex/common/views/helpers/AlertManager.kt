@@ -78,6 +78,8 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     belowTextContent: @Composable (() -> Unit) = {},
+    // When false, [text] is rendered as literal text — use for user-controlled content.
+    parseHtml: Boolean = true,
     buttons: @Composable () -> Unit,
   ) {
     showAlert {
@@ -85,8 +87,14 @@ class AlertManager {
         onDismissRequest = { onDismissRequest?.invoke(); if (dismissible) hideAlert() },
         title = alertTitle(title),
         buttons = {
-          AlertContent(text, hostDevice, extraPadding = true, textAlign = textAlign, belowTextContent = belowTextContent) {
-            buttons()
+          if (parseHtml) {
+            AlertContent(text, hostDevice, extraPadding = true, textAlign = textAlign, belowTextContent = belowTextContent) {
+              buttons()
+            }
+          } else {
+            AlertContent(text?.let { AnnotatedString(it) }, hostDevice, extraPadding = true) {
+              buttons()
+            }
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -125,13 +133,15 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false,
     hostDevice: Pair<Long?, String>? = null,
+    // When false, [text] is rendered as literal text — use for user-controlled content.
+    parseHtml: Boolean = true,
   ) {
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
         title = alertTitle(title),
         buttons = {
-          AlertContent(text, hostDevice, true) {
+          val buttonRow: @Composable () -> Unit = {
             Row(
               Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
               horizontalArrangement = Arrangement.SpaceBetween
@@ -151,6 +161,11 @@ class AlertManager {
                 hideAlert()
               }, Modifier.focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
             }
+          }
+          if (parseHtml) {
+            AlertContent(text, hostDevice, true, content = buttonRow)
+          } else {
+            AlertContent(text?.let { AnnotatedString(it) }, hostDevice, true, content = buttonRow)
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))

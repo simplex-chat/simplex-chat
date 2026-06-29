@@ -93,14 +93,14 @@
     <string name="notifications_mode_off_desc">Ứng dụng chỉ có thể nhận thông báo khi nó đang chạy, không có dịch vụ nền nào được khởi động</string>
     <string name="app_version_code">Bản dựng ứng dụng: %s</string>
     <string name="appearance_settings">Giao diện</string>
-    <string name="settings_section_title_app">ỨNG DỤNG</string>
+    <string name="settings_section_title_app">Ứng dụng</string>
     <string name="v5_6_app_data_migration">Di chuyển dữ liệu ứng dụng</string>
     <string name="full_backup">Sao lưu dữ liệu ứng dụng</string>
     <string name="app_passcode_replaced_with_self_destruct">Mã truy cập ứng dụng đã được thay thế bằng mã tự hủy.</string>
     <string name="v5_3_encrypt_local_files_descr">Ứng dụng mã hóa các tệp cục bộ mới (trừ video).</string>
     <string name="migrate_to_device_apply_onion">Áp dụng</string>
     <string name="la_app_passcode">Mã truy cập ứng dụng</string>
-    <string name="settings_section_title_icon">BIỂU TƯỢNG ỨNG DỤNG</string>
+    <string name="settings_section_title_icon">Biểu tượng ứng dụng</string>
     <string name="v5_0_app_passcode">Mã truy cập</string>
     <string name="app_version_name">Phiên bản ứng dụng: v%s</string>
     <string name="app_version_title">Phiên bản ứng dụng</string>
@@ -184,7 +184,7 @@
     <string name="icon_descr_call_ended">Cuộc gọi kết thúc</string>
     <string name="callstatus_ended">cuộc gọi kết thúc %1$s</string>
     <string name="callstatus_error">lỗi cuộc gọi</string>
-    <string name="settings_section_title_calls">CUỘC GỌI</string>
+    <string name="settings_section_title_calls">Cuộc gọi</string>
     <string name="icon_descr_cancel_image_preview">Hủy xem trước ảnh</string>
     <string name="icon_descr_cancel_file_preview">Hủy xem trước tệp</string>
     <string name="cancel_verb">Hủy</string>
@@ -234,11 +234,11 @@
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">đang thay đổi địa chỉ cho %s…</string>
     <string name="chat_preferences">Tùy chọn trò chuyện</string>
     <string name="settings_section_title_chat_colors">Màu trò chuyện</string>
-    <string name="chat_database_section">CƠ SỞ DỮ LIỆU TRÒ CHUYỆN</string>
+    <string name="chat_database_section">Cơ sở dữ liệu trò chuyện</string>
     <string name="chat_is_stopped">Kết nối trò chuyện đã được dừng lại</string>
     <string name="migrate_to_device_chat_migrated">Cơ sở dữ liệu đã được di chuyển!</string>
     <string name="your_chats">Các cuộc trò chuyện</string>
-    <string name="settings_section_title_chats">CÁC CUỘC TRÒ CHUYỆN</string>
+    <string name="settings_section_title_chats">Các cuộc trò chuyện</string>
     <string name="notifications_mode_periodic_desc">Kiểm tra tin nhắn mới mỗi 10 phút trong tối đa 1 phút</string>
     <string name="v4_6_chinese_spanish_interface">Giao diện Trung Quốc và Tây Ban Nha</string>
     <string name="chat_with_developers">Trò chuyện với nhà phát triển</string>
@@ -463,7 +463,7 @@
     <string name="smp_servers_delete_server">Xóa máy chủ</string>
     <string name="smp_server_test_delete_queue">Xóa hàng đợi</string>
     <string name="settings_developer_tools">Công cụ nhà phát triển</string>
-    <string name="settings_section_title_device">THIẾT BỊ</string>
+    <string name="settings_section_title_device">Thiết bị</string>
     <string name="developer_options_section">Tùy chọn cho nhà phát triển</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Xác thực thiết bị đã bị vô hiệu hóa. Tắt Khóa SimpleX.</string>
     <string name="snd_error_relay">Lỗi máy chủ đích: %1$s</string>
@@ -738,7 +738,7 @@
     <string name="error_setting_network_config">Lỗi cập nhật cấu hình mạng</string>
     <string name="error_updating_user_privacy">Lỗi cập nhật quyền riêng tư người dùng</string>
     <string name="icon_descr_expand_role">Mở rộng chọn chức vụ</string>
-    <string name="settings_section_title_experimenta">THỬ NGHIỆM</string>
+    <string name="settings_section_title_experimenta">Thử nghiệm</string>
     <string name="expand_verb">Mở rộng</string>
     <string name="exit_without_saving">Thoát mà không lưu</string>
     <string name="expired_label">đã hết hạn</string>
@@ -748,7 +748,7 @@
     <string name="export_database">Xuất cơ sở dữ liệu</string>
     <string name="migrate_from_device_error_uploading_archive">Lỗi tải lên kho lưu trữ</string>
     <string name="migrate_from_device_exported_file_doesnt_exist">Tập tin đã xuất không tồn tại</string>
-    <string name="settings_section_title_files">TẬP TIN</string>
+    <string name="settings_section_title_files">Tập tin</string>
     <string name="failed_to_parse_chats_title">Không thể tải các cuộc trò chuyện</string>
     <string name="file_error_no_file">Không tìm thấy tệp - có thể tập tin đã bị xóa và hủy bỏ.</string>
     <string name="file_error">Lỗi tệp</string>
@@ -776,7 +776,7 @@
     <string name="file_will_be_received_when_contact_is_online">Tệp sẽ được nhận khi liên hệ của bạn hoạt động, vui lòng chờ hoặc kiểm tra lại sau!</string>
     <string name="share_text_file_status">Trạng thái tệp: %s</string>
     <string name="wallpaper_scale_fill">Lấp đầy</string>
-    <string name="settings_section_title_chat_database">CƠ SỞ DỮ LIỆU TRÒ CHUYỆN</string>
+    <string name="settings_section_title_chat_database">Cơ sở dữ liệu trò chuyện</string>
     <string name="switching_profile_error_title">Lỗi chuyển đổi hồ sơ</string>
     <string name="v5_2_favourites_filter_descr">Lọc các cuộc hội thoại chưa đọc và các cuộc hội thoại yêu thích.</string>
     <string name="v5_1_message_reactions_descr">Cuối cùng, chúng ta đã có chúng! 🚀</string>
@@ -821,7 +821,7 @@
     <string name="proxy_destination_error_failed_to_connect">Máy chủ chuyển tiếp %1$s không thể kết nối tới máy chủ đích %2$s. Vui lòng thử lại sau.</string>
     <string name="smp_proxy_error_broker_host">Địa chỉ máy chủ chuyển tiếp không tương thích với cài đặt mạng: %1$s.</string>
     <string name="smp_proxy_error_broker_version">Phiên bản máy chủ chuyển tiếp không tương thích với cài đặt mạng: %1$s.</string>
-    <string name="section_title_for_console">CHO CONSOLE</string>
+    <string name="section_title_for_console">Cho console</string>
     <string name="forward_message">Chuyển tiếp tin nhắn…</string>
     <string name="v4_6_reduced_battery_usage">Giảm thiểu sử dụng pin hơn nữa</string>
     <string name="forward_alert_forward_messages_without_files">Chuyển tiếp tin nhắn mà không có tệp?</string>
@@ -863,7 +863,7 @@
     <string name="email_invite_body">Xin chào!
 \nKết nối với tôi qua SimpleX Chat: %s</string>
     <string name="hide_profile">Ẩn hồ sơ</string>
-    <string name="settings_section_title_help">TRỢ GIÚP</string>
+    <string name="settings_section_title_help">Trợ giúp</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">Nhóm sẽ bị xóa cho tất cả các thành viên - điều này không thể hoàn tác!</string>
     <string name="delete_group_for_self_cannot_undo_warning">Nhóm sẽ bị xóa cho bạn - điều này không thể hoàn tác!</string>
     <string name="group_preferences">Tùy chọn nhóm</string>
@@ -952,7 +952,7 @@
     <string name="app_check_for_updates_button_install">Cài đặt cập nhật</string>
     <string name="incoming_video_call">Cuộc gọi video đến</string>
     <string name="desktop_incompatible_version">Phiên bản không tương thích</string>
-    <string name="theme_colors_section_title">MÀU SẮC GIAO DIỆN</string>
+    <string name="theme_colors_section_title">Màu sắc giao diện</string>
     <string name="group_member_status_invited">đã được mời</string>
     <string name="error_parsing_uri_title">Đường dẫn không hợp lệ</string>
     <string name="invalid_chat">cuộc trò chuyện không hợp lệ</string>
@@ -1001,7 +1001,7 @@
     <string name="button_add_members">Mời thành viên</string>
     <string name="invite_to_group_button">Mời vào nhóm</string>
     <string name="button_leave_group">Rời nhóm</string>
-    <string name="member_info_section_title_member">THÀNH VIÊN</string>
+    <string name="member_info_section_title_member">Thành viên</string>
     <string name="message_queue_info">Thông tin hàng đợi tin nhắn</string>
     <string name="users_delete_data_only">Chỉ dữ liệu hồ sơ cục bộ</string>
     <string name="v5_2_fix_encryption">Giữ lại các kết nối của bạn</string>
@@ -1050,7 +1050,7 @@
     <string name="member_will_be_removed_from_group_cannot_be_undone">Thành viên sẽ bị xóa khỏi nhóm - việc này không thể được hoàn tác!</string>
     <string name="chat_theme_apply_to_light_mode">Chế độ sáng</string>
     <string name="v5_7_new_interface_languages">UI tiếng Litva</string>
-    <string name="settings_section_title_messages">TIN NHẮN VÀ TỆP</string>
+    <string name="settings_section_title_messages">Tin nhắn và tệp</string>
     <string name="message_deletion_prohibited_in_chat">Việc xóa tin nhắn mà không thể phục hồi là bị cấm.</string>
     <string name="v5_5_join_group_conversation">Tham gia vào các cuộc trò chuyện nhóm</string>
     <string name="update_network_smp_proxy_mode_question">Chế độ định tuyến tin nhắn</string>
@@ -1323,7 +1323,7 @@
     <string name="profile_password">Mật khẩu hồ sơ</string>
     <string name="note_folder_local_display_name">Ghi chú riêng tư</string>
     <string name="prohibit_message_deletion">Cấm xóa tin nhắn mà không thể phục hồi.</string>
-    <string name="settings_section_title_private_message_routing">ĐỊNH TUYẾN TIN NHẮN RIÊNG TƯ</string>
+    <string name="settings_section_title_private_message_routing">Định tuyến tin nhắn riêng tư</string>
     <string name="display_name__field">Tên hồ sơ:</string>
     <string name="image_descr_profile_image">ảnh đại diện</string>
     <string name="users_delete_with_connections">Hồ sơ và các kết nối máy chủ</string>
@@ -1581,7 +1581,7 @@
     <string name="servers_info_reset_stats_alert_title">Đặt lại tất cả số liệu thống kê?</string>
     <string name="save_passphrase_and_open_chat">Lưu mật khẩu và mở kết nối trò chuyện</string>
     <string name="send_verb">Gửi</string>
-    <string name="run_chat_section">KHỞI CHẠY KẾT NỐI TRÒ CHUYỆN</string>
+    <string name="run_chat_section">Khởi chạy kết nối trò chuyện</string>
     <string name="save_verb">Lưu</string>
     <string name="scan_paste_link">Quét / Dán đường dẫn</string>
     <string name="smp_servers_scan_qr">Quét mã QR máy chủ</string>
@@ -1623,7 +1623,7 @@
     <string name="save_welcome_message_question">Lưu lời chào?</string>
     <string name="icon_descr_sent_msg_status_send_failed">gửi thất bại</string>
     <string name="scan_code_from_contacts_app">Quét mã bảo mật từ ứng dụng của liên hệ bạn.</string>
-    <string name="settings_section_title_delivery_receipts">GỬI CHỈ BÁO ĐÃ NHẬN TỚI</string>
+    <string name="settings_section_title_delivery_receipts">Gửi chỉ báo đã nhận tới</string>
     <string name="search_verb">Tìm kiếm</string>
     <string name="search_or_paste_simplex_link">Tìm kiếm hoặc dán đường dẫn SimpleX</string>
     <string name="save_list">Lưu danh sách</string>
@@ -1685,7 +1685,7 @@
     <string name="profile_update_event_set_new_picture">đặt ảnh đại diện mới</string>
     <string name="v4_4_disappearing_messages_desc">Các tin nhắn đã gửi sẽ bị xóa sau thời gian đã cài.</string>
     <string name="message_queue_info_server_info">thông tin hàng đợi máy chủ: %1$s\n\ntin nhắn được nhận cuối cùng: %2$s</string>
-    <string name="settings_section_title_settings">CÀI ĐẶT</string>
+    <string name="settings_section_title_settings">Cài đặt</string>
     <string name="info_row_sent_at">Đã gửi vào</string>
     <string name="server_address">Địa chỉ máy chủ</string>
     <string name="session_code">Mã phiên</string>
@@ -1716,7 +1716,7 @@
     <string name="set_passphrase">Đặt mật khẩu</string>
     <string name="toolbar_settings">Cài đặt</string>
     <string name="network_error_broker_host_desc">Địa chỉ máy chủ không tương thích với cài đặt mạng: %1$s.</string>
-    <string name="conn_stats_section_title_servers">CÁC MÁY CHỦ</string>
+    <string name="conn_stats_section_title_servers">Các máy chủ</string>
     <string name="error_xftp_test_server_auth">Máy chủ yêu cầu xác thực để tải lên, kiểm tra mật khẩu</string>
     <string name="network_session_mode_server">Máy chủ</string>
     <string name="set_passcode">Đặt mã truy cập</string>
@@ -1828,7 +1828,7 @@
     <string name="icon_descr_speaker_on">Loa ngoài bật</string>
     <string name="icon_descr_sound_muted">Âm thanh đã bị tắt</string>
     <string name="app_check_for_updates_stable">Ổn định</string>
-    <string name="settings_section_title_socks">PROXY SOCKS</string>
+    <string name="settings_section_title_socks">Proxy SOCKS</string>
     <string name="receipts_section_groups">Các nhóm nhỏ (tối đa 20 thành viên)</string>
     <string name="non_fatal_errors_occured_during_import">Một vài lỗi không nghiêm trọng đã xảy ra trong lúc nhập:</string>
     <string name="icon_descr_speaker_off">Loa ngoài tắt</string>
@@ -1896,7 +1896,7 @@
     <string name="v4_6_chinese_spanish_interface_descr">Xin gửi lời cảm ơn tới các người dùng đã góp công qua Weblate!</string>
     <string name="v5_0_polish_interface_descr">Xin gửi lời cảm ơn tới các người dùng đã góp công qua Weblate!</string>
     <string name="system_mode_toast">Chế độ hệ thống</string>
-    <string name="settings_section_title_support">HỖ TRỢ SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">Hỗ trợ SimpleX Chat</string>
     <string name="temporary_file_error">Lỗi tệp tạm thời</string>
     <string name="chat_help_tap_button">Nhấn nút</string>
     <string name="network_option_tcp_connection">Kết nối TCP</string>
@@ -1947,7 +1947,7 @@
     <string name="alert_text_msg_bad_id">ID của tin nhắn tiếp theo là không chính xác (nhỏ hơn hoặc bằng với cái trước).\nViệc này có thể xảy ra do một vài lỗi hoặc khi kết nối bị xâm phạm.</string>
     <string name="database_backup_can_be_restored">Nỗ lực đổi mật khẩu cơ sở dữ liệu đã không được hoàn thành.</string>
     <string name="this_device_name_shared_with_mobile">Tên thiết bị sẽ được chia sẻ với thiết bị di động đã được kết nối.</string>
-    <string name="settings_section_title_themes">CÁC CHỦ ĐỀ</string>
+    <string name="settings_section_title_themes">Các chủ đề</string>
     <string name="failed_to_create_user_invalid_desc">Tên hiển thị này không hợp lệ. Xin vui lòng chọn một cái tên khác.</string>
     <string name="profile_is_only_shared_with_your_contacts">Hồ sơ chỉ được chia sẻ với các liên hệ của bạn.</string>
     <string name="e2ee_info_pq_short">Cuộc trò chuyện này được bảo vệ bằng mã hóa đầu cuối có kháng lượng tử.</string>
@@ -2196,7 +2196,7 @@
     <string name="one_hand_ui_change_instruction">Bạn có thể thay đổi nói trong cài đặt Giao diện.</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Bạn đang tham gia nhóm thông qua đường dẫn này.</string>
     <string name="you_can_enable_delivery_receipts_later">Bạn có thể bật vào lúc sau thông qua Cài đặt</string>
-    <string name="settings_section_title_you">BẠN</string>
+    <string name="settings_section_title_you">Bạn</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Bạn có thể chia sẻ một đường dẫn hoặc mã QR - bất kỳ ai cũng sẽ có thể tham gia nhóm. Bạn sẽ không mất các thành viên của nhóm nếu sau này bạn xóa nó đi.</string>
     <string name="migrate_to_device_try_again">Bạn có thể thử một lần nữa.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Bạn đã kết nối tới máy chủ dùng để nhận tin nhắn từ liên hệ này.</string>
