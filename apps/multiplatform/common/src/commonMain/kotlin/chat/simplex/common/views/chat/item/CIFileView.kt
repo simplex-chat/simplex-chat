@@ -15,7 +15,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -30,7 +32,10 @@ import java.net.URI
 @Composable
 fun CIFileView(
   file: CIFile?,
-  edited: Boolean,
+  meta: CIMeta,
+  chatTTL: Int?,
+  showViaProxy: Boolean,
+  showTimestamp: Boolean,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
   senderProfile: LocalProfile?,
@@ -202,10 +207,13 @@ fun CIFileView(
   ) {
     fileIndicator()
     if (!smallView) {
-      val metaReserve = if (edited)
-        "                       "
-      else
-        "                   "
+      val secondaryColor = MaterialTheme.colors.secondary
+      val encrypted = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
+      val metaReserve = buildAnnotatedString {
+        withStyle(reserveTimestampStyle) {
+          append(reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor = secondaryColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp))
+        }
+      }
       if (file != null) {
         Column {
           Text(
@@ -213,8 +221,11 @@ fun CIFileView(
             maxLines = 1
           )
           Text(
-            formatBytes(file.fileSize) + metaReserve,
-            color = MaterialTheme.colors.secondary,
+            buildAnnotatedString {
+              append(formatBytes(file.fileSize))
+              append(metaReserve)
+            },
+            color = secondaryColor,
             fontSize = 14.sp,
             maxLines = 1
           )
