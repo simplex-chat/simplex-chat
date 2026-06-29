@@ -811,7 +811,9 @@ testLeftMemberDeleteGroupLocalCleanup =
         (cath <# "#team alice> hello")
       bob ##> "/leave #team"
       concurrentlyN_
-        [ bob <## "#team: you left the group",
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
           alice <## "#team: bob left the group",
           cath <## "#team: bob left the group"
         ]
@@ -819,7 +821,7 @@ testLeftMemberDeleteGroupLocalCleanup =
       bob <## "#team: you deleted the group"
       withCCTransaction bob $ \db -> do
         [Only n] <-
-          DB.query
+          DB.query_
             db
             [sql|
               SELECT
