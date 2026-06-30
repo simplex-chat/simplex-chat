@@ -215,9 +215,6 @@ private func handleTextTaps(
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
                 if attrs[nameAttrKey] is SimplexNameInfo {
-                    // Route the tapped name through the same connect flow as a link;
-                    // planAndConnect resolves it on the core (name target). This runs
-                    // in a free function with no view context, so use the global theme.
                     planAndConnect(s.attributedSubstring(from: range).string, theme: AppTheme.shared, dismiss: false)
                 } else if let url = attrs[linkAttrKey] as? String {
                     linkURL = url

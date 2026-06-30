@@ -357,9 +357,16 @@ private fun UserAddressLayout(
             // ShareViaEmailButton { sendEmail(userAddress) }
             BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
             AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
+          }
+          if (addressSettingsState.value.businessAddress) {
+            SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
+          }
+
+          SectionDividerSpaced()
+          SectionView {
             SettingsActionItem(
-              painterResource(MR.images.ic_verified_user),
-              stringResource(MR.strings.set_simplex_name),
+              painterResource(MR.images.ic_at),
+              stringResource(MR.strings.your_simplex_name),
               click = {
                 ModalManager.start.showCustomModal { close ->
                   SetSimplexNameView(
@@ -383,9 +390,6 @@ private fun UserAddressLayout(
               },
               iconColor = MaterialTheme.colors.secondary
             )
-          }
-          if (addressSettingsState.value.businessAddress) {
-            SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
           }
 
           SectionDividerSpaced()

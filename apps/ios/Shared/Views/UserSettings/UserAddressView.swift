@@ -194,8 +194,8 @@ struct UserAddressView: View {
         Section {
             NavigationLink {
                 SetSimplexNameView(
-                    titleKey: "Set SimpleX name",
-                    footer: "Set a SimpleX name so people can connect to you using @yourname instead of a link. The name must already be registered to your address.",
+                    titleKey: "Your SimpleX name",
+                    footer: "Let people connect to you via name registered with your SimpleX address.",
                     prefix: "@",
                     nameText: chatModel.currentUser?.profile.simplexName?.shortName ?? "",
                     save: { name in
@@ -209,7 +209,7 @@ struct UserAddressView: View {
                     }
                 )
             } label: {
-                Label("Set SimpleX name", systemImage: "checkmark.shield")
+                Label("Your SimpleX name", systemImage: "at")
             }
         }
 
@@ -731,6 +731,8 @@ struct SetSimplexNameView: View {
                 TextField(prefix + "name.simplex", text: $nameText)
                     .autocorrectionDisabled(true)
                     .textInputAutocapitalization(.never)
+            } header: {
+                Text(verbatim: "")
             } footer: {
                 Text(footer).foregroundColor(theme.colors.secondary)
             }
@@ -756,6 +758,7 @@ struct SetSimplexNameView: View {
             }
         }
         .navigationTitle(titleKey)
+        .navigationBarTitleDisplayMode(.large)
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Error saving name"), message: Text(alertMessage))
         }

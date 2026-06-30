@@ -250,8 +250,8 @@ struct GroupChatInfoView: View {
                             if groupInfo.groupProfile.publicGroup != nil {
                                 NavigationLink {
                                     SetSimplexNameView(
-                                        titleKey: "Set SimpleX name",
-                                        footer: "Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel's address.",
+                                        titleKey: "SimpleX name",
+                                        footer: "Let people join via name registered with this channel link.",
                                         prefix: "#",
                                         nameText: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.shortName ?? "",
                                         save: { name in
@@ -270,7 +270,7 @@ struct GroupChatInfoView: View {
                                         }
                                     )
                                 } label: {
-                                    Label("Set SimpleX name", systemImage: "checkmark.shield")
+                                    Label("SimpleX name", systemImage: "number")
                                 }
                             }
                         }

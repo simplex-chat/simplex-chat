@@ -827,8 +827,8 @@ fun ModalData.GroupChatInfoLayout(
           ChannelWebPageButton(groupInfo, manageWebPage)
           if (groupInfo.groupProfile.publicGroup != null) {
             SettingsActionItem(
-              painterResource(MR.images.ic_verified_user),
-              stringResource(MR.strings.set_simplex_name),
+              painterResource(MR.images.ic_tag),
+              stringResource(MR.strings.simplex_name),
               setSimplexName,
               iconColor = MaterialTheme.colors.secondary
             )
