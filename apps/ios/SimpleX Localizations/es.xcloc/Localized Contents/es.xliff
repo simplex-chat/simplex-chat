@@ -2343,9 +2343,9 @@ This is your own one-time link!</source>
         <target>Conectando con el servidor... (error: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting to contact, please wait or check later!" xml:space="preserve">
+      <trans-unit id="Connecting to contact, please wait or check later!" xml:space="preserve" approved="no">
         <source>Connecting to contact, please wait or check later!</source>
-        <target>Conectando con el contacto, por favor espera o revisa más tarde.</target>
+        <target state="translated">Se está estableciendo la conexión con el contacto. ¡Por favor, espera o vuelve a intentarlo más tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting to desktop" xml:space="preserve">
@@ -3075,9 +3075,9 @@ alert button</note>
         <target>Eliminar cola</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete relay" xml:space="preserve">
+      <trans-unit id="Delete relay" xml:space="preserve" approved="no">
         <source>Delete relay</source>
-        <target>Eliminar servidor</target>
+        <target state="translated">Eliminar retransmisión</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete report" xml:space="preserve">
@@ -6063,9 +6063,9 @@ quién se comunica con quién</target>
         <target>Contacto nuevo:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New desktop app!" xml:space="preserve">
+      <trans-unit id="New desktop app!" xml:space="preserve" approved="no">
         <source>New desktop app!</source>
-        <target>Nueva aplicación para PC!</target>
+        <target state="translated">¡Nueva aplicación de escritorio!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New display name" xml:space="preserve">
@@ -7355,9 +7355,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>¿Reconectar servidores?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at" xml:space="preserve">
+      <trans-unit id="Record updated at" xml:space="preserve" approved="no">
         <source>Record updated at</source>
-        <target>Registro actualiz.</target>
+        <target state="translated">Registro actualizado a las</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Record updated at: %@" xml:space="preserve">
@@ -7504,7 +7504,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Remove relay" xml:space="preserve" approved="no">
         <source>Remove relay</source>
-        <target state="translated">Eliminar servidor</target>
+        <target state="translated">Desmontar la retransmisión</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove relay?" xml:space="preserve" approved="no">
@@ -10119,9 +10119,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>El video se recibirá cuando el contacto termine de subirlo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>Video will be received when your contact is online, please wait or check later!</source>
-        <target>El vídeo se recibirá cuando el contacto esté en línea, por favor espera o revisa más tarde.</target>
+        <target state="translated">El vídeo se recibirá cuando tu contacto esté conectado. ¡Por favor, espera o vuelve a intentarlo más tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Videos" xml:space="preserve">
@@ -10672,24 +10672,24 @@ Repeat connection request?</source>
         <target>Podrás enviar mensajes **después de que tu solicitud sea aceptada**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
-        <target>Te conectarás al grupo cuando el dispositivo del anfitrión esté en línea, por favor espera o revisa más tarde.</target>
+        <target state="translated">Te conectarás al grupo cuando el dispositivo del administrador del grupo esté conectado; ¡por favor, espera o vuelve a intentarlo más tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when group link host's device is online, please wait or check later!</source>
-        <target>Te conectarás cuando el dispositivo propietario del grupo esté en línea, por favor espera o revisa más tarde.</target>
+        <target state="translated">Te conectarás cuando el dispositivo del anfitrión del enlace de grupo esté conectado; ¡por favor, espera o vuelve a intentarlo más tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your connection request is accepted, please wait or check later!</source>
-        <target>Te conectarás cuando tu solicitud se acepte, por favor espera o revisa más tarde.</target>
+        <target state="translated">Te conectarás cuando se acepte tu solicitud de conexión. ¡Por favor, espera o vuelve a intentarlo más tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your contact's device is online, please wait or check later!</source>
-        <target>Te conectarás cuando el dispositivo del contacto esté en línea, por favor espera o revisa más tarde.</target>
+        <target state="translated">Te conectarás cuando el dispositivo de tu contacto esté conectado; ¡por favor, espera o vuelve a intentarlo más tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
@@ -11152,9 +11152,9 @@ marked deleted chat item preview text</note>
         <target>conectado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting" xml:space="preserve">
+      <trans-unit id="connecting" xml:space="preserve" approved="no">
         <source>connecting</source>
-        <target>conectando...</target>
+        <target state="translated">conectando</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (accepted)" xml:space="preserve">
