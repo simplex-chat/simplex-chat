@@ -525,7 +525,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpRoster :: GroupRoster -> ChatMsgEvent 'Json
   XGrpRosterAck :: VersionRoster -> Maybe Text -> ChatMsgEvent 'Json
-  XGrpRosterRequest :: VersionRoster -> ChatMsgEvent 'Json
+  XGrpRosterRequest :: Maybe VersionRoster -> ChatMsgEvent 'Json
   XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
@@ -1449,7 +1449,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
       XGrpRoster_ -> XGrpRoster <$> (GroupRoster <$> p "version" <*> p "fileInv")
       XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
-      XGrpRosterRequest_ -> XGrpRosterRequest <$> p "version"
+      XGrpRosterRequest_ -> XGrpRosterRequest <$> opt "version"
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
@@ -1524,7 +1524,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
       XGrpRoster GroupRoster {version, fileInv} -> o ["version" .= version, "fileInv" .= fileInv]
       XGrpRosterAck version err -> o $ ("error" .=? err) ["version" .= version]
-      XGrpRosterRequest version -> o ["version" .= version]
+      XGrpRosterRequest version -> o $ ("version" .=? version) []
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where
           encodeFwdSender = \case

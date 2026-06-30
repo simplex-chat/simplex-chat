@@ -90,6 +90,7 @@ module Simplex.Chat.Store.Groups
     getPublishableGroupRelays,
     setGroupRosterVersion,
     getGroupRosterVersion,
+    getStoredRosterVersion,
     setMemberRosterServedVersion,
     getMemberRosterServedVersion,
     getGroupRoster,
@@ -1480,6 +1481,14 @@ getGroupRosterVersion db GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT roster_version FROM groups WHERE group_id = ?" (Only groupId)
 
+-- The version of the roster blob actually stored (written with the blob in setGroupLiveRoster), as opposed to
+-- roster_version (the acceptance gate). The owner sends the blob before the delta, so these normally match; a
+-- failed blob send leaves the gate (advanced by the delta) ahead of the stored blob until a later roster completes.
+getStoredRosterVersion :: DB.Connection -> GroupInfo -> IO (Maybe VersionRoster)
+getStoredRosterVersion db GroupInfo {groupId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT stored_roster_version FROM groups WHERE group_id = ?" (Only groupId)
+
 -- The newest roster version a relay re-served to this member on its catch-up request: bounds reflected
 -- amplification, so a member can't re-trigger a full serve at a version it was already served.
 setMemberRosterServedVersion :: DB.Connection -> GroupMember -> VersionRoster -> IO ()
@@ -1591,6 +1600,10 @@ getRosterTransfer db fileId =
 
 -- Write the single live roster on groups from a completed transfer's values (header NULL on a member,
 -- so its live roster_msg_* stay NULL and it never re-serves; only relays re-serve).
+-- Sets BOTH versions: a completed blob advances the gate (roster_version - refuse anything older, the downgrade
+-- protection for the no-delta join/new-relay/re-serve paths, where the blob is the only thing that sets the gate)
+-- and records the stored version (stored_roster_version - what is actually held and re-served). Deltas advance
+-- only the gate, so stored_roster_version <= roster_version always.
 setGroupLiveRoster :: DB.Connection -> GroupInfo -> VersionRoster -> GroupMemberId -> UTCTime -> Maybe SignedMsg -> ByteString -> IO ()
 setGroupLiveRoster db GroupInfo {groupId} v ownerGMId brokerTs sm_ blob = do
   currentTs <- getCurrentTime
@@ -1598,13 +1611,13 @@ setGroupLiveRoster db GroupInfo {groupId} v ownerGMId brokerTs sm_ blob = do
     db
     [sql|
       UPDATE groups SET
-        roster_version = ?, roster_blob = ?,
+        roster_version = ?, stored_roster_version = ?, roster_blob = ?,
         roster_sending_owner_gm_id = ?, roster_broker_ts = ?,
         roster_msg_chat_binding = ?, roster_msg_signatures = ?, roster_msg_body = ?,
         updated_at = ?
       WHERE group_id = ?
     |]
-    ( (v, Binary blob, ownerGMId, brokerTs)
+    ( (v, v, Binary blob, ownerGMId, brokerTs)
         :. ((\SignedMsg {chatBinding} -> chatBinding) <$> sm_, (\SignedMsg {signatures} -> Binary (smpEncode signatures)) <$> sm_, (\SignedMsg {signedBody} -> Binary signedBody) <$> sm_, currentTs, groupId)
     )
 

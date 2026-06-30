@@ -1186,9 +1186,11 @@ serveRoster :: User -> GroupInfo -> GroupMember -> CM ()
 serveRoster user gInfo member =
   when (member `supportsVersion` groupRosterVersion) $ do
     cxt <- chatStoreCxt
-    -- read the served version with the blob, so the recorded served version matches what is served
-    withStore' (\db -> (,) <$> getGroupRoster db gInfo <*> getGroupRosterVersion db gInfo) >>= \case
-      (Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_), rosterVer_) ->
+    -- read the stored blob's own version, not roster_version: roster_version is the acceptance gate (highest
+    -- version accepted), which a delta can advance past the stored blob when the owner's blob send failed -
+    -- recording it would over-claim what this member was actually served
+    withStore' (\db -> (,) <$> getGroupRoster db gInfo <*> getStoredRosterVersion db gInfo) >>= \case
+      (Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_), storedVer_) ->
         case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
           Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
           Right chatMsg@ChatMessage {msgId} ->
@@ -1198,8 +1200,8 @@ serveRoster user gInfo member =
                 sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
                 forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
                   sendInlineBlobChunks user gInfo [member] sid blob
-                -- record the served version so a member can't re-trigger a full serve at a version it already got
-                forM_ rosterVer_ $ \v -> withStore' $ \db -> setMemberRosterServedVersion db member v
+                -- record the served (stored) version so a member can't re-trigger a full serve at a version it already got
+                forM_ storedVer_ $ \v -> withStore' $ \db -> setMemberRosterServedVersion db member v
               Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
       (Nothing, _) -> pure ()
 

@@ -10,10 +10,12 @@ m20260629_member_roster_served :: Text
 m20260629_member_roster_served =
   [r|
 ALTER TABLE group_members ADD COLUMN roster_served_version BIGINT;
+ALTER TABLE groups ADD COLUMN stored_roster_version BIGINT;
 |]
 
 down_m20260629_member_roster_served :: Text
 down_m20260629_member_roster_served =
   [r|
 ALTER TABLE group_members DROP COLUMN roster_served_version;
+ALTER TABLE groups DROP COLUMN stored_roster_version;
 |]

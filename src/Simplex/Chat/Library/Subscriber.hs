@@ -3261,17 +3261,21 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               then (requestRosterOnGap gInfo fwdRelay_ cur v `catchAllErrors` eToView) >> action
               else messageWarning "x.grp.mem: roster version not newer than current, ignoring" $> Nothing
 
-    -- A subscriber that skipped versions (cur known and v > cur+1) asks the relay that forwarded this delta
-    -- to re-serve the full roster, recovering the privileged set and keys carried by the missed versions.
-    -- The request carries the pre-gap cur (the relay serves only what it holds newer). Best-effort: a failed
-    -- request must not block applying the delta. Relays and the direct path don't request (fwdRelay_ is Nothing).
+    -- A subscriber that skipped versions (no roster yet, or v above cur+1) asks the relay that forwarded this
+    -- delta to re-serve the full roster, recovering the privileged set and keys carried by the missed versions.
+    -- The request carries the subscriber's current version (Nothing if none); the relay serves only what it holds
+    -- newer. Best-effort: a failed request must not block applying the delta. Relays and the direct path don't
+    -- request (fwdRelay_ is Nothing), and a relay that predates roster support is skipped.
     requestRosterOnGap :: GroupInfo -> Maybe GroupMember -> Maybe VersionRoster -> VersionRoster -> CM ()
     requestRosterOnGap gInfo fwdRelay_ cur_ v
       | isUserGrpFwdRelay gInfo = pure ()
-      | otherwise = case (fwdRelay_, cur_) of
-          (Just relay, Just cur@(VersionRoster c))
-            | v > VersionRoster (c + 1) -> void $ sendGroupMessage' user gInfo [relay] (XGrpRosterRequest cur)
+      | otherwise = case fwdRelay_ of
+          Just relay
+            | gap, relay `supportsVersion` groupRosterVersion ->
+                void $ sendGroupMessage' user gInfo [relay] (XGrpRosterRequest cur_)
           _ -> pure ()
+      where
+        gap = maybe True (\(VersionRoster c) -> v > VersionRoster (c + 1)) cur_
 
     xGrpMemRole :: GroupInfo -> Maybe GroupMember -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemRole gInfo@GroupInfo {membership} fwdRelay_ m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
@@ -3496,17 +3500,18 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             messageError $ "x.grp.roster.ack: relay could not save roster, marked rejected: " <> e
         _ -> pure ()
 
-    -- A relay re-serves the full roster to a subscriber that detected a version gap, but only when it holds
-    -- something newer than BOTH the requester's claimed version and the version it last served this member -
-    -- the latter bounds reflected amplification (a member can't re-trigger a full serve with reqVer = 0).
+    -- A relay re-serves the full roster to a subscriber that detected a version gap, but only when its STORED
+    -- blob is newer than BOTH the requester's version (Nothing = none) and the version it last served this member
+    -- - the latter bounds reflected amplification (a member can't re-trigger a full serve). Gating on the stored
+    -- blob (not roster_version, the gate) means the relay serves only a blob the requester will accept.
     -- serveRoster records the served version (on all serve paths) and is a no-op without a roster.
-    xGrpRosterRequest :: GroupInfo -> GroupMember -> VersionRoster -> CM ()
-    xGrpRosterRequest gInfo m reqVer =
+    xGrpRosterRequest :: GroupInfo -> GroupMember -> Maybe VersionRoster -> CM ()
+    xGrpRosterRequest gInfo m reqVer_ =
       when (isUserGrpFwdRelay gInfo) $ do
-        (cur_, served_) <- withStore' $ \db ->
-          (,) <$> getGroupRosterVersion db gInfo <*> getMemberRosterServedVersion db m
-        forM_ cur_ $ \cur ->
-          when (cur > reqVer && maybe True (cur >) served_) $ serveRoster user gInfo m
+        (stored_, served_) <- withStore' $ \db ->
+          (,) <$> getStoredRosterVersion db gInfo <*> getMemberRosterServedVersion db m
+        forM_ stored_ $ \stored ->
+          when (maybe True (stored >) reqVer_ && maybe True (stored >) served_) $ serveRoster user gInfo m
 
     checkHostRole :: GroupMember -> GroupMemberRole -> CM ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
