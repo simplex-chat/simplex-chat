@@ -369,6 +369,7 @@ struct ChatThemePreview: View {
             if withMessages {
                 let alice = ChatItem.getSample(1, CIDirection.directRcv, Date.now, NSLocalizedString("Good afternoon!", comment: "message preview"))
                 let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.text, chatDir: alice.chatDir))
+                let alice2 = ChatItem.getSample(3, CIDirection.directRcv, Date.now, NSLocalizedString("Good afternoon!", comment: "message preview"), quotedItem: CIQuote.getSample(bob.id, bob.meta.itemTs, bob.content.text, chatDir: bob.chatDir))
                 HStack {
                     ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         .modifier(ChatItemClipped(alice, tailVisible: true))
@@ -379,6 +380,11 @@ struct ChatThemePreview: View {
                     ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: bob, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         .modifier(ChatItemClipped(bob, tailVisible: true))
                         .frame(alignment: .trailing)
+                }
+                HStack {
+                    ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice2, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+                        .modifier(ChatItemClipped(alice2, tailVisible: true))
+                    Spacer()
                 }
             } else {
                 Rectangle().fill(.clear)

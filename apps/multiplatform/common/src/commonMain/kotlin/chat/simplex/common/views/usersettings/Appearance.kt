@@ -297,9 +297,15 @@ object AppearanceScope {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
           val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
           PreviewChatItemView(alice)
-          PreviewChatItemView(
-            ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
+          val bob = remember(alice) {
+            ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_alice),
               quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
+            )
+          }
+          PreviewChatItemView(bob)
+          PreviewChatItemView(
+            ChatItem.getSampleData(3, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob),
+              quotedItem = CIQuote(bob.chatDir, bob.id, sentAt = bob.meta.itemTs, formattedText = bob.formattedText, content = MsgContent.MCText(bob.content.text))
             )
           )
         }
@@ -1010,7 +1016,7 @@ object AppearanceScope {
     ColumnWithScrollBar(Modifier.imePadding()) {
       AppBarTitle(name.text)
 
-      val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.SENT_QUOTE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
+      val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.SENT_QUOTE, ThemeColor.RECEIVED_QUOTE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
       if (supportedLiveChange) {
         SimpleXThemeOverride(currentColors()) {
           ChatThemePreview(theme, wallpaperImage, wallpaperType, previewBackgroundColor, previewTintColor)
