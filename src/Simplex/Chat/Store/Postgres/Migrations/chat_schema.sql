@@ -831,7 +831,8 @@ CREATE TABLE test_chat_schema.group_members (
     member_relations_vector bytea,
     relay_link bytea,
     member_pub_key bytea,
-    removed_at timestamp with time zone
+    removed_at timestamp with time zone,
+    roster_served_version bigint
 );
 
 
@@ -989,7 +990,9 @@ CREATE TABLE test_chat_schema.groups (
     roster_msg_signatures bytea,
     roster_sending_owner_gm_id bigint,
     roster_broker_ts timestamp with time zone,
-    roster_blob bytea
+    roster_blob bytea,
+    stored_roster_version bigint,
+    applied_complete_roster_version bigint
 );
 
 
