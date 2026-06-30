@@ -53,16 +53,16 @@ You can also tap and hold the microphone button to record a voice message. In th
 
 <img src="../../blog/images/20230103-live.png" width="288">
 
-You can use "live" messages for your recipients to see the messages as you type them, without having to tap "Send" button until it's completed. It can be useful in these scenarios:
+You can use "live" messages for your recipients to see the messages as you type them, without having to tap the "Send" button until it's completed. It can be useful in these scenarios:
 
-1. Real-time conversation, like talking in person or in a discussion club. You can retract what you wrote, but your recipients would see it. Also people don’t need to guess what you’re typing. This allows to avoid interrupting the flow of conversation and still send longer messages.
-2. An activist doing live reporting when there is a risk to lose the phone or connection at any moment. This feature allows to send as much as possible, up to the last word, without having to send only very short messages.
+1. Real-time conversation, like talking in person or in a debate club. You can retract what you wrote, but your recipients will have seen it. Another benefit is that people do not need to guess what you are typing. This can be helpful for avoiding any interuptions to the flow of a conversation while still sending longer messages.
+2. An activist doing live reporting when there is a risk of losing their phone or their connection to the internet at any moment. This feature allows them to send as much as possible, up to the last word, without having to repeatedly send short messages.
 
-To send a "live" message:
+How to send a "live" message:
 
-- Tap ⚡️ (lightning) button on the right of the message entry box.
-- When you do it first time, you would see and alert explaining the feature. Tap "OK", and tap it again.
-- Now you can start typing the messages, the app will be periodically sending the updates to your recipients, as you type (every few seconds, and only complete words).
+- Tap the ⚡️ (lightning) button on the right of the message entry box.
+- When you do this for the first time, you will see an alert explaining the feature. Tap "OK", then tap it again to start your live message.
+- Now you can start typing the message. The app will be periodically send the updates to your recipients as you type (every few seconds, and only complete words).
 
 ### Sending stickers and animated messages
 
