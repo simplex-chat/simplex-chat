@@ -84,7 +84,7 @@ extension ChatAPIResult {
 
 // Spec: spec/api.md#decodeAPIResult
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
-//    print("decodeAPIResult \(String(describing: R.self))")
+    print("decodeAPIResult \(String(describing: R.self)): \(String(data: d, encoding: .utf8) ?? "<non-utf8 \(d.count) bytes>")")
     do {
 //        return try withStackSizeLimit { try jsonDecoder.decode(APIResult<R>.self, from: d) }
         return try jsonDecoder.decode(APIResult<R>.self, from: d)
