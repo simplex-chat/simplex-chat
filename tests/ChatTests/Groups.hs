@@ -301,6 +301,7 @@ chatGroupTests = do
       describe "promoted members roster" $ do
         it "moderator action verifies via owner-signed roster" testChannelModeratorActionViaRoster
         it "subscriber recovers a missed roster member after a version gap" testChannelSubscriberRosterCatchUp
+        it "2 relays: subscriber recovers a missed roster member after a version gap" testChannel2RelaysSubscriberRosterCatchUp
         it "removed moderator drops from the roster cache" testChannelRemovedModeratorRefreshesRoster
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
@@ -9711,6 +9712,24 @@ checkMemberRow cc name expectedRole = do
     DB.query db "SELECT member_role FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
   map (\(Only r) -> r) roles `shouldBe` maybeToList expectedRole
 
+-- The wire member id for a named member (look it up on a client that knows the name, e.g. the owner), used to
+-- find a member by id on a subscriber that only knows it by member-id hash (e.g. after roster recovery).
+getMemberIdByName :: TestCC -> T.Text -> IO ByteString
+getMemberIdByName cc name = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
+  case rows of
+    [Only mid] -> pure mid
+    _ -> fail $ "expected one group_members row for " <> T.unpack name
+
+getMemberRoleKey :: TestCC -> ByteString -> IO (T.Text, Maybe ByteString)
+getMemberRoleKey cc mid = do
+  rows <- withCCTransaction cc $ \db ->
+    DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only mid) :: IO [(T.Text, Maybe ByteString)]
+  case rows of
+    [r] -> pure r
+    _ -> fail "expected one group_members row by member id"
+
 testChannelModeratorActionViaRoster :: HasCallStack => TestParams -> IO ()
 testChannelModeratorActionViaRoster ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -9801,8 +9820,8 @@ testChannelSubscriberRosterCatchUp ps =
               -- simulate cath having fallen behind and lost dan: capture dan's member id (from the owner, which
               -- knows the name) and cath's owner-pinned key for dan, then delete dan's record and rewind cath's
               -- applied frontier so the next delta arrives as a gap (v2 > applied 0 + 1)
-              danId <- memberId alice "dan"
-              (_, danKey) <- roleKeyById cath danId
+              danId <- getMemberIdByName alice "dan"
+              (_, danKey) <- getMemberRoleKey cath danId
               withCCTransaction cath $ \db -> do
                 DB.execute db "DELETE FROM group_members WHERE member_id = ?" (Only danId)
                 DB.execute db "UPDATE groups SET applied_complete_roster_version = ? WHERE group_id = ?" (0 :: Int64, 1 :: Int64)
@@ -9811,24 +9830,68 @@ testChannelSubscriberRosterCatchUp ps =
               promoteChannelMember "team" alice bob frank [cath, dan, eve]
               threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
               -- cath recovered dan from the re-served roster: same member id, role, and owner-pinned key
-              (recRole, recKey) <- roleKeyById cath danId
+              (recRole, recKey) <- getMemberRoleKey cath danId
               recRole `shouldBe` "member"
               recKey `shouldBe` danKey
-  where
-    memberId :: TestCC -> T.Text -> IO ByteString
-    memberId cc name = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
-      case rows of
-        [Only mid] -> pure mid
-        _ -> fail $ "expected one group_members row for " <> T.unpack name
-    roleKeyById :: TestCC -> ByteString -> IO (T.Text, Maybe ByteString)
-    roleKeyById cc mid = do
-      rows <- withCCTransaction cc $ \db ->
-        DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE member_id = ?" (Only mid) :: IO [(T.Text, Maybe ByteString)]
-      case rows of
-        [r] -> pure r
-        _ -> fail "expected one recovered group_members row for dan"
+
+-- Same recovery, but the subscriber (frank) is connected to two relays: the request goes to whichever relay
+-- forwarded the gapping delta, and only an observation that catch-up works in a 2-relay channel (not the race).
+testChannel2RelaysSubscriberRosterCatchUp :: HasCallStack => TestParams -> IO ()
+testChannel2RelaysSubscriberRosterCatchUp ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+              forM_ [dan, eve, frank] $ \member ->
+                memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink member
+              -- promote dan (v0) then eve (v1) into the owner-signed roster, forwarded by both relays; frank
+              -- (the subscriber) learns both with their keys
+              threadDelay 1000000
+              alice ##> "/mr #team dan member"
+              alice <## "#team: you changed the role of dan to member (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of dan from observer to member (signed)",
+                  cath <## "#team: alice changed the role of dan from observer to member (signed)",
+                  dan <## "#team: alice changed your role from observer to member (signed)",
+                  eve <### [EndsWith "from observer to member (signed)"],
+                  frank <### [EndsWith "from observer to member (signed)"]
+                ]
+              threadDelay 1000000
+              alice ##> "/mr #team eve member"
+              alice <## "#team: you changed the role of eve to member (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of eve from observer to member (signed)",
+                  cath <## "#team: alice changed the role of eve from observer to member (signed)",
+                  eve <## "#team: alice changed your role from observer to member (signed)",
+                  dan <### [EndsWith "from observer to member (signed)"],
+                  frank <### [EndsWith "from observer to member (signed)"]
+                ]
+              threadDelay 1000000
+              -- simulate frank having fallen behind and lost dan: delete dan's record and rewind frank's complete
+              -- frontier so the next delta (eve -> v2) arrives as a gap (2 > applied 0 + 1)
+              danId <- getMemberIdByName alice "dan"
+              (_, danKey) <- getMemberRoleKey frank danId
+              withCCTransaction frank $ \db -> do
+                DB.execute db "DELETE FROM group_members WHERE member_id = ?" (Only danId)
+                DB.execute db "UPDATE groups SET applied_complete_roster_version = ? WHERE group_id = ?" (0 :: Int64, 1 :: Int64)
+              -- eve -> moderator (v2) reaches frank at a jumped version; it requests the roster from the relay that
+              -- forwarded the delta, which re-serves the current snapshot (including dan), recovering dan
+              alice ##> "/mr #team eve moderator"
+              alice <## "#team: you changed the role of eve to moderator (signed)"
+              concurrentlyN_
+                [ bob <## "#team: alice changed the role of eve from member to moderator (signed)",
+                  cath <## "#team: alice changed the role of eve from member to moderator (signed)",
+                  eve <## "#team: alice changed your role from member to moderator (signed)",
+                  dan <### [EndsWith "from member to moderator (signed)"],
+                  frank <### [EndsWith "from member to moderator (signed)"]
+                ]
+              threadDelay 2000000 -- wait for the gap request + relay re-serve to recover dan
+              (recRole, recKey) <- getMemberRoleKey frank danId
+              recRole `shouldBe` "member"
+              recKey `shouldBe` danKey
 
 testChannelRemovedModeratorRefreshesRoster :: HasCallStack => TestParams -> IO ()
 testChannelRemovedModeratorRefreshesRoster ps =
