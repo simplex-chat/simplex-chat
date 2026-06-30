@@ -247,7 +247,7 @@
     <string name="change_verb">Cambiar</string>
     <string name="notifications_mode_periodic_desc">Se realizan comprobaciones de mensajes nuevos periódicas de hasta un minuto de duración cada 10 minutos</string>
     <string name="clear_contacts_selection_button">Limpiar</string>
-    <string name="change_member_role_question">¿Cambiar rol?</string>
+    <string name="change_member_role_question">¿Cambiar de función?</string>
     <string name="v4_4_verify_connection_security_desc">Compara los códigos de seguridad con tus contactos</string>
     <string name="choose_file">Archivo</string>
     <string name="clear_verb">Vaciar</string>
@@ -904,7 +904,7 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puedes iniciar el chat en Configuración / Base de datos o reiniciando la aplicación.</string>
     <string name="you_sent_group_invitation">Has enviado una invitación de grupo</string>
     <string name="num_contacts_selected">%d contacto(s) seleccionado(s)</string>
-    <string name="group_info_section_title_num_members">%1$s MIEMBROS</string>
+    <string name="group_info_section_title_num_members">%1$s miembros</string>
     <string name="voice_prohibited_in_this_chat">Los mensajes de voz no están permitidos en este chat.</string>
     <string name="whats_new">Novedades</string>
     <string name="you_have_to_enter_passphrase_every_time">La contraseña no se almacena en el dispositivo, tienes que introducirla cada vez que inicies la aplicación.</string>
@@ -1306,7 +1306,7 @@
     <string name="sending_delivery_receipts_will_be_enabled">El envío de confirmaciones de entrega se activará para todos los contactos.</string>
     <string name="v5_2_message_delivery_receipts_descr">¡El doble check que nos faltaba! ✅</string>
     <string name="you_can_enable_delivery_receipts_later">Puedes activar más tarde en Configuración</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Puedes activarlos más tarde en la configuración de Privacidad y Seguridad.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Puedes habilitarlas más tarde a través de la aplicación, en la sección de configuración de privacidad.</string>
     <string name="v5_2_more_things">Algunas cosas más</string>
     <string name="choose_file_title">Selecciona un archivo</string>
     <string name="no_selected_chat">Ningún chat seleccionado</string>
@@ -2809,7 +2809,7 @@
     <string name="error_deleting_message">Error al eliminar mensaje</string>
     <string name="from_history">Del historial</string>
     <string name="close_behavior_dialog_text">Si eliges Cerrar, los mensajes no serán recibidos.\nPuedes cambiarlo más tarde desde el menú Apariencia.</string>
-    <string name="appearance_minimize_to_tray_desc">Mantener Simplex en segundo plano para recibir mensajes.</string>
+    <string name="appearance_minimize_to_tray_desc">Se ejecuta en segundo plano para recibir mensajes</string>
     <string name="close_behavior_dialog_minimize">Minimizar</string>
     <string name="close_behavior_dialog_title">Minimizar?</string>
     <string name="appearance_minimize_to_tray">Minimizar al cerrar la ventana</string>
