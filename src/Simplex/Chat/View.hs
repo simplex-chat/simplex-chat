@@ -1134,7 +1134,7 @@ groupDomainName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
 
 viewNameVerified :: Maybe SimplexNameInfo -> Maybe Text -> [StyledString]
 viewNameVerified name_ result =
-  let nameStr = maybe "name" (\ni -> "simplex name " <> shortNameInfoStr ni) name_
+  let nameStr = maybe "name" (\ni -> "SimpleX name " <> shortNameInfoStr ni) name_
    in case result of
         Nothing -> [plain nameStr <> " verified"]
         Just reason -> [plain nameStr <> " not verified: " <> plain reason]
@@ -1151,7 +1151,7 @@ simplexNameStatus (Just ni) status hasProof = case status of
     | hasProof -> [line "unverified"]
     | otherwise -> []
   where
-    line s = "simplex name: " <> plain (shortNameInfoStr ni) <> " (" <> s <> ")"
+    line s = "SimpleX name: " <> plain (shortNameInfoStr ni) <> " (" <> s <> ")"
 
 -- TODO [short links] show all settings
 viewAddressSettings :: AddressSettings -> [StyledString]
@@ -1172,7 +1172,7 @@ groupLink_ intro g GroupLink {connLinkContact = CCLink cReq shortLink, acceptMem
     "",
     plain $ maybe cReqStr strEncode shortLink
   ]
-    <> ["simplex name: " <> plain (shortNameInfoStr ni) | Just ni <- [groupDomainName g]]
+    <> ["SimpleX name: " <> plain (shortNameInfoStr ni) | Just ni <- [groupDomainName g]]
     <> [ "",
          "Anybody can connect to you and join group as " <> showRole acceptMemberRole <> " with: " <> highlight' "/c <group_link_above>",
          "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
@@ -1253,7 +1253,7 @@ viewGroupLinkRelaysUpdated g groupLink relays =
       [ "group link:",
         plain $ maybe cReqStr strEncode shortLink
       ]
-    <> ["simplex name: " <> plain (shortNameInfoStr ni) | Just ni <- [groupDomainName g]]
+    <> ["SimpleX name: " <> plain (shortNameInfoStr ni) | Just ni <- [groupDomainName g]]
   where
     GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
     cReqStr = strEncode $ simplexChatContact cReq
@@ -2685,7 +2685,7 @@ viewChatError isCmd logLevel testView = \case
       let reason = case nameErr of
             SNENoValidLink -> "has no usable connection link"
             SNEUnknownName -> "is not included in the connection link's profile"
-       in ["simplex name " <> plain (shortNameInfoStr ni) <> " " <> reason]
+       in ["SimpleX name " <> plain (shortNameInfoStr ni) <> " " <> reason]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $

@@ -1405,7 +1405,7 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved simplex name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
+-- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
 data SimplexNameError
   = SNENoValidLink -- the name's record has no usable contact/channel link
   | SNEUnknownName -- the resolved link's profile has no name, or a different name
