@@ -2695,4 +2695,7 @@
     <string name="relay_bar_no_active_relays">Tidak ada relay aktif</string>
     <string name="no_available_relays">Tidak ada relai yang tersedia</string>
     <string name="why_built_p1">Tidak ada yang melacak percakapan Anda. Tidak ada yang menggambar peta ke mana pun Anda pergi. Privasi tidak pernah menjadi fitur — itu adalah cara hidup.</string>
+    <string name="no_chat_relays_enabled">Tidak ada fitur relay obrolan yang diaktifkan.</string>
+    <string name="relay_bar_no_relays">Tidak ada relai</string>
+    <string name="no_relays_selected">Tidak ada relay yang dipilih</string>
 </resources>
