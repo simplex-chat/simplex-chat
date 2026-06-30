@@ -6480,6 +6480,22 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>Uploaded</source>
         <target state="translated">已上傳</target>
       </trans-unit>
+      <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve" approved="no">
+        <source>%1$@ supported SimpleX Chat. The badge expired on %2$@.</source>
+        <target state="translated">%1$@ 曾是 SimpleX Chat 支持者。徽章已於 %2$@ 過期。</target>
+      </trans-unit>
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
+        <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ 於 %2$@：</target>
+      </trans-unit>
+      <trans-unit id="%@ invested in SimpleX Chat crowdfunding." xml:space="preserve" approved="no">
+        <source>%@ invested in SimpleX Chat crowdfunding.</source>
+        <target state="translated">%@ 出資支持了 SimpleX Chat 的群眾募資。</target>
+      </trans-unit>
+      <trans-unit id="%@ supports SimpleX Chat." xml:space="preserve" approved="no">
+        <source>%@ supports SimpleX Chat.</source>
+        <target state="translated">%@ 是 SimpleX Chat 支持者。</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="zh-Hant" datatype="plaintext">
@@ -6494,23 +6510,27 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="NSCameraUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</source>
-        <target state="translated">SimpleX 需要相機的啟用權限去掃描二維碼以連接其他用戶和接收視訊通話。</target>
+        <target state="translated">SimpleX 需要相機取用權限，才能掃描二維碼與其他使用者連線，並用於視訊通話。</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
       <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX uses Face ID for local authentication</source>
-        <target state="translated">SimpleX 用 Face ID 去進行本機認證</target>
+        <target state="translated">SimpleX 使用 Face ID 進行本機認證</target>
         <note>Privacy - Face ID Usage Description</note>
       </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>
-        <target state="translated">SimpleX 需要麥克風的啟用權限去接收語音和視訊通話，以及錄製語音訊息。</target>
+        <target state="translated">SimpleX 需要麥克風取用權限，才能進行語音和視訊通話，並錄製語音訊息。</target>
         <note>Privacy - Microphone Usage Description</note>
       </trans-unit>
       <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs access to Photo Library for saving captured and received media</source>
-        <target state="translated">SimpleX 需要圖片庫的啟用權限去儲存已截取和已接收的媒體</target>
+        <target state="translated">SimpleX 需要照片圖庫取用權限，才能儲存拍攝和接收的媒體</target>
         <note>Privacy - Photo Library Additions Usage Description</note>
+      </trans-unit>
+      <trans-unit id="NSLocalNetworkUsageDescription" xml:space="preserve" approved="no">
+        <source>SimpleX uses local network access to allow using user chat profile via desktop app on the same network.</source>
+        <target state="translated">SimpleX 需要本機網路取用權限，讓同一網路上的桌面應用程式能使用你的聊天個人檔案。</target>
       </trans-unit>
     </body>
   </file>
@@ -6533,6 +6553,66 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
         <target state="translated">版權所有© 2022 SimpleX Chat。保留所有權利。</target>
         <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="zh-Hant" datatype="plaintext">
+    <body>
+      <trans-unit id="%d new events" xml:space="preserve" approved="no">
+        <source>%d new events</source>
+        <target state="translated">%d 個新事件</target>
+      </trans-unit>
+      <trans-unit id="From: %@" xml:space="preserve" approved="no">
+        <source>From: %@</source>
+        <target state="translated">來自：%@</target>
+      </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve" approved="no">
+        <source>From %d chat(s)</source>
+        <target state="translated">來自 %d 個聊天</target>
+      </trans-unit>
+      <trans-unit id="New events" xml:space="preserve" approved="no">
+        <source>New events</source>
+        <target state="translated">新事件</target>
+      </trans-unit>
+      <trans-unit id="New messages" xml:space="preserve" approved="no">
+        <source>New messages</source>
+        <target state="translated">新訊息</target>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="zh-Hant" datatype="plaintext">
+    <body>
+      <trans-unit id="CFBundleDisplayName" xml:space="preserve" approved="no">
+        <source>SimpleX SE</source>
+        <target state="translated">SimpleX SE</target>
+      </trans-unit>
+      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve" approved="no">
+        <source>Copyright © 2024 SimpleX Chat. All rights reserved.</source>
+        <target state="translated">版權所有© 2024 SimpleX Chat。保留所有權利。</target>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="zh-Hant" datatype="plaintext">
+    <body>
+      <trans-unit id="App is locked!" xml:space="preserve" approved="no">
+        <source>App is locked!</source>
+        <target state="translated">應用程式已鎖定！</target>
+      </trans-unit>
+      <trans-unit id="Cancel" xml:space="preserve" approved="no">
+        <source>Cancel</source>
+        <target state="translated">取消</target>
+      </trans-unit>
+      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve" approved="no">
+        <source>Cannot access keychain to save database password</source>
+        <target state="translated">無法存取鑰匙圈以儲存數據庫密碼</target>
+      </trans-unit>
+      <trans-unit id="Cannot forward message" xml:space="preserve" approved="no">
+        <source>Cannot forward message</source>
+        <target state="translated">無法轉發訊息</target>
+      </trans-unit>
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve" approved="no">
+        <source>Currently maximum supported file size is %@.</source>
+        <target state="translated">目前支援的最大檔案大小為 %@。</target>
       </trans-unit>
     </body>
   </file>
