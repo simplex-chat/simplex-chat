@@ -2324,9 +2324,11 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 
 @Serializable
 data class SimplexNameClaim(
-  val name: SimplexNameInfo,
+  val name: String,
   val proof: NameClaimProof? = null
-)
+) {
+  val shortName: String get() = name.removePrefix("simplex:/name")
+}
 
 @Serializable
 data class PublicGroupAccess(

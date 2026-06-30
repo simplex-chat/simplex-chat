@@ -197,7 +197,7 @@ struct UserAddressView: View {
                     titleKey: "Set SimpleX name",
                     footer: "Set a SimpleX name so people can connect to you using @yourname instead of a link. The name must already be registered to your address.",
                     prefix: "@",
-                    nameText: chatModel.currentUser?.profile.simplexName?.name.shortName ?? "",
+                    nameText: chatModel.currentUser?.profile.simplexName?.shortName ?? "",
                     save: { name in
                         do {
                             let u = try await apiSetUserName(name)

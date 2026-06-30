@@ -184,10 +184,11 @@ fun ModalData.GroupChatInfoView(
               title = generalGetString(MR.strings.set_simplex_name),
               footer = generalGetString(MR.strings.set_channel_simplex_name_footer),
               prefix = "#",
-              initial = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.name?.shortName ?: "",
+              initial = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.shortName ?: "",
               save = { name ->
                 val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?: PublicGroupAccess()
-                val gInfo = chatModel.controller.apiSetPublicGroupAccess(rhId, groupInfo.groupId, access)
+                val newAccess = access.copy(simplexName = name?.let { SimplexNameClaim(it) })
+                val gInfo = chatModel.controller.apiSetPublicGroupAccess(rhId, groupInfo.groupId, newAccess)
                 if (gInfo != null) {
                   withContext(Dispatchers.Main) { chatModel.chatsContext.updateGroup(rhId, gInfo) }
                   true
@@ -974,7 +975,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
     val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
-    val groupName = access?.simplexName?.name
+    val groupName = access?.simplexName?.shortName
     if (groupName != null && access.simplexName?.proof != null) {
       SimplexNameView(
         name = groupName,

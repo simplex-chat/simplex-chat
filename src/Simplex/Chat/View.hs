@@ -1128,10 +1128,6 @@ simplexChatContact' = \case
   CLFull (CRContactUri crData) -> CLFull $ CRContactUri crData {crScheme = simplexChat}
   l@(CLShort _) -> l
 
-shareLinkStr :: Maybe SimplexNameInfo -> B.ByteString -> B.ByteString
-shareLinkStr (Just ni) _ = strEncode ni
-shareLinkStr Nothing fallback = fallback
-
 groupDomainName :: GroupInfo -> Maybe SimplexNameInfo
 groupDomainName GroupInfo {groupProfile = GroupProfile {publicGroup}} =
   claimName <$> (publicGroup >>= publicGroupAccess >>= publicGroupClaim)
@@ -1174,12 +1170,14 @@ groupLink_ :: StyledString -> GroupInfo -> GroupLink -> [StyledString]
 groupLink_ intro g GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
   [ intro,
     "",
-    plain $ shareLinkStr (groupDomainName g) $ maybe cReqStr strEncode shortLink,
-    "",
-    "Anybody can connect to you and join group as " <> showRole acceptMemberRole <> " with: " <> highlight' "/c <group_link_above>",
-    "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
-    "to delete it: " <> highlight ("/delete link #" <> viewGroupName g) <> " (joined members will remain connected to you)"
+    plain $ maybe cReqStr strEncode shortLink
   ]
+    <> ["simplex name: " <> plain (shortNameInfoStr ni) | Just ni <- [groupDomainName g]]
+    <> [ "",
+         "Anybody can connect to you and join group as " <> showRole acceptMemberRole <> " with: " <> highlight' "/c <group_link_above>",
+         "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
+         "to delete it: " <> highlight ("/delete link #" <> viewGroupName g) <> " (joined members will remain connected to you)"
+       ]
     <> ["The group link for old clients: " <> plain cReqStr | isJust shortLink]
   where
     cReqStr = strEncode $ simplexChatContact cReq
@@ -1253,8 +1251,9 @@ viewGroupLinkRelaysUpdated g groupLink relays =
     <> map showRelay relays
     <>
       [ "group link:",
-        plain $ shareLinkStr (groupDomainName g) $ maybe cReqStr strEncode shortLink
+        plain $ maybe cReqStr strEncode shortLink
       ]
+    <> ["simplex name: " <> plain (shortNameInfoStr ni) | Just ni <- [groupDomainName g]]
   where
     GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
     cReqStr = strEncode $ simplexChatContact cReq

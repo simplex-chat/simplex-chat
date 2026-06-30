@@ -24,7 +24,7 @@ import kotlinx.coroutines.*
 // null on network error. With `autoVerify`, it runs once on open when state is null.
 @Composable
 fun SimplexNameView(
-  name: SimplexNameInfo,
+  name: String,
   verification: Boolean?,
   autoVerify: Boolean,
   verify: suspend () -> Pair<Boolean?, String?>?
@@ -68,7 +68,7 @@ fun SimplexNameView(
     modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
   ) {
     Text(
-      name.shortName,
+      name,
       style = MaterialTheme.typography.body2.copy(
         color = if (verification == true) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         fontFamily = if (verification == true) FontFamily.Default else FontFamily.Monospace

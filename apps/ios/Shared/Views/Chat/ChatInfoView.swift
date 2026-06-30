@@ -392,9 +392,9 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
-            if let contactDomain = contact.profile.simplexName?.name, contact.profile.simplexName?.proof != nil {
+            if let claim = contact.profile.simplexName, claim.proof != nil {
                 SimplexNameView(
-                    name: contactDomain,
+                    name: claim.shortName,
                     verification: contact.profile.contactDomainVerification,
                     autoVerify: UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES),
                     verify: {
@@ -1386,7 +1386,7 @@ private func deleteNotReadyContact(
 // verify runs the verify API, updates the model and returns (newVerification, failureReason);
 // nil on network error. With autoVerify, it runs once on appear when state is nil.
 struct SimplexNameView: View {
-    let name: SimplexNameInfo
+    let name: String
     let verification: Bool?
     let autoVerify: Bool
     let verify: () async -> (Bool?, String?)?
@@ -1398,7 +1398,7 @@ struct SimplexNameView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(name.shortName)
+            Text(name)
                 .font(verification == true ? .subheadline : .system(.subheadline, design: .monospaced))
                 .foregroundColor(verification == true ? theme.colors.primary : theme.colors.secondary)
             indicator()

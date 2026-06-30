@@ -74,16 +74,16 @@ instance ToField NameClaimProof where toField = toField . encodeJSON
 instance FromField NameClaimProof where fromField = fromTextField_ decodeJSON
 
 data SimplexNameClaim = SimplexNameClaim
-  { name :: SimplexNameInfo,
+  { name :: StrJSON "SimplexNameInfo" SimplexNameInfo,
     proof :: Maybe NameClaimProof
   }
   deriving (Eq, Show)
 
 mkSimplexNameClaim :: Maybe SimplexNameInfo -> Maybe NameClaimProof -> Maybe SimplexNameClaim
-mkSimplexNameClaim name_ proof_ = (`SimplexNameClaim` proof_) <$> name_
+mkSimplexNameClaim name_ proof_ = (\n -> SimplexNameClaim (StrJSON n) proof_) <$> name_
 
 claimName :: SimplexNameClaim -> SimplexNameInfo
-claimName (SimplexNameClaim n _) = n
+claimName (SimplexNameClaim n _) = unStrJSON n
 
 claimProof :: SimplexNameClaim -> Maybe NameClaimProof
 claimProof (SimplexNameClaim _ p) = p

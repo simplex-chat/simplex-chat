@@ -253,11 +253,11 @@ struct GroupChatInfoView: View {
                                         titleKey: "Set SimpleX name",
                                         footer: "Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel's address.",
                                         prefix: "#",
-                                        nameText: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.name.shortName ?? "",
+                                        nameText: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.shortName ?? "",
                                         save: { name in
                                             do {
                                                 var access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?? PublicGroupAccess()
-                                                access.simplexName = name
+                                                access.simplexName = name.map { SimplexNameClaim(name: $0) }
                                                 let gInfo = try await apiSetPublicGroupAccess(groupInfo.groupId, access: access)
                                                 await MainActor.run {
                                                     chatModel.updateGroup(gInfo)
@@ -358,7 +358,7 @@ struct GroupChatInfoView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
-               let groupName = access.simplexName?.name,
+               let groupName = access.simplexName?.shortName,
                access.simplexName?.proof != nil {
                 SimplexNameView(
                     name: groupName,

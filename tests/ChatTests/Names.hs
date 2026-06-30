@@ -97,9 +97,9 @@ testConnectByChannelName ps = withSmpServerAndNames $ \reg ->
         (shortLink, _) <- prepareChannel1Relay "team" alice cath
         registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
         alice ##> "/public group access #team domain=team.simplex"
-        alice <## "updated public group access: domain=simplex:/name#team.simplex"
+        alice <## "updated public group access: domain=#team.simplex"
         cath <## "alice updated group #team: (signed)"
-        cath <## "updated public group access: domain=simplex:/name#team.simplex"
+        cath <## "updated public group access: domain=#team.simplex"
         bob ##> "/c #team.simplex"
         bob <## "#team: connection started"
         concurrentlyN_

@@ -2635,12 +2635,16 @@ public struct PublicGroupAccess: Codable, Hashable {
 }
 
 public struct SimplexNameClaim: Codable, Hashable {
-    public init(name: SimplexNameInfo, proof: NameClaimProof? = nil) {
+    public init(name: String, proof: NameClaimProof? = nil) {
         self.name = name
         self.proof = proof
     }
-    public var name: SimplexNameInfo
+    public var name: String
     public var proof: NameClaimProof?
+
+    public var shortName: String {
+        name.hasPrefix("simplex:/name") ? String(name.dropFirst("simplex:/name".count)) : name
+    }
 }
 
 public enum SimplexNameError: Decodable, Hashable {

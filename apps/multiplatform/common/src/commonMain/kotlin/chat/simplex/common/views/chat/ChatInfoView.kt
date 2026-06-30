@@ -757,7 +757,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
-    val contactDomain = contact.profile.simplexName?.name
+    val contactDomain = contact.profile.simplexName?.shortName
     if (contactDomain != null && contact.profile.simplexName?.proof != null) {
       SimplexNameView(
         name = contactDomain,

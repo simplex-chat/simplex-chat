@@ -366,7 +366,7 @@ private fun UserAddressLayout(
                     title = generalGetString(MR.strings.set_simplex_name),
                     footer = generalGetString(MR.strings.set_user_simplex_name_footer),
                     prefix = "@",
-                    initial = user?.profile?.simplexName?.name?.shortName ?: "",
+                    initial = user?.profile?.simplexName?.shortName ?: "",
                     save = { name ->
                       try {
                         val u = chatModel.controller.apiSetUserName(user?.remoteHostId, name)

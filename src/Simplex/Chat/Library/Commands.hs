@@ -1507,7 +1507,7 @@ processChatCommand cxt nm = \case
                 unless (nameResolvesTo sl nrSimplexContact) $ throwCmdError "name does not point to your address"
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
-        let p' = (fromLocalProfile p :: Profile) {simplexName = (`SimplexNameClaim` Nothing) <$> name_, contactLink = cl'}
+        let p' = (fromLocalProfile p :: Profile) {simplexName = mkSimplexNameClaim name_ Nothing, contactLink = cl'}
         updateProfile_ user p' True $ withFastStore $ \db -> do
           user' <- updateUserProfile db user p'
           liftIO $ setUserSimplexName db user' name_
