@@ -3258,14 +3258,22 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               let fresh = maybe True (v >=) gate
               when fresh $ do
                 setGroupRosterVersion db gInfo v
-                -- advance the complete frontier only when this delta is the next version (no gap)
-                when (maybe False (\(VersionRoster c) -> v == VersionRoster (c + 1)) prevComplete) $
+                -- advance the frontier when this delta is the next version. One version can carry several deltas
+                -- (a multi-member role change), delivered in order, so seeing any one of them advances the frontier
+                -- past that whole version; a relay that drops some deltas within a version is not detected here.
+                when (v == nextCompleteVersion prevComplete) $
                   setCompleteRosterVersion db gInfo v
               pure (fresh, prevComplete)
             if accept
               then (requestRosterOnGap v prevComplete `catchAllErrors` eToView) >> action
               else messageWarning "x.grp.mem: roster version not newer than current, ignoring" $> Nothing
       where
+        -- the next contiguous version after the complete frontier. With no frontier the baseline is the first
+        -- roster version (VersionRoster 0, see broadcastRoster): a subscriber seeing v0 without a prior roster is
+        -- current, not gapped, as it cannot have missed an earlier version - so v0 neither requests nor stays behind.
+        nextCompleteVersion = \case
+          Just (VersionRoster c) -> VersionRoster (c + 1)
+          Nothing -> VersionRoster 0
         -- a subscriber whose complete frontier (before this delta) lags more than one below it has missed versions:
         -- ask the relay that forwarded it (it holds >= v = the new gate) to re-serve the full roster, carrying the
         -- previous frontier so only a fuller snapshot is served. A stuck frontier re-asks on every following delta
@@ -3279,7 +3287,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     void $ sendGroupMessage' user gInfo [relay] (XGrpRosterRequest prevComplete)
               _ -> pure ()
           where
-            gap = maybe True (\(VersionRoster c) -> v > VersionRoster (c + 1)) prevComplete
+            gap = v > nextCompleteVersion prevComplete
 
     xGrpMemRole :: GroupInfo -> Maybe GroupMember -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemRole gInfo@GroupInfo {membership} fwdRelay_ m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
