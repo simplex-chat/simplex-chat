@@ -206,3 +206,4 @@ If you have to run your bot on another machine, you need to secure access to bot
 - [Matterbridge bot](https://github.com/UnkwUsr/matterbridge-simplex) (JavaScript)
 - [Nodify](https://nodify.ie) (Low-Code)
 - [simplex-mcp-server](https://github.com/JnanaSrota/simplex-mcp-server) - MCP server for SimpleX Chat, letting any LLM send and list contacts (uses simplex-chat-py).
+- [simplex-ai-bot](https://github.com/JnanaSrota/simplex-ai-bot) - AI assistant bot powered by Groq, with per-contact history and /reset.
