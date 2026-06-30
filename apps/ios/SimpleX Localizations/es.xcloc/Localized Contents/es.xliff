@@ -37,7 +37,7 @@
       </trans-unit>
       <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve" approved="no">
         <source>%1$@ supported SimpleX Chat. The badge expired on %2$@.</source>
-        <target state="translated">%1$@ ha apoyado SimpleX Chat. La insignia ha caducó el %2$@.</target>
+        <target state="translated">%1$@ ha apoyado a SimpleX Chat. La insignia caducó el %2$@.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%@" xml:space="preserve">
@@ -1013,7 +1013,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow anyone to embed" xml:space="preserve" approved="no">
         <source>Allow anyone to embed</source>
-        <target state="translated">Permitir que cualquiera pueda insertar</target>
+        <target state="translated">Permitir que cualquiera pueda añadirlo a su web</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
@@ -1408,7 +1408,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Badge cannot be verified" xml:space="preserve" approved="no">
         <source>Badge cannot be verified</source>
-        <target state="translated">No se puede verificar la insignia</target>
+        <target state="translated">No se pudo verificar la insignia</target>
         <note>badge alert title</note>
       </trans-unit>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve">
@@ -2355,7 +2355,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connecting via channel name requires a newer app version." xml:space="preserve" approved="no">
         <source>Connecting via channel name requires a newer app version.</source>
-        <target state="translated">Para conectarse mediante el nombre del canal es necesaria una versión más reciente de la aplicación.</target>
+        <target state="translated">Para conectarte mediante el nombre del canal es necesaria una versión más reciente de la aplicación.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Connecting via contact name requires a newer app version." xml:space="preserve" approved="no">
@@ -6435,9 +6435,9 @@ Requiere activación de la VPN.</target>
         <target>No se usarán hosts .onion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only channel owners can change channel preferences." xml:space="preserve">
+      <trans-unit id="Only channel owners can change channel preferences." xml:space="preserve" approved="no">
         <source>Only channel owners can change channel preferences.</source>
-        <target>Sólo los propietarios pueden modificar las preferencias de los canales.</target>
+        <target state="translated">Sólo los propietarios pueden modificar las preferencias del canal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
@@ -9406,7 +9406,7 @@ y los contactos son tuyos.</target>
       </trans-unit>
       <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve" approved="no">
         <source>This badge could not be verified and may not be genuine.</source>
-        <target state="translated">No se pudo verificar la insignia y podría no ser auténtica.</target>
+        <target state="translated">No se ha podido verificar la insignia, podría no ser auténtica.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
@@ -9441,7 +9441,7 @@ y los contactos son tuyos.</target>
       </trans-unit>
       <trans-unit id="This group requires a newer version of the app. Please update the app to join." xml:space="preserve" approved="no">
         <source>This group requires a newer version of the app. Please update the app to join.</source>
-        <target state="translated">Este grupo requiere una versión más reciente de la app. Por favor, actualiza la app para unirte.</target>
+        <target state="translated">Este grupo requiere una versión más reciente de la app. Por favor, actualizala para unirte.</target>
         <note>alert message
 alert subtitle</note>
       </trans-unit>
@@ -9806,7 +9806,7 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       </trans-unit>
       <trans-unit id="Unverified badge" xml:space="preserve" approved="no">
         <source>Unverified badge</source>
-        <target state="translated">Insignia no verificada</target>
+        <target state="translated">Insignia sin verificar</target>
         <note>badge alert title</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
