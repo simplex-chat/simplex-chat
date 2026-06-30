@@ -3260,7 +3260,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 setGroupRosterVersion db gInfo v
                 -- advance the frontier when this delta is the next version. One version can carry several deltas
                 -- (a multi-member role change), delivered in order, so seeing any one of them advances the frontier
-                -- past that whole version; a relay that drops some deltas within a version is not detected here.
+                -- past that whole version.
                 when (v == nextCompleteVersion prevComplete) $
                   setCompleteRosterVersion db gInfo v
               pure (fresh, prevComplete)
