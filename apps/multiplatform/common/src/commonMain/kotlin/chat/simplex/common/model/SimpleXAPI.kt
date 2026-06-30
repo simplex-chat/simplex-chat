@@ -1559,24 +1559,43 @@ object ChatController {
       }
       r is API.Error && r.err is ChatError.ChatErrorChat
           && r.err.errorType is ChatErrorType.SimplexName -> {
+        val name = r.err.errorType.simplexName.shortName
         if (r.err.errorType.simplexNameError is SimplexNameError.NoValidLink) {
           AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.cannot_reconnect_via_simplex_name),
-            generalGetString(MR.strings.simplex_name_unprepared_desc)
+            generalGetString(MR.strings.simplex_name_no_valid_link),
+            generalGetString(MR.strings.simplex_name_no_valid_link_desc).format(name)
           )
         } else {
           AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.simplex_name_not_found),
-            generalGetString(MR.strings.simplex_name_not_found_desc)
+            generalGetString(MR.strings.simplex_name_unconfirmed),
+            generalGetString(MR.strings.simplex_name_unconfirmed_desc).format(name)
           )
         }
       }
       r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.NO_NAME_SERVERS -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.simplex_name_resolution_unavailable),
-          generalGetString(MR.strings.simplex_name_resolver_unavailable_desc)
+          generalGetString(MR.strings.simplex_name_error),
+          generalGetString(MR.strings.simplex_name_no_servers_desc)
         )
+      }
+      r is API.Error && r.err is ChatError.ChatErrorAgent
+          && r.err.agentError is AgentErrorType.SMP
+          && r.err.agentError.smpErr is SMPErrorType.NAME -> {
+        when (val nameErr = r.err.agentError.smpErr.nameErr) {
+          is NameErrorType.NOT_FOUND -> AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.simplex_name_not_found),
+            generalGetString(MR.strings.simplex_name_not_found_desc)
+          )
+          is NameErrorType.NO_RESOLVER -> AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.simplex_name_error),
+            generalGetString(MR.strings.simplex_name_server_no_resolver_desc).format(r.err.agentError.serverAddress)
+          )
+          is NameErrorType.RESOLVER -> AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.simplex_name_error),
+            generalGetString(MR.strings.simplex_name_resolver_error_desc).format(nameErr.resolverErr)
+          )
+        }
       }
       r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.SMP
@@ -1617,10 +1636,14 @@ object ChatController {
       generalGetString(MR.strings.unsupported_connection_link)
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexName ->
       if (e.errorType.simplexNameError is SimplexNameError.NoValidLink)
-        generalGetString(MR.strings.cannot_reconnect_via_simplex_name)
-      else generalGetString(MR.strings.simplex_name_not_found)
+        generalGetString(MR.strings.simplex_name_no_valid_link)
+      else generalGetString(MR.strings.simplex_name_unconfirmed)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.NO_NAME_SERVERS ->
-      generalGetString(MR.strings.simplex_name_resolution_unavailable)
+      generalGetString(MR.strings.simplex_name_error)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.NAME ->
+      if (e.agentError.smpErr.nameErr is NameErrorType.NOT_FOUND)
+        generalGetString(MR.strings.simplex_name_not_found)
+      else generalGetString(MR.strings.simplex_name_error)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH ->
       generalGetString(MR.strings.connection_error_auth)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.BLOCKED ->
