@@ -1670,16 +1670,21 @@ section.page.footer {
     font-size: calc(var(--sec-vwu) * 2.3);
 }
 
-/* testing-water: standalone flag phone + reserve block, bottom-right (matches the baked-in
-   flag position of the full background). FIRST PASS — positions to calibrate visually. */
-/* testing-water: flag + Reserve block are ONE positioned unit (flex), so they
-   stay attached when the block's width changes. */
+/* testing-water: flag + Reserve are ONE absolutely-positioned unit. Anchored to the SECTION CENTRE
+   (= the centred background illustration's centre) and offset in canvas units (--sec-*), which scale
+   by min(vw,vh) exactly like the background. So the block stays locked to the same spot in the
+   illustration on any aspect ratio — as if baked into it — instead of drifting with viewport width.
+   --flag-x / --flag-y are the offsets from centre (canvas units); width:max-content keeps the text
+   from being squeezed when the position changes. */
 .cf-hero--testing-water .cf-flag-block {
     position: absolute;
-    bottom: calc(var(--sec-vhu) * 15);
-    left: 82%;                  /* horizontal CENTER of the group (it floats in the gutter, not pinned to the edge) */
-    transform: translateX(-50%);
-    width: max-content;         /* size to content, so moving the position never squeezes the text */
+    left: 50%;
+    top: 50%;
+    --flag-x: 35;
+    --flag-y: 16;
+    transform: translate(calc(-50% + var(--sec-vwu) * var(--flag-x)),
+                         calc(-50% + var(--sec-vhu) * var(--flag-y)));
+    width: max-content;
     display: flex;
     align-items: center;
 }
