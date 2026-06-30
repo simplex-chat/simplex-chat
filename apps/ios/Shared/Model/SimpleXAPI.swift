@@ -1083,6 +1083,24 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             title: "Unsupported connection link",
             message: "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
         )
+    case let .error(.simplexName(name, err)):
+        switch err {
+        case .noValidLink:
+            mkAlert(
+                title: "Cannot reconnect via name",
+                message: "This SimpleX name is known but has no saved link to reconnect via."
+            )
+        case .unknownName:
+            mkAlert(
+                title: name.nameType == .contact ? "Contact name not found" : "Channel name not found",
+                message: "There is no contact or group registered with this SimpleX name."
+            )
+        }
+    case .errorAgent(.NO_NAME_SERVERS):
+        mkAlert(
+            title: "Name resolution unavailable",
+            message: "None of your SMP servers support resolving SimpleX names. Add a server that does, or use a connection link."
+        )
     case .errorAgent(.SMP(_, .AUTH)):
         mkAlert(
             title: "Connection error (AUTH)",
@@ -1327,6 +1345,29 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
     case let .userProfileUpdated(user, _, _, _): return user
     default: throw r.unexpected
     }
+}
+
+// name is the encoded SimplexName (e.g. "@alice.simplex"); nil clears it
+func apiSetUserName(_ name: String?) async throws -> User {
+    let userId = try currentUserId("apiSetUserName")
+    let r: ChatResponse1 = try await chatSendCmd(.apiSetUserName(userId: userId, name: name))
+    switch r {
+    case let .userProfileUpdated(user, _, _, _): return user
+    case let .userProfileNoChange(user): return user
+    default: throw r.unexpected
+    }
+}
+
+func apiVerifyContactName(_ contactId: Int64) async throws -> (Contact, String?) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyContactName(contactId: contactId))
+    if case let .contactNameVerified(_, contact, verificationFailure) = r { return (contact, verificationFailure) }
+    throw r.unexpected
+}
+
+func apiVerifyPublicGroupName(_ groupId: Int64) async throws -> (GroupInfo, String?) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyPublicGroupName(groupId: groupId))
+    if case let .groupNameVerified(_, groupInfo, verificationFailure) = r { return (groupInfo, verificationFailure) }
+    throw r.unexpected
 }
 
 func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
@@ -1991,6 +2032,12 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
 
 func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws -> GroupInfo {
     let r: ChatResponse2 = try await chatSendCmd(.apiUpdateGroupProfile(groupId: groupId, groupProfile: groupProfile))
+    if case let .groupUpdated(_, toGroup) = r { return toGroup }
+    throw r.unexpected
+}
+
+func apiSetPublicGroupAccess(_ groupId: Int64, access: PublicGroupAccess) async throws -> GroupInfo {
+    let r: ChatResponse2 = try await chatSendCmd(.apiSetPublicGroupAccess(groupId: groupId, access: access))
     if case let .groupUpdated(_, toGroup) = r { return toGroup }
     throw r.unexpected
 }

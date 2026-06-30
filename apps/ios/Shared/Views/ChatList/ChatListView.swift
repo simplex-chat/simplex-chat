@@ -22,7 +22,7 @@ enum UserPickerSheet: Identifiable {
 
     var navigationTitle: LocalizedStringKey {
         switch self {
-        case .address: "SimpleX address"
+        case .address: "SimpleX address and name"
         case .chatPreferences: "Your preferences"
         case .chatProfiles: "Your chat profiles"
         case .currentProfile: "Your current profile"
@@ -683,8 +683,19 @@ struct ChatListSearchBar: View {
                     searchShowingSimplexLink = true
                     searchChatFilteredBySimplexLink = nil
                     connect(text)
-                case let .name(nameInfo):
-                    showUnsupportedNameAlert(nameInfo)
+                case let .name(text, _):
+                    // A name lookup means "take me to this contact": open it (visible prompt),
+                    // unlike a pasted link in search which filters the list — so no filterKnownContact.
+                    searchFocussed = false
+                    planAndConnect(
+                        text,
+                        theme: theme,
+                        dismiss: false,
+                        cleanup: {
+                            searchText = ""
+                            searchFocussed = false
+                        }
+                    )
                 case .none:
                     if t != "" {
                         searchFocussed = true

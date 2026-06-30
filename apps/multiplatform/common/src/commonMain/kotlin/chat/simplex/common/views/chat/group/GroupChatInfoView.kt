@@ -178,6 +178,26 @@ fun ModalData.GroupChatInfoView(
       manageWebPage = {
           ModalManager.end.showCustomModal { close -> ChannelWebPageView(rhId, groupInfo, chatModel, close) }
       },
+      setSimplexName = {
+          ModalManager.end.showCustomModal { close ->
+            SetSimplexNameView(
+              title = generalGetString(MR.strings.set_simplex_name),
+              footer = generalGetString(MR.strings.set_channel_simplex_name_footer),
+              prefix = "#",
+              initial = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.shortName ?: "",
+              save = { name ->
+                val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?: PublicGroupAccess()
+                val newAccess = access.copy(simplexName = name?.let { SimplexNameClaim(it) })
+                val gInfo = chatModel.controller.apiSetPublicGroupAccess(rhId, groupInfo.groupId, newAccess)
+                if (gInfo != null) {
+                  withContext(Dispatchers.Main) { chatModel.chatsContext.updateGroup(rhId, gInfo) }
+                  true
+                } else false
+              },
+              close = close
+            )
+          }
+      },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
     )
@@ -510,6 +530,7 @@ fun ModalData.GroupChatInfoLayout(
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
   manageWebPage: () -> Unit,
+  setSimplexName: () -> Unit,
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit,
   deletingItems: State<Boolean>
@@ -804,6 +825,14 @@ fun ModalData.GroupChatInfoLayout(
         SectionDividerSpaced()
         SectionView(title = stringResource(MR.strings.advanced_options)) {
           ChannelWebPageButton(groupInfo, manageWebPage)
+          if (groupInfo.groupProfile.publicGroup?.publicGroupAccess != null) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_verified_user),
+              stringResource(MR.strings.set_simplex_name),
+              setSimplexName,
+              iconColor = MaterialTheme.colors.secondary
+            )
+          }
         }
       }
 
@@ -945,6 +974,22 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
+    val groupName = access?.simplexName?.shortName
+    if (groupName != null && access.simplexName?.proof != null) {
+      SimplexNameView(
+        name = groupName,
+        verification = groupInfo.groupDomainVerification,
+        autoVerify = chatModel.controller.appPrefs.privacyVerifySimplexNames.get(),
+        verify = {
+          val rhId = chatModel.remoteHostId()
+          chatModel.controller.apiVerifyPublicGroupName(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
+            chatModel.chatsContext.updateGroup(rhId, gInfo)
+            gInfo.groupDomainVerification to reason
+          }
+        }
+      )
+    }
     val webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage
     if (webPage != null) {
       val uriHandler = LocalUriHandler.current
@@ -1436,6 +1481,7 @@ fun PreviewGroupChatInfoLayout() {
       manageGroupLink = {},
       manageWebPage = {},
       onSearchClicked = {},
+      setSimplexName = {},
       deletingItems = remember { mutableStateOf(true) }
     )
   }

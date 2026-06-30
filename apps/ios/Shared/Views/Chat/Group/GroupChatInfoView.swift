@@ -247,6 +247,32 @@ struct GroupChatInfoView: View {
                     if groupInfo.useRelays && groupInfo.isOwner {
                         Section(header: Text("Advanced options").foregroundColor(theme.colors.secondary)) {
                             channelWebAccessButton()
+                            if groupInfo.groupProfile.publicGroup?.publicGroupAccess != nil {
+                                NavigationLink {
+                                    SetSimplexNameView(
+                                        titleKey: "Set SimpleX name",
+                                        footer: "Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel's address.",
+                                        prefix: "#",
+                                        nameText: groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.shortName ?? "",
+                                        save: { name in
+                                            do {
+                                                var access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?? PublicGroupAccess()
+                                                access.simplexName = name.map { SimplexNameClaim(name: $0) }
+                                                let gInfo = try await apiSetPublicGroupAccess(groupInfo.groupId, access: access)
+                                                await MainActor.run {
+                                                    chatModel.updateGroup(gInfo)
+                                                    groupInfo = gInfo
+                                                }
+                                                return nil
+                                            } catch {
+                                                return responseError(error)
+                                            }
+                                        }
+                                    )
+                                } label: {
+                                    Label("Set SimpleX name", systemImage: "checkmark.shield")
+                                }
+                            }
                         }
                     }
 
@@ -330,6 +356,28 @@ struct GroupChatInfoView: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
+               let groupName = access.simplexName?.shortName,
+               access.simplexName?.proof != nil {
+                SimplexNameView(
+                    name: groupName,
+                    verification: groupInfo.groupDomainVerification,
+                    autoVerify: UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES),
+                    verify: {
+                        do {
+                            let (gInfo, reason) = try await apiVerifyPublicGroupName(groupInfo.groupId)
+                            await MainActor.run {
+                                chatModel.updateGroup(gInfo)
+                                groupInfo = gInfo
+                            }
+                            return (gInfo.groupDomainVerification, reason)
+                        } catch {
+                            logger.error("apiVerifyPublicGroupName: \(responseError(error))")
+                            return nil
+                        }
+                    }
+                )
             }
             if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage,
                let url = URL(string: webPage) {

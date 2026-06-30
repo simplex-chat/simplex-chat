@@ -122,6 +122,7 @@ class AppPreferences {
   val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
+  val privacyVerifySimplexNames = mkBoolPreference(SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES, true)
   val privacyLinkPreviewsShowAlert = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, true)
   val privacySanitizeLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SANITIZE_LINKS, false)
   // TODO remove
@@ -397,6 +398,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
+    private const val SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES = "PrivacyVerifySimplexNames"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT = "PrivacyLinkPreviewsShowAlert"
     private const val SHARED_PREFS_PRIVACY_SANITIZE_LINKS = "PrivacySanitizeLinks"
     private const val SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS = "ChatListOpenLinks" // TODO remove
@@ -1555,6 +1557,27 @@ object ChatController {
           generalGetString(MR.strings.link_requires_newer_app_version_please_upgrade)
         )
       }
+      r is API.Error && r.err is ChatError.ChatErrorChat
+          && r.err.errorType is ChatErrorType.SimplexName -> {
+        if (r.err.errorType.simplexNameError is SimplexNameError.NoValidLink) {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.cannot_reconnect_via_simplex_name),
+            generalGetString(MR.strings.simplex_name_unprepared_desc)
+          )
+        } else {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.simplex_name_not_found),
+            generalGetString(MR.strings.simplex_name_not_found_desc)
+          )
+        }
+      }
+      r is API.Error && r.err is ChatError.ChatErrorAgent
+          && r.err.agentError is AgentErrorType.NO_NAME_SERVERS -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.simplex_name_resolution_unavailable),
+          generalGetString(MR.strings.simplex_name_resolver_unavailable_desc)
+        )
+      }
       r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.SMP
           && r.err.agentError.smpErr is SMPErrorType.AUTH -> {
@@ -1592,6 +1615,12 @@ object ChatController {
       generalGetString(MR.strings.invalid_connection_link)
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.UnsupportedConnReq ->
       generalGetString(MR.strings.unsupported_connection_link)
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexName ->
+      if (e.errorType.simplexNameError is SimplexNameError.NoValidLink)
+        generalGetString(MR.strings.cannot_reconnect_via_simplex_name)
+      else generalGetString(MR.strings.simplex_name_not_found)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.NO_NAME_SERVERS ->
+      generalGetString(MR.strings.simplex_name_resolution_unavailable)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH ->
       generalGetString(MR.strings.connection_error_auth)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.BLOCKED ->
@@ -1760,6 +1789,31 @@ object ChatController {
       r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
       else -> throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
     }
+  }
+
+  // name is the encoded SimplexName (e.g. "@alice.simplex"); null clears it. Throws on rejection.
+  suspend fun apiSetUserName(rh: Long?, name: String?): User {
+    val userId = currentUserId("apiSetUserName")
+    val r = sendCmd(rh, CC.ApiSetUserName(userId, name))
+    return when {
+      r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
+      r is API.Result && r.res is CR.UserProfileNoChange -> r.res.user.updateRemoteHostId(rh)
+      else -> throw Exception("failed to set SimpleX name: ${r.responseType} ${r.details}")
+    }
+  }
+
+  suspend fun apiVerifyContactName(rh: Long?, contactId: Long): Pair<Contact, String?>? {
+    val r = sendCmd(rh, CC.ApiVerifyContactName(contactId))
+    if (r is API.Result && r.res is CR.ContactNameVerified) return r.res.contact to r.res.verificationFailure
+    Log.e(TAG, "apiVerifyContactName bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiVerifyPublicGroupName(rh: Long?, groupId: Long): Pair<GroupInfo, String?>? {
+    val r = sendCmd(rh, CC.ApiVerifyPublicGroupName(groupId))
+    if (r is API.Result && r.res is CR.GroupNameVerified) return r.res.groupInfo to r.res.verificationFailure
+    Log.e(TAG, "apiVerifyPublicGroupName bad response: ${r.responseType} ${r.details}")
+    return null
   }
 
   suspend fun apiSetContactPrefs(rh: Long?, contactId: Long, prefs: ChatPreferences): Contact? {
@@ -2289,7 +2343,7 @@ object ChatController {
     return when {
       r is API.Result && r.res is CR.GroupUpdated -> r.res.toGroup
       r is API.Error -> {
-        AlertManager.shared.showAlertMsg(generalGetString(errorTitle), "${r.err.string}")
+        AlertManager.shared.showAlertMsg(generalGetString(errorTitle), r.err.string)
         null
       }
       else -> {
@@ -2298,6 +2352,21 @@ object ChatController {
           generalGetString(errorTitle),
           "${r.responseType}: ${r.details}"
         )
+        null
+      }
+    }
+  }
+
+  suspend fun apiSetPublicGroupAccess(rh: Long?, groupId: Long, access: PublicGroupAccess): GroupInfo? {
+    val r = sendCmd(rh, CC.ApiSetPublicGroupAccess(groupId, access))
+    return when {
+      r is API.Result && r.res is CR.GroupUpdated -> r.res.toGroup
+      r is API.Error -> {
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), r.err.string)
+        null
+      }
+      else -> {
+        Log.e(TAG, "apiSetPublicGroupAccess bad response: ${r.responseType} ${r.details}")
         null
       }
     }
@@ -3705,6 +3774,7 @@ sealed class CC {
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
+  class ApiSetPublicGroupAccess(val groupId: Long, val access: PublicGroupAccess): CC()
   class APICreateGroupLink(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
@@ -3775,6 +3845,9 @@ sealed class CC {
   class ApiShowMyAddress(val userId: Long): CC()
   class ApiAddMyAddressShortLink(val userId: Long): CC()
   class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
+  class ApiSetUserName(val userId: Long, val name: String?): CC()
+  class ApiVerifyContactName(val contactId: Long): CC()
+  class ApiVerifyPublicGroupName(val groupId: Long): CC()
   class ApiSetAddressSettings(val userId: Long, val addressSettings: AddressSettings): CC()
   class ApiGetCallInvitations: CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
@@ -3983,6 +4056,10 @@ sealed class CC {
     is ApiShowMyAddress -> "/_show_address $userId"
     is ApiAddMyAddressShortLink -> "/_short_link_address $userId"
     is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
+    is ApiSetUserName -> "/_set_name $userId" + (if (name != null) " $name" else "")
+    is ApiSetPublicGroupAccess -> "/_public group access #$groupId ${json.encodeToString(access)}"
+    is ApiVerifyContactName -> "/_verify name @$contactId"
+    is ApiVerifyPublicGroupName -> "/_verify name #$groupId"
     is ApiSetAddressSettings -> "/_address_settings $userId ${json.encodeToString(addressSettings)}"
     is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
@@ -4164,6 +4241,10 @@ sealed class CC {
     is ApiShowMyAddress -> "apiShowMyAddress"
     is ApiAddMyAddressShortLink -> "apiAddMyAddressShortLink"
     is ApiSetProfileAddress -> "apiSetProfileAddress"
+    is ApiSetUserName -> "apiSetUserName"
+    is ApiSetPublicGroupAccess -> "apiSetPublicGroupAccess"
+    is ApiVerifyContactName -> "apiVerifyContactName"
+    is ApiVerifyPublicGroupName -> "apiVerifyPublicGroupName"
     is ApiSetAddressSettings -> "apiSetAddressSettings"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
@@ -4443,8 +4524,8 @@ data class ServerOperator(
       serverDomains = listOf("simplex.im"),
       conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null, autoAccepted = false),
       enabled = true,
-      smpRoles = ServerRoles(storage = true, proxy = true),
-      xftpRoles = ServerRoles(storage = true, proxy = true)
+      smpRoles = ServerRoles(storage = true, proxy = true, names = true),
+      xftpRoles = ServerRoles(storage = true, proxy = true, names = false)
     )
   }
 
@@ -4504,7 +4585,8 @@ data class ServerOperator(
 @Serializable
 data class ServerRoles(
   val storage: Boolean,
-  val proxy: Boolean
+  val proxy: Boolean,
+  val names: Boolean
 )
 
 @Serializable
@@ -4526,8 +4608,8 @@ data class UserOperatorServers(
       serverDomains = emptyList(),
       conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
-      smpRoles = ServerRoles(storage = true, proxy = true),
-      xftpRoles = ServerRoles(storage = true, proxy = true)
+      smpRoles = ServerRoles(storage = true, proxy = true, names = true),
+      xftpRoles = ServerRoles(storage = true, proxy = true, names = false)
     )
 
   companion object {
@@ -4613,11 +4695,18 @@ sealed class UserServersError {
 @Serializable
 sealed class UserServersWarning {
   @Serializable @SerialName("noChatRelays") data class NoChatRelays(val user: UserRef? = null): UserServersWarning()
+  @Serializable @SerialName("noNamesServers") data class NoNamesServers(val user: UserRef? = null): UserServersWarning()
 
   val globalWarning: String?
     get() = when (this) {
       is NoChatRelays -> {
         val text = generalGetString(MR.strings.no_chat_relays_enabled)
+        if (user != null) {
+          String.format(generalGetString(MR.strings.for_chat_profile), user.localDisplayName) + " " + text
+        } else text
+      }
+      is NoNamesServers -> {
+        val text = generalGetString(MR.strings.no_names_servers_enabled)
         if (user != null) {
           String.format(generalGetString(MR.strings.for_chat_profile), user.localDisplayName) + " " + text
         } else text
@@ -6462,6 +6551,8 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
+  @Serializable @SerialName("contactNameVerified") class ContactNameVerified(val user: UserRef, val contact: Contact, val verificationFailure: String? = null): CR()
+  @Serializable @SerialName("groupNameVerified") class GroupNameVerified(val user: UserRef, val groupInfo: GroupInfo, val verificationFailure: String? = null): CR()
   @Serializable @SerialName("groupLinkDataUpdated") class GroupLinkDataUpdated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>, val relaysChanged: Boolean): CR()
   @Serializable @SerialName("groupRelayUpdated") class GroupRelayUpdated(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val groupRelay: GroupRelay): CR()
   @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
@@ -6653,6 +6744,8 @@ sealed class CR {
     is JoinedGroupMember -> "joinedGroupMember"
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupUpdated -> "groupUpdated"
+    is ContactNameVerified -> "contactNameVerified"
+    is GroupNameVerified -> "groupNameVerified"
     is GroupLinkDataUpdated -> "groupLinkDataUpdated"
     is GroupRelayUpdated -> "groupRelayUpdated"
     is GroupLinkCreated -> "groupLinkCreated"
@@ -6837,6 +6930,8 @@ sealed class CR {
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
+    is ContactNameVerified -> withUser(user, "contact: ${json.encodeToString(contact)}\nverificationFailure: $verificationFailure")
+    is GroupNameVerified -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nverificationFailure: $verificationFailure")
     is GroupLinkDataUpdated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays\nrelaysChanged: $relaysChanged")
     is GroupRelayUpdated -> withUser(user, "groupInfo: $groupInfo\nmember: $member\ngroupRelay: $groupRelay")
     is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
@@ -6961,6 +7056,12 @@ sealed class OwnerVerification {
 }
 
 @Serializable
+sealed class SimplexNameError {
+  @Serializable @SerialName("noValidLink") object NoValidLink : SimplexNameError()
+  @Serializable @SerialName("unknownName") object UnknownName : SimplexNameError()
+}
+
+@Serializable
 sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
   @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
@@ -6978,7 +7079,7 @@ sealed class InvitationLinkPlan {
 
 @Serializable
 sealed class ContactAddressPlan {
-  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): ContactAddressPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null, val verifiedName: SimplexNameInfo? = null): ContactAddressPlan()
   @Serializable @SerialName("ownLink") object OwnLink: ContactAddressPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
@@ -6988,7 +7089,7 @@ sealed class ContactAddressPlan {
 
 @Serializable
 sealed class GroupLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null): GroupLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null, val verifiedName: SimplexNameInfo? = null): GroupLinkPlan()
   @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
@@ -7297,6 +7398,7 @@ sealed class ChatErrorType {
       is ChatStoreChanged -> "chatStoreChanged"
       is ConnectionPlanChatError -> "connectionPlan"
       is InvalidConnReq -> "invalidConnReq"
+      is SimplexName -> "simplexName"
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
@@ -7379,6 +7481,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
   @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
+  @Serializable @SerialName("simplexName") class SimplexName(val simplexName: SimplexNameInfo, val simplexNameError: SimplexNameError): ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()
@@ -7647,6 +7750,7 @@ sealed class AgentErrorType {
     is INTERNAL -> "INTERNAL $internalErr"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
     is INACTIVE -> "INACTIVE"
+    is NO_NAME_SERVERS -> "NO_NAME_SERVERS"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType, val errContext: String): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType, val errContext: String): AgentErrorType()
@@ -7661,6 +7765,19 @@ sealed class AgentErrorType {
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
   @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
+  @Serializable @SerialName("NO_NAME_SERVERS") object NO_NAME_SERVERS: AgentErrorType()
+}
+
+@Serializable
+sealed class NameErrorType {
+  val string: String get() = when (this) {
+    is NO_RESOLVER -> "NO_RESOLVER"
+    is NOT_FOUND -> "NOT_FOUND"
+    is RESOLVER -> "RESOLVER $resolverErr"
+  }
+  @Serializable @SerialName("NO_RESOLVER") object NO_RESOLVER: NameErrorType()
+  @Serializable @SerialName("NOT_FOUND") object NOT_FOUND: NameErrorType()
+  @Serializable @SerialName("RESOLVER") class RESOLVER(val resolverErr: String): NameErrorType()
 }
 
 @Serializable
@@ -7730,6 +7847,7 @@ sealed class SMPErrorType {
     is LARGE_MSG -> "LARGE_MSG"
     is EXPIRED -> "EXPIRED"
     is INTERNAL -> "INTERNAL"
+    is NAME -> "NAME ${nameErr.string}"
   }
   @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
   @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
@@ -7744,6 +7862,7 @@ sealed class SMPErrorType {
   @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
   @Serializable @SerialName("EXPIRED") class EXPIRED: SMPErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL: SMPErrorType()
+  @Serializable @SerialName("NAME") class NAME(val nameErr: NameErrorType): SMPErrorType()
 }
 
 @Serializable

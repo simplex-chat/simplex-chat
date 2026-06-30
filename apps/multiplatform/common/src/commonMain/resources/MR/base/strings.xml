@@ -146,6 +146,7 @@
   <string name="for_chat_profile">For chat profile %s:</string>
   <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
   <string name="no_chat_relays_enabled">No chat relays enabled.</string>
+  <string name="no_names_servers_enabled">No servers to resolve names.</string>
   <string name="server_warning">Server warning</string>
   <string name="error_accepting_operator_conditions">Error accepting conditions</string>
   <string name="blocking_reason_spam">Spam</string>
@@ -199,6 +200,12 @@
   <string name="channel_name_requires_newer_app_version">Connecting via channel name requires a newer app version.</string>
   <string name="contact_name_requires_newer_app_version">Connecting via contact name requires a newer app version.</string>
   <string name="please_upgrade_the_app">Please upgrade the app.</string>
+  <string name="simplex_name_not_found">SimpleX name not found</string>
+  <string name="simplex_name_not_found_desc">There is no contact or group registered with this SimpleX name.</string>
+  <string name="cannot_reconnect_via_simplex_name">Cannot reconnect via name</string>
+  <string name="simplex_name_unprepared_desc">This SimpleX name is known but has no saved link to reconnect via.</string>
+  <string name="simplex_name_resolution_unavailable">Name resolution unavailable</string>
+  <string name="simplex_name_resolver_unavailable_desc">None of your SMP servers support resolving SimpleX names. Add a server that does, or use a connection link.</string>
   <string name="channel_temporarily_unavailable">Channel temporarily unavailable</string>
   <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="app_update_required">App update required</string>
@@ -929,7 +936,15 @@
   <string name="paste_link">Paste link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
-  <string name="simplex_address">SimpleX address</string>
+  <string name="simplex_address">SimpleX address and name</string>
+  <string name="verify_simplex_name_action">Verify name</string>
+  <string name="verify_simplex_names">Verify SimpleX names</string>
+  <string name="simplex_name_not_verified">SimpleX name not verified</string>
+  <string name="set_simplex_name">Set SimpleX name</string>
+  <string name="simplex_name_placeholder">name.simplex</string>
+  <string name="error_saving_simplex_name">Error saving SimpleX name</string>
+  <string name="set_user_simplex_name_footer">Set a SimpleX name so people can connect to you using @yourname instead of a link. The name must already be registered to your address.</string>
+  <string name="set_channel_simplex_name_footer">Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel\'s address.</string>
   <string name="or_show_this_qr_code">Or show this code</string>
   <string name="full_link_button_text">Full link</string>
   <string name="short_link_button_text">Short link</string>
@@ -2153,6 +2168,7 @@
   <string name="operator_use_for_messages">Use for messages</string>
   <string name="operator_use_for_messages_receiving">To receive</string>
   <string name="operator_use_for_messages_private_routing">For private routing</string>
+  <string name="operator_use_for_names">To resolve names</string>
   <string name="operator_added_message_servers">Added message servers</string>
   <string name="operator_use_for_files">Use for files</string>
   <string name="operator_use_for_sending">To send</string>

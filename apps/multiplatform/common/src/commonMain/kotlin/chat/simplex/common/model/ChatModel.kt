@@ -2068,7 +2068,9 @@ data class LocalProfile(
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
   val peerType: ChatPeerType? = null,
-  val localBadge: LocalBadge? = null
+  val localBadge: LocalBadge? = null,
+  val simplexName: SimplexNameClaim? = null,
+  val contactDomainVerification: Boolean? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
@@ -2198,6 +2200,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
+  val groupDomainVerification: Boolean? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -2320,9 +2323,17 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 }
 
 @Serializable
+data class SimplexNameClaim(
+  val name: String,
+  val proof: NameClaimProof? = null
+) {
+  val shortName: String get() = name.removePrefix("simplex:/name")
+}
+
+@Serializable
 data class PublicGroupAccess(
   val groupWebPage: String? = null,
-  val groupDomain: String? = null,
+  val simplexName: SimplexNameClaim? = null,
   val domainWebPage: Boolean = false,
   val allowEmbedding: Boolean = false
 )
@@ -4875,14 +4886,35 @@ enum class SimplexLinkType(val linkType: String) {
 data class SimplexNameInfo(
   val nameType: SimplexNameType,
   val nameDomain: SimplexNameDomain
-)
+) {
+  // prefix-less domain for prefilling the set-name field (shortName without the @/# prefix)
+  val editDomain: String
+    get() = if (nameType == SimplexNameType.publicGroup && nameDomain.nameTLD == SimplexTLD.simplex && nameDomain.subDomain.isEmpty())
+      nameDomain.domain
+    else nameDomain.fullDomainName
+
+  // user-facing display string, mirrors backend shortNameInfoStr
+  val shortName: String
+    get() = (if (nameType == SimplexNameType.publicGroup) "#" else "@") + editDomain
+}
 
 @Serializable
 data class SimplexNameDomain(
   val nameTLD: SimplexTLD,
   val domain: String,
   val subDomain: List<String>
-)
+) {
+  // mirrors backend fullDomainName: reverse(subDomain) + [domain] + tld
+  val fullDomainName: String
+    get() {
+      val tld = when (nameTLD) {
+        SimplexTLD.simplex -> listOf("simplex")
+        SimplexTLD.testing -> listOf("testing")
+        SimplexTLD.web -> emptyList()
+      }
+      return (subDomain.reversed() + domain + tld).joinToString(".")
+    }
+}
 
 @Serializable
 enum class SimplexTLD {
@@ -4896,6 +4928,14 @@ enum class SimplexNameType {
   @SerialName("publicGroup") publicGroup,
   @SerialName("contact") contact
 }
+
+// peer's signed name claim; UI only checks presence
+@Serializable
+data class NameClaimProof(
+  val presHeader: String,
+  val signature: String,
+  val linkOwnerId: String? = null
+)
 
 @Serializable
 enum class FormatColor(val color: String) {

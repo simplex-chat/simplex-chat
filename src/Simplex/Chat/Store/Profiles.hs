@@ -393,7 +393,7 @@ setUserSimplexName db user@User {userId, profile = p@LocalProfile {profileId}} n
     db
     "UPDATE contact_profiles SET simplex_name = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?"
     (name_, ts, userId, profileId)
-  pure (user :: User) {profile = p {simplexName = (`SimplexNameClaim` Nothing) <$> name_}}
+  pure (user :: User) {profile = p {simplexName = mkSimplexNameClaim name_ Nothing}}
 
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
 setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do
