@@ -1381,10 +1381,6 @@ private func deleteNotReadyContact(
     ))
 }
 
-// Renders a contact's / channel's SimpleX name with its 3-state verification indicator.
-// verification: nil = not attempted, false = failed, true = verified.
-// verify runs the verify API, updates the model and returns (newVerification, failureReason);
-// nil on network error. With autoVerify, it runs once on appear when state is nil.
 struct SimplexNameView: View {
     let name: String
     let verification: Bool?
