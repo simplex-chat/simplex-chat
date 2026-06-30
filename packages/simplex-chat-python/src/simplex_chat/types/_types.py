@@ -2781,7 +2781,7 @@ class SimplePreference(TypedDict):
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
 
 class SimplexNameClaim(TypedDict):
-    name: "SimplexNameInfo"
+    name: str
     proof: NotRequired["NameClaimProof"]
 
 class SimplexNameDomain(TypedDict):

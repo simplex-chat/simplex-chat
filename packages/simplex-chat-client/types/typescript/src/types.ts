@@ -3984,7 +3984,7 @@ export enum SimplexLinkType {
 }
 
 export interface SimplexNameClaim {
-  name: SimplexNameInfo
+  name: string
   proof?: NameClaimProof
 }
 

@@ -3614,7 +3614,7 @@ A_QUEUE:
 ## SimplexNameClaim
 
 **Record type**:
-- name: [SimplexNameInfo](#simplexnameinfo)
+- name: string
 - proof: [NameClaimProof](#nameclaimproof)?
 
 
