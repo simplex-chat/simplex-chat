@@ -4207,17 +4207,30 @@ processChatCommand cxt nm = \case
               Nothing -> do
                 l' <- resolveSLink
                 (FixedLinkData {linkConnReq = cReq, rootKey}, cData) <- getShortLinkConnReq nm user l'
+                contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
+                let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
+                    linkName_ = linkProfile_ >>= \Profile {simplexName} -> claimName <$> simplexName
+                    verifiedName_ = case nl of CTName ni -> Just ni; _ -> Nothing
+                    refreshContact ct' = case (verifiedName_, linkProfile_) of
+                      (Just _, Just p) -> updateContactFromLinkData user ct' p
+                      _ -> pure ct'
+                forM_ verifiedName_ $ \ni -> verifyNameClaim ni linkName_
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
-                  Just ct' | not (contactDeleted ct') -> pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct'))
+                  Just ct' | not (contactDeleted ct') -> do
+                    ct'' <- refreshContact ct'
+                    pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct''))
                   _ -> do
-                    contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
                     let ContactLinkData _ UserContactData {owners} = cData
                         ov = verifyLinkOwner rootKey owners l' sig_
                     plan <- contactRequestPlan user cReq contactSLinkData_ ov
-                    case (nl, plan) of
-                      (CTName ni, CPContactAddress cap@(CAPOk (Just ContactShortLinkData {profile = Profile {simplexName}}) _ _)) -> do
-                        _ <- verifyNameClaim ni (claimName <$> simplexName)
-                        pure (con l' cReq, CPContactAddress cap {verifiedName = Just ni})
+                    case plan of
+                      CPContactAddress cap@(CAPOk {}) -> pure (con l' cReq, CPContactAddress cap {verifiedName = verifiedName_})
+                      CPContactAddress (CAPKnown ct') -> do
+                        ct'' <- refreshContact ct'
+                        pure (con l' cReq, CPContactAddress (CAPKnown ct''))
+                      CPContactAddress (CAPContactViaAddress ct') -> do
+                        ct'' <- refreshContact ct'
+                        pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct''))
                       _ -> pure (con l' cReq, plan)
             where
               knownLinkPlans = withFastStore $ \db ->
@@ -4265,14 +4278,19 @@ processChatCommand cxt nm = \case
                         (Nothing, Nothing) -> pure ()
                         _ -> throwChatError CEInvalidConnReq
                       let ov = verifyLinkOwner rootKey owners l' sig_
+                          verifiedName_ = case nl of CTName ni -> Just ni; _ -> Nothing
+                          claimedName GroupProfile {publicGroup} = claimName <$> (publicGroup >>= publicGroupAccess >>= publicGroupClaim)
                       plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
-                      case (nl, plan) of
-                        (CTName ni, CPGroupLink glp@(GLPOk (Just _) (Just gld) _ _)) -> do
-                          let GroupShortLinkData {groupProfile = GroupProfile {publicGroup = pg}} = gld
-                              gName = claimName <$> (pg >>= publicGroupAccess >>= publicGroupClaim)
-                          _ <- verifyNameClaim ni gName
-                          pure (con l' cReq, CPGroupLink glp {verifiedName = Just ni})
-                        _ -> pure (con l' cReq, plan)
+                      forM_ verifiedName_ $ \ni ->
+                        verifyNameClaim ni $ case plan of
+                          CPGroupLink (GLPOk _ (Just GroupShortLinkData {groupProfile = gp}) _ _) -> claimedName gp
+                          CPGroupLink (GLPKnown GroupInfo {groupProfile = gp} _ _ _) -> claimedName gp
+                          CPGroupLink (GLPOwnLink GroupInfo {groupProfile = gp}) -> claimedName gp
+                          CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile = gp})) -> claimedName gp
+                          _ -> maybe Nothing (\GroupShortLinkData {groupProfile = gp} -> claimedName gp) groupSLinkData_
+                      pure $ case plan of
+                        CPGroupLink glp@(GLPOk {}) -> (con l' cReq, CPGroupLink glp {verifiedName = verifiedName_})
+                        _ -> (con l' cReq, plan)
             where
               unsupportedGroupType = \case
                 Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
