@@ -200,7 +200,8 @@ CREATE TABLE groups(
   roster_sending_owner_gm_id INTEGER,
   roster_broker_ts TEXT,
   roster_blob BLOB,
-  stored_roster_version INTEGER, -- received
+  stored_roster_version INTEGER,
+  applied_complete_roster_version INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
