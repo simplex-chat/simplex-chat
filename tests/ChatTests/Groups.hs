@@ -9800,12 +9800,12 @@ testChannelSubscriberRosterCatchUp ps =
               threadDelay 1000000
               -- simulate cath having fallen behind and lost dan: capture dan's member id (from the owner, which
               -- knows the name) and cath's owner-pinned key for dan, then delete dan's record and rewind cath's
-              -- roster_version so the next delta arrives as a gap (v2 > 0+1)
+              -- applied frontier so the next delta arrives as a gap (v2 > applied 0 + 1)
               danId <- memberId alice "dan"
               (_, danKey) <- roleKeyById cath danId
               withCCTransaction cath $ \db -> do
                 DB.execute db "DELETE FROM group_members WHERE member_id = ?" (Only danId)
-                DB.execute db "UPDATE groups SET roster_version = ? WHERE group_id = ?" (0 :: Int64, 1 :: Int64)
+                DB.execute db "UPDATE groups SET applied_complete_roster_version = ? WHERE group_id = ?" (0 :: Int64, 1 :: Int64)
               -- the next privileged change (frank -> v2) reaches cath at a jumped version, triggering catch-up:
               -- cath requests the roster from the forwarding relay, which re-serves the current snapshot
               promoteChannelMember "team" alice bob frank [cath, dan, eve]

@@ -93,6 +93,8 @@ module Simplex.Chat.Store.Groups
     getStoredRosterVersion,
     setMemberRosterServedVersion,
     getMemberRosterServedVersion,
+    setCompleteRosterVersion,
+    getCompleteRosterVersion,
     getStoredGroupRoster,
     RcvRosterTransfer (..),
     createRosterTransfer,
@@ -1501,6 +1503,21 @@ getMemberRosterServedVersion db GroupMember {groupMemberId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT roster_served_version FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
 
+-- The highest version up to which the subscriber holds a complete, contiguous picture: advances by 1 on a
+-- contiguous delta and to the roster's version on a roster apply, but stays put on a gapped delta (so a stuck
+-- value re-triggers the catch-up request on every following delta until a roster fills the gap). This is the
+-- subscriber's "what I have" for both gap detection and the request - as opposed to roster_version (highest seen,
+-- the revert gate) and stored_roster_version (the blob a relay holds).
+setCompleteRosterVersion :: DB.Connection -> GroupInfo -> VersionRoster -> IO ()
+setCompleteRosterVersion db GroupInfo {groupId} v = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET applied_complete_roster_version = ?, updated_at = ? WHERE group_id = ?" (v, currentTs, groupId)
+
+getCompleteRosterVersion :: DB.Connection -> GroupInfo -> IO (Maybe VersionRoster)
+getCompleteRosterVersion db GroupInfo {groupId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT applied_complete_roster_version FROM groups WHERE group_id = ?" (Only groupId)
+
 -- The live roster header a relay re-serves to joiners, with the completed blob and its stored version
 -- (all written together at completion, so the blob and version are present whenever the header is).
 -- Returns the stored version, not roster_version (the gate), so callers serve/record exactly what they hold.
@@ -1601,10 +1618,10 @@ getRosterTransfer db fileId =
 
 -- Write the single live roster on groups from a completed transfer's values (header NULL on a member,
 -- so its live roster_msg_* stay NULL and it never re-serves; only relays re-serve).
--- Sets BOTH versions: a completed blob advances the gate (roster_version - refuse anything older, the downgrade
--- protection for the no-delta join/new-relay/re-serve paths, where the blob is the only thing that sets the gate)
--- and records the stored version (stored_roster_version - what is actually held and re-served). Deltas advance
--- only the gate, so stored_roster_version <= roster_version always.
+-- Sets all three versions to the completed blob's version: the gate (roster_version - refuse anything older),
+-- the stored version (stored_roster_version - the blob actually held and re-served), and the complete frontier
+-- (applied_complete_roster_version - a snapshot makes the picture complete up to its version). Deltas advance the
+-- gate always and the complete frontier only when contiguous, so complete <= stored <= roster_version normally.
 setGroupLiveRoster :: DB.Connection -> GroupInfo -> VersionRoster -> GroupMemberId -> UTCTime -> Maybe SignedMsg -> ByteString -> IO ()
 setGroupLiveRoster db GroupInfo {groupId} v ownerGMId brokerTs sm_ blob = do
   currentTs <- getCurrentTime
@@ -1612,13 +1629,13 @@ setGroupLiveRoster db GroupInfo {groupId} v ownerGMId brokerTs sm_ blob = do
     db
     [sql|
       UPDATE groups SET
-        roster_version = ?, stored_roster_version = ?, roster_blob = ?,
+        roster_version = ?, stored_roster_version = ?, applied_complete_roster_version = ?, roster_blob = ?,
         roster_sending_owner_gm_id = ?, roster_broker_ts = ?,
         roster_msg_chat_binding = ?, roster_msg_signatures = ?, roster_msg_body = ?,
         updated_at = ?
       WHERE group_id = ?
     |]
-    ( (v, v, Binary blob, ownerGMId, brokerTs)
+    ( (v, v, v, Binary blob, ownerGMId, brokerTs)
         :. ((\SignedMsg {chatBinding} -> chatBinding) <$> sm_, (\SignedMsg {signatures} -> Binary (smpEncode signatures)) <$> sm_, (\SignedMsg {signedBody} -> Binary signedBody) <$> sm_, currentTs, groupId)
     )
 
