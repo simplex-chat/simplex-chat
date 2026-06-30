@@ -498,7 +498,7 @@ data GroupInfo = GroupInfo
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupKeys :: Maybe GroupKeys,
-    groupNameVerification :: Maybe Bool
+    simplexNameVerification :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -784,7 +784,7 @@ data LocalProfile = LocalProfile
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
     simplexName :: Maybe SimplexNameClaim,
-    contactNameVerification :: Maybe Bool
+    simplexNameVerification :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -792,8 +792,8 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, simplexName} localAlias now badgeVerified contactNameVerification =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, simplexName, contactNameVerification}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, simplexName} localAlias now badgeVerified simplexNameVerification =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, simplexName, simplexNameVerification}
   where
     localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 
@@ -846,7 +846,7 @@ instance ToField GroupType where toField = toField . textEncode
 data PublicGroupAccess = PublicGroupAccess
   { groupWebPage :: Maybe Text,
     simplexName :: Maybe SimplexNameClaim,
-    domainWebPage :: Bool,
+    simplexNameWebPage :: Bool,
     allowEmbedding :: Bool
   }
   deriving (Eq, Show)

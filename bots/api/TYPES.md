@@ -2365,7 +2365,7 @@ MemberSupport:
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?
-- groupDomainVerification: bool?
+- simplexNameVerification: bool?
 
 
 ---
@@ -2791,7 +2791,7 @@ Unknown:
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
 - simplexName: [SimplexNameClaim](#simplexnameclaim)?
-- contactDomainVerification: bool?
+- simplexNameVerification: bool?
 
 
 ---
@@ -3214,7 +3214,7 @@ NO_SESSION:
 **Record type**:
 - groupWebPage: string?
 - simplexName: [SimplexNameClaim](#simplexnameclaim)?
-- domainWebPage: bool
+- simplexNameWebPage: bool
 - allowEmbedding: bool
 
 

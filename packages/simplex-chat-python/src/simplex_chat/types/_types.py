@@ -1858,7 +1858,7 @@ class GroupInfo(TypedDict):
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
     groupKeys: NotRequired["GroupKeys"]
-    groupDomainVerification: NotRequired[bool]
+    simplexNameVerification: NotRequired[bool]
 
 class GroupKeys(TypedDict):
     publicGroupId: str
@@ -2122,7 +2122,7 @@ class LocalProfile(TypedDict):
     localBadge: NotRequired["LocalBadge"]
     localAlias: str
     simplexName: NotRequired["SimplexNameClaim"]
-    contactDomainVerification: NotRequired[bool]
+    simplexNameVerification: NotRequired[bool]
 
 MemberCriteria = Literal["all"]
 
@@ -2436,7 +2436,7 @@ ProxyError_Tag = Literal["PROTOCOL", "BROKER", "BASIC_AUTH", "NO_SESSION"]
 class PublicGroupAccess(TypedDict):
     groupWebPage: NotRequired[str]
     simplexName: NotRequired["SimplexNameClaim"]
-    domainWebPage: bool
+    simplexNameWebPage: bool
     allowEmbedding: bool
 
 class PublicGroupData(TypedDict):

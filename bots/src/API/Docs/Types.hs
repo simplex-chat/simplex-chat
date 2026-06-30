@@ -42,7 +42,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Transport
 import Simplex.FileTransfer.Types hiding (RcvFileStatus) -- the type with the same name is used in simplex-chat.
-import Simplex.Messaging.Agent.Protocol hiding (ConnectTarget (..))
+import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)

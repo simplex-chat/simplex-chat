@@ -163,7 +163,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         localBadge: LocalBadge? = nil,
         localAlias: String,
         simplexName: SimplexNameClaim? = nil,
-        contactNameVerification: Bool? = nil
+        simplexNameVerification: Bool? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -176,7 +176,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.localBadge = localBadge
         self.localAlias = localAlias
         self.simplexName = simplexName
-        self.contactNameVerification = contactNameVerification
+        self.simplexNameVerification = simplexNameVerification
     }
 
     public var profileId: Int64
@@ -190,7 +190,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var localBadge: LocalBadge?
     public var localAlias: String
     public var simplexName: SimplexNameClaim?
-    public var contactNameVerification: Bool?
+    public var simplexNameVerification: Bool?
 
     var profileViewName: String {
         localAlias == ""
@@ -2540,7 +2540,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var localAlias: String
-    public var groupNameVerification: Bool?
+    public var simplexNameVerification: Bool?
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -2621,16 +2621,16 @@ public enum GroupType: Codable, Hashable {
 }
 
 public struct PublicGroupAccess: Codable, Hashable {
-    public init(groupWebPage: String? = nil, simplexName: SimplexNameClaim? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
+    public init(groupWebPage: String? = nil, simplexName: SimplexNameClaim? = nil, simplexNameWebPage: Bool = false, allowEmbedding: Bool = false) {
         self.groupWebPage = groupWebPage
         self.simplexName = simplexName
-        self.domainWebPage = domainWebPage
+        self.simplexNameWebPage = simplexNameWebPage
         self.allowEmbedding = allowEmbedding
     }
 
     public var groupWebPage: String?
     public var simplexName: SimplexNameClaim?
-    public var domainWebPage: Bool = false
+    public var simplexNameWebPage: Bool = false
     public var allowEmbedding: Bool = false
 }
 

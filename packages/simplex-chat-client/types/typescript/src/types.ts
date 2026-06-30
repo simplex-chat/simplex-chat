@@ -2651,7 +2651,7 @@ export interface GroupInfo {
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
-  groupDomainVerification?: boolean
+  simplexNameVerification?: boolean
 }
 
 export interface GroupKeys {
@@ -3030,7 +3030,7 @@ export interface LocalProfile {
   localBadge?: LocalBadge
   localAlias: string
   simplexName?: SimplexNameClaim
-  contactDomainVerification?: boolean
+  simplexNameVerification?: boolean
 }
 
 export enum MemberCriteria {
@@ -3473,7 +3473,7 @@ export namespace ProxyError {
 export interface PublicGroupAccess {
   groupWebPage?: string
   simplexName?: SimplexNameClaim
-  domainWebPage: boolean
+  simplexNameWebPage: boolean
   allowEmbedding: boolean
 }
 

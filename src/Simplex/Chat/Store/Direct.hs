@@ -569,7 +569,7 @@ updateContactProfile db cxt user@User {userId} c p' = do
       profile = toLocalProfile profileId p'' localAlias currentTs badgeVerified nameVerified
   updateContactProfile' currentTs badgeVerified profile
   where
-    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, simplexName = prevClaim, contactNameVerification = prevVerification}, userPreferences} = c
+    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, simplexName = prevClaim, simplexNameVerification = prevVerification}, userPreferences} = c
     Profile {displayName = newName, simplexName, preferences} = p'
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
     claimChanged = (claimName <$> prevClaim) /= (claimName <$> simplexName)

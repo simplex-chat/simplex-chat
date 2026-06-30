@@ -1809,12 +1809,12 @@ viewContactBadge = maybe [] $ \lb ->
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, simplexName, contactNameVerification}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, simplexName, simplexNameVerification}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> plain (strEncode (simplexChatContact' l))]) contactLink
-    <> simplexNameStatus (claimName <$> simplexName) contactNameVerification (isJust (claimProof =<< simplexName))
+    <> simplexNameStatus (claimName <$> simplexName) simplexNameVerification (isJust (claimProof =<< simplexName))
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -2049,10 +2049,10 @@ viewGroupUpdated
           access = pg >>= publicGroupAccess
           access' = pg' >>= publicGroupAccess
           viewAccess Nothing = " removed"
-          viewAccess (Just PublicGroupAccess {groupWebPage, simplexName, domainWebPage, allowEmbedding}) =
+          viewAccess (Just PublicGroupAccess {groupWebPage, simplexName, simplexNameWebPage, allowEmbedding}) =
             maybe "" (\u -> " web=" <> plain u) groupWebPage
-              <> maybe "" (\ni -> " domain=" <> plain (strEncode ni)) (claimName <$> simplexName)
-              <> (if domainWebPage then " domain_page=on" else "")
+              <> maybe "" (\ni -> " name=" <> plain (strEncode ni)) (claimName <$> simplexName)
+              <> (if simplexNameWebPage then " name_page=on" else "")
               <> (if allowEmbedding then " embed=on" else "")
 
 viewGroupProfile :: GroupInfo -> [StyledString]
@@ -2225,11 +2225,11 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
     contactNameLine :: Contact -> [StyledString]
-    contactNameLine Contact {profile = LocalProfile {simplexName, contactNameVerification}} =
-      simplexNameStatus (claimName <$> simplexName) contactNameVerification (isJust (claimProof =<< simplexName))
+    contactNameLine Contact {profile = LocalProfile {simplexName, simplexNameVerification}} =
+      simplexNameStatus (claimName <$> simplexName) simplexNameVerification (isJust (claimProof =<< simplexName))
     groupNameLine :: GroupInfo -> [StyledString]
-    groupNameLine g'@GroupInfo {groupNameVerification, groupProfile = GroupProfile {publicGroup}} =
-      simplexNameStatus (groupSimplexName g') groupNameVerification (isJust (claimProof =<< (publicGroup >>= publicGroupAccess >>= publicGroupClaim)))
+    groupNameLine g'@GroupInfo {simplexNameVerification, groupProfile = GroupProfile {publicGroup}} =
+      simplexNameStatus (groupSimplexName g') simplexNameVerification (isJust (claimProof =<< (publicGroup >>= publicGroupAccess >>= publicGroupClaim)))
     viewSigVerification = \case
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]

@@ -424,7 +424,7 @@ getUserContactProfiles db User {userId} =
       (Only userId)
   where
     toContactProfile :: (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe SimplexNameInfo, Maybe Preferences) -> Profile
-    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, contactDomain, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain Nothing, peerType, preferences, badge = Nothing}
+    toContactProfile (displayName, fullName, shortDescr, image, contactLink, peerType, simplexName, preferences) = Profile {displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim simplexName Nothing, peerType, preferences, badge = Nothing}
 
 createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> C.PrivateKeyEd25519 -> ExceptT StoreError IO ()
 createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode linkPrivSigKey =

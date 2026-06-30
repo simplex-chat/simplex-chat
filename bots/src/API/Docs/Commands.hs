@@ -410,6 +410,7 @@ undocumentedCommands =
     "APISetMemberSettings",
     "APISetNetworkConfig",
     "APISetNetworkInfo",
+    "APISetPublicGroupAccess",
     "APISetServerOperators",
     "APISetUserContactReceipts",
     "APISetUserGroupReceipts",

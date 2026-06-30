@@ -1468,7 +1468,7 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
       _ -> False
 
 updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
-updateContactFromLinkData user ct@Contact {contactId, profile = profile@LocalProfile {simplexName = prevClaim, contactNameVerification}} linkProfile@Profile {simplexName = newClaim}
+updateContactFromLinkData user ct@Contact {contactId, profile = profile@LocalProfile {simplexName = prevClaim, simplexNameVerification}} linkProfile@Profile {simplexName = newClaim}
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
       when profileChanged $ void $ withStore $ \db -> updateContactProfile db cxt user ct linkProfile
@@ -1478,7 +1478,7 @@ updateContactFromLinkData user ct@Contact {contactId, profile = profile@LocalPro
   where
     profileChanged = fromLocalProfile profile /= linkProfile
     claimChanged = (claimName <$> prevClaim) /= (claimName <$> newClaim)
-    verifyChanged = contactNameVerification /= Just True || claimChanged
+    verifyChanged = simplexNameVerification /= Just True || claimChanged
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
