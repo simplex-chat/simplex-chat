@@ -4458,6 +4458,11 @@ public enum MREmojiChar: String, Codable, CaseIterable, Hashable {
     case heart = "❤"
     case launch = "🚀"
     case check = "✅"
+    case celebrate = "🎉"
+    case thanks = "🙏"
+    case eyes = "👀"
+    case surprise = "😮"
+    case thinking = "🤔"
 }
 
 extension MsgReaction: Decodable {
