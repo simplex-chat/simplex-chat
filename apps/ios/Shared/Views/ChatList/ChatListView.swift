@@ -684,8 +684,6 @@ struct ChatListSearchBar: View {
                     searchChatFilteredBySimplexLink = nil
                     connect(text)
                 case let .name(text, _):
-                    // A name lookup means "take me to this contact": open it (visible prompt),
-                    // unlike a pasted link in search which filters the list — so no filterKnownContact.
                     searchFocussed = false
                     planAndConnect(
                         text,
