@@ -35,6 +35,7 @@ from .types import T
 class BotCommand:
     keyword: str
     label: str
+    params: str = ""
 
 
 class Bot(Client):
@@ -146,6 +147,8 @@ class Bot(Client):
         }
         if self._commands:
             prefs["commands"] = [
+                {"type": "command", "keyword": c.keyword, "label": c.label, "params": c.params}
+                if c.params else
                 {"type": "command", "keyword": c.keyword, "label": c.label}
                 for c in self._commands
             ]
