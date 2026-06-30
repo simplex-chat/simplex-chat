@@ -19,12 +19,16 @@ import Database.SQLite.Simple.QQ (sql)
 --     missed versions, so each following delta re-asks the forwarding relay until a roster fills the frontier.
 -- Also adds group_members.roster_served_version - the newest version a relay re-served a given member, bounding
 -- reflected amplification (a member can't re-trigger a full serve at a version it was already served).
+-- Backfill an existing roster's stored and complete versions from roster_version: pre-upgrade the picture is
+-- contiguous up to roster_version (no gap detection existed), so a fresh NULL frontier would read every group's
+-- next delta as a gap and make every subscriber request a re-serve at once.
 m20260629_roster_catchup :: Query
 m20260629_roster_catchup =
   [sql|
 ALTER TABLE group_members ADD COLUMN roster_served_version INTEGER;
 ALTER TABLE groups ADD COLUMN stored_roster_version INTEGER;
 ALTER TABLE groups ADD COLUMN applied_complete_roster_version INTEGER;
+UPDATE groups SET stored_roster_version = roster_version, applied_complete_roster_version = roster_version WHERE roster_version IS NOT NULL;
 |]
 
 down_m20260629_roster_catchup :: Query
