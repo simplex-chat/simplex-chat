@@ -825,7 +825,7 @@ fun ModalData.GroupChatInfoLayout(
         SectionDividerSpaced()
         SectionView(title = stringResource(MR.strings.advanced_options)) {
           ChannelWebPageButton(groupInfo, manageWebPage)
-          if (groupInfo.groupProfile.publicGroup?.publicGroupAccess != null) {
+          if (groupInfo.groupProfile.publicGroup != null) {
             SettingsActionItem(
               painterResource(MR.images.ic_verified_user),
               stringResource(MR.strings.set_simplex_name),

@@ -247,7 +247,7 @@ struct GroupChatInfoView: View {
                     if groupInfo.useRelays && groupInfo.isOwner {
                         Section(header: Text("Advanced options").foregroundColor(theme.colors.secondary)) {
                             channelWebAccessButton()
-                            if groupInfo.groupProfile.publicGroup?.publicGroupAccess != nil {
+                            if groupInfo.groupProfile.publicGroup != nil {
                                 NavigationLink {
                                     SetSimplexNameView(
                                         titleKey: "Set SimpleX name",
