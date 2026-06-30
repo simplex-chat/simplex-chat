@@ -722,8 +722,6 @@ struct SetSimplexNameView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @State private var saving = false
-    @State private var showAlert = false
-    @State private var alertMessage = ""
 
     var body: some View {
         List {
@@ -744,8 +742,7 @@ struct SetSimplexNameView: View {
                         await MainActor.run {
                             saving = false
                             if let err {
-                                alertMessage = err
-                                showAlert = true
+                                showAlert(NSLocalizedString("Error saving name", comment: "alert title"), message: err)
                             } else {
                                 dismiss()
                             }
@@ -759,9 +756,6 @@ struct SetSimplexNameView: View {
         }
         .navigationTitle(titleKey)
         .navigationBarTitleDisplayMode(.large)
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("Error saving name"), message: Text(alertMessage))
-        }
     }
 
     // ensure the correct type prefix so a contact name is not parsed as a group (or vice versa)

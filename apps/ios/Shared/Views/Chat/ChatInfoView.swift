@@ -1389,8 +1389,6 @@ struct SimplexNameView: View {
     @EnvironmentObject var theme: AppTheme
     @State private var inFlight = false
     @State private var showSpinner = false
-    @State private var showAlert = false
-    @State private var alertMessage = ""
 
     var body: some View {
         HStack(spacing: 6) {
@@ -1401,9 +1399,6 @@ struct SimplexNameView: View {
         }
         .padding(.bottom, 2)
         .onAppear { if autoVerify && verification == nil { runVerify(manual: false) } }
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("SimpleX name not verified"), message: Text(alertMessage))
-        }
     }
 
     @ViewBuilder private func indicator() -> some View {
@@ -1437,8 +1432,7 @@ struct SimplexNameView: View {
                 showSpinner = false
                 // show the reason on a manual run, or on an inconclusive auto run (state stayed nil)
                 if let (newV, reason) = res, let reason, manual || newV == nil {
-                    alertMessage = reason
-                    showAlert = true
+                    showAlert(NSLocalizedString("SimpleX name not verified", comment: "alert title"), message: reason)
                 }
             }
         }
