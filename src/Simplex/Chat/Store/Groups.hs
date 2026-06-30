@@ -46,7 +46,7 @@ module Simplex.Chat.Store.Groups
     getGroupViaShortLinkToConnect,
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
-    setGroupDomainVerified,
+    setGroupNameVerified,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -258,8 +258,8 @@ import Database.SQLite.Simple.QQ (sql)
 type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. ((Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. BadgeRow :. (Maybe SimplexNameInfo, Maybe BoolInt, Maybe NameClaimProof)) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact)
 
 toMaybeGroupMember :: UTCTime -> Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactDomainVerification, profileContactDomainProof)) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
-  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactDomainVerification, profileContactDomainProof)) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
+toMaybeGroupMember now userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. ((Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactNameVerification, profileContactDomainProof)) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
+  Just $ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. badgeRow :. (profileContactDomain, profileContactNameVerification, profileContactDomainProof)) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink))
 toMaybeGroupMember _ _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -448,7 +448,7 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing,
           groupKeys,
-          groupDomainVerification = Nothing
+          groupNameVerification = Nothing
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -527,7 +527,7 @@ createGroupInvitation db cxt user@User {userId} contact@Contact {contactId, acti
                   membersRequireAttention = 0,
                   viaGroupLinkUri = Nothing,
                   groupKeys = Nothing,
-                  groupDomainVerification = Nothing
+                  groupNameVerification = Nothing
                 },
               groupMemberId
             )
@@ -644,7 +644,7 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
 createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> StoreCxt -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> Maybe Bool -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
-createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ domainVerified = do
+createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ nameVerified = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
   (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ currentTs
@@ -662,7 +662,7 @@ createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile b
   hostMember_ <- forM hostMemberId_ $ getGroupMember db cxt user groupId
   forM_ hostMember_ $ \hostMember ->
     when business $ liftIO $ setGroupBusinessChatInfo groupId membership hostMember
-  liftIO $ mapM_ (setGroupDomainVerified db user groupId) domainVerified
+  liftIO $ mapM_ (setGroupNameVerified db user groupId) nameVerified
   g <- getGroupInfo db cxt user groupId
   pure (g, hostMember_)
   where
@@ -2658,7 +2658,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
     fullGroupPreferences = mergeGroupPreferences groupPreferences
     groupClaim pg = claimName <$> (pg >>= publicGroupAccess >>= publicGroupClaim)
     claimChanged = groupClaim oldPublicGroup /= groupClaim publicGroup
-    g' = if claimChanged then (g :: GroupInfo) {groupDomainVerification = Nothing} else g
+    g' = if claimChanged then (g :: GroupInfo) {groupNameVerification = Nothing} else g
     clearVerificationIfClaimChanged =
       when claimChanged $
         DB.execute db "UPDATE groups SET simplex_name_verification = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
@@ -2688,8 +2688,8 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
 
-setGroupDomainVerified :: DB.Connection -> User -> GroupId -> Bool -> IO ()
-setGroupDomainVerified db User {userId} groupId verified =
+setGroupNameVerified :: DB.Connection -> User -> GroupId -> Bool -> IO ()
+setGroupNameVerified db User {userId} groupId verified =
   DB.execute
     db
     "UPDATE groups SET simplex_name_verification = ? WHERE user_id = ? AND group_id = ?"

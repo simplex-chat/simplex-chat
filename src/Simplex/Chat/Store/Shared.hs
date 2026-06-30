@@ -495,8 +495,8 @@ type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe
 type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. (cpContactDomain, cpContactDomainVerification, cpContactDomainProof)) :. connRow) =
-  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim cpContactDomain cpContactDomainProof, contactDomainVerification = unBI <$> cpContactDomainVerification, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
+toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. (cpContactDomain, cpContactNameVerification, cpContactDomainProof)) :. connRow) =
+  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim cpContactDomain cpContactDomainProof, contactNameVerification = unBI <$> cpContactNameVerification, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
       activeConn = toMaybeConnection cxt connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
@@ -538,8 +538,8 @@ getProfileById db userId profileId = do
 type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Maybe GroupId, Maybe Int64) :. (Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias) :. (Maybe XContactId, PQSupport, Maybe SharedMsgId, Maybe SharedMsgId, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat) :. BadgeRow :. (Maybe SimplexNameInfo, Maybe BoolInt, Maybe NameClaimProof)
 
 toContactRequest :: UTCTime -> ContactRequestRow -> UserContactRequest
-toContactRequest now ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, preferences, createdAt, updatedAt, minVer, maxVer) :. badgeRow :. (contactDomain, contactDomainVerification, contactDomainProof)) = do
-  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactDomainVerification = unBI <$> contactDomainVerification, peerType, preferences, localBadge = rowToBadge now badgeRow, localAlias}
+toContactRequest now ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, preferences, createdAt, updatedAt, minVer, maxVer) :. badgeRow :. (contactDomain, contactNameVerification, contactDomainProof)) = do
+  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactNameVerification = unBI <$> contactNameVerification, peerType, preferences, localBadge = rowToBadge now badgeRow, localAlias}
       cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
    in UserContactRequest {contactRequestId, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, createdAt, updatedAt}
 
@@ -555,10 +555,10 @@ userQuery =
   |]
 
 toUser :: UTCTime -> (UserId, UserId, ContactId, ProfileId, BoolInt, Int64) :. (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe Preferences) :. (BoolInt, BoolInt, BoolInt, BoolInt, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime, BoolInt, BoolInt, Maybe UIThemeEntityOverrides) :. BadgeRow :. (Maybe SimplexNameInfo, Maybe BoolInt, Maybe NameClaimProof) -> User
-toUser now ((userId, auId, userContactId, profileId, BI activeUser, activeOrder) :. (displayName, fullName, shortDescr, image, contactLink, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, BI userChatRelay, BI clientService, uiThemes) :. badgeRow :. (contactDomain, contactDomainVerification, contactDomainProof)) =
+toUser now ((userId, auId, userContactId, profileId, BI activeUser, activeOrder) :. (displayName, fullName, shortDescr, image, contactLink, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, BI userChatRelay, BI clientService, uiThemes) :. badgeRow :. (contactDomain, contactNameVerification, contactDomainProof)) =
   User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptMemberContacts, viewPwdHash, userMemberProfileUpdatedAt, userChatRelay = BoolDef userChatRelay, clientService = BoolDef clientService, uiThemes}
   where
-    profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactDomainVerification = unBI <$> contactDomainVerification, peerType, localBadge = rowToBadge now badgeRow, preferences = userPreferences, localAlias = ""}
+    profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactNameVerification = unBI <$> contactNameVerification, peerType, localBadge = rowToBadge now badgeRow, preferences = userPreferences, localAlias = ""}
     fullPreferences = fullPreferences' userPreferences
     viewPwdHash = UserPwdHash <$> viewPwdHash_ <*> viewPwdSalt_
 
@@ -683,7 +683,7 @@ type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, Ver
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences) :. BadgeRow :. (Maybe SimplexNameInfo, Maybe BoolInt, Maybe NameClaimProof)
 
 toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. groupKeysRow :. Only groupDomainVerification :. userMemberRow) =
+toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. groupKeysRow :. Only groupNameVerification :. userMemberRow) =
   let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr cxt}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
@@ -693,7 +693,7 @@ toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayN
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-   in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupKeys, groupDomainVerification = unBI <$> groupDomainVerification}
+   in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupKeys, groupNameVerification = unBI <$> groupNameVerification}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
@@ -771,8 +771,8 @@ toContactMember now cxt User {userContactId} (memberRow :. connRow) =
   (toGroupMember now userContactId memberRow) {activeConn = toMaybeConnection cxt connRow}
 
 rowToLocalProfile :: UTCTime -> ProfileRow -> LocalProfile
-rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, preferences) :. badgeRow :. (contactDomain, contactDomainVerification, contactDomainProof)) =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactDomainVerification = unBI <$> contactDomainVerification, peerType, localBadge = rowToBadge now badgeRow, localAlias, preferences}
+rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, preferences) :. badgeRow :. (contactDomain, contactNameVerification, contactDomainProof)) =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, simplexName = mkSimplexNameClaim contactDomain contactDomainProof, contactNameVerification = unBI <$> contactNameVerification, peerType, localBadge = rowToBadge now badgeRow, localAlias, preferences}
 
 toBusinessChatInfo :: BusinessChatInfoRow -> Maybe BusinessChatInfo
 toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId}

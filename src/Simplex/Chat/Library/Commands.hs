@@ -2294,7 +2294,7 @@ processChatCommand cxt nm = \case
     Contact {profile = LocalProfile {simplexName}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
     reason <- verifyEntityName user nm (claimName <$> simplexName) connLink_ (claimProof =<< simplexName) "contact has no name to verify" $
-      \v -> withStore' $ \db -> setContactDomainVerified db user contactId v
+      \v -> withStore' $ \db -> setContactNameVerified db user contactId v
     ct' <- withFastStore $ \db -> getContact db cxt user contactId
     pure $ CRContactNameVerified user ct' reason
   APIVerifyPublicGroupName groupId -> withUser $ \user -> do
@@ -2302,7 +2302,7 @@ processChatCommand cxt nm = \case
     let access = publicGroup >>= publicGroupAccess
         connLink_ = preparedGroup >>= \PreparedGroup {connLinkToConnect = CCLink _ sLnk_} -> ACSL SCMContact <$> sLnk_
     reason <- verifyEntityName user nm (claimName <$> (access >>= publicGroupClaim)) connLink_ (claimProof =<< (access >>= publicGroupClaim)) "group has no name to verify" $
-      \v -> withStore' $ \db -> setGroupDomainVerified db user groupId v
+      \v -> withStore' $ \db -> setGroupNameVerified db user groupId v
     g' <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     pure $ CRGroupNameVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
@@ -4766,13 +4766,13 @@ processChatCommand cxt nm = \case
         a $ SRGroup gId scope (sendAsGroup' gInfo scope)
       _ -> throwCmdError "not supported"
     preparedGroupFromLink :: User -> CreatedLinkContact -> DirectLink -> GroupShortLinkData -> Maybe SharedMsgId -> Maybe Bool -> CM (GroupInfo, Maybe GroupMember)
-    preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId domainVerified = do
+    preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId nameVerified = do
       let GroupShortLinkData {groupProfile = gp, publicGroupData = publicGroupData_} = groupSLinkData
           publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
           useRelays = not direct
       subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
       gVar <- asks random
-      withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_ domainVerified
+      withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_ nameVerified
 
     getSharedMsgId :: CM SharedMsgId
     getSharedMsgId = do

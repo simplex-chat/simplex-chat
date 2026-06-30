@@ -163,7 +163,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         localBadge: LocalBadge? = nil,
         localAlias: String,
         simplexName: SimplexNameClaim? = nil,
-        contactDomainVerification: Bool? = nil
+        contactNameVerification: Bool? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -176,7 +176,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.localBadge = localBadge
         self.localAlias = localAlias
         self.simplexName = simplexName
-        self.contactDomainVerification = contactDomainVerification
+        self.contactNameVerification = contactNameVerification
     }
 
     public var profileId: Int64
@@ -190,7 +190,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var localBadge: LocalBadge?
     public var localAlias: String
     public var simplexName: SimplexNameClaim?
-    public var contactDomainVerification: Bool?
+    public var contactNameVerification: Bool?
 
     var profileViewName: String {
         localAlias == ""
@@ -2540,7 +2540,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var localAlias: String
-    public var groupDomainVerification: Bool?
+    public var groupNameVerification: Bool?
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent

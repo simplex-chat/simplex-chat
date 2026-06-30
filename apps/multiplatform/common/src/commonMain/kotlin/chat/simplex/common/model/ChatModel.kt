@@ -2070,7 +2070,7 @@ data class LocalProfile(
   val peerType: ChatPeerType? = null,
   val localBadge: LocalBadge? = null,
   val simplexName: SimplexNameClaim? = null,
-  val contactDomainVerification: Boolean? = null
+  val contactNameVerification: Boolean? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
@@ -2200,7 +2200,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
-  val groupDomainVerification: Boolean? = null,
+  val groupNameVerification: Boolean? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"

@@ -498,7 +498,7 @@ data GroupInfo = GroupInfo
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupKeys :: Maybe GroupKeys,
-    groupDomainVerification :: Maybe Bool
+    groupNameVerification :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -784,7 +784,7 @@ data LocalProfile = LocalProfile
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
     simplexName :: Maybe SimplexNameClaim,
-    contactDomainVerification :: Maybe Bool
+    contactNameVerification :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -792,8 +792,8 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, simplexName} localAlias now badgeVerified contactDomainVerification =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, simplexName, contactDomainVerification}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, simplexName} localAlias now badgeVerified contactNameVerification =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, simplexName, contactNameVerification}
   where
     localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 

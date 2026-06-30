@@ -51,7 +51,7 @@ module Simplex.Chat.Store.Direct
     getContactViaShortLinkToConnect,
     getContactIdByName,
     updateContactProfile,
-    setContactDomainVerified,
+    setContactNameVerified,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -403,12 +403,12 @@ createIncognitoProfile db User {userId} p = do
   createIncognitoProfile_ db userId createdAt p
 
 createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe Bool -> ExceptT StoreError IO Contact
-createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId domainVerified = do
+createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId nameVerified = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
   contactId <- createContact_ db cxt user p ctUserPreferences prepared "" currentTs
-  liftIO $ mapM_ (setContactDomainVerified db user contactId) domainVerified
+  liftIO $ mapM_ (setContactNameVerified db user contactId) nameVerified
   getContact db cxt user contactId
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
@@ -569,7 +569,7 @@ updateContactProfile db cxt user@User {userId} c p' = do
       profile = toLocalProfile profileId p'' localAlias currentTs badgeVerified nameVerified
   updateContactProfile' currentTs badgeVerified profile
   where
-    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, simplexName = prevClaim, contactDomainVerification = prevVerification}, userPreferences} = c
+    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, simplexName = prevClaim, contactNameVerification = prevVerification}, userPreferences} = c
     Profile {displayName = newName, simplexName, preferences} = p'
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
     claimChanged = (claimName <$> prevClaim) /= (claimName <$> simplexName)
@@ -589,8 +589,8 @@ updateContactProfile db cxt user@User {userId} c p' = do
             clearVerificationIfClaimChanged
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
 
-setContactDomainVerified :: DB.Connection -> User -> ContactId -> Bool -> IO ()
-setContactDomainVerified db User {userId} contactId verified =
+setContactNameVerified :: DB.Connection -> User -> ContactId -> Bool -> IO ()
+setContactNameVerified db User {userId} contactId verified =
   DB.execute
     db
     [sql|

@@ -979,13 +979,13 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
     if (groupName != null && access.simplexName?.proof != null) {
       SimplexNameView(
         name = groupName,
-        verification = groupInfo.groupDomainVerification,
+        verification = groupInfo.groupNameVerification,
         autoVerify = chatModel.controller.appPrefs.privacyVerifySimplexNames.get(),
         verify = {
           val rhId = chatModel.remoteHostId()
           chatModel.controller.apiVerifyPublicGroupName(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
             chatModel.chatsContext.updateGroup(rhId, gInfo)
-            gInfo.groupDomainVerification to reason
+            gInfo.groupNameVerification to reason
           }
         }
       )

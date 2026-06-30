@@ -395,7 +395,7 @@ struct ChatInfoView: View {
             if let claim = contact.profile.simplexName, claim.proof != nil {
                 SimplexNameView(
                     name: claim.shortName,
-                    verification: contact.profile.contactDomainVerification,
+                    verification: contact.profile.contactNameVerification,
                     autoVerify: UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES),
                     verify: {
                         do {
@@ -404,7 +404,7 @@ struct ChatInfoView: View {
                                 chatModel.updateContact(ct)
                                 contact = ct
                             }
-                            return (ct.profile.contactDomainVerification, reason)
+                            return (ct.profile.contactNameVerification, reason)
                         } catch {
                             logger.error("apiVerifyContactName: \(responseError(error))")
                             return nil

@@ -362,7 +362,7 @@ struct GroupChatInfoView: View {
                access.simplexName?.proof != nil {
                 SimplexNameView(
                     name: groupName,
-                    verification: groupInfo.groupDomainVerification,
+                    verification: groupInfo.groupNameVerification,
                     autoVerify: UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES),
                     verify: {
                         do {
@@ -371,7 +371,7 @@ struct GroupChatInfoView: View {
                                 chatModel.updateGroup(gInfo)
                                 groupInfo = gInfo
                             }
-                            return (gInfo.groupDomainVerification, reason)
+                            return (gInfo.groupNameVerification, reason)
                         } catch {
                             logger.error("apiVerifyPublicGroupName: \(responseError(error))")
                             return nil

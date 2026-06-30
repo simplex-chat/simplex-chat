@@ -761,13 +761,13 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     if (contactDomain != null && contact.profile.simplexName?.proof != null) {
       SimplexNameView(
         name = contactDomain,
-        verification = contact.profile.contactDomainVerification,
+        verification = contact.profile.contactNameVerification,
         autoVerify = chatModel.controller.appPrefs.privacyVerifySimplexNames.get(),
         verify = {
           val rhId = chatModel.remoteHostId()
           chatModel.controller.apiVerifyContactName(rhId, contact.contactId)?.let { (ct, reason) ->
             chatModel.chatsContext.updateContact(rhId, ct)
-            ct.profile.contactDomainVerification to reason
+            ct.profile.contactNameVerification to reason
           }
         }
       )

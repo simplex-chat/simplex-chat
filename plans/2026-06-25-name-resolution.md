@@ -92,7 +92,7 @@ which has:
 - a JSON **object** instance: `$(J.deriveJSON defaultJSON ''SimplexNameInfo)`
   (`SimplexName.hs:154`) → `{nameType, nameDomain}`.
 
-**Keep the object JSON** — the UI/API wants the structured form (it reads the name
+**Keep the object JSON** — the UI/API needs the structured form (it reads the name
 off `LocalProfile`, `CRSimplexNameVerified`, …). The conflict is only on the
 **wire**: `PublicGroupAccess.groupDomain` is a **released** field typed
 `Maybe Text` (a JSON string), so the wire form of the name must stay a string.
@@ -119,7 +119,7 @@ binding generator must render `StrJSON`-wrapped fields as `string`.
 
 DB stays TEXT: `ToField` (`SimplexName.hs:146`) on write; on read a **hard**
 `FromField SimplexNameInfo` (add it — `SimplexName.hs:141-145` says to define it
-"when a consumer wants the row-fail behaviour"), so an invalid stored name fails the
+"when a consumer requires the row-fail behaviour"), so an invalid stored name fails the
 row — matching the wire, where a name that won't `strDecode` fails the profile. **No
 soft-decode** (`decodeSimplexName` dropped for the name columns).
 

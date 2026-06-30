@@ -1087,19 +1087,19 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
         switch err {
         case .noValidLink:
             mkAlert(
-                title: "Cannot reconnect via name",
-                message: "This SimpleX name is known but has no saved link to reconnect via."
+                title: "No valid link",
+                message: "The SimpleX name \(name.shortName) is registered, but it has no valid link."
             )
         case .unknownName:
             mkAlert(
-                title: name.nameType == .contact ? "Contact name not found" : "Channel name not found",
-                message: "There is no contact or group registered with this SimpleX name."
+                title: "Unconfirmed name",
+                message: "The SimpleX name \(name.shortName) is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner."
             )
         }
     case .errorAgent(.NO_NAME_SERVERS):
         mkAlert(
-            title: "Name resolution unavailable",
-            message: "None of your SMP servers support resolving SimpleX names. Add a server that does, or use a connection link."
+            title: "SimpleX name error",
+            message: "None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link."
         )
     case .errorAgent(.SMP(_, .AUTH)):
         mkAlert(
@@ -1130,6 +1130,24 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             )
         } else {
             connectionErrorAlert(r)
+        }
+    case let .errorAgent(.SMP(serverAddress, .NAME(nameErr))):
+        switch nameErr {
+        case .NOT_FOUND:
+            mkAlert(
+                title: "Name not found",
+                message: "This SimpleX name is not registered. Please check the name."
+            )
+        case .NO_RESOLVER:
+            mkAlert(
+                title: "SimpleX name error",
+                message: "Server \(serverAddress) does not support name resolution. Configure servers, or use a connection link."
+            )
+        case let .RESOLVER(resolverErr):
+            mkAlert(
+                title: "SimpleX name error",
+                message: "Resolver error: \(resolverErr)"
+            )
         }
     default: connectionErrorAlert(r)
     }
