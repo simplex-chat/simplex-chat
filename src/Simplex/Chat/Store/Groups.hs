@@ -93,7 +93,7 @@ module Simplex.Chat.Store.Groups
     getStoredRosterVersion,
     setMemberRosterServedVersion,
     getMemberRosterServedVersion,
-    getGroupRoster,
+    getStoredGroupRoster,
     RcvRosterTransfer (..),
     createRosterTransfer,
     getRosterTransferVersion,
@@ -1501,21 +1501,22 @@ getMemberRosterServedVersion db GroupMember {groupMemberId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT roster_served_version FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
 
--- The live roster header a relay re-serves to joiners, with the completed blob served alongside it
--- (both are written together at completion, so the blob is present whenever the header is).
-getGroupRoster :: DB.Connection -> GroupInfo -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg, Maybe ByteString))
-getGroupRoster db GroupInfo {groupId} =
+-- The live roster header a relay re-serves to joiners, with the completed blob and its stored version
+-- (all written together at completion, so the blob and version are present whenever the header is).
+-- Returns the stored version, not roster_version (the gate), so callers serve/record exactly what they hold.
+getStoredGroupRoster :: DB.Connection -> GroupInfo -> IO (Maybe (GroupMemberId, UTCTime, SignedMsg, Maybe ByteString, Maybe VersionRoster))
+getStoredGroupRoster db GroupInfo {groupId} =
   (>>= toRoster)
     <$> maybeFirstRow
       id
       ( DB.query
           db
-          "SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_binding, roster_msg_signatures, roster_msg_body, roster_blob FROM groups WHERE group_id = ?"
+          "SELECT roster_sending_owner_gm_id, roster_broker_ts, roster_msg_chat_binding, roster_msg_signatures, roster_msg_body, roster_blob, stored_roster_version FROM groups WHERE group_id = ?"
           (Only groupId)
       )
   where
-    toRoster (Just ownerGMId, Just brokerTs, Just cb, Just (Binary sigsBs), Just (Binary body), blob_) =
-      (\sigs -> (ownerGMId, brokerTs, SignedMsg cb sigs body, (\(Binary b) -> b) <$> blob_)) <$> eitherToMaybe (smpDecode sigsBs)
+    toRoster (Just ownerGMId, Just brokerTs, Just cb, Just (Binary sigsBs), Just (Binary body), blob_, storedVer_) =
+      (\sigs -> (ownerGMId, brokerTs, SignedMsg cb sigs body, (\(Binary b) -> b) <$> blob_, storedVer_)) <$> eitherToMaybe (smpDecode sigsBs)
     toRoster _ = Nothing
 
 -- A per-source in-flight roster transfer, keyed (group_id, from_member_id): replaces the single

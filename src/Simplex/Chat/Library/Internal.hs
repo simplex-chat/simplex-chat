@@ -1186,11 +1186,8 @@ serveRoster :: User -> GroupInfo -> GroupMember -> CM ()
 serveRoster user gInfo member =
   when (member `supportsVersion` groupRosterVersion) $ do
     cxt <- chatStoreCxt
-    -- read the stored blob's own version, not roster_version: roster_version is the acceptance gate (highest
-    -- version accepted), which a delta can advance past the stored blob when the owner's blob send failed -
-    -- recording it would over-claim what this member was actually served
-    withStore' (\db -> (,) <$> getGroupRoster db gInfo <*> getStoredRosterVersion db gInfo) >>= \case
-      (Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_), storedVer_) ->
+    withStore' (\db -> getStoredGroupRoster db gInfo) >>= \case
+      Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_, storedVer_) ->
         case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
           Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
           Right chatMsg@ChatMessage {msgId} ->
@@ -1200,10 +1197,12 @@ serveRoster user gInfo member =
                 sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
                 forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
                   sendInlineBlobChunks user gInfo [member] sid blob
-                -- record the served (stored) version so a member can't re-trigger a full serve at a version it already got
+                -- record the blob's own stored version as served, not roster_version (the gate): a delta can
+                -- advance the gate past the stored blob on a failed blob send, and recording the gate would
+                -- over-claim what this member was actually served, suppressing legitimate catch-up
                 forM_ storedVer_ $ \v -> withStore' $ \db -> setMemberRosterServedVersion db member v
               Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
-      (Nothing, _) -> pure ()
+      Nothing -> pure ()
 
 -- Used in groups with relays to introduce moderators and above to a new member,
 -- and to announce the new member to moderators and above.
