@@ -1499,12 +1499,12 @@ processChatCommand cxt nm = \case
       else do
         cl' <- case name_ of
           Nothing -> pure contactLink
-          Just SimplexNameInfo {nameDomain} -> do
-            UserContactLink {shortLinkDataSet, connLinkContact = CCLink fl sl_} <- withFastStore (`getUserAddress` user)          
+          Just ni@SimplexNameInfo {nameDomain} -> do
+            UserContactLink {shortLinkDataSet, connLinkContact = CCLink fl sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
                 NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
-                unless (nameResolvesTo sl nrSimplexContact) $ throwCmdError "name does not point to your address"
+                unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexName ni SNENoValidLink
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
         let p' = (fromLocalProfile p :: Profile) {simplexName = mkSimplexNameClaim name_ Nothing, contactLink = cl'}
@@ -3141,7 +3141,7 @@ processChatCommand cxt nm = \case
         forM_ (claimName <$> simplexName) $ \newName@SimplexNameInfo {nameDomain} ->
           when (Just newName /= (claimName <$> (existingAccess >>= publicGroupClaim))) $ do
             NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
-            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwCmdError "name is not registered to this channel"
+            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexName newName SNENoValidLink
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}}
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do

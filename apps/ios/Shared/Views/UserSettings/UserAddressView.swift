@@ -204,7 +204,7 @@ struct UserAddressView: View {
                             await MainActor.run { chatModel.updateUser(u) }
                             return nil
                         } catch {
-                            return responseError(error)
+                            return setSimplexNameError(error, isChannel: false)
                         }
                     }
                 )
@@ -757,7 +757,7 @@ struct SetSimplexNameView: View {
         }
         .navigationTitle(titleKey)
         .alert(isPresented: $showAlert) {
-            Alert(title: Text("Error saving SimpleX name"), message: Text(alertMessage))
+            Alert(title: Text("Error saving name"), message: Text(alertMessage))
         }
     }
 

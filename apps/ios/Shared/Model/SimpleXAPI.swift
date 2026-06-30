@@ -1366,6 +1366,15 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
 }
 
 // name is the encoded SimplexName (e.g. "@alice.simplex"); nil clears it
+func setSimplexNameError(_ error: Error, isChannel: Bool) -> String {
+    if let e = error as? ChatError, case let .error(.simplexName(name, .noValidLink)) = e {
+        return isChannel
+            ? "The SimpleX name \(name.shortName) is registered without channel link. Add channel link to the name via the registration page."
+            : "The SimpleX name \(name.shortName) is registered without SimpleX address. Add your SimpleX address to the name via the registration page."
+    }
+    return responseError(error)
+}
+
 func apiSetUserName(_ name: String?) async throws -> User {
     let userId = try currentUserId("apiSetUserName")
     let r: ChatResponse1 = try await chatSendCmd(.apiSetUserName(userId: userId, name: name))

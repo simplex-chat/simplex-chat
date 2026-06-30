@@ -265,7 +265,7 @@ struct GroupChatInfoView: View {
                                                 }
                                                 return nil
                                             } catch {
-                                                return responseError(error)
+                                                return setSimplexNameError(error, isChannel: true)
                                             }
                                         }
                                     )

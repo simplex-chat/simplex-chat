@@ -373,7 +373,7 @@ private fun UserAddressLayout(
                         withContext(Dispatchers.Main) { chatModel.updateUser(u) }
                         true
                       } catch (e: Exception) {
-                        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), e.message ?: "")
+                        Log.e(TAG, "apiSetUserName: ${e.message}")
                         false
                       }
                     },
