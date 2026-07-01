@@ -2698,4 +2698,12 @@
     <string name="no_chat_relays_enabled">Tidak ada fitur relay obrolan yang diaktifkan.</string>
     <string name="relay_bar_no_relays">Tidak ada relai</string>
     <string name="no_relays_selected">Tidak ada relay yang dipilih</string>
+    <string name="voice_recording_not_supported">Perekaman suara tidak didukung di platform Anda.</string>
+    <string name="unsupported_channel_name">Nama saluran tidak didukung</string>
+    <string name="unsupported_contact_name">Nama kontak tidak didukung</string>
+    <string name="please_upgrade_the_app">Silakan perbarui aplikasinya.</string>
+    <string name="group_link_requires_newer_version">Grup ini membutuhkan versi aplikasi yang lebih baru. Silakan perbarui aplikasi untuk bergabung.</string>
+    <string name="placeholder_search_images">Cari gambar</string>
+    <string name="placeholder_search_videos">Cari video</string>
+    <string name="placeholder_search_voice_messages">Cari pesan suara</string>
 </resources>
