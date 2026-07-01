@@ -705,26 +705,26 @@ val LightColorPaletteApp = AppColors(
 )
 
 val SimplexColorPalette = darkColors(
-  primary = Color(0xFF70F0F9),  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xFF1298A5),
-  secondary = HighOrLowlight,
-  secondaryVariant = Color(0xFF2C464D),
-  background = Color(0xFF111528),
+  primary = oklch(0.7993f, 0.1442f, 220.36f),  // #00D3F9. If this value changes also need to update #0088ff in string resource files
+  primaryVariant = oklch(0.7993f, 0.1442f, 220.36f),  // #00D3F9
+  secondary = oklch(0.6953f, 0.1031f, 276.93f),  // #8B99D6
+  secondaryVariant = oklch(0.3238f, 0.0863f, 274.69f),  // #26305B
+  background = oklch(0.2298f, 0.0530f, 274.76f),  // #151B33
   //  surface = Color.Black,
   //  background = Color(0xFF121212),
-  surface = Color(0xFF121C37),
+  surface = oklch(0.2298f, 0.0530f, 274.76f),  // #151B33
   error = Color.Red,
 //  onBackground = Color(0xFFFFFBFA),
 //  onSurface = Color(0xFFFFFBFA),
   //  onError: Color = Color.Black,
 )
 val SimplexColorPaletteApp = AppColors(
-  title = Color(0xFF267BE5),
-  primaryVariant2 = Color(0xFF172941),
-  sentMessage = Color(0xFF172941),
-  sentQuote = Color(0xFF1C3A57),
-  receivedMessage = Color(0xff25283a),
-  receivedQuote = Color(0xff36394a),
+  title = Color.White,
+  primaryVariant2 = oklch(0.3238f, 0.0863f, 274.69f),  // #26305B — note folder avatar, same as secondaryVariant
+  sentMessage = oklch(0.4186f, 0.1523f, 266.18f),  // #204797 — flat sent bubble fallback
+  sentQuote = oklch(0.4722f, 0.1601f, 266.32f),  // #2C56AC
+  receivedMessage = oklch(0.3066f, 0.0991f, 271.92f),  // #1D2B5C
+  receivedQuote = oklch(0.3582f, 0.1077f, 272.16f),  // #28386F
 )
 
 val BlackColorPalette = darkColors(
