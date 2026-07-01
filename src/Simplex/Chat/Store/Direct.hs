@@ -100,6 +100,7 @@ where
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import Data.Bifunctor (first)
 import Data.Either (rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -121,6 +122,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport, pattern PQSupportOff)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
+import Simplex.Messaging.Util ((<$$>))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -801,7 +803,7 @@ getContactByName db cxt user localDisplayName = do
 
 getContactToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (CreatedLinkContact, Contact))
 getContactToConnect db cxt user@User {userId} = \case
-  CTLink sl -> fmap (fmap (\(cReq, ct) -> (CCLink cReq (Just sl), ct))) (getContactViaShortLinkToConnect db cxt user sl)
+  CTLink sl -> first (`CCLink` Just sl) <$$> getContactViaShortLinkToConnect db cxt user sl
   CTName ni ->
     liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, ni)) >>= \case
       Just (ctId :: Int64, Just (ACR cMode cReq), Just (sLnk :: ShortLinkContact)) | Just Refl <- testEquality cMode SCMContact ->

@@ -207,7 +207,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
-import Data.Bifunctor (second)
+import Data.Bifunctor (first, second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Char (toLower)
@@ -1076,7 +1076,7 @@ getGroupInfoByName db cxt user gName = do
 
 getGroupToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> ExceptT StoreError IO (Maybe (CreatedLinkContact, GroupInfo))
 getGroupToConnect db cxt user@User {userId} = \case
-  CTLink sl -> fmap (fmap (\(cReq, g) -> (CCLink cReq (Just sl), g))) (getGroupViaShortLinkToConnect db cxt user sl)
+  CTLink sl -> first (`CCLink` Just sl) <$$> getGroupViaShortLinkToConnect db cxt user sl
   CTName ni ->
     liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, ni)) >>= \case
       Just (gId :: Int64, Just cReq, Just (sLnk :: ShortLinkContact)) -> Just . (CCLink cReq (Just sLnk),) <$> getGroupInfo db cxt user gId
