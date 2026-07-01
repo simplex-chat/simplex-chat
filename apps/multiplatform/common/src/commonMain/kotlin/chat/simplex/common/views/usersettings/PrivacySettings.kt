@@ -135,7 +135,7 @@ fun MorePrivacyView(chatModel: ChatModel) {
           }
         })
       SettingsPreferenceItem(
-        painterResource(MR.images.ic_verified_user),
+        painterResource(MR.images.ic_tag),
         stringResource(MR.strings.verify_simplex_names),
         chatModel.controller.appPrefs.privacyVerifySimplexNames
       )

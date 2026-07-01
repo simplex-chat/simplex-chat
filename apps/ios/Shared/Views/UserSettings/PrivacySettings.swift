@@ -194,7 +194,7 @@ struct PrivacySettings: View {
                         m.draftChatId = nil
                     }
                 }
-                settingsRow("checkmark.shield", color: theme.colors.secondary) {
+                settingsRow("number", color: theme.colors.secondary) {
                     Toggle("Verify SimpleX names", isOn: $verifySimplexNames)
                 }
             } header: {
