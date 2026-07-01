@@ -1046,9 +1046,9 @@ swipe action</note>
         <target>Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también lo permite. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow members to chat with admins." xml:space="preserve">
+      <trans-unit id="Allow members to chat with admins." xml:space="preserve" approved="no">
         <source>Allow members to chat with admins.</source>
-        <target>Permitir que los miembros chateen con administradores.</target>
+        <target state="translated">Permite que los miembros chateen con los administradores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
@@ -1081,9 +1081,9 @@ swipe action</note>
         <target>Permitir compartir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow subscribers to chat with admins." xml:space="preserve">
+      <trans-unit id="Allow subscribers to chat with admins." xml:space="preserve" approved="no">
         <source>Allow subscribers to chat with admins.</source>
-        <target>Permitir que los suscriptores chateen con administradores.</target>
+        <target state="translated">Permite que los miembros chateen con los administradores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -3240,9 +3240,9 @@ alert button</note>
         <target>Los mensajes directos entre miembros del grupo no están permitidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Direct messages between subscribers are prohibited." xml:space="preserve">
+      <trans-unit id="Direct messages between subscribers are prohibited." xml:space="preserve" approved="no">
         <source>Direct messages between subscribers are prohibited.</source>
-        <target>Los mensajes directos entre suscriptores del canal no están permitidos.</target>
+        <target state="translated">Los mensajes directos entre suscriptores no están permitidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable" xml:space="preserve">
@@ -5581,14 +5581,14 @@ This is your link for group %@!</source>
         <target>Informes de miembros</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All chat members will be notified.</source>
-        <target>El rol del miembro cambiará a "%@". Se notificará en el chat.</target>
+        <target state="translated">El rol del miembro cambiará a "%@" y se notificará en el chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target>El rol del miembro cambiará a "%@" y se notificará al grupo.</target>
+        <target state="translated">El rol del miembro cambiará a "%@" y se notificará en el grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
@@ -8163,14 +8163,14 @@ chat item action</note>
         <target>Envíalos desde la galería o desde teclados personalizados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve">
+      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve" approved="no">
         <source>Send up to 100 last messages to new members.</source>
-        <target>Se envían hasta 100 mensajes más recientes a los miembros nuevos.</target>
+        <target state="translated">Se envían los 100 últimos mensajes a los miembros nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send up to 100 last messages to new subscribers." xml:space="preserve">
+      <trans-unit id="Send up to 100 last messages to new subscribers." xml:space="preserve" approved="no">
         <source>Send up to 100 last messages to new subscribers.</source>
-        <target>Se envían hasta 100 mensajes más recientes a los suscriptores nuevos.</target>
+        <target state="translated">Se envían los 100 últimos mensajes a los miembros nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send your private feedback to groups." xml:space="preserve">
@@ -8947,9 +8947,9 @@ report reason</note>
         <target>Los suscriptores pueden chatear con los administradores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+      <trans-unit id="Subscribers can irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Subscribers can irreversibly delete sent messages. (24 hours)</source>
-        <target>Los suscriptores del canal pueden eliminar mensajes de forma irreversible. (24 horas)</target>
+        <target state="translated">Los suscriptores pueden eliminar mensajes de forma irreversible. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscribers can report messsages to moderators." xml:space="preserve">
@@ -8957,29 +8957,29 @@ report reason</note>
         <target>Los suscriptores pueden informar de mensajes a los moderadores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can send SimpleX links." xml:space="preserve">
+      <trans-unit id="Subscribers can send SimpleX links." xml:space="preserve" approved="no">
         <source>Subscribers can send SimpleX links.</source>
-        <target>Los suscriptores del canal pueden enviar enlaces SimpleX.</target>
+        <target state="translated">Los suscriptores pueden enviar enlaces SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can send direct messages." xml:space="preserve">
+      <trans-unit id="Subscribers can send direct messages." xml:space="preserve" approved="no">
         <source>Subscribers can send direct messages.</source>
-        <target>Los suscriptores del canal pueden enviar mensajes directos.</target>
+        <target state="translated">Los suscriptores pueden enviar mensajes directos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Subscribers can send disappearing messages." xml:space="preserve" approved="no">
         <source>Subscribers can send disappearing messages.</source>
-        <target>Los suscriptores del canal pueden enviar mensajes temporales.</target>
+        <target state="translated">Los suscriptores pueden enviar mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can send files and media." xml:space="preserve">
+      <trans-unit id="Subscribers can send files and media." xml:space="preserve" approved="no">
         <source>Subscribers can send files and media.</source>
-        <target>Los suscriptores del canal pueden enviar archivos y multimedia.</target>
+        <target state="translated">Los suscriptores pueden enviar archivos y multimedia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribers can send voice messages." xml:space="preserve">
+      <trans-unit id="Subscribers can send voice messages." xml:space="preserve" approved="no">
         <source>Subscribers can send voice messages.</source>
-        <target>Los suscriptores del canal pueden enviar mensajes de voz.</target>
+        <target state="translated">Los suscriptores pueden enviar mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscribers use relay link to connect to the channel.&#10;Relay address was used to set up this relay for the channel." xml:space="preserve">
@@ -10642,9 +10642,9 @@ Repeat connection request?</source>
         <target>Debes permitir que tus contacto te llamen para poder llamarles.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve">
+      <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve" approved="no">
         <source>You need to allow your contact to send voice messages to be able to send them.</source>
-        <target>Para poder enviar mensajes de voz antes debes permitir que tu contacto pueda enviarlos.</target>
+        <target state="translated">Para poder enviar mensajes de voz, antes debes permitir que tu contacto pueda enviarlos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You rejected group invitation" xml:space="preserve">
