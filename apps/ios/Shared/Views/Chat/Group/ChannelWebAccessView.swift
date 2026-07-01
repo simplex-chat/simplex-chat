@@ -149,7 +149,7 @@ struct ChannelWebAccessView: View {
                     pg.publicGroupAccess = PublicGroupAccess(
                         groupWebPage: trimmedPage.isEmpty ? nil : trimmedPage,
                         simplexName: existingAccess?.simplexName,
-                        simplexNameWebPage: existingAccess?.simplexNameWebPage ?? false,
+                        domainWebPage: existingAccess?.domainWebPage ?? false,
                         allowEmbedding: allowEmbedding
                     )
                     gp.publicGroup = pg

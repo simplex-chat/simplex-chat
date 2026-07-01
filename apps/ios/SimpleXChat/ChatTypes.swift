@@ -2621,16 +2621,16 @@ public enum GroupType: Codable, Hashable {
 }
 
 public struct PublicGroupAccess: Codable, Hashable {
-    public init(groupWebPage: String? = nil, simplexName: SimplexNameClaim? = nil, simplexNameWebPage: Bool = false, allowEmbedding: Bool = false) {
+    public init(groupWebPage: String? = nil, simplexName: SimplexNameClaim? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
         self.groupWebPage = groupWebPage
         self.simplexName = simplexName
-        self.simplexNameWebPage = simplexNameWebPage
+        self.domainWebPage = domainWebPage
         self.allowEmbedding = allowEmbedding
     }
 
     public var groupWebPage: String?
     public var simplexName: SimplexNameClaim?
-    public var simplexNameWebPage: Bool = false
+    public var domainWebPage: Bool = false
     public var allowEmbedding: Bool = false
 }
 

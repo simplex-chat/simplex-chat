@@ -50,7 +50,7 @@ fun ChannelWebPageView(
       val newAccess = PublicGroupAccess(
         groupWebPage = trimmedPage.ifEmpty { null },
         simplexName = access?.simplexName,
-        simplexNameWebPage = access?.simplexNameWebPage ?: false,
+        domainWebPage = access?.domainWebPage ?: false,
         allowEmbedding = allowEmbedding.value
       )
       val gp = groupInfo.groupProfile.copy(

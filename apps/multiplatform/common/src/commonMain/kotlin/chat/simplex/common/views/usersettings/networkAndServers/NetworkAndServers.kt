@@ -268,13 +268,16 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
     if (currentRemoteHost == null && networkUseSocksProxy.value) {
       SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
     }
-    val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
 
-    SectionItemView(
-      { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
-      disabled = saveDisabled,
-    ) {
-      Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+    SectionDividerSpaced()
+    SectionView {
+      val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
+      SectionItemView(
+        { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
+        disabled = saveDisabled,
+      ) {
+        Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+      }
     }
     val serversErrs = globalServersErrors(serverErrors.value)
     if (serversErrs.isNotEmpty()) {

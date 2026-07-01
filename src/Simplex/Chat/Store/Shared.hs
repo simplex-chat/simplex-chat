@@ -708,17 +708,17 @@ toPublicGroupProfile _ _ _ _ = Nothing
 
 publicGroupAccessRow :: Maybe PublicGroupProfile -> PublicGroupAccessRow
 publicGroupAccessRow pgp = case pgp >>= publicGroupAccess of
-  Just PublicGroupAccess {groupWebPage, simplexName, simplexNameWebPage, allowEmbedding} ->
-    (groupWebPage, claimName <$> simplexName, Just (BI simplexNameWebPage), Just (BI allowEmbedding), claimProof =<< simplexName)
+  Just PublicGroupAccess {groupWebPage, simplexName, domainWebPage, allowEmbedding} ->
+    (groupWebPage, claimName <$> simplexName, Just (BI domainWebPage), Just (BI allowEmbedding), claimProof =<< simplexName)
   Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing)
 
 toPublicGroupAccess :: PublicGroupAccessRow -> Maybe PublicGroupAccess
-toPublicGroupAccess (groupWebPage, simplexName, simplexNameWebPage_, allowEmbedding_, simplexNameProof)
-  | isJust groupWebPage || isJust simplexName || simplexNameWebPage || allowEmbedding =
-      Just PublicGroupAccess {groupWebPage, simplexName = mkSimplexNameClaim simplexName simplexNameProof, simplexNameWebPage, allowEmbedding}
+toPublicGroupAccess (groupWebPage, simplexName, domainWebPage_, allowEmbedding_, simplexNameProof)
+  | isJust groupWebPage || isJust simplexName || domainWebPage || allowEmbedding =
+      Just PublicGroupAccess {groupWebPage, simplexName = mkSimplexNameClaim simplexName simplexNameProof, domainWebPage, allowEmbedding}
   | otherwise = Nothing
   where
-    simplexNameWebPage = maybe False unBI simplexNameWebPage_
+    domainWebPage = maybe False unBI domainWebPage_
     allowEmbedding = maybe False unBI allowEmbedding_
 
 toGroupKeys :: Maybe B64UrlByteString -> GroupKeysRow -> Maybe GroupKeys

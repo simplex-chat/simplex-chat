@@ -2334,7 +2334,7 @@ data class SimplexNameClaim(
 data class PublicGroupAccess(
   val groupWebPage: String? = null,
   val simplexName: SimplexNameClaim? = null,
-  val simplexNameWebPage: Boolean = false,
+  val domainWebPage: Boolean = false,
   val allowEmbedding: Boolean = false
 )
 

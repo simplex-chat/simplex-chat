@@ -846,7 +846,7 @@ instance ToField GroupType where toField = toField . textEncode
 data PublicGroupAccess = PublicGroupAccess
   { groupWebPage :: Maybe Text,
     simplexName :: Maybe SimplexNameClaim,
-    simplexNameWebPage :: Bool,
+    domainWebPage :: Bool,
     allowEmbedding :: Bool
   }
   deriving (Eq, Show)

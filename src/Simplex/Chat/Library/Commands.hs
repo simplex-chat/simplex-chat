@@ -5662,9 +5662,9 @@ chatCommandP =
     publicGroupAccessP = do
       groupWebPage <- optional (" web=" *> (safeDecodeUtf8 <$> A.takeTill A.isSpace))
       simplexName <- optional (" name=" *> strP)
-      simplexNameWebPage <- (" name_page=" *> onOffP) <|> pure False
+      domainWebPage <- (" name_page=" *> onOffP) <|> pure False
       allowEmbedding <- (" embed=" *> onOffP) <|> pure False
-      pure PublicGroupAccess {groupWebPage, simplexName = mkSimplexNameClaim simplexName Nothing, simplexNameWebPage, allowEmbedding}
+      pure PublicGroupAccess {groupWebPage, simplexName = mkSimplexNameClaim simplexName Nothing, domainWebPage, allowEmbedding}
     profileNameDescr = (,) <$> displayNameP <*> shortDescrP
     -- 'Help with bot':'link <ID>','Menu of commands':[...]
     botCommandsP :: Parser [ChatBotCommand]
