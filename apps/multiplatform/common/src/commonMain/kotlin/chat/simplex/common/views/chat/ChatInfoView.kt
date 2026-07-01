@@ -757,10 +757,10 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
-    val simplexName = contact.profile.simplexName?.shortName
-    if (simplexName != null && contact.profile.simplexName?.proof != null) {
+    val simplexName = contact.profile.simplexName
+    if (simplexName != null && (contact.profile.simplexNameVerification != null || simplexName.proof != null)) {
       SimplexNameView(
-        name = simplexName,
+        name = simplexName.shortName,
         verification = contact.profile.simplexNameVerification,
         autoVerify = chatModel.controller.appPrefs.privacyVerifySimplexNames.get(),
         verify = {

@@ -392,7 +392,7 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
-            if let claim = contact.profile.simplexName, claim.proof != nil {
+            if let claim = contact.profile.simplexName, contact.profile.simplexNameVerification != nil || claim.proof != nil {
                 SimplexNameView(
                     name: claim.shortName,
                     verification: contact.profile.simplexNameVerification,

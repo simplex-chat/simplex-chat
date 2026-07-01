@@ -359,7 +359,7 @@ struct GroupChatInfoView: View {
             }
             if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
                let groupName = access.simplexName?.shortName,
-               access.simplexName?.proof != nil {
+               groupInfo.simplexNameVerification != nil || access.simplexName?.proof != nil {
                 SimplexNameView(
                     name: groupName,
                     verification: groupInfo.simplexNameVerification,

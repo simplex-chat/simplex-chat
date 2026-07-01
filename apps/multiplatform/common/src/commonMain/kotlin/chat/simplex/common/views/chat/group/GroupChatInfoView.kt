@@ -976,7 +976,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
     val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
     val groupName = access?.simplexName?.shortName
-    if (groupName != null && access.simplexName?.proof != null) {
+    if (groupName != null && (groupInfo.simplexNameVerification != null || access.simplexName?.proof != null)) {
       SimplexNameView(
         name = groupName,
         verification = groupInfo.simplexNameVerification,
