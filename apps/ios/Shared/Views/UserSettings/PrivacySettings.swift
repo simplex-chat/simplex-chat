@@ -82,9 +82,6 @@ struct PrivacySettings: View {
                     settingsRow("link", color: theme.colors.secondary) {
                         Toggle("Remove link tracking", isOn: $privacySanitizeLinks)
                     }
-                    settingsRow("checkmark.shield", color: theme.colors.secondary) {
-                        Toggle("Verify SimpleX names", isOn: $verifySimplexNames)
-                    }
                 } header: {
                     Text("Chats")
                         .foregroundColor(theme.colors.secondary)
@@ -196,6 +193,9 @@ struct PrivacySettings: View {
                         m.draft = nil
                         m.draftChatId = nil
                     }
+                }
+                settingsRow("checkmark.shield", color: theme.colors.secondary) {
+                    Toggle("Verify SimpleX names", isOn: $verifySimplexNames)
                 }
             } header: {
                 Text("Chats")
