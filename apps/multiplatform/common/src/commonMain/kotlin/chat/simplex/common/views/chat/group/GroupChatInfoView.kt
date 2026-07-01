@@ -1095,6 +1095,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
       MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member, async = true)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
+        val shortDescr = member.shortDescr?.trim().orEmpty()
         Row(verticalAlignment = Alignment.CenterVertically) {
           if (member.verified) {
             MemberVerifiedShield()
@@ -1104,6 +1105,16 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
             member.nameBadge,
             maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
+          )
+        }
+
+        if (shortDescr.isNotEmpty()) {
+          Text(
+            shortDescr,
+            color = MaterialTheme.colors.secondary,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
           )
         }
 
