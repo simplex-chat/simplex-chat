@@ -1089,11 +1089,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> Nothing <$ xGrpMemInv gInfo' m'' memId introInv
               XGrpMemFwd memInfo introInv -> Nothing <$ xGrpMemFwd gInfo' m'' memInfo introInv
-              XGrpMemRole memId memRole memberKey rosterVer -> fmap ctx <$> xGrpMemRole gInfo' m'' memId memRole memberKey rosterVer msg brokerTs
+              XGrpMemRole memId memRole memberKey rosterVer -> fmap ctx <$> xGrpMemRole gInfo' Nothing m'' memId memRole memberKey rosterVer msg brokerTs
               XGrpMemRestrict memId memRestrictions -> fmap ctx <$> xGrpMemRestrict gInfo' m'' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> Nothing <$ xGrpMemCon gInfo' m'' memId
               XGrpMemDel memId withMessages rosterVer -> case encoding @e of
-                SJson -> fmap ctx <$> xGrpMemDel gInfo' m'' memId withMessages rosterVer verifiedMsg msg brokerTs False
+                SJson -> fmap ctx <$> xGrpMemDel gInfo' Nothing m'' memId withMessages rosterVer verifiedMsg msg brokerTs False
                 SBinary -> pure Nothing
               XGrpLeave -> fmap ctx <$> xGrpLeave gInfo' m'' msg brokerTs
               XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' msg brokerTs
@@ -1101,6 +1101,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps' msg
               XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' m'' gr verifiedMsg sharedMsgId_ brokerTs
               XGrpRosterAck ackVer ackErr -> Nothing <$ xGrpRosterAck gInfo' m'' ackVer ackErr
+              XGrpRosterRequest reqVer -> Nothing <$ xGrpRosterRequest gInfo' m'' reqVer
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward fwd msg' -> Nothing <$ xGrpMsgForward gInfo' Nothing m'' fwd (ParsedMsg Nothing Nothing msg') brokerTs
@@ -3244,29 +3245,57 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     -- batch), then advance it in the same transaction; a strictly lower version is a replay and is ignored.
     -- Only an owner sender may advance it: a non-owner signed event is rejected by the action that follows,
     -- but must not bump roster_version first, or every later owner roster at a lower version is dropped.
-    applyAtRosterVersion :: GroupInfo -> GroupMember -> Maybe VersionRoster -> CM (Maybe DeliveryJobScope) -> CM (Maybe DeliveryJobScope)
-    applyAtRosterVersion gInfo sender rosterVer_ action
+    applyAtRosterVersion :: GroupInfo -> Maybe GroupMember -> GroupMember -> Maybe VersionRoster -> CM (Maybe DeliveryJobScope) -> CM (Maybe DeliveryJobScope)
+    applyAtRosterVersion gInfo fwdRelay_ sender rosterVer_ action
       | not (useRelays' gInfo) = action
       | otherwise = case rosterVer_ of
           Nothing -> action
           Just _ | memberRole' sender /= GROwner -> action
           Just v -> do
-            accept <- withStore' $ \db -> do
-              cur <- getGroupRosterVersion db gInfo
-              let fresh = maybe True (v >=) cur
-              when fresh $ setGroupRosterVersion db gInfo v
-              pure fresh
+            (accept, prevComplete) <- withStore' $ \db -> do
+              gate <- getGroupRosterVersion db gInfo
+              prevComplete <- getCompleteRosterVersion db gInfo
+              let fresh = maybe True (v >=) gate
+              when fresh $ do
+                setGroupRosterVersion db gInfo v
+                -- advance the frontier when this delta is the next version. One version can carry several deltas
+                -- (a multi-member role change), delivered in order, so seeing any one of them advances the frontier
+                -- past that whole version.
+                when (v == nextCompleteVersion prevComplete) $
+                  setCompleteRosterVersion db gInfo v
+              pure (fresh, prevComplete)
             if accept
-              then action
+              then (requestRosterOnGap v prevComplete `catchAllErrors` eToView) >> action
               else messageWarning "x.grp.mem: roster version not newer than current, ignoring" $> Nothing
+      where
+        -- the next contiguous version after the complete frontier. With no frontier the baseline is the first
+        -- roster version (VersionRoster 0, see broadcastRoster): a subscriber seeing v0 without a prior roster is
+        -- current, not gapped, as it cannot have missed an earlier version - so v0 neither requests nor stays behind.
+        nextCompleteVersion = \case
+          Just (VersionRoster c) -> VersionRoster (c + 1)
+          Nothing -> VersionRoster 0
+        -- a subscriber whose complete frontier (before this delta) lags more than one below it has missed versions:
+        -- ask the relay that forwarded it (it holds >= v = the new gate) to re-serve the full roster, carrying the
+        -- previous frontier so only a fuller snapshot is served. A stuck frontier re-asks on every following delta
+        -- until a roster fills it. Best-effort; relays and the direct path (fwdRelay_ = Nothing) don't ask, nor a
+        -- relay that predates roster support.
+        requestRosterOnGap v prevComplete
+          | isUserGrpFwdRelay gInfo = pure ()
+          | otherwise = case fwdRelay_ of
+              Just relay
+                | gap, relay `supportsVersion` groupRosterVersion ->
+                    void $ sendGroupMessage' user gInfo [relay] (XGrpRosterRequest prevComplete)
+              _ -> pure ()
+          where
+            gap = v > nextCompleteVersion prevComplete
 
-    xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
+    xGrpMemRole :: GroupInfo -> Maybe GroupMember -> GroupMember -> MemberId -> GroupMemberRole -> Maybe MemberKey -> Maybe VersionRoster -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xGrpMemRole gInfo@GroupInfo {membership} fwdRelay_ m@GroupMember {memberRole = senderRole} memId memRole memberKey_ rosterVer_ msg@RcvMessage {msgSigned} brokerTs
       | membershipMemId == memId =
-          applyAtRosterVersion gInfo m rosterVer_ $
+          applyAtRosterVersion gInfo fwdRelay_ m rosterVer_ $
             let gInfo' = gInfo {membership = membership {memberRole = memRole}}
              in changeMemberRole gInfo' membership False (\db -> updateGroupMemberRole db user membership memRole) (RGEUserRole memRole) True
-      | otherwise = applyAtRosterVersion gInfo m rosterVer_ $ do
+      | otherwise = applyAtRosterVersion gInfo fwdRelay_ m rosterVer_ $ do
           defaultRole <- unknownMemberRole gInfo
           -- an owner-signed event with a key TOFU-creates an unknown member only for a roster role; else a plain lookup
           let allowCreate = useRelays' gInfo && senderRole == GROwner && isRosterRole memRole && isJust memberKey_
@@ -3442,18 +3471,22 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             `catchAllErrors` \_ -> pure (cs, as)
 
     emitRosterResults :: GroupInfo -> GroupMember -> UTCTime -> ([MemberId], [(GroupMember, GroupMemberRole, Bool)]) -> CM ()
-    emitRosterResults gInfo author rosterBrokerTs (conflicts, applied) = do
+    emitRosterResults gInfo@GroupInfo {membership} author rosterBrokerTs (conflicts, applied) = do
       forM_ conflicts $ \mid' ->
         messageWarning $ "x.grp.roster: member key conflict, keeping trusted key, memberId=" <> safeDecodeUtf8 (strEncode mid')
       forM_ applied $ \(member, fromRole, created) ->
-        unless created $ createItems member fromRole
+        unless created $ emitRoleChange member fromRole
       where
-        createItems member fromRole = do
+        emitRoleChange member fromRole = do
           let toRole = memberRole' member
-              gEvent = RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) toRole
-          (gInfo', author', scopeInfo) <- mkGroupChatScope gInfo author
-          ci <- createChatItem user (CDGroupRcv gInfo' scopeInfo author') False (CIRcvGroupEvent gEvent) Nothing (Just MSSVerified) (Just rosterBrokerTs)
-          toView $ CEvtNewChatItems user [ci]
+          (gInfo', author') <-
+            if sameMemberId (memberId' membership) member
+              then do
+                (gInfo', author', scopeInfo) <- mkGroupChatScope gInfo author
+                ci <- createChatItem user (CDGroupRcv gInfo' scopeInfo author') False (CIRcvGroupEvent $ RGEUserRole toRole) Nothing (Just MSSVerified) (Just rosterBrokerTs)
+                toView $ CEvtNewChatItems user [ci]
+                pure (gInfo', author')
+              else pure (gInfo, author)
           toView CEvtMemberRole {user, groupInfo = gInfo', byMember = author', member, fromRole, toRole, msgSigned = Just MSSVerified}
 
     sendRosterAck :: GroupInfo -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
@@ -3478,6 +3511,19 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             toView $ CEvtGroupRelayUpdated user gInfo m relay'
             messageError $ "x.grp.roster.ack: relay could not save roster, marked rejected: " <> e
         _ -> pure ()
+
+    -- A relay re-serves the full roster to a subscriber that detected a version gap, but only when its STORED
+    -- blob is newer than BOTH the requester's version (Nothing = none) and the version it last served this member
+    -- - the latter bounds reflected amplification (a member can't re-trigger a full serve). Gating on the stored
+    -- blob (not roster_version, the gate) means the relay serves only a blob the requester will accept.
+    -- serveRoster records the served version (on all serve paths) and is a no-op without a roster.
+    xGrpRosterRequest :: GroupInfo -> GroupMember -> Maybe VersionRoster -> CM ()
+    xGrpRosterRequest gInfo m reqVer_ =
+      when (isUserGrpFwdRelay gInfo) $ do
+        (stored_, served_) <- withStore' $ \db ->
+          (,) <$> getStoredRosterVersion db gInfo <*> getMemberRosterServedVersion db m
+        forM_ stored_ $ \stored ->
+          when (maybe True (stored >) reqVer_ && maybe True (stored >) served_) $ serveRoster user gInfo m
 
     checkHostRole :: GroupMember -> GroupMemberRole -> CM ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
@@ -3523,11 +3569,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       withStore $ \db -> setMemberVectorRelationConnected db sendingMem refMem MRSubjectConnected
       withStore $ \db -> setMemberVectorRelationConnected db refMem sendingMem MRReferencedConnected
 
-    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> Maybe VersionRoster -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
-    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages rosterVer_ verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
+    xGrpMemDel :: GroupInfo -> Maybe GroupMember -> GroupMember -> MemberId -> Bool -> Maybe VersionRoster -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
+    xGrpMemDel gInfo@GroupInfo {membership} fwdRelay_ m@GroupMember {memberRole = senderRole} memId withMessages rosterVer_ verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
       let GroupMember {memberId = membershipMemId} = membership
       if membershipMemId == memId
-        then applyAtRosterVersion gInfo m rosterVer_ $ checkRole membership $ do
+        then applyAtRosterVersion gInfo fwdRelay_ m rosterVer_ $ checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
           -- TODO [relays] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
           unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
@@ -3539,7 +3585,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           deleteMemberItem msg gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages msgSigned
           pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
-        else applyAtRosterVersion gInfo m rosterVer_ $
+        else applyAtRosterVersion gInfo fwdRelay_ m rosterVer_ $
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
             Left _ -> do
               messageError "x.grp.mem.del with unknown member ID"
@@ -3805,9 +3851,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p rcvMsg msgTs
             XGrpRelayNew rl -> withAuthor XGrpRelayNew_ $ \author -> void $ xGrpRelayNew gInfo author rl
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
-            XGrpMemRole memId memRole memberKey rosterVer -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole memberKey rosterVer rcvMsg msgTs
+            XGrpMemRole memId memRole memberKey rosterVer -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo (Just m) author memId memRole memberKey rosterVer rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
-            XGrpMemDel memId withMessages rosterVer -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel gInfo author memId withMessages rosterVer verifiedMsg rcvMsg msgTs True
+            XGrpMemDel memId withMessages rosterVer -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel gInfo (Just m) author memId withMessages rosterVer verifiedMsg rcvMsg msgTs True
             XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
