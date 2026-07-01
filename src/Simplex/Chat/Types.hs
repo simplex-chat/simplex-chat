@@ -52,7 +52,7 @@ import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
-import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim, setClaimProof)
+import Simplex.Chat.Names (SimplexNameClaim, setClaimProof)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared

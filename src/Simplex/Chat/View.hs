@@ -2049,10 +2049,10 @@ viewGroupUpdated
           access = pg >>= publicGroupAccess
           access' = pg' >>= publicGroupAccess
           viewAccess Nothing = " removed"
-          viewAccess (Just PublicGroupAccess {groupWebPage, simplexName, simplexNameWebPage, allowEmbedding}) =
+          viewAccess (Just PublicGroupAccess {groupWebPage, simplexName, domainWebPage, allowEmbedding}) =
             maybe "" (\u -> " web=" <> plain u) groupWebPage
               <> maybe "" (\ni -> " name=" <> plain (strEncode ni)) (claimName <$> simplexName)
-              <> (if simplexNameWebPage then " name_page=on" else "")
+              <> (if domainWebPage then " name_page=on" else "")
               <> (if allowEmbedding then " embed=on" else "")
 
 viewGroupProfile :: GroupInfo -> [StyledString]

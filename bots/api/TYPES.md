@@ -3214,7 +3214,7 @@ NO_SESSION:
 **Record type**:
 - groupWebPage: string?
 - simplexName: [SimplexNameClaim](#simplexnameclaim)?
-- simplexNameWebPage: bool
+- domainWebPage: bool
 - allowEmbedding: bool
 
 

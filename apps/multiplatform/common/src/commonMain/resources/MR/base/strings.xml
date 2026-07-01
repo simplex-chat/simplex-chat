@@ -951,8 +951,6 @@
   <string name="error_saving_simplex_name">Error saving name</string>
   <string name="simplex_name_owner_no_channel_link">The SimpleX name %1$s is registered without channel link. Add channel link to the name via the registration page.</string>
   <string name="simplex_name_owner_no_address">The SimpleX name %1$s is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</string>
-  <string name="set_user_simplex_name_footer">Set a SimpleX name so people can connect to you using @yourname instead of a link. The name must already be registered to your address.</string>
-  <string name="set_channel_simplex_name_footer">Set a SimpleX name so people can find this channel as #name. The name must be registered to this channel\'s address.</string>
   <string name="set_user_simplex_name_footer">Let people connect to you via name registered with your SimpleX address.</string>
   <string name="set_channel_simplex_name_footer">Let people join via name registered with this channel link.</string>
   <string name="or_show_this_qr_code">Or show this code</string>

@@ -3473,7 +3473,7 @@ export namespace ProxyError {
 export interface PublicGroupAccess {
   groupWebPage?: string
   simplexName?: SimplexNameClaim
-  simplexNameWebPage: boolean
+  domainWebPage: boolean
   allowEmbedding: boolean
 }
 
