@@ -10,7 +10,7 @@ import kotlin.math.sin
 
 fun oklch(L: Float, C: Float, H: Float, alpha: Float = 1f): Color {
   val hRad = H * (Math.PI.toFloat() / 180f)
-  return Color(L, C * cos(hRad), C * sin(hRad), alpha, ColorSpaces.Oklab)
+  return Color(L, C * cos(hRad), C * sin(hRad), alpha, ColorSpaces.Oklab).convert(ColorSpaces.DisplayP3)
 }
 
 val Indigo = Color(0xFF9966FF)
