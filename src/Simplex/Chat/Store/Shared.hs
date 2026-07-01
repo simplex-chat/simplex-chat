@@ -230,7 +230,6 @@ type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, BoolInt, May
 
 type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe BoolInt, Maybe GroupLinkId, Maybe XContactId) :. (Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe BoolInt, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQSupport, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe Int, Maybe VersionChat, Maybe VersionChat, Maybe VersionChat)
 
-
 toConnection :: StoreCxt -> ConnectionRow -> Connection
 toConnection cxt ((connId, acId, connLevel, viaContact, viaUserContactLink, BI viaGroupLink, groupLinkId, xContactId) :. (customUserProfileId, connStatus, connType, BI contactConnInitiated, localAlias) :. (contactId, groupMemberId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter, chatV, minVer, maxVer)) =
   Connection
