@@ -263,9 +263,9 @@ struct GroupChatInfoView: View {
                                                     chatModel.updateGroup(gInfo)
                                                     groupInfo = gInfo
                                                 }
-                                                return nil
+                                                return true
                                             } catch {
-                                                return setSimplexNameError(error, isChannel: true)
+                                                return false
                                             }
                                         }
                                     )

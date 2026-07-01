@@ -1366,22 +1366,27 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
 }
 
 // name is the encoded SimplexName (e.g. "@alice.simplex"); nil clears it
-func setSimplexNameError(_ error: Error, isChannel: Bool) -> String {
-    if let e = error as? ChatError, case let .error(.simplexName(name, .noValidLink)) = e {
-        return isChannel
-            ? "The SimpleX name \(name.shortName) is registered without channel link. Add channel link to the name via the registration page."
-            : "The SimpleX name \(name.shortName) is registered without SimpleX address. Add your SimpleX address to the name via the registration page."
+// owner-specific SNENoValidLink wording; everything else reuses the general apiConnectResponseAlert
+func showSetSimplexNameError<R>(_ r: APIResult<R>, isChannel: Bool) {
+    if case let .error(.simplexName(name, .noValidLink)) = r.unexpected {
+        let format = isChannel
+            ? NSLocalizedString("The SimpleX name %@ is registered without channel link. Add channel link to the name via the registration page.", comment: "alert message")
+            : NSLocalizedString("The SimpleX name %@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.", comment: "alert message")
+        showAlert(NSLocalizedString("Error saving name", comment: "alert title"), message: String.localizedStringWithFormat(format, name.shortName))
+    } else {
+        AlertManager.shared.showAlert(apiConnectResponseAlert(r))
     }
-    return responseError(error)
 }
 
 func apiSetUserName(_ name: String?) async throws -> User {
     let userId = try currentUserId("apiSetUserName")
-    let r: ChatResponse1 = try await chatSendCmd(.apiSetUserName(userId: userId, name: name))
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiSetUserName(userId: userId, name: name))
     switch r {
-    case let .userProfileUpdated(user, _, _, _): return user
-    case let .userProfileNoChange(user): return user
-    default: throw r.unexpected
+    case let .result(.userProfileUpdated(user, _, _, _)): return user
+    case let .result(.userProfileNoChange(user)): return user
+    default:
+        showSetSimplexNameError(r, isChannel: false)
+        throw r.unexpected
     }
 }
 
@@ -2064,8 +2069,9 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
 }
 
 func apiSetPublicGroupAccess(_ groupId: Int64, access: PublicGroupAccess) async throws -> GroupInfo {
-    let r: ChatResponse2 = try await chatSendCmd(.apiSetPublicGroupAccess(groupId: groupId, access: access))
-    if case let .groupUpdated(_, toGroup) = r { return toGroup }
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiSetPublicGroupAccess(groupId: groupId, access: access))
+    if case let .result(.groupUpdated(_, toGroup)) = r { return toGroup }
+    showSetSimplexNameError(r, isChannel: true)
     throw r.unexpected
 }
 

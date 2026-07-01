@@ -202,9 +202,9 @@ struct UserAddressView: View {
                         do {
                             let u = try await apiSetUserName(name)
                             await MainActor.run { chatModel.updateUser(u) }
-                            return nil
+                            return true
                         } catch {
-                            return setSimplexNameError(error, isChannel: false)
+                            return false
                         }
                     }
                 )
@@ -718,7 +718,7 @@ struct SetSimplexNameView: View {
     let footer: LocalizedStringKey
     let prefix: String
     @State var nameText: String
-    let save: (String?) async -> String?
+    let save: (String?) async -> Bool
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @State private var saving = false
@@ -738,14 +738,10 @@ struct SetSimplexNameView: View {
                 Button {
                     saving = true
                     Task {
-                        let err = await save(normalized())
+                        let ok = await save(normalized())
                         await MainActor.run {
                             saving = false
-                            if let err {
-                                showAlert(NSLocalizedString("Error saving name", comment: "alert title"), message: err)
-                            } else {
-                                dismiss()
-                            }
+                            if ok { dismiss() }
                         }
                     }
                 } label: {

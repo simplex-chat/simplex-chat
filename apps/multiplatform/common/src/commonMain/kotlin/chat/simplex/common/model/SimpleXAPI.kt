@@ -1629,12 +1629,13 @@ object ChatController {
     }
   }
 
-  fun setSimplexNameErrorText(err: ChatError, isChannel: Boolean): String =
+  // owner-specific wording for setting one's own/channel name; null for other errors (handled by apiConnectResponseAlert)
+  fun simplexNameOwnerError(err: ChatError, isChannel: Boolean): String? =
     if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.SimplexName && err.errorType.simplexNameError is SimplexNameError.NoValidLink) {
       val name = err.errorType.simplexName.shortName
       if (isChannel) generalGetString(MR.strings.simplex_name_owner_no_channel_link).format(name)
       else generalGetString(MR.strings.simplex_name_owner_no_address).format(name)
-    } else err.string
+    } else null
 
   fun connErrorText(e: ChatError): String = when {
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.InvalidConnReq ->
@@ -1829,7 +1830,11 @@ object ChatController {
       r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
       r is API.Result && r.res is CR.UserProfileNoChange -> r.res.user.updateRemoteHostId(rh)
       else -> {
-        if (r is API.Error) AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), setSimplexNameErrorText(r.err, false))
+        if (r is API.Error) {
+          val ownerMsg = simplexNameOwnerError(r.err, isChannel = false)
+          if (ownerMsg != null) AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), ownerMsg)
+          else apiConnectResponseAlert(r)
+        }
         throw Exception("failed to set SimpleX name: ${r.responseType} ${r.details}")
       }
     }
@@ -2395,7 +2400,9 @@ object ChatController {
     return when {
       r is API.Result && r.res is CR.GroupUpdated -> r.res.toGroup
       r is API.Error -> {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), setSimplexNameErrorText(r.err, true))
+        val ownerMsg = simplexNameOwnerError(r.err, isChannel = true)
+        if (ownerMsg != null) AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), ownerMsg)
+        else apiConnectResponseAlert(r)
         null
       }
       else -> {
