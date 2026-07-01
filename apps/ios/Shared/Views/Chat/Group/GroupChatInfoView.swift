@@ -508,8 +508,15 @@ struct GroupChatInfoView: View {
                 // TODO server connection status
                 VStack(alignment: .leading) {
                     let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
+                    let shortDescr = member.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines)
                     NameWithBadge((member.verified ? memberVerifiedShield + t : t), member.nameBadge)
                         .lineLimit(1)
+                    if let shortDescr = shortDescr, shortDescr != "" {
+                        Text(shortDescr)
+                            .lineLimit(1)
+                            .font(.caption)
+                            .foregroundColor(theme.colors.secondary)
+                    }
                     (user ? Text ("you: ") + Text(member.memberStatus.shortText) : Text(memberConnStatus(member)))
                         .lineLimit(1)
                         .font(.caption)
