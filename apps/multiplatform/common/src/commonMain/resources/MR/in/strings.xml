@@ -2706,4 +2706,23 @@
     <string name="placeholder_search_images">Cari gambar</string>
     <string name="placeholder_search_videos">Cari video</string>
     <string name="placeholder_search_voice_messages">Cari pesan suara</string>
+    <string name="server_warning">Peringatan server</string>
+    <string name="placeholder_search_files">Cari berkas</string>
+    <string name="placeholder_search_links">Cari tautan</string>
+    <string name="content_filter_videos">Video</string>
+    <string name="content_filter_voice_messages">Pesan suara</string>
+    <string name="talk_to_someone">Bicara dengan seseorang</string>
+    <string name="your_public_address">Alamat publik Anda</string>
+    <string name="chat_banner_join_channel">Ketuk Gabung saluran</string>
+    <string name="chat_banner_your_channel">Saluran Anda</string>
+    <string name="share_channel">Bagikan saluran…</string>
+    <string name="share_via_chat">Bagikan via obrolan</string>
+    <string name="tap_to_open">Ketuk untuk buka</string>
+    <string name="chat_link_one_time">Tautan 1-kali</string>
+    <string name="chat_link_signed">(ditandai)</string>
+    <string name="owner_verification_failed">⚠️ Verifikasi tanda tangan gagal: %s.</string>
+    <string name="you_are_subscriber">anda adalah pelanggan</string>
+    <string name="onboarding_send_1_time_link">Kirim tautannya via aplikasi pesan apa pun - aman. Minta untuk tempel ke SimpleX.</string>
+    <string name="onboarding_or_show_qr_code">Atau perlihat kode QR atau melalui panggilan video.</string>
+    <string name="onboarding_post_address">Gunakan alamat ini di profil media sosial, situs web, atau tanda tangan email Anda.</string>
 </resources>
