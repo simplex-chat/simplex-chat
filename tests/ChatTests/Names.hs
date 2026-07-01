@@ -110,7 +110,7 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       alice ##> "/ad"
       _ <- getContactLinks alice True
       alice ##> "/_set_name 1 @alice.simplex"
-      alice <## "bad chat command: name does not point to your address"
+      alice <## "SimpleX name @alice.simplex has no valid connection link"
 
 testConnectByChannelName :: HasCallStack => TestParams -> IO ()
 testConnectByChannelName ps = withSmpServerAndNames $ \reg ->

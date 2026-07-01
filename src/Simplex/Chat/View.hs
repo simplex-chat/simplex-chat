@@ -2683,7 +2683,7 @@ viewChatError isCmd logLevel testView = \case
     CEInvalidConnReq -> viewInvalidConnReq
     CESimplexName ni nameErr ->
       let reason = case nameErr of
-            SNENoValidLink -> "has no usable connection link"
+            SNENoValidLink -> "has no valid connection link"
             SNEUnknownName -> "is not included in the connection link's profile"
        in ["SimpleX name " <> plain (shortNameInfoStr ni) <> " " <> reason]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
