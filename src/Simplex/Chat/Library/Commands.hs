@@ -2762,7 +2762,7 @@ processChatCommand cxt nm = \case
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
-      -- in relay groups the roster has a single signer, so only the owner may change moderator/admin roles
+      -- in relay groups the roster has a single signer, so only the owner may change member/moderator/admin roles
       when (useRelays' gInfo && (isRosterRole newRole || anyPrivilegedTarget) && memberRole' (membership gInfo) /= GROwner) $
         throwCmdError "only the group owner can change moderator and admin roles"
       when (useRelays' gInfo && isRosterRole newRole && finalPrivilegedCount > maxGroupRosterSize) $
@@ -2778,7 +2778,7 @@ processChatCommand cxt nm = \case
       pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole, msgSigned} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
-      -- anyPrivilegedTarget: a target currently moderator/admin (gates the owner-only check); anyRosterChange:
+      -- anyPrivilegedTarget: a target currently member/moderator/admin (gates the owner-only check); anyRosterChange:
       -- a current member's role change that alters the roster blob - the only case that bumps the version, since a
       -- bump with no delta reads as a gap to subscribers; finalPrivilegedCount: moderators + admins after the change.
       selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool, Bool, Int)
@@ -2921,7 +2921,7 @@ processChatCommand cxt nm = \case
       unless (null errs) $ toView $ CEvtChatErrors errs
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
-      -- anyPrivilegedRemoved: any removed member is moderator/admin (gates the owner-only check); anyRosterRemoved:
+      -- anyPrivilegedRemoved: any removed member is member/moderator/admin (gates the owner-only check); anyRosterRemoved:
       -- a current roster member is removed - the only case that alters the blob and so bumps the version (pending/
       -- invited members aren't on the roster, and a bump with no delta reads as a gap to subscribers).
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool)
