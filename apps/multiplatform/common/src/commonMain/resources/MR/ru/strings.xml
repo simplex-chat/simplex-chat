@@ -2884,4 +2884,8 @@
     <string name="channel_owners_contributors_count">владельцев и участников проекта</string>
     <string name="badge_supported_simplex">поддерживал SimpleX Chat. Срок действия бейджа истек в</string>
     <string name="settings_section_title_about">О приложении</string>
+    <string name="advanced_settings">Продвинутые настройки</string>
+    <string name="another_instance_title">Приложение уже запущено</string>
+    <string name="app_update_required">Необходимо обновление приложения</string>
+    <string name="help_and_support"></string>
 </resources>
