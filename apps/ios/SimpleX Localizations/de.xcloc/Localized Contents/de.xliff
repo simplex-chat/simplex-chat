@@ -4071,9 +4071,9 @@ chat item action</note>
         <target>Fehler beim Scannen des Codes: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending email" xml:space="preserve">
+      <trans-unit id="Error sending email" xml:space="preserve" approved="no">
         <source>Error sending email</source>
-        <target>Fehler beim Senden der eMail</target>
+        <target state="translated">Fehler beim Senden der E-Mail</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending member contact invitation" xml:space="preserve">
@@ -11716,14 +11716,14 @@ time to disappear</note>
         <target>Quantum-resistente E2E-Verschlüsselung</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="received answer…" xml:space="preserve">
+      <trans-unit id="received answer…" xml:space="preserve" approved="no">
         <source>received answer…</source>
-        <target>Antwort erhalten…</target>
+        <target state="translated">Antwort erhalten …</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="received confirmation…" xml:space="preserve">
+      <trans-unit id="received confirmation…" xml:space="preserve" approved="no">
         <source>received confirmation…</source>
-        <target>Bestätigung erhalten…</target>
+        <target state="translated">Bestätigung erhalten …</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected" xml:space="preserve">
