@@ -438,13 +438,13 @@ APIAddContact_Response = CR.Invitation | CR.ChatCmdError
 # Network usage: interactive.
 class APIConnectPlan(TypedDict):
     userId: int  # int64
-    connectTarget: NotRequired["T.AConnectTarget"]
+    connectTarget: NotRequired[str]
     resolveKnown: bool
     linkOwnerSig: NotRequired["T.LinkOwnerSig"]
 
 
 def APIConnectPlan_cmd_string(self: APIConnectPlan) -> str:
-    return '/_connect plan ' + str(self['userId']) + ' ' + str(self.get('connectTarget'))
+    return '/_connect plan ' + str(self['userId']) + ' ' + self.get('connectTarget')
 
 APIConnectPlan_Response = CR.ConnectionPlan | CR.ChatCmdError
 
@@ -467,11 +467,11 @@ APIConnect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInv
 # Network usage: interactive.
 class Connect(TypedDict):
     incognito: bool
-    connTarget_: NotRequired["T.AConnectTarget"]
+    connTarget_: NotRequired[str]
 
 
 def Connect_cmd_string(self: Connect) -> str:
-    return '/connect' + ((' ' + str(self.get('connTarget_'))) if self.get('connTarget_') is not None else '')
+    return '/connect' + ((' ' + self.get('connTarget_')) if self.get('connTarget_') is not None else '')
 
 Connect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 

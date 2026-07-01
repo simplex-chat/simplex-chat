@@ -1397,13 +1397,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             CFSetShortLink ->
               case (ucGroupId_, auData) of
                 (Just groupId, UserContactLinkData UserContactData {relays = relayLinks}) -> do
-                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks, newlyActiveGMIds) <- withStore $ \db -> do
+                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db cxt user groupId
                     gLink <- getGroupLink db user gInfo
                     relays <- liftIO $ getGroupRelays db gInfo
-                    (relays', changed, newlyActiveLinks, newlyActiveGMIds) <- liftIO $ foldrM (updateRelay db) ([], False, [], []) relays
+                    (relays', changed, newlyActiveLinks) <- liftIO $ foldrM (updateRelay db) ([], False, []) relays
                     liftIO $ setGroupInProgressDone db gInfo
-                    pure (gInfo, gLink, relays', changed, newlyActiveLinks, newlyActiveGMIds)
+                    pure (gInfo, gLink, relays', changed, newlyActiveLinks)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
                   let GroupSummary {publicMemberCount} = groupSummary gInfo
                   -- Owner is counted in publicMemberCount; > 1 means at least one subscriber.
@@ -1421,16 +1421,16 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                       unless (null recipients) $
                         void $ sendGroupMessages user gInfo Nothing False recipients events
                   where
-                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId]) -> IO ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId])
-                    updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks, newlyActiveGMIds) =
+                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
+                    updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks) =
                       case relayLink of
                         Just rLink
                           -- version is gated upstream at publish (getPublishableGroupRelays): an RSAccepted relay
                           -- whose link is in the published data is necessarily pre-roster, so activate it too
                           | rLink `elem` relayLinks && (relayStatus == RSAcknowledgedRoster || relayStatus == RSAccepted) -> do
                               relay' <- updateRelayStatus db relay RSActive
-                              pure (relay' : acc, True, rLink : newlyActiveLinks, groupMemberId : newlyActiveGMIds)
-                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActiveLinks, newlyActiveGMIds)
+                              pure (relay' : acc, True, rLink : newlyActiveLinks)
+                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActiveLinks)
                           | relayStatus == RSActive -> do
                               -- Relay link absent from link data — deactivate.
                               -- RSAccepted relays are not deactivated: their own link data update
@@ -1439,8 +1439,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                               -- TODO   the SMP server, but this owner won't receive a LINK callback for it
                               -- TODO   (LINK only fires in response to own setConnShortLink calls).
                               relay' <- updateRelayStatus db relay RSInactive
-                              pure (relay' : acc, True, newlyActiveLinks, newlyActiveGMIds)
-                        _ -> pure (relay : acc, changed, newlyActiveLinks, newlyActiveGMIds)
+                              pure (relay' : acc, True, newlyActiveLinks)
+                        _ -> pure (relay : acc, changed, newlyActiveLinks)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do

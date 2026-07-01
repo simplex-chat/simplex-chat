@@ -106,7 +106,7 @@ import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Names (SimplexNameClaim (..), claimName, mkSimplexNameClaim)
+import Simplex.Chat.Names (claimName, mkSimplexNameClaim)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared

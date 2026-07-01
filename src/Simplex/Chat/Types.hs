@@ -4,6 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -1802,6 +1803,7 @@ deriving instance Eq (ConnectTarget m)
 deriving instance Show (ConnectTarget m)
 
 data AConnectTarget = forall m. ConnectionModeI m => ACTarget (SConnectionMode m) (ConnectTarget m)
+  deriving (ToJSON, FromJSON) via (StrJSON "AConnectTarget" AConnectTarget)
 
 instance Eq AConnectTarget where
   ACTarget m t == ACTarget m' t' = case testEquality m m' of
@@ -1818,25 +1820,15 @@ instance StrEncoding AConnectTarget where
     CTInv l -> strEncode l
   strP =
     (ACTarget SCMContact . CTShortContact . CTName <$> (lookAhead nameStart *> strP))
-      <|> ((\(ACL m cl) -> aConnectTarget m cl) <$> strP)
+      <|> (aConnectTarget <$> strP)
     where
       nameStart = "@" <|> "#" <|> "simplex:/name"
 
-aConnectTarget :: SConnectionMode m -> ConnectionLink m -> AConnectTarget
-aConnectTarget m cl = case (m, cl) of
-  (SCMContact, CLFull cr) -> ACTarget SCMContact (CTFullContact cr)
-  (SCMContact, CLShort sl) -> ACTarget SCMContact (CTShortContact (CTLink sl))
-  (SCMInvitation, _) -> ACTarget SCMInvitation (CTInv cl)
-
-aConnectTargetLink :: AConnectionLink -> AConnectTarget
-aConnectTargetLink (ACL m cl) = aConnectTarget m cl
-
-instance ToJSON AConnectTarget where
-  toEncoding = strToJEncoding
-  toJSON = strToJSON
-
-instance FromJSON AConnectTarget where
-  parseJSON = strParseJSON "AConnectTarget"
+aConnectTarget :: AConnectionLink -> AConnectTarget
+aConnectTarget (ACL SCMInvitation cl) = ACTarget SCMInvitation (CTInv cl)
+aConnectTarget (ACL SCMContact cl) = ACTarget SCMContact $ case cl of
+  CLFull cr -> CTFullContact cr
+  CLShort sl -> CTShortContact (CTLink sl)
 
 type CreatedLinkInvitation = CreatedConnLink 'CMInvitation
 

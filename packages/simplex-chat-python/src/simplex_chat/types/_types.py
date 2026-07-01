@@ -16,20 +16,6 @@ class AChatItem(TypedDict):
     chatInfo: "ChatInfo"
     chatItem: "ChatItem"
 
-# Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names.
-
-class AConnectTarget_name(TypedDict):
-    type: Literal["name"]
-    : "SimplexNameInfo"
-
-class AConnectTarget_link(TypedDict):
-    type: Literal["link"]
-    : str
-
-AConnectTarget = AConnectTarget_name | AConnectTarget_link
-
-AConnectTarget_Tag = Literal["name", "link"]
-
 class AddRelayResult(TypedDict):
     relay: "UserChatRelay"
     relayError: NotRequired["ChatError"]

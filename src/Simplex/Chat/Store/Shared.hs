@@ -30,7 +30,6 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
 import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, verifyBadge_)
@@ -50,7 +49,6 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Encoding.String (StrJSON (..))
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (AnyError (..))

@@ -233,11 +233,10 @@ import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRel
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConfirmationId, ConnId, ConnectionLink (..), CreatedConnLink (..), InvitationId, OwnerAuth (..), SConnectionMode (..), SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (ConfirmationId, ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Encoding (smpDecode, smpEncode)
-import Simplex.Messaging.Encoding.String (StrJSON (..))
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import Simplex.Messaging.Agent.Store.Entity (DBEntityId)
 import qualified Simplex.Messaging.Agent.Store.DB as DB

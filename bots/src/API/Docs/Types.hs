@@ -251,7 +251,6 @@ chatTypesDocsData =
     (sti @ConnectionErrorType, STUnion, "", [], "", ""),
     (sti @ConnectionMode, (STEnum' $ take 3 . consLower "CM"), "", [], "", ""),
     (sti @ConnectionPlan, STUnion, "CP", [], "", ""),
-    ((sti @ContactNameOrLink) {typeName = "AConnectTarget"}, STUnion, "CT", [], "", "Connect target: SimpleX link (`CTLink`) or SimpleX name (`CTName`). Wire form is the bare string returned by `strEncode` — `simplex:/...` for links, `#name.simplex` / `@name.simplex` for names."),
     (sti @ConnStatus, STUnion, "Conn", [], "", ""),
     (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", [], "", ""),
     (sti @Contact, STRecord, "", [], "", ""),
@@ -476,7 +475,6 @@ deriving instance Generic ConnectionEntity
 deriving instance Generic ConnectionErrorType
 deriving instance Generic ConnectionMode
 deriving instance Generic ConnectionPlan
-deriving instance Generic ContactNameOrLink
 deriving instance Generic ConnStatus
 deriving instance Generic ConnType
 deriving instance Generic Contact
