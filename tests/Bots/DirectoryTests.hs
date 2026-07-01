@@ -175,12 +175,8 @@ testDirectoryService ps =
         bob <## "Please add it to the group welcome message."
         bob <## "For example, add:"
         welcomeWithLink <- dropStrPrefix "'SimpleX Directory'> " . dropTime <$> getTermLine bob
-        bob <# "'SimpleX Directory'> Recommended settings for public groups:"
-        bob <## "- Direct messages: off"
-        bob <## "- Files and media: on for moderators"
-        bob <## "- SimpleX links: on for moderators"
-        bob <## ""
-        bob <## "You can change these in the group preferences."
+        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
+        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
         -- putStrLn "*** update profile without link"
         updateGroupProfile bob "Welcome!"
         bob <# "'SimpleX Directory'> The profile updated for ID 1 (PSA), but the group link is not added to the welcome message."
@@ -814,7 +810,7 @@ testNotSentApprovalBadRoles ps =
         bob `connectVia` dsLink
         cath `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
-        welcomeWithLink <- groupAccepted bob "privacy"
+        welcomeWithLink <- groupAccepted bob "privacy" 1
         bob ##> "/mr privacy 'SimpleX Directory' member"
         bob <## "#privacy: you changed the role of 'SimpleX Directory' to member"
         updateProfileWithLink bob "privacy" welcomeWithLink 1
@@ -837,7 +833,7 @@ testNotApprovedBadRoles ps =
         bob `connectVia` dsLink
         cath `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
-        welcomeWithLink <- groupAccepted bob "privacy"
+        welcomeWithLink <- groupAccepted bob "privacy" 1
         updateProfileWithLink bob "privacy" welcomeWithLink 1
         notifySuperUser superUser bob "privacy" "Privacy" welcomeWithLink 1
         bob ##> "/mr privacy 'SimpleX Directory' member"
@@ -1045,14 +1041,14 @@ testDuplicateAskConfirmation ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
-        _ <- groupAccepted bob "privacy"
+        _ <- groupAccepted bob "privacy" 1
         cath `connectVia` dsLink
         submitGroup cath "privacy" "Privacy"
         cath <# "'SimpleX Directory'> The group privacy (Privacy) is already submitted to the directory."
         cath <## "To confirm the registration, please send:"
         cath <# "'SimpleX Directory'> /confirm 1:privacy"
         cath #> "@'SimpleX Directory' /confirm 1:privacy"
-        welcomeWithLink <- groupAccepted cath "privacy"
+        welcomeWithLink <- groupAccepted cath "privacy" 1
         groupNotFound bob "privacy"
         completeRegistrationId superUser cath "privacy" "Privacy" welcomeWithLink 2 1
         groupFound bob "privacy"
@@ -1076,7 +1072,7 @@ testDuplicateProhibitConfirmation ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
-        welcomeWithLink <- groupAccepted bob "privacy"
+        welcomeWithLink <- groupAccepted bob "privacy" 1
         cath `connectVia` dsLink
         submitGroup cath "privacy" "Privacy"
         cath <# "'SimpleX Directory'> The group privacy (Privacy) is already submitted to the directory."
@@ -1095,14 +1091,14 @@ testDuplicateProhibitWhenUpdated ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
-        welcomeWithLink <- groupAccepted bob "privacy"
+        welcomeWithLink <- groupAccepted bob "privacy" 1
         cath `connectVia` dsLink
         submitGroup cath "privacy" "Privacy"
         cath <# "'SimpleX Directory'> The group privacy (Privacy) is already submitted to the directory."
         cath <## "To confirm the registration, please send:"
         cath <# "'SimpleX Directory'> /confirm 1:privacy"
         cath #> "@'SimpleX Directory' /confirm 1:privacy"
-        welcomeWithLink' <- groupAccepted cath "privacy"
+        welcomeWithLink' <- groupAccepted cath "privacy" 1
         groupNotFound cath "privacy"
         completeRegistration superUser bob "privacy" "Privacy" welcomeWithLink 1
         groupFound cath "privacy"
@@ -1126,14 +1122,14 @@ testDuplicateProhibitApproval ps =
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
-        welcomeWithLink <- groupAccepted bob "privacy"
+        welcomeWithLink <- groupAccepted bob "privacy" 1
         cath `connectVia` dsLink
         submitGroup cath "privacy" "Privacy"
         cath <# "'SimpleX Directory'> The group privacy (Privacy) is already submitted to the directory."
         cath <## "To confirm the registration, please send:"
         cath <# "'SimpleX Directory'> /confirm 1:privacy"
         cath #> "@'SimpleX Directory' /confirm 1:privacy"
-        welcomeWithLink' <- groupAccepted cath "privacy"
+        welcomeWithLink' <- groupAccepted cath "privacy" 1
         updateProfileWithLink cath "privacy" welcomeWithLink' 1
         notifySuperUser superUser cath "privacy" "Privacy" welcomeWithLink' 2
         groupNotFound cath "privacy"
@@ -1806,7 +1802,7 @@ registerGroup su u n fn = registerGroupId su u n fn 1 1
 registerGroupId :: TestCC -> TestCC -> String -> String -> Int -> Int -> IO ()
 registerGroupId su u n fn gId ugId = do
   submitGroup u n fn
-  welcomeWithLink <- groupAccepted u n
+  welcomeWithLink <- groupAccepted u n ugId
   completeRegistrationId su u n fn welcomeWithLink gId ugId
 
 submitGroup :: TestCC -> String -> String -> IO ()
@@ -1817,8 +1813,8 @@ submitGroup u n fn = do
   u ##> ("/a " <> viewName n <> " 'SimpleX Directory' admin")
   u <## ("invitation to join the group #" <> viewName n <> " sent to 'SimpleX Directory'")
 
-groupAccepted :: TestCC -> String -> IO String
-groupAccepted u n = do
+groupAccepted :: TestCC -> String -> Int -> IO String
+groupAccepted u n ugId = do
   u <###
     [ WithTime ("'SimpleX Directory'> Joining the group " <> n <> "…"),
       ConsoleString ("#" <> viewName n <> ": 'SimpleX Directory' joined the group")
@@ -1829,12 +1825,8 @@ groupAccepted u n = do
   u <## "Please add it to the group welcome message."
   u <## "For example, add:"
   welcomeWithLink <- dropStrPrefix "'SimpleX Directory'> " . dropTime <$> getTermLine u
-  u <# "'SimpleX Directory'> Recommended settings for public groups:"
-  u <## "- Direct messages: off"
-  u <## "- Files and media: on for moderators"
-  u <## "- SimpleX links: on for moderators"
-  u <## ""
-  u <## "You can change these in the group preferences."
+  u <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
+  u <## ("Captcha verification is enabled. Use /'filter " <> show ugId <> "' to change it.")
   pure welcomeWithLink
 
 completeRegistration :: TestCC -> TestCC -> String -> String -> String -> Int -> IO ()
@@ -2069,12 +2061,8 @@ testRegisterChannelViaCard ps =
           ]
         -- owner sends a message to trigger member introduction
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        bob <# "'SimpleX Directory'> Recommended settings for public groups:"
-        bob <## "- Direct messages: off"
-        bob <## "- Files and media: on for moderators"
-        bob <## "- SimpleX links: on for moderators"
-        bob <## ""
-        bob <## "You can change these in the group preferences."
+        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
+        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
         superUser <##. "Link to join channel: "
@@ -2173,12 +2161,8 @@ testDeleteChannelRegistration ps =
             bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
           ]
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        bob <# "'SimpleX Directory'> Recommended settings for public groups:"
-        bob <## "- Direct messages: off"
-        bob <## "- Files and media: on for moderators"
-        bob <## "- SimpleX links: on for moderators"
-        bob <## ""
-        bob <## "You can change these in the group preferences."
+        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
+        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
         superUser <##. "Link to join channel: "
@@ -2223,12 +2207,8 @@ testReregistrationAlreadyListed ps =
             bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
           ]
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        bob <# "'SimpleX Directory'> Recommended settings for public groups:"
-        bob <## "- Direct messages: off"
-        bob <## "- Files and media: on for moderators"
-        bob <## "- SimpleX links: on for moderators"
-        bob <## ""
-        bob <## "You can change these in the group preferences."
+        bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
+        bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
         superUser <##. "Link to join channel: "
@@ -2288,12 +2268,8 @@ testLinkCheckUpdatesCount ps = do
                 bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
               ]
             bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-            bob <# "'SimpleX Directory'> Recommended settings for public groups:"
-            bob <## "- Direct messages: off"
-            bob <## "- Files and media: on for moderators"
-            bob <## "- SimpleX links: on for moderators"
-            bob <## ""
-            bob <## "You can change these in the group preferences."
+            bob <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
+            bob <## "Captcha verification is enabled. Use /'filter 1' to change it."
             superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
             superUser <## "news"
             superUser <##. "Link to join channel: "

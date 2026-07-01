@@ -295,13 +295,10 @@ acceptMemberHook
 groupMemberAcceptance :: GroupInfo -> DirectoryMemberAcceptance
 groupMemberAcceptance GroupInfo {customData} = (\DirectoryGroupData {memberAcceptance = ma} -> ma) $ fromCustomData customData
 
-recommendedSettingsNotice :: Text
-recommendedSettingsNotice =
-  "Recommended settings for public groups:\n\
-  \- Direct messages: off\n\
-  \- Files and media: on for moderators\n\
-  \- SimpleX links: on for moderators\n\n\
-  \You can change these in the group preferences."
+recommendedSettingsNotice :: UserGroupRegId -> Text
+recommendedSettingsNotice userGroupId =
+  "We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them.\n\
+  \Captcha verification is enabled. Use /'filter " <> tshow userGroupId <> "' to change it."
 
 useMemberFilter :: Maybe ImageData -> Maybe ProfileCondition -> Bool
 useMemberFilter img_ = \case
@@ -498,7 +495,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                       \Please add it to the group welcome message.\n\
                       \For example, add:"
                     notifyOwner gr' $ "Link to join the group " <> displayName <> ": " <> groupLinkText gLink
-                    notifyOwner gr' recommendedSettingsNotice
+                    notifyOwner gr' $ recommendedSettingsNotice (userGroupRegId gr')
                 Left (ChatError e) -> case e of
                   CEGroupUserRole {} -> notifyOwner gr "Failed creating group link, as service is no longer an admin."
                   CEGroupMemberUserRemoved -> notifyOwner gr "Failed creating group link, as service is removed from the group."
@@ -1069,7 +1066,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
            in if role >= GROwner
                 then setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
                   notifyOwner gr' $ "Joined the " <> gt <> " " <> displayName <> ". Registration is pending approval — it may take up to 48 hours."
-                  notifyOwner gr' recommendedSettingsNotice
+                  notifyOwner gr' $ recommendedSettingsNotice (userGroupRegId gr')
                   sendToApprove g gr' 1
                 else do
                   setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \_ -> pure ()
