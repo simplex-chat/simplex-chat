@@ -218,9 +218,9 @@ channel subscriber relay bar</note>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d sec" xml:space="preserve">
+      <trans-unit id="%d sec" xml:space="preserve" approved="no">
         <source>%d sec</source>
-        <target>%d sec</target>
+        <target state="translated">%d s</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d seconds(s)" xml:space="preserve">
