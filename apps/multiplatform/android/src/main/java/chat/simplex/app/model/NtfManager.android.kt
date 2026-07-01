@@ -12,6 +12,9 @@ import android.net.Uri
 import android.view.Display
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.core.app.*
+import androidx.core.app.Person
+import androidx.core.app.RemoteInput
+import androidx.core.graphics.drawable.IconCompat
 import chat.simplex.app.*
 import chat.simplex.app.TAG
 import chat.simplex.app.views.call.CallActivity
@@ -38,6 +41,9 @@ object NtfManager {
   const val CallNotificationId: Int = -1
   private const val UserIdKey: String = "userId"
   private const val ChatIdKey: String = "chatId"
+  private const val ReplyAction: String = "chat.simplex.app.NTF_REPLY"
+  private const val DismissAction: String = "chat.simplex.app.NTF_DISMISS"
+  private const val ReplyTextKey: String = "chat.simplex.app.NTF_REPLY_TEXT"
   private val appPreferences: AppPreferences = ChatController.appPrefs
   private val context: Context
     get() = SimplexApp.context
@@ -51,6 +57,15 @@ object NtfManager {
   // (UserId, ChatId) -> Time
   private var prevNtfTime = mutableMapOf<Pair<Long, ChatId>, Long>()
   private val msgNtfTimeoutMs = 30000L
+
+  // Per-chat conversation history for MessagingStyle re-rendering (also shows the sent reply).
+  // API 26-27 can't reliably extract MessagingStyle from a posted notification, so we keep our own.
+  private data class NtfMessage(val text: String, val time: Long, val fromSelf: Boolean)
+  private class ConversationNtf(val userId: Long, var displayName: String, var image: String?) {
+    val messages = ArrayDeque<NtfMessage>()
+  }
+  private const val maxNtfMessages = 8
+  private val conversations = java.util.concurrent.ConcurrentHashMap<ChatId, ConversationNtf>()
 
   init {
     if (areNotificationsEnabledInSystem()) createNtfChannelsMaybeShowAlert()
@@ -75,6 +90,7 @@ object NtfManager {
   fun cancelNotificationsForChat(chatId: String) {
     val key = prevNtfTime.keys.firstOrNull { it.second == chatId }
     prevNtfTime.remove(key)
+    conversations.remove(chatId)
     manager.cancel(chatId.hashCode())
     val msgNtfs = manager.activeNotifications.filter { ntf ->
       ntf.notification.channelId == MessageChannel
@@ -90,6 +106,7 @@ object NtfManager {
       prevNtfTime.remove(it)
       manager.cancel(it.second.hashCode())
     }
+    conversations.entries.removeAll { it.value.userId == userId }
     val msgNtfs = manager.activeNotifications.filter { ntf ->
       ntf.notification.channelId == MessageChannel
     }
@@ -99,7 +116,7 @@ object NtfManager {
     }
   }
 
-  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
+  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList(), canReply: Boolean = false) {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
     val now = Clock.System.now().toEpochMilliseconds()
@@ -108,36 +125,48 @@ object NtfManager {
     val previewMode = appPreferences.notificationPreviewMode.get()
     val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(MR.strings.notification_preview_somebody) else displayName
     val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(MR.strings.notification_preview_new_message) else msgText
-    val largeIcon = when {
-      actions.isEmpty() -> null
-      image == null || previewMode == NotificationPreviewMode.HIDDEN.name -> BitmapFactory.decodeResource(context.resources, R.drawable.icon)
-      else -> base64ToBitmap(image).asAndroidBitmap()
-    }
+
     val builder = NotificationCompat.Builder(context, MessageChannel)
-      .setContentTitle(title)
-      .setContentText(content)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setSmallIcon(R.drawable.ntf_icon)
-      .setLargeIcon(largeIcon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
-      .setVibrate(if (actions.isEmpty()) null else longArrayOf(0, 250, 250, 250))
       .setContentIntent(chatPendingIntent(OpenChatAction, user.userId, chatId))
-      .setSilent(if (actions.isEmpty()) recentNotification else false)
 
-    for (action in actions) {
-      val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-      val actionIntent = Intent(SimplexApp.context, NtfActionReceiver::class.java)
-      actionIntent.action = action.name
-      actionIntent.putExtra(UserIdKey, user.userId)
-      actionIntent.putExtra(ChatIdKey, chatId)
-      val actionPendingIntent: PendingIntent = PendingIntent.getBroadcast(SimplexApp.context, 0, actionIntent, flags)
-      val actionButton = when (action) {
-        NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(MR.strings.accept)
+    if (canReply) {
+      // Inline reply: render the conversation as MessagingStyle and attach a RemoteInput reply action.
+      val convo = updateConversation(user.userId, chatId, title, image, content, now, fromSelf = false)
+      builder
+        .setStyle(messagingStyle(user.userId, chatId, convo))
+        .addAction(replyAction(user.userId, chatId))
+        .setDeleteIntent(dismissPendingIntent(chatId))
+        .setSilent(recentNotification)
+    } else {
+      val largeIcon = when {
+        actions.isEmpty() -> null
+        image == null || previewMode == NotificationPreviewMode.HIDDEN.name -> BitmapFactory.decodeResource(context.resources, R.drawable.icon)
+        else -> base64ToBitmap(image).asAndroidBitmap()
       }
-      builder.addAction(0, actionButton, actionPendingIntent)
+      builder
+        .setContentTitle(title)
+        .setContentText(content)
+        .setLargeIcon(largeIcon)
+        .setVibrate(if (actions.isEmpty()) null else longArrayOf(0, 250, 250, 250))
+        .setSilent(if (actions.isEmpty()) recentNotification else false)
+      for (action in actions) {
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        val actionIntent = Intent(SimplexApp.context, NtfActionReceiver::class.java)
+        actionIntent.action = action.name
+        actionIntent.putExtra(UserIdKey, user.userId)
+        actionIntent.putExtra(ChatIdKey, chatId)
+        val actionPendingIntent: PendingIntent = PendingIntent.getBroadcast(SimplexApp.context, 0, actionIntent, flags)
+        val actionButton = when (action) {
+          NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(MR.strings.accept)
+        }
+        builder.addAction(0, actionButton, actionPendingIntent)
+      }
     }
     val summary = NotificationCompat.Builder(context, MessageChannel)
       .setSmallIcon(R.drawable.ntf_icon)
@@ -155,6 +184,111 @@ object NtfManager {
         notify(0, summary)
       }
     }
+  }
+
+  private fun updateConversation(userId: Long, chatId: ChatId, displayName: String, image: String?, text: String, time: Long, fromSelf: Boolean): ConversationNtf {
+    val convo = conversations.computeIfAbsent(chatId) { ConversationNtf(userId, displayName, image) }
+    synchronized(convo) {
+      convo.displayName = displayName
+      convo.image = image
+      convo.messages.addLast(NtfMessage(text, time, fromSelf))
+      while (convo.messages.size > maxNtfMessages) convo.messages.removeFirst()
+    }
+    return convo
+  }
+
+  private fun messagingStyle(userId: Long, chatId: ChatId, convo: ConversationNtf): NotificationCompat.MessagingStyle {
+    val self = Person.Builder()
+      .setName(generalGetString(MR.strings.notification_reply_you))
+      .setKey("self_$userId")
+      .build()
+    val hidePreview = appPreferences.notificationPreviewMode.get() == NotificationPreviewMode.HIDDEN.name
+    val senderIcon = convo.image
+      ?.takeIf { !hidePreview }
+      ?.let { runCatching { IconCompat.createWithBitmap(base64ToBitmap(it).asAndroidBitmap()) }.getOrNull() }
+    val sender = Person.Builder()
+      .setName(convo.displayName)
+      .setKey(chatId)
+      .apply { if (senderIcon != null) setIcon(senderIcon) }
+      .build()
+    val style = NotificationCompat.MessagingStyle(self)
+    synchronized(convo) {
+      convo.messages.forEach { m ->
+        style.addMessage(NotificationCompat.MessagingStyle.Message(m.text, m.time, if (m.fromSelf) null else sender))
+      }
+    }
+    return style
+  }
+
+  private fun replyAction(userId: Long, chatId: ChatId): NotificationCompat.Action {
+    val remoteInput = RemoteInput.Builder(ReplyTextKey)
+      .setLabel(generalGetString(MR.strings.notification_reply_hint))
+      .build()
+    val intent = Intent(SimplexApp.context, NtfActionReceiver::class.java)
+      .setAction(ReplyAction)
+      .putExtra(UserIdKey, userId)
+      .putExtra(ChatIdKey, chatId)
+    // FLAG_MUTABLE is required so the system can write the RemoteInput reply text into the intent.
+    // The target is an explicit, non-exported receiver, so a mutable PendingIntent is safe here.
+    val pendingIntent = PendingIntent.getBroadcast(
+      SimplexApp.context, chatId.hashCode(), intent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+    )
+    return NotificationCompat.Action.Builder(R.drawable.ntf_icon, generalGetString(MR.strings.notification_reply_action), pendingIntent)
+      .addRemoteInput(remoteInput)
+      .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+      .setShowsUserInterface(false)
+      .setAllowGeneratedReplies(true)
+      // require device unlock before delivering the reply on a locked device (API 31+, no-op below)
+      .setAuthenticationRequired(true)
+      .build()
+  }
+
+  private fun dismissPendingIntent(chatId: ChatId): PendingIntent {
+    val intent = Intent(SimplexApp.context, NtfActionReceiver::class.java)
+      .setAction(DismissAction)
+      .putExtra(ChatIdKey, chatId)
+    return PendingIntent.getBroadcast(
+      SimplexApp.context, "d:$chatId".hashCode(), intent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+  }
+
+  // Re-posting the conversation notification under the same id clears the system inline-reply
+  // "Sending…" progress state. Built entirely from convo (the per-chat id is user-independent).
+  private fun postConversationNotification(chatId: ChatId, convo: ConversationNtf) {
+    val builder = NotificationCompat.Builder(context, MessageChannel)
+      .setPriority(NotificationCompat.PRIORITY_HIGH)
+      .setGroup(MessageGroup)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setSmallIcon(R.drawable.ntf_icon)
+      .setColor(0x88FFFF)
+      .setAutoCancel(true)
+      .setOnlyAlertOnce(true)
+      .setSilent(true)
+      .setContentIntent(chatPendingIntent(OpenChatAction, convo.userId, chatId))
+      .setDeleteIntent(dismissPendingIntent(chatId))
+      .setStyle(messagingStyle(convo.userId, chatId, convo))
+      .addAction(replyAction(convo.userId, chatId))
+    with(NotificationManagerCompat.from(context)) {
+      if (ActivityCompat.checkSelfPermission(SimplexApp.context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+        notify(chatId.hashCode(), builder.build())
+      }
+    }
+  }
+
+  fun onReplySent(chatId: ChatId, text: String) {
+    val convo = conversations[chatId] ?: return
+    val now = Clock.System.now().toEpochMilliseconds()
+    updateConversation(convo.userId, chatId, convo.displayName, convo.image, text, now, fromSelf = true)
+    postConversationNotification(chatId, convo)
+  }
+
+  fun onReplyFailed(chatId: ChatId) {
+    Log.e(TAG, "ntf reply failed for $chatId")
+    // Re-post without the failed text so the inline-reply progress state is cleared, then notify the user.
+    conversations[chatId]?.let { postConversationNotification(chatId, it) }
+    showMessage(generalGetString(MR.strings.notification_reply_failed_title), generalGetString(MR.strings.notification_reply_failed_desc))
   }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
@@ -314,6 +448,23 @@ object NtfManager {
       val chatId = intent?.getStringExtra(ChatIdKey) ?: return
       val m = SimplexApp.context.chatModel
       when (intent.action) {
+        ReplyAction -> {
+          val text = RemoteInput.getResultsFromIntent(intent)?.getCharSequence(ReplyTextKey)?.toString()
+          if (text.isNullOrBlank()) return
+          val pending = goAsync()
+          withBGApi {
+            try {
+              if (sendNtfReply(rhId = null, userId = userId, chatId = chatId, text = text)) onReplySent(chatId, text)
+              else onReplyFailed(chatId)
+            } catch (e: Throwable) {
+              Log.e(TAG, "ntf reply error: ${e.stackTraceToString()}")
+              onReplyFailed(chatId)
+            } finally {
+              pending.finish()
+            }
+          }
+        }
+        DismissAction -> conversations.remove(chatId)
         NotificationAction.ACCEPT_CONTACT_REQUEST.name -> ntfManager.acceptContactRequestAction(userId, incognito = false, chatId)
         RejectCallAction -> {
           val invitation = m.callInvitations[chatId]
