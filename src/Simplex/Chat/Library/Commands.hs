@@ -56,8 +56,8 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, proofPresHeaderLink, verifyCredential)
-import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim (..), claimName, claimProof, mkSimplexNameClaim, signNameProof, verifyNameProofSig)
+import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim (..), claimName, claimProof, mkSimplexNameClaim, verifyNameProofSig)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -4792,46 +4792,37 @@ nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . st
 verifyName :: User -> NetworkRequestMode -> SimplexNameInfo -> Maybe AConnShortLink -> Maybe NameClaimProof -> CM (Maybe Bool, Maybe Text)
 verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
   (Nothing, _) -> pure (Nothing, Just "no name proof to verify")
-  (_, Nothing) -> pure (Nothing, Just "no connection link to check the name proof against")
-  (Just proof, Just connLink)
-    | not (proofBoundTo proof connLink) ->
-        pure (Just False, Just "the name proof is bound to a different link than the one used to connect")
-    | otherwise -> do
-        let SimplexNameInfo {nameType, nameDomain} = claim
-        NameRecord {nrSimplexContact, nrSimplexChannel} <-
-          withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
-        let resolvedLinks = case nameType of
-              NTContact -> nrSimplexContact
-              NTPublicGroup -> nrSimplexChannel
-        if null resolvedLinks
-          then pure (Just False, Just "the name is not registered (it does not resolve to any address)")
-          else do
-            ok <- or <$> mapM (verifyProofKey nm user claim proof) resolvedLinks
-            pure $
-              if ok
-                then (Just True, Nothing)
-                else (Just False, Just "the name resolves to a different address — its owner did not sign this name proof")
+  (_, Nothing) -> pure (Nothing, Just "no connection link to check the name against")
+  (Just proof, Just (ACSL SCMContact profileSLnk)) -> do
+    let SimplexNameInfo {nameType, nameDomain} = claim
+    NameRecord {nrSimplexContact, nrSimplexChannel} <-
+      withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
+    let resolvedLinks = case nameType of
+          NTContact -> nrSimplexContact
+          NTPublicGroup -> nrSimplexChannel
+    if not (nameResolvesTo profileSLnk resolvedLinks)
+      then pure (Just False, Just "the name does not resolve to this address")
+      else do
+        ok <- verifyProofKey nm user profileSLnk claim proof
+        pure $
+          if ok
+            then (Just True, Nothing)
+            else (Just False, Just "the name proof was not signed by this address's owner")
+  (Just _, Just _) -> pure (Nothing, Just "unexpected connection link type for name verification")
 
-proofBoundTo :: NameClaimProof -> AConnShortLink -> Bool
-proofBoundTo NameClaimProof {presHeader} connLink =
-  maybe False (`sameConnShortLink` connLink) (proofPresHeaderLink presHeader)
-
--- verify the proof signature against the resolved name's owner key;
+-- verify the proof signature against the profile address's owner key;
 -- getShortLinkConnReq's network/agent error propagates (UI can retry), not recorded as a verdict
-verifyProofKey :: NetworkRequestMode -> User -> SimplexNameInfo -> NameClaimProof -> Text -> CM Bool
-verifyProofKey nm user claim proof resolvedText =
-  case strDecode (encodeUtf8 resolvedText) :: Either String AConnectionLink of
-    Right (ACL SCMContact (CLShort sLnk)) -> do
-      (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}) <- getShortLinkConnReq nm user sLnk
-      pure $ proofSignedByOwner rootKey owners claim proof
-    _ -> pure False
+verifyProofKey :: NetworkRequestMode -> User -> ShortLinkContact -> SimplexNameInfo -> NameClaimProof -> CM Bool
+verifyProofKey nm user sLnk claim proof = do
+  (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}) <- getShortLinkConnReq nm user sLnk
+  pure $ proofSignedByOwner rootKey owners sLnk claim proof
 
-proofSignedByOwner :: C.PublicKeyEd25519 -> [OwnerAuth] -> SimplexNameInfo -> NameClaimProof -> Bool
-proofSignedByOwner rootKey owners claim proof@NameClaimProof {linkOwnerId} =
+proofSignedByOwner :: C.PublicKeyEd25519 -> [OwnerAuth] -> ShortLinkContact -> SimplexNameInfo -> NameClaimProof -> Bool
+proofSignedByOwner rootKey owners sLnk claim proof@NameClaimProof {linkOwnerId} =
   let key_ = case linkOwnerId of
         Nothing -> Just rootKey
         Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
-   in maybe False (\key -> verifyNameProofSig key claim proof) key_
+   in maybe False (\key -> verifyNameProofSig key claim sLnk proof) key_
 
 -- connecting by name resolves the name to this address, so it is verified without checking the proof
 verifyNameClaim :: SimplexNameInfo -> Maybe SimplexNameInfo -> CM (Maybe Bool)

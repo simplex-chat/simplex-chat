@@ -14,7 +14,6 @@ module Simplex.Chat.Names
     claimProof,
     setClaimProof,
     NameClaimProof (..),
-    signNameProof,
     verifyNameProofSig,
   )
 where
@@ -22,7 +21,7 @@ where
 import qualified Data.Aeson.TH as JQ
 import Data.ByteString.Char8 (ByteString)
 import Simplex.Chat.Badges (ProofPresHeader)
-import Simplex.Messaging.Agent.Protocol (OwnerId)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), OwnerId)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -39,7 +38,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 
 -- A name claim proof: signed by the address owner's key (linkOwnerId = Just oid when a channel
 -- owner other than the address signs, Nothing when the address's own root key signs) over
--- strEncode name <> strEncode presHeader, tied to the link it is shown through.
+-- the name-proof payload, binding the name to the address (see nameProofPayload).
 data NameClaimProof = NameClaimProof
   { linkOwnerId :: Maybe (StrJSON "OwnerId" OwnerId),
     presHeader :: ProofPresHeader,
@@ -47,24 +46,13 @@ data NameClaimProof = NameClaimProof
   }
   deriving (Eq, Show)
 
-nameProofPayload :: SimplexNameInfo -> ProofPresHeader -> ByteString
-nameProofPayload name presHeader = strEncode name <> strEncode presHeader
+nameProofPayload :: SimplexNameInfo -> ProofPresHeader -> ConnShortLink 'CMContact -> ByteString
+nameProofPayload name presHeader (CSLContact _ ct srv key) =
+  strEncode (Str "simplex_names_v1", presHeader, name, ct, srv, key)
 
--- linkOwnerId names the signing owner in the link's owner chain (Nothing = root key for a contact address).
-signNameProof :: C.PrivateKeyEd25519 -> Maybe OwnerId -> SimplexNameInfo -> ProofPresHeader -> NameClaimProof
-signNameProof key linkOwnerId name presHeader =
-  NameClaimProof
-    { linkOwnerId = StrJSON <$> linkOwnerId,
-      presHeader,
-      signature = C.sign' key (nameProofPayload name presHeader)
-    }
-
--- verify a name proof's signature against the resolved address owner key. The caller must
--- SEPARATELY check the proof's presHeader link is the one it was shown through, so a proof made
--- for one link can't be reused on another.
-verifyNameProofSig :: C.PublicKeyEd25519 -> SimplexNameInfo -> NameClaimProof -> Bool
-verifyNameProofSig ownerKey name NameClaimProof {presHeader, signature} =
-  C.verify' ownerKey signature (nameProofPayload name presHeader)
+verifyNameProofSig :: C.PublicKeyEd25519 -> SimplexNameInfo -> ConnShortLink 'CMContact -> NameClaimProof -> Bool
+verifyNameProofSig ownerKey name sLnk NameClaimProof {presHeader, signature} =
+  C.verify' ownerKey signature (nameProofPayload name presHeader sLnk)
 
 $(JQ.deriveJSON defaultJSON ''NameClaimProof)
 

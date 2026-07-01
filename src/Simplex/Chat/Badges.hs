@@ -30,7 +30,6 @@ module Simplex.Chat.Badges
     maxFileSizeLegend,
     ProofPresHeaderTag (..),
     ProofPresHeader (..),
-    proofPresHeaderLink,
     BadgePurchase (..),
     BadgeMasterKey (..),
     BadgeRequest (..),
@@ -67,7 +66,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
 import Simplex.FileTransfer.Description (gb, maxFileSize)
-import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), OwnerId)
+import Simplex.Messaging.Agent.Protocol (OwnerId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
@@ -202,25 +201,20 @@ maxXFTPFileSize = \case
 -- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
 -- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
 
-data ProofPresHeaderTag = PHTestTag | PHSimplexLinkTag | PHUnknownTag Char
+data ProofPresHeaderTag = PHTestTag | PHUnknownTag Char
 
 instance StrEncoding ProofPresHeaderTag where
   strEncode = B.singleton . \case
     PHTestTag -> 'T'
-    PHSimplexLinkTag -> 'L'
     PHUnknownTag c -> c
   strP = tag <$> A.anyChar
     where
       tag = \case
         'T' -> PHTestTag
-        'L' -> PHSimplexLinkTag
         c -> PHUnknownTag c
 
--- PHSimplexLink binds the proof to the link it is presented through (a 1-time
--- invitation or a contact address), making it non-replayable across links.
 data ProofPresHeader
   = PHTest ByteString
-  | PHSimplexLink AConnShortLink
   | PHUnknown Char ByteString
   deriving (Eq, Show)
   deriving (ToJSON, FromJSON) via (StrJSON "ProofPresHeader" ProofPresHeader)
@@ -228,25 +222,17 @@ data ProofPresHeader
 instance StrEncoding ProofPresHeader where
   strEncode = \case
     PHTest nonce -> strEncode PHTestTag <> nonce
-    PHSimplexLink lnk -> strEncode PHSimplexLinkTag <> strEncode lnk
     PHUnknown c b -> strEncode (PHUnknownTag c) <> b
   strP =
     strP >>= \case
       PHTestTag -> PHTest <$> A.takeByteString
-      PHSimplexLinkTag -> PHSimplexLink <$> strP
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
 -- v6.5.x accepts both; v7 will reject PHTest/PHUnknown
 proofPresHeaderAccepted :: ProofPresHeader -> Bool
 proofPresHeaderAccepted = \case
   PHTest _ -> True
-  PHSimplexLink _ -> True
   PHUnknown _ _ -> True
-
-proofPresHeaderLink :: ProofPresHeader -> Maybe AConnShortLink
-proofPresHeaderLink = \case
-  PHSimplexLink lnk -> Just lnk
-  _ -> Nothing
 
 -- Payment proof
 
