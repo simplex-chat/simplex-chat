@@ -808,16 +808,14 @@ processChatCommand cxt nm = \case
           recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
-          let msgIds = itemsMsgIds items
-              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) False) msgIds
-          mapM_ (sendGroupMessages user gInfo Nothing False recipients False) events
+          let signedEvents = L.nonEmpty $ mapMaybe (delEventSigned gInfo chatScopeInfo False) items
+          mapM_ (sendGroupSignedMessages user gInfo Nothing False recipients) signedEvents
           delGroupChatItems user gInfo chatScopeInfo items False
         CIDMHistory -> do
           unless (publicGroupEditor gInfo (membership gInfo)) $ throwChatError CEInvalidChatItemDelete
           recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
-          let msgIds = itemsMsgIds items
-              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) True) msgIds
-          mapM_ (sendGroupMessages user gInfo Nothing False recipients False) events
+          let signedEvents = L.nonEmpty $ mapMaybe (delEventSigned gInfo chatScopeInfo True) items
+          mapM_ (sendGroupSignedMessages user gInfo Nothing False recipients) signedEvents
           delGroupChatItems user gInfo chatScopeInfo items False
       pure $ CRChatItemsDeleted user deletions True False
     CTLocal -> do
@@ -839,6 +837,10 @@ processChatCommand cxt nm = \case
               SMDRcv -> False
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
+      -- per-item self/history delete signer: sign iff the target item was held signed (preserves self-delete deniability)
+      delEventSigned :: GroupInfo -> Maybe GroupChatScopeInfo -> Bool -> CChatItem 'CTGroup -> Maybe (Maybe MsgSigning, ChatMsgEvent 'Json)
+      delEventSigned gInfo chatScopeInfo onlyHistory (CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId, msgSigned}}) =
+        (\msgId -> let evt = XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) onlyHistory in (groupMsgSigning (isJust msgSigned) gInfo evt, evt)) <$> itemSharedMsgId
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
     (gInfo, items) <- getCommandGroupChatItems user gId itemIds
     -- TODO [knocking] check scope is Nothing for all items? (prohibit moderation in support chats?)
@@ -3913,8 +3915,9 @@ processChatCommand cxt nm = \case
       assertDeletable gInfo items
       assertUserGroupRole gInfo GRModerator
       let msgMemIds = itemsMsgMemIds gInfo items
-          events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId memId (toMsgScope gInfo <$> chatScopeInfo) False) msgMemIds
-      mapM_ (sendGroupMessages_ user gInfo ms False) events
+          -- moderation deletes always sign (attributable; avoids the catch-up-moderator divergence)
+          signedEvents = L.nonEmpty $ map (\(msgId, memId) -> let evt = XMsgDel msgId memId (toMsgScope gInfo <$> chatScopeInfo) False in (groupMsgSigning True gInfo evt, evt)) msgMemIds
+      mapM_ (sendGroupSignedMessages_ gInfo ms) signedEvents
       delGroupChatItems user gInfo chatScopeInfo items True
       where
         assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()

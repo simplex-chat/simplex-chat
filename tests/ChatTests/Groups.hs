@@ -36,7 +36,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -336,6 +336,9 @@ chatGroupTests = do
       it "should reject unsigned update of a signed item" testChannelMemberUpdateEnforcement
       it "should sign as-channel post and keep it displayed as the channel" testChannelAsGroupSign
       it "should reject a non-owner posting as the channel" testChannelAsGroupSpoof
+      it "should sign self-delete of a signed item" testChannelMemberSelfDeleteSign
+      it "should reject unsigned delete of a signed item" testChannelMemberDeleteEnforcement
+      it "should always sign moderation delete" testChannelModerationDeleteSign
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -12289,6 +12292,180 @@ testChannelAsGroupSpoof ps =
       case rows of
         (Only connId : _) -> pure connId
         _ -> fail $ "no relay connection to member " <> T.unpack name
+
+testChannelMemberSelfDeleteSign :: HasCallStack => TestParams -> IO ()
+testChannelMemberSelfDeleteSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- member sends a signed message; dan holds it verified
+            cath ##> "/_send #1 sign=on text signed hello"
+            cath <# "#team signed hello"
+            bob <# "#team cath> signed hello"
+            concurrentlyN_
+              [ alice <# "#team cath> signed hello [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> signed hello [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> signed hello [>>]"
+              ]
+            dan #$> ("/_get chat #1 count=100 search=signed hello", chat, [(0, "signed hello (signed)")])
+
+            -- self-delete of the signed item: signed delete, dan (holding it signed) accepts
+            cathMsgId <- lastItemId cath
+            cath #$> ("/_delete item #1 " <> cathMsgId <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] signed hello"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] signed hello",
+                dan <# "#team cath> [marked deleted] signed hello",
+                eve <# "#team cath> [marked deleted] signed hello"
+              ]
+
+            -- self-delete of an unsigned item: unsigned delete, accepted (no enforcement)
+            cath #> "#team plain hello"
+            bob <# "#team cath> plain hello"
+            concurrentlyN_
+              [ alice <# "#team cath> plain hello [>>]",
+                dan <# "#team cath> plain hello [>>]",
+                eve <# "#team cath> plain hello [>>]"
+              ]
+            cathMsgId2 <- lastItemId cath
+            cath #$> ("/_delete item #1 " <> cathMsgId2 <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] plain hello"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] plain hello",
+                dan <# "#team cath> [marked deleted] plain hello",
+                eve <# "#team cath> [marked deleted] plain hello"
+              ]
+
+testChannelMemberDeleteEnforcement :: HasCallStack => TestParams -> IO ()
+testChannelMemberDeleteEnforcement ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath posts a signed message; dan holds it verified
+            cath ##> "/_send #1 sign=on text secret"
+            cath <# "#team secret"
+            bob <# "#team cath> secret"
+            concurrentlyN_
+              [ alice <# "#team cath> secret [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> secret [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> secret [>>]"
+              ]
+            dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
+
+            -- the relay forges an unsigned XMsgDel of cath's signed item to dan
+            cathMemId <- memberIdByName bob "cath"
+            sharedId <- itemSharedMsgId cath
+            connId <- relayConnIdToMember bob "dan"
+            ts <- getCurrentTime
+            let ChatController {smpAgent = bobAgent} = chatController bob
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgDel sharedId Nothing Nothing False)
+                fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
+                body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
+            sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+            either (fail . show) (const $ pure ()) sent
+            -- dan rejects the unsigned delete of the held-signed item; item not deleted, rejection recorded
+            threadDelay 2000000
+            dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
+
+            -- a legitimate signed self-delete by cath is accepted
+            cathMsgId <- lastItemId cath
+            cath #$> ("/_delete item #1 " <> cathMsgId <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] secret"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] secret",
+                dan <# "#team cath> [marked deleted] secret",
+                eve <# "#team cath> [marked deleted] secret"
+              ]
+  where
+    memberIdByName :: TestCC -> T.Text -> IO MemberId
+    memberIdByName cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_id FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only ByteString]
+      case rows of
+        (Only mid : _) -> pure (MemberId mid)
+        _ -> fail $ "no member " <> T.unpack name
+    relayConnIdToMember :: TestCC -> T.Text -> IO ByteString
+    relayConnIdToMember cc name = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
+          (Only name) ::
+          IO [Only ByteString]
+      case rows of
+        (Only connId : _) -> pure connId
+        _ -> fail $ "no relay connection to member " <> T.unpack name
+    itemSharedMsgId :: TestCC -> IO SharedMsgId
+    itemSharedMsgId cc = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query_ db "SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1" :: IO [Only ByteString]
+      case rows of
+        (Only smid : _) -> pure (SharedMsgId smid)
+        _ -> fail "no shared_msg_id"
+
+testChannelModerationDeleteSign :: HasCallStack => TestParams -> IO ()
+testChannelModerationDeleteSign ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            promoteChannelMember "team" alice bob cath [dan, eve]
+
+            -- cath posts a signed message; dan holds it verified
+            cath ##> "/_send #1 sign=on text moderated post"
+            cath <# "#team moderated post"
+            bob <# "#team cath> moderated post"
+            concurrentlyN_
+              [ alice <# "#team cath> moderated post [>>]",
+                do dan <### [EndsWith "updated to cath"]
+                   dan <## "#team: bob introduced cath (Catherine) in the channel"
+                   dan <# "#team cath> moderated post [>>]",
+                do eve <### [EndsWith "updated to cath"]
+                   eve <## "#team: bob introduced cath (Catherine) in the channel"
+                   eve <# "#team cath> moderated post [>>]"
+              ]
+            dan #$> ("/_get chat #1 count=100 search=moderated post", chat, [(0, "moderated post (signed)")])
+
+            -- owner moderation-deletes cath's signed post; the always-signed delete is accepted by dan (holding it signed)
+            -- resolve alice's item id by text (not lastItemId) so a racing trailing event can't select the wrong item
+            catItemIdOnAlice <- itemIdByText alice "moderated post"
+            alice ##> ("/_delete member item #1 " <> catItemIdOnAlice)
+            alice <## "message marked deleted by you"
+            concurrentlyN_
+              [ bob <# "#team cath> [marked deleted by alice] moderated post",
+                cath <# "#team cath> [marked deleted by alice] moderated post",
+                dan <# "#team cath> [marked deleted by alice] moderated post",
+                eve <# "#team cath> [marked deleted by alice] moderated post"
+              ]
+  where
+    itemIdByText :: TestCC -> T.Text -> IO String
+    itemIdByText cc t = do
+      rows <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT chat_item_id FROM chat_items WHERE item_text LIKE '%' || ? || '%' ORDER BY chat_item_id DESC LIMIT 1" (Only t) :: IO [Only Int64]
+      case rows of
+        (Only i : _) -> pure (show i)
+        _ -> fail $ "no item with text " <> T.unpack t
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =
