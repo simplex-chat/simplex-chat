@@ -985,10 +985,11 @@ acceptGroupJoinRequestAsync
     subMode <- chatReadVar subscriptionMode
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
     (cmdId, acId) <- prepareAgentAccept user True cReqInvId PQSupportOff
-    withStore $ \db ->
+    m <- withStore $ \db -> do
       liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
+      getGroupMemberById db vr user groupMemberId
     agentAcceptContactAsync user cmdId acId True cReqInvId msg PQSupportOff chatV subMode
-    withStore $ \db -> getGroupMemberById db vr user groupMemberId
+    pure m
 
 acceptGroupJoinSendRejectAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupRejectionReason -> CM GroupMember
 acceptGroupJoinSendRejectAsync
@@ -1016,10 +1017,11 @@ acceptGroupJoinSendRejectAsync
     subMode <- chatReadVar subscriptionMode
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
     (cmdId, acId) <- prepareAgentAccept user False cReqInvId PQSupportOff
-    withStore $ \db ->
+    m <- withStore $ \db -> do
       liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
+      getGroupMemberById db vr user groupMemberId
     agentAcceptContactAsync user cmdId acId False cReqInvId msg PQSupportOff chatV subMode
-    withStore $ \db -> getGroupMemberById db vr user groupMemberId
+    pure m
 
 acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
