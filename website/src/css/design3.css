@@ -1583,3 +1583,352 @@ section.page.footer {
         max-width: 1320px;
     }
 }
+
+/* ===== Crowdfunding home hero (.cf-hero) — desktop. Additive; does not touch section.cover.
+   Sits inside <main> over the shared sticky gradient, so no own gradient is needed —
+   only the desktop-only decorative illustration on top, plus text and the campaign blocks.
+   Mobile + RTL follow in the next commit. ===== */
+
+/* Centered content stack — mirrors section.cover div.content */
+.cf-hero .content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: calc(var(--sec-vhu) * 3.5);
+    width: var(--sec-w);
+    height: var(--sec-h);
+}
+
+.cf-hero .content h1 {
+    font-family: "GT-Walsheim", sans-serif;
+    font-weight: 700;
+    font-size: calc(var(--sec-vwu) * 12);
+    line-height: 0.9;
+    letter-spacing: -0.025em;
+    color: #1187fe;
+}
+
+.dark .cf-hero .content h1 {
+    color: #ffffff;
+}
+
+.cf-hero .content h2 {
+    font-family: "GT-Walsheim", sans-serif;
+    font-weight: 400;
+    font-size: calc(var(--sec-vwu) * 4.36);
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+}
+
+.cf-hero .content > p {
+    font-family: "Manrope", sans-serif;
+    font-weight: 200;
+    font-size: calc(var(--sec-vwu) * 1.5625);
+    max-width: calc(var(--sec-vwu) * 53);
+    color: #000000;
+}
+
+.dark .cf-hero .content > p {
+    color: #ffffff;
+}
+
+/* Desktop-only decorative illustration, per version (mirrors .page-2 background mechanics) */
+.cf-hero--testing-water {
+    background-image: url("/img/design_3/section-1-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .cf-hero--testing-water {
+    background-image: url("/img/design_3/section-1-desktop.webp");
+}
+
+.cf-hero--crowdfunding-full {
+    background-image: url("/img/design_3/section-1-desktop-wefunder-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .cf-hero--crowdfunding-full {
+    background-image: url("/img/design_3/section-1-desktop-wefunder.webp");
+}
+
+/* Full: the flag phone is baked into the desktop background, so hide the standalone image
+   (it reappears on mobile, where the decorative background is hidden — handled in C5). */
+.cf-hero--crowdfunding-full .cf-flag {
+    display: none;
+}
+
+/* crowdfunding-full CTA — stays in the centered flow under the paragraph */
+.cf-invest {
+    font-family: "GT-Walsheim", sans-serif;
+    font-weight: 400;
+    font-size: calc(var(--sec-vwu) * 2.3);
+}
+
+/* testing-water: flag + Reserve are ONE absolutely-positioned unit. Anchored to the SECTION CENTRE
+   (= the centred background illustration's centre) and offset in canvas units (--sec-*), which scale
+   by min(vw,vh) exactly like the background. So the block stays locked to the same spot in the
+   illustration on any aspect ratio — as if baked into it — instead of drifting with viewport width.
+   --flag-x / --flag-y are the offsets from centre (canvas units); width:max-content keeps the text
+   from being squeezed when the position changes. */
+.cf-hero--testing-water .cf-flag-block {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    --flag-x: 35;
+    --flag-y: 16;
+    transform: translate(calc(-50% + var(--sec-vwu) * var(--flag-x)),
+                         calc(-50% + var(--sec-vhu) * var(--flag-y)));
+    width: max-content;
+    display: flex;
+    align-items: center;
+}
+
+.cf-flag-block .cf-flag {
+    height: calc(var(--sec-vhu) * 37.42);
+    width: auto;
+}
+
+.cf-reserve {
+    position: relative;
+    top: calc(var(--sec-vhu) * 8.34);
+    width: calc(var(--sec-vwu) * 11.7);
+    text-align: left;
+}
+
+[dir="rtl"] .cf-reserve {
+    text-align: right;
+}
+
+/* nudge the inline arrow glyph down to sit on the text line */
+.cf-arrow {
+    vertical-align: -0.08em;
+}
+
+/* light theme: cf-hero links + subheadline use the blue gradient (not the global gold);
+   scoped to .cf-hero so the rest of the site's .gradient-text is untouched */
+:root:not(.dark) .cf-hero .gradient-text {
+    background-image: linear-gradient(100deg, #001aa7 0%, #0095e7 100%);
+}
+
+/* light theme: "Security Audits" label reads black on the light gradient */
+:root:not(.dark) .cf-hero .security-audits {
+    color: #000000;
+}
+
+/* The bordered badges (App Store / Google Play / F-Droid) get the #4f4f4f frame + 6px radius that
+   unifies their height and corners, but the badge art's own corners/edges are tighter, so on the
+   light cf-hero the gap inside the frame shows through. Fill it black so the badge merges with the
+   frame into one solid rounded button (invisible on the dark cover, so scoped to cf-hero only). */
+.cf-hero .socials a img:not(.no-border) {
+    background-color: #000;
+}
+
+.cf-reserve-h {
+    font-family: "Manrope", sans-serif;
+    font-weight: 200;
+    font-size: calc(var(--sec-vwu) * 1.5625);
+    line-height: 1.25;
+    color: #000000;
+}
+
+.cf-reserve-h a {
+    font-weight: 500;
+}
+
+/* reserve-heading line break: after "Own a share" on desktop, after "of SimpleX" on mobile */
+.cf-brk-d { display: block; }
+.cf-brk-m { display: none; }
+
+.dark .cf-reserve-h {
+    color: #ffffff;
+}
+
+.cf-disclaimer {
+    font-family: "Manrope", sans-serif;
+    font-weight: 300;
+    font-size: calc(var(--sec-vwu) * 0.52);
+    line-height: 1.25;
+    margin-top: calc(var(--sec-vhu) * 0.9);
+    color: #8ca0cd;
+}
+
+.dark .cf-disclaimer {
+    color: #526da9;
+}
+
+/* ===== Crowdfunding hero — mobile (≤959px). Calibrated to the mobile mockup. ===== */
+@media (max-width: 959px) {
+    /* One full screen (height:100svh — matches the mockup's full-bleed composition) laid out as a
+       grid. Element rows are `auto`; each distributed gap is a fixed guard track + an fr share track
+       (see grid-template-rows below), so gap = guard + weight's share of the leftover. The leftover
+       (~24% of the screen on a normal phone, by design) fills the gaps per the --w-* weights —
+       calibrate those to place elements as in the mockup (small gap above the headline; the bulk
+       around the flag). Guards never collapse; only an extreme aspect can force an overflow. */
+    section.page.cf-hero--testing-water .content {
+        display: grid;
+        height: 100svh;
+        width: var(--sec-w);
+        padding: 0;
+        gap: 0;
+        justify-items: center;
+        --gz: calc(var(--sec-vhu) * 1.5);   /* min guard for the distributed gaps */
+        --gz-flag: 0;                       /* guard around the flag — ×0, no fixed minimum */
+        --gz-bot: calc(var(--gz) * 0.7);    /* below-audits guard (own multiplier of --gz) */
+        --ig: calc(var(--sec-vhu) * 1);     /* fixed internal guard between headline lines */
+        --w-top: 58fr;   /* above headline — the mockup has a lot of air above the headline */
+        --w-hf: 35fr;    /* headline → flag */
+        --w-fd: 25fr;    /* flag → downloads */
+        --w-da: 0fr;     /* downloads → audits — guard only, no extra share */
+        --w-bot: 16fr;   /* below audits */
+        /* Each distributed gap is TWO rows: a fixed guard track + an fr share track, so the gap =
+           guard + (weight's share of the leftover). Leftover = 100svh − elements − all guards, so
+           shrinking a guard frees space that the fr tracks redistribute by weight — elements shift
+           and the flag gets squeezed, exactly as expected. Row map: 1 top-guard · 2 top-fr · 3 h1 ·
+           4 ig · 5 h2 · 6 ig · 7 p · 8 hf-guard · 9 hf-fr · 10 flag · 11 fd-guard · 12 fd-fr ·
+           13 downloads · 14 da-guard · 15 da-fr · 16 audits · 17 bot-guard · 18 bot-fr. */
+        grid-template-rows:
+            var(--gz) var(--w-top)
+            auto
+            var(--ig)
+            auto
+            var(--ig)
+            auto
+            var(--gz-flag) var(--w-hf)
+            auto
+            var(--gz-flag) var(--w-fd)
+            auto
+            var(--gz) var(--w-da)
+            auto
+            var(--gz-bot) var(--w-bot);
+    }
+
+    /* .area is normally locked to the design canvas (height:var(--sec-h)), which is shorter than a
+       tall window and centered in the section — that offset is what pushed the grid's bottom row
+       off-screen. Fill the viewport so the grid maps 1:1 to it. */
+    section.page.cf-hero--testing-water .area {
+        height: 100svh;
+    }
+
+    .cf-hero--testing-water .content > h1 { grid-row: 3; }
+    .cf-hero--testing-water .content > h2 { grid-row: 5; }
+    .cf-hero--testing-water .content > p  { grid-row: 7; }
+    .cf-hero--testing-water .cf-flag-block { grid-row: 10; }
+    .cf-hero--testing-water .socials       { grid-row: 13; }
+    .cf-hero--testing-water .security-btns { grid-row: 16; }
+
+    .cf-hero .content h1 {
+        font-size: calc(var(--sec-vwu) * 22.5);
+        line-height: 0.85;
+    }
+
+    .cf-hero .content h2 {
+        font-size: calc(var(--sec-vwu) * 9.35);
+    }
+
+    /* no arrow after the subheadline on mobile */
+    .cf-arrow {
+        display: none;
+    }
+
+    /* mobile: reserve-heading breaks after "of SimpleX" instead of after "Own a share" */
+    .cf-brk-d { display: none; }
+    .cf-brk-m { display: block; }
+
+    .cf-hero .content > p {
+        font-size: calc(var(--sec-vwu) * 4.7);
+        line-height: 1.2;
+        max-width: calc(var(--sec-vwu) * 93);
+    }
+
+    /* desktop decorative phones are hidden on mobile — only the flag phone remains.
+       The .dark variants are listed too: the dark bg rules are `.dark .cf-hero--…` (higher
+       specificity), so without these a sliver of the illustration still showed in dark mode. */
+    .cf-hero--testing-water,
+    .cf-hero--crowdfunding-full,
+    .dark .cf-hero--testing-water,
+    .dark .cf-hero--crowdfunding-full {
+        background-image: none;
+    }
+
+    /* flag + Reserve in one grid row (placed above): reserve text on the left, flag phone on the
+       right (row-reverse vs the flag-first DOM order). Not absolutely positioned. */
+    .cf-hero--testing-water .cf-flag-block {
+        position: static;
+        left: auto;
+        transform: none;
+        width: auto;
+        flex-direction: row-reverse;
+        justify-content: center;
+        align-items: center;
+        gap: calc(var(--sec-vwu) * 0.75);
+        min-height: 0;   /* allow the row to shrink with the flag on a short window */
+    }
+
+    .cf-flag-block .cf-flag {
+        width: auto;
+        height: auto;
+        /* design height 23vhu, but capped at a share of the real screen so it shrinks first on a
+           short/odd-aspect window instead of pushing the bottom rows off (no scroll here) */
+        max-height: min(calc(var(--sec-vhu) * 23), 25svh);
+    }
+
+    .cf-reserve {
+        position: static;
+        top: auto;
+        margin-inline-start: 0;
+        width: calc(var(--sec-vwu) * 53.5);
+    }
+
+    .cf-reserve-h {
+        font-size: calc(var(--sec-vwu) * 4.7);
+    }
+
+    .cf-disclaimer {
+        font-size: calc(var(--sec-vwu) * 1.78);
+        line-height: 1.25;
+    }
+
+    /* --- Bottom rows ship as fixed px (40px badges, 36px audit icons/pills, 14–21px text),
+       so they don't shrink with the window and used to overflow a short one. Re-express them
+       in viewport-height units; two knobs drive each row, the ratios keep the original look.
+       !important is needed where the base rules use it. --- */
+    .cf-hero {
+        --cf-dl: 5.7;    /* downloads row unit (vhu) */
+        --cf-aud: 4.4;   /* audits row unit (vhu) */
+    }
+
+    .cf-hero .socials {
+        min-height: 0;
+    }
+    .cf-hero .socials a img,
+    .cf-hero .desktop-app-btn .btn-content {
+        height: calc(var(--sec-vhu) * var(--cf-dl));
+    }
+    .cf-hero .desktop-app-btn .btn-content img {
+        height: calc(var(--sec-vhu) * var(--cf-dl) * 0.6) !important;
+    }
+    .cf-hero .desktop-app-btn .btn-content p {
+        font-size: calc(var(--sec-vhu) * var(--cf-dl) * 0.275) !important;
+    }
+
+    .cf-hero .security-btns img {
+        height: calc(var(--sec-vhu) * var(--cf-aud));
+    }
+    .cf-hero .security-btns .box-btn {
+        height: calc(var(--sec-vhu) * var(--cf-aud));
+        font-size: calc(var(--sec-vhu) * var(--cf-aud) * 0.58) !important;
+        padding: 0 calc(var(--sec-vhu) * var(--cf-aud) * 0.3);
+    }
+    .cf-hero .security-audits {
+        font-size: calc(var(--sec-vhu) * var(--cf-aud) * 0.39) !important;
+    }
+    .cf-hero .security-btns {
+        gap: calc(var(--sec-vhu) * var(--cf-aud) * 0.33);
+    }
+}

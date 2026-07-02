@@ -95,6 +95,14 @@ module.exports = function (ty) {
   const catPills = Object.keys(catCounts).sort()
   ty.addGlobalData("linkPills", mediaPills.concat(catPills))
 
+  // Home first-section variant: "default" | "testing-water" | "crowdfunding-full".
+  // Selects which hero index.html renders; "default" = the current site, untouched.
+  ty.addGlobalData("homeHero", "testing-water")
+  // testing-water "Reserve now" -> the testing-the-waters interest form
+  ty.addGlobalData("reserveUrl", "https://simplexchat.typeform.com/crowdfunding")
+  // crowdfunding-full "Invest" CTA -- placeholder until the Wefunder campaign page is live
+  ty.addGlobalData("wefunderUrl", "https://wefunder.com/")
+
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
   ty.addFilter("getlang", (path) => {
