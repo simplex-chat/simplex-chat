@@ -4761,7 +4761,7 @@ Fehler: %2$@</target>
       </trans-unit>
       <trans-unit id="Help &amp; support" xml:space="preserve" approved="no">
         <source>Help &amp; support</source>
-        <target state="translated">Hilfe &amp; Unterstützung</target>
+        <target state="translated">Hilfe und Unterstützung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help admins moderating their groups." xml:space="preserve">
