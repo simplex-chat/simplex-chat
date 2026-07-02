@@ -525,13 +525,26 @@ fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
 
 fun safeOpenUri(uri: String, uriHandler: UriHandler) {
   try {
-    uriHandler.openUri(uri)
+    uriHandler.openUri(encodeUriNonAscii(uri))
   } catch (e: Exception) {
     // It can happen, for example, when you click on a text 0.00001 but don't have any app that can catch
     // `tel:` scheme in url installed on a device (no phone app or contacts, maybe)
     Log.e(TAG, "Open url: ${e.stackTraceToString()}")
     showInvalidLinkAlert(uri, error = e.message)
   }
+}
+
+// non-ASCII characters make a link an IRI, not a URI; percent-encode the non-ASCII octets (RFC 3987)
+// so the link opens with strict URL parsers (e.g. java.net.URI on desktop). Identity for ASCII input.
+private fun encodeUriNonAscii(uri: String): String {
+  if (uri.all { it.code < 0x80 }) return uri
+  val hex = "0123456789ABCDEF"
+  val sb = StringBuilder()
+  for (b in uri.toByteArray(Charsets.UTF_8)) {
+    val i = b.toInt() and 0xFF
+    if (i < 0x80) sb.append(i.toChar()) else sb.append('%').append(hex[i shr 4]).append(hex[i and 0xF])
+  }
+  return sb.toString()
 }
 
 fun showInvalidLinkAlert(uri: String, error: String? = null) {
