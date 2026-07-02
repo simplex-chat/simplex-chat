@@ -1042,7 +1042,7 @@ export type ChatErrorType =
   | ChatErrorType.ChatNotStopped
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
-  | ChatErrorType.SimplexName
+  | ChatErrorType.SimplexDomain
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1120,7 +1120,7 @@ export namespace ChatErrorType {
     | "chatNotStopped"
     | "chatStoreChanged"
     | "invalidConnReq"
-    | "simplexName"
+    | "simplexDomain"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1275,10 +1275,10 @@ export namespace ChatErrorType {
     type: "invalidConnReq"
   }
 
-  export interface SimplexName extends Interface {
-    type: "simplexName"
-    simplexName: SimplexNameInfo
-    simplexNameError: SimplexNameError
+  export interface SimplexDomain extends Interface {
+    type: "simplexDomain"
+    simplexDomain: SimplexDomain
+    simplexDomainError: SimplexDomainError
   }
 
   export interface UnsupportedConnReq extends Interface {
@@ -2630,7 +2630,7 @@ export interface GroupInfo {
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
-  simplexNameVerification?: boolean
+  groupDomainVerified?: boolean
 }
 
 export interface GroupKeys {
@@ -3008,8 +3008,8 @@ export interface LocalProfile {
   peerType?: ChatPeerType
   localBadge?: LocalBadge
   localAlias: string
-  simplexName?: SimplexNameClaim
-  simplexNameVerification?: boolean
+  contactDomain?: SimplexDomainClaim
+  contactDomainVerified?: boolean
 }
 
 export enum MemberCriteria {
@@ -3203,12 +3203,6 @@ export enum MsgSigStatus {
   SignedNoKey = "signedNoKey",
 }
 
-export interface NameClaimProof {
-  linkOwnerId?: string
-  presHeader: string
-  signature: string
-}
-
 export type NameErrorType = NameErrorType.NO_RESOLVER | NameErrorType.NOT_FOUND | NameErrorType.RESOLVER
 
 export namespace NameErrorType {
@@ -3390,7 +3384,7 @@ export interface Profile {
   preferences?: Preferences
   peerType?: ChatPeerType
   badge?: BadgeProof
-  simplexName?: SimplexNameClaim
+  contactDomain?: SimplexDomainClaim
 }
 
 export type ProxyClientError = 
@@ -3451,7 +3445,7 @@ export namespace ProxyError {
 
 export interface PublicGroupAccess {
   groupWebPage?: string
-  simplexName?: SimplexNameClaim
+  groupDomainClaim?: SimplexDomainClaim
   domainWebPage: boolean
   allowEmbedding: boolean
 }
@@ -3954,29 +3948,21 @@ export interface SimplePreference {
   allow: FeatureAllowed
 }
 
-export enum SimplexLinkType {
-  Contact = "contact",
-  Invitation = "invitation",
-  Group = "group",
-  Channel = "channel",
-  Relay = "relay",
-}
-
-export interface SimplexNameClaim {
-  name: string
-  proof?: NameClaimProof
-}
-
-export interface SimplexNameDomain {
+export interface SimplexDomain {
   nameTLD: SimplexTLD
   domain: string
   subDomain: string[]
 }
 
-export type SimplexNameError = SimplexNameError.NoValidLink | SimplexNameError.UnknownName
+export interface SimplexDomainClaim {
+  domain: string
+  proof?: SimplexDomainProof
+}
 
-export namespace SimplexNameError {
-  export type Tag = "noValidLink" | "unknownName"
+export type SimplexDomainError = SimplexDomainError.NoValidLink | SimplexDomainError.UnknownDomain
+
+export namespace SimplexDomainError {
+  export type Tag = "noValidLink" | "unknownDomain"
 
   interface Interface {
     type: Tag
@@ -3986,14 +3972,28 @@ export namespace SimplexNameError {
     type: "noValidLink"
   }
 
-  export interface UnknownName extends Interface {
-    type: "unknownName"
+  export interface UnknownDomain extends Interface {
+    type: "unknownDomain"
   }
+}
+
+export interface SimplexDomainProof {
+  linkOwnerId?: string
+  presHeader: string
+  signature: string
+}
+
+export enum SimplexLinkType {
+  Contact = "contact",
+  Invitation = "invitation",
+  Group = "group",
+  Channel = "channel",
+  Relay = "relay",
 }
 
 export interface SimplexNameInfo {
   nameType: SimplexNameType
-  nameDomain: SimplexNameDomain
+  nameDomain: SimplexDomain
 }
 
 export enum SimplexNameType {

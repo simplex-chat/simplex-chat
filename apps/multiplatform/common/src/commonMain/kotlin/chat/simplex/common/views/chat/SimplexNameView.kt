@@ -24,9 +24,8 @@ import kotlinx.coroutines.*
 // null on network error. With `autoVerify`, it runs once on open when state is null.
 @Composable
 fun SimplexNameView(
-  name: String,
-  verification: Boolean?,
-  autoVerify: Boolean,
+  simplexName: String,
+  verified: Boolean?,
   verify: suspend () -> Pair<Boolean?, String?>?
 ) {
   val scope = rememberCoroutineScope()
@@ -59,7 +58,7 @@ fun SimplexNameView(
   }
 
   LaunchedEffect(Unit) {
-    if (autoVerify && verification == null) runVerify(manual = false)
+    if (chatModel.controller.appPrefs.privacyVerifySimplexNames.get() && verified == null) runVerify(manual = false)
   }
 
   Row(
@@ -68,18 +67,18 @@ fun SimplexNameView(
     modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
   ) {
     Text(
-      name,
+      simplexName,
       style = MaterialTheme.typography.body2.copy(
-        color = if (verification == true) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-        fontFamily = if (verification == true) FontFamily.Default else FontFamily.Monospace
+        color = if (verified == true) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+        fontFamily = if (verified == true) FontFamily.Default else FontFamily.Monospace
       )
     )
     when {
       showSpinner.value ->
         CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colors.secondary)
-      verification == true ->
+      verified == true ->
         Icon(painterResource(MR.images.ic_check_filled), null, Modifier.size(18.dp), tint = MaterialTheme.colors.onBackground)
-      verification == false ->
+      verified == false ->
         Icon(
           painterResource(MR.images.ic_close), null, tint = Color.Red,
           modifier = Modifier.size(18.dp).clickable { runVerify(manual = true) }

@@ -180,14 +180,15 @@ fun ModalData.GroupChatInfoView(
       },
       setSimplexName = {
           ModalManager.end.showCustomModal { close ->
-            SetSimplexNameView(
+            val domain = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName
+            SetSimplexDomainView(
               title = generalGetString(MR.strings.set_simplex_name),
               footer = generalGetString(MR.strings.set_channel_simplex_name_footer),
-              prefix = "#",
-              initial = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.simplexName?.shortName ?: "",
-              save = { name ->
+              placeholder = "#channelname.testing",
+              simplexName = if (domain == null) "" else "#$domain",
+              save = { domain ->
                 val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?: PublicGroupAccess()
-                val newAccess = access.copy(simplexName = name?.let { SimplexNameClaim(it) })
+                val newAccess = access.copy(groupDomainClaim = domain?.let { SimplexDomainClaim(it) })
                 val gInfo = chatModel.controller.apiSetPublicGroupAccess(rhId, groupInfo.groupId, newAccess)
                 if (gInfo != null) {
                   withContext(Dispatchers.Main) { chatModel.chatsContext.updateGroup(rhId, gInfo) }
@@ -637,6 +638,12 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
+            SettingsActionItem(
+              painterResource(MR.images.ic_tag),
+              stringResource(MR.strings.simplex_name),
+              setSimplexName,
+              iconColor = MaterialTheme.colors.secondary
+            )
           } else if (channelLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
@@ -825,14 +832,6 @@ fun ModalData.GroupChatInfoLayout(
         SectionDividerSpaced()
         SectionView(title = stringResource(MR.strings.advanced_options)) {
           ChannelWebPageButton(groupInfo, manageWebPage)
-          if (groupInfo.groupProfile.publicGroup != null) {
-            SettingsActionItem(
-              painterResource(MR.images.ic_tag),
-              stringResource(MR.strings.simplex_name),
-              setSimplexName,
-              iconColor = MaterialTheme.colors.secondary
-            )
-          }
         }
       }
 
@@ -975,17 +974,16 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
     val access = groupInfo.groupProfile.publicGroup?.publicGroupAccess
-    val groupName = access?.simplexName?.shortName
-    if (groupName != null && (groupInfo.simplexNameVerification != null || access.simplexName?.proof != null)) {
+    val domain = access?.groupDomainClaim?.shortName
+    if (domain != null && (groupInfo.groupDomainVerified != null || access.groupDomainClaim?.proof != null)) {
       SimplexNameView(
-        name = groupName,
-        verification = groupInfo.simplexNameVerification,
-        autoVerify = chatModel.controller.appPrefs.privacyVerifySimplexNames.get(),
+        simplexName = "#${domain}",
+        verified = groupInfo.groupDomainVerified,
         verify = {
           val rhId = chatModel.remoteHostId()
-          chatModel.controller.apiVerifyPublicGroupName(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
+          chatModel.controller.apiVerifyGroupDomain(rhId, groupInfo.groupId)?.let { (gInfo, reason) ->
             chatModel.chatsContext.updateGroup(rhId, gInfo)
-            gInfo.simplexNameVerification to reason
+            gInfo.groupDomainVerified to reason
           }
         }
       )

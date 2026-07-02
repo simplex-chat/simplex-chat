@@ -66,14 +66,11 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
 import Simplex.FileTransfer.Description (gb, maxFileSize)
-import Simplex.Messaging.Agent.Protocol (OwnerId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
-import Simplex.Messaging.SimplexName (SimplexNameInfo)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.ToField (ToField (..))

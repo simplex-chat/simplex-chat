@@ -19,24 +19,28 @@ import kotlinx.coroutines.*
 // The field is prefilled with the full prefixed name; `save` receives the encoded name (or null to
 // clear) and returns true on success (it shows its own error alert otherwise).
 @Composable
-fun SetSimplexNameView(
+fun SetSimplexDomainView(
   title: String,
   footer: String,
-  prefix: String,
-  initial: String,
+  placeholder: String,
+  simplexName: String,
   save: suspend (String?) -> Boolean,
   close: () -> Unit
 ) {
-  val name = rememberSaveable { mutableStateOf(initial) }
+  val name = rememberSaveable { mutableStateOf(simplexName) }
   val saving = remember { mutableStateOf(false) }
-  val unchanged = name.value.trim() == initial.trim()
+  val unchanged = name.value.trim() == simplexName.trim()
+
+  fun addSimplexTLD(s: String): String {
+    return if (s.contains(".")) s else "$s.simplex"
+  }
 
   fun normalized(): String? {
     val s = name.value.trim()
     return when {
       s.isEmpty() -> null
-      s.startsWith("@") || s.startsWith("#") -> prefix + s.substring(1)
-      else -> prefix + s
+      s.startsWith("@") || s.startsWith("#") -> addSimplexTLD(s.substring(1))
+      else -> addSimplexTLD(s)
     }
   }
 
@@ -44,7 +48,7 @@ fun SetSimplexNameView(
     withBGApi {
       saving.value = true
       val ok = try { save(normalized()) } catch (e: Exception) {
-        Log.e(TAG, "SetSimplexNameView save: ${e.stackTraceToString()}")
+        Log.e(TAG, "SetSimplexDomainView save: ${e.stackTraceToString()}")
         AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_simplex_name), e.message ?: "")
         false
       }
@@ -57,7 +61,7 @@ fun SetSimplexNameView(
     ColumnWithScrollBar {
       AppBarTitle(title)
       SectionView {
-        PlainTextEditor(name, placeholder = prefix + stringResource(MR.strings.simplex_name_placeholder))
+        PlainTextEditor(name, placeholder)
       }
       SectionTextFooter(footer)
       SectionDividerSpaced()

@@ -139,7 +139,6 @@ This file is generated automatically.
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
-- [NameClaimProof](#nameclaimproof)
 - [NameErrorType](#nameerrortype)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
@@ -174,10 +173,11 @@ This file is generated automatically.
 - [SMPAgentError](#smpagenterror)
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
+- [SimplexDomain](#simplexdomain)
+- [SimplexDomainClaim](#simplexdomainclaim)
+- [SimplexDomainError](#simplexdomainerror)
+- [SimplexDomainProof](#simplexdomainproof)
 - [SimplexLinkType](#simplexlinktype)
-- [SimplexNameClaim](#simplexnameclaim)
-- [SimplexNameDomain](#simplexnamedomain)
-- [SimplexNameError](#simplexnameerror)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -1111,10 +1111,10 @@ ChatStoreChanged:
 InvalidConnReq:
 - type: "invalidConnReq"
 
-SimplexName:
-- type: "simplexName"
-- simplexName: [SimplexNameInfo](#simplexnameinfo)
-- simplexNameError: [SimplexNameError](#simplexnameerror)
+SimplexDomain:
+- type: "simplexDomain"
+- simplexDomain: [SimplexDomain](#simplexdomain)
+- simplexDomainError: [SimplexDomainError](#simplexdomainerror)
 
 UnsupportedConnReq:
 - type: "unsupportedConnReq"
@@ -2347,7 +2347,7 @@ MemberSupport:
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?
-- simplexNameVerification: bool?
+- groupDomainVerified: bool?
 
 
 ---
@@ -2772,8 +2772,8 @@ Unknown:
 - peerType: [ChatPeerType](#chatpeertype)?
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
-- simplexName: [SimplexNameClaim](#simplexnameclaim)?
-- simplexNameVerification: bool?
+- contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
+- contactDomainVerified: bool?
 
 
 ---
@@ -2947,16 +2947,6 @@ Unknown:
 **Enum type**:
 - "verified"
 - "signedNoKey"
-
-
----
-
-## NameClaimProof
-
-**Record type**:
-- linkOwnerId: string?
-- presHeader: string
-- signature: string
 
 
 ---
@@ -3146,7 +3136,7 @@ count=<count>
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
 - badge: [BadgeProof](#badgeproof)?
-- simplexName: [SimplexNameClaim](#simplexnameclaim)?
+- contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 
 
 ---
@@ -3195,7 +3185,7 @@ NO_SESSION:
 
 **Record type**:
 - groupWebPage: string?
-- simplexName: [SimplexNameClaim](#simplexnameclaim)?
+- groupDomainClaim: [SimplexDomainClaim](#simplexdomainclaim)?
 - domainWebPage: bool
 - allowEmbedding: bool
 
@@ -3581,6 +3571,48 @@ A_QUEUE:
 
 ---
 
+## SimplexDomain
+
+**Record type**:
+- nameTLD: [SimplexTLD](#simplextld)
+- domain: string
+- subDomain: [string]
+
+
+---
+
+## SimplexDomainClaim
+
+**Record type**:
+- domain: string
+- proof: [SimplexDomainProof](#simplexdomainproof)?
+
+
+---
+
+## SimplexDomainError
+
+**Discriminated union type**:
+
+NoValidLink:
+- type: "noValidLink"
+
+UnknownDomain:
+- type: "unknownDomain"
+
+
+---
+
+## SimplexDomainProof
+
+**Record type**:
+- linkOwnerId: string?
+- presHeader: string
+- signature: string
+
+
+---
+
 ## SimplexLinkType
 
 **Enum type**:
@@ -3593,43 +3625,11 @@ A_QUEUE:
 
 ---
 
-## SimplexNameClaim
-
-**Record type**:
-- name: string
-- proof: [NameClaimProof](#nameclaimproof)?
-
-
----
-
-## SimplexNameDomain
-
-**Record type**:
-- nameTLD: [SimplexTLD](#simplextld)
-- domain: string
-- subDomain: [string]
-
-
----
-
-## SimplexNameError
-
-**Discriminated union type**:
-
-NoValidLink:
-- type: "noValidLink"
-
-UnknownName:
-- type: "unknownName"
-
-
----
-
 ## SimplexNameInfo
 
 **Record type**:
 - nameType: [SimplexNameType](#simplexnametype)
-- nameDomain: [SimplexNameDomain](#simplexnamedomain)
+- nameDomain: [SimplexDomain](#simplexdomain)
 
 
 ---

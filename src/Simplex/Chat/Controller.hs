@@ -417,7 +417,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile {userId :: UserId, profile :: Profile}
-  | APISetUserName {userId :: UserId, simplexName :: Maybe SimplexNameInfo}
+  | APISetUserDomain {userId :: UserId, simplexDomain :: Maybe SimplexDomain}
   | APISetContactPrefs {contactId :: ContactId, preferences :: Preferences}
   | APISetContactAlias {contactId :: ContactId, localAlias :: LocalAlias}
   | APISetGroupAlias {groupId :: GroupId, localAlias :: LocalAlias}
@@ -538,8 +538,8 @@ data ChatCommand
   | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
-  | APIVerifyContactName {contactId :: ContactId}
-  | APIVerifyPublicGroupName {groupId :: GroupId}
+  | APIVerifyContactDomain {contactId :: ContactId}
+  | APIVerifyGroupDomain {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
@@ -1406,9 +1406,9 @@ data ChatError
   deriving (Show, Exception)
 
 -- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
-data SimplexNameError
-  = SNENoValidLink -- the name's record has no usable contact/channel link
-  | SNEUnknownName -- the resolved link's profile has no name, or a different name
+data SimplexDomainError
+  = SDENoValidLink -- the name's record has no usable contact/channel link
+  | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
 data ChatErrorType
@@ -1432,7 +1432,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CESimplexName {simplexName :: SimplexNameInfo, simplexNameError :: SimplexNameError}
+  | CESimplexDomain {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited
@@ -1764,7 +1764,7 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SNE") ''SimplexNameError)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 

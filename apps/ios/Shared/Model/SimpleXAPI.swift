@@ -1083,17 +1083,17 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             title: "Unsupported connection link",
             message: "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
         )
-    case let .error(.simplexName(name, err)):
+    case let .error(.simplexDomain(domain, err)):
         switch err {
         case .noValidLink:
             mkAlert(
                 title: "No valid link",
-                message: "The SimpleX name \(name.shortName) is registered, but it has no valid link."
+                message: "The SimpleX name \(domain.fullDomainName) is registered, but it has no valid link."
             )
-        case .unknownName:
+        case .unknownDomain:
             mkAlert(
                 title: "Unconfirmed name",
-                message: "The SimpleX name \(name.shortName) is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner."
+                message: "The SimpleX name \(domain.fullDomainName) is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner."
             )
         }
     case .errorAgent(.NO_NAME_SERVERS):
@@ -1368,19 +1368,19 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
 // name is the encoded SimplexName (e.g. "@alice.simplex"); nil clears it
 // owner-specific SNENoValidLink wording; everything else reuses the general apiConnectResponseAlert
 func showSetSimplexNameError<R>(_ r: APIResult<R>, isChannel: Bool) {
-    if case let .error(.simplexName(name, .noValidLink)) = r.unexpected {
+    if case let .error(.simplexDomain(domain, .noValidLink)) = r.unexpected {
         let format = isChannel
-            ? NSLocalizedString("The SimpleX name %@ is registered without channel link. Add channel link to the name via the registration page.", comment: "alert message")
-            : NSLocalizedString("The SimpleX name %@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.", comment: "alert message")
-        showAlert(NSLocalizedString("Error saving name", comment: "alert title"), message: String.localizedStringWithFormat(format, name.shortName))
+            ? NSLocalizedString("The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.", comment: "alert message")
+            : NSLocalizedString("The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.", comment: "alert message")
+        showAlert(NSLocalizedString("Error saving name", comment: "alert title"), message: String.localizedStringWithFormat(format, domain.fullDomainName))
     } else {
         AlertManager.shared.showAlert(apiConnectResponseAlert(r))
     }
 }
 
-func apiSetUserName(_ name: String?) async throws -> User {
-    let userId = try currentUserId("apiSetUserName")
-    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiSetUserName(userId: userId, name: name))
+func apiSetUserDomain(_ simplexDomain: String?) async throws -> User {
+    let userId = try currentUserId("apiSetUserDomain")
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiSetUserDomain(userId: userId, simplexDomain: simplexDomain))
     switch r {
     case let .result(.userProfileUpdated(user, _, _, _)): return user
     case let .result(.userProfileNoChange(user)): return user
@@ -1390,14 +1390,14 @@ func apiSetUserName(_ name: String?) async throws -> User {
     }
 }
 
-func apiVerifyContactName(_ contactId: Int64) async throws -> (Contact, String?) {
-    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyContactName(contactId: contactId))
+func apiVerifyContactDomain(_ contactId: Int64) async throws -> (Contact, String?) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyContactDomain(contactId: contactId))
     if case let .contactNameVerified(_, contact, verificationFailure) = r { return (contact, verificationFailure) }
     throw r.unexpected
 }
 
-func apiVerifyPublicGroupName(_ groupId: Int64) async throws -> (GroupInfo, String?) {
-    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyPublicGroupName(groupId: groupId))
+func apiVerifyGroupDomain(_ groupId: Int64) async throws -> (GroupInfo, String?) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyGroupDomain(groupId: groupId))
     if case let .groupNameVerified(_, groupInfo, verificationFailure) = r { return (groupInfo, verificationFailure) }
     throw r.unexpected
 }

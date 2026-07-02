@@ -122,7 +122,7 @@ class AppPreferences {
   val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
-  val privacyVerifySimplexNames = mkBoolPreference(SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES, true)
+  val privacyVerifySimplexNames = mkBoolPreference(SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES, false)
   val privacyLinkPreviewsShowAlert = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, true)
   val privacySanitizeLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SANITIZE_LINKS, false)
   // TODO remove
@@ -1558,17 +1558,17 @@ object ChatController {
         )
       }
       r is API.Error && r.err is ChatError.ChatErrorChat
-          && r.err.errorType is ChatErrorType.SimplexName -> {
-        val name = r.err.errorType.simplexName.shortName
-        if (r.err.errorType.simplexNameError is SimplexNameError.NoValidLink) {
+          && r.err.errorType is ChatErrorType.CESimplexDomain -> {
+        val domain = r.err.errorType.simplexDomain.fullDomainName
+        if (r.err.errorType.simplexDomainError is SimplexDomainError.NoValidLink) {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_no_valid_link),
-            generalGetString(MR.strings.simplex_name_no_valid_link_desc).format(name)
+            generalGetString(MR.strings.simplex_name_no_valid_link_desc).format(domain)
           )
         } else {
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.simplex_name_unconfirmed),
-            generalGetString(MR.strings.simplex_name_unconfirmed_desc).format(name)
+            generalGetString(MR.strings.simplex_name_unconfirmed_desc).format(domain)
           )
         }
       }
@@ -1631,10 +1631,10 @@ object ChatController {
 
   // owner-specific wording for setting one's own/channel name; null for other errors (handled by apiConnectResponseAlert)
   fun simplexNameOwnerError(err: ChatError, isChannel: Boolean): String? =
-    if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.SimplexName && err.errorType.simplexNameError is SimplexNameError.NoValidLink) {
-      val name = err.errorType.simplexName.shortName
-      if (isChannel) generalGetString(MR.strings.simplex_name_owner_no_channel_link).format(name)
-      else generalGetString(MR.strings.simplex_name_owner_no_address).format(name)
+    if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CESimplexDomain && err.errorType.simplexDomainError is SimplexDomainError.NoValidLink) {
+      val domain = err.errorType.simplexDomain.fullDomainName
+      if (isChannel) generalGetString(MR.strings.simplex_name_owner_no_channel_link).format(domain)
+      else generalGetString(MR.strings.simplex_name_owner_no_address).format(domain)
     } else null
 
   fun connErrorText(e: ChatError): String = when {
@@ -1642,8 +1642,8 @@ object ChatController {
       generalGetString(MR.strings.invalid_connection_link)
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.UnsupportedConnReq ->
       generalGetString(MR.strings.unsupported_connection_link)
-    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexName ->
-      if (e.errorType.simplexNameError is SimplexNameError.NoValidLink)
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.CESimplexDomain ->
+      if (e.errorType.simplexDomainError is SimplexDomainError.NoValidLink)
         generalGetString(MR.strings.simplex_name_no_valid_link)
       else generalGetString(MR.strings.simplex_name_unconfirmed)
     e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.NO_NAME_SERVERS ->
@@ -1823,9 +1823,9 @@ object ChatController {
   }
 
   // name is the encoded SimplexName (e.g. "@alice.simplex"); null clears it. Throws on rejection.
-  suspend fun apiSetUserName(rh: Long?, name: String?): User {
-    val userId = currentUserId("apiSetUserName")
-    val r = sendCmd(rh, CC.ApiSetUserName(userId, name))
+  suspend fun apiSetUserDomain(rh: Long?, simplexDomain: String?): User {
+    val userId = currentUserId("apiSetUserDomain")
+    val r = sendCmd(rh, CC.ApiSetUserDomain(userId, simplexDomain))
     return when {
       r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
       r is API.Result && r.res is CR.UserProfileNoChange -> r.res.user.updateRemoteHostId(rh)
@@ -1840,17 +1840,17 @@ object ChatController {
     }
   }
 
-  suspend fun apiVerifyContactName(rh: Long?, contactId: Long): Pair<Contact, String?>? {
-    val r = sendCmd(rh, CC.ApiVerifyContactName(contactId))
+  suspend fun apiVerifyContactDomain(rh: Long?, contactId: Long): Pair<Contact, String?>? {
+    val r = sendCmd(rh, CC.ApiVerifyContactDomain(contactId))
     if (r is API.Result && r.res is CR.ContactNameVerified) return r.res.contact to r.res.verificationFailure
-    Log.e(TAG, "apiVerifyContactName bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiVerifyContactDomain bad response: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun apiVerifyPublicGroupName(rh: Long?, groupId: Long): Pair<GroupInfo, String?>? {
-    val r = sendCmd(rh, CC.ApiVerifyPublicGroupName(groupId))
+  suspend fun apiVerifyGroupDomain(rh: Long?, groupId: Long): Pair<GroupInfo, String?>? {
+    val r = sendCmd(rh, CC.ApiVerifyGroupDomain(groupId))
     if (r is API.Result && r.res is CR.GroupNameVerified) return r.res.groupInfo to r.res.verificationFailure
-    Log.e(TAG, "apiVerifyPublicGroupName bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiVerifyGroupDomain bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -3885,9 +3885,9 @@ sealed class CC {
   class ApiShowMyAddress(val userId: Long): CC()
   class ApiAddMyAddressShortLink(val userId: Long): CC()
   class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
-  class ApiSetUserName(val userId: Long, val name: String?): CC()
-  class ApiVerifyContactName(val contactId: Long): CC()
-  class ApiVerifyPublicGroupName(val groupId: Long): CC()
+  class ApiSetUserDomain(val userId: Long, val simplexDomain: String?): CC()
+  class ApiVerifyContactDomain(val contactId: Long): CC()
+  class ApiVerifyGroupDomain(val groupId: Long): CC()
   class ApiSetAddressSettings(val userId: Long, val addressSettings: AddressSettings): CC()
   class ApiGetCallInvitations: CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
@@ -4096,10 +4096,10 @@ sealed class CC {
     is ApiShowMyAddress -> "/_show_address $userId"
     is ApiAddMyAddressShortLink -> "/_short_link_address $userId"
     is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
-    is ApiSetUserName -> "/_set_name $userId" + (if (name != null) " $name" else "")
+    is ApiSetUserDomain -> "/_set domain $userId" + (if (simplexDomain != null) " $simplexDomain" else "")
     is ApiSetPublicGroupAccess -> "/_public group access #$groupId ${json.encodeToString(access)}"
-    is ApiVerifyContactName -> "/_verify name @$contactId"
-    is ApiVerifyPublicGroupName -> "/_verify name #$groupId"
+    is ApiVerifyContactDomain -> "/_verify domain @$contactId"
+    is ApiVerifyGroupDomain -> "/_verify domain #$groupId"
     is ApiSetAddressSettings -> "/_address_settings $userId ${json.encodeToString(addressSettings)}"
     is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
@@ -4281,10 +4281,10 @@ sealed class CC {
     is ApiShowMyAddress -> "apiShowMyAddress"
     is ApiAddMyAddressShortLink -> "apiAddMyAddressShortLink"
     is ApiSetProfileAddress -> "apiSetProfileAddress"
-    is ApiSetUserName -> "apiSetUserName"
+    is ApiSetUserDomain -> "apiSetUserDomain"
     is ApiSetPublicGroupAccess -> "apiSetPublicGroupAccess"
-    is ApiVerifyContactName -> "apiVerifyContactName"
-    is ApiVerifyPublicGroupName -> "apiVerifyPublicGroupName"
+    is ApiVerifyContactDomain -> "apiVerifyContactDomain"
+    is ApiVerifyGroupDomain -> "apiVerifyGroupDomain"
     is ApiSetAddressSettings -> "apiSetAddressSettings"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
@@ -7096,9 +7096,9 @@ sealed class OwnerVerification {
 }
 
 @Serializable
-sealed class SimplexNameError {
-  @Serializable @SerialName("noValidLink") object NoValidLink : SimplexNameError()
-  @Serializable @SerialName("unknownName") object UnknownName : SimplexNameError()
+sealed class SimplexDomainError {
+  @Serializable @SerialName("noValidLink") object NoValidLink : SimplexDomainError()
+  @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
 }
 
 @Serializable
@@ -7438,7 +7438,7 @@ sealed class ChatErrorType {
       is ChatStoreChanged -> "chatStoreChanged"
       is ConnectionPlanChatError -> "connectionPlan"
       is InvalidConnReq -> "invalidConnReq"
-      is SimplexName -> "simplexName"
+      is CESimplexDomain -> "simplexDomain"
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
@@ -7521,7 +7521,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
   @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
-  @Serializable @SerialName("simplexName") class SimplexName(val simplexName: SimplexNameInfo, val simplexNameError: SimplexNameError): ChatErrorType()
+  @Serializable @SerialName("simplexDomain") class CESimplexDomain(val simplexDomain: SimplexDomain, val simplexDomainError: SimplexDomainError): ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()

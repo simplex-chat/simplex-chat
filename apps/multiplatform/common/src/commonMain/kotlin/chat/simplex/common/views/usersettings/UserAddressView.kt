@@ -369,18 +369,19 @@ private fun UserAddressLayout(
               stringResource(MR.strings.your_simplex_name),
               click = {
                 ModalManager.start.showCustomModal { close ->
-                  SetSimplexNameView(
+                  val domain = user?.profile?.contactDomain?.shortName
+                  SetSimplexDomainView(
                     title = generalGetString(MR.strings.set_simplex_name),
                     footer = generalGetString(MR.strings.set_user_simplex_name_footer),
-                    prefix = "@",
-                    initial = user?.profile?.simplexName?.shortName ?: "",
-                    save = { name ->
+                    placeholder = "@yourname.testing",
+                    simplexName = if (domain == null) "" else "@$domain",
+                    save = { simplexDomain ->
                       try {
-                        val u = chatModel.controller.apiSetUserName(user?.remoteHostId, name)
+                        val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)
                         withContext(Dispatchers.Main) { chatModel.updateUser(u) }
                         true
                       } catch (e: Exception) {
-                        Log.e(TAG, "apiSetUserName: ${e.message}")
+                        Log.e(TAG, "apiSetUserDomain: ${e.message}")
                         false
                       }
                     },

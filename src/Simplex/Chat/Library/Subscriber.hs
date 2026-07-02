@@ -1422,7 +1422,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                         void $ sendGroupMessages user gInfo Nothing False recipients events
                   where
                     updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
-                    updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks) =
+                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed, newlyActiveLinks) =
                       case relayLink of
                         Just rLink
                           -- version is gated upstream at publish (getPublishableGroupRelays): an RSAccepted relay
@@ -3335,7 +3335,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           -- transfer record + its scratch file in one transaction (file owned by the transfer, keyed per source)
           rft@RcvFileTransfer {fileId} <- withStore $ \db -> do
             transferId <- liftIO $ createRosterTransfer db gInfo (groupMemberId' fromMember) newVer fileDigest (groupMemberId' author) brokerTs relayHdr
-            createRosterRcvFile db userId gInfo fromMember transferId sharedMsgId rosterFInv (Just IFMSent) (fromIntegral chSize)
+            createRosterRcvFile db userId gInfo fromMember transferId sharedMsgId rosterFInv (Just IFMSent) chSize
           -- accept the chat-item-free file before chunk 1 (FIFO before it) so chunk 1 isn't rejected on RFSNew
           -- transient scratch file (consumed into roster_blob, then deleted): temp folder, not the user's files folder / Downloads
           tmpDir <- lift getChatTempDirectory
@@ -3361,10 +3361,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         Just RcvRosterTransfer {rosterTransferId = transferId, rosterTransferVersion = pendingVer, rosterTransferDigest = pendingDigest, rosterTransferOwnerGMId = ownerGMId, rosterTransferBrokerTs = rosterBrokerTs, rosterTransferHeader = header_} -> do
           owner_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberById db cxt user ownerGMId)
           blob <- readAssembledRoster
-          let isRelay = isUserGrpFwdRelay gInfo
+          let isRelay' = isUserGrpFwdRelay gInfo
               ackErr err = do
                 cleanupRosterTransferById transferId
-                when isRelay $ forM_ owner_ $ \owner -> sendRosterAck gInfo owner pendingVer (Just err)
+                when isRelay' $ forM_ owner_ $ \owner -> sendRosterAck gInfo owner pendingVer (Just err)
           if FD.FileDigest (LC.sha512Hash (LB.fromStrict blob)) /= pendingDigest
             then ackErr "relay could not verify the roster blob"
             else case parseAll rosterBlobP blob of
@@ -3388,7 +3388,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   forM_ results_ $ \results -> do
                     emitRosterResults gInfo author rosterBrokerTs results
                     -- ack while setting up (own status accepted/acknowledged); a serving (active) relay must not ack broadcasts.
-                    when (isRelay && (relayOwnStatus gInfo == Just RSAccepted || relayOwnStatus gInfo == Just RSAcknowledgedRoster)) $ do
+                    when (isRelay' && (relayOwnStatus gInfo == Just RSAccepted || relayOwnStatus gInfo == Just RSAcknowledgedRoster)) $ do
                       sendRosterAck gInfo author pendingVer Nothing
                       withStore' $ \db -> void $ updateRelayOwnStatusFromTo db gInfo RSAccepted RSAcknowledgedRoster
       where

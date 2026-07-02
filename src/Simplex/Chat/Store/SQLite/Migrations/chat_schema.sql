@@ -29,9 +29,9 @@ CREATE TABLE contact_profiles(
   badge_master_key BLOB,
   badge_signature BLOB,
   badge_key_idx INTEGER,
-  simplex_name TEXT,
-  simplex_name_verification INTEGER,
-  simplex_name_proof TEXT
+  contact_domain TEXT,
+  contact_domain_proof TEXT,
+  contact_domain_verified INTEGER
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -140,10 +140,10 @@ CREATE TABLE group_profiles(
   group_link BLOB,
   public_group_id BLOB,
   group_web_page TEXT,
+  group_domain TEXT,
   domain_web_page INTEGER,
   allow_embedding INTEGER,
-  simplex_name TEXT,
-  simplex_name_proof TEXT
+  group_domain_proof TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -204,7 +204,7 @@ CREATE TABLE groups(
   roster_sending_owner_gm_id INTEGER,
   roster_broker_ts TEXT,
   roster_blob BLOB,
-  simplex_name_verification INTEGER, -- received
+  group_domain_verified INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

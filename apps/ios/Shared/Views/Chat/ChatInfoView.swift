@@ -392,21 +392,21 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
-            if let claim = contact.profile.simplexName, contact.profile.simplexNameVerification != nil || claim.proof != nil {
+            if let domain = contact.profile.contactDomain,
+               contact.profile.contactDomainVerified != nil || domain.proof != nil {
                 SimplexNameView(
-                    name: claim.shortName,
-                    verification: contact.profile.simplexNameVerification,
-                    autoVerify: UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES),
+                    simplexName: "@\(domain.shortName)",
+                    verified: contact.profile.contactDomainVerified,
                     verify: {
                         do {
-                            let (ct, reason) = try await apiVerifyContactName(contact.contactId)
+                            let (ct, reason) = try await apiVerifyContactDomain(contact.contactId)
                             await MainActor.run {
                                 chatModel.updateContact(ct)
                                 contact = ct
                             }
-                            return (ct.profile.simplexNameVerification, reason)
+                            return (ct.profile.contactDomainVerified, reason)
                         } catch {
-                            logger.error("apiVerifyContactName: \(responseError(error))")
+                            logger.error("apiVerifyContactDomain: \(responseError(error))")
                             return nil
                         }
                     }
@@ -1382,31 +1382,31 @@ private func deleteNotReadyContact(
 }
 
 struct SimplexNameView: View {
-    let name: String
-    let verification: Bool?
-    let autoVerify: Bool
-    let verify: () async -> (Bool?, String?)?
     @EnvironmentObject var theme: AppTheme
+    @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) var autoVerify = false
+    let simplexName: String
+    let verified: Bool?
+    let verify: () async -> (Bool?, String?)?
     @State private var inFlight = false
     @State private var showSpinner = false
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(name)
-                .font(verification == true ? .subheadline : .system(.subheadline, design: .monospaced))
-                .foregroundColor(verification == true ? theme.colors.primary : theme.colors.secondary)
+            Text(simplexName)
+                .font(verified == true ? .subheadline : .system(.subheadline, design: .monospaced))
+                .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
             indicator()
         }
         .padding(.bottom, 2)
-        .onAppear { if autoVerify && verification == nil { runVerify(manual: false) } }
+        .onAppear { if autoVerify && verified == nil { runVerify(manual: false) } }
     }
 
     @ViewBuilder private func indicator() -> some View {
         if showSpinner {
             ProgressView()
-        } else if verification == true {
+        } else if verified == true {
             Image(systemName: "checkmark")
-        } else if verification == false {
+        } else if verified == false {
             Image(systemName: "xmark")
                 .foregroundColor(.red)
                 .onTapGesture { runVerify(manual: true) }

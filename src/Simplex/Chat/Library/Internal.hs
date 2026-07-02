@@ -54,7 +54,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
 import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
-import Simplex.Chat.Names (claimName, mkSimplexNameClaim)
+import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -1244,11 +1244,11 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     }
 
 redactedMemberProfile :: GroupInfo -> GroupMember -> Profile -> Profile
-redactedMemberProfile g m Profile {displayName, fullName, shortDescr, image, contactLink = lnk, peerType, badge, simplexName} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink, preferences = Nothing, peerType, badge, simplexName = redactedName}
+redactedMemberProfile g m Profile {displayName, fullName, shortDescr, image, contactLink = lnk, peerType, badge, contactDomain} =
+  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink, preferences = Nothing, peerType, badge, contactDomain = redactedDomain}
   where
     contactLink = if allowSimplexLinks then lnk else Nothing
-    redactedName = mkSimplexNameClaim (if allowDirect then claimName <$> simplexName else Nothing) Nothing
+    redactedDomain = if allowDirect then (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain else Nothing
     allowDirect = groupFeatureMemberAllowed SGFDirectMessages m g
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
     removeSimplexLink s
@@ -1468,17 +1468,17 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
       _ -> False
 
 updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
-updateContactFromLinkData user ct@Contact {contactId, profile = profile@LocalProfile {simplexName = prevClaim, simplexNameVerification}} linkProfile@Profile {simplexName = newClaim}
+updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
-      when profileChanged $ void $ withStore $ \db -> updateContactProfile db cxt user ct linkProfile
-      when verifyChanged $ withStore' $ \db -> setContactNameVerified db user contactId True
-      withStore $ \db -> getContact db cxt user contactId
+      withFastStore $ \db -> do
+        ct' <- updateContactProfile db cxt user ct linkProfile
+        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True else pure ct'
   | otherwise = pure ct
   where
     profileChanged = fromLocalProfile profile /= linkProfile
-    claimChanged = (claimName <$> prevClaim) /= (claimName <$> newClaim)
-    verifyChanged = simplexNameVerification /= Just True || claimChanged
+    claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
+    verifyChanged = contactDomainVerified /= Just True || claimChanged
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
@@ -3109,7 +3109,7 @@ simplexTeamContactProfile =
       peerType = Nothing,
       preferences = Nothing,
       badge = Nothing,
-      simplexName = Nothing
+      contactDomain = Nothing
     }
 
 simplexStatusContactProfile :: Profile
@@ -3123,7 +3123,7 @@ simplexStatusContactProfile =
       peerType = Just CPTBot,
       preferences = Nothing,
       badge = Nothing,
-      simplexName = Nothing
+      contactDomain = Nothing
     }
 
 timeItToView :: String -> CM' a -> CM' a

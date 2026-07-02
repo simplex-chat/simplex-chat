@@ -193,14 +193,15 @@ struct UserAddressView: View {
 
         Section {
             NavigationLink {
-                SetSimplexNameView(
-                    titleKey: "Your SimpleX name",
+                let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.shortName { "@\(d)" } else { "" }
+                SetSimplexDomainView(
+                    title: "Your SimpleX name",
                     footer: "Let people connect to you via name registered with your SimpleX address.",
-                    prefix: "@",
-                    nameText: chatModel.currentUser?.profile.simplexName?.shortName ?? "",
-                    save: { name in
+                    prompt: "@yourname.testing",
+                    simplexName: simplexName,
+                    save: { simplexDomain in
                         do {
-                            let u = try await apiSetUserName(name)
+                            let u = try await apiSetUserDomain(simplexDomain)
                             await MainActor.run { chatModel.updateUser(u) }
                             return true
                         } catch {
@@ -710,14 +711,11 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
     }
 }
 
-// Set the user's own (prefix "@") or a channel's (prefix "#") SimpleX name.
-// The field is prefilled with the full prefixed name; `save` receives the encoded name (or nil to
-// clear) and returns a failure message (nil on success). The prefix is normalised on save.
-struct SetSimplexNameView: View {
-    let titleKey: LocalizedStringKey
+struct SetSimplexDomainView: View {
+    let title: LocalizedStringKey
     let footer: LocalizedStringKey
-    let prefix: String
-    @State var nameText: String
+    let prompt: String
+    @State var simplexName: String
     let save: (String?) async -> Bool
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
@@ -726,7 +724,7 @@ struct SetSimplexNameView: View {
     var body: some View {
         List {
             Section {
-                TextField(prefix + "name.simplex", text: $nameText)
+                TextField(prompt, text: $simplexName)
                     .autocorrectionDisabled(true)
                     .textInputAutocapitalization(.never)
             } header: {
@@ -750,16 +748,19 @@ struct SetSimplexNameView: View {
                 .disabled(saving)
             }
         }
-        .navigationTitle(titleKey)
+        .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
     }
 
-    // ensure the correct type prefix so a contact name is not parsed as a group (or vice versa)
     private func normalized() -> String? {
-        let s = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if s.isEmpty { return nil }
-        if s.hasPrefix("@") || s.hasPrefix("#") { return prefix + s.dropFirst() }
-        return prefix + s
+        let s = simplexName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return s.isEmpty
+                ? nil
+                : addSimplexTLD(s.hasPrefix("@") || s.hasPrefix("#") ? String(s.dropFirst()) : s)
+    }
+
+    private func addSimplexTLD(_ d: String) -> String {
+        if d.contains(".") { d } else { "\(d).simplex" }
     }
 }
 

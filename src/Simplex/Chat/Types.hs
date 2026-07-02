@@ -53,7 +53,7 @@ import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
-import Simplex.Chat.Names (SimplexNameClaim, setClaimProof)
+import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -499,7 +499,7 @@ data GroupInfo = GroupInfo
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupKeys :: Maybe GroupKeys,
-    simplexNameVerification :: Maybe Bool
+    groupDomainVerified :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -699,7 +699,7 @@ data Profile = Profile
     preferences :: Maybe Preferences,
     peerType :: Maybe ChatPeerType,
     badge :: Maybe BadgeProof,
-    simplexName :: Maybe SimplexNameClaim
+    contactDomain :: Maybe SimplexDomainClaim
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -732,14 +732,14 @@ instance TextEncoding ChatPeerType where
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, simplexName = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing, badge = Nothing, contactDomain = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
-  LocalProfile {displayName = n1, fullName = fn1, image = i1}
-  LocalProfile {displayName = n2, fullName = fn2, image = i2} =
-    n1 == n2 && fn1 == fn2 && i1 == i2
+  LocalProfile {displayName = n1, fullName = fn1, image = i1, shortDescr = d1}
+  LocalProfile {displayName = n2, fullName = fn2, image = i2, shortDescr = d2} =
+    n1 == n2 && fn1 == fn2 && i1 == i2 && d1 == d2
 
 -- equal for profile-update detection: badge proofs are re-generated for every presentation,
 -- so compare badges by disclosed info (not proof bytes) - a re-presentation of the same badge is a no-op
@@ -747,7 +747,7 @@ sameProfileContent :: Profile -> Profile -> Bool
 sameProfileContent p@Profile {badge = b} p'@Profile {badge = b'} =
   clearProofs p == clearProofs p' && (proofInfo <$> b) == (proofInfo <$> b')
   where
-    clearProofs pr@Profile {simplexName} = pr {badge = Nothing, simplexName = setClaimProof Nothing <$> simplexName}
+    clearProofs pr@Profile {contactDomain} = pr {badge = Nothing, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
     proofInfo :: BadgeProof -> BadgeInfo
     proofInfo (BadgeProof _ _ _ info) = info
 
@@ -784,8 +784,8 @@ data LocalProfile = LocalProfile
     peerType :: Maybe ChatPeerType,
     localBadge :: Maybe LocalBadge,
     localAlias :: LocalAlias,
-    simplexName :: Maybe SimplexNameClaim,
-    simplexNameVerification :: Maybe Bool
+    contactDomain :: Maybe SimplexDomainClaim,
+    contactDomainVerified :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -793,15 +793,15 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> UTCTime -> Maybe Bool -> Maybe Bool -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, simplexName} localAlias now badgeVerified simplexNameVerification =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, simplexName, simplexNameVerification}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge, contactDomain} localAlias now badgeVerified contactDomainVerified =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, localAlias, contactDomain, contactDomainVerified}
   where
     localBadge = (\b@(BadgeProof _ _ _ info) -> PeerBadge b (mkBadgeStatus now badgeVerified info)) <$> badge
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, simplexName} =
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localBadge, contactDomain} =
   -- the name proof is re-signed on each send
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, simplexName = setClaimProof Nothing <$> simplexName}
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge = localBadge >>= wireBadge, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
   where
     wireBadge :: LocalBadge -> Maybe BadgeProof
     wireBadge = \case
@@ -846,15 +846,11 @@ instance ToField GroupType where toField = toField . textEncode
 
 data PublicGroupAccess = PublicGroupAccess
   { groupWebPage :: Maybe Text,
-    simplexName :: Maybe SimplexNameClaim,
+    groupDomainClaim :: Maybe SimplexDomainClaim,
     domainWebPage :: Bool,
     allowEmbedding :: Bool
   }
   deriving (Eq, Show)
-
--- selector disambiguated from Profile/LocalProfile simplexName
-publicGroupClaim :: PublicGroupAccess -> Maybe SimplexNameClaim
-publicGroupClaim PublicGroupAccess {simplexName} = simplexName
 
 data PublicGroupProfile = PublicGroupProfile
   { groupType :: GroupType,

@@ -947,7 +947,6 @@
   <string name="simplex_name">SimpleX name</string>
   <string name="your_simplex_name">Your SimpleX name</string>
   <string name="set_simplex_name">Set SimpleX name</string>
-  <string name="simplex_name_placeholder">name.simplex</string>
   <string name="error_saving_simplex_name">Error saving name</string>
   <string name="simplex_name_owner_no_channel_link">The SimpleX name %1$s is registered without channel link. Add channel link to the name via the registration page.</string>
   <string name="simplex_name_owner_no_address">The SimpleX name %1$s is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</string>

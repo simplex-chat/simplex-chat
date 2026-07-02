@@ -57,7 +57,7 @@ import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
-import Simplex.Chat.Names (NameClaimProof (..), SimplexNameClaim (..), claimName, claimProof, mkSimplexNameClaim, verifyNameProofSig)
+import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1493,24 +1493,24 @@ processChatCommand cxt nm = \case
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
-  APISetUserName userId name_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, simplexName}} ->
-    if (claimName <$> simplexName) == name_
+  APISetUserDomain userId domain_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} ->
+    if (claimDomain <$> contactDomain) == domain_
       then pure $ CRUserProfileNoChange user
       else do
-        cl' <- case name_ of
+        cl' <- case domain_ of
           Nothing -> pure contactLink
-          Just ni@SimplexNameInfo {nameDomain} -> do
-            UserContactLink {shortLinkDataSet, connLinkContact = CCLink fl sl_} <- withFastStore (`getUserAddress` user)
+          Just domain -> do
+            UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
-                NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
-                unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexName ni SNENoValidLink
+                NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+                unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexDomain domain SDENoValidLink
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
-        let p' = (fromLocalProfile p :: Profile) {simplexName = mkSimplexNameClaim name_ Nothing, contactLink = cl'}
+        let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
         updateProfile_ user p' True $ withFastStore $ \db -> do
           user' <- updateUserProfile db user p'
-          liftIO $ setUserSimplexName db user' name_
+          liftIO $ setUserSimplexDomain db user' domain_
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
     ct <- withFastStore $ \db -> getContact db cxt user contactId
     updateContactPrefs user ct prefs'
@@ -2005,7 +2005,7 @@ processChatCommand cxt nm = \case
     subMode <- chatReadVar subscriptionMode
     -- TODO [badges] bind link and badge to handshake context
     linkProfile <- presentUserBadge user incognitoProfile $ userProfileDirect user incognitoProfile Nothing True
-    let userData = contactShortLinkData linkProfile {simplexName = Nothing} Nothing
+    let userData = contactShortLinkData linkProfile {contactDomain = Nothing} Nothing
         userLinkData = UserInvLinkData userData
     (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation (Just userLinkData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
@@ -2290,20 +2290,19 @@ processChatCommand cxt nm = \case
       _ -> throwError e
     connectWithPlan user incognito ccLink plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
-  APIVerifyContactName contactId -> withUser $ \user -> do
-    Contact {profile = LocalProfile {simplexName}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
+  APIVerifyContactDomain contactId -> withUser $ \user -> do
+    ct@Contact {profile = LocalProfile {contactDomain}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
-    reason <- verifyEntityName user nm (claimName <$> simplexName) connLink_ (claimProof =<< simplexName) "contact has no name to verify" $
-      \v -> withStore' $ \db -> setContactNameVerified db user contactId v
-    ct' <- withFastStore $ \db -> getContact db cxt user contactId
+    domain <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
+    (verified, reason) <- verifyEntityDomain user nm NTContact domain connLink_
+    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v) verified
     pure $ CRContactNameVerified user ct' reason
-  APIVerifyPublicGroupName groupId -> withUser $ \user -> do
-    GroupInfo {groupProfile = GroupProfile {publicGroup}, preparedGroup} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
-    let access = publicGroup >>= publicGroupAccess
-        connLink_ = preparedGroup >>= \PreparedGroup {connLinkToConnect = CCLink _ sLnk_} -> ACSL SCMContact <$> sLnk_
-    reason <- verifyEntityName user nm (claimName <$> (access >>= publicGroupClaim)) connLink_ (claimProof =<< (access >>= publicGroupClaim)) "group has no name to verify" $
-      \v -> withStore' $ \db -> setGroupNameVerified db user groupId v
-    g' <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+  APIVerifyGroupDomain groupId -> withUser $ \user -> do
+    g@GroupInfo {groupProfile = GroupProfile {publicGroup}, preparedGroup} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+    let connLink_ = preparedGroup >>= \PreparedGroup {connLinkToConnect = CCLink _ sLnk_} -> ACSL SCMContact <$> sLnk_
+    domain <- maybe (throwCmdError "group has no name to verify") pure $ publicGroup >>= publicGroupAccess >>= groupDomainClaim
+    (verified, reason) <- verifyEntityDomain user nm NTPublicGroup domain connLink_
+    g' <- maybe (pure g) (\v -> withFastStore' $ \db -> setGroupDomainVerified db user g v) verified
     pure $ CRGroupNameVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db cxt user contactId
@@ -3134,14 +3133,14 @@ processChatCommand cxt nm = \case
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
     CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db cxt user gName)
-  APISetPublicGroupAccess gId access@PublicGroupAccess {simplexName} -> withUser $ \user -> do
+  APISetPublicGroupAccess gId access@PublicGroupAccess {groupDomainClaim = newClaim} -> withUser $ \user -> do
     gInfo@GroupInfo {groupProfile = p@GroupProfile {publicGroup}} <- withStore $ \db -> getGroupInfo db cxt user gId
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
-        forM_ (claimName <$> simplexName) $ \newName@SimplexNameInfo {nameDomain} ->
-          when (Just newName /= (claimName <$> (existingAccess >>= publicGroupClaim))) $ do
-            NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
-            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexName newName SNENoValidLink
+        forM_ (claimDomain <$> newClaim) $ \newDomain ->
+          when (Just newDomain /= (claimDomain <$> (existingAccess >>= groupDomainClaim))) $ do
+            NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) newDomain
+            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomain newDomain SDENoValidLink
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}}
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -4209,12 +4208,13 @@ processChatCommand cxt nm = \case
                 (FixedLinkData {linkConnReq = cReq, rootKey}, cData) <- getShortLinkConnReq nm user l'
                 contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
                 let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
-                    linkName_ = linkProfile_ >>= \Profile {simplexName} -> claimName <$> simplexName
-                    verifiedName_ = case nl of CTName ni -> Just ni; _ -> Nothing
-                    refreshContact ct' = case (verifiedName_, linkProfile_) of
+                    linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
+                    verifiedName = case nl of CTName ni -> Just ni; _ -> Nothing
+                    refreshContact ct' = case (verifiedName, linkProfile_) of
                       (Just _, Just p) -> updateContactFromLinkData user ct' p
                       _ -> pure ct'
-                forM_ verifiedName_ $ \ni -> verifyNameClaim ni linkName_
+                forM_ verifiedName $ \SimplexNameInfo {nameDomain} ->
+                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomain nameDomain SDEUnknownDomain
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> do
                     ct'' <- refreshContact ct'
@@ -4224,7 +4224,7 @@ processChatCommand cxt nm = \case
                         ov = verifyLinkOwner rootKey owners l' sig_
                     plan <- contactRequestPlan user cReq contactSLinkData_ ov
                     case plan of
-                      CPContactAddress cap@(CAPOk {}) -> pure (con l' cReq, CPContactAddress cap {verifiedName = verifiedName_})
+                      CPContactAddress cap@(CAPOk {}) -> pure (con l' cReq, CPContactAddress cap {verifiedName})
                       CPContactAddress (CAPKnown ct') -> do
                         ct'' <- refreshContact ct'
                         pure (con l' cReq, CPContactAddress (CAPKnown ct''))
@@ -4278,18 +4278,18 @@ processChatCommand cxt nm = \case
                         (Nothing, Nothing) -> pure ()
                         _ -> throwChatError CEInvalidConnReq
                       let ov = verifyLinkOwner rootKey owners l' sig_
-                          verifiedName_ = case nl of CTName ni -> Just ni; _ -> Nothing
-                          claimedName GroupProfile {publicGroup} = claimName <$> (publicGroup >>= publicGroupAccess >>= publicGroupClaim)
+                          verifiedName = case nl of CTName ni -> Just ni; _ -> Nothing
                       plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
-                      forM_ verifiedName_ $ \ni ->
-                        verifyNameClaim ni $ case plan of
-                          CPGroupLink (GLPOk _ (Just GroupShortLinkData {groupProfile = gp}) _ _) -> claimedName gp
-                          CPGroupLink (GLPKnown GroupInfo {groupProfile = gp} _ _ _) -> claimedName gp
-                          CPGroupLink (GLPOwnLink GroupInfo {groupProfile = gp}) -> claimedName gp
-                          CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile = gp})) -> claimedName gp
-                          _ -> maybe Nothing (\GroupShortLinkData {groupProfile = gp} -> claimedName gp) groupSLinkData_
+                      forM_ verifiedName $ \SimplexNameInfo {nameDomain} ->
+                        let domain_ = (\GroupProfile {publicGroup} -> claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) =<< case plan of
+                              CPGroupLink (GLPOk _ (Just GroupShortLinkData {groupProfile}) _ _) -> Just groupProfile
+                              CPGroupLink (GLPKnown GroupInfo {groupProfile} _ _ _) -> Just groupProfile
+                              CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) -> Just groupProfile
+                              CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) -> Just groupProfile
+                              _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
+                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomain nameDomain SDEUnknownDomain
                       pure $ case plan of
-                        CPGroupLink glp@(GLPOk {}) -> (con l' cReq, CPGroupLink glp {verifiedName = verifiedName_})
+                        CPGroupLink glp@(GLPOk {}) -> (con l' cReq, CPGroupLink glp {verifiedName})
                         _ -> (con l' cReq, plan)
             where
               unsupportedGroupType = \case
@@ -4311,13 +4311,13 @@ processChatCommand cxt nm = \case
                 pure (con l' (linkConnReq fd), CPGroupLink (GLPKnown g' (BoolDef updated) ov (ListDef glOwners)))
     -- resolve a name to its first contact/channel short link
     resolveNameLink :: User -> SimplexNameInfo -> CM (ConnShortLink 'CMContact)
-    resolveNameLink user ni@SimplexNameInfo {nameType, nameDomain} = do
+    resolveNameLink user SimplexNameInfo {nameType, nameDomain} = do
       NameRecord {nrSimplexContact, nrSimplexChannel} <-
         withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
       let (candidates, ctType) = case nameType of
             NTContact -> (nrSimplexContact, CCTContact)
             NTPublicGroup -> (nrSimplexChannel, CCTChannel)
-      maybe (throwChatError $ CESimplexName ni SNENoValidLink) pure $ firstNameLink ctType candidates
+      maybe (throwChatError $ CESimplexDomain nameDomain SDENoValidLink) pure $ firstNameLink ctType candidates
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
@@ -4789,53 +4789,31 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
 nameResolvesTo :: ConnShortLink 'CMContact -> [Text] -> Bool
 nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . strDecode . encodeUtf8)
 
-verifyName :: User -> NetworkRequestMode -> SimplexNameInfo -> Maybe AConnShortLink -> Maybe NameClaimProof -> CM (Maybe Bool, Maybe Text)
-verifyName user nm claim connLink_ proof_ = case (proof_, connLink_) of
+verifyEntityDomain :: User -> NetworkRequestMode -> SimplexNameType -> SimplexDomainClaim -> Maybe AConnShortLink -> CM (Maybe Bool, Maybe Text)
+verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain, proof = proof_} connLink_ = case (proof_, connLink_) of
   (Nothing, _) -> pure (Nothing, Just "no name proof to verify")
   (_, Nothing) -> pure (Nothing, Just "no connection link to check the name against")
   (Just proof, Just (ACSL SCMContact profileSLnk)) -> do
-    let SimplexNameInfo {nameType, nameDomain} = claim
-    NameRecord {nrSimplexContact, nrSimplexChannel} <-
-      withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain
+    NameRecord {nrSimplexContact, nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
     let resolvedLinks = case nameType of
           NTContact -> nrSimplexContact
           NTPublicGroup -> nrSimplexChannel
     if not (nameResolvesTo profileSLnk resolvedLinks)
       then pure (Just False, Just "the name does not resolve to this address")
       else do
-        ok <- verifyProofKey nm user profileSLnk claim proof
-        pure $
-          if ok
-            then (Just True, Nothing)
-            else (Just False, Just "the name proof was not signed by this address's owner")
+        ok <- verifyDomainProof proof profileSLnk
+        pure (Just ok, if ok then Nothing else Just "the name proof was not signed by this address's owner")
   (Just _, Just _) -> pure (Nothing, Just "unexpected connection link type for name verification")
-
--- verify the proof signature against the profile address's owner key;
--- getShortLinkConnReq's network/agent error propagates (UI can retry), not recorded as a verdict
-verifyProofKey :: NetworkRequestMode -> User -> ShortLinkContact -> SimplexNameInfo -> NameClaimProof -> CM Bool
-verifyProofKey nm user sLnk claim proof = do
-  (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}) <- getShortLinkConnReq nm user sLnk
-  pure $ proofSignedByOwner rootKey owners sLnk claim proof
-
-proofSignedByOwner :: C.PublicKeyEd25519 -> [OwnerAuth] -> ShortLinkContact -> SimplexNameInfo -> NameClaimProof -> Bool
-proofSignedByOwner rootKey owners sLnk claim proof@NameClaimProof {linkOwnerId} =
-  let key_ = case linkOwnerId of
-        Nothing -> Just rootKey
-        Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
-   in maybe False (\key -> verifyNameProofSig key claim sLnk proof) key_
-
--- connecting by name resolves the name to this address, so it is verified without checking the proof
-verifyNameClaim :: SimplexNameInfo -> Maybe SimplexNameInfo -> CM (Maybe Bool)
-verifyNameClaim ni claimedName_ = do
-  unless (claimedName_ == Just ni) $ throwChatError $ CESimplexName ni SNEUnknownName
-  pure (Just True)
-
-verifyEntityName :: User -> NetworkRequestMode -> Maybe SimplexNameInfo -> Maybe AConnShortLink -> Maybe NameClaimProof -> String -> (Bool -> CM ()) -> CM (Maybe Text)
-verifyEntityName user nm claim_ connLink_ proof_ noNameErr persist = do
-  claim <- maybe (throwCmdError noNameErr) pure claim_
-  (verdict, reason) <- verifyName user nm claim connLink_ proof_
-  forM_ verdict persist
-  pure reason
+  where
+    verifyDomainProof :: SimplexDomainProof -> ShortLinkContact -> CM Bool
+    verifyDomainProof SimplexDomainProof {linkOwnerId, presHeader, signature} sLnk@(CSLContact _ ct srv key) = do
+      (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}) <- getShortLinkConnReq nm user sLnk
+      let ownerKey_ = case linkOwnerId of
+            Nothing -> Just rootKey
+            Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
+      pure $ maybe False (\k -> C.verify' k signature proofPayload) ownerKey_
+      where
+        proofPayload = strEncode (Str "simplex_domain_v1", presHeader, domain, ct, srv, key)
 
 data ConnectViaContactResult
   = CVRConnectedContact Contact
@@ -5313,7 +5291,7 @@ chatCommandP =
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
-      "/_set_name " *> (APISetUserName <$> A.decimal <*> optional (A.space *> strP)),
+      "/_set domain " *> (APISetUserDomain <$> A.decimal <*> optional (A.space *> strP)),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
@@ -5484,8 +5462,8 @@ chatCommandP =
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
-      "/_verify name @" *> (APIVerifyContactName <$> A.decimal),
-      "/_verify name #" *> (APIVerifyPublicGroupName <$> A.decimal),
+      "/_verify domain @" *> (APIVerifyContactDomain <$> A.decimal),
+      "/_verify domain #" *> (APIVerifyGroupDomain <$> A.decimal),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,
@@ -5661,10 +5639,10 @@ chatCommandP =
     onOffP = ("on" $> True) <|> ("off" $> False)
     publicGroupAccessP = do
       groupWebPage <- optional (" web=" *> (safeDecodeUtf8 <$> A.takeTill A.isSpace))
-      simplexName <- optional (" name=" *> strP)
-      domainWebPage <- (" name_page=" *> onOffP) <|> pure False
+      groupDomain <- optional (" domain=" *> strP)
+      domainWebPage <- (" domain_page=" *> onOffP) <|> pure False
       allowEmbedding <- (" embed=" *> onOffP) <|> pure False
-      pure PublicGroupAccess {groupWebPage, simplexName = mkSimplexNameClaim simplexName Nothing, domainWebPage, allowEmbedding}
+      pure PublicGroupAccess {groupWebPage, groupDomainClaim = mkDomainClaim <$> groupDomain, domainWebPage, allowEmbedding}
     profileNameDescr = (,) <$> displayNameP <*> shortDescrP
     -- 'Help with bot':'link <ID>','Menu of commands':[...]
     botCommandsP :: Parser [ChatBotCommand]
@@ -5685,7 +5663,7 @@ chatCommandP =
     newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
       service <- (" service=" *> onOffP) <|> pure False
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, simplexName = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
@@ -5694,7 +5672,7 @@ chatCommandP =
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, simplexName = Nothing}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
       pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

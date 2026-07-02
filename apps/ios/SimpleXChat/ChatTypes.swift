@@ -119,7 +119,8 @@ public struct Profile: Codable, NamedChat, Hashable {
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil,
-        peerType: ChatPeerType? = nil
+        peerType: ChatPeerType? = nil,
+        contactDomain: SimplexDomainClaim? = nil
     ) {
         self.displayName = displayName
         self.fullName = fullName
@@ -127,6 +128,7 @@ public struct Profile: Codable, NamedChat, Hashable {
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
+        self.contactDomain = contactDomain
     }
 
     public var displayName: String
@@ -139,6 +141,7 @@ public struct Profile: Codable, NamedChat, Hashable {
     // the badge proof from the wire profile - opaque to the UI, round-tripped to the core (apiPrepareContact)
     public var badge: BadgeProof?
     public var localAlias: String { get { "" } }
+    public var contactDomain: SimplexDomainClaim?
 
     var profileViewName: String {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
@@ -162,8 +165,8 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         peerType: ChatPeerType? = nil,
         localBadge: LocalBadge? = nil,
         localAlias: String,
-        simplexName: SimplexNameClaim? = nil,
-        simplexNameVerification: Bool? = nil
+        contactDomain: SimplexDomainClaim? = nil,
+        contactDomainVerified: Bool? = nil
     ) {
         self.profileId = profileId
         self.displayName = displayName
@@ -175,8 +178,8 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.peerType = peerType
         self.localBadge = localBadge
         self.localAlias = localAlias
-        self.simplexName = simplexName
-        self.simplexNameVerification = simplexNameVerification
+        self.contactDomain = contactDomain
+        self.contactDomainVerified = contactDomainVerified
     }
 
     public var profileId: Int64
@@ -189,8 +192,8 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var peerType: ChatPeerType?
     public var localBadge: LocalBadge?
     public var localAlias: String
-    public var simplexName: SimplexNameClaim?
-    public var simplexNameVerification: Bool?
+    public var contactDomain: SimplexDomainClaim?
+    public var contactDomainVerified: Bool?
 
     var profileViewName: String {
         localAlias == ""
@@ -2540,7 +2543,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var localAlias: String
-    public var simplexNameVerification: Bool?
+    public var groupDomainVerified: Bool?
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -2621,35 +2624,35 @@ public enum GroupType: Codable, Hashable {
 }
 
 public struct PublicGroupAccess: Codable, Hashable {
-    public init(groupWebPage: String? = nil, simplexName: SimplexNameClaim? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
+    public init(groupWebPage: String? = nil, groupDomainClaim: SimplexDomainClaim? = nil, domainWebPage: Bool = false, allowEmbedding: Bool = false) {
         self.groupWebPage = groupWebPage
-        self.simplexName = simplexName
+        self.groupDomainClaim = groupDomainClaim
         self.domainWebPage = domainWebPage
         self.allowEmbedding = allowEmbedding
     }
 
     public var groupWebPage: String?
-    public var simplexName: SimplexNameClaim?
+    public var groupDomainClaim: SimplexDomainClaim?
     public var domainWebPage: Bool = false
     public var allowEmbedding: Bool = false
 }
 
-public struct SimplexNameClaim: Codable, Hashable {
-    public init(name: String, proof: NameClaimProof? = nil) {
-        self.name = name
+public struct SimplexDomainClaim: Codable, Hashable {
+    public init(domain: String, proof: SimplexDomainProof? = nil) {
+        self.domain = domain
         self.proof = proof
     }
-    public var name: String
-    public var proof: NameClaimProof?
+    public var domain: String
+    public var proof: SimplexDomainProof?
 
     public var shortName: String {
-        name.hasPrefix("simplex:/name") ? String(name.dropFirst("simplex:/name".count)) : name
+        domain.hasSuffix(".simplex") ? String(domain.dropLast(".simplex".count)) : domain
     }
 }
 
-public enum SimplexNameError: Decodable, Hashable {
+public enum SimplexDomainError: Decodable, Hashable {
     case noValidLink
-    case unknownName
+    case unknownDomain
 }
 
 public struct RelayCapabilities: Codable, Hashable {
@@ -5285,28 +5288,15 @@ public enum SimplexLinkType: String, Decodable, Hashable {
 
 public struct SimplexNameInfo: Codable, Equatable, Hashable {
     public var nameType: SimplexNameType
-    public var nameDomain: SimplexNameDomain
+    public var nameDomain: SimplexDomain
 
-    // prefix-less domain for prefilling the set-name field (mirrors shortName without the @/# prefix)
-    public var editDomain: String {
-        if nameType == .publicGroup, nameDomain.nameTLD == .simplex, nameDomain.subDomain.isEmpty {
-            return nameDomain.domain
-        }
-        return nameDomain.fullDomainName
-    }
-
-    // user-facing display string, mirrors backend shortNameInfoStr
-    public var shortName: String {
-        (nameType == .publicGroup ? "#" : "@") + editDomain
-    }
-
-    public init(nameType: SimplexNameType, nameDomain: SimplexNameDomain) {
+    public init(nameType: SimplexNameType, nameDomain: SimplexDomain) {
         self.nameType = nameType
         self.nameDomain = nameDomain
     }
 }
 
-public struct SimplexNameDomain: Codable, Equatable, Hashable {
+public struct SimplexDomain: Codable, Equatable, Hashable {
     public var nameTLD: SimplexTLD
     public var domain: String
     public var subDomain: [String]
@@ -5340,11 +5330,10 @@ public enum SimplexNameType: String, Codable, Hashable {
     case contact
 }
 
-// peer's signed name claim; UI only checks presence
-public struct NameClaimProof: Codable, Hashable {
+public struct SimplexDomainProof: Codable, Hashable {
+    public var linkOwnerId: String?
     public var presHeader: String
     public var signature: String
-    public var linkOwnerId: String?
 }
 
 public enum FormatColor: String, Decodable, Hashable {

@@ -156,9 +156,9 @@ enum ChatCommand: ChatCmdProtocol {
     case apiAddMyAddressShortLink(userId: Int64)
     case apiSetProfileAddress(userId: Int64, on: Bool)
     case apiSetAddressSettings(userId: Int64, addressSettings: AddressSettings)
-    case apiSetUserName(userId: Int64, name: String?)
-    case apiVerifyContactName(contactId: Int64)
-    case apiVerifyPublicGroupName(groupId: Int64)
+    case apiSetUserDomain(userId: Int64, simplexDomain: String?)
+    case apiVerifyContactDomain(contactId: Int64)
+    case apiVerifyGroupDomain(groupId: Int64)
     case apiAcceptContact(incognito: Bool, contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     // WebRTC calls
@@ -374,10 +374,10 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiAddMyAddressShortLink(userId): return "/_short_link_address \(userId)"
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiSetAddressSettings(userId, addressSettings): return "/_address_settings \(userId) \(encodeJSON(addressSettings))"
-            case let .apiSetUserName(userId, name): return "/_set_name \(userId)" + (name.map { " " + $0 } ?? "")
+            case let .apiSetUserDomain(userId, simplexDomain): return "/_set domain \(userId)" + (simplexDomain.map { " " + $0 } ?? "")
             case let .apiSetPublicGroupAccess(groupId, access): return "/_public group access #\(groupId) \(encodeJSON(access))"
-            case let .apiVerifyContactName(contactId): return "/_verify name @\(contactId)"
-            case let .apiVerifyPublicGroupName(groupId): return "/_verify name #\(groupId)"
+            case let .apiVerifyContactDomain(contactId): return "/_verify domain @\(contactId)"
+            case let .apiVerifyGroupDomain(groupId): return "/_verify domain #\(groupId)"
             case let .apiAcceptContact(incognito, contactReqId): return "/_accept incognito=\(onOff(incognito)) \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiSendCallInvitation(contact, callType): return "/_call invite @\(contact.apiId) \(encodeJSON(callType))"
@@ -560,9 +560,9 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiAddMyAddressShortLink: return "apiAddMyAddressShortLink"
             case .apiSetProfileAddress: return "apiSetProfileAddress"
             case .apiSetAddressSettings: return "apiSetAddressSettings"
-            case .apiSetUserName: return "apiSetUserName"
-            case .apiVerifyContactName: return "apiVerifyContactName"
-            case .apiVerifyPublicGroupName: return "apiVerifyPublicGroupName"
+            case .apiSetUserDomain: return "apiSetUserDomain"
+            case .apiVerifyContactDomain: return "apiVerifyContactDomain"
+            case .apiVerifyGroupDomain: return "apiVerifyGroupDomain"
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"
             case .apiSendCallInvitation: return "apiSendCallInvitation"

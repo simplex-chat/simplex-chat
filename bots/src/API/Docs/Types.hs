@@ -322,7 +322,6 @@ chatTypesDocsData =
     (sti @MsgReaction, STUnion, "MR", [], "", ""),
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
-    (sti @NameClaimProof, STRecord, "", [], "", ""),
     (sti @NameErrorType, STUnion, "", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
@@ -356,10 +355,11 @@ chatTypesDocsData =
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
+    (sti @SimplexDomain, STRecord, "", [], "", ""),
+    (sti @SimplexDomainClaim, STRecord, "", [], "", ""),
+    (sti @SimplexDomainError, STUnion, "SDE", [], "", ""),
+    (sti @SimplexDomainProof, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
-    (sti @SimplexNameClaim, STRecord, "", [], "", ""),
-    (sti @SimplexNameDomain, STRecord, "", [], "", ""),
-    (sti @SimplexNameError, STUnion, "SNE", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
@@ -553,7 +553,6 @@ deriving instance Generic MsgFilter
 deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
-deriving instance Generic NameClaimProof
 deriving instance Generic NameErrorType
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
@@ -585,10 +584,11 @@ deriving instance Generic RelayProfile
 deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
+deriving instance Generic SimplexDomain
+deriving instance Generic SimplexDomainClaim
+deriving instance Generic SimplexDomainError
+deriving instance Generic SimplexDomainProof
 deriving instance Generic SimplexLinkType
-deriving instance Generic SimplexNameClaim
-deriving instance Generic SimplexNameDomain
-deriving instance Generic SimplexNameError
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
 deriving instance Generic SimplexTLD
