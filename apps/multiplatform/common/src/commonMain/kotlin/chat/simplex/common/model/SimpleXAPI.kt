@@ -7521,7 +7521,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
   @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
-  @Serializable @SerialName("simplexDomain") class SimplexDomainNotReady(val simplexDomain: SimplexDomain, val simplexDomainError: SimplexDomainError): ChatErrorType()
+  @Serializable @SerialName("simplexDomainNotReady") class SimplexDomainNotReady(val simplexDomain: SimplexDomain, val simplexDomainError: SimplexDomainError): ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()
