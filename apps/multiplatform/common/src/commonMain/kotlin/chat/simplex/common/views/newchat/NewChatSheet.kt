@@ -64,7 +64,7 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
           ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
         },
         createChannel = {
-          ModalManager.start.showCustomModal { close -> AddChannelView(chatModel, close, closeAll) }
+          ModalManager.start.showCustomModal { close -> AddChannelView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
         },
         rh = rh,
         close = close

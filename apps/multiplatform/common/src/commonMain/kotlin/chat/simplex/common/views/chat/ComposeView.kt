@@ -113,7 +113,9 @@ data class ComposeState(
   val inProgress: Boolean = false,
   val progressByTimeout: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: MentionedMembers = emptyMap()
+  val mentions: MentionedMembers = emptyMap(),
+  // the max file size the user may attach, raised by their active badge unless the chat is incognito; kept in sync on chat switch
+  val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP)
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     ComposeMessage(
@@ -251,8 +253,6 @@ data class ComposeState(
   }
 }
 
-private val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
-
 sealed class RecordingState {
   object NotStarted: RecordingState()
   class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
@@ -288,18 +288,25 @@ expect fun AttachmentSelection(
 )
 
 fun MutableState<ComposeState>.onFilesAttached(uris: List<URI>) {
-  val groups =  uris.groupBy { isImage(it) }
-  val images = groups[true] ?: emptyList()
+  val groups = uris.groupBy { isImage(it) || isVideoUri(it) }
+  val media = groups[true] ?: emptyList()
   val files = groups[false] ?: emptyList()
-  if (images.isNotEmpty()) {
-    CoroutineScope(Dispatchers.IO).launch { processPickedMedia(images, null) }
+  if (media.isNotEmpty()) {
+    CoroutineScope(Dispatchers.IO).launch { processPickedMedia(media, null) }
   } else if (files.isNotEmpty()) {
     processPickedFile(uris.first(), null)
   }
 }
 
+private fun isVideoUri(uri: URI): Boolean {
+  val name = getFileName(uri)?.lowercase() ?: return false
+  return name.endsWith(".mov") || name.endsWith(".avi") || name.endsWith(".mp4") ||
+      name.endsWith(".mpg") || name.endsWith(".mpeg") || name.endsWith(".mkv")
+}
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
+    val maxFileSize = value.maxFileSize
     val fileSize = getFileSize(uri)
     if (fileSize != null && fileSize <= maxFileSize) {
       val fileName = getFileName(uri)
@@ -318,11 +325,12 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
 }
 
 suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?) {
+  val maxFileSize = value.maxFileSize
   val content = ArrayList<UploadContent>()
   val imagesPreview = ArrayList<String>()
   uris.forEach { uri ->
     var bitmap: ImageBitmap?
-    when {
+    val uploadContent: UploadContent? = when {
       isImage(uri) -> {
         // Image
         val drawable = getDrawableFromUri(uri)
@@ -332,16 +340,19 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
           // It's a gif or webp
           val fileSize = getFileSize(uri)
           if (fileSize != null && fileSize <= maxFileSize) {
-            content.add(UploadContent.AnimatedImage(uri))
+            UploadContent.AnimatedImage(uri)
           } else {
             bitmap = null
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
               String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
             )
+            null
           }
         } else if (bitmap != null) {
-          content.add(UploadContent.SimpleImage(uri))
+          UploadContent.SimpleImage(uri)
+        } else {
+          null
         }
       }
       else -> {
@@ -349,11 +360,22 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
         val res = getBitmapFromVideo(uri, withAlertOnException = true)
         bitmap = res.preview
         val durationMs = res.duration
-        content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))
+        UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0)
       }
     }
-    if (bitmap != null) {
+    // content and imagesPreview must stay index-aligned and equal-length: both consumers
+    // (ComposeImageView and sendMessageAsync) cross-index one list by the other's index.
+    // Only pair them when a preview bitmap exists; otherwise skip the media entirely.
+    if (bitmap != null && uploadContent != null) {
+      content.add(uploadContent)
       imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
+    } else if (uploadContent is UploadContent.Video && !AlertManager.shared.hasAlertsShown()) {
+      // A corrupted/undecodable video can yield a null preview frame without throwing, so
+      // getBitmapFromVideo shows no alert. Skip it (other picked media still send) and tell
+      // the user instead of dropping it silently. hasAlertsShown guards against stacking the
+      // alert across multiple bad items and against duplicating the one already shown on the
+      // exception path. Image decode failures are already surfaced by getBitmapFromUri above.
+      showVideoDecodingException()
     }
   }
   if (imagesPreview.isNotEmpty()) {
@@ -487,7 +509,7 @@ fun ComposeView(
     if (live) {
       composeState.value = composeState.value.copy(inProgress = false, progressByTimeout = false)
     } else {
-      composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+      composeState.value = ComposeState(useLinkPreviews = useLinkPreviews, maxFileSize = composeState.value.maxFileSize)
       resetLinkPreview()
     }
     recState.value = RecordingState.NotStarted
@@ -1094,7 +1116,7 @@ fun ComposeView(
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
     val lastEditable = chatsCtx.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
-      composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
+      composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews).copy(maxFileSize = composeState.value.maxFileSize)
     }
   }
 
@@ -1181,8 +1203,9 @@ fun ComposeView(
   }
 
   val ownerRelayState = ownerRelayState(chat, chatModel)
+  val subscriberRelayState = subscriberRelayState(chat, chatModel)
 
-  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason(ownerRelayState?.noActiveRelays == true))
+  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason((ownerRelayState?.noActiveRelays ?: subscriberRelayState?.noActiveRelays) == true))
   val sendMsgEnabled = rememberUpdatedState(userCantSendReason.value == null)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
@@ -1321,6 +1344,11 @@ fun ComposeView(
     }
     chatModel.removeLiveDummy()
     CIFile.cachedRemoteFileRequests.clear()
+  }
+  // keep the attach size limit in sync with the chat: the user's active badge raises it, but not in incognito chats where no badge is presented
+  LaunchedEffect(chat.chatInfo) {
+    val incognito = if (chat.chatInfo.profileChangeProhibited) chat.chatInfo.incognito else chatModel.controller.appPrefs.incognito.get()
+    composeState.value = composeState.value.copy(maxFileSize = getMaxFileSize(FileProtocol.XFTP, if (incognito) null else chatModel.currentUser.value?.profile))
   }
   if (appPlatform.isDesktop) {
     // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
@@ -1548,18 +1576,12 @@ fun ComposeView(
           }
         }
       } else {
-        val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
-        val relayMembers = chatModel.groupMembers.value
-          .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus !in listOf(GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) }
-          .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
-        val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
-        val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }
-        val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
-        val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
-        val resolvedCount = connectedCount + removedCount + failedCount
-        val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
-        if (total == 0 || removedCount + failedCount > 0 || resolvedCount < total) {
-          SubscriberChannelRelayBar(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, showProgress, relayListExpanded)
+        subscriberRelayState?.let { s ->
+          val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
+          val resolvedCount = s.connectedCount + s.removedCount + s.failedCount
+          if (s.total == 0 || s.removedCount + s.failedCount > 0 || resolvedCount < s.total) {
+            SubscriberChannelRelayBar(s.hostnames, s.relayMembers, s.connectedCount, s.removedCount, s.failedCount, s.total, showProgress, relayListExpanded)
+          }
         }
       }
     }
@@ -2022,6 +2044,33 @@ private data class OwnerRelayState(
   val activeCount: Int,
   val failedCount: Int,
   val removedCount: Int,
+  val noActiveRelays: Boolean
+)
+
+private fun subscriberRelayState(chat: Chat, chatModel: ChatModel): SubscriberRelayState? {
+  val gInfo = (chat.chatInfo as? ChatInfo.Group)?.groupInfo ?: return null
+  if (!gInfo.useRelays || gInfo.membership.memberRole == GroupMemberRole.Owner ||
+    gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemRejected, GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+  ) return null
+  val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
+  val relayMembers = chatModel.groupMembers.value
+    .filter { it.memberRole == GroupMemberRole.Relay && it.memberStatus !in listOf(GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted) }
+    .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
+  val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }
+  val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
+  val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
+  val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
+  val noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
+  return SubscriberRelayState(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
+}
+
+private data class SubscriberRelayState(
+  val hostnames: List<String>,
+  val relayMembers: List<GroupMember>,
+  val connectedCount: Int,
+  val removedCount: Int,
+  val failedCount: Int,
+  val total: Int,
   val noActiveRelays: Boolean
 )
 

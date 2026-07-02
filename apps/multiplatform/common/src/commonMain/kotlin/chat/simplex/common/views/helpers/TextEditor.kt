@@ -31,6 +31,7 @@ fun TextEditor(
   modifier: Modifier,
   placeholder: String? = null,
   contentPadding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
+  shape: Shape = RoundedCornerShape(14.dp),
   isValid: (String) -> Boolean = { true },
   focusRequester: FocusRequester? = null,
   enabled: Boolean = true
@@ -53,7 +54,7 @@ fun TextEditor(
       .fillMaxWidth()
       .padding(contentPadding)
       .heightIn(min = 52.dp)
-      .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(14.dp)),
+      .border(border = BorderStroke(1.dp, strokeColor), shape = shape),
     contentAlignment = Alignment.Center,
   ) {
     val textFieldModifier = modifier
@@ -100,6 +101,28 @@ fun TextEditor(
         valid = isValid(it)
       }
   }
+}
+
+@Composable
+fun PlainTextEditor(
+  value: MutableState<String>,
+  placeholder: String? = null,
+  singleLine: Boolean = true
+) {
+  BasicTextField(
+    value = value.value,
+    onValueChange = { value.value = it },
+    modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = 12.dp),
+    textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
+    singleLine = singleLine,
+    cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+    decorationBox = { innerTextField ->
+      if (value.value.isEmpty() && placeholder != null) {
+        Text(placeholder, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+      }
+      innerTextField()
+    }
+  )
 }
 
 @Serializable

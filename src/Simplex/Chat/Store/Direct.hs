@@ -105,6 +105,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
+import Simplex.Chat.Badges (badgeToRow)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -243,8 +244,8 @@ createRelayMemberConnectionAsync db user@User {userId} gInfo GroupMember {groupM
   where
     customUserProfileId_ = localProfileId <$> incognitoMembershipProfile gInfo
 
-createRelayTestConnection :: DB.Connection -> VersionRangeChat -> User -> ConnId -> ConnStatus -> VersionChat -> SubscriptionMode -> ExceptT StoreError IO Connection
-createRelayTestConnection db vr user@User {userId} agentConnId connStatus chatV subMode = do
+createRelayTestConnection :: DB.Connection -> StoreCxt -> User -> ConnId -> ConnStatus -> VersionChat -> SubscriptionMode -> ExceptT StoreError IO Connection
+createRelayTestConnection db cxt user@User {userId} agentConnId connStatus chatV subMode = do
   currentTs <- liftIO getCurrentTime
   liftIO $
     DB.execute
@@ -261,7 +262,7 @@ createRelayTestConnection db vr user@User {userId} agentConnId connStatus chatV 
           :. (BI True, currentTs, currentTs)
       )
   connId <- liftIO $ insertedRowId db
-  getConnectionById db vr user connId
+  getConnectionById db cxt user connId
 
 updateConnLinkData :: DB.Connection -> User -> Connection -> ConnReqContact -> ConnReqUriHash -> Maybe GroupLinkId -> VersionChat -> PQSupport -> IO ()
 updateConnLinkData db User {userId} Connection {connId} cReq cReqHash groupLinkId_ chatV pqSup = do
@@ -285,13 +286,13 @@ setPreparedGroupStartedConnection db groupId = do
     "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
     (BI True, currentTs, groupId)
 
-getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Either (Maybe Connection) Contact)
-getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 =
-  getContactByConnReqHash db vr user cReqHash1 cReqHash2 >>= maybe (Left <$> getConnection) (pure . Right)
+getConnReqContactXContactId :: DB.Connection -> StoreCxt -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Either (Maybe Connection) Contact)
+getConnReqContactXContactId db cxt user@User {userId} cReqHash1 cReqHash2 =
+  getContactByConnReqHash db cxt user cReqHash1 cReqHash2 >>= maybe (Left <$> getConnection) (pure . Right)
   where
     getConnection :: IO (Maybe Connection)
     getConnection =
-      maybeFirstRow (toConnection vr) $
+      maybeFirstRow (toConnection cxt) $
         DB.query
           db
           [sql|
@@ -305,10 +306,11 @@ getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 =
           |]
           (userId, cReqHash1, userId, cReqHash2)
 
-getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact)
-getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
+getContactByConnReqHash :: DB.Connection -> StoreCxt -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact)
+getContactByConnReqHash db cxt user@User {userId} cReqHash1 cReqHash2 = do
+  currentTs <- getCurrentTime
   ct <-
-    maybeFirstRow (toContact vr user []) $
+    maybeFirstRow (toContact currentTs cxt user []) $
       DB.query
         db
         [sql|
@@ -318,6 +320,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
             cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
             ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+            cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
             c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -394,18 +397,18 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> VersionRangeChat -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> ExceptT StoreError IO Contact
-createPreparedContact db vr user p connLinkToConnect welcomeSharedMsgId = do
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> ExceptT StoreError IO Contact
+createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences prepared "" currentTs
-  getContact db vr user contactId
+  contactId <- createContact_ db cxt user p ctUserPreferences prepared "" currentTs
+  getContact db cxt user contactId
 
-updatePreparedContactUser :: DB.Connection -> VersionRangeChat -> User -> Contact -> User -> ExceptT StoreError IO Contact
+updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
   db
-  vr
+  cxt
   user
   Contact {contactId, localDisplayName = oldLDN, profile = profile@LocalProfile {profileId, displayName}}
   newUser@User {userId = newUserId} = do
@@ -438,15 +441,15 @@ updatePreparedContactUser
           |]
           (newUserId, currentTs, contactId)
         safeDeleteLDN db user oldLDN
-      getContact db vr newUser contactId
+      getContact db cxt newUser contactId
 
-createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db vr user Connection {connId, localAlias} p = do
+createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db cxt user Connection {connId, localAlias} p = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs
+  contactId <- createContact_ db cxt user p ctUserPreferences Nothing localAlias currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
-  getContact db vr user contactId
+  getContact db cxt user contactId
 
 deleteContactConnections :: DB.Connection -> User -> Contact -> IO ()
 deleteContactConnections db User {userId} Contact {contactId} = do
@@ -500,13 +503,13 @@ deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDis
         deleteUnusedIncognitoProfileById_ db user profileId
 
 -- TODO remove in future versions: only used for legacy contact cleanup
-getDeletedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
-getDeletedContacts db vr user@User {userId} = do
+getDeletedContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]
+getDeletedContacts db cxt user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)
-  rights <$> mapM (runExceptT . getDeletedContact db vr user) contactIds
+  rights <$> mapM (runExceptT . getDeletedContact db cxt user) contactIds
 
-getDeletedContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Contact
-getDeletedContact db vr user contactId = getContact_ db vr user contactId True
+getDeletedContact :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO Contact
+getDeletedContact db cxt user contactId = getContact_ db cxt user contactId True
 
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
@@ -552,22 +555,25 @@ deleteUnusedProfile_ db userId profileId =
         :. (userId, profileId, userId, profileId, profileId)
     )
 
-updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
-updateContactProfile db user@User {userId} c p'
-  | displayName == newName = do
-      liftIO $ updateContactProfile_ db userId profileId p'
-      pure c {profile, mergedPreferences}
-  | otherwise =
-      ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-        currentTs <- getCurrentTime
-        updateContactProfile_' db userId profileId p' currentTs
-        updateContactLDN_ db user contactId localDisplayName ldn currentTs
-        pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
+updateContactProfile :: DB.Connection -> StoreCxt -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
+updateContactProfile db cxt user@User {userId} c p' = do
+  currentTs <- liftIO getCurrentTime
+  badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) lp p'
+  let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified
+  updateContactProfile' currentTs badgeVerified profile
   where
-    Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
+    Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
     Profile {displayName = newName, preferences} = p'
-    profile = toLocalProfile profileId p' localAlias
     mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
+    updateContactProfile' currentTs badgeVerified profile
+      | displayName == newName = do
+          liftIO $ updateContactProfile_' db userId profileId p' badgeVerified currentTs
+          pure c {profile, mergedPreferences}
+      | otherwise =
+          ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+            updateContactProfile_' db userId profileId p' badgeVerified currentTs
+            updateContactLDN_ db user contactId localDisplayName ldn currentTs
+            pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do
@@ -694,55 +700,58 @@ setQuotaErrCounter db User {userId} Connection {connId} counter = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
 
-updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
-updateContactProfile_ db userId profileId profile = do
+updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateContactProfile_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
-  updateContactProfile_' db userId profileId profile currentTs
+  updateContactProfile_' db userId profileId profile badgeVerified currentTs
 
-updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} updatedAt = do
+updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?,
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt, userId, profileId)
+    ((displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
-updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
-updateMemberContactProfileReset_ db userId profileId profile = do
+updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateMemberContactProfileReset_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
-  updateMemberContactProfileReset_' db userId profileId profile currentTs
+  updateMemberContactProfileReset_' db userId profileId profile badgeVerified currentTs
 
-updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image} updatedAt = do
+updateMemberContactProfileReset_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateMemberContactProfileReset_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = NULL, preferences = NULL, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = NULL, preferences = NULL, updated_at = ?,
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, updatedAt, userId, profileId)
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
 
 -- update only member profile fields (when member has associated contact - we keep contactLink and prefs)
-updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
-updateMemberContactProfile_ db userId profileId profile = do
+updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()
+updateMemberContactProfile_ db userId profileId profile badgeVerified = do
   currentTs <- getCurrentTime
-  updateMemberContactProfile_' db userId profileId profile currentTs
+  updateMemberContactProfile_' db userId profileId profile badgeVerified currentTs
 
-updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image} updatedAt = do
+updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> UTCTime -> IO ()
+updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, badge} badgeVerified updatedAt =
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, updated_at = ?,
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, updatedAt, userId, profileId)
+    ((displayName, fullName, shortDescr, image, updatedAt) :. badgeToRow badge badgeVerified :. (userId, profileId))
 
 updateContactLDN_ :: DB.Connection -> User -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt = do
@@ -756,15 +765,15 @@ updateContactLDN_ db user@User {userId} contactId displayName newName updatedAt 
     (newName, updatedAt, userId, contactId)
   safeDeleteLDN db user displayName
 
-getContactByName :: DB.Connection -> VersionRangeChat -> User -> ContactName -> ExceptT StoreError IO Contact
-getContactByName db vr user localDisplayName = do
+getContactByName :: DB.Connection -> StoreCxt -> User -> ContactName -> ExceptT StoreError IO Contact
+getContactByName db cxt user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
-  getContact db vr user cId
+  getContact db cxt user cId
 
-getUserContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
-getUserContacts db vr user@User {userId} = do
+getUserContacts :: DB.Connection -> StoreCxt -> User -> IO [Contact]
+getUserContacts db cxt user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
-  contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
+  contacts <- rights <$> mapM (runExceptT . getContact db cxt user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
 getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO (Maybe Int64)
@@ -773,18 +782,21 @@ getUserContactLinkIdByCReq db contactRequestId =
     DB.query db "SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?" (Only contactRequestId)
 
 getContactRequest :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserContactRequest
-getContactRequest db User {userId} contactRequestId =
-  ExceptT . firstRow toContactRequest (SEContactRequestNotFound contactRequestId) $
+getContactRequest db User {userId} contactRequestId = do
+  currentTs <- liftIO getCurrentTime
+  ExceptT . firstRow (toContactRequest currentTs) (SEContactRequestNotFound contactRequestId) $
     DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.contact_request_id = ?") (userId, contactRequestId)
 
 getContactRequest' :: DB.Connection -> User -> Int64 -> IO (Maybe UserContactRequest)
-getContactRequest' db User {userId} contactRequestId =
-  maybeFirstRow toContactRequest $
+getContactRequest' db User {userId} contactRequestId = do
+  currentTs <- getCurrentTime
+  maybeFirstRow (toContactRequest currentTs) $
     DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.contact_request_id = ?") (userId, contactRequestId)
 
 getBusinessContactRequest :: DB.Connection -> User -> GroupId -> IO (Maybe UserContactRequest)
-getBusinessContactRequest db _user groupId =
-  maybeFirstRow toContactRequest $
+getBusinessContactRequest db _user groupId = do
+  currentTs <- getCurrentTime
+  maybeFirstRow (toContactRequest currentTs) $
     DB.query db (contactRequestQuery <> " WHERE cr.business_group_id = ?") (Only groupId)
 
 contactRequestQuery :: Query
@@ -793,10 +805,11 @@ contactRequestQuery =
     SELECT
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-      cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, cr.xcontact_id,
+      cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
       cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
       cr.created_at, cr.updated_at,
-      cr.peer_chat_min_version, cr.peer_chat_max_version
+      cr.peer_chat_min_version, cr.peer_chat_max_version,
+      p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx
     FROM contact_requests cr
     JOIN contact_profiles p USING (contact_profile_id)
   |]
@@ -832,7 +845,7 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createContactFromRequest :: DB.Connection -> User -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
+createContactFromRequest :: DB.Connection -> User -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> LocalProfile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
 createContactFromRequest db user@User {userId, profile = LocalProfile {preferences}} uclId_ agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile xContactId incognitoProfile subMode pqSup contactUsed = do
   currentTs <- getCurrentTime
   let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
@@ -848,7 +861,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
         Contact
           { contactId,
             localDisplayName,
-            profile = toLocalProfile profileId profile "",
+            profile,
             activeConn = Just conn,
             contactUsed,
             contactStatus = CSActive,
@@ -890,22 +903,23 @@ getContactIdByName db User {userId} cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ? AND deleted = 0" (userId, cName)
 
-getContactViaShortLinkToConnect :: forall c. ConnectionModeI c => DB.Connection -> VersionRangeChat -> User -> ConnShortLink c -> ExceptT StoreError IO (Maybe (ConnectionRequestUri c, Contact))
-getContactViaShortLinkToConnect db vr user@User {userId} shortLink = do
+getContactViaShortLinkToConnect :: forall c. ConnectionModeI c => DB.Connection -> StoreCxt -> User -> ConnShortLink c -> ExceptT StoreError IO (Maybe (ConnectionRequestUri c, Contact))
+getContactViaShortLinkToConnect db cxt user@User {userId} shortLink = do
   liftIO (maybeFirstRow id $ DB.query db "SELECT contact_id, conn_full_link_to_connect FROM contacts WHERE user_id = ? AND conn_short_link_to_connect = ?" (userId, shortLink)) >>= \case
     Just (ctId :: Int64, Just (ACR cMode cReq)) ->
       case testEquality cMode (sConnectionMode @c) of
-        Just Refl -> Just . (cReq,) <$> getContact db vr user ctId
+        Just Refl -> Just . (cReq,) <$> getContact db cxt user ctId
         Nothing -> pure Nothing
     _ -> pure Nothing
 
-getContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Contact
-getContact db vr user contactId = getContact_ db vr user contactId False
+getContact :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO Contact
+getContact db cxt user contactId = getContact_ db cxt user contactId False
 
-getContact_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
-getContact_ db vr user@User {userId} contactId deleted = do
+getContact_ :: DB.Connection -> StoreCxt -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
+getContact_ db cxt user@User {userId} contactId deleted = do
+  currentTs <- liftIO getCurrentTime
   chatTags <- liftIO $ getDirectChatTags db contactId
-  ExceptT . firstRow (toContact vr user chatTags) (SEContactNotFound contactId) $
+  ExceptT . firstRow (toContact currentTs cxt user chatTags) (SEContactNotFound contactId) $
     DB.query
       db
       [sql|
@@ -915,6 +929,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
           ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -928,12 +943,13 @@ getContact_ db vr user@User {userId} contactId deleted = do
       (userId, contactId, BI deleted)
 
 getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO User
-getUserByContactRequestId db contactRequestId =
-  ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
+getUserByContactRequestId db contactRequestId = do
+  now <- liftIO getCurrentTime
+  ExceptT . firstRow (toUser now) (SEUserNotFoundByContactRequestId contactRequestId) $
     DB.query db (userQuery <> " JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?") (Only contactRequestId)
 
-getContactConnections :: DB.Connection -> VersionRangeChat -> UserId -> Contact -> IO [Connection]
-getContactConnections db vr userId Contact {contactId} =
+getContactConnections :: DB.Connection -> StoreCxt -> UserId -> Contact -> IO [Connection]
+getContactConnections db cxt userId Contact {contactId} =
   connections =<< liftIO getConnections_
   where
     getConnections_ =
@@ -950,11 +966,11 @@ getContactConnections db vr userId Contact {contactId} =
         |]
         (userId, userId, contactId)
     connections [] = pure []
-    connections rows = pure $ map (toConnection vr) rows
+    connections rows = pure $ map (toConnection cxt) rows
 
-getConnectionById :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Connection
-getConnectionById db vr User {userId} connId = ExceptT $ do
-  firstRow (toConnection vr) (SEConnectionNotFoundById connId) $
+getConnectionById :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO Connection
+getConnectionById db cxt User {userId} connId = ExceptT $ do
+  firstRow (toConnection cxt) (SEConnectionNotFoundById connId) $
     DB.query
       db
       [sql|

@@ -138,6 +138,21 @@ AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FI
 class AutoAccept(TypedDict):
     acceptIncognito: bool
 
+class BadgeInfo(TypedDict):
+    badgeType: "BadgeType"
+    badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
+    badgeExtra: str
+
+class BadgeProof(TypedDict):
+    badgeKeyIdx: int  # int
+    presHeader: str
+    proof: str
+    badgeInfo: "BadgeInfo"
+
+BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
+
+BadgeType = Literal["supporter", "legend", "investor"]
+
 class BlockingInfo(TypedDict):
     reason: "BlockingReason"
     notice: NotRequired["ClientNotice"]
@@ -1437,6 +1452,7 @@ class ContactShortLinkData(TypedDict):
     profile: "Profile"
     message: NotRequired["MsgContent"]
     business: bool
+    localBadge: NotRequired["LocalBadge"]
 
 ContactStatus = Literal["active", "deleted", "deletedByUser"]
 
@@ -1646,6 +1662,8 @@ class FileTransferMeta(TypedDict):
     chunkSize: int  # int64
     cancelled: bool
 
+FileType = Literal["normal", "roster"]
+
 class Format_bold(TypedDict):
     type: Literal["bold"]
 
@@ -1806,6 +1824,7 @@ class GroupInfo(TypedDict):
     uiThemes: NotRequired["UIThemeEntityOverrides"]
     customData: NotRequired[dict[str, object]]
     groupSummary: "GroupSummary"
+    rosterVersion: NotRequired[int]  # int64
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
     groupKeys: NotRequired["GroupKeys"]
@@ -2055,6 +2074,10 @@ class LinkPreview(TypedDict):
     image: str
     content: NotRequired["LinkContent"]
 
+class LocalBadge(TypedDict):
+    badge: "BadgeInfo"
+    status: "BadgeStatus"
+
 class LocalProfile(TypedDict):
     profileId: int  # int64
     displayName: str
@@ -2064,6 +2087,7 @@ class LocalProfile(TypedDict):
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
+    localBadge: NotRequired["LocalBadge"]
     localAlias: str
 
 MemberCriteria = Literal["all"]
@@ -2315,6 +2339,7 @@ class Profile(TypedDict):
     contactLink: NotRequired[str]
     preferences: NotRequired["Preferences"]
     peerType: NotRequired["ChatPeerType"]
+    badge: NotRequired["BadgeProof"]
 
 class ProxyClientError_protocolError(TypedDict):
     type: Literal["protocolError"]
@@ -2528,6 +2553,7 @@ class RcvFileTransfer(TypedDict):
     xftpRcvFile: NotRequired["XFTPRcvFile"]
     fileInvitation: "FileInvitation"
     fileStatus: "RcvFileStatus"
+    fileType: "FileType"
     rcvFileInline: NotRequired["InlineFileMode"]
     senderDisplayName: str
     chunkSize: int  # int64
@@ -2645,7 +2671,7 @@ class RelayProfile(TypedDict):
     shortDescr: NotRequired[str]
     image: NotRequired[str]
 
-RelayStatus = Literal["new", "invited", "accepted", "active", "inactive", "rejected"]
+RelayStatus = Literal["new", "invited", "accepted", "acknowledgedRoster", "active", "inactive", "rejected"]
 
 ReportReason = Literal["spam", "content", "community", "profile", "other"]
 
@@ -3429,7 +3455,7 @@ class UserContactRequest(TypedDict):
     cReqChatVRange: "VersionRange"
     localDisplayName: str
     profileId: int  # int64
-    profile: "Profile"
+    profile: "LocalProfile"
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
     xContactId: NotRequired[str]

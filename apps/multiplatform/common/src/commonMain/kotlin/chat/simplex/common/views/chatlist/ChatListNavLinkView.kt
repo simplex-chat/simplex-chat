@@ -254,9 +254,9 @@ suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, contentT
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
   // groupMembers loading can take a long time and if the user already closed the screen, coroutine may be canceled
   val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)
-  val currentMembers = chatModel.groupMembers.value
+  val currentMembersById = chatModel.groupMembers.value.associateBy { it.id }
   val newMembers = groupMembers.map { newMember ->
-    val currentMember = currentMembers.find { it.id == newMember.id }
+    val currentMember = currentMembersById[newMember.id]
     val currentMemberStats = currentMember?.activeConn?.connectionStats
     val newMemberConn = newMember.activeConn
     if (currentMemberStats != null && newMemberConn != null && newMemberConn.connectionStats == null) {
@@ -772,10 +772,11 @@ fun rejectContactRequest(rhId: Long?, contactRequestId: Long, chatModel: ChatMod
 fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_pending_connection__question),
-    text = generalGetString(
+    text = "${connection.displayName}\n\n" + generalGetString(
       if (connection.initiated) MR.strings.contact_you_shared_link_with_wont_be_able_to_connect
       else MR.strings.connection_you_accepted_will_be_cancelled
     ),
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withBGApi {

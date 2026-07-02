@@ -26,7 +26,9 @@ struct ChatHelp: View {
                 Button("connect to SimpleX Chat developers.") {
                     dismissSettingsSheet()
                     DispatchQueue.main.async {
-                        UIApplication.shared.open(simplexTeamURL)
+                        // simplexTeamURL targets this same app; route to the in-app connect flow
+                        // (UIApplication.shared.open is dropped for self-owned URLs in the foreground)
+                        ChatModel.shared.appOpenUrl = simplexTeamURL
                     }
                 }
                 .padding(.top, 2)

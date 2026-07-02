@@ -23,7 +23,7 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), mkStoreCxt)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -88,7 +88,7 @@ serviceProfile :: Profile
 serviceProfile = mkProfile "service_user" "Service user" Nothing
 
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
-mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
+mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing}
 
 it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 it name test =
@@ -702,10 +702,10 @@ getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no conne
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
 getTestCCContact cc contactId = do
-  let TestCC {chatController = ChatController {config = ChatConfig {chatVRange = vr}}} = cc
+  let TestCC {chatController = ChatController {config}} = cc
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
-      runExceptT (getContact db vr user contactId) >>= either (fail . show) pure
+      runExceptT (getContact db (mkStoreCxt config) user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

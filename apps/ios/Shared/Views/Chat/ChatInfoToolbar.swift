@@ -47,7 +47,7 @@ struct ChatInfoToolbar: View {
             }
             .padding(.trailing, 4)
             let t = Text(cInfo.displayName).font(.headline)
-            (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
+            NameWithBadge((cInfo.contact?.verified == true ? contactVerifiedShield + t : t), cInfo.nameBadge, .headline)
                 .lineLimit(1)
                 .if (cInfo.fullName != "" && cInfo.displayName != cInfo.fullName) { v in
                     VStack(spacing: 0) {
@@ -129,6 +129,15 @@ public func subscriberCountStr(_ count: Int64) -> String {
     count == 1
         ? String.localizedStringWithFormat(NSLocalizedString("%d subscriber", comment: "channel subscriber count"), count)
         : String.localizedStringWithFormat(NSLocalizedString("%d subscribers", comment: "channel subscriber count"), count)
+}
+
+public func ownersContributorsCountStr(_ count: Int, withContributors: Bool) -> String {
+    if withContributors {
+        return String.localizedStringWithFormat(NSLocalizedString("%d owners & contributors", comment: "channel members count"), count)
+    }
+    return count == 1
+        ? String.localizedStringWithFormat(NSLocalizedString("%d owner", comment: "channel owners count"), count)
+        : String.localizedStringWithFormat(NSLocalizedString("%d owners", comment: "channel owners count"), count)
 }
 
 struct ChatInfoToolbar_Previews: PreviewProvider {
