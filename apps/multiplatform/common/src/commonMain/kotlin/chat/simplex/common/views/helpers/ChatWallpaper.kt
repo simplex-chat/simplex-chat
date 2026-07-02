@@ -22,16 +22,17 @@ import kotlinx.serialization.Serializable
 import java.io.File
 import kotlin.math.*
 
-// Per-wallpaper SIMPLEX gradient stops: chat background + the four bubble slots + secondary/author text.
-// The background stops are drawn by simplexGradient(); bubble/text stops are consumed by SimplexBrushes.
+// Per-wallpaper SIMPLEX gradient stops: chat background + the four bubble slots, plus the
+// secondary/author text tints. Background stops are drawn by simplexGradient(); bubble stops
+// and the semi-transparent text tints are consumed by SimplexBrushes.
 data class SimplexStops(
   val bg: Array<Pair<Float, Color>>,
   val sent: Array<Pair<Float, Color>>,
   val sentQuote: Array<Pair<Float, Color>>,
   val received: Array<Pair<Float, Color>>,
   val receivedQuote: Array<Pair<Float, Color>>,
-  val secondary: List<Pair<Float, Color>>,
-  val author: List<Pair<Float, Color>>,
+  val secondaryTint: Color,
+  val authorTint: Color,
 )
 
 enum class PresetWallpaper(
@@ -108,17 +109,8 @@ enum class PresetWallpaper(
         0.84f to oklch(0.3700f, 0.0742f, 88f),
         1.00f to oklch(0.4350f, 0.1049f, 105f),
       ),
-      secondary = listOf(
-        0.20f to oklch(0.5050f, 0.1072f, 88f),
-        0.55f to oklch(0.5350f, 0.1135f, 88f),
-        0.90f to oklch(0.7050f, 0.1200f, 88f),
-      ),
-      author = listOf(
-        0.20f to oklch(0.6300f, 0.1367f, 88f),
-        0.55f to oklch(0.6450f, 0.1399f, 88f),
-        0.70f to oklch(0.7250f, 0.1100f, 88f),
-        0.90f to oklch(0.9923f, 0.0170f, 100f),
-      ),
+      secondaryTint = oklch(0.8874f, 0.1270f, 86.2f, 0.6f),
+      authorTint = oklch(0.8518f, 0.0736f, 87.2f, 0.6f),
     )
   ),
   FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f,
@@ -186,17 +178,8 @@ enum class PresetWallpaper(
         0.84f to oklch(0.4130f, 0.1171f, 130f),
         1.00f to oklch(0.5040f, 0.1217f, 113f),
       ),
-      secondary = listOf(
-        0.20f to oklch(0.5200f, 0.1320f, 130f),
-        0.55f to oklch(0.5500f, 0.1421f, 130f),
-        0.90f to oklch(0.7200f, 0.1218f, 130f),
-      ),
-      author = listOf(
-        0.20f to oklch(0.6450f, 0.1523f, 130f),
-        0.55f to oklch(0.6600f, 0.1523f, 130f),
-        0.70f to oklch(0.7400f, 0.1117f, 130f),
-        0.90f to oklch(0.9923f, 0.0170f, 100f),
-      ),
+      secondaryTint = oklch(0.8874f, 0.1270f, 130.0f, 0.6f),
+      authorTint = oklch(0.8518f, 0.0736f, 130.0f, 0.6f),
     )
   ),
   HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f,
@@ -264,17 +247,8 @@ enum class PresetWallpaper(
         0.84f to oklch(0.4230f, 0.1319f, 5f),
         1.00f to oklch(0.5140f, 0.1234f, 22f),
       ),
-      secondary = listOf(
-        0.20f to oklch(0.5300f, 0.1339f, 5f),
-        0.55f to oklch(0.5600f, 0.1442f, 5f),
-        0.90f to oklch(0.7300f, 0.1236f, 5f),
-      ),
-      author = listOf(
-        0.20f to oklch(0.6550f, 0.1545f, 5f),
-        0.55f to oklch(0.6700f, 0.1545f, 5f),
-        0.70f to oklch(0.7500f, 0.1133f, 5f),
-        0.90f to oklch(0.9923f, 0.0170f, 100f),
-      ),
+      secondaryTint = oklch(0.8874f, 0.1270f, 5.0f, 0.6f),
+      authorTint = oklch(0.8518f, 0.0736f, 5.0f, 0.6f),
     )
   ),
   KIDS(MR.images.wallpaper_kids, "kids", 0.53f,
@@ -342,17 +316,8 @@ enum class PresetWallpaper(
         0.84f to oklch(0.4230f, 0.0819f, 200f),
         1.00f to oklch(0.5140f, 0.1195f, 217f),
       ),
-      secondary = listOf(
-        0.20f to oklch(0.5300f, 0.1087f, 200f),
-        0.55f to oklch(0.5600f, 0.1149f, 200f),
-        0.90f to oklch(0.7300f, 0.1200f, 200f),
-      ),
-      author = listOf(
-        0.20f to oklch(0.6550f, 0.1373f, 200f),
-        0.55f to oklch(0.6700f, 0.1405f, 200f),
-        0.70f to oklch(0.7500f, 0.1100f, 200f),
-        0.90f to oklch(0.9923f, 0.0170f, 100f),
-      ),
+      secondaryTint = oklch(0.8874f, 0.1270f, 200.0f, 0.6f),
+      authorTint = oklch(0.8518f, 0.0736f, 200.0f, 0.6f),
     )
   ),
   SCHOOL(MR.images.wallpaper_school, "school", 0.53f,
@@ -420,17 +385,8 @@ enum class PresetWallpaper(
         0.84f to oklch(0.4950f, 0.1346f, 271f),
         1.00f to oklch(0.6250f, 0.1286f, 254f),
       ),
-      secondary = listOf(
-        0.20f to oklch(0.5600f, 0.1397f, 271f),
-        0.55f to oklch(0.5900f, 0.1505f, 271f),
-        0.90f to oklch(0.7600f, 0.1172f, 271f),
-      ),
-      author = listOf(
-        0.20f to oklch(0.6850f, 0.1612f, 271f),
-        0.55f to oklch(0.7000f, 0.1562f, 271f),
-        0.70f to oklch(0.7800f, 0.1116f, 271f),
-        0.90f to oklch(0.9923f, 0.0170f, 100f),
-      ),
+      secondaryTint = oklch(0.8874f, 0.1270f, 271.0f, 0.6f),
+      authorTint = oklch(0.8518f, 0.0736f, 271.0f, 0.6f),
     )
   ),
   TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f,
@@ -498,17 +454,8 @@ enum class PresetWallpaper(
         0.84f to oklch(0.4470f, 0.1328f, 315f),
         1.00f to oklch(0.5510f, 0.1251f, 298f),
       ),
-      secondary = listOf(
-        0.20f to oklch(0.5400f, 0.1358f, 315f),
-        0.55f to oklch(0.5700f, 0.1463f, 315f),
-        0.90f to oklch(0.7400f, 0.1254f, 315f),
-      ),
-      author = listOf(
-        0.20f to oklch(0.6650f, 0.1567f, 315f),
-        0.55f to oklch(0.6800f, 0.1567f, 315f),
-        0.70f to oklch(0.7600f, 0.1149f, 315f),
-        0.90f to oklch(0.9923f, 0.0170f, 100f),
-      ),
+      secondaryTint = oklch(0.8874f, 0.1270f, 315.0f, 0.6f),
+      authorTint = oklch(0.8518f, 0.0736f, 315.0f, 0.6f),
     )
   );
 

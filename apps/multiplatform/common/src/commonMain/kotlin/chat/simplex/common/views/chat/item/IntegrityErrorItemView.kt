@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
@@ -51,12 +53,10 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: 
 
 @Composable
 fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onClick: () -> Unit) {
-  val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    Modifier.clickable(onClick = onClick),
-    shape = RoundedCornerShape(18.dp),
-    color = receivedColor,
-    contentColor = LocalContentColor.current
+  Box(
+    Modifier.clickable(onClick = onClick)
+      .clip(RoundedCornerShape(18.dp))
+      .chatBubbleBackground(sent = false, isQuote = false)
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),

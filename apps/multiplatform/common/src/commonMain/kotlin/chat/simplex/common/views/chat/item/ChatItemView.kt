@@ -48,7 +48,10 @@ val msgTailWidthDp = 9.dp
 private val msgTailMinHeightDp = msgTailWidthDp * 1.254f // ~56deg
 private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
-val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
+// Event-text style; the colour is applied at the render site (event views use
+// simplexSecondaryTint), so it follows the composition theme. Unspecified here defers the
+// colour to the Text/ClickableText that draws the string.
+val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = Color.Unspecified)
 
 fun chatEventText(ci: ChatItem, isChannel: Boolean = false): AnnotatedString =
   chatEventText(ci.content.text(isChannel), ci.timestampText)
@@ -647,7 +650,8 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
-                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                color = simplexSecondaryTint()
               )
             }
 
@@ -677,7 +681,8 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(annotatedStringResource(sId)) }
                 },
-                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                color = simplexSecondaryTint()
               )
             }
 

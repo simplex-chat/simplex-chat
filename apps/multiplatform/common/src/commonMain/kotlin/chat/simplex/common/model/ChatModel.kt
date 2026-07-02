@@ -4850,7 +4850,7 @@ sealed class Format {
   val isSimplexLink = this is SimplexLink
 
   companion object {
-    val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
+    val linkStyle @Composable get() = SpanStyle(color = LocalSimplexLinkColor.current ?: MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
   }
 }
 

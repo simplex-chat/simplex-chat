@@ -13,36 +13,44 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DefaultTheme
 import chat.simplex.common.ui.theme.isInDarkTheme
+import chat.simplex.common.ui.theme.simplexSecondaryTint
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
+
+private fun palette(metaColor: Color, dark: Boolean): Color =
+  if (dark) metaColor.copy(
+    red = metaColor.red * 0.67F,
+    green = metaColor.green * 0.67F,
+    blue = metaColor.red * 0.67F,
+  ) else metaColor.copy(
+    red = minOf(metaColor.red * 1.33F, 1F),
+    green = minOf(metaColor.green * 1.33F, 1F),
+    blue = minOf(metaColor.red * 1.33F, 1F),
+  )
 
 @Composable
 fun CIMetaView(
   chatItem: ChatItem,
   timedMessagesTTL: Int?,
-  metaColor: Color = MaterialTheme.colors.secondary,
-  paleMetaColor: Color = if (isInDarkTheme()) {
-    metaColor.copy(
-      red = metaColor.red * 0.67F,
-      green = metaColor.green * 0.67F,
-      blue = metaColor.red * 0.67F)
-  } else {
-    metaColor.copy(
-      red = minOf(metaColor.red * 1.33F, 1F),
-      green = minOf(metaColor.green * 1.33F, 1F),
-      blue = minOf(metaColor.red * 1.33F, 1F))
-  },
+  metaColor: Color? = null,
+  paleMetaColor: Color? = null,
   showStatus: Boolean = true,
   showEdited: Boolean = true,
   showTimestamp: Boolean,
   showViaProxy: Boolean,
 ) {
+  val effectiveMeta = metaColor ?: simplexSecondaryTint()
+  // Partial delivery keeps the same warm tint but at lower alpha, so it reads a touch
+  // dimmer than full delivery while staying legible on the gradient.
+  val effectivePale = paleMetaColor ?: if (CurrentColors.value.base == DefaultTheme.SIMPLEX) effectiveMeta.copy(alpha = 0.4f) else palette(effectiveMeta, isInDarkTheme())
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
       Text(
         chatItem.timestampText,
-        color = metaColor,
+        color = effectiveMeta,
         fontSize = 12.sp,
         modifier = Modifier.padding(start = 3.dp)
       )
@@ -51,8 +59,8 @@ fun CIMetaView(
         chatItem.meta,
         timedMessagesTTL,
         encrypted = chatItem.encryptedFile,
-        metaColor,
-        paleMetaColor,
+        effectiveMeta,
+        effectivePale,
         showStatus = showStatus,
         showEdited = showEdited,
         showViaProxy = showViaProxy,
@@ -87,7 +95,7 @@ private fun CIMetaText(
   }
   if (showViaProxy && meta.sentViaProxy == true) {
     Spacer(Modifier.width(4.dp))
-    Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = color)
   }
   if (showStatus) {
     Spacer(Modifier.width(4.dp))

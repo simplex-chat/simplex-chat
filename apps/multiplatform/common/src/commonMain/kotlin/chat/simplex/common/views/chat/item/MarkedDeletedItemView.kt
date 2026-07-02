@@ -4,6 +4,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,12 +22,10 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
-  val sentColor = MaterialTheme.appColors.sentMessage
-  val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = if (ci.chatDir.sent) sentColor else receivedColor,
-    contentColor = LocalContentColor.current
+  Box(
+    Modifier
+      .clip(RoundedCornerShape(18.dp))
+      .chatBubbleBackground(sent = ci.chatDir.sent, isQuote = false)
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -80,9 +79,10 @@ private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: 
     markedDeletedText(chatItem, chatInfo)
   }
 
+  val deletedColor = simplexSecondaryTint()
   Text(
     buildAnnotatedString {
-      withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
+      withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = deletedColor)) { append(text) }
     },
     style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
     modifier = Modifier.padding(end = 8.dp),
