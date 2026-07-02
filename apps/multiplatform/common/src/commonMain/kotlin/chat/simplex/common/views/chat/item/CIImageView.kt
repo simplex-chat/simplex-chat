@@ -176,9 +176,6 @@ fun CIImageView(
       .then(
         if (!smallView) {
           val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
-          // Derive the height directly instead of via aspectRatio: a very wide image keeps its natural ratio
-          // (no upper clamp) while taller images are capped at 2.33. aspectRatio would instead derive
-          // width = height * ratio during measurement and overflow Constraints for extreme ratios (e.g. 4000x1).
           Modifier.width(w).height(w * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f))
         } else Modifier
       )
