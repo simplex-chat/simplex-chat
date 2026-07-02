@@ -12097,8 +12097,8 @@ testChannelMemberMessageSign ps =
                    eve <# "#team cath> signed hello [>>]"
               ]
             -- sender and recipient hold it signed
-            cath #$> ("/_get chat #1 count=1", chat, [(1, "signed hello (signed)")])
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "signed hello (signed)")])
+            cath #$> ("/_get chat #1 count=100 search=signed hello", chat, [(1, "signed hello (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=signed hello", chat, [(0, "signed hello (signed)")])
 
             -- editing a signed item reuses the signature
             cathMsgId <- lastItemId cath
@@ -12110,8 +12110,8 @@ testChannelMemberMessageSign ps =
                 dan <# "#team cath> [edited] signed hello edited",
                 eve <# "#team cath> [edited] signed hello edited"
               ]
-            cath #$> ("/_get chat #1 count=1", chat, [(1, "signed hello edited (signed)")])
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "signed hello edited (signed)")])
+            cath #$> ("/_get chat #1 count=100 search=signed hello edited", chat, [(1, "signed hello edited (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=signed hello edited", chat, [(0, "signed hello edited (signed)")])
 
             -- default send is unsigned, and holds no signature
             cath #> "#team plain hello"
@@ -12121,8 +12121,8 @@ testChannelMemberMessageSign ps =
                 dan <# "#team cath> plain hello [>>]",
                 eve <# "#team cath> plain hello [>>]"
               ]
-            cath #$> ("/_get chat #1 count=1", chat, [(1, "plain hello")])
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "plain hello")])
+            cath #$> ("/_get chat #1 count=100 search=plain hello", chat, [(1, "plain hello")])
+            dan #$> ("/_get chat #1 count=100 search=plain hello", chat, [(0, "plain hello")])
 
 testChannelMemberUpdateEnforcement :: HasCallStack => TestParams -> IO ()
 testChannelMemberUpdateEnforcement ps =
@@ -12147,7 +12147,7 @@ testChannelMemberUpdateEnforcement ps =
                    eve <## "#team: bob introduced cath (Catherine) in the channel"
                    eve <# "#team cath> secret [>>]"
               ]
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "secret (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
 
             -- the malicious relay forges an unsigned XMsgUpdate of cath's signed item to dan
             cathMemId <- memberIdByName bob "cath"
@@ -12163,7 +12163,10 @@ testChannelMemberUpdateEnforcement ps =
             -- dan rejects the unsigned mutation of the held-signed item (RGEMsgBadSignature, stored not shown live),
             -- and the original signed content is not overwritten
             threadDelay 2000000
-            dan #$> ("/_get chat #1 count=2", chat, [(0, "secret (signed)"), (0, "message rejected: bad signature")])
+            -- (critical) the forged content did NOT overwrite the original signed item
+            dan #$> ("/_get chat #1 count=100 search=secret", chat, [(0, "secret (signed)")])
+            -- the rejection is recorded as a bad-signature item
+            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
 
             -- a legitimate signed edit by cath is accepted
             cathMsgId <- lastItemId cath
@@ -12175,7 +12178,8 @@ testChannelMemberUpdateEnforcement ps =
                 dan <# "#team cath> [edited] secret edited",
                 eve <# "#team cath> [edited] secret edited"
               ]
-            dan #$> ("/_get chat #1 count=2", chat, [(0, "secret edited (signed)"), (0, "message rejected: bad signature")])
+            dan #$> ("/_get chat #1 count=100 search=secret edited", chat, [(0, "secret edited (signed)")])
+            dan #$> ("/_get chat #1 count=100 search=bad signature", chat, [(0, "message rejected: bad signature")])
   where
     memberIdByName :: TestCC -> T.Text -> IO MemberId
     memberIdByName cc name = do
@@ -12217,16 +12221,16 @@ testChannelAsGroupSign ps =
             alice <# "#team signed channel post"
             bob <# "#team> signed channel post"
             [cath, dan, eve] *<# "#team> signed channel post [>>]"
-            alice #$> ("/_get chat #1 count=1", chat, [(1, "signed channel post (signed)")])
-            cath #$> ("/_get chat #1 count=1", chat, [(0, "signed channel post (signed)")])
+            alice #$> ("/_get chat #1 count=100 search=signed channel post", chat, [(1, "signed channel post (signed)")])
+            cath #$> ("/_get chat #1 count=100 search=signed channel post", chat, [(0, "signed channel post (signed)")])
 
             -- owner posts as the channel, unsigned: anonymous (FwdChannel), no signature, still as the channel
             alice ##> "/_send #1(as_group=on) text plain channel post"
             alice <# "#team plain channel post"
             bob <# "#team> plain channel post"
             [cath, dan, eve] *<# "#team> plain channel post [>>]"
-            alice #$> ("/_get chat #1 count=1", chat, [(1, "plain channel post")])
-            cath #$> ("/_get chat #1 count=1", chat, [(0, "plain channel post")])
+            alice #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(1, "plain channel post")])
+            cath #$> ("/_get chat #1 count=100 search=plain channel post", chat, [(0, "plain channel post")])
 
 testChannelAsGroupSpoof :: HasCallStack => TestParams -> IO ()
 testChannelAsGroupSpoof ps =
@@ -12265,7 +12269,7 @@ testChannelAsGroupSpoof ps =
             dan <##. "error: x.msg.new: member is not allowed to send as group"
             -- not rendered as the channel: dan still holds only the legitimate member message
             threadDelay 1000000
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "hi from cath")])
+            dan #$> ("/_get chat #1 count=100 search=hi from cath", chat, [(0, "hi from cath")])
   where
     memberIdByName :: TestCC -> T.Text -> IO MemberId
     memberIdByName cc name = do
