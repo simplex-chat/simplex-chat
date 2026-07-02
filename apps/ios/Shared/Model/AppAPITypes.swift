@@ -972,8 +972,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case membersRoleUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], toRole: GroupMemberRole)
     case membersBlockedForAllUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], blocked: Bool)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
-    case contactNameVerified(user: UserRef, contact: Contact, verificationFailure: String?)
-    case groupNameVerified(user: UserRef, groupInfo: GroupInfo, verificationFailure: String?)
+    case contactDomainVerified(user: UserRef, contact: Contact, verificationFailure: String?)
+    case groupDomainVerified(user: UserRef, groupInfo: GroupInfo, verificationFailure: String?)
     case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink)
     case groupLink(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink)
     case groupLinkDeleted(user: UserRef, groupInfo: GroupInfo)
@@ -1029,8 +1029,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .membersRoleUser: "membersRoleUser"
         case .membersBlockedForAllUser: "membersBlockedForAllUser"
         case .groupUpdated: "groupUpdated"
-        case .contactNameVerified: "contactNameVerified"
-        case .groupNameVerified: "groupNameVerified"
+        case .contactDomainVerified: "contactDomainVerified"
+        case .groupDomainVerified: "groupDomainVerified"
         case .groupLinkCreated: "groupLinkCreated"
         case .groupLink: "groupLink"
         case .groupLinkDeleted: "groupLinkDeleted"
@@ -1082,8 +1082,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .membersRoleUser(u, groupInfo, members, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\ntoRole: \(toRole)")
         case let .membersBlockedForAllUser(u, groupInfo, members, blocked): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(members)\nblocked: \(blocked)")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
-        case let .contactNameVerified(u, contact, verificationFailure): return withUser(u, "contact: \(contact)\nverificationFailure: \(verificationFailure ?? "ok")")
-        case let .groupNameVerified(u, groupInfo, verificationFailure): return withUser(u, "groupInfo: \(groupInfo)\nverificationFailure: \(verificationFailure ?? "ok")")
+        case let .contactDomainVerified(u, contact, verificationFailure): return withUser(u, "contact: \(contact)\nverificationFailure: \(verificationFailure ?? "ok")")
+        case let .groupDomainVerified(u, groupInfo, verificationFailure): return withUser(u, "groupInfo: \(groupInfo)\nverificationFailure: \(verificationFailure ?? "ok")")
         case let .groupLinkCreated(u, groupInfo, groupLink): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)")
         case let .groupLink(u, groupInfo, groupLink): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)")
         case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))

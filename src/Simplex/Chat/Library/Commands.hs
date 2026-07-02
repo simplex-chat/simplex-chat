@@ -1504,7 +1504,7 @@ processChatCommand cxt nm = \case
             case sl_ of
               Just sl | shortLinkDataSet -> do
                 NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
-                unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexDomain domain SDENoValidLink
+                unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexDomainNotReady domain SDENoValidLink
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
         let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
@@ -2296,14 +2296,14 @@ processChatCommand cxt nm = \case
     domain <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
     (verified, reason) <- verifyEntityDomain user nm NTContact domain connLink_
     ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v) verified
-    pure $ CRContactNameVerified user ct' reason
+    pure $ CRContactDomainVerified user ct' reason
   APIVerifyGroupDomain groupId -> withUser $ \user -> do
     g@GroupInfo {groupProfile = GroupProfile {publicGroup}, preparedGroup} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     let connLink_ = preparedGroup >>= \PreparedGroup {connLinkToConnect = CCLink _ sLnk_} -> ACSL SCMContact <$> sLnk_
     domain <- maybe (throwCmdError "group has no name to verify") pure $ publicGroup >>= publicGroupAccess >>= groupDomainClaim
     (verified, reason) <- verifyEntityDomain user nm NTPublicGroup domain connLink_
     g' <- maybe (pure g) (\v -> withFastStore' $ \db -> setGroupDomainVerified db user g v) verified
-    pure $ CRGroupNameVerified user g' reason
+    pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db cxt user contactId
     ccLink <- case contactLink of
@@ -3140,7 +3140,7 @@ processChatCommand cxt nm = \case
         forM_ (claimDomain <$> newClaim) $ \newDomain ->
           when (Just newDomain /= (claimDomain <$> (existingAccess >>= groupDomainClaim))) $ do
             NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) newDomain
-            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomain newDomain SDENoValidLink
+            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}}
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -4214,7 +4214,7 @@ processChatCommand cxt nm = \case
                       (Just _, Just p) -> updateContactFromLinkData user ct' p
                       _ -> pure ct'
                 forM_ verifiedName $ \SimplexNameInfo {nameDomain} ->
-                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomain nameDomain SDEUnknownDomain
+                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> do
                     ct'' <- refreshContact ct'
@@ -4287,7 +4287,7 @@ processChatCommand cxt nm = \case
                               CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) -> Just groupProfile
                               CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) -> Just groupProfile
                               _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
-                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomain nameDomain SDEUnknownDomain
+                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
                       pure $ case plan of
                         CPGroupLink glp@(GLPOk {}) -> (con l' cReq, CPGroupLink glp {verifiedName})
                         _ -> (con l' cReq, plan)
@@ -4317,7 +4317,7 @@ processChatCommand cxt nm = \case
       let (candidates, ctType) = case nameType of
             NTContact -> (nrSimplexContact, CCTContact)
             NTPublicGroup -> (nrSimplexChannel, CCTChannel)
-      maybe (throwChatError $ CESimplexDomain nameDomain SDENoValidLink) pure $ firstNameLink ctType candidates
+      maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink ctType candidates
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do

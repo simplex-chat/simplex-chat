@@ -4923,9 +4923,9 @@ enum class SimplexNameType {
 // peer's signed name claim; UI only checks presence
 @Serializable
 data class SimplexDomainProof(
+  val linkOwnerId: String? = null,
   val presHeader: String,
-  val signature: String,
-  val linkOwnerId: String? = null
+  val signature: String
 )
 
 @Serializable

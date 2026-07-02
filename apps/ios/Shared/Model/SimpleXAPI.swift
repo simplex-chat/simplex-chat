@@ -1083,7 +1083,7 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             title: "Unsupported connection link",
             message: "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
         )
-    case let .error(.simplexDomain(domain, err)):
+    case let .error(.simplexDomainNotReady(domain, err)):
         switch err {
         case .noValidLink:
             mkAlert(
@@ -1368,7 +1368,7 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
 // name is the encoded SimplexName (e.g. "@alice.simplex"); nil clears it
 // owner-specific SNENoValidLink wording; everything else reuses the general apiConnectResponseAlert
 func showSetSimplexNameError<R>(_ r: APIResult<R>, isChannel: Bool) {
-    if case let .error(.simplexDomain(domain, .noValidLink)) = r.unexpected {
+    if case let .error(.simplexDomainNotReady(domain, .noValidLink)) = r.unexpected {
         let format = isChannel
             ? NSLocalizedString("The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.", comment: "alert message")
             : NSLocalizedString("The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.", comment: "alert message")
@@ -1392,13 +1392,13 @@ func apiSetUserDomain(_ simplexDomain: String?) async throws -> User {
 
 func apiVerifyContactDomain(_ contactId: Int64) async throws -> (Contact, String?) {
     let r: ChatResponse2 = try await chatSendCmd(.apiVerifyContactDomain(contactId: contactId))
-    if case let .contactNameVerified(_, contact, verificationFailure) = r { return (contact, verificationFailure) }
+    if case let .contactDomainVerified(_, contact, verificationFailure) = r { return (contact, verificationFailure) }
     throw r.unexpected
 }
 
 func apiVerifyGroupDomain(_ groupId: Int64) async throws -> (GroupInfo, String?) {
     let r: ChatResponse2 = try await chatSendCmd(.apiVerifyGroupDomain(groupId: groupId))
-    if case let .groupNameVerified(_, groupInfo, verificationFailure) = r { return (groupInfo, verificationFailure) }
+    if case let .groupDomainVerified(_, groupInfo, verificationFailure) = r { return (groupInfo, verificationFailure) }
     throw r.unexpected
 }
 

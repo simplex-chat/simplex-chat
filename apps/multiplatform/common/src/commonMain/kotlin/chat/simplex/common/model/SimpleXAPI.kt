@@ -1558,7 +1558,7 @@ object ChatController {
         )
       }
       r is API.Error && r.err is ChatError.ChatErrorChat
-          && r.err.errorType is ChatErrorType.CESimplexDomain -> {
+          && r.err.errorType is ChatErrorType.SimplexDomainNotReady -> {
         val domain = r.err.errorType.simplexDomain.fullDomainName
         if (r.err.errorType.simplexDomainError is SimplexDomainError.NoValidLink) {
           AlertManager.shared.showAlertMsg(
@@ -1631,7 +1631,7 @@ object ChatController {
 
   // owner-specific wording for setting one's own/channel name; null for other errors (handled by apiConnectResponseAlert)
   fun simplexNameOwnerError(err: ChatError, isChannel: Boolean): String? =
-    if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CESimplexDomain && err.errorType.simplexDomainError is SimplexDomainError.NoValidLink) {
+    if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.SimplexDomainNotReady && err.errorType.simplexDomainError is SimplexDomainError.NoValidLink) {
       val domain = err.errorType.simplexDomain.fullDomainName
       if (isChannel) generalGetString(MR.strings.simplex_name_owner_no_channel_link).format(domain)
       else generalGetString(MR.strings.simplex_name_owner_no_address).format(domain)
@@ -1642,7 +1642,7 @@ object ChatController {
       generalGetString(MR.strings.invalid_connection_link)
     e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.UnsupportedConnReq ->
       generalGetString(MR.strings.unsupported_connection_link)
-    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.CESimplexDomain ->
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.SimplexDomainNotReady ->
       if (e.errorType.simplexDomainError is SimplexDomainError.NoValidLink)
         generalGetString(MR.strings.simplex_name_no_valid_link)
       else generalGetString(MR.strings.simplex_name_unconfirmed)
@@ -1842,14 +1842,14 @@ object ChatController {
 
   suspend fun apiVerifyContactDomain(rh: Long?, contactId: Long): Pair<Contact, String?>? {
     val r = sendCmd(rh, CC.ApiVerifyContactDomain(contactId))
-    if (r is API.Result && r.res is CR.ContactNameVerified) return r.res.contact to r.res.verificationFailure
+    if (r is API.Result && r.res is CR.ContactDomainVerified) return r.res.contact to r.res.verificationFailure
     Log.e(TAG, "apiVerifyContactDomain bad response: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiVerifyGroupDomain(rh: Long?, groupId: Long): Pair<GroupInfo, String?>? {
     val r = sendCmd(rh, CC.ApiVerifyGroupDomain(groupId))
-    if (r is API.Result && r.res is CR.GroupNameVerified) return r.res.groupInfo to r.res.verificationFailure
+    if (r is API.Result && r.res is CR.GroupDomainVerified) return r.res.groupInfo to r.res.verificationFailure
     Log.e(TAG, "apiVerifyGroupDomain bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -6591,8 +6591,8 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
-  @Serializable @SerialName("contactNameVerified") class ContactNameVerified(val user: UserRef, val contact: Contact, val verificationFailure: String? = null): CR()
-  @Serializable @SerialName("groupNameVerified") class GroupNameVerified(val user: UserRef, val groupInfo: GroupInfo, val verificationFailure: String? = null): CR()
+  @Serializable @SerialName("contactDomainVerified") class ContactDomainVerified(val user: UserRef, val contact: Contact, val verificationFailure: String? = null): CR()
+  @Serializable @SerialName("groupDomainVerified") class GroupDomainVerified(val user: UserRef, val groupInfo: GroupInfo, val verificationFailure: String? = null): CR()
   @Serializable @SerialName("groupLinkDataUpdated") class GroupLinkDataUpdated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>, val relaysChanged: Boolean): CR()
   @Serializable @SerialName("groupRelayUpdated") class GroupRelayUpdated(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val groupRelay: GroupRelay): CR()
   @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
@@ -6784,8 +6784,8 @@ sealed class CR {
     is JoinedGroupMember -> "joinedGroupMember"
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupUpdated -> "groupUpdated"
-    is ContactNameVerified -> "contactNameVerified"
-    is GroupNameVerified -> "groupNameVerified"
+    is ContactDomainVerified -> "contactDomainVerified"
+    is GroupDomainVerified -> "groupDomainVerified"
     is GroupLinkDataUpdated -> "groupLinkDataUpdated"
     is GroupRelayUpdated -> "groupRelayUpdated"
     is GroupLinkCreated -> "groupLinkCreated"
@@ -6970,8 +6970,8 @@ sealed class CR {
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
-    is ContactNameVerified -> withUser(user, "contact: ${json.encodeToString(contact)}\nverificationFailure: $verificationFailure")
-    is GroupNameVerified -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nverificationFailure: $verificationFailure")
+    is ContactDomainVerified -> withUser(user, "contact: ${json.encodeToString(contact)}\nverificationFailure: $verificationFailure")
+    is GroupDomainVerified -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nverificationFailure: $verificationFailure")
     is GroupLinkDataUpdated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays\nrelaysChanged: $relaysChanged")
     is GroupRelayUpdated -> withUser(user, "groupInfo: $groupInfo\nmember: $member\ngroupRelay: $groupRelay")
     is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
@@ -7438,7 +7438,7 @@ sealed class ChatErrorType {
       is ChatStoreChanged -> "chatStoreChanged"
       is ConnectionPlanChatError -> "connectionPlan"
       is InvalidConnReq -> "invalidConnReq"
-      is CESimplexDomain -> "simplexDomain"
+      is SimplexDomainNotReady -> "simplexDomainNotReady"
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
@@ -7521,7 +7521,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
   @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
-  @Serializable @SerialName("simplexDomain") class CESimplexDomain(val simplexDomain: SimplexDomain, val simplexDomainError: SimplexDomainError): ChatErrorType()
+  @Serializable @SerialName("simplexDomain") class SimplexDomainNotReady(val simplexDomain: SimplexDomain, val simplexDomainError: SimplexDomainError): ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()

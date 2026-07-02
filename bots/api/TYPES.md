@@ -1111,8 +1111,8 @@ ChatStoreChanged:
 InvalidConnReq:
 - type: "invalidConnReq"
 
-SimplexDomain:
-- type: "simplexDomain"
+SimplexDomainNotReady:
+- type: "simplexDomainNotReady"
 - simplexDomain: [SimplexDomain](#simplexdomain)
 - simplexDomainError: [SimplexDomainError](#simplexdomainerror)
 

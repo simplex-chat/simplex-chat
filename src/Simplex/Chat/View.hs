@@ -148,8 +148,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
-  CRContactNameVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewNameVerified NTContact (claimDomain <$> contactDomain) result
-  CRGroupNameVerified u g result -> ttyUser u $ viewNameVerified NTPublicGroup (groupSimplexDomain g) result
+  CRContactDomainVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewDomainVerified NTContact (claimDomain <$> contactDomain) result
+  CRGroupDomainVerified u g result -> ttyUser u $ viewDomainVerified NTPublicGroup (groupSimplexDomain g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
   CRNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz testView
@@ -1132,8 +1132,8 @@ groupSimplexDomain :: GroupInfo -> Maybe SimplexDomain
 groupSimplexDomain GroupInfo {groupProfile = GroupProfile {publicGroup}} =
   claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
 
-viewNameVerified :: SimplexNameType -> Maybe SimplexDomain -> Maybe Text -> [StyledString]
-viewNameVerified nameType domain_ result =
+viewDomainVerified :: SimplexNameType -> Maybe SimplexDomain -> Maybe Text -> [StyledString]
+viewDomainVerified nameType domain_ result =
   let nameStr = maybe "name" (\d -> "SimpleX name " <> shortNameInfoStr (SimplexNameInfo nameType d)) domain_
    in case result of
         Nothing -> [plain nameStr <> " verified"]
@@ -2682,7 +2682,7 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexDomain domain domainErr ->
+    CESimplexDomainNotReady domain domainErr ->
       let reason = case domainErr of
             SDENoValidLink -> "has no valid connection link"
             SDEUnknownDomain -> "is not included in the connection link's profile"

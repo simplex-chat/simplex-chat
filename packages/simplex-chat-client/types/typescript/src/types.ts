@@ -1042,7 +1042,7 @@ export type ChatErrorType =
   | ChatErrorType.ChatNotStopped
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
-  | ChatErrorType.SimplexDomain
+  | ChatErrorType.SimplexDomainNotReady
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1120,7 +1120,7 @@ export namespace ChatErrorType {
     | "chatNotStopped"
     | "chatStoreChanged"
     | "invalidConnReq"
-    | "simplexDomain"
+    | "simplexDomainNotReady"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1275,8 +1275,8 @@ export namespace ChatErrorType {
     type: "invalidConnReq"
   }
 
-  export interface SimplexDomain extends Interface {
-    type: "simplexDomain"
+  export interface SimplexDomainNotReady extends Interface {
+    type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
   }
