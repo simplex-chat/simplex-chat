@@ -5092,8 +5092,9 @@ D'autres améliorations sont à venir !</target>
         <target state="translated">Invalide (non enregistré)</target>
         <note>token status text</note>
       </trans-unit>
-      <trans-unit id="Invalid (wrong topic)" xml:space="preserve">
+      <trans-unit id="Invalid (wrong topic)" xml:space="preserve" approved="no">
         <source>Invalid (wrong topic)</source>
+        <target state="translated">Invalide (mauvais sujet)</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Invalid QR code" xml:space="preserve">
@@ -5126,12 +5127,14 @@ D'autres améliorations sont à venir !</target>
         <target>Nom invalide !</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Invalid relay address!" xml:space="preserve">
+      <trans-unit id="Invalid relay address!" xml:space="preserve" approved="no">
         <source>Invalid relay address!</source>
+        <target state="translated">Adresse de relais invalide !</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Invalid relay name!" xml:space="preserve">
+      <trans-unit id="Invalid relay name!" xml:space="preserve" approved="no">
         <source>Invalid relay name!</source>
+        <target state="translated">Nom du relais invalide !</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Invalid response" xml:space="preserve">
@@ -5159,8 +5162,9 @@ D'autres améliorations sont à venir !</target>
         <target>Inviter des amis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite member" xml:space="preserve">
+      <trans-unit id="Invite member" xml:space="preserve" approved="no">
         <source>Invite member</source>
+        <target state="translated">Inviter un membre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
@@ -5229,8 +5233,9 @@ D'autres améliorations sont à venir !</target>
         <target>Il semblerait que vous êtes déjà connecté via ce lien. Si ce n'est pas le cas, il y a eu une erreur (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It will be shown to subscribers and used to allow loading the preview." xml:space="preserve">
+      <trans-unit id="It will be shown to subscribers and used to allow loading the preview." xml:space="preserve" approved="no">
         <source>It will be shown to subscribers and used to allow loading the preview.</source>
+        <target state="translated">Ceci sera montré aux abonné·es et utilisé pour permettre le chargement de l'aperçu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Italian interface" xml:space="preserve">
@@ -5253,8 +5258,9 @@ D'autres améliorations sont à venir !</target>
         <target>rejoindre entant que %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join channel" xml:space="preserve">
+      <trans-unit id="Join channel" xml:space="preserve" approved="no">
         <source>Join channel</source>
+        <target state="translated">Rejoindre le canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
@@ -5304,8 +5310,9 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Conserver l'invitation inutilisée ?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Keep your chats clean" xml:space="preserve">
+      <trans-unit id="Keep your chats clean" xml:space="preserve" approved="no">
         <source>Keep your chats clean</source>
+        <target state="translated">Garez vos discussions propres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -5343,12 +5350,14 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Quitter</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Leave channel" xml:space="preserve">
+      <trans-unit id="Leave channel" xml:space="preserve" approved="no">
         <source>Leave channel</source>
+        <target state="translated">Quitter le canal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave channel?" xml:space="preserve">
+      <trans-unit id="Leave channel?" xml:space="preserve" approved="no">
         <source>Leave channel?</source>
+        <target state="translated">Quitter le canal ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave chat" xml:space="preserve">
@@ -5371,8 +5380,9 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Quitter le groupe ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
+      <trans-unit id="Less traffic on mobile networks." xml:space="preserve" approved="no">
         <source>Less traffic on mobile networks.</source>
+        <target state="translated">Moins de transferts de données sur les réseaux mobiles.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve" approved="no">
@@ -5400,8 +5410,9 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Liez vos applications mobiles et de bureau ! 🔗</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Link signature verified." xml:space="preserve">
+      <trans-unit id="Link signature verified." xml:space="preserve" approved="no">
         <source>Link signature verified.</source>
+        <target state="translated">Signature du lien vérifiée.</target>
         <note>owner verification</note>
       </trans-unit>
       <trans-unit id="Linked desktop options" xml:space="preserve">
