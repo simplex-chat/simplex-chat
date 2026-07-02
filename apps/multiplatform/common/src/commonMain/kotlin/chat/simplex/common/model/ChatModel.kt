@@ -696,10 +696,17 @@ object ChatModel {
       }
     }
 
-    suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
-      fun isRemovedMemberItem(item: ChatItem): Boolean = when {
-        item.chatDir is CIDirection.GroupSnd -> removedMember.groupMemberId == groupInfo.membership.groupMemberId
-        item.chatDir is CIDirection.GroupRcv -> item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId
+    suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) =
+      removeMemberItems(rhId, listOf(removedMember), byMember, groupInfo)
+
+    // Batched variant: scans chat items once for all removed members, avoiding O(members * items)
+    // rebuilds of the chat items list when removing many members at once.
+    suspend fun removeMemberItems(rhId: Long?, removedMembers: List<GroupMember>, byMember: GroupMember, groupInfo: GroupInfo) {
+      val removedMemberIds = removedMembers.mapTo(mutableSetOf()) { it.groupMemberId }
+      val membershipRemoved = groupInfo.membership.groupMemberId in removedMemberIds
+      fun isRemovedMemberItem(item: ChatItem): Boolean = when (val dir = item.chatDir) {
+        is CIDirection.GroupSnd -> membershipRemoved
+        is CIDirection.GroupRcv -> dir.groupMember.groupMemberId in removedMemberIds
         else -> false
       }
       fun markedUpdatedItem(item: ChatItem): ChatItem? {
@@ -968,6 +975,68 @@ object ChatModel {
         }
       } else {
         false
+      }
+    }
+
+    // Batched variant of [upsertGroupMember]: scans chat items and rebuilds the members list once
+    // for all members, avoiding O(members * items) work when upserting many members at once.
+    suspend fun upsertGroupMembers(rhId: Long?, groupInfo: GroupInfo, members: List<GroupMember>) {
+      if (members.isEmpty()) return
+      // the user's own membership was updated
+      if (members.any { it.groupMemberId == groupInfo.membership.groupMemberId }) {
+        updateGroup(rhId, groupInfo)
+      }
+      // update current chat or channel being created
+      if (chatId.value != groupInfo.id && creatingChannelId.value != groupInfo.id) return
+      if (groupMembers.value.isNotEmpty() && groupMembers.value.firstOrNull()?.groupId != groupInfo.groupId) {
+        // stale data, should be cleared at that point, otherwise, duplicated items will be here which will produce crashes in LazyColumn
+        groupMembers.value = emptyList()
+        groupMembersIndexes.value = emptyMap()
+      }
+      // index members to upsert by id, excluding the user's own membership (handled above)
+      val membersById = HashMap<Long, GroupMember>(members.size * 2)
+      for (m in members) {
+        if (m.groupMemberId != groupInfo.membership.groupMemberId) membersById[m.groupMemberId] = m
+      }
+      if (membersById.isEmpty()) return
+      // single pass over chat items
+      var itemsChanged = false
+      val updated = chatItems.value.map { item ->
+        val dir = item.chatDir
+        if (dir is CIDirection.GroupRcv) {
+          val m = membersById[dir.groupMember.groupMemberId]
+          // Take into account only specific changes, not all. Other member updates are not important and can be skipped
+          if (m != null && (dir.groupMember.image != m.image ||
+                dir.groupMember.chatViewName != m.chatViewName ||
+                dir.groupMember.blocked != m.blocked ||
+                dir.groupMember.memberRole != m.memberRole)
+          ) {
+            itemsChanged = true
+            item.copy(chatDir = CIDirection.GroupRcv(m))
+          } else item
+        } else item
+      }
+      if (itemsChanged) {
+        chatItems.replaceAll(updated)
+      }
+      // update the members list once
+      val gMembers = groupMembers.value.toMutableList()
+      val gmIndexes = groupMembersIndexes.value.toMutableMap()
+      var addedNew = false
+      for (m in members) {
+        if (m.groupMemberId == groupInfo.membership.groupMemberId) continue
+        val idx = gmIndexes[m.groupMemberId]
+        if (idx != null) {
+          gMembers[idx] = m
+        } else {
+          gMembers.add(m)
+          gmIndexes[m.groupMemberId] = gMembers.size - 1
+          addedNew = true
+        }
+      }
+      groupMembers.value = gMembers
+      if (addedNew) {
+        groupMembersIndexes.value = gmIndexes
       }
     }
 
