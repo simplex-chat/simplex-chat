@@ -6391,7 +6391,7 @@ La crittografia più sicura.</target>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve" approved="no">
         <source>Ok</source>
-        <target state="translated">OK</target>
+        <target state="translated">Ok</target>
         <note>alert action
 alert button
 new chat action</note>
