@@ -1635,11 +1635,11 @@ getChatScopeInfo cxt user = \case
 getGroupRecipients :: StoreCxt -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> VersionChat -> CM [GroupMember]
 getGroupRecipients cxt user gInfo@GroupInfo {membership} scopeInfo modsCompatVersion
   | useRelays' gInfo && not (isRelay membership) = do
-      unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
+      unless (groupSenderEligible membership) $ throwChatError $ CECommandError "not current member"
       withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
   | otherwise = case scopeInfo of
       Nothing -> do
-        unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
+        unless (groupSenderEligible membership) $ throwChatError $ CECommandError "not current member"
         ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo
         pure $ filter memberCurrent ms
       Just (GCSIMemberSupport Nothing) -> do
@@ -1648,7 +1648,7 @@ getGroupRecipients cxt user gInfo@GroupInfo {membership} scopeInfo modsCompatVer
         when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
         pure rcpModMs'
       Just (GCSIMemberSupport (Just supportMem)) -> do
-        unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
+        unless (groupSenderEligible membership) $ throwChatError $ CECommandError "not current member"
         unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"
         if memberStatus supportMem == GSMemPendingApproval
           then pure [supportMem]
@@ -1659,6 +1659,8 @@ getGroupRecipients cxt user gInfo@GroupInfo {membership} scopeInfo modsCompatVer
   where
     compatible GroupMember {activeConn, memberChatVRange} =
       maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= modsCompatVersion
+    groupSenderEligible m =
+      (memberCurrent m && memberActive m) || memberStatus m == GSMemLeft
 
 mkLocalGroupChatScope :: GroupInfo -> CM (GroupInfo, Maybe GroupChatScopeInfo)
 mkLocalGroupChatScope gInfo@GroupInfo {membership}
