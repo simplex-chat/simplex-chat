@@ -2316,7 +2316,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
     groupMessageDelete gInfo@GroupInfo {membership} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =
       findItem >>= \case
-        Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> case (chatDir, m_) of
+        Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> requireSignedDelete cci $ case (chatDir, m_) of
           (CIGroupRcv mem, Just m@GroupMember {memberId}) ->
             let msgMemberId = fromMaybe memberId sndMemberId_
                 isAuthor = sameMemberId memberId mem
@@ -2362,7 +2362,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             messageError ("x.msg.del: channel message not found, " <> tshow e) $> Nothing
       where
         isOwner = maybe True (\m -> memberRole' m == GROwner) m_
-        RcvMessage {msgId} = rcvMsg
+        RcvMessage {msgId, msgSigned} = rcvMsg
         findItem = do
           let tryMemberLookup mId =
                 withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user gInfo mId sharedMsgId)
@@ -2392,6 +2392,19 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | senderRole < GRModerator || senderRole < memberRole =
               messageError "x.msg.del: message of another member with insufficient member permissions" $> Nothing
           | otherwise = a
+        -- reject an unsigned XMsgDel of a held-signed item (delete-censorship spoof) fail-closed, mirroring requireSignedMutation
+        requireSignedDelete :: CChatItem 'CTGroup -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+        requireSignedDelete cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {msgSigned = itemSigned}}) action
+          | isJust itemSigned && isNothing msgSigned = do
+              scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)
+              let cd :: ChatDirection 'CTGroup 'MDRcv
+                  cd = case chatDir of
+                    CIGroupRcv mem -> CDGroupRcv gInfo scopeInfo mem
+                    CIChannelRcv -> CDChannelRcv gInfo scopeInfo
+                    CIGroupSnd -> CDGroupRcv gInfo scopeInfo membership
+              createInternalChatItem user cd (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
+              pure Nothing
+          | otherwise = action
         delete :: CChatItem 'CTGroup -> Bool -> Maybe GroupMember -> CM (Maybe DeliveryTaskContext)
         delete cci asGroup byGroupMember = do
           scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db cxt user gInfo (cChatItemId cci)

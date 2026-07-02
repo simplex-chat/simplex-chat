@@ -2371,10 +2371,20 @@ sendRelayCapIfNeeded user gInfo = do
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo scope asGroup members sign events = do
+  sendGroupProfileUpdate user gInfo scope asGroup members
+  sendGroupMessages_ user gInfo members sign events
+
+-- per-item signer variant of sendGroupMessages (used for per-item delete signing); preserves the profile-update prelude
+sendGroupSignedMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> NonEmpty (Maybe MsgSigning, ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupSignedMessages user gInfo scope asGroup members signedEvents = do
+  sendGroupProfileUpdate user gInfo scope asGroup members
+  sendGroupSignedMessages_ gInfo members signedEvents
+
+sendGroupProfileUpdate :: User -> GroupInfo -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
+sendGroupProfileUpdate user gInfo scope asGroup members =
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchAllErrors` eToView
-  sendGroupMessages_ user gInfo members sign events
   where
     User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
