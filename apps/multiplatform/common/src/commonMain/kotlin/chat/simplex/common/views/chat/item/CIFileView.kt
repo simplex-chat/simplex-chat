@@ -53,12 +53,18 @@ fun CIFileView(
     Box(
       contentAlignment = Alignment.Center
     ) {
-      Icon(
-        painterResource(MR.images.ic_draft_filled),
-        stringResource(MR.strings.icon_descr_file),
-        Modifier.fillMaxSize(),
-        tint = color
-      )
+      val isDefaultTint = color == (if (isInDarkTheme()) FileDark else FileLight)
+      val isSimplex = CurrentColors.value.base == DefaultTheme.SIMPLEX
+      val outerOverlay = if (isSimplex && isDefaultTint)
+        Modifier.simplexAvatarBrushOverlay(SimplexBubbleSlot.ReceivedQuote) else Modifier
+      Box(outerOverlay.fillMaxSize()) {
+        Icon(
+          painterResource(MR.images.ic_draft_filled),
+          stringResource(MR.strings.icon_descr_file),
+          Modifier.fillMaxSize(),
+          tint = color
+        )
+      }
       if (innerIcon != null) {
         Icon(
           innerIcon,
@@ -220,12 +226,13 @@ fun CIFileView(
             file.fileName,
             maxLines = 1
           )
+          val fileSizeColor = simplexSecondaryTint()
           Text(
             buildAnnotatedString {
               append(formatBytes(file.fileSize))
               append(metaReserve)
             },
-            color = secondaryColor,
+            color = fileSizeColor,
             fontSize = 14.sp,
             maxLines = 1
           )

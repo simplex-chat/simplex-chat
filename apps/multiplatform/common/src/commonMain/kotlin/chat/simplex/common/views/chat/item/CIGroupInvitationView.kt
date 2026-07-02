@@ -4,6 +4,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -51,11 +52,16 @@ fun CIGroupInvitationView(
     val iconColor =
       if (action && !inProgress.value) if (chatIncognito) Indigo else MaterialTheme.colors.primary
       else if (isInDarkTheme()) FileDark else FileLight
+    val isSimplex = CurrentColors.value.base == DefaultTheme.SIMPLEX
+    val avatarOverlayMod = if (isSimplex && groupInvitation.groupProfile.image == null)
+      Modifier.simplexAvatarBrushOverlay(SimplexBubbleSlot.ReceivedQuote) else Modifier
 
     Row(
       Modifier.defaultMinSize(minWidth = 220.dp)
     ) {
-      ProfileImage(size = 54.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
+      Box(avatarOverlayMod) {
+        ProfileImage(size = 54.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
+      }
       Spacer(Modifier.width(8.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 54.dp),
@@ -84,15 +90,12 @@ fun CIGroupInvitationView(
 
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
-      inProgress.value = true
-      joinGroup(groupInvitation.groupId) { inProgress.value = false }
-    }) else Modifier,
-    shape = RoundedCornerShape(18.dp),
-    color = if (sent) sentColor else receivedColor,
-    contentColor = LocalContentColor.current
-  ) {
+  val isSimplex = CurrentColors.value.base == DefaultTheme.SIMPLEX
+  val containerClickable = if (action && !inProgress.value) Modifier.clickable(onClick = {
+    inProgress.value = true
+    joinGroup(groupInvitation.groupId) { inProgress.value = false }
+  }) else Modifier
+  @Composable fun BubbleContent() {
     Box(
       Modifier
         .width(IntrinsicSize.Min)
@@ -146,6 +149,25 @@ fun CIGroupInvitationView(
       }
 
       CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)
+    }
+  }
+
+  if (isSimplex) {
+    Box(
+      containerClickable
+        .clip(RoundedCornerShape(18.dp))
+        .chatBubbleBackground(sent = sent, isQuote = false)
+    ) {
+      BubbleContent()
+    }
+  } else {
+    Surface(
+      modifier = containerClickable,
+      shape = RoundedCornerShape(18.dp),
+      color = if (sent) sentColor else receivedColor,
+      contentColor = LocalContentColor.current
+    ) {
+      BubbleContent()
     }
   }
 }

@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.simplexSecondaryTint
 import chat.simplex.res.MR
 
 @Composable
@@ -51,6 +52,7 @@ fun CIMemberCreatedContactView(
       fun open(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Open", start = offset, end = offset).isNotEmpty()
       ClickableText(
         annotatedText,
+        style = TextStyle(color = simplexSecondaryTint()),
         onClick = {
           if (open(it)) {
             openDirectChat(chatItem.chatDir.groupMember.memberContactId)
@@ -64,7 +66,7 @@ fun CIMemberCreatedContactView(
         append("  ")
         withStyle(chatEventStyle) { append(chatItem.timestampText) }
       }
-      Text(annotatedText)
+      Text(annotatedText, color = simplexSecondaryTint())
     }
   }
 }

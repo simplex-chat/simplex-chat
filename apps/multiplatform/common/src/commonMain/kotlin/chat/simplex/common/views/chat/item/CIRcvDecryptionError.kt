@@ -7,14 +7,14 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.ui.theme.appColors
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -138,12 +138,10 @@ fun DecryptionErrorItemFixButton(
   onClick: () -> Unit,
   syncSupported: Boolean
 ) {
-  val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    Modifier.clickable(onClick = onClick),
-    shape = RoundedCornerShape(18.dp),
-    color = receivedColor,
-    contentColor = LocalContentColor.current
+  Box(
+    Modifier.clickable(onClick = onClick)
+      .clip(RoundedCornerShape(18.dp))
+      .chatBubbleBackground(sent = false, isQuote = false)
   ) {
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
@@ -186,12 +184,10 @@ fun DecryptionErrorItem(
   ci: ChatItem,
   onClick: () -> Unit
 ) {
-  val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    Modifier.clickable(onClick = onClick),
-    shape = RoundedCornerShape(18.dp),
-    color = receivedColor,
-    contentColor = LocalContentColor.current
+  Box(
+    Modifier.clickable(onClick = onClick)
+      .clip(RoundedCornerShape(18.dp))
+      .chatBubbleBackground(sent = false, isQuote = false)
   ) {
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
