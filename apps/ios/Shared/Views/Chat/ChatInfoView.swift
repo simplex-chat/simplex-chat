@@ -392,6 +392,26 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
+            if let domain = contact.profile.contactDomain,
+               contact.profile.contactDomainVerified != nil || domain.proof != nil {
+                SimplexNameView(
+                    simplexName: "@\(domain.shortName)",
+                    verified: contact.profile.contactDomainVerified,
+                    verify: {
+                        do {
+                            let (ct, reason) = try await apiVerifyContactDomain(contact.contactId)
+                            await MainActor.run {
+                                chatModel.updateContact(ct)
+                                contact = ct
+                            }
+                            return (ct.profile.contactDomainVerified, reason)
+                        } catch {
+                            logger.error("apiVerifyContactDomain: \(responseError(error))")
+                            return nil
+                        }
+                    }
+                )
+            }
             if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
                 let r = markdownText(descr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
                 msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
@@ -1359,6 +1379,64 @@ private func deleteNotReadyContact(
         ),
         id: "deleteNotReadyContact"
     ))
+}
+
+struct SimplexNameView: View {
+    @EnvironmentObject var theme: AppTheme
+    @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) var autoVerify = false
+    let simplexName: String
+    let verified: Bool?
+    let verify: () async -> (Bool?, String?)?
+    @State private var inFlight = false
+    @State private var showSpinner = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(simplexName)
+                .font(verified == true ? .subheadline : .system(.subheadline, design: .monospaced))
+                .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
+            indicator()
+        }
+        .padding(.bottom, 2)
+        .onAppear { if autoVerify && verified == nil { runVerify(manual: false) } }
+    }
+
+    @ViewBuilder private func indicator() -> some View {
+        if showSpinner {
+            ProgressView()
+        } else if verified == true {
+            Image(systemName: "checkmark")
+        } else if verified == false {
+            Image(systemName: "xmark")
+                .foregroundColor(.red)
+                .onTapGesture { runVerify(manual: true) }
+        } else {
+            Button { runVerify(manual: true) } label: {
+                Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+            }
+        }
+    }
+
+    private func runVerify(manual: Bool) {
+        if inFlight { return }
+        inFlight = true
+        // delay the spinner so a fast result on appear doesn't flash it
+        Task {
+            try? await Task.sleep(nanoseconds: 300_000000)
+            await MainActor.run { if inFlight { showSpinner = true } }
+        }
+        Task {
+            let res = await verify()
+            await MainActor.run {
+                inFlight = false
+                showSpinner = false
+                // show the reason on a manual run, or on an inconclusive auto run (state stayed nil)
+                if let (newV, reason) = res, let reason, manual || newV == nil {
+                    showAlert(NSLocalizedString("SimpleX name not verified", comment: "alert title"), message: reason)
+                }
+            }
+        }
+    }
 }
 
 struct ChatInfoView_Previews: PreviewProvider {

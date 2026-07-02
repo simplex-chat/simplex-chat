@@ -1083,6 +1083,24 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             title: "Unsupported connection link",
             message: "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
         )
+    case let .error(.simplexDomainNotReady(domain, err)):
+        switch err {
+        case .noValidLink:
+            mkAlert(
+                title: "No valid link",
+                message: "The SimpleX name \(domain.fullDomainName) is registered, but it has no valid link."
+            )
+        case .unknownDomain:
+            mkAlert(
+                title: "Unconfirmed name",
+                message: "The SimpleX name \(domain.fullDomainName) is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner."
+            )
+        }
+    case .errorAgent(.NO_NAME_SERVERS):
+        mkAlert(
+            title: "SimpleX name error",
+            message: "None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link."
+        )
     case .errorAgent(.SMP(_, .AUTH)):
         mkAlert(
             title: "Connection error (AUTH)",
@@ -1112,6 +1130,24 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             )
         } else {
             connectionErrorAlert(r)
+        }
+    case let .errorAgent(.SMP(serverAddress, .NAME(nameErr))):
+        switch nameErr {
+        case .NOT_FOUND:
+            mkAlert(
+                title: "Name not found",
+                message: "This SimpleX name is not registered. Please check the name."
+            )
+        case .NO_RESOLVER:
+            mkAlert(
+                title: "SimpleX name error",
+                message: "Server \(serverAddress) does not support name resolution. Configure servers, or use a connection link."
+            )
+        case let .RESOLVER(resolverErr):
+            mkAlert(
+                title: "SimpleX name error",
+                message: "Resolver error: \(resolverErr)"
+            )
         }
     default: connectionErrorAlert(r)
     }
@@ -1327,6 +1363,43 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
     case let .userProfileUpdated(user, _, _, _): return user
     default: throw r.unexpected
     }
+}
+
+// name is the encoded SimplexName (e.g. "@alice.simplex"); nil clears it
+// owner-specific SNENoValidLink wording; everything else reuses the general apiConnectResponseAlert
+func showSetSimplexNameError<R>(_ r: APIResult<R>, isChannel: Bool) {
+    if case let .error(.simplexDomainNotReady(domain, .noValidLink)) = r.unexpected {
+        let format = isChannel
+            ? NSLocalizedString("The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.", comment: "alert message")
+            : NSLocalizedString("The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.", comment: "alert message")
+        showAlert(NSLocalizedString("Error saving name", comment: "alert title"), message: String.localizedStringWithFormat(format, domain.fullDomainName))
+    } else {
+        AlertManager.shared.showAlert(apiConnectResponseAlert(r))
+    }
+}
+
+func apiSetUserDomain(_ simplexDomain: String?) async throws -> User {
+    let userId = try currentUserId("apiSetUserDomain")
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiSetUserDomain(userId: userId, simplexDomain: simplexDomain))
+    switch r {
+    case let .result(.userProfileUpdated(user, _, _, _)): return user
+    case let .result(.userProfileNoChange(user)): return user
+    default:
+        showSetSimplexNameError(r, isChannel: false)
+        throw r.unexpected
+    }
+}
+
+func apiVerifyContactDomain(_ contactId: Int64) async throws -> (Contact, String?) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyContactDomain(contactId: contactId))
+    if case let .contactDomainVerified(_, contact, verificationFailure) = r { return (contact, verificationFailure) }
+    throw r.unexpected
+}
+
+func apiVerifyGroupDomain(_ groupId: Int64) async throws -> (GroupInfo, String?) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiVerifyGroupDomain(groupId: groupId))
+    if case let .groupDomainVerified(_, groupInfo, verificationFailure) = r { return (groupInfo, verificationFailure) }
+    throw r.unexpected
 }
 
 func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
@@ -1992,6 +2065,13 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
 func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws -> GroupInfo {
     let r: ChatResponse2 = try await chatSendCmd(.apiUpdateGroupProfile(groupId: groupId, groupProfile: groupProfile))
     if case let .groupUpdated(_, toGroup) = r { return toGroup }
+    throw r.unexpected
+}
+
+func apiSetPublicGroupAccess(_ groupId: Int64, access: PublicGroupAccess) async throws -> GroupInfo {
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiSetPublicGroupAccess(groupId: groupId, access: access))
+    if case let .result(.groupUpdated(_, toGroup)) = r { return toGroup }
+    showSetSimplexNameError(r, isChannel: true)
     throw r.unexpected
 }
 

@@ -31,11 +31,6 @@ suspend fun planAndConnect(
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
   when (val target = strConnectTarget(shortOrFullLink.trim())) {
-    is ConnectTarget.Name -> {
-      showUnsupportedNameAlert(target.nameInfo)
-      cleanup?.invoke()
-      return CompletableDeferred(false)
-    }
     is ConnectTarget.Link -> {
       if (target.linkType == SimplexLinkType.relay) {
         AlertManager.privacySensitive.showAlertMsg(
@@ -46,7 +41,9 @@ suspend fun planAndConnect(
         return CompletableDeferred(false)
       }
     }
-    null -> {}
+    // A SimplexName falls through to apiConnectPlan, which resolves it on the
+    // core (the /_connect plan command accepts a name target, not only a link).
+    is ConnectTarget.Name, null -> {}
   }
   connectProgressManager.cancelConnectProgress()
   val inProgress = mutableStateOf(true)
@@ -204,6 +201,12 @@ private suspend fun planAndConnectTask(
         is ContactAddressPlan.Known -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .Known")
           val contact = connectionPlan.contactAddressPlan.contact
+          // A name-resolved contact is prepared in the store but not yet in the
+          // chat list (link-prepared chats arrive via NewPreparedChat). Surface it
+          // so it's visible and openable; no-op if already present.
+          if (chatModel.getContactChat(contact.contactId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
+          }
           if (filterKnownContact != null) {
             filterKnownContact(contact)
           } else {
@@ -288,6 +291,11 @@ private suspend fun planAndConnectTask(
         is GroupLinkPlan.Known -> {
           Log.d(TAG, "planAndConnect, .GroupLink, .Known")
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo
+          // Same as ContactAddress.Known: surface a name-resolved (prepared)
+          // group in the chat list so it's visible and openable.
+          if (chatModel.getGroupChat(groupInfo.groupId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = emptyList()))
+          }
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)
           } else {

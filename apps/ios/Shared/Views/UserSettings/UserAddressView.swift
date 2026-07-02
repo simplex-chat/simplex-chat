@@ -192,6 +192,29 @@ struct UserAddressView: View {
         }
 
         Section {
+            NavigationLink {
+                let simplexName = if let d = chatModel.currentUser?.profile.contactDomain?.shortName { "@\(d)" } else { "" }
+                SetSimplexDomainView(
+                    title: "Your SimpleX name",
+                    footer: "Let people connect to you via name registered with your SimpleX address.",
+                    prompt: "@yourname.testing",
+                    simplexName: simplexName,
+                    save: { simplexDomain in
+                        do {
+                            let u = try await apiSetUserDomain(simplexDomain)
+                            await MainActor.run { chatModel.updateUser(u) }
+                            return true
+                        } catch {
+                            return false
+                        }
+                    }
+                )
+            } label: {
+                Label("Your SimpleX name", systemImage: "at")
+            }
+        }
+
+        Section {
             createOneTimeLinkButton()
         } header: {
             Text("Or to share privately")
@@ -685,6 +708,59 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
         } catch let error {
             logger.error("apiSetUserAddressSettings error: \(responseError(error))")
         }
+    }
+}
+
+struct SetSimplexDomainView: View {
+    let title: LocalizedStringKey
+    let footer: LocalizedStringKey
+    let prompt: String
+    @State var simplexName: String
+    let save: (String?) async -> Bool
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var theme: AppTheme
+    @State private var saving = false
+
+    var body: some View {
+        List {
+            Section {
+                TextField(prompt, text: $simplexName)
+                    .autocorrectionDisabled(true)
+                    .textInputAutocapitalization(.never)
+            } header: {
+                Text(verbatim: "")
+            } footer: {
+                Text(footer).foregroundColor(theme.colors.secondary)
+            }
+            Section {
+                Button {
+                    saving = true
+                    Task {
+                        let ok = await save(normalized())
+                        await MainActor.run {
+                            saving = false
+                            if ok { dismiss() }
+                        }
+                    }
+                } label: {
+                    Text("Save")
+                }
+                .disabled(saving)
+            }
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func normalized() -> String? {
+        let s = simplexName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return s.isEmpty
+                ? nil
+                : addSimplexTLD(s.hasPrefix("@") || s.hasPrefix("#") ? String(s.dropFirst()) : s)
+    }
+
+    private func addSimplexTLD(_ d: String) -> String {
+        if d.contains(".") { d } else { "\(d).simplex" }
     }
 }
 

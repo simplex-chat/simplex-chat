@@ -2039,14 +2039,15 @@ data class Profile(
   val peerType: ChatPeerType? = null,
   // the badge proof from the wire profile: not interpreted by the UI (display uses crypto-free LocalBadge),
   // but preserved so passing a link profile back to the core (apiPrepareContact) keeps the proof
-  val badge: BadgeProof? = null
+  val badge: BadgeProof? = null,
+  val contactDomain: SimplexDomainClaim? = null
 ): NamedChat {
   val profileViewName: String
     get() {
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
 
   companion object {
     val sampleData = Profile(
@@ -2068,11 +2069,13 @@ data class LocalProfile(
   val contactLink: String? = null,
   val preferences: ChatPreferences? = null,
   val peerType: ChatPeerType? = null,
-  val localBadge: LocalBadge? = null
+  val localBadge: LocalBadge? = null,
+  val contactDomain: SimplexDomainClaim? = null,
+  val contactDomainVerified: Boolean? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType)
+  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType, contactDomain = contactDomain)
 
   companion object {
     val sampleData = LocalProfile(
@@ -2198,6 +2201,7 @@ data class GroupInfo (
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
+  val groupDomainVerified: Boolean? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -2320,9 +2324,17 @@ object GroupTypeSerializer : KSerializer<GroupType> {
 }
 
 @Serializable
+data class SimplexDomainClaim(
+  val domain: String,
+  val proof: SimplexDomainProof? = null
+) {
+  val shortName: String get() = domain.removeSuffix(".simplex")
+}
+
+@Serializable
 data class PublicGroupAccess(
   val groupWebPage: String? = null,
-  val groupDomain: String? = null,
+  val groupDomainClaim: SimplexDomainClaim? = null,
   val domainWebPage: Boolean = false,
   val allowEmbedding: Boolean = false
 )
@@ -4874,15 +4886,26 @@ enum class SimplexLinkType(val linkType: String) {
 @Serializable
 data class SimplexNameInfo(
   val nameType: SimplexNameType,
-  val nameDomain: SimplexNameDomain
+  val nameDomain: SimplexDomain
 )
 
 @Serializable
-data class SimplexNameDomain(
+data class SimplexDomain(
   val nameTLD: SimplexTLD,
   val domain: String,
   val subDomain: List<String>
-)
+) {
+  // mirrors backend fullDomainName: reverse(subDomain) + [domain] + tld
+  val fullDomainName: String
+    get() {
+      val tld = when (nameTLD) {
+        SimplexTLD.simplex -> listOf("simplex")
+        SimplexTLD.testing -> listOf("testing")
+        SimplexTLD.web -> emptyList()
+      }
+      return (subDomain.reversed() + domain + tld).joinToString(".")
+    }
+}
 
 @Serializable
 enum class SimplexTLD {
@@ -4896,6 +4919,14 @@ enum class SimplexNameType {
   @SerialName("publicGroup") publicGroup,
   @SerialName("contact") contact
 }
+
+// peer's signed name claim; UI only checks presence
+@Serializable
+data class SimplexDomainProof(
+  val linkOwnerId: String? = null,
+  val presHeader: String,
+  val signature: String
+)
 
 @Serializable
 enum class FormatColor(val color: String) {

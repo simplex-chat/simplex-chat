@@ -32,6 +32,7 @@ let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_D
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews" // deprecated, moved to app group
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
+let DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES = "privacyVerifySimplexNames"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
 let DEFAULT_PRIVACY_PROTECT_SCREEN = "privacyProtectScreen"
 let DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET = "privacyDeliveryReceiptsSet"
@@ -99,6 +100,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: SimpleXLinkMode.description.rawValue,
     DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS: true,
+    DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES: false,
     DEFAULT_PRIVACY_SAVE_LAST_DRAFT: true,
     DEFAULT_PRIVACY_PROTECT_SCREEN: false,
     DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET: false,

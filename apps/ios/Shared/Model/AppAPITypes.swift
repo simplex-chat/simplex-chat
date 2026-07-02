@@ -84,6 +84,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
+    case apiSetPublicGroupAccess(groupId: Int64, access: PublicGroupAccess)
     case apiCreateGroupLink(groupId: Int64, memberRole: GroupMemberRole)
     case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
@@ -155,6 +156,9 @@ enum ChatCommand: ChatCmdProtocol {
     case apiAddMyAddressShortLink(userId: Int64)
     case apiSetProfileAddress(userId: Int64, on: Bool)
     case apiSetAddressSettings(userId: Int64, addressSettings: AddressSettings)
+    case apiSetUserDomain(userId: Int64, simplexDomain: String?)
+    case apiVerifyContactDomain(contactId: Int64)
+    case apiVerifyGroupDomain(groupId: Int64)
     case apiAcceptContact(incognito: Bool, contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     // WebRTC calls
@@ -370,6 +374,10 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiAddMyAddressShortLink(userId): return "/_short_link_address \(userId)"
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiSetAddressSettings(userId, addressSettings): return "/_address_settings \(userId) \(encodeJSON(addressSettings))"
+            case let .apiSetUserDomain(userId, simplexDomain): return "/_set domain \(userId)" + (simplexDomain.map { " " + $0 } ?? "")
+            case let .apiSetPublicGroupAccess(groupId, access): return "/_public group access #\(groupId) \(encodeJSON(access))"
+            case let .apiVerifyContactDomain(contactId): return "/_verify domain @\(contactId)"
+            case let .apiVerifyGroupDomain(groupId): return "/_verify domain #\(groupId)"
             case let .apiAcceptContact(incognito, contactReqId): return "/_accept incognito=\(onOff(incognito)) \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiSendCallInvitation(contact, callType): return "/_call invite @\(contact.apiId) \(encodeJSON(callType))"
@@ -481,6 +489,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiLeaveGroup: return "apiLeaveGroup"
             case .apiListMembers: return "apiListMembers"
             case .apiUpdateGroupProfile: return "apiUpdateGroupProfile"
+            case .apiSetPublicGroupAccess: return "apiSetPublicGroupAccess"
             case .apiCreateGroupLink: return "apiCreateGroupLink"
             case .apiGroupLinkMemberRole: return "apiGroupLinkMemberRole"
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
@@ -551,6 +560,9 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiAddMyAddressShortLink: return "apiAddMyAddressShortLink"
             case .apiSetProfileAddress: return "apiSetProfileAddress"
             case .apiSetAddressSettings: return "apiSetAddressSettings"
+            case .apiSetUserDomain: return "apiSetUserDomain"
+            case .apiVerifyContactDomain: return "apiVerifyContactDomain"
+            case .apiVerifyGroupDomain: return "apiVerifyGroupDomain"
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"
             case .apiSendCallInvitation: return "apiSendCallInvitation"
@@ -960,6 +972,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case membersRoleUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], toRole: GroupMemberRole)
     case membersBlockedForAllUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], blocked: Bool)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
+    case contactDomainVerified(user: UserRef, contact: Contact, verificationFailure: String?)
+    case groupDomainVerified(user: UserRef, groupInfo: GroupInfo, verificationFailure: String?)
     case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink)
     case groupLink(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink)
     case groupLinkDeleted(user: UserRef, groupInfo: GroupInfo)
@@ -1015,6 +1029,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .membersRoleUser: "membersRoleUser"
         case .membersBlockedForAllUser: "membersBlockedForAllUser"
         case .groupUpdated: "groupUpdated"
+        case .contactDomainVerified: "contactDomainVerified"
+        case .groupDomainVerified: "groupDomainVerified"
         case .groupLinkCreated: "groupLinkCreated"
         case .groupLink: "groupLink"
         case .groupLinkDeleted: "groupLinkDeleted"
@@ -1066,6 +1082,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .membersRoleUser(u, groupInfo, members, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\ntoRole: \(toRole)")
         case let .membersBlockedForAllUser(u, groupInfo, members, blocked): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(members)\nblocked: \(blocked)")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
+        case let .contactDomainVerified(u, contact, verificationFailure): return withUser(u, "contact: \(contact)\nverificationFailure: \(verificationFailure ?? "ok")")
+        case let .groupDomainVerified(u, groupInfo, verificationFailure): return withUser(u, "groupInfo: \(groupInfo)\nverificationFailure: \(verificationFailure ?? "ok")")
         case let .groupLinkCreated(u, groupInfo, groupLink): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)")
         case let .groupLink(u, groupInfo, groupLink): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)")
         case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))
@@ -1383,7 +1401,7 @@ enum InvitationLinkPlan: Decodable, Hashable {
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?, verifiedName: SimplexNameInfo?)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1398,7 +1416,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?, verifiedName: SimplexNameInfo?)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)
@@ -1766,14 +1784,15 @@ struct ServerOperator: Identifiable, Equatable, Codable {
         serverDomains: ["simplex.im"],
         conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
         enabled: true,
-        smpRoles: ServerRoles(storage: true, proxy: true),
-        xftpRoles: ServerRoles(storage: true, proxy: true)
+        smpRoles: ServerRoles(storage: true, proxy: true, names: true),
+        xftpRoles: ServerRoles(storage: true, proxy: true, names: false)
     )
 }
 
 struct ServerRoles: Equatable, Codable {
     var storage: Bool
     var proxy: Bool
+    var names: Bool
 }
 
 struct UserOperatorServers: Identifiable, Equatable, Codable {
@@ -1800,8 +1819,8 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
                 serverDomains: [],
                 conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
-                smpRoles: ServerRoles(storage: true, proxy: true),
-                xftpRoles: ServerRoles(storage: true, proxy: true)
+                smpRoles: ServerRoles(storage: true, proxy: true, names: true),
+                xftpRoles: ServerRoles(storage: true, proxy: true, names: false)
             )
         }
         set { `operator` = newValue }
@@ -1824,6 +1843,7 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
 
 public enum UserServersWarning: Decodable {
     case noChatRelays(user: UserRef?)
+    case noNamesServers(user: UserRef?)
 }
 
 enum UserServersError: Decodable {

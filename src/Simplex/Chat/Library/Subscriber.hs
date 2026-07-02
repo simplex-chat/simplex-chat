@@ -381,8 +381,6 @@ processAgentMessageConn :: StoreCxt -> User -> ACorrId -> ConnId -> AEvent 'AECo
 processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage = do
   -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
   -- as in this case no need to ACK message - we can't process messages for this connection anyway.
-  -- SEDBException will be re-trown as CRITICAL as it is likely to indicate a temporary database condition
-  -- that will be resolved with app restart.
   entity <- critical agentConnId $ withStore (\db -> getConnectionEntity db cxt user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of
     END -> case entity of
@@ -838,8 +836,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
                     let GroupMember {memberId = membershipMemId} = membership
-                        allowSimplexLinks = groupUserAllowSimplexLinks gInfo
-                    membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
+                    membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId membershipProfile
@@ -1400,13 +1397,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             CFSetShortLink ->
               case (ucGroupId_, auData) of
                 (Just groupId, UserContactLinkData UserContactData {relays = relayLinks}) -> do
-                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks, newlyActiveGMIds) <- withStore $ \db -> do
+                  (gInfo, gLink, relays, relaysChanged, newlyActiveLinks) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db cxt user groupId
                     gLink <- getGroupLink db user gInfo
                     relays <- liftIO $ getGroupRelays db gInfo
-                    (relays', changed, newlyActiveLinks, newlyActiveGMIds) <- liftIO $ foldrM (updateRelay db) ([], False, [], []) relays
+                    (relays', changed, newlyActiveLinks) <- liftIO $ foldrM (updateRelay db) ([], False, []) relays
                     liftIO $ setGroupInProgressDone db gInfo
-                    pure (gInfo, gLink, relays', changed, newlyActiveLinks, newlyActiveGMIds)
+                    pure (gInfo, gLink, relays', changed, newlyActiveLinks)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
                   let GroupSummary {publicMemberCount} = groupSummary gInfo
                   -- Owner is counted in publicMemberCount; > 1 means at least one subscriber.
@@ -1424,16 +1421,16 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                       unless (null recipients) $
                         void $ sendGroupMessages user gInfo Nothing False recipients events
                   where
-                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId]) -> IO ([GroupRelay], Bool, [ShortLinkContact], [GroupMemberId])
-                    updateRelay db relay@GroupRelay {groupMemberId, relayLink, relayStatus} (acc, changed, newlyActiveLinks, newlyActiveGMIds) =
+                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool, [ShortLinkContact]) -> IO ([GroupRelay], Bool, [ShortLinkContact])
+                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed, newlyActiveLinks) =
                       case relayLink of
                         Just rLink
                           -- version is gated upstream at publish (getPublishableGroupRelays): an RSAccepted relay
                           -- whose link is in the published data is necessarily pre-roster, so activate it too
                           | rLink `elem` relayLinks && (relayStatus == RSAcknowledgedRoster || relayStatus == RSAccepted) -> do
                               relay' <- updateRelayStatus db relay RSActive
-                              pure (relay' : acc, True, rLink : newlyActiveLinks, groupMemberId : newlyActiveGMIds)
-                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActiveLinks, newlyActiveGMIds)
+                              pure (relay' : acc, True, rLink : newlyActiveLinks)
+                          | rLink `elem` relayLinks -> pure (relay : acc, changed, newlyActiveLinks)
                           | relayStatus == RSActive -> do
                               -- Relay link absent from link data — deactivate.
                               -- RSAccepted relays are not deactivated: their own link data update
@@ -1442,8 +1439,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                               -- TODO   the SMP server, but this owner won't receive a LINK callback for it
                               -- TODO   (LINK only fires in response to own setConnShortLink calls).
                               relay' <- updateRelayStatus db relay RSInactive
-                              pure (relay' : acc, True, newlyActiveLinks, newlyActiveGMIds)
-                        _ -> pure (relay : acc, changed, newlyActiveLinks, newlyActiveGMIds)
+                              pure (relay' : acc, True, newlyActiveLinks)
+                        _ -> pure (relay : acc, changed, newlyActiveLinks)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do
@@ -2812,8 +2809,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise =
           pure m
       where
-        contentChanged = not (sameProfileContent (redactedMemberProfile allowSimplexLinks (fromLocalProfile p)) (redactedMemberProfile allowSimplexLinks p'))
-        allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo && groupFeatureMemberAllowed SGFDirectMessages m gInfo
+        contentChanged = not (sameProfileContent (redactedMemberProfile gInfo m (fromLocalProfile p)) (redactedMemberProfile gInfo m p'))
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -3228,8 +3224,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         pure toMember
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      let allowSimplexLinks = groupUserAllowSimplexLinks gInfo
-      membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
+      membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user Nothing (chatHasNtfs chatSettings) groupConnReq dm subMode
@@ -3340,7 +3335,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           -- transfer record + its scratch file in one transaction (file owned by the transfer, keyed per source)
           rft@RcvFileTransfer {fileId} <- withStore $ \db -> do
             transferId <- liftIO $ createRosterTransfer db gInfo (groupMemberId' fromMember) newVer fileDigest (groupMemberId' author) brokerTs relayHdr
-            createRosterRcvFile db userId gInfo fromMember transferId sharedMsgId rosterFInv (Just IFMSent) (fromIntegral chSize)
+            createRosterRcvFile db userId gInfo fromMember transferId sharedMsgId rosterFInv (Just IFMSent) chSize
           -- accept the chat-item-free file before chunk 1 (FIFO before it) so chunk 1 isn't rejected on RFSNew
           -- transient scratch file (consumed into roster_blob, then deleted): temp folder, not the user's files folder / Downloads
           tmpDir <- lift getChatTempDirectory
@@ -3366,10 +3361,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         Just RcvRosterTransfer {rosterTransferId = transferId, rosterTransferVersion = pendingVer, rosterTransferDigest = pendingDigest, rosterTransferOwnerGMId = ownerGMId, rosterTransferBrokerTs = rosterBrokerTs, rosterTransferHeader = header_} -> do
           owner_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberById db cxt user ownerGMId)
           blob <- readAssembledRoster
-          let isRelay = isUserGrpFwdRelay gInfo
+          let isRelay' = isUserGrpFwdRelay gInfo
               ackErr err = do
                 cleanupRosterTransferById transferId
-                when isRelay $ forM_ owner_ $ \owner -> sendRosterAck gInfo owner pendingVer (Just err)
+                when isRelay' $ forM_ owner_ $ \owner -> sendRosterAck gInfo owner pendingVer (Just err)
           if FD.FileDigest (LC.sha512Hash (LB.fromStrict blob)) /= pendingDigest
             then ackErr "relay could not verify the roster blob"
             else case parseAll rosterBlobP blob of
@@ -3393,7 +3388,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                   forM_ results_ $ \results -> do
                     emitRosterResults gInfo author rosterBrokerTs results
                     -- ack while setting up (own status accepted/acknowledged); a serving (active) relay must not ack broadcasts.
-                    when (isRelay && (relayOwnStatus gInfo == Just RSAccepted || relayOwnStatus gInfo == Just RSAcknowledgedRoster)) $ do
+                    when (isRelay' && (relayOwnStatus gInfo == Just RSAccepted || relayOwnStatus gInfo == Just RSAcknowledgedRoster)) $ do
                       sendRosterAck gInfo author pendingVer Nothing
                       withStore' $ \db -> void $ updateRelayOwnStatusFromTo db gInfo RSAccepted RSAcknowledgedRoster
       where
