@@ -316,9 +316,10 @@ struct UserAddressView: View {
                 }
             } catch let error {
                 logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")
-                let a = getErrorAlert(error, "Error creating address")
-                alert = .error(title: a.title, error: a.message)
-                await MainActor.run { progressIndicator = false }
+                await MainActor.run {
+                    progressIndicator = false
+                    showErrorAlert(error, NSLocalizedString("Error creating address", comment: ""))
+                }
             }
         }
     }
@@ -390,8 +391,7 @@ struct UserAddressView: View {
                 case .success: ()
                 case let .failure(error):
                     logger.error("UserAddressView share via email: \(responseError(error))")
-                    let a = getErrorAlert(error, "Error sending email")
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error sending email", comment: ""))
                 }
                 mailViewResult = nil
             }
