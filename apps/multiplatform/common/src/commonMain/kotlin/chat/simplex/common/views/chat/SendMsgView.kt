@@ -218,9 +218,11 @@ fun SendMsgView(
                       val nowOn = !composeState.value.sign
                       composeState.value = composeState.value.copy(sign = nowOn)
                       if (nowOn) {
-                        AlertManager.shared.showAlertMsg(
+                        AlertManager.shared.showAlertDialog(
                           title = generalGetString(MR.strings.sign_message),
-                          text = generalGetString(if (sendAsGroup) MR.strings.sign_message_as_channel_desc else MR.strings.sign_message_desc)
+                          text = generalGetString(if (sendAsGroup) MR.strings.sign_message_as_channel_desc else MR.strings.sign_message_desc),
+                          dismissText = generalGetString(MR.strings.dont_sign_message),
+                          onDismiss = { composeState.value = composeState.value.copy(sign = false) }
                         )
                       }
                       showDropdown.value = false

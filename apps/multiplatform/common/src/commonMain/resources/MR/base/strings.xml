@@ -754,6 +754,7 @@
   <string name="send_disappearing_message_send">Send</string>
   <string name="sign_message">Sign message</string>
   <string name="signing_message">Signing message</string>
+  <string name="dont_sign_message">Don\'t sign</string>
   <string name="sign_message_desc">A signature is transferable, non-repudiable proof that you authored this message — it confirms authorship and integrity, not timing, order, or completeness.</string>
   <string name="sign_message_as_channel_desc">A signature is transferable, non-repudiable proof that you authored this message — it confirms authorship and integrity, not timing, order, or completeness. Signing a post sent as the channel also reveals you as its author.</string>
   <string name="live_message">Live message!</string>
