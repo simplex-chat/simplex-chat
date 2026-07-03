@@ -3712,7 +3712,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             }
         joinExistingContact subMode mCt@Contact {contactId = mContactId}
           | autoAcceptMemberContacts user = do
-              (cmdId, acId) <- prepareJoinMemberContact
+              (cmdId, acId) <- prepareAgentJoin user Nothing True connReq
               mCt' <- withStore $ \db -> do
                 updateMemberContactInvited db user mCt groupDirectInv
                 void $ liftIO $ createMemberContactConn db user acId (Just cmdId) g mConn ConnJoined mContactId subMode
@@ -3731,7 +3731,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               createItems mCt' m
         createNewContact subMode
           | autoAcceptMemberContacts user = do
-              (cmdId, acId) <- prepareJoinMemberContact
+              (cmdId, acId) <- prepareAgentJoin user Nothing True connReq
               -- [incognito] reuse membership incognito profile
               (mCt, m') <- withStore $ \db -> do
                 (mContactId, m') <- liftIO $ createMemberContactInvited db user g m groupDirectInv
@@ -3751,7 +3751,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
               createInternalChatItem user (CDDirectRcv mCt) (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
               createItems mCt m'
-        prepareJoinMemberContact = prepareAgentJoin user Nothing True connReq
         joinMemberContactAsync cmdId acId subMode = do
           -- [incognito] send membership incognito profile
           p <- presentUserBadge user (incognitoMembershipProfile g) $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True
