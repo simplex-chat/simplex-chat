@@ -18,7 +18,7 @@ ALTER TABLE groups ADD COLUMN group_domain_verified INTEGER;
 ALTER TABLE user_contact_links ADD COLUMN link_priv_sig_key BLOB;
 
 ALTER TABLE server_operators ADD COLUMN smp_role_names INTEGER NOT NULL DEFAULT 0;
-UPDATE server_operators SET smp_role_names = 1 WHERE server_operator_tag = 'simplex';
+UPDATE server_operators SET smp_role_names = 1 WHERE server_operator_tag = 'simplex' OR server_operator_tag = 'flux';
 |]
 
 down_m20260603_simplex_name :: Query

@@ -39,8 +39,8 @@ operatorFlux =
       serverDomains = ["simplexonflux.com"],
       conditionsAcceptance = CARequired Nothing,
       enabled = True,
-      smpRoles = ServerRoles {storage = False, proxy = True, names = False},
-      xftpRoles = ServerRoles {storage = False, proxy = True, names = False}
+      smpRoles = ServerRoles {storage = False, proxy = True, names = True},
+      xftpRoles = allRoles
     }
 
 -- Please note: if any servers are removed from the lists below, they MUST be added here.
