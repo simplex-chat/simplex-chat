@@ -34,8 +34,12 @@ public struct ErrorAlert: Error {
     }
 
     public init(_ error: any Error) {
-        self = if let e = error as? ChatError {
-            ErrorAlert(e)
+        self = if let chatError = error as? ChatError {
+            if let a = getNetworkErrorAlert(chatError) {
+                ErrorAlert(title: "\(a.title)", message: a.message.map { "\($0)" })
+            } else {
+                ErrorAlert("\(chatErrorString(chatError))")
+            }
         } else {
             ErrorAlert("\(error.localizedDescription)")
         }
