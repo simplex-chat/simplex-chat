@@ -639,10 +639,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               groupInfo <- withStore $ \db -> getGroupInfo db cxt user groupId
               subMode <- chatReadVar subscriptionMode
-              groupConnIds <- prepareAgentCreation user CFCreateConnGrpInv True SCMInvitation
+              groupConnIds@(cmdId, connId) <- prepareAgentCreation user CFCreateConnGrpInv True SCMInvitation
               gVar <- asks random
               withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
-              createAgentConnectionAsync groupConnIds True SCMInvitation subMode
+              withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId True SCMInvitation CR.IKPQOff subMode
         -- TODO REMOVE LEGACY ^^^
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
@@ -3178,17 +3178,14 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     Just (ChatVersionRange mcvr)
                       | maxVersion mcvr >= groupDirectInvVersion -> do
                           subMode <- chatReadVar subscriptionMode
-                          -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-                          groupConnIds <- prepareConn
+                          groupConnIds@(cmdId, connId) <- prepareAgentCreation user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation
                           let chatV = maybe (minVersion (vr cxt)) (\peerVR -> vr cxt `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
                           void $ withStore $ \db -> do
                             reMember <- createIntroReMember db cxt user gInfo memInfo memRestrictions
                             createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
-                          createAgentConnectionAsync groupConnIds (chatHasNtfs chatSettings) SCMInvitation subMode
+                          withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff subMode
                       | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
-      where
-        prepareConn = prepareAgentCreation user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation
 
     sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> CM ()
     sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
