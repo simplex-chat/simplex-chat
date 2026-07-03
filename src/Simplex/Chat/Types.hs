@@ -60,7 +60,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo, UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -1789,6 +1789,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data ConnectTarget (m :: ConnectionMode) where
   CTFullContact :: ConnectionRequestUri 'CMContact -> ConnectTarget 'CMContact
   CTShortContact :: ContactNameOrLink -> ConnectTarget 'CMContact
+  CTDomain :: SimplexDomain -> ConnectTarget 'CMContact
   CTInv :: ConnectionLink 'CMInvitation -> ConnectTarget 'CMInvitation
 
 data ContactNameOrLink = CTName SimplexNameInfo | CTLink (ConnShortLink 'CMContact)
@@ -1813,10 +1814,12 @@ instance StrEncoding AConnectTarget where
     CTFullContact cr -> strEncode cr
     CTShortContact (CTName n) -> strEncode n
     CTShortContact (CTLink sl) -> strEncode sl
+    CTDomain d -> strEncode d
     CTInv l -> strEncode l
   strP =
     (ACTarget SCMContact . CTShortContact . CTName <$> (lookAhead nameStart *> strP))
       <|> (aConnectTarget <$> strP)
+      <|> (ACTarget SCMContact . CTDomain <$> strP)
     where
       nameStart = "@" <|> "#" <|> "simplex:/name"
 

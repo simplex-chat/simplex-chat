@@ -2164,7 +2164,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
-  CPContactAddress cap -> case cap of
+  CPContactAddress cap _ -> case cap of
     CAPOk contactSLinkData ov _ -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
@@ -2182,7 +2182,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
-  CPGroupLink glp -> case glp of
+  CPGroupLink glp _ -> case glp of
     GLPOk groupSLinkInfo_ groupSLinkData ov _ ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
        in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]

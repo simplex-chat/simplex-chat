@@ -1083,8 +1083,8 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
-  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, groupDomain :: Maybe SimplexDomain}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, contactDomain :: Maybe SimplexDomain}
   | CPError {chatError :: ChatError}
   deriving (Show)
 
@@ -1146,13 +1146,13 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap -> case cap of
+  CPContactAddress cap _ -> case cap of
     CAPOk {} -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp -> case glp of
+  CPGroupLink glp _ -> case glp of
     GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True

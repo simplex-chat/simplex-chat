@@ -561,7 +561,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
                 sendToApprove g' gr' n'
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) True Nothing) >>= \case
-            Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}))) ->
+            Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}) _)) ->
               case dbOwnerMemberId gr of
                 Just ownerGMId ->
                   withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (storeCxt cc) user groupId ownerGMId) >>= \case
@@ -819,7 +819,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $ do
             let link = ACL SCMContact $ CLShort groupLink
             sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) True Nothing) >>= \case
-              Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated = BoolDef updated, linkOwners = ListDef owners}))) ->
+              Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated = BoolDef updated, linkOwners = ListDef owners}) _)) ->
                 checkValidOwner dbOwnerMemberId owners $ do
                   when updated $ reapprove pg gr groupRegStatus g'
                   when (updated || summary /= groupSummary g') $ listingsUpdated env
@@ -978,7 +978,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     handleGroupLinkPlan :: Contact -> CreatedLinkContact -> MemberId -> LinkOwnerSig -> Text -> ConnectionPlan -> IO ()
     handleGroupLinkPlan ct ccLink mId ownerSig gt = \case
-      CPGroupLink glp -> case glp of
+      CPGroupLink glp _ -> case glp of
         GLPOk {groupSLinkData_, ownerVerification} -> case (groupSLinkData_, ownerVerification) of
           (Just groupSLinkData, Just OVVerified) -> joinAndRegisterPublicGroup ct ccLink mId gt groupSLinkData
           (_, Just (OVFailed reason)) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
