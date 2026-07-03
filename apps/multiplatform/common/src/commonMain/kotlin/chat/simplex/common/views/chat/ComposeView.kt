@@ -115,7 +115,9 @@ data class ComposeState(
   val useLinkPreviews: Boolean,
   val mentions: MentionedMembers = emptyMap(),
   // the max file size the user may attach, raised by their active badge unless the chat is incognito; kept in sync on chat switch
-  val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP)
+  val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP),
+  // per-send opt-in to sign the message (relay channels only); resets on send/chat change, not persisted
+  val sign: Boolean = false
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     ComposeMessage(
@@ -559,6 +561,7 @@ fun ComposeView(
         sendAsGroup = cInfo.sendAsGroup,
         live = live,
         ttl = ttl,
+        sign = composeState.value.sign,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
       )
     if (!chatItems.isNullOrEmpty()) {
@@ -1390,6 +1393,8 @@ fun ComposeView(
       allowVoiceToContact = ::allowVoiceToContact,
       sendButtonColor = sendButtonColor,
       timedMessageAllowed = timedMessageAllowed,
+      showSign = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.useRelays == true,
+      sendAsGroup = chat.chatInfo.sendAsGroup,
       customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
       placeholder = if (userCantSendReason.value != null) "" else placeholder ?: composeState.value.placeholder,
       sendMessage = { ttl ->

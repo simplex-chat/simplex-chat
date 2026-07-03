@@ -32,6 +32,8 @@ struct SendMessageView: View {
     var finishVoiceMessageRecording: (() -> Void)? = nil
     var allowVoiceMessagesToContact: (() -> Void)? = nil
     var timedMessageAllowed: Bool = false
+    var showSign: Bool = false
+    var sendAsGroup: Bool = false
     var onMediaAdded: ([UploadContent]) -> Void
     @State private var holdingVMR = false
     @Namespace var namespace
@@ -43,6 +45,7 @@ struct SendMessageView: View {
     @State private var sendButtonSize: CGFloat = 29
     @State private var sendButtonOpacity: CGFloat = 1
     @State private var showCustomDisappearingMessageDialogue = false
+    @State private var showSignInfoAlert = false
     @State private var showCustomTimePicker = false
     @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
     @UserDefault(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
@@ -205,6 +208,16 @@ struct SendMessageView: View {
                 disappearingMessageCustomTimePicker()
             }
         }
+        .alert("Sign message", isPresented: $showSignInfoAlert) {
+            Button("OK") {}
+            Button("Don't sign", role: .cancel) { composeState.sign = false }
+        } message: {
+            Text(
+                sendAsGroup
+                ? "A signature is transferable, non-repudiable proof that you authored this message — it confirms authorship and integrity, not timing, order, or completeness. Signing a post sent as the channel also reveals you as its author."
+                : "A signature is transferable, non-repudiable proof that you authored this message — it confirms authorship and integrity, not timing, order, or completeness."
+            )
+        }
     }
 
     private func disappearingMessageCustomTimePicker() -> some View {
@@ -241,6 +254,17 @@ struct SendMessageView: View {
                     showCustomDisappearingMessageDialogue = true
                 } label: {
                     Label("Disappearing message", systemImage: "stopwatch")
+                }
+            }
+            if showSign {
+                Button {
+                    composeState.sign.toggle()
+                    if composeState.sign { showSignInfoAlert = true }
+                } label: {
+                    Label(
+                        composeState.sign ? "Signing message" : "Sign message",
+                        systemImage: composeState.sign ? "checkmark.seal.fill" : "checkmark.seal"
+                    )
                 }
             }
         }

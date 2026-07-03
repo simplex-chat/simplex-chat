@@ -49,6 +49,8 @@ fun SendMsgView(
   sendButtonColor: Color = MaterialTheme.colors.primary,
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
+  showSign: Boolean = false,
+  sendAsGroup: Boolean = false,
   customDisappearingMessageTimePref: SharedPreference<Int>? = null,
   placeholder: String,
   sendMessage: (Int?) -> Unit,
@@ -202,6 +204,25 @@ fun SendMsgView(
                     painterResource(MR.images.ic_timer),
                     onClick = {
                       showCustomDisappearingMessageDialog.value = true
+                      showDropdown.value = false
+                    }
+                  )
+                }
+              }
+              if (showSign && !cs.editing) {
+                menuItems.add {
+                  ItemAction(
+                    generalGetString(if (cs.sign) MR.strings.signing_message else MR.strings.sign_message),
+                    painterResource(MR.images.ic_verified),
+                    onClick = {
+                      val nowOn = !composeState.value.sign
+                      composeState.value = composeState.value.copy(sign = nowOn)
+                      if (nowOn) {
+                        AlertManager.shared.showAlertMsg(
+                          title = generalGetString(MR.strings.sign_message),
+                          text = generalGetString(if (sendAsGroup) MR.strings.sign_message_as_channel_desc else MR.strings.sign_message_desc)
+                        )
+                      }
                       showDropdown.value = false
                     }
                   )

@@ -54,6 +54,8 @@ struct ComposeState {
     var progressByTimeout = false
     var useLinkPreviews = true
     var mentions: MentionedMembers = [:]
+    // per-send opt-in to sign the message (relay channels only); resets on send/chat change, not persisted
+    var sign = false
 
     init(
         message: String = "",
@@ -62,7 +64,8 @@ struct ComposeState {
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
         voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
-        mentions: MentionedMembers = [:]
+        mentions: MentionedMembers = [:],
+        sign: Bool = false
     ) {
         self.message = message
         self.parsedMessage = parsedMessage
@@ -71,6 +74,7 @@ struct ComposeState {
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
         self.mentions = mentions
+        self.sign = sign
     }
 
     init(editingItem: ChatItem) {
@@ -107,7 +111,8 @@ struct ComposeState {
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
         voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
-        mentions: MentionedMembers? = nil
+        mentions: MentionedMembers? = nil,
+        sign: Bool? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
@@ -116,7 +121,8 @@ struct ComposeState {
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
             voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState,
-            mentions: mentions ?? self.mentions
+            mentions: mentions ?? self.mentions,
+            sign: sign ?? self.sign
         )
     }
 
@@ -1058,6 +1064,8 @@ struct ComposeView: View {
                 finishVoiceMessageRecording: finishVoiceMessageRecording,
                 allowVoiceMessagesToContact: allowVoiceMessagesToContact,
                 timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
+                showSign: chat.chatInfo.groupInfo?.useRelays == true,
+                sendAsGroup: chat.chatInfo.sendAsGroup,
                 onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                 keyboardVisible: $keyboardVisible,
                 keyboardHiddenDate: $keyboardHiddenDate,
@@ -1682,6 +1690,7 @@ struct ComposeView: View {
                     sendAsGroup: chat.chatInfo.sendAsGroup,
                     live: live,
                     ttl: ttl,
+                    sign: composeState.sign,
                     composedMessages: msgs
                 ) {
                 await MainActor.run {

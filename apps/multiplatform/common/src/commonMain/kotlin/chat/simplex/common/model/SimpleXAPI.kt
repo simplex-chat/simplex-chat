@@ -1096,8 +1096,8 @@ object ChatController {
 
   suspend fun apiReorderChatTags(rh: Long?, tagIds: List<Long>) = sendCommandOkResp(rh, CC.ApiReorderChatTags(tagIds))
 
-  suspend fun apiSendMessages(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, sendAsGroup: Boolean = false, live: Boolean = false, ttl: Int? = null, composedMessages: List<ComposedMessage>): List<AChatItem>? {
-    val cmd = CC.ApiSendMessages(type, id, scope, sendAsGroup, live, ttl, composedMessages)
+  suspend fun apiSendMessages(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, sendAsGroup: Boolean = false, live: Boolean = false, ttl: Int? = null, sign: Boolean = false, composedMessages: List<ComposedMessage>): List<AChatItem>? {
+    val cmd = CC.ApiSendMessages(type, id, scope, sendAsGroup, live, ttl, sign, composedMessages)
     return processSendMessageCmd(rh, cmd)
   }
 
@@ -3782,7 +3782,7 @@ sealed class CC {
   class ApiGetChat(val type: ChatType, val id: Long, val scope: GroupChatScope?, val contentTag: MsgContentTag?, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatContentTypes(val type: ChatType, val id: Long, val scope: GroupChatScope?): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val scope: GroupChatScope?, val itemId: Long): CC()
-  class ApiSendMessages(val type: ChatType, val id: Long, val scope: GroupChatScope?, val sendAsGroup: Boolean, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
+  class ApiSendMessages(val type: ChatType, val id: Long, val scope: GroupChatScope?, val sendAsGroup: Boolean, val live: Boolean, val ttl: Int?, val sign: Boolean, val composedMessages: List<ComposedMessage>): CC()
   class ApiCreateChatTag(val tag: ChatTagData): CC()
   class ApiSetChatTags(val type: ChatType, val id: Long, val tagIds: List<Long>): CC()
   class ApiDeleteChatTag(val tagId: Long): CC()
@@ -3980,7 +3980,7 @@ sealed class CC {
     is ApiSendMessages -> {
       val msgs = json.encodeToString(composedMessages)
       val ttlStr = if (ttl != null) "$ttl" else "default"
-      "/_send ${chatRef(type, id, scope)}${if (sendAsGroup) "(as_group=on)" else ""} live=${onOff(live)} ttl=${ttlStr} json $msgs"
+      "/_send ${chatRef(type, id, scope)}${if (sendAsGroup) "(as_group=on)" else ""} live=${onOff(live)} ttl=${ttlStr} sign=${onOff(sign)} json $msgs"
     }
     is ApiCreateChatTag -> "/_create tag ${json.encodeToString(tag)}"
     is ApiSetChatTags -> "/_tags ${chatRef(type, id, scope = null)} ${tagIds.joinToString(",")}"
