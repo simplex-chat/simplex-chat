@@ -217,9 +217,21 @@ getGroupMemberFileInfo db User {userId} GroupInfo {groupId} GroupMember {groupMe
 
 deleteGroupChatItemsMessages :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupChatItemsMessages db User {userId} GroupInfo {groupId} = do
-  DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
+  DB.execute
+    db
+    [sql|
+      DELETE FROM messages
+      WHERE message_id IN (
+        SELECT cim.message_id
+        FROM chat_item_messages cim
+        INNER JOIN chat_items ci ON ci.chat_item_id = cim.chat_item_id
+        WHERE ci.user_id = ? AND ci.group_id = ? AND ci.item_content_tag != 'chatBanner'
+      )
+    |]
+    (userId, groupId)
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'" (userId, groupId)
+  DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
 
 createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> ChatMsgEvent e -> Maybe MsgSigning -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
 createNewSndMessage db gVar connOrGroupId chatMsgEvent msgSigning_ encodeMessage =
