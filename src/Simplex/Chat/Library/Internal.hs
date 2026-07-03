@@ -1187,8 +1187,8 @@ serveRoster :: User -> GroupInfo -> GroupMember -> CM ()
 serveRoster user gInfo member =
   when (member `supportsVersion` groupRosterVersion) $ do
     cxt <- chatStoreCxt
-    withStore' (\db -> getGroupRoster db gInfo) >>= \case
-      Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_) ->
+    withStore' (\db -> getStoredGroupRoster db gInfo) >>= \case
+      Just (ownerGMId, brokerTs, sm@SignedMsg {signedBody}, blob_, storedVer_) ->
         case J.eitherDecodeStrict' signedBody :: Either String (ChatMessage 'Json) of
           Left e -> logError $ "serveRoster: cannot decode saved roster message: " <> tshow e
           Right chatMsg@ChatMessage {msgId} ->
@@ -1198,6 +1198,10 @@ serveRoster user gInfo member =
                 sendFwdMemberMessage member fwd (VMSigned MSSVerified sm chatMsg)
                 forM_ ((,) <$> msgId <*> blob_) $ \(sid, blob) ->
                   sendInlineBlobChunks user gInfo [member] sid blob
+                -- record the blob's own stored version as served, not roster_version (the gate): a delta can
+                -- advance the gate past the stored blob on a failed blob send, and recording the gate would
+                -- over-claim what this member was actually served, suppressing legitimate catch-up
+                forM_ storedVer_ $ \v -> withStore' $ \db -> setMemberRosterServedVersion db member v
               Left e -> logError $ "serveRoster: roster owner not found: " <> tshow e
       Nothing -> pure ()
 
@@ -2285,24 +2289,39 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
+-- The roster change being broadcast, projected onto the current roster members in broadcastRoster. This lets the
+-- roster blob be built (and sent) before the change is applied to the owner's own member records, so the owner
+-- never demotes/removes a member locally before the change has been propagated to relays.
+data RosterDelta
+  = RDRoleChanged GroupMemberRole [GroupMember] -- these members now hold this role
+  | RDRemoved [GroupMember] -- these members are removed from the group
+
+applyRosterDelta :: RosterDelta -> [GroupMember] -> [GroupMember]
+applyRosterDelta delta current = case delta of
+  RDRoleChanged role changed -> map (\m -> (m :: GroupMember) {memberRole = role}) changed <> without changed
+  RDRemoved removed -> without removed
+  where
+    without ms = let ids = S.fromList (map groupMemberId' ms) in filter ((`S.notMember` ids) . groupMemberId') current
+
 -- TODO [relays] improvement: publish roster_version in link data so the owner can recover the latest version
 -- TODO   after restoring from a stale backup (relays accept only strictly-greater versions)
--- Persist the next roster version before sending the events that carry it (so a recipient never advances
--- past a version the owner hasn't recorded). The matching blob is broadcast separately, by broadcastRoster,
--- after the change is applied to the owner's members - so the served roster excludes demoted/removed members.
-reserveRosterVersion :: GroupInfo -> CM VersionRoster
-reserveRosterVersion gInfo = do
+-- Reserve and persist the next roster version (committed before the events that carry it, so a recipient never
+-- advances past a version the owner hasn't recorded), then broadcast the matching blob with the change projected
+-- onto the served roster (so it excludes demoted/removed members). Returns the reserved version for the delta
+-- that follows. The blob send is best-effort - a failed send heals on the next change or on resume.
+broadcastRoster :: User -> GroupInfo -> RosterDelta -> CM VersionRoster
+broadcastRoster user gInfo delta = do
   let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
   withStore' $ \db -> setGroupRosterVersion db gInfo rosterVer
+  sendRosterBlob rosterVer `catchAllErrors` eToView
   pure rosterVer
-
-broadcastRoster :: User -> GroupInfo -> VersionRoster -> CM ()
-broadcastRoster user gInfo rosterVer = do
-  cxt <- chatStoreCxt
-  (relays, rosterMems) <- withStore' $ \db ->
-    (,) <$> getGroupRelayMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
-  forM_ (L.nonEmpty relays) $ \relays' ->
-    sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster rosterMems)
+  where
+    sendRosterBlob rosterVer = do
+      cxt <- chatStoreCxt
+      (relays, rosterMems) <- withStore' $ \db ->
+        (,) <$> getGroupRelayMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
+      forM_ (L.nonEmpty relays) $ \relays' ->
+        sendRoster user gInfo (L.toList relays') rosterVer (buildGroupRoster $ applyRosterDelta delta rosterMems)
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfo -> GroupMember -> CM ()
