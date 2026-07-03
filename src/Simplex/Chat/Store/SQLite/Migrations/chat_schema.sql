@@ -28,7 +28,10 @@ CREATE TABLE contact_profiles(
   badge_extra TEXT,
   badge_master_key BLOB,
   badge_signature BLOB,
-  badge_key_idx INTEGER
+  badge_key_idx INTEGER,
+  contact_domain TEXT,
+  contact_domain_proof TEXT,
+  contact_domain_verified INTEGER
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -139,7 +142,8 @@ CREATE TABLE group_profiles(
   group_web_page TEXT,
   group_domain TEXT,
   domain_web_page INTEGER,
-  allow_embedding INTEGER
+  allow_embedding INTEGER,
+  group_domain_proof TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -199,7 +203,8 @@ CREATE TABLE groups(
   roster_msg_signatures BLOB,
   roster_sending_owner_gm_id INTEGER,
   roster_broker_ts TEXT,
-  roster_blob BLOB, -- received
+  roster_blob BLOB,
+  group_domain_verified INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -393,6 +398,7 @@ CREATE TABLE user_contact_links(
   short_link_contact BLOB,
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
   short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
+  link_priv_sig_key BLOB,
   UNIQUE(user_id, local_display_name)
 ) STRICT;
 CREATE TABLE contact_requests(
@@ -700,6 +706,8 @@ CREATE TABLE server_operators(
   xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  smp_role_names INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE usage_conditions(
   usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,

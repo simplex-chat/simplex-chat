@@ -47,52 +47,62 @@ and reaches the unbounded `aspectRatio`.
 
 ## Fix
 
-Add the symmetric **upper** bound to the clamp, mirroring the existing lower
-bound and the tall-image height cap already enforced in `PriorityLayout`
-(`FramedItemView.kt`: `maxImageHeight = constraints.maxWidth * 2.33f`):
+An initial fix (already merged) added a symmetric upper bound to the ratio,
+`coerceIn(1f / 2.33f, 2.33f)`. That stops the crash but reshapes every image
+wider than 2.33:1 — including legitimate panoramas — to 2.33:1. This change
+**supersedes** it: stop routing the box height through `aspectRatio` and compute
+it **directly**, so the dangerous `width = height × ratio` derivation never
+happens. The wide side is then left at its **natural ratio** (no upper clamp);
+only the tall side is capped at `2.33`, exactly as before. This mirrors what the
+iOS app already does (`height = w × heightRatio`, `heightRatio = min(h / w, 2.33)`):
 
 ```kotlin
-// after
+// before (merged interim fix)
 Modifier.width(w).aspectRatio((previewBitmap.width.toFloat() / previewBitmap.height.toFloat()).coerceIn(1f / 2.33f, 2.33f))
+// after
+Modifier.width(w).height(w * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f))
 ```
 
-This is the minimal one-line change. With the cap, the box width is pinned
-(`≤ DEFAULT_MAX_IMAGE_WIDTH = 500.dp`) and the height-driven width becomes
-`height × 2.33 ≈ 2714 px` — three orders of magnitude inside the 262142 limit —
-so the measurement can never overflow at any screen density. `2.33` is the
-project's single "most-extreme allowed image proportion" constant: an image is
-now clamped to at most 2.33:1 in **either** direction, the same rule already
-applied to tall images.
+With this form the box width is pinned (`≤ DEFAULT_MAX_IMAGE_WIDTH = 500.dp`) and
+the height is `w × min(h / w, 2.33)`, which is always in `(0, w × 2.33]` — at most
+`≈ 1165.dp`. Both dimensions are therefore always far inside the 262142 px
+`Constraints` limit **at any aspect ratio and any screen density**, so the crash
+is structurally impossible rather than merely bounded. A very wide image renders
+at its true proportions (a thin strip) instead of being reshaped to 2.33:1.
 
-## Why 2.33 (and not a larger cap)
+This does not disturb the framed item's text-width adaptation: that uses
+`.width(IntrinsicSize.Max)` (`FramedItemView.kt`), which reads the image box's
+intrinsic **width** — still pinned to `w` — so only the wide side's height
+derivation changes.
 
-`2.33` is provably safe by construction because it ties the wide bound to the
-same proportion the layout already guarantees for height, independent of density.
-A larger cap (e.g. 50–200) would preserve the natural shape of genuine panoramas
-but relies on an assumption about the maximum measured height and loses the
-symmetry with the tall-image rule. The trade-off accepted here is that wide
-images between 2.33:1 and the crash threshold now display at 2.33:1 (the very
-wide remainder shown as a thin strip with `ContentScale.FillWidth`) rather than
-at their natural ratio — a cosmetic change in exchange for a guaranteed-safe,
-consistent fix.
+## Why compute height directly (vs clamping the ratio)
+
+The earlier candidate fix clamped the ratio (`coerceIn(1f / 2.33f, 2.33f)`). That
+is safe, but it reshapes every image wider than 2.33:1 — including legitimate
+panoramas — to 2.33:1, because `ContentScale.FillWidth` cannot fill the
+over-tall box and the image letterboxes. Computing the height directly removes
+the overflow-prone code path entirely *and* preserves the natural shape of wide
+images, so there is no display trade-off to accept. It also makes the Compose and
+iOS image-sizing logic parallel.
 
 ## Scope / non-goals
 
-- Only the `!smallView` framed Box uses a media-derived `aspectRatio`; it is now
-  clamped. The chat-list `smallView` preview is locked to a fixed `36.sp` square,
-  and all other image/video/link paths size with `.width(...)` + `ContentScale`
-  (no `aspectRatio`), so none of them can hit this overflow.
-- Two follow-ups were identified but intentionally left out to keep the diff
-  minimal: (1) a **symmetric wide guard** in the bitmap decoders
-  (`outWidth > outHeight * 256`) for defense-in-depth across all consumers, and
-  (2) extracting the duplicated `2.33` literal (now in `CIImageView.kt` and
-  `FramedItemView.kt`) into a shared `MAX_IMAGE_ASPECT_RATIO` constant.
+- Only the `!smallView` framed Box derived its size from the image ratio; it now
+  computes height directly. The chat-list `smallView` preview is locked to a fixed
+  `36.sp` square, and all other image/video/link paths size with `.width(...)` +
+  `ContentScale` (no `aspectRatio`), so none of them can hit this overflow.
+- One follow-up was identified but intentionally left out to keep the diff
+  minimal: a **symmetric wide guard** in the bitmap decoders
+  (`outWidth > outHeight * 256`, mirroring the existing tall guard in
+  `Images.android.kt` / `Images.desktop.kt`) for defense-in-depth, so any future
+  consumer rendering a decoded bitmap is protected at the source.
 
 ## iOS
 
-iOS is **not** affected by the crash. It carries the same lopsided logic —
-`heightRatio` (`apps/ios/SimpleXChat/ImageUtils.swift`) caps only the tall side
-(`min(size.height / size.width, 2.33)`) — but SwiftUI lays out with `CGFloat`
-frames and has no `Constraints` packing limit, so a 4000×1 image yields a valid
-(sub-pixel height) frame instead of throwing. No iOS change is required for the
-crash; bounding the wide side there would only be a cosmetic parity tweak.
+iOS is **not** affected by the crash, and the fix above brings the two platforms
+into alignment. iOS already sizes the preview by computing the height directly —
+`height = w × heightRatio`, `heightRatio = min(size.height / size.width, 2.33)`
+(`apps/ios/SimpleXChat/ImageUtils.swift`) — which is exactly the form now used on
+Android/desktop. (Even before, SwiftUI lays out with `CGFloat` frames and has no
+`Constraints` packing limit, so a 4000×1 image yielded a valid sub-pixel-height
+frame rather than throwing.) No iOS change is required.

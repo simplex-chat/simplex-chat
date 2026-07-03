@@ -54,6 +54,10 @@ func showAlert(
     }
 }
 
+func showAlert(_ a: (title: String, message: String?)) {
+    showAlert(a.title, message: a.message)
+}
+
 func showAlert(
     _ title: String,
     message: String? = nil,

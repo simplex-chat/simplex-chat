@@ -57,9 +57,9 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Protocol (sndAuthKeySMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
+import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
@@ -202,13 +202,6 @@ testAgentCfg =
   where
     RetryInterval2 {riFast, riSlow} = messageRetryInterval aCfg
 
-testAgentCfgNoShortLinks :: AgentConfig
-testAgentCfgNoShortLinks =
-  testAgentCfg
-    { smpClientVRange = mkVersionRange (Version 1) sndAuthKeySMPClientVersion, -- v3
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion (Version 14)} -- before shortLinksSMPVersion
-    }
-
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
@@ -220,9 +213,6 @@ testCfg =
       channelSubscriberRole = GRObserver,
       confirmMigrations = MCYesUp
     }
-
-testCfgNoShortLinks :: ChatConfig
-testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
@@ -586,6 +576,8 @@ smpServerCfg =
       smpAgentCfg = defaultSMPClientAgentConfig,
       allowSMPProxy = True,
       serverClientConcurrency = 16,
+      serverResolverConcurrency = 1000,
+      namesConfig = Nothing,
       information = Nothing,
       startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}
     }
@@ -598,6 +590,13 @@ withSmpServer = withSmpServer' smpServerCfg
 
 withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
+
+-- | SMP server with a local names resolver attached; the action gets the resolver
+-- registry to map names to the addresses it creates.
+withSmpServerAndNames :: (NameRegistry -> IO a) -> IO a
+withSmpServerAndNames action =
+  withNameResolver $ \port reg ->
+    withSmpServer' smpServerCfg {namesConfig = Just (resolverNamesConfig port)} (action reg)
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"

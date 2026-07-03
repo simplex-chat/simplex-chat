@@ -80,5 +80,7 @@ skipComparisonForDownMigrations =
     -- group_member_intro_id field moves
     "20251128_migrate_member_relations",
     -- on down migration single_sender_group_member_id column is re-added at the end of the table
-    "20260529_delivery_job_senders"
+    "20260529_delivery_job_senders",
+    -- group_domain is removed
+    "20260603_simplex_name"
   ]
