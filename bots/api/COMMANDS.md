@@ -283,6 +283,7 @@ Send messages.
 - sendRef: [ChatRef](./TYPES.md#chatref)
 - liveMessage: bool
 - ttl: int?
+- signMessages: bool
 - composedMessages: [[ComposedMessage](./TYPES.md#composedmessage)]
 
 **Syntax**:

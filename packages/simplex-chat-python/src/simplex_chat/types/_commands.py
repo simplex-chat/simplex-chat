@@ -80,6 +80,7 @@ class APISendMessages(TypedDict):
     sendRef: "T.ChatRef"
     liveMessage: bool
     ttl: NotRequired[int]  # int
+    signMessages: bool
     composedMessages: list["T.ComposedMessage"]  # non-empty
 
 

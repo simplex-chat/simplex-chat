@@ -89,6 +89,7 @@ export interface APISendMessages {
   sendRef: T.ChatRef
   liveMessage: boolean
   ttl?: number // int
+  signMessages: boolean
   composedMessages: T.ComposedMessage[] // non-empty
 }
 
