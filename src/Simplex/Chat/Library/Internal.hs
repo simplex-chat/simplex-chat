@@ -935,8 +935,8 @@ acceptContactRequestAsync
       forM_ xContactId $ \xcId -> liftIO $ setContactAcceptedXContactId db ct xcId
       Connection {connId} <- liftIO $ createAcceptedContactConn db user (Just uclId) contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
       liftIO $ setCommandConnId db user cmdId connId
-      getContact db vr user contactId
-    agentAcceptContactAsync user cmdId acId True cReqInvId (XInfo profileToSend) cReqPQSup chatV subMode
+      getContact db cxt user contactId
+    agentAcceptContactAsync cmdId acId True cReqInvId (XInfo profileToSend) cReqPQSup chatV subMode
     pure ct'
 
 acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> Maybe GroupMember -> CM GroupMember
@@ -988,8 +988,8 @@ acceptGroupJoinRequestAsync
     (cmdId, acId) <- prepareAgentAccept user True cReqInvId PQSupportOff
     m <- withStore $ \db -> do
       liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
-      getGroupMemberById db vr user groupMemberId
-    agentAcceptContactAsync user cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+      getGroupMemberById db cxt user groupMemberId
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
     pure m
 
 acceptGroupJoinSendRejectAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupRejectionReason -> CM GroupMember
@@ -1020,8 +1020,8 @@ acceptGroupJoinSendRejectAsync
     (cmdId, acId) <- prepareAgentAccept user False cReqInvId PQSupportOff
     m <- withStore $ \db -> do
       liftIO $ createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
-      getGroupMemberById db vr user groupMemberId
-    agentAcceptContactAsync user cmdId acId False cReqInvId msg PQSupportOff chatV subMode
+      getGroupMemberById db cxt user groupMemberId
+    agentAcceptContactAsync cmdId acId False cReqInvId msg PQSupportOff chatV subMode
     pure m
 
 acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
@@ -1055,7 +1055,7 @@ acceptBusinessJoinRequestAsync
     withStore' $ \db -> do
       forM_ xContactId $ \xcId -> setBusinessChatAcceptedXContactId db gInfo xcId
       createJoiningMemberConnection db user uclId (cmdId, acId) chatV cReqChatVRange groupMemberId subMode
-    agentAcceptContactAsync user cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
     let cd = CDGroupSnd gInfo Nothing
     -- TODO [short links] move to profileContactRequest?
     createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
@@ -1084,7 +1084,7 @@ acceptRelayJoinRequestAsync
       gInfo' <- liftIO $ updateRelayOwnStatusFromTo db gInfo RSInvited RSAccepted
       ownerMember' <- getGroupMemberById db cxt user groupMemberId
       pure (gInfo', ownerMember')
-    agentAcceptContactAsync user cmdId acId True cReqInvId msg PQSupportOff chatV subMode
+    agentAcceptContactAsync cmdId acId True cReqInvId msg PQSupportOff chatV subMode
     pure r
 
 rejectRelayInvitationAsync
@@ -1108,7 +1108,7 @@ rejectRelayInvitationAsync user uclId cxt groupRelayInv invId reqChatVRange init
   (cmdId, acId) <- prepareAgentAccept user False invId PQSupportOff
   withStore' $ \db ->
     createJoiningMemberConnection db user uclId (cmdId, acId) chatV reqChatVRange groupMemberId subMode
-  agentAcceptContactAsync user cmdId acId False invId msg PQSupportOff chatV subMode
+  agentAcceptContactAsync cmdId acId False invId msg PQSupportOff chatV subMode
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
@@ -2749,8 +2749,8 @@ prepareAgentCreation user cmdFunction enableNtfs cMode = do
   connId <- withAgent $ \a -> prepareConnectionToCreate a (aUserId user) enableNtfs cMode PQSupportOff
   pure (cmdId, connId)
 
-createAgentConnectionAsync :: ConnectionModeI c => User -> CommandId -> ConnId -> Bool -> SConnectionMode c -> SubscriptionMode -> CM ()
-createAgentConnectionAsync user cmdId connId enableNtfs cMode subMode =
+createAgentConnectionAsync :: ConnectionModeI c => CommandId -> ConnId -> Bool -> SConnectionMode c -> SubscriptionMode -> CM ()
+createAgentConnectionAsync cmdId connId enableNtfs cMode subMode =
   withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId enableNtfs cMode IKPQOff subMode
 
 prepareAgentJoin :: User -> Maybe Connection -> Bool -> ConnectionRequestUri c -> CM (CommandId, ConnId)
@@ -2761,8 +2761,8 @@ prepareAgentJoin user conn_ enableNtfs cReqUri = do
     Nothing -> withAgent $ \a -> prepareConnectionToJoin a (aUserId user) enableNtfs cReqUri PQSupportOff
   pure (cmdId, connId)
 
-joinAgentConnectionAsync :: ConnectionModeI c => User -> CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
-joinAgentConnectionAsync user cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
+joinAgentConnectionAsync :: ConnectionModeI c => CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
+joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMode =
   withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> CM ()
@@ -2778,8 +2778,8 @@ prepareAgentAccept user enableNtfs invId pqSup = do
   connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) enableNtfs invId pqSup
   pure (cmdId, connId)
 
-agentAcceptContactAsync :: MsgEncodingI e => User -> CommandId -> ConnId -> Bool -> InvitationId -> ChatMsgEvent e -> PQSupport -> VersionChat -> SubscriptionMode -> CM ()
-agentAcceptContactAsync user cmdId connId enableNtfs invId msg pqSup chatV subMode = do
+agentAcceptContactAsync :: MsgEncodingI e => CommandId -> ConnId -> Bool -> InvitationId -> ChatMsgEvent e -> PQSupport -> VersionChat -> SubscriptionMode -> CM ()
+agentAcceptContactAsync cmdId connId enableNtfs invId msg pqSup chatV subMode = do
   dm <- encodeConnInfoPQ pqSup chatV msg
   withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) connId enableNtfs invId dm pqSup subMode
 
