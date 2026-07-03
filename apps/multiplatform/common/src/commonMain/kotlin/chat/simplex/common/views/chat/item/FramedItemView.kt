@@ -211,7 +211,6 @@ fun FramedItemView(
     .clipChatItem(ci, tailVisible, revealed = true)
     .chatBubbleBackground(sent = sent, isQuote = false, transparent = transparentBackground)) {
     var metaColor: Color? = null
-    CompositionLocalProvider(LocalSimplexLinkColor provides MaterialTheme.colors.primary) {
     Box(contentAlignment = Alignment.BottomEnd) {
       val chatItemTail = remember { appPreferences.chatItemTail.state }
       val style = shapeStyle(ci, chatItemTail.value, tailVisible, true)
@@ -374,7 +373,6 @@ fun FramedItemView(
       ) {
         CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
       }
-    }
     }
   }
 }

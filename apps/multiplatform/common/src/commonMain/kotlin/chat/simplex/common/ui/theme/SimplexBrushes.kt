@@ -21,13 +21,10 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 // SIMPLEX 20°-tilted "sunrise" axis spans the whole chat surface (top app bar to compose bar).
-// Bubble backgrounds and secondary text sample stops along this same axis so colour rises
+// Bubble backgrounds sample stops along this same axis so colour rises
 // from bottom-left dark to top-right warm in one coordinated motion across the screen.
 
 private const val SIMPLEX_TILT_DEG = 20f
-
-// Per-wallpaper gradient stops live in PresetWallpaper._simplexStops (ChatWallpaper.kt).
-val LocalSimplexLinkColor = compositionLocalOf<Color?> { null }
 
 class ChatViewportInfo(
   val sizePx: State<IntSize>,
