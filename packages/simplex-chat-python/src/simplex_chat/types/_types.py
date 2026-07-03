@@ -1428,7 +1428,7 @@ class ContactAddressPlan_ok(TypedDict):
     type: Literal["ok"]
     contactSLinkData_: NotRequired["ContactShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
-    verifiedName: NotRequired["SimplexNameInfo"]
+    verifiedDomain: NotRequired["SimplexDomain"]
 
 class ContactAddressPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -1868,7 +1868,7 @@ class GroupLinkPlan_ok(TypedDict):
     groupSLinkInfo_: NotRequired["GroupShortLinkInfo"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
-    verifiedName: NotRequired["SimplexNameInfo"]
+    verifiedDomain: NotRequired["SimplexDomain"]
 
 class GroupLinkPlan_ownLink(TypedDict):
     type: Literal["ownLink"]

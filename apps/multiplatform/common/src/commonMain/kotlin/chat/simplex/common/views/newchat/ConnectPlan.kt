@@ -91,8 +91,8 @@ private suspend fun planAndConnectTask(
               connectionLink,
               connectionPlan.invitationLinkPlan.contactSLinkData_,
               ownerVerification = connectionPlan.invitationLinkPlan.ownerVerification,
-              close,
-              cleanup
+              close = close,
+              cleanup = cleanup
             )
           } else {
             Log.d(TAG, "planAndConnect, .InvitationLink, .Ok, no short link data")
@@ -154,6 +154,7 @@ private suspend fun planAndConnectTask(
               connectionLink,
               connectionPlan.contactAddressPlan.contactSLinkData_,
               ownerVerification = connectionPlan.contactAddressPlan.ownerVerification,
+              verifiedDomain = connectionPlan.contactAddressPlan.verifiedDomain,
               close,
               cleanup
             )
@@ -231,6 +232,7 @@ private suspend fun planAndConnectTask(
               connectionPlan.groupLinkPlan.groupSLinkInfo_,
               connectionPlan.groupLinkPlan.groupSLinkData_,
               ownerVerification = connectionPlan.groupLinkPlan.ownerVerification,
+              verifiedDomain = connectionPlan.groupLinkPlan.verifiedDomain,
               close,
               cleanup
             )
@@ -627,6 +629,7 @@ fun showPrepareContactAlert(
   connectionLink: CreatedConnLink,
   contactShortLinkData: ContactShortLinkData,
   ownerVerification: OwnerVerification? = null,
+  verifiedDomain: SimplexDomain? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -650,7 +653,7 @@ fun showPrepareContactAlert(
       AlertManager.privacySensitive.hideAlert()
       ModalManager.closeAllModalsEverywhere()
       withBGApi {
-        val chat = chatModel.controller.apiPrepareContact(rhId, connectionLink, contactShortLinkData)
+        val chat = chatModel.controller.apiPrepareContact(rhId, connectionLink, contactShortLinkData, verifiedDomain)
         if (chat != null) {
           withContext(Dispatchers.Main) {
             ChatController.chatModel.chatsContext.addChat(chat)
@@ -672,6 +675,7 @@ fun showPrepareGroupAlert(
   groupShortLinkInfo: GroupShortLinkInfo?,
   groupShortLinkData: GroupShortLinkData,
   ownerVerification: OwnerVerification? = null,
+  verifiedDomain: SimplexDomain? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -694,7 +698,7 @@ fun showPrepareGroupAlert(
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
         val directLink = groupShortLinkInfo?.direct ?: true
-        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData)
+        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData, verifiedDomain)
         if (chat != null) {
           withContext(Dispatchers.Main) {
             val relays = groupShortLinkInfo?.groupRelays

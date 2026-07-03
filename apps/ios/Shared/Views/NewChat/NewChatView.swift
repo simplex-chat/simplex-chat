@@ -1132,6 +1132,7 @@ private func showPrepareContactAlert(
     connectionLink: CreatedConnLink,
     contactShortLinkData: ContactShortLinkData,
     ownerVerification: OwnerVerification? = nil,
+    verifiedDomain: SimplexDomain? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1158,7 +1159,7 @@ private func showPrepareContactAlert(
         onConfirm: {
             Task {
                 do {
-                    let chat = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
+                    let chat = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData, verifiedDomain: verifiedDomain)
                     await MainActor.run {
                         ChatModel.shared.addChat(Chat(chat))
                         openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
@@ -1180,6 +1181,7 @@ private func showPrepareGroupAlert(
     groupShortLinkInfo: GroupShortLinkInfo?,
     groupShortLinkData: GroupShortLinkData,
     ownerVerification: OwnerVerification? = nil,
+    verifiedDomain: SimplexDomain? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1208,7 +1210,7 @@ private func showPrepareGroupAlert(
         onConfirm: {
             Task {
                 do {
-                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData)
+                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain)
                     await MainActor.run {
                         if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
                            case let .group(gInfo, _) = chat.chatInfo {
@@ -1401,7 +1403,7 @@ func planAndConnect(
                     }
                 case let .contactAddress(cap):
                     switch cap {
-                    case let .ok(contactSLinkData_, ownerVerification, _):
+                    case let .ok(contactSLinkData_, ownerVerification, verifiedDomain):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
                             await MainActor.run {
@@ -1409,6 +1411,7 @@ func planAndConnect(
                                     connectionLink: connectionLink,
                                     contactShortLinkData: contactSLinkData,
                                     ownerVerification: ownerVerification,
+                                    verifiedDomain: verifiedDomain,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1484,7 +1487,7 @@ func planAndConnect(
                     }
                 case let .groupLink(glp):
                     switch glp {
-                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, _):
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, verifiedDomain):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
@@ -1493,6 +1496,7 @@ func planAndConnect(
                                     groupShortLinkInfo: groupShortLinkInfo_,
                                     groupShortLinkData: groupSLinkData,
                                     ownerVerification: ownerVerification,
+                                    verifiedDomain: verifiedDomain,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
