@@ -278,8 +278,9 @@ struct GroupMemberInfoView: View {
                                             }
                                         } catch let e {
                                             logger.error("apiContactQueueInfo error: \(responseError(e))")
-                                            let a = getErrorAlert(e, "Error")
-                                            await MainActor.run { alert = .error(title: a.title, error: a.message) }
+                                            await MainActor.run {
+                                                showErrorAlert(e, NSLocalizedString("Error", comment: ""))
+                                            }
                                         }
                                     }
                                 }
@@ -473,10 +474,9 @@ struct GroupMemberInfoView: View {
                         }
                     } catch let error {
                         logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error creating member contact")
                         await MainActor.run {
                             progressIndicator = false
-                            alert = .error(title: a.title, error: a.message)
+                            showErrorAlert(error, NSLocalizedString("Error creating member contact", comment: ""))
                         }
                     }
                 }
@@ -752,8 +752,9 @@ struct GroupMemberInfoView: View {
                     } catch let error {
                         newRole = mem.memberRole
                         logger.error("apiMembersRole error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error changing role")
-                        alert = .error(title: a.title, error: a.message)
+                        await MainActor.run {
+                            showErrorAlert(error, NSLocalizedString("Error changing role", comment: ""))
+                        }
                     }
                 }
             },
@@ -774,9 +775,8 @@ struct GroupMemberInfoView: View {
                 }
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error changing address")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error changing address", comment: ""))
                 }
             }
         }
@@ -792,9 +792,8 @@ struct GroupMemberInfoView: View {
                 }
             } catch let error {
                 logger.error("abortSwitchMemberAddress apiAbortSwitchGroupMember error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error aborting address change")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error aborting address change", comment: ""))
                 }
             }
         }
@@ -811,9 +810,8 @@ struct GroupMemberInfoView: View {
                 }
             } catch let error {
                 logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
                 }
             }
         }

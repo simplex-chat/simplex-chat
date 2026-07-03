@@ -139,6 +139,7 @@ This file is generated automatically.
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
 - [MsgSigStatus](#msgsigstatus)
+- [NameErrorType](#nameerrortype)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -172,8 +173,11 @@ This file is generated automatically.
 - [SMPAgentError](#smpagenterror)
 - [SecurityCode](#securitycode)
 - [SimplePreference](#simplepreference)
+- [SimplexDomain](#simplexdomain)
+- [SimplexDomainClaim](#simplexdomainclaim)
+- [SimplexDomainError](#simplexdomainerror)
+- [SimplexDomainProof](#simplexdomainproof)
 - [SimplexLinkType](#simplexlinktype)
-- [SimplexNameDomain](#simplexnamedomain)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -312,6 +316,9 @@ XFTP:
 FILE:
 - type: "FILE"
 - fileErr: [FileErrorType](#fileerrortype)
+
+NO_NAME_SERVERS:
+- type: "NO_NAME_SERVERS"
 
 PROXY:
 - type: "PROXY"
@@ -1104,6 +1111,11 @@ ChatStoreChanged:
 InvalidConnReq:
 - type: "invalidConnReq"
 
+SimplexDomainNotReady:
+- type: "simplexDomainNotReady"
+- simplexDomain: [SimplexDomain](#simplexdomain)
+- simplexDomainError: [SimplexDomainError](#simplexdomainerror)
+
 UnsupportedConnReq:
 - type: "unsupportedConnReq"
 
@@ -1784,6 +1796,7 @@ Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- verifiedDomain: [SimplexDomain](#simplexdomain)?
 
 OwnLink:
 - type: "ownLink"
@@ -1975,6 +1988,10 @@ EXPIRED:
 
 INTERNAL:
 - type: "INTERNAL"
+
+NAME:
+- type: "NAME"
+- nameErr: [NameErrorType](#nameerrortype)
 
 DUPLICATE_:
 - type: "DUPLICATE_"
@@ -2330,6 +2347,7 @@ MemberSupport:
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 - groupKeys: [GroupKeys](#groupkeys)?
+- groupDomainVerified: bool?
 
 
 ---
@@ -2375,6 +2393,7 @@ Ok:
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- verifiedDomain: [SimplexDomain](#simplexdomain)?
 
 OwnLink:
 - type: "ownLink"
@@ -2753,6 +2772,8 @@ Unknown:
 - peerType: [ChatPeerType](#chatpeertype)?
 - localBadge: [LocalBadge](#localbadge)?
 - localAlias: string
+- contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
+- contactDomainVerified: bool?
 
 
 ---
@@ -2930,6 +2951,23 @@ Unknown:
 
 ---
 
+## NameErrorType
+
+**Discriminated union type**:
+
+NO_RESOLVER:
+- type: "NO_RESOLVER"
+
+NOT_FOUND:
+- type: "NOT_FOUND"
+
+RESOLVER:
+- type: "RESOLVER"
+- resolverErr: string
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3098,6 +3136,7 @@ count=<count>
 - preferences: [Preferences](#preferences)?
 - peerType: [ChatPeerType](#chatpeertype)?
 - badge: [BadgeProof](#badgeproof)?
+- contactDomain: [SimplexDomainClaim](#simplexdomainclaim)?
 
 
 ---
@@ -3146,7 +3185,7 @@ NO_SESSION:
 
 **Record type**:
 - groupWebPage: string?
-- groupDomain: string?
+- groupDomainClaim: [SimplexDomainClaim](#simplexdomainclaim)?
 - domainWebPage: bool
 - allowEmbedding: bool
 
@@ -3532,6 +3571,48 @@ A_QUEUE:
 
 ---
 
+## SimplexDomain
+
+**Record type**:
+- nameTLD: [SimplexTLD](#simplextld)
+- domain: string
+- subDomain: [string]
+
+
+---
+
+## SimplexDomainClaim
+
+**Record type**:
+- domain: string
+- proof: [SimplexDomainProof](#simplexdomainproof)?
+
+
+---
+
+## SimplexDomainError
+
+**Discriminated union type**:
+
+NoValidLink:
+- type: "noValidLink"
+
+UnknownDomain:
+- type: "unknownDomain"
+
+
+---
+
+## SimplexDomainProof
+
+**Record type**:
+- linkOwnerId: string?
+- presHeader: string
+- signature: string
+
+
+---
+
 ## SimplexLinkType
 
 **Enum type**:
@@ -3544,21 +3625,11 @@ A_QUEUE:
 
 ---
 
-## SimplexNameDomain
-
-**Record type**:
-- nameTLD: [SimplexTLD](#simplextld)
-- domain: string
-- subDomain: [string]
-
-
----
-
 ## SimplexNameInfo
 
 **Record type**:
 - nameType: [SimplexNameType](#simplexnametype)
-- nameDomain: [SimplexNameDomain](#simplexnamedomain)
+- nameDomain: [SimplexDomain](#simplexdomain)
 
 
 ---

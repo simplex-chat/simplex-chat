@@ -389,8 +389,17 @@ struct ContactsListSearchBar: View {
                     searchShowingSimplexLink = true
                     searchChatFilteredBySimplexLink = nil
                     connect(text)
-                case let .name(nameInfo):
-                    showUnsupportedNameAlert(nameInfo)
+                case let .name(text, _):
+                    searchFocussed = false
+                    planAndConnect(
+                        text,
+                        theme: theme,
+                        dismiss: true,
+                        cleanup: {
+                            searchText = ""
+                            searchFocussed = false
+                        }
+                    )
                 case .none:
                     if t != "" {
                         searchFocussed = true

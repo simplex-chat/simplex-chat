@@ -148,7 +148,7 @@ struct ChannelWebAccessView: View {
                     let existingAccess = pg.publicGroupAccess
                     pg.publicGroupAccess = PublicGroupAccess(
                         groupWebPage: trimmedPage.isEmpty ? nil : trimmedPage,
-                        groupDomain: existingAccess?.groupDomain,
+                        groupDomainClaim: existingAccess?.groupDomainClaim,
                         domainWebPage: existingAccess?.domainWebPage ?? false,
                         allowEmbedding: allowEmbedding
                     )

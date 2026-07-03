@@ -40,6 +40,7 @@ library
       Simplex.Chat.AppSettings
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
+      Simplex.Chat.Names
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
@@ -144,6 +145,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
           Simplex.Chat.Store.Postgres.Migrations.M20260601_relay_sent_web_domain
           Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
+          Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
           Simplex.Chat.Store.Postgres.Migrations.M20260629_roster_catchup
   else
       exposed-modules:
@@ -307,6 +309,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260531_member_removed_at
           Simplex.Chat.Store.SQLite.Migrations.M20260601_relay_sent_web_domain
           Simplex.Chat.Store.SQLite.Migrations.M20260602_group_roster
+          Simplex.Chat.Store.SQLite.Migrations.M20260603_simplex_name
           Simplex.Chat.Store.SQLite.Migrations.M20260629_roster_catchup
   other-modules:
       Paths_simplex_chat
@@ -581,12 +584,14 @@ test-suite simplex-chat-test
       ChatTests.Forward
       ChatTests.Groups
       ChatTests.Local
+      ChatTests.Names
       ChatTests.Profiles
       ChatTests.Utils
       JSONFixtures
       JSONTests
       MarkdownTests
       MemberRelationsTests
+      NameResolver
       MessageBatching
       OperatorTests
       ProtocolTests
@@ -667,6 +672,8 @@ test-suite simplex-chat-test
     , unicode-transforms ==0.4.*
     , unliftio ==0.2.*
     , uri-bytestring >=0.3.3.1 && <0.4
+    , wai ==3.2.*
+    , warp ==3.3.*
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:

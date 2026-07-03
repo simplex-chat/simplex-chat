@@ -66,6 +66,7 @@ export type AgentErrorType =
   | AgentErrorType.NTF
   | AgentErrorType.XFTP
   | AgentErrorType.FILE
+  | AgentErrorType.NO_NAME_SERVERS
   | AgentErrorType.PROXY
   | AgentErrorType.RCP
   | AgentErrorType.BROKER
@@ -84,6 +85,7 @@ export namespace AgentErrorType {
     | "NTF"
     | "XFTP"
     | "FILE"
+    | "NO_NAME_SERVERS"
     | "PROXY"
     | "RCP"
     | "BROKER"
@@ -134,6 +136,10 @@ export namespace AgentErrorType {
   export interface FILE extends Interface {
     type: "FILE"
     fileErr: FileErrorType
+  }
+
+  export interface NO_NAME_SERVERS extends Interface {
+    type: "NO_NAME_SERVERS"
   }
 
   export interface PROXY extends Interface {
@@ -1036,6 +1042,7 @@ export type ChatErrorType =
   | ChatErrorType.ChatNotStopped
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
+  | ChatErrorType.SimplexDomainNotReady
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1113,6 +1120,7 @@ export namespace ChatErrorType {
     | "chatNotStopped"
     | "chatStoreChanged"
     | "invalidConnReq"
+    | "simplexDomainNotReady"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1265,6 +1273,12 @@ export namespace ChatErrorType {
 
   export interface InvalidConnReq extends Interface {
     type: "invalidConnReq"
+  }
+
+  export interface SimplexDomainNotReady extends Interface {
+    type: "simplexDomainNotReady"
+    simplexDomain: SimplexDomain
+    simplexDomainError: SimplexDomainError
   }
 
   export interface UnsupportedConnReq extends Interface {
@@ -2035,6 +2049,7 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
+    verifiedDomain?: SimplexDomain
   }
 
   export interface OwnLink extends Interface {
@@ -2157,6 +2172,7 @@ export type ErrorType =
   | ErrorType.LARGE_MSG
   | ErrorType.EXPIRED
   | ErrorType.INTERNAL
+  | ErrorType.NAME
   | ErrorType.DUPLICATE_
 
 export namespace ErrorType {
@@ -2175,6 +2191,7 @@ export namespace ErrorType {
     | "LARGE_MSG"
     | "EXPIRED"
     | "INTERNAL"
+    | "NAME"
     | "DUPLICATE_"
 
   interface Interface {
@@ -2239,6 +2256,11 @@ export namespace ErrorType {
 
   export interface INTERNAL extends Interface {
     type: "INTERNAL"
+  }
+
+  export interface NAME extends Interface {
+    type: "NAME"
+    nameErr: NameErrorType
   }
 
   export interface DUPLICATE_ extends Interface {
@@ -2608,6 +2630,7 @@ export interface GroupInfo {
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
+  groupDomainVerified?: boolean
 }
 
 export interface GroupKeys {
@@ -2658,6 +2681,7 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
+    verifiedDomain?: SimplexDomain
   }
 
   export interface OwnLink extends Interface {
@@ -2984,6 +3008,8 @@ export interface LocalProfile {
   peerType?: ChatPeerType
   localBadge?: LocalBadge
   localAlias: string
+  contactDomain?: SimplexDomainClaim
+  contactDomainVerified?: boolean
 }
 
 export enum MemberCriteria {
@@ -3177,6 +3203,29 @@ export enum MsgSigStatus {
   SignedNoKey = "signedNoKey",
 }
 
+export type NameErrorType = NameErrorType.NO_RESOLVER | NameErrorType.NOT_FOUND | NameErrorType.RESOLVER
+
+export namespace NameErrorType {
+  export type Tag = "NO_RESOLVER" | "NOT_FOUND" | "RESOLVER"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NO_RESOLVER extends Interface {
+    type: "NO_RESOLVER"
+  }
+
+  export interface NOT_FOUND extends Interface {
+    type: "NOT_FOUND"
+  }
+
+  export interface RESOLVER extends Interface {
+    type: "RESOLVER"
+    resolverErr: string
+  }
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3335,6 +3384,7 @@ export interface Profile {
   preferences?: Preferences
   peerType?: ChatPeerType
   badge?: BadgeProof
+  contactDomain?: SimplexDomainClaim
 }
 
 export type ProxyClientError = 
@@ -3395,7 +3445,7 @@ export namespace ProxyError {
 
 export interface PublicGroupAccess {
   groupWebPage?: string
-  groupDomain?: string
+  groupDomainClaim?: SimplexDomainClaim
   domainWebPage: boolean
   allowEmbedding: boolean
 }
@@ -3898,6 +3948,41 @@ export interface SimplePreference {
   allow: FeatureAllowed
 }
 
+export interface SimplexDomain {
+  nameTLD: SimplexTLD
+  domain: string
+  subDomain: string[]
+}
+
+export interface SimplexDomainClaim {
+  domain: string
+  proof?: SimplexDomainProof
+}
+
+export type SimplexDomainError = SimplexDomainError.NoValidLink | SimplexDomainError.UnknownDomain
+
+export namespace SimplexDomainError {
+  export type Tag = "noValidLink" | "unknownDomain"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NoValidLink extends Interface {
+    type: "noValidLink"
+  }
+
+  export interface UnknownDomain extends Interface {
+    type: "unknownDomain"
+  }
+}
+
+export interface SimplexDomainProof {
+  linkOwnerId?: string
+  presHeader: string
+  signature: string
+}
+
 export enum SimplexLinkType {
   Contact = "contact",
   Invitation = "invitation",
@@ -3906,15 +3991,9 @@ export enum SimplexLinkType {
   Relay = "relay",
 }
 
-export interface SimplexNameDomain {
-  nameTLD: SimplexTLD
-  domain: string
-  subDomain: string[]
-}
-
 export interface SimplexNameInfo {
   nameType: SimplexNameType
-  nameDomain: SimplexNameDomain
+  nameDomain: SimplexDomain
 }
 
 export enum SimplexNameType {

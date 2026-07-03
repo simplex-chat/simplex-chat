@@ -53,7 +53,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), BadgePresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -1227,13 +1228,14 @@ introduceInChannel cxt user gInfo subscriber@GroupMember {activeConn = Just conn
       sendGroupMemberMessages user gInfo conn evts
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
-userProfileInGroup user = userProfileInGroup' user . groupUserAllowSimplexLinks
+userProfileInGroup user g = userProfileInGroup' user (Just g)
 {-# INLINE userProfileInGroup #-}
 
-userProfileInGroup' :: User -> Bool -> Maybe Profile -> Profile
-userProfileInGroup' User {profile = p} allowSimplexLinks incognitoProfile =
+-- Nothing group ⇒ no redaction (e.g. joining via a link with no group profile yet).
+userProfileInGroup' :: User -> Maybe GroupInfo -> Maybe Profile -> Profile
+userProfileInGroup' User {profile = p} mg incognitoProfile =
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-   in redactedMemberProfile allowSimplexLinks p'
+   in maybe p' (\g -> redactedMemberProfile g (membership g) p') mg
 
 memberInfo :: GroupInfo -> GroupMember -> MemberInfo
 memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, activeConn} =
@@ -1241,16 +1243,18 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile,
+      profile = redactedMemberProfile g m $ fromLocalProfile memberProfile,
       memberKey = MemberKey <$> memberPubKey
     }
-  where
-    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && groupFeatureMemberAllowed SGFDirectMessages m g
 
-redactedMemberProfile :: Bool -> Profile -> Profile
-redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType, badge} =
-  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType, badge}
+redactedMemberProfile :: GroupInfo -> GroupMember -> Profile -> Profile
+redactedMemberProfile g m Profile {displayName, fullName, shortDescr, image, contactLink = lnk, peerType, badge, contactDomain} =
+  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink, preferences = Nothing, peerType, badge, contactDomain = redactedDomain}
   where
+    contactLink = if allowSimplexLinks then lnk else Nothing
+    redactedDomain = if allowDirect then (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain else Nothing
+    allowDirect = groupFeatureMemberAllowed SGFDirectMessages m g
+    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g && allowDirect
     removeSimplexLink s
       | allowSimplexLinks = Just s
       | hasObfuscatedSimplexLink s = Nothing
@@ -1466,6 +1470,19 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
     countChanged = case publicGroupData of
       Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
       _ -> False
+
+updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
+updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
+  | profileChanged || verifyChanged = do
+      cxt <- chatStoreCxt
+      withFastStore $ \db -> do
+        ct' <- updateContactProfile db cxt user ct linkProfile
+        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True else pure ct'
+  | otherwise = pure ct
+  where
+    profileChanged = fromLocalProfile profile /= linkProfile
+    claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
+    verifyChanged = contactDomainVerified /= Just True || claimChanged
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
@@ -2054,6 +2071,7 @@ presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p =
           Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
   _ -> pure p
 
+
 -- receiving side of contact/invitation link data: verify the badge proof from the link profile
 -- and set the crypto-free display badge for the UI (the raw proof stays in profile for APIPrepareContact)
 linkDataBadge :: ContactShortLinkData -> CM ContactShortLinkData
@@ -2368,9 +2386,8 @@ sendGroupMessages user gInfo scope asGroup members events = do
             _ -> False
     sendProfileUpdate = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
-          allowSimplexLinks = groupUserAllowSimplexLinks gInfo
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
-      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
+      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' $ XInfo profileUpdate
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
@@ -3110,7 +3127,8 @@ simplexTeamContactProfile =
       contactLink = Just $ CLFull adminContactReq,
       peerType = Nothing,
       preferences = Nothing,
-      badge = Nothing
+      badge = Nothing,
+      contactDomain = Nothing
     }
 
 simplexStatusContactProfile :: Profile
@@ -3123,7 +3141,8 @@ simplexStatusContactProfile =
       contactLink = Just (either error CLFull $ strDecode "simplex:/contact/#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FShQuD-rPokbDvkyotKx5NwM8P3oUXHxA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA6fSx1k9zrOmF0BJpCaTarZvnZpMTAVQhd3RkDQ35KT0%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"),
       peerType = Just CPTBot,
       preferences = Nothing,
-      badge = Nothing
+      badge = Nothing,
+      contactDomain = Nothing
     }
 
 timeItToView :: String -> CM' a -> CM' a

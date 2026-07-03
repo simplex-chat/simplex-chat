@@ -33,7 +33,7 @@ withBroadcastBot opts test =
     bot = simplexChatCore testCfg (mkChatOpts opts) $ broadcastBot opts
 
 broadcastBotProfile :: Profile
-broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing}
+broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
 
 mkBotOpts :: TestParams -> [KnownContact] -> BroadcastBotOpts
 mkBotOpts ps publishers =

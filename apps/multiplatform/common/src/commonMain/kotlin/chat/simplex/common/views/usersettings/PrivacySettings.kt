@@ -134,6 +134,11 @@ fun MorePrivacyView(chatModel: ChatModel) {
             chatModel.draftChatId.value = null
           }
         })
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_tag),
+        stringResource(MR.strings.verify_simplex_names),
+        chatModel.controller.appPrefs.privacyVerifySimplexNames
+      )
     }
     SectionDividerSpaced()
 

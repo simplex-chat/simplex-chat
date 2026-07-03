@@ -540,7 +540,10 @@ CREATE TABLE test_chat_schema.contact_profiles (
     badge_extra text,
     badge_master_key bytea,
     badge_signature bytea,
-    badge_key_idx bigint
+    badge_key_idx bigint,
+    contact_domain text,
+    contact_domain_proof text,
+    contact_domain_verified smallint
 );
 
 
@@ -867,7 +870,8 @@ CREATE TABLE test_chat_schema.group_profiles (
     group_web_page text,
     group_domain text,
     domain_web_page bigint,
-    allow_embedding bigint
+    allow_embedding bigint,
+    group_domain_proof text
 );
 
 
@@ -981,7 +985,7 @@ CREATE TABLE test_chat_schema.groups (
     public_member_count bigint,
     relay_request_retries bigint DEFAULT 0 NOT NULL,
     relay_request_delay bigint DEFAULT 0 NOT NULL,
-    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 04:00:00+04'::timestamp with time zone NOT NULL,
+    relay_request_execute_at timestamp with time zone DEFAULT '1970-01-01 01:00:00+01'::timestamp with time zone NOT NULL,
     relay_inactive_at timestamp with time zone,
     relay_sent_web_domain text,
     roster_version bigint,
@@ -991,6 +995,7 @@ CREATE TABLE test_chat_schema.groups (
     roster_sending_owner_gm_id bigint,
     roster_broker_ts timestamp with time zone,
     roster_blob bytea,
+    group_domain_verified smallint,
     stored_roster_version bigint,
     applied_complete_roster_version bigint
 );
@@ -1380,7 +1385,8 @@ CREATE TABLE test_chat_schema.server_operators (
     xftp_role_storage smallint DEFAULT 1 NOT NULL,
     xftp_role_proxy smallint DEFAULT 1 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    smp_role_names smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1457,7 +1463,8 @@ CREATE TABLE test_chat_schema.user_contact_links (
     business_address smallint DEFAULT 0,
     short_link_contact bytea,
     short_link_data_set smallint DEFAULT 0 NOT NULL,
-    short_link_large_data_set smallint DEFAULT 0 NOT NULL
+    short_link_large_data_set smallint DEFAULT 0 NOT NULL,
+    link_priv_sig_key bytea
 );
 
 

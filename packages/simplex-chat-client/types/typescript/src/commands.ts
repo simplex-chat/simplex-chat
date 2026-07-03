@@ -495,11 +495,11 @@ export namespace APIAddContact {
   }
 }
 
-// Determine SimpleX link type and if the bot is already connected via this link.
+// Determine SimpleX link type and if the bot is already connected via this link or name.
 // Network usage: interactive.
 export interface APIConnectPlan {
   userId: number // int64
-  connectionLink?: string
+  connectTarget?: string
   resolveKnown: boolean
   linkOwnerSig?: T.LinkOwnerSig
 }
@@ -508,7 +508,7 @@ export namespace APIConnectPlan {
   export type Response = CR.ConnectionPlan | CR.ChatCmdError
 
   export function cmdString(self: APIConnectPlan): string {
-    return '/_connect plan ' + self.userId + ' ' + self.connectionLink
+    return '/_connect plan ' + self.userId + ' ' + self.connectTarget
   }
 }
 
@@ -528,18 +528,18 @@ export namespace APIConnect {
   }
 }
 
-// Connect via SimpleX link as string in the active user profile.
+// Connect via SimpleX link or name as string in the active user profile.
 // Network usage: interactive.
 export interface Connect {
   incognito: boolean
-  connLink_?: string
+  connTarget_?: string
 }
 
 export namespace Connect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: Connect): string {
-    return '/connect' + (self.connLink_ ? ' ' + self.connLink_ : '')
+    return '/connect' + (self.connTarget_ ? ' ' + self.connTarget_ : '')
   }
 }
 

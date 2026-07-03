@@ -31,11 +31,6 @@ suspend fun planAndConnect(
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
   when (val target = strConnectTarget(shortOrFullLink.trim())) {
-    is ConnectTarget.Name -> {
-      showUnsupportedNameAlert(target.nameInfo)
-      cleanup?.invoke()
-      return CompletableDeferred(false)
-    }
     is ConnectTarget.Link -> {
       if (target.linkType == SimplexLinkType.relay) {
         AlertManager.privacySensitive.showAlertMsg(
@@ -46,7 +41,9 @@ suspend fun planAndConnect(
         return CompletableDeferred(false)
       }
     }
-    null -> {}
+    // A SimplexName falls through to apiConnectPlan, which resolves it on the
+    // core (the /_connect plan command accepts a name target, not only a link).
+    is ConnectTarget.Name, null -> {}
   }
   connectProgressManager.cancelConnectProgress()
   val inProgress = mutableStateOf(true)
@@ -94,8 +91,8 @@ private suspend fun planAndConnectTask(
               connectionLink,
               connectionPlan.invitationLinkPlan.contactSLinkData_,
               ownerVerification = connectionPlan.invitationLinkPlan.ownerVerification,
-              close,
-              cleanup
+              close = close,
+              cleanup = cleanup
             )
           } else {
             Log.d(TAG, "planAndConnect, .InvitationLink, .Ok, no short link data")
@@ -157,6 +154,7 @@ private suspend fun planAndConnectTask(
               connectionLink,
               connectionPlan.contactAddressPlan.contactSLinkData_,
               ownerVerification = connectionPlan.contactAddressPlan.ownerVerification,
+              verifiedDomain = connectionPlan.contactAddressPlan.verifiedDomain,
               close,
               cleanup
             )
@@ -204,6 +202,12 @@ private suspend fun planAndConnectTask(
         is ContactAddressPlan.Known -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .Known")
           val contact = connectionPlan.contactAddressPlan.contact
+          // A name-resolved contact is prepared in the store but not yet in the
+          // chat list (link-prepared chats arrive via NewPreparedChat). Surface it
+          // so it's visible and openable; no-op if already present.
+          if (chatModel.getContactChat(contact.contactId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
+          }
           if (filterKnownContact != null) {
             filterKnownContact(contact)
           } else {
@@ -228,6 +232,7 @@ private suspend fun planAndConnectTask(
               connectionPlan.groupLinkPlan.groupSLinkInfo_,
               connectionPlan.groupLinkPlan.groupSLinkData_,
               ownerVerification = connectionPlan.groupLinkPlan.ownerVerification,
+              verifiedDomain = connectionPlan.groupLinkPlan.verifiedDomain,
               close,
               cleanup
             )
@@ -288,6 +293,11 @@ private suspend fun planAndConnectTask(
         is GroupLinkPlan.Known -> {
           Log.d(TAG, "planAndConnect, .GroupLink, .Known")
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo
+          // Same as ContactAddress.Known: surface a name-resolved (prepared)
+          // group in the chat list so it's visible and openable.
+          if (chatModel.getGroupChat(groupInfo.groupId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null), chatItems = emptyList()))
+          }
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)
           } else {
@@ -619,6 +629,7 @@ fun showPrepareContactAlert(
   connectionLink: CreatedConnLink,
   contactShortLinkData: ContactShortLinkData,
   ownerVerification: OwnerVerification? = null,
+  verifiedDomain: SimplexDomain? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -642,7 +653,7 @@ fun showPrepareContactAlert(
       AlertManager.privacySensitive.hideAlert()
       ModalManager.closeAllModalsEverywhere()
       withBGApi {
-        val chat = chatModel.controller.apiPrepareContact(rhId, connectionLink, contactShortLinkData)
+        val chat = chatModel.controller.apiPrepareContact(rhId, connectionLink, contactShortLinkData, verifiedDomain)
         if (chat != null) {
           withContext(Dispatchers.Main) {
             ChatController.chatModel.chatsContext.addChat(chat)
@@ -664,6 +675,7 @@ fun showPrepareGroupAlert(
   groupShortLinkInfo: GroupShortLinkInfo?,
   groupShortLinkData: GroupShortLinkData,
   ownerVerification: OwnerVerification? = null,
+  verifiedDomain: SimplexDomain? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -686,7 +698,7 @@ fun showPrepareGroupAlert(
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
         val directLink = groupShortLinkInfo?.direct ?: true
-        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData)
+        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData, verifiedDomain)
         if (chat != null) {
           withContext(Dispatchers.Main) {
             val relays = groupShortLinkInfo?.groupRelays
