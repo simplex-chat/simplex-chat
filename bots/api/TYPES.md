@@ -1747,10 +1747,12 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
+- groupDomain: [SimplexDomain](#simplexdomain)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
+- contactDomain: [SimplexDomain](#simplexdomain)?
 
 Error:
 - type: "error"

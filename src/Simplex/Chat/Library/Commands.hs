@@ -4204,14 +4204,15 @@ processChatCommand cxt nm = \case
           pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
     connectPlan user (ACTarget SCMContact ct) resolveKnown sig_ nameRec = case ct of
       CTDomain d ->
-        second addContactDomain <$> connectPlanName NTPublicGroup `catchAllErrors` \e ->
+        (connectPlanName NTPublicGroup >>= addContactDomain) `catchAllErrors` \e ->
           atomically (tryReadTMVar nameRec) >>= \case
             Nothing -> throwError e
             Just _ -> second addGroupDomain <$> connectPlanName NTContact
         where
           addContactDomain = \case
-            CPGroupLink p _ -> CPGroupLink p (Just d)
-            p -> p
+            (l, CPGroupLink p _) -> pure (l, CPGroupLink p (Just d))
+            (_, CPError _) -> second addGroupDomain <$> connectPlanName NTContact
+            r -> pure r
           addGroupDomain = \case
             CPContactAddress p _ -> CPContactAddress p (Just d)
             p -> p

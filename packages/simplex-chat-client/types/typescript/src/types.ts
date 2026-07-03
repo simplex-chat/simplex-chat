@@ -1986,11 +1986,13 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
+    groupDomain?: SimplexDomain
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
+    contactDomain?: SimplexDomain
   }
 
   export interface Error extends Interface {
