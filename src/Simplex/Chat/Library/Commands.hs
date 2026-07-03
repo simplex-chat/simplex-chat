@@ -4220,7 +4220,6 @@ processChatCommand cxt nm = \case
               (connectPlanName NTContact (Left e) `catchAllErrors` \_ -> throwError e')
           addContactDomain nr = \case
             (l, CPGroupLink p _) | isJust (firstNameLink CCTContact (nrSimplexContact nr)) -> pure (l, CPGroupLink p (Just d))
-            (_, CPError _) -> second (addGroupDomain nr) <$> connectPlanName NTContact (Right nr)
             r -> pure r
           addGroupDomain nr = \case
             CPContactAddress p _ | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) -> CPContactAddress p (Just d)
