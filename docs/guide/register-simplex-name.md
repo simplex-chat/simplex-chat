@@ -60,7 +60,8 @@ Add your link:
   (**Create SimpleX address**) and paste it here. People reach it with `@name`.
 - **SimpleX Channel link** for a channel. Copy your **Channel link** and paste it
   here. People join it with `#name`.
-- Add both to use one name for your chat (`@name`) and your channel (`#name`).
+- **Advanced usage:** add both to use one name for your chat (`@name`) and your
+  channel (`#name`).
 
 Then tap **Next**.
 
@@ -72,6 +73,13 @@ Finally, tap **Begin** and complete the three steps the site shows:
 > 1. Complete a transaction to begin the timer.
 > 2. Wait 60 seconds for the timer to complete.
 > 3. Complete a second transaction to secure your name.
+
+These two transactions protect the name you are registering. The first records
+only a secret code for the name, not the name itself, so nobody watching the
+blockchain can see which name you want. The wait lets that first transaction
+settle, and the second transaction then reveals and claims the name. Without this
+two-step process, someone could see your registration in progress and grab the
+name before you.
 
 ![The three steps to secure your name](./images/before-we-start.png)
 
