@@ -1384,7 +1384,7 @@ func planAndConnect(
                             }
                         }
                     }
-                case let .contactAddress(cap):
+                case let .contactAddress(cap, _):
                     switch cap {
                     case let .ok(contactSLinkData_, ownerVerification, verifiedDomain):
                         if let contactSLinkData = contactSLinkData_ {
@@ -1468,7 +1468,7 @@ func planAndConnect(
                             )
                         }
                     }
-                case let .groupLink(glp):
+                case let .groupLink(glp, _):
                     switch glp {
                     case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, verifiedDomain):
                         if let groupSLinkData = groupSLinkData_ {

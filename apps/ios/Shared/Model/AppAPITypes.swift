@@ -1388,8 +1388,8 @@ enum OwnerVerification: Decodable, Hashable {
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan)
-    case groupLink(groupLinkPlan: GroupLinkPlan)
+    case contactAddress(contactAddressPlan: ContactAddressPlan, groupDomain: SimplexDomain?)
+    case groupLink(groupLinkPlan: GroupLinkPlan, contactDomain: SimplexDomain?)
     case error(chatError: ChatError)
 }
 
