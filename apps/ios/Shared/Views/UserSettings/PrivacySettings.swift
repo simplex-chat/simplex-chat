@@ -16,6 +16,7 @@ struct PrivacySettings: View {
     @AppStorage(GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS, store: groupDefaults) private var useLinkPreviews = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
+    @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) private var verifySimplexNames = false
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
@@ -192,6 +193,9 @@ struct PrivacySettings: View {
                         m.draft = nil
                         m.draftChatId = nil
                     }
+                }
+                settingsRow("number", color: theme.colors.secondary) {
+                    Toggle("Verify SimpleX names", isOn: $verifySimplexNames)
                 }
             } header: {
                 Text("Chats")
