@@ -119,9 +119,10 @@ fun FramedItemView(
           tint = iconColor ?: if (isInDarkTheme()) FileDark else FileLight
         )
       }
+      val captionColor = simplexSecondaryTint()
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = MaterialTheme.colors.secondary)) {
+          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = captionColor)) {
             append(caption)
           }
         },
