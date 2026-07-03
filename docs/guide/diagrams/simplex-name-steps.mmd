@@ -1,0 +1,22 @@
+flowchart TD
+  S([Start]) --> A["Step 1: Create a wallet<br/>save your recovery phrase"]
+  A --> B["Step 2: Register the name<br/>connect wallet, search, choose years"]
+  B --> C["Add your link:<br/>+ Add more to profile &rarr; SimpleX"]
+  C --> D{"Which link?"}
+  D -->|"@ contact"| E["SimpleX Address"]
+  D -->|"# channel"| F["SimpleX Channel link"]
+  D -->|"both"| G["SimpleX Address<br/>+ SimpleX Channel link"]
+  E --> H["Confirm: two transactions,<br/>60 seconds apart"]
+  F --> H
+  G --> H
+  H --> I["Step 3: Check in the app<br/>shows 'Unconfirmed name'"]
+  I --> J["Step 4: Set your name in the app<br/>Your SimpleX name"]
+  J --> K["Step 5: Another device<br/>Connect via link, paste @name"]
+  K --> Z([Connected. Name verified.])
+
+  classDef start fill:#f4ecf7,stroke:#8e44ad,color:#4a235a;
+  classDef step fill:#eaf2fb,stroke:#2e86de,color:#1b3a5b;
+  classDef ok fill:#d5f5e3,stroke:#27ae60,color:#145a32;
+  class S start;
+  class Z ok;
+  class A,B,C,E,F,G,H,I,J,K step;

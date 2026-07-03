@@ -12,6 +12,7 @@ The first messaging platform that has no user identifiers of any kind — 100% p
 - [Secret groups](./secret-groups.md)
 - [Channel webpage](./channel-webpage.md)
 - [Chat profiles](./chat-profiles.md)
+- [Registering a SimpleX name](./register-simplex-name.md)
 - [Managing data](./managing-data.md)
 - [Audio & video calls](./audio-video-calls.md)
 - [Privacy & security](./privacy-security.md)
