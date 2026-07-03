@@ -2058,9 +2058,8 @@ processChatCommand cxt nm = \case
           createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
-  APIConnectPlan userId (Just ct) resolveKnown linkOwnerSig_ -> withUserId userId $ \user -> do
-    nameRec <- newEmptyTMVarIO
-    uncurry (CRConnectionPlan user) <$> connectPlan user ct resolveKnown linkOwnerSig_ nameRec
+  APIConnectPlan userId (Just ct) resolveKnown linkOwnerSig_ -> withUserId userId $ \user ->
+    uncurry (CRConnectionPlan user) <$> connectPlan user ct resolveKnown linkOwnerSig_ Nothing
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
@@ -2285,8 +2284,7 @@ processChatCommand cxt nm = \case
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito (Just ct) -> withUser $ \user -> do
     let con m cReq = pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing))
-    nameRec <- newEmptyTMVarIO
-    (ccLink, plan) <- connectPlan user ct False Nothing nameRec `catchAllErrors` \e -> case ct of
+    (ccLink, plan) <- connectPlan user ct False Nothing Nothing `catchAllErrors` \e -> case ct of
       ACTarget m (CTFullContact cReq) -> con m cReq
       ACTarget m (CTInv (CLFull cReq)) -> con m cReq
       _ -> throwError e
@@ -4180,7 +4178,7 @@ processChatCommand cxt nm = \case
             pure (gId, chatSettings)
         _ -> throwCmdError "not supported"
       processChatCommand cxt nm $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
-    connectPlan :: User -> AConnectTarget -> Bool -> Maybe LinkOwnerSig -> TMVar NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
+    connectPlan :: User -> AConnectTarget -> Bool -> Maybe LinkOwnerSig -> Maybe NameRecord -> CM (ACreatedConnLink, ConnectionPlan)
     connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ nameRec = case cLink of
       CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing Nothing
       CLShort l -> do
@@ -4204,22 +4202,18 @@ processChatCommand cxt nm = \case
           pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
     connectPlan user (ACTarget SCMContact ct) resolveKnown sig_ nameRec = case ct of
       CTDomain d -> do
-        plan_ <- tryAllErrors $ connectPlanName NTPublicGroup
-        nr_ <- atomically $ tryReadTMVar nameRec
-        case plan_ of
-          Right plan -> maybe (pure plan) (`addContactDomain` plan) nr_
-          Left e -> case nr_ of
-            Nothing -> throwError e
-            Just nr -> second (addGroupDomain nr) <$> connectPlanName NTContact
+        nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
+        (connectPlanName NTPublicGroup nr >>= addContactDomain nr) `catchAllErrors` \e ->
+          second (addGroupDomain nr) <$> connectPlanName NTContact nr
         where
           addContactDomain nr = \case
             (l, CPGroupLink p _) | isJust (firstNameLink CCTContact (nrSimplexContact nr)) -> pure (l, CPGroupLink p (Just d))
-            (_, CPError _) -> second (addGroupDomain nr) <$> connectPlanName NTContact
+            (_, CPError _) -> second (addGroupDomain nr) <$> connectPlanName NTContact nr
             r -> pure r
           addGroupDomain nr = \case
             CPContactAddress p _ | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) -> CPContactAddress p (Just d)
             p -> p
-          connectPlanName nameType = connectPlan user connTarget resolveKnown sig_ nameRec
+          connectPlanName nameType nr = connectPlan user connTarget resolveKnown sig_ (Just nr)
             where
               connTarget = ACTarget SCMContact $ CTShortContact $ CTName $ SimplexNameInfo nameType d
       CTFullContact cReq -> do
@@ -4339,15 +4333,11 @@ processChatCommand cxt nm = \case
           -- resolve a name to its first contact/channel short link
           resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact)
           resolveNameLink SimplexNameInfo {nameType, nameDomain} = do
-            NameRecord {nrSimplexContact, nrSimplexChannel} <- maybe (resolveDomain nameDomain) pure =<< atomically (tryReadTMVar nameRec)
+            NameRecord {nrSimplexContact, nrSimplexChannel} <- maybe (withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain) pure nameRec
             let (candidates, ctType') = case nameType of
                   NTContact -> (nrSimplexContact, CCTContact)
                   NTPublicGroup -> (nrSimplexChannel, CCTChannel)
             maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink ctType' candidates
-          resolveDomain d = do
-            nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
-            void $ atomically $ tryPutTMVar nameRec nr
-            pure nr
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
