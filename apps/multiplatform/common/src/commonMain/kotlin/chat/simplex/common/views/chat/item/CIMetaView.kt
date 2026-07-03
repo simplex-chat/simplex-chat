@@ -107,6 +107,10 @@ private fun CIMetaText(
     Spacer(Modifier.width(4.dp))
     StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
   }
+  if (meta.msgSigned == MsgSigStatus.Verified) {
+    Spacer(Modifier.width(4.dp))
+    StatusIconText(painterResource(MR.images.ic_verified_user), color)
+  }
 
   if (showTimestamp) {
     Spacer(Modifier.width(4.dp))
@@ -163,6 +167,11 @@ fun reserveSpaceForMeta(
   }
 
   if (encrypted != null) {
+    appendSpace()
+    res += iconSpace
+    space = whiteSpace
+  }
+  if (meta.msgSigned == MsgSigStatus.Verified) {
     appendSpace()
     res += iconSpace
     space = whiteSpace

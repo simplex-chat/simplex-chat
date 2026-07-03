@@ -2765,6 +2765,11 @@ public struct GroupShortLinkData: Codable, Hashable {
     public var publicGroupData: PublicGroupData?
 }
 
+public enum MsgSigStatus: String, Decodable, Equatable, Hashable {
+    case verified
+    case signedNoKey
+}
+
 public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case new
     case invited
@@ -3867,6 +3872,7 @@ public struct CIMeta: Decodable, Hashable {
     public var deletable: Bool
     public var editable: Bool
     public var showGroupAsSender: Bool
+    public var msgSigned: MsgSigStatus?
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }

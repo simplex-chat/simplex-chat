@@ -2423,6 +2423,12 @@ data class GroupShortLinkData (
 )
 
 @Serializable
+enum class MsgSigStatus {
+  @SerialName("verified") Verified,
+  @SerialName("signedNoKey") SignedNoKey;
+}
+
+@Serializable
 enum class RelayStatus {
   @SerialName("new") New,
   @SerialName("invited") Invited,
@@ -3554,7 +3560,8 @@ data class CIMeta (
   val userMention: Boolean,
   val deletable: Boolean,
   val editable: Boolean,
-  val showGroupAsSender: Boolean
+  val showGroupAsSender: Boolean,
+  val msgSigned: MsgSigStatus? = null
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 

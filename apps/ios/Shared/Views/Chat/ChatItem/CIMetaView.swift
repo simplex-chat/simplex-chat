@@ -147,6 +147,11 @@ func ciMetaText(
         r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
         space = textSpace
     }
+    if meta.msgSigned == .verified {
+        appendSpace()
+        r = r + statusIconText("checkmark.seal", resolved)
+        space = textSpace
+    }
     if showTimesamp {
         appendSpace()
         r = r + colored(meta.timestampText, resolved)
