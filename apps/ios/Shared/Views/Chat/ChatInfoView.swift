@@ -283,8 +283,9 @@ struct ChatInfoView: View {
                                         }
                                     } catch let e {
                                         logger.error("apiContactQueueInfo error: \(responseError(e))")
-                                        let a = getErrorAlert(e, "Error")
-                                        await MainActor.run { alert = .error(title: a.title, error: a.message) }
+                                        await MainActor.run {
+                                            showErrorAlert(e, NSLocalizedString("Error", comment: ""))
+                                        }
                                     }
                                 }
                             }
@@ -334,7 +335,7 @@ struct ChatInfoView: View {
             case .syncConnectionForceAlert:
                 return syncConnectionForceAlert({
                     Task {
-                        if let stats = await syncContactConnection(contact, force: true, showAlert: { alert = .someAlert(alert: $0) }) {
+                        if let stats = await syncContactConnection(contact, force: true) {
                             connectionStats = stats
                             dismiss()
                         }
@@ -541,7 +542,7 @@ struct ChatInfoView: View {
     private func synchronizeConnectionButton() -> some View {
         Button {
             Task {
-                if let stats = await syncContactConnection(contact, force: false, showAlert: { alert = .someAlert(alert: $0) }) {
+                if let stats = await syncContactConnection(contact, force: false) {
                     connectionStats = stats
                     dismiss()
                 }
@@ -618,9 +619,8 @@ struct ChatInfoView: View {
                 }
             } catch let error {
                 logger.error("switchContactAddress apiSwitchContact error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error changing address")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error changing address", comment: ""))
                 }
             }
         }
@@ -636,9 +636,8 @@ struct ChatInfoView: View {
                 }
             } catch let error {
                 logger.error("abortSwitchContactAddress apiAbortSwitchContact error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error aborting address change")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error aborting address change", comment: ""))
                 }
             }
         }
@@ -748,7 +747,7 @@ struct ChatTTLOption: View {
     }
 }
 
-func syncContactConnection(_ contact: Contact, force: Bool, showAlert: (SomeAlert) -> Void) async -> ConnectionStats? {
+func syncContactConnection(_ contact: Contact, force: Bool) async -> ConnectionStats? {
     do {
         let stats = try apiSyncContactRatchet(contact.apiId, force)
         await MainActor.run {
@@ -757,14 +756,8 @@ func syncContactConnection(_ contact: Contact, force: Bool, showAlert: (SomeAler
         return stats
     } catch let error {
         logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
-        let a = getErrorAlert(error, "Error synchronizing connection")
         await MainActor.run {
-            showAlert(
-                SomeAlert(
-                    alert: mkAlert(title: a.title, message: a.message),
-                    id: "syncContactConnection error"
-                )
-            )
+            showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
         }
         return nil
     }
@@ -844,7 +837,7 @@ private struct CallButton: View {
                                 message: Text("Connection requires encryption renegotiation."),
                                 primaryButton: .default(Text("Fix")) {
                                     Task {
-                                        if let stats = await syncContactConnection(contact, force: false, showAlert: showAlert) {
+                                        if let stats = await syncContactConnection(contact, force: false) {
                                             connectionStats = stats
                                         }
                                     }

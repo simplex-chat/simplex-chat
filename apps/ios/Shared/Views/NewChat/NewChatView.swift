@@ -204,8 +204,7 @@ struct NewChatView: View {
             creatingConnReq = true
             Task {
                 _ = try? await Task.sleep(nanoseconds: 250_000000)
-                let (r, apiAlert) = await apiAddContact(incognito: incognitoGroupDefault.get())
-                if let (connLink, pcc) = r {
+                if let (connLink, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
                     await MainActor.run {
                         m.updateContactConnection(pcc)
                         m.showingInvitation = ShowingInvitation(pcc: pcc, connChatUsed: false)
@@ -215,9 +214,6 @@ struct NewChatView: View {
                 } else {
                     await MainActor.run {
                         creatingConnReq = false
-                        if let apiAlert = apiAlert {
-                            alert = .newChatSomeAlert(alert: SomeAlert(alert: apiAlert, id: "createInvitation error"))
-                        }
                     }
                 }
             }
@@ -434,15 +430,9 @@ private struct ActiveProfilePicker: View {
                         profileSwitchStatus = .idle
                         incognitoEnabled = !incognito
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
-                        let err = getErrorAlert(error, "Error changing to incognito!")
-
-                        alert = SomeAlert(
-                            alert: Alert(
-                                title: Text(err.title),
-                                message: Text(err.message ?? "Error: \(responseError(error))")
-                            ),
-                            id: "setConnectionIncognitoError"
-                        )
+                        await MainActor.run {
+                            showErrorAlert(error, NSLocalizedString("Error changing to incognito!", comment: ""))
+                        }
                     }
                 }
             }
@@ -494,14 +484,7 @@ private struct ActiveProfilePicker: View {
                             if let currentUser = chatModel.currentUser {
                                 selectedProfile = currentUser
                             }
-                            let err = getErrorAlert(error, "Error changing connection profile")
-                            alert = SomeAlert(
-                                alert: Alert(
-                                    title: Text(err.title),
-                                    message: Text(err.message ?? "Error: \(responseError(error))")
-                                ),
-                                id: "changeConnectionUserError"
-                            )
+                            showErrorAlert(error, NSLocalizedString("Error changing connection profile", comment: ""))
                         }
                     }
                 }
@@ -1331,7 +1314,7 @@ func planAndConnect(
 
     func connectTask(_ inProgress: BoxedValue<Bool>) {
         Task {
-            let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
+            let result = await apiConnectPlan(connLink: shortOrFullLink, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
             await MainActor.run {
                 ConnectProgressManager.shared.stopConnectProgress()
             }
@@ -1623,17 +1606,8 @@ func planAndConnect(
                         cleanup: cleanup
                     )
                 }
-            } else {
-                await MainActor.run {
-                    if let alert {
-                        dismissAllSheets(animated: true) {
-                            AlertManager.shared.showAlert(alert)
-                            cleanup?()
-                        }
-                    } else {
-                        cleanup?()
-                    }
-                }
+            } else if let cleanup {
+                await MainActor.run { cleanup() }
             }
         }
     }
