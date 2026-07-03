@@ -2283,7 +2283,7 @@ processChatCommand cxt nm = \case
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito (Just ct) -> withUser $ \user -> do
-    let con m cReq = pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing))
+    let con m cReq = pure (Just $ ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing))
     (ccLink, plan) <- connectPlan user ct False Nothing `catchAllErrors` \e -> case ct of
       ACTarget m (CTFullContact cReq) -> con m cReq
       ACTarget m (CTInv (CLFull cReq)) -> con m cReq
@@ -2320,7 +2320,7 @@ processChatCommand cxt nm = \case
       throwError e
   ConnectSimplex incognito -> withUser $ \user -> do
     plan <- contactRequestPlan user adminContactReq Nothing Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing Nothing))
-    connectWithPlan user incognito (ACCL SCMContact (CCLink adminContactReq Nothing)) plan
+    connectWithPlan user incognito (Just $ ACCL SCMContact (CCLink adminContactReq Nothing)) plan
   DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
   ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
   APIListContacts userId -> withUserId userId $ \user ->
@@ -4172,7 +4172,7 @@ processChatCommand cxt nm = \case
             pure (gId, chatSettings)
         _ -> throwCmdError "not supported"
       processChatCommand cxt nm $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
-    connectPlan :: User -> AConnectTarget -> Bool -> Maybe LinkOwnerSig -> CM (ACreatedConnLink, ConnectionPlan)
+    connectPlan :: User -> AConnectTarget -> Bool -> Maybe LinkOwnerSig -> CM (Maybe ACreatedConnLink, ConnectionPlan)
     connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ = case cLink of
       CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing Nothing
       CLShort l -> do
@@ -4186,20 +4186,19 @@ processChatCommand cxt nm = \case
             invitationReqAndPlan cReq (Just l') contactSLinkData_ ov
       where
         knownLinkPlans l' = withFastStore $ \db -> do
-          let inv cReq = ACCL SCMInvitation $ CCLink cReq (Just l')
+          let inv cReq = Just $ ACCL SCMInvitation $ CCLink cReq (Just l')
           liftIO (getConnectionEntityViaShortLink db cxt user l') >>= \case
             Just (cReq, ent) -> pure $ Just (inv cReq, invitationEntityPlan Nothing Nothing ent)
             -- deleted contact is returned as known, as invitation link cannot be re-used too connect anyway
             Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db cxt user l'
         invitationReqAndPlan cReq sLnk_ cld ov = do
           plan <- invitationRequestPlan user cReq cld ov `catchAllErrors` (pure . CPError)
-          pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
+          pure (Just $ ACCL SCMInvitation (CCLink cReq sLnk_), plan)
     connectPlan user (ACTarget SCMContact ct) resolveKnown sig_ = case ct of
       CTFullContact cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
-        pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
-      CTShortContact nl ->
-        case ctType of
+        pure (Just $ ACCL SCMContact $ CCLink cReq Nothing, plan)
+      CTShortContact nl -> (`catchAllErrors` \e -> pure (Nothing, CPError e)) $ first Just <$> case ctType of
           CCTContact ->
             knownLinkPlans >>= \case
               Just r -> pure r
@@ -4318,17 +4317,18 @@ processChatCommand cxt nm = \case
             NTContact -> (nrSimplexContact, CCTContact)
             NTPublicGroup -> (nrSimplexChannel, CCTChannel)
       maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink ctType candidates
-    connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
+    connectWithPlan :: User -> IncognitoEnabled -> Maybe ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
+      | CPError e <- plan, Nothing <- ccLink = throwError e
       | connectionPlanProceed plan = do
           case plan of CPError e -> eToView e; _ -> pure ()
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
               processChatCommand cxt nm $ APIConnectContactViaAddress userId incognito contactId
-            CPContactAddress (CAPOk (Just sld) _ vName@(Just _)) -> connectContactViaName sld vName
+            CPContactAddress (CAPOk (Just sld) _ vName@(Just _)) | Just cl <- ccLink -> connectContactViaName cl sld vName
             CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _ vName)
-              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld vName
-            _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
+              | Just (ACCL SCMContact ccl) <- ccLink -> joinChannelViaRelays ccl gld vName
+            _ -> processChatCommand cxt nm $ APIConnect userId incognito ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink plan
       where
         joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> Maybe SimplexDomain -> CM ChatResponse
@@ -4347,9 +4347,9 @@ processChatCommand cxt nm = \case
               gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
               deleteGroupConnections user gInfo False
               withFastStore' $ \db -> deleteGroup db user gInfo
-        connectContactViaName :: ContactShortLinkData -> Maybe SimplexDomain -> CM ChatResponse
-        connectContactViaName sld vName =
-          processChatCommand cxt nm (APIPrepareContact userId ccLink vName sld) >>= \case
+        connectContactViaName :: ACreatedConnLink -> ContactShortLinkData -> Maybe SimplexDomain -> CM ChatResponse
+        connectContactViaName cl sld vName =
+          processChatCommand cxt nm (APIPrepareContact userId cl vName sld) >>= \case
             CRNewPreparedChat _ (AChat SCTDirect (Chat (DirectChat Contact {contactId}) _ _)) ->
               processChatCommand cxt nm (APIConnectPreparedContact contactId incognito Nothing)
             _ -> throwChatError $ CEException "connectContactViaName: unexpected response from APIPrepareContact"

@@ -1320,6 +1320,15 @@ func planAndConnect(
             }
             if !inProgress.boxedValue { return }
             if let (connectionLink, connectionPlan) = result {
+                guard let connectionLink else {
+                    await MainActor.run {
+                        if case let .error(chatError) = connectionPlan {
+                            showAlert(NSLocalizedString("Connection error", comment: "alert title"), message: connErrorText(chatError))
+                        }
+                        cleanup?()
+                    }
+                    return
+                }
                 switch connectionPlan {
                 case let .invitationLink(ilp):
                     switch ilp {

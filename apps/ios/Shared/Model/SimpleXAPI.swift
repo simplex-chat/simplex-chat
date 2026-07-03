@@ -1026,7 +1026,7 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
-func apiConnectPlan(connLink: String, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> (CreatedConnLink, ConnectionPlan)? {
+func apiConnectPlan(connLink: String, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> (CreatedConnLink?, ConnectionPlan)? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return nil
@@ -1159,6 +1159,18 @@ func connErrorText(_ e: ChatError) -> String {
         String.localizedStringWithFormat(NSLocalizedString("Connection blocked: %@", comment: "conn error description"), info.reason.text)
     case .errorAgent(.SMP(_, .QUOTA)):
         NSLocalizedString("The connection reached the limit of undelivered messages", comment: "conn error description")
+    case let .error(.simplexName(_, err)):
+        switch err {
+        case .noValidLink: NSLocalizedString("No valid link", comment: "conn error description")
+        case .unknownName: NSLocalizedString("Unconfirmed name", comment: "conn error description")
+        }
+    case .errorAgent(.NO_NAME_SERVERS):
+        NSLocalizedString("SimpleX name error", comment: "conn error description")
+    case let .errorAgent(.SMP(_, .NAME(nameErr))):
+        switch nameErr {
+        case .NOT_FOUND: NSLocalizedString("Name not found", comment: "conn error description")
+        default: NSLocalizedString("SimpleX name error", comment: "conn error description")
+        }
     default:
         if getNetworkErrorAlert(e) != nil {
             NSLocalizedString("Network error", comment: "conn error description")
