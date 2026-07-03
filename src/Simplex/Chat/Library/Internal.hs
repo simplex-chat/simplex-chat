@@ -2749,8 +2749,8 @@ prepareAgentCreation user cmdFunction enableNtfs cMode = do
   connId <- withAgent $ \a -> prepareConnectionToCreate a (aUserId user) enableNtfs cMode PQSupportOff
   pure (cmdId, connId)
 
-createAgentConnectionAsync :: ConnectionModeI c => CommandId -> ConnId -> Bool -> SConnectionMode c -> SubscriptionMode -> CM ()
-createAgentConnectionAsync cmdId connId enableNtfs cMode subMode =
+createAgentConnectionAsync :: ConnectionModeI c => (CommandId, ConnId) -> Bool -> SConnectionMode c -> SubscriptionMode -> CM ()
+createAgentConnectionAsync (cmdId, connId) enableNtfs cMode subMode =
   withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId enableNtfs cMode IKPQOff subMode
 
 prepareAgentJoin :: User -> Maybe Connection -> Bool -> ConnectionRequestUri c -> CM (CommandId, ConnId)

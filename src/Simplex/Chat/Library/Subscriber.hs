@@ -642,7 +642,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               groupConnIds <- prepareAgentCreation user CFCreateConnGrpInv True SCMInvitation
               gVar <- asks random
               withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
-              uncurry createAgentConnectionAsync groupConnIds True SCMInvitation subMode
+              createAgentConnectionAsync groupConnIds True SCMInvitation subMode
         -- TODO REMOVE LEGACY ^^^
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
@@ -3184,7 +3184,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                           void $ withStore $ \db -> do
                             reMember <- createIntroReMember db cxt user gInfo memInfo memRestrictions
                             createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
-                          uncurry createAgentConnectionAsync groupConnIds (chatHasNtfs chatSettings) SCMInvitation subMode
+                          createAgentConnectionAsync groupConnIds (chatHasNtfs chatSettings) SCMInvitation subMode
                       | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
