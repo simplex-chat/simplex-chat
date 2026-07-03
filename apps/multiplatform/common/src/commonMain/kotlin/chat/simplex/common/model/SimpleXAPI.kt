@@ -1010,7 +1010,9 @@ object ChatController {
   suspend fun apiImportArchive(config: ArchiveConfig): List<ArchiveError> {
     val r = sendCmd(null, CC.ApiImportArchive(config))
     if (r is API.Result && r.res is CR.ArchiveImported) return r.res.archiveErrors
-    throw Exception("failed to import archive: ${r.responseType} ${r.details}")
+    val errMsg = "failed to import archive: ${r.responseType} ${r.details}"
+    Log.e(TAG, "apiImportArchive error: $errMsg")
+    throw Exception(errMsg)
   }
 
   suspend fun apiDeleteStorage() {
@@ -1979,8 +1981,9 @@ object ChatController {
     return if (r is API.Result && r.res is CR.SndStandaloneFileCreated) {
       r.res.fileTransferMeta to null
     } else {
-      Log.e(TAG, "uploadStandaloneFile error: $r")
-      null to r.toString()
+      val errMsg = apiResponseErrorMessage(r)
+      Log.e(TAG, "uploadStandaloneFile error: $errMsg")
+      null to errMsg
     }
   }
 
@@ -1989,18 +1992,27 @@ object ChatController {
     return if (r is API.Result && r.res is CR.RcvStandaloneFileCreated) {
       r.res.rcvFileTransfer to null
     } else {
-      Log.e(TAG, "downloadStandaloneFile error: $r")
-      null to r.toString()
+      val errMsg = apiResponseErrorMessage(r)
+      Log.e(TAG, "downloadStandaloneFile error: $errMsg")
+      null to errMsg
     }
   }
 
-  suspend fun standaloneFileInfo(url: String, ctrl: ChatCtrl? = null): MigrationFileLinkData? {
+  suspend fun standaloneFileInfo(url: String, ctrl: ChatCtrl? = null): Pair<MigrationFileLinkData?, String?> {
     val r = sendCmd(null, CC.ApiStandaloneFileInfo(url), ctrl)
     return if (r is API.Result && r.res is CR.StandaloneFileInfo) {
-      r.res.fileMeta
+      val meta = r.res.fileMeta
+      if (meta != null) {
+        meta to null
+      } else {
+        val errMsg = apiResponseErrorMessage(r, "missing file metadata")
+        Log.e(TAG, "standaloneFileInfo error: $errMsg")
+        null to errMsg
+      }
     } else {
-      Log.e(TAG, "standaloneFileInfo error: $r")
-      null
+      val errMsg = apiResponseErrorMessage(r)
+      Log.e(TAG, "standaloneFileInfo error: $errMsg")
+      null to errMsg
     }
   }
 
@@ -2654,10 +2666,14 @@ object ChatController {
   }
 
   private fun apiErrorAlert(method: String, title: String, r: API) {
-    val errMsg = "${r.responseType}: ${r.details}"
+    val errMsg = apiResponseErrorMessage(r)
     Log.e(TAG, "$method bad response: $errMsg")
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
+
+  fun apiResponseErrorMessage(r: API, fallback: String? = null): String =
+    if (r is API.Error) r.err.string
+    else fallback ?: "${r.responseType}: ${r.details}"
 
   // Spec: spec/api.md#processReceivedMsg
   private suspend fun processReceivedMsg(msg: API) {
