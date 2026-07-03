@@ -3230,7 +3230,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       let enableNtfsGrp = chatHasNtfs chatSettings
       groupConnIds@(gCmdId, gAcId) <- prepareAgentJoin user Nothing enableNtfsGrp groupConnReq
-      directConnIds <- forM directConnReq $ \dcr -> prepareAgentJoin user Nothing True dcr
+      directConnIds <- mapM (prepareAgentJoin user Nothing True) directConnReq
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr cxt `peerConnChatVersion` mcvr
