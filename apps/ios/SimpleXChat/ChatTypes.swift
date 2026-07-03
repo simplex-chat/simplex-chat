@@ -5312,6 +5312,10 @@ public struct SimplexDomain: Codable, Equatable, Hashable {
         return (subDomain.reversed() + [domain] + tld).joined(separator: ".")
     }
 
+    public var cmdString: String {
+        "domain=\(fullDomainName)"
+    }
+
     public init(nameTLD: SimplexTLD, domain: String, subDomain: [String]) {
         self.nameTLD = nameTLD
         self.domain = domain

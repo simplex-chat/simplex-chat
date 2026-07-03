@@ -4896,15 +4896,16 @@ data class SimplexDomain(
   val subDomain: List<String>
 ) {
   // mirrors backend fullDomainName: reverse(subDomain) + [domain] + tld
-  val fullDomainName: String
-    get() {
-      val tld = when (nameTLD) {
-        SimplexTLD.simplex -> listOf("simplex")
-        SimplexTLD.testing -> listOf("testing")
-        SimplexTLD.web -> emptyList()
-      }
-      return (subDomain.reversed() + domain + tld).joinToString(".")
+  val fullDomainName: String get() {
+    val tld = when (nameTLD) {
+      SimplexTLD.simplex -> listOf("simplex")
+      SimplexTLD.testing -> listOf("testing")
+      SimplexTLD.web -> emptyList()
     }
+    return (subDomain.reversed() + domain + tld).joinToString(".")
+  }
+
+  val cmdString: String get() = "domain=$fullDomainName"
 }
 
 @Serializable

@@ -979,7 +979,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       let GroupShortLinkData {groupProfile = GroupProfile {displayName}} = groupSLinkData
           ownerContact = GroupOwnerContact {contactId = contactId' ct, memberId = mId}
       sendMessage cc ct $ "Joining the " <> gt <> " " <> displayName <> "…"
-      sendChatCmd cc (APIPrepareGroup userId ccLink False groupSLinkData Nothing) >>= \case
+      sendChatCmd cc (APIPrepareGroup userId ccLink False Nothing groupSLinkData) >>= \case
         Right (CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _))) -> do
           let gId = groupId' gInfo
           addGroupReg notifyAdminUsers st cc ct gInfo GRSProposed $ \_ -> pure ()

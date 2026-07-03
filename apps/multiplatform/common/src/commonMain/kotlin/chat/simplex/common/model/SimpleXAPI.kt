@@ -4073,8 +4073,8 @@ sealed class CC {
       val sigStr = if (linkOwnerSig != null) " sig=${json.encodeToString(linkOwnerSig)}" else ""
       "/_connect plan $userId $connLink$sigStr"
     }
-    is APIPrepareContact -> "/_prepare contact $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} ${json.encodeToString(contactShortLinkData)}${verifiedDomain?.let { " ${it.fullDomainName}" } ?: ""}"
-    is APIPrepareGroup -> "/_prepare group $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} direct=${onOff(directLink)} ${json.encodeToString(groupShortLinkData)}${verifiedDomain?.let { " ${it.fullDomainName}" } ?: ""}"
+    is APIPrepareContact -> "/_prepare contact $userId ${connLink.cmdString}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(contactShortLinkData)}"
+    is APIPrepareGroup -> "/_prepare group $userId ${connLink.cmdString} direct=${onOff(directLink)}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(groupShortLinkData)}"
     is APIChangePreparedContactUser -> "/_set contact user @$contactId $newUserId"
     is APIChangePreparedGroupUser -> "/_set group user #$groupId $newUserId"
     is APIConnectPreparedContact -> "/_connect contact @$contactId incognito=${onOff(incognito)}${maybeContent(msg)}"
@@ -7083,6 +7083,8 @@ data class CreatedConnLink(val connFullLink: String, val connShortLink: String?)
   fun simplexChatUri(short: Boolean): String =
     if (short) connShortLink ?: simplexChatLink(connFullLink)
     else simplexChatLink(connFullLink)
+
+  val cmdString: String get() = connFullLink + (if (connShortLink == null) "" else " $connShortLink")
 }
 
 fun simplexChatLink(uri: String): String =

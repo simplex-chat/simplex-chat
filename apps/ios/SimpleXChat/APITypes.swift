@@ -184,6 +184,10 @@ public struct CreatedConnLink: Decodable, Hashable {
     public func simplexChatUri(short: Bool = true) -> String {
         short ? (connShortLink ?? simplexChatLink(connFullLink)) : simplexChatLink(connFullLink)
     }
+
+    public var cmdString: String {
+        connFullLink + (connShortLink.map { " \($0)"} ?? "")
+    }
 }
 
 public func simplexChatLink(_ uri: String) -> String {

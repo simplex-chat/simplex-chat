@@ -56,7 +56,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), ProofPresHeader (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -96,7 +96,7 @@ import Simplex.Chat.Web (webPreviewWorker)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSizeHard)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
-import Simplex.Messaging.Agent.Protocol hiding (ConnectTarget (..))
+import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
@@ -2061,7 +2061,7 @@ processChatCommand cxt nm = \case
   APIConnectPlan userId (Just ct) resolveKnown linkOwnerSig_ -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user ct resolveKnown linkOwnerSig_
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
-  APIPrepareContact userId accLink contactSLinkData verifiedDomain -> withUserId userId $ \user -> do
+  APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
     case accLink of
@@ -2096,7 +2096,7 @@ processChatCommand cxt nm = \case
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
-  APIPrepareGroup userId ccLink direct groupSLinkData verifiedDomain -> withUserId userId $ \user -> do
+  APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId (True <$ verifiedDomain)
@@ -4340,7 +4340,7 @@ processChatCommand cxt nm = \case
               throwError e
           where
             prepareChannelGroup =
-              processChatCommand cxt nm (APIPrepareGroup userId ccl False gld vName) >>= \case
+              processChatCommand cxt nm (APIPrepareGroup userId ccl False vName gld) >>= \case
                 CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _)) -> pure gInfo
                 _ -> throwChatError $ CEException "joinChannelViaRelays: unexpected response from APIPrepareGroup"
             deletePreparedChannel groupId = do
@@ -4349,7 +4349,7 @@ processChatCommand cxt nm = \case
               withFastStore' $ \db -> deleteGroup db user gInfo
         connectContactViaName :: ContactShortLinkData -> Maybe SimplexDomain -> CM ChatResponse
         connectContactViaName sld vName =
-          processChatCommand cxt nm (APIPrepareContact userId ccLink sld vName) >>= \case
+          processChatCommand cxt nm (APIPrepareContact userId ccLink vName sld) >>= \case
             CRNewPreparedChat _ (AChat SCTDirect (Chat (DirectChat Contact {contactId}) _ _)) ->
               processChatCommand cxt nm (APIConnectPreparedContact contactId incognito Nothing)
             _ -> throwChatError $ CEException "connectContactViaName: unexpected response from APIPrepareContact"
@@ -5450,8 +5450,8 @@ chatCommandP =
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> ((" resolve=" *> onOffP) <|> pure False) <*> optional (" sig=" *> jsonP)),
-      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP <*> optional (A.space *> strP)),
-      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <* A.space <*> jsonP <*> optional (A.space *> strP)),
+      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
+      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
