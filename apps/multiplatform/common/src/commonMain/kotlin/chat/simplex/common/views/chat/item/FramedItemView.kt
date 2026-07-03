@@ -116,7 +116,7 @@ fun FramedItemView(
           icon,
           caption,
           Modifier.size(18.dp),
-          tint = iconColor ?: if (isInDarkTheme()) FileDark else FileLight
+          tint = iconColor ?: if (CurrentColors.value.base == DefaultTheme.SIMPLEX) simplexSecondaryTint() else if (isInDarkTheme()) FileDark else FileLight
         )
       }
       val captionColor = simplexSecondaryTint()

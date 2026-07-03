@@ -262,6 +262,8 @@ fun ChatItemView(
       }
       val iconTint = if (fullyVisible) {
         Color.White
+      } else if (CurrentColors.value.base == DefaultTheme.SIMPLEX) {
+        simplexSecondaryTint()
       } else {
         if (MaterialTheme.colors.isLight) {
           MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
