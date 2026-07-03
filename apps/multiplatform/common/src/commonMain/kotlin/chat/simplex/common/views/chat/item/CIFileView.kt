@@ -55,16 +55,12 @@ fun CIFileView(
     ) {
       val isDefaultTint = color == (if (isInDarkTheme()) FileDark else FileLight)
       val isSimplex = CurrentColors.value.base == DefaultTheme.SIMPLEX
-      val outerOverlay = if (isSimplex && isDefaultTint)
-        Modifier.simplexAvatarBrushOverlay(SimplexBubbleSlot.ReceivedQuote) else Modifier
-      Box(outerOverlay.fillMaxSize()) {
-        Icon(
-          painterResource(MR.images.ic_draft_filled),
-          stringResource(MR.strings.icon_descr_file),
-          Modifier.fillMaxSize(),
-          tint = color
-        )
-      }
+      Icon(
+        painterResource(MR.images.ic_draft_filled),
+        stringResource(MR.strings.icon_descr_file),
+        Modifier.fillMaxSize(),
+        tint = if (isSimplex && isDefaultTint) simplexSecondaryTint() else color
+      )
       if (innerIcon != null) {
         Icon(
           innerIcon,

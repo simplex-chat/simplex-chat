@@ -2064,10 +2064,8 @@ fun BoxScope.ChatItemsList(
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
-                        val memberAvatarOverlay = if (CurrentColors.value.base == DefaultTheme.SIMPLEX && member.image == null)
-                          Modifier.simplexAvatarBrushOverlay(SimplexBubbleSlot.ReceivedQuote) else Modifier
-                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }.then(memberAvatarOverlay)) {
-                          MemberImage(member)
+                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                          MemberImage(member, color = if (CurrentColors.value.base == DefaultTheme.SIMPLEX && member.image == null) simplexSecondaryTint() else MaterialTheme.colors.secondaryVariant)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false, dismissState.offset.value)
@@ -2299,9 +2297,7 @@ fun BoxScope.ChatItemsList(
           .padding(top = DEFAULT_PADDING_HALF)
           .let { if (CurrentColors.value.base == DefaultTheme.SIMPLEX) it else it.background(MaterialTheme.appColors.receivedMessage) }
       ) {
-        Box(if (CurrentColors.value.base == DefaultTheme.SIMPLEX && chatInfo.image == null) Modifier.simplexAvatarBrushOverlay(SimplexBubbleSlot.ReceivedQuote) else Modifier) {
-          ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
-        }
+        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = if (CurrentColors.value.base == DefaultTheme.SIMPLEX && chatInfo.image == null) simplexSecondaryTint() else MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
         val bannerBadge = chatInfo.nameBadge
         val uriHandler = LocalUriHandler.current
         Text(
@@ -2820,8 +2816,8 @@ private suspend fun preloadItemsAfter(
 val MEMBER_IMAGE_SIZE: Dp = 37.dp
 
 @Composable
-fun MemberImage(member: GroupMember) {
-  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, backgroundColor = MaterialTheme.colors.background)
+fun MemberImage(member: GroupMember, color: Color = MaterialTheme.colors.secondaryVariant) {
+  MemberProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member, color = color, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable

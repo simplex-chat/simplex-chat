@@ -207,13 +207,11 @@ fun FramedItemView(
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
       !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null && ci.meta.itemForwarded == null
 
-  val (linkColor, linkModifier) = simplexLinkColor()
   Box(Modifier
     .clipChatItem(ci, tailVisible, revealed = true)
-    .chatBubbleBackground(sent = sent, isQuote = false, transparent = transparentBackground)
-    .then(linkModifier)) {
+    .chatBubbleBackground(sent = sent, isQuote = false, transparent = transparentBackground)) {
     var metaColor: Color? = null
-    CompositionLocalProvider(LocalSimplexLinkColor provides linkColor) {
+    CompositionLocalProvider(LocalSimplexLinkColor provides MaterialTheme.colors.primary) {
     Box(contentAlignment = Alignment.BottomEnd) {
       val chatItemTail = remember { appPreferences.chatItemTail.state }
       val style = shapeStyle(ci, chatItemTail.value, tailVisible, true)

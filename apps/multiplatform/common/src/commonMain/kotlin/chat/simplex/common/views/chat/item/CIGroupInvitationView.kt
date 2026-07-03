@@ -53,15 +53,11 @@ fun CIGroupInvitationView(
       if (action && !inProgress.value) if (chatIncognito) Indigo else MaterialTheme.colors.primary
       else if (isInDarkTheme()) FileDark else FileLight
     val isSimplex = CurrentColors.value.base == DefaultTheme.SIMPLEX
-    val avatarOverlayMod = if (isSimplex && groupInvitation.groupProfile.image == null)
-      Modifier.simplexAvatarBrushOverlay(SimplexBubbleSlot.ReceivedQuote) else Modifier
 
     Row(
       Modifier.defaultMinSize(minWidth = 220.dp)
     ) {
-      Box(avatarOverlayMod) {
-        ProfileImage(size = 54.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
-      }
+      ProfileImage(size = 54.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = if (isSimplex && groupInvitation.groupProfile.image == null) simplexSecondaryTint() else iconColor)
       Spacer(Modifier.width(8.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 54.dp),
