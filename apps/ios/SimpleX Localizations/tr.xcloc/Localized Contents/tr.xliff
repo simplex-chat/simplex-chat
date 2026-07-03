@@ -197,6 +197,18 @@
         <target>%d ay</target>
         <note>time interval</note>
       </trans-unit>
+      <trans-unit id="%d owner" xml:space="preserve">
+        <source>%d owner</source>
+        <note>channel owners count</note>
+      </trans-unit>
+      <trans-unit id="%d owners" xml:space="preserve">
+        <source>%d owners</source>
+        <note>channel owners count</note>
+      </trans-unit>
+      <trans-unit id="%d owners &amp; contributors" xml:space="preserve">
+        <source>%d owners &amp; contributors</source>
+        <note>channel members count</note>
+      </trans-unit>
       <trans-unit id="%d relays failed" xml:space="preserve">
         <source>%d relays failed</source>
         <target>%d aktarıcı başarısız oldu</target>
@@ -1694,11 +1706,6 @@ new chat action</note>
         <target>Kilit modunu değiştir</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change member role?" xml:space="preserve">
-        <source>Change member role?</source>
-        <target>Üye rolünü değiştir?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
         <source>Change passcode</source>
         <target>Şifreyi değiştir</target>
@@ -1717,6 +1724,10 @@ new chat action</note>
       <trans-unit id="Change role" xml:space="preserve">
         <source>Change role</source>
         <target>Rolü değiştir</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change role?" xml:space="preserve">
+        <source>Change role?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change self-destruct mode" xml:space="preserve">
@@ -2284,14 +2295,6 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Bilgisayara bağlanıyor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting via channel name requires a newer app version." xml:space="preserve">
-        <source>Connecting via channel name requires a newer app version.</source>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="Connecting via contact name requires a newer app version." xml:space="preserve">
-        <source>Connecting via contact name requires a newer app version.</source>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="Connection" xml:space="preserve">
         <source>Connection</source>
         <target>Bağlantı</target>
@@ -2306,6 +2309,10 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <source>Connection blocked</source>
         <target>Bağlantı engellendi</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection blocked: %@" xml:space="preserve">
+        <source>Connection blocked: %@</source>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
@@ -3083,7 +3090,7 @@ alert button</note>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
-        <source>Destination server address of %@ is incompatible with forwarding server %@ settings.</source>
+        <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
         <target>Hedef sunucu adresi %@, yönlendirme sunucusu %@ ayarlarıyla uyumlu değil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3093,7 +3100,7 @@ alert button</note>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
-        <source>Destination server version of %@ is incompatible with forwarding server %@.</source>
+        <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
         <target>Hedef sunucu %@ sürümü, yönlendirme sunucusu %@ ile uyumlu değil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3639,7 +3646,7 @@ chat item action</note>
       <trans-unit id="Error" xml:space="preserve">
         <source>Error</source>
         <target>Hata</target>
-        <note>conn error description</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error aborting address change" xml:space="preserve">
         <source>Error aborting address change</source>
@@ -3935,6 +3942,10 @@ chat item action</note>
         <target>Grup profili kaydedilirken sorun oluştu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving name" xml:space="preserve">
+        <source>Error saving name</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error saving passcode" xml:space="preserve">
         <source>Error saving passcode</source>
         <target>Parola kaydedilirken sorun oluştu</target>
@@ -4068,6 +4079,7 @@ chat item action</note>
         <source>Error: %@</source>
         <target>Hata: %@</target>
         <note>alert message
+conn error description
 file error text
 snd error text</note>
       </trans-unit>
@@ -5273,6 +5285,14 @@ Bu senin grup için bağlantın %@!</target>
         <target>Mobil ağlarda daha az trafik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Let people connect to you via name registered with your SimpleX address." xml:space="preserve">
+        <source>Let people connect to you via name registered with your SimpleX address.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Let people join via name registered with this channel link." xml:space="preserve">
+        <source>Let people join via name registered with this channel link.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
         <source>Let someone connect to you</source>
         <note>No comment provided by engineer.</note>
@@ -5448,21 +5468,6 @@ Bu senin grup için bağlantın %@!</target>
         <source>Member reports</source>
         <target>Üye raporları</target>
         <note>chat feature</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
-        <source>Member role will be changed to "%@". All chat members will be notified.</source>
-        <target>Üye rolü "%@" olarak değiştirilecektir. Tüm sohbet üyeleri bilgilendirilecektir.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
-        <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target>Üye rolü "%@" olarak değiştirilecektir. Ve tüm grup üyeleri bilgilendirilecektir.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
-        <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target>Üye rolü "%@" olarak değiştirilecektir. Ve üye yeni bir davetiye alacaktır.</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from chat - this cannot be undone!</source>
@@ -5818,6 +5823,10 @@ Bu senin grup için bağlantın %@!</target>
         <target>İsim</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Name not found" xml:space="preserve">
+        <source>Name not found</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Ağ &amp; sunucular</target>
@@ -6139,6 +6148,10 @@ The most secure encryption.</source>
         <target>Mesaj almak için hiç sunucu yok.</target>
         <note>servers error</note>
       </trans-unit>
+      <trans-unit id="No servers to resolve names." xml:space="preserve">
+        <source>No servers to resolve names.</source>
+        <note>servers warning</note>
+      </trans-unit>
       <trans-unit id="No servers to send files." xml:space="preserve">
         <source>No servers to send files.</source>
         <target>Dosya göndermek için hiç sunucu yok.</target>
@@ -6154,12 +6167,20 @@ The most secure encryption.</source>
         <target>Okunmamış sohbet yok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No valid link" xml:space="preserve">
+        <source>No valid link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
         <source>Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Non-profit governance" xml:space="preserve">
         <source>Non-profit governance</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link." xml:space="preserve">
+        <source>None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
@@ -6565,8 +6586,8 @@ alert button</note>
         <source>Owner</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Owners" xml:space="preserve">
-        <source>Owners</source>
+      <trans-unit id="Owners &amp; contributors" xml:space="preserve">
+        <source>Owners &amp; contributors</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ownership: you can run your own relays." xml:space="preserve">
@@ -6755,10 +6776,6 @@ Hata: %@</target>
         <source>Please try to disable and re-enable notfications.</source>
         <target>Lütfen bildirimleri devre dışı bırakmayı ve yeniden etkinleştirmeyi deneyin.</target>
         <note>token info</note>
-      </trans-unit>
-      <trans-unit id="Please upgrade the app." xml:space="preserve">
-        <source>Please upgrade the app.</source>
-        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve">
         <source>Please wait for group moderators to review your request to join the group.</source>
@@ -7463,6 +7480,10 @@ swipe action</note>
         <target>Kullanıcı temasına sıfırla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Resolver error: %@" xml:space="preserve">
+        <source>Resolver error: %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
         <source>Restart the app to create a new chat profile</source>
         <target>Yeni bir sohbet profili oluşturmak için uygulamayı yeniden başlatın</target>
@@ -7541,6 +7562,22 @@ swipe action</note>
       <trans-unit id="Role" xml:space="preserve">
         <source>Role</source>
         <target>Rol</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All chat members will be notified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All group members will be notified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. All subscribers will be notified." xml:space="preserve">
+        <source>Role will be changed to "%@". All subscribers will be notified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
+        <source>Role will be changed to "%@". The member will receive a new invitation.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -8073,6 +8110,10 @@ chat item action</note>
         <target>Sunucu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server %@ does not support name resolution. Configure servers, or use a connection link." xml:space="preserve">
+        <source>Server %@ does not support name resolution. Configure servers, or use a connection link.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server added to operator %@." xml:space="preserve">
         <source>Server added to operator %@.</source>
         <target>Sunucu operatör %@'ya eklendi.</target>
@@ -8500,6 +8541,18 @@ chat item action</note>
         <source>SimpleX links not allowed</source>
         <target>SimpleX bağlantılarına izin verilmiyor</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name" xml:space="preserve">
+        <source>SimpleX name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name error" xml:space="preserve">
+        <source>SimpleX name error</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX name not verified" xml:space="preserve">
+        <source>SimpleX name not verified</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
         <source>SimpleX one-time invitation</source>
@@ -8957,6 +9010,22 @@ It can happen because of some bug or when the connection is compromised.</source
 Bazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page." xml:space="preserve">
+        <source>The SimpleX name #%@ is registered without channel link. Add channel link to the name via the registration page.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name %@ is registered, but it has no valid link." xml:space="preserve">
+        <source>The SimpleX name %@ is registered, but it has no valid link.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." xml:space="preserve">
+        <source>The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page." xml:space="preserve">
+        <source>The SimpleX name @%@ is registered without SimpleX address. Add your SimpleX address to the name via the registration page.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
         <source>The address will be short, and your profile will be shared via the address.</source>
         <target>Adres kısa olacak ve profiliniz bu adres üzerinden paylaşılacaktır.</target>
@@ -9136,6 +9205,10 @@ your contacts and groups.</source>
         <target>Bunlar kişi ve grup ayarlarında geçersiz kılınabilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This SimpleX name is not registered. Please check the name." xml:space="preserve">
+        <source>This SimpleX name is not registered. Please check the name.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
         <target>Bu işlem geri alınamaz - alınan ve gönderilen tüm dosyalar ve medya silinecektir. Düşük çözünürlüklü resimler kalacaktır.</target>
@@ -9313,6 +9386,10 @@ Bu özellik etkinleştirilmeden önce kimlik doğrulamayı tamamlamanız istenec
         <target>Sesli mesaj kaydetmek için lütfen Mikrofon kullanım izni verin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To resolve names" xml:space="preserve">
+        <source>To resolve names</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
         <target>Gizli profilinizi ortaya çıkarmak için **Sohbet profilleriniz** sayfasındaki arama alanına tam bir şifre girin.</target>
@@ -9435,6 +9512,10 @@ Bu özellik etkinleştirilmeden önce kimlik doğrulamayı tamamlamanız istenec
         <source>Unblock subscriber for all?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unconfirmed name" xml:space="preserve">
+        <source>Unconfirmed name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Undelivered messages" xml:space="preserve">
         <source>Undelivered messages</source>
         <target>Teslim edilmemiş mesajlar</target>
@@ -9532,18 +9613,10 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <target>Okunmamış</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Unsupported channel name" xml:space="preserve">
-        <source>Unsupported channel name</source>
-        <note>alert title</note>
-      </trans-unit>
       <trans-unit id="Unsupported connection link" xml:space="preserve">
         <source>Unsupported connection link</source>
         <target>Desteklenmeyen bağlantı bağlantısı</target>
         <note>conn error description</note>
-      </trans-unit>
-      <trans-unit id="Unsupported contact name" xml:space="preserve">
-        <source>Unsupported contact name</source>
-        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Unverified badge" xml:space="preserve">
         <source>Unverified badge</source>
@@ -9798,6 +9871,10 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <source>Verify</source>
         <note>relay test step</note>
       </trans-unit>
+      <trans-unit id="Verify SimpleX names" xml:space="preserve">
+        <source>Verify SimpleX names</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
         <source>Verify code with desktop</source>
         <target>Bilgisayarla kodu doğrula</target>
@@ -9821,6 +9898,10 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
       <trans-unit id="Verify database passphrase" xml:space="preserve">
         <source>Verify database passphrase</source>
         <target>Veritabanı parolasını doğrulayın</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify name" xml:space="preserve">
+        <source>Verify name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify passphrase" xml:space="preserve">
@@ -10457,6 +10538,10 @@ Bağlantı isteği tekrarlansın mı?</target>
         <target>SimpleX adresin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your SimpleX name" xml:space="preserve">
+        <source>Your SimpleX name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
         <target>İş bağlantınız</target>
@@ -10930,6 +11015,10 @@ marked deleted chat item preview text</note>
         <source>contact should accept…</source>
         <target>kişi kabul etmeli…</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="contributor" xml:space="preserve">
+        <source>contributor</source>
+        <note>member role</note>
       </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
         <source>creator</source>
@@ -11573,6 +11662,10 @@ son alınan msj: %2$@</target>
         <source>strike</source>
         <target>çizik</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="subscriber" xml:space="preserve">
+        <source>subscriber</source>
+        <note>member role</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
         <source>this contact</source>
