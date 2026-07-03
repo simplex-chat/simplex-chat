@@ -175,7 +175,7 @@ fun FramedItemView(
             Modifier
               .padding(top = 6.dp, end = 4.dp)
               .size(22.dp),
-            tint = if (isInDarkTheme()) FileDark else FileLight
+            tint = if (CurrentColors.value.base == DefaultTheme.SIMPLEX) simplexSecondaryTint() else if (isInDarkTheme()) FileDark else FileLight
           )
         }
         is MsgContent.MCChat -> {
@@ -189,7 +189,7 @@ fun FramedItemView(
             painterResource(qi.content.chatLink.smallIconRes),
             null,
             Modifier.padding(top = 6.dp, end = 4.dp).size(22.dp),
-            tint = if (isInDarkTheme()) FileDark else FileLight
+            tint = if (CurrentColors.value.base == DefaultTheme.SIMPLEX) simplexSecondaryTint() else if (isInDarkTheme()) FileDark else FileLight
           )
         }
         else -> ciQuotedMsgView(qi)
