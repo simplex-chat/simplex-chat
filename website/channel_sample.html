@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimpleX Channel Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    [data-simplex-channel-preview] { height: 100%; }
+  </style>
+</head>
+<body>
+  <!-- Optional attributes:
+    data-color-scheme="light"
+    data-dark-background="#000832"
+    data-light-background="#ffffff"
+    data-relay-scheme="https"
+  -->
+  <div data-simplex-channel-preview
+    data-channel-link="YOUR_CHANNEL_LINK"
+    data-channel-id="YOUR_CHANNEL_ID"
+    data-relay-domains="relay1.example.com"
+    data-app-download-buttons="on"
+  ></div>
+  <script src="https://simplex.chat/js/channel-preview.js"></script>
+</body>
+</html>

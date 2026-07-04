@@ -2,12 +2,12 @@ package chat.simplex.common.views.chat.group
 
 import InfoRow
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.InlineTextContent
@@ -421,10 +421,9 @@ fun GroupMemberInfoLayout(
   @Composable
   fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
-    // TODO [relays] re-enable when relay management ships
-    val canRemove = member.canBeRemoved(groupInfo) && member.memberRole != GroupMemberRole.Relay
+    val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
       SectionView {
         if (canBlockForAll) {
           if (member.blockedByAdmin) {
@@ -446,7 +445,7 @@ fun GroupMemberInfoLayout(
 
   @Composable
   fun NonAdminBlockSection() {
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
     SectionView {
       if (member.blockedByAdmin) {
         SettingsActionItem(
@@ -470,7 +469,7 @@ fun GroupMemberInfoLayout(
     ) {
       GroupMemberInfoHeader(member)
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     val contactId = member.memberContactId
 
@@ -534,7 +533,7 @@ fun GroupMemberInfoLayout(
         }
       }
 
-      SectionSpacer()
+      SectionDividerSpaced()
     }
 
     val showMemberSupportChat = !openedFromSupportChat &&
@@ -567,7 +566,7 @@ fun GroupMemberInfoLayout(
     }
 
     if (member.contactLink != null) {
-      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title)) {
         SimpleXLinkQRCode(member.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(member.contactLink)) }
@@ -578,8 +577,8 @@ fun GroupMemberInfoLayout(
         } else {
           ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
         }
-        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       }
+      SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       SectionDividerSpaced()
     }
 
@@ -597,15 +596,11 @@ fun GroupMemberInfoLayout(
         else if (groupInfo.businessChat == null) MR.strings.info_row_group
         else MR.strings.info_row_chat
       InfoRow(stringResource(titleId), groupInfo.displayName)
-      if (!groupInfo.useRelays) {
-        val roles = remember { member.canChangeRoleTo(groupInfo) }
-        if (roles != null) {
-          RoleSelectionRow(roles, newRole, onRoleSelected)
-        } else {
-          InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
-        }
+      val roles = remember { member.canChangeRoleTo(groupInfo) }
+      if (roles != null) {
+        RoleSelectionRow(roles, newRole, onRoleSelected, groupInfo.isChannel)
       } else {
-        InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
+        InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text(isChannel = groupInfo.isChannel))
       }
       val relayLink = member.relayLink
       if (relayLink != null) {
@@ -889,14 +884,15 @@ fun ConnectViaAddressButton(onClick: () -> Unit) {
 private fun RoleSelectionRow(
   roles: List<GroupMemberRole>,
   selectedRole: MutableState<GroupMemberRole>,
-  onSelected: (GroupMemberRole) -> Unit
+  onSelected: (GroupMemberRole) -> Unit,
+  isChannel: Boolean
 ) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = remember { roles.map { it to it.text } }
+    val values = remember { roles.map { it to it.text(isChannel = isChannel) } }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.change_role),
       values,
@@ -957,12 +953,14 @@ fun updateMemberRoleDialog(
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
     text = if (memberCurrent) {
-      if (groupInfo.businessChat == null)
-        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+      if (groupInfo.isChannel)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_channel), newRole.text(isChannel = groupInfo.isChannel))
+      else if (groupInfo.businessChat == null)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text(isChannel = groupInfo.isChannel))
       else
-        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text(isChannel = groupInfo.isChannel))
     } else
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text),
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text(isChannel = groupInfo.isChannel)),
     confirmText = generalGetString(MR.strings.change_verb),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
@@ -978,9 +976,9 @@ fun updateMembersRoleDialog(
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
     text = if (groupInfo.businessChat == null)
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text(isChannel = groupInfo.isChannel))
     else
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text),
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text(isChannel = groupInfo.isChannel)),
     confirmText = generalGetString(MR.strings.change_verb),
     onConfirm = onConfirm,
   )

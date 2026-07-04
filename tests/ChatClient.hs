@@ -24,10 +24,12 @@ import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), WebPreviewConfig (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options
@@ -152,6 +154,7 @@ testCoreOpts =
       tbqSize = 16,
       deviceName = Nothing,
       chatRelay = False,
+      webPreviewConfig = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
@@ -160,6 +163,9 @@ testCoreOpts =
 
 relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
+
+relayWebTestOpts :: Text -> FilePath -> Maybe FilePath -> ChatOpts
+relayWebTestOpts webDomain webDir webCorsFile = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {webDomain, webJsonDir = webDir, webCorsFile, webUpdateInterval = 300, webPreviewItemCount = 50}}}
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
@@ -211,7 +217,7 @@ testCfg =
       shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
       tbqSize = 16,
-      channelSubscriberRole = GRMember, -- starting role is GRMember to test members sending messages
+      channelSubscriberRole = GRObserver,
       confirmMigrations = MCYesUp
     }
 
@@ -281,11 +287,12 @@ prevVersion (Version v) = Version (v - 1)
 nextVersion :: Version v -> Version v
 nextVersion (Version v) = Version (v + 1)
 
-createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat ps cfg opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {chatRelay}} dbPrefix profile = do
+createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Bool -> Profile -> IO TestCC
+createTestChat ps cfg opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {chatRelay}} dbPrefix clientService profile = do
   Right db@ChatDatabase {chatStore, agentStore} <- createDatabase ps coreOptions dbPrefix
   insertUser agentStore
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile chatRelay True
+  ts <- getCurrentTime
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecordAt db' (AgentUserId 1) chatRelay clientService profile True ts
   startTestChat_ ps db cfg opts user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
@@ -313,7 +320,7 @@ startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> User -
 startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
-  cc <- newChatController db (Just user) cfg opts False
+  Right cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
@@ -351,6 +358,9 @@ stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}
 withNewTestChat :: HasCallStack => TestParams -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChat ps = withNewTestChatCfgOpts ps testCfg testOpts
 
+withNewTestChat_ :: HasCallStack => TestParams -> String -> Bool -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChat_ ps = withNewTestChatCfgOpts_ ps testCfg testOpts
+
 withNewTestChatV1 :: HasCallStack => TestParams -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChatV1 ps = withNewTestChatCfg ps testCfgV1
 
@@ -361,9 +371,12 @@ withNewTestChatOpts :: HasCallStack => TestParams -> ChatOpts -> String -> Profi
 withNewTestChatOpts ps = withNewTestChatCfgOpts ps testCfg
 
 withNewTestChatCfgOpts :: HasCallStack => TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
-withNewTestChatCfgOpts ps cfg opts dbPrefix profile runTest =
+withNewTestChatCfgOpts ps cfg opts dbPrefix = withNewTestChatCfgOpts_ ps cfg opts dbPrefix False
+
+withNewTestChatCfgOpts_ :: HasCallStack => TestParams -> ChatConfig -> ChatOpts -> String -> Bool -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChatCfgOpts_ ps cfg opts dbPrefix clientService profile runTest =
   bracket
-    (createTestChat ps cfg opts dbPrefix profile)
+    (createTestChat ps cfg opts dbPrefix clientService profile)
     (stopTestChat ps)
     (\cc -> runTest cc >>= ((cc <// 100000) $>))
 
@@ -420,9 +433,11 @@ testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStac
 testChatN cfg opts ps test params =
   bracket (getTestCCs $ zip ps [1 ..]) endTests test
   where
+    useClientServices = False
+    -- useClientServices = True
     getTestCCs :: [(Profile, Int)] -> IO [TestCC]
     getTestCCs [] = pure []
-    getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) p <*> getTestCCs envs'
+    getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) useClientServices p <*> getTestCCs envs'
     endTests tcs = do
       mapConcurrently_ (<// 100000) tcs
       mapConcurrently_ (stopTestChat params) tcs
@@ -535,7 +550,7 @@ smpServerCfg =
       maxJournalStateLines = 4,
       queueIdBytes = 24,
       msgIdBytes = 6,
-      serverStoreCfg = SSCMemory Nothing,
+      serverStoreCfg = SSCMemory Nothing, -- $ Just StorePaths {storeLogFile = "tmp/smp-server-store.log", storeMsgsFile = Just "tmp/smp-server-messages.log"},
       storeNtfsFile = Nothing,
       allowNewQueues = True,
       -- server password is disabled as otherwise v1 tests fail

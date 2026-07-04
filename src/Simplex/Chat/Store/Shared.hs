@@ -543,16 +543,16 @@ userQuery :: Query
 userQuery =
   [sql|
     SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
-      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.ui_themes, u.is_user_chat_relay,
+      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
-toUser :: UTCTime -> (UserId, UserId, ContactId, ProfileId, BoolInt, Int64) :. (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe Preferences) :. (BoolInt, BoolInt, BoolInt, BoolInt, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime, Maybe UIThemeEntityOverrides, BoolInt) :. BadgeRow -> User
-toUser now ((userId, auId, userContactId, profileId, BI activeUser, activeOrder) :. (displayName, fullName, shortDescr, image, contactLink, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, uiThemes, BI userChatRelay) :. badgeRow) =
-  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptMemberContacts = BoolDef autoAcceptMemberContacts, viewPwdHash, userMemberProfileUpdatedAt, uiThemes, userChatRelay = BoolDef userChatRelay}
+toUser :: UTCTime -> (UserId, UserId, ContactId, ProfileId, BoolInt, Int64) :. (ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe Preferences) :. (BoolInt, BoolInt, BoolInt, BoolInt, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime, BoolInt, BoolInt, Maybe UIThemeEntityOverrides) :. BadgeRow -> User
+toUser now ((userId, auId, userContactId, profileId, BI activeUser, activeOrder) :. (displayName, fullName, shortDescr, image, contactLink, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, BI userChatRelay, BI clientService, uiThemes) :. badgeRow) =
+  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptMemberContacts, viewPwdHash, userMemberProfileUpdatedAt, userChatRelay = BoolDef userChatRelay, clientService = BoolDef clientService, uiThemes}
   where
     profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localBadge = rowToBadge now badgeRow, preferences = userPreferences, localAlias = ""}
     fullPreferences = fullPreferences' userPreferences
@@ -670,7 +670,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupKeysRow :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupKeysRow :. GroupMemberRow
 
 type PublicGroupAccessRow = (Maybe Text, Maybe Text, Maybe BoolInt, Maybe BoolInt)
 
@@ -679,7 +679,7 @@ type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, Ver
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences) :. BadgeRow
 
 toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. groupKeysRow :. userMemberRow) =
+toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. groupKeysRow :. userMemberRow) =
   let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr cxt}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
@@ -689,7 +689,7 @@ toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayN
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-   in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, customData, membersRequireAttention, viaGroupLinkUri, groupKeys}
+   in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupKeys}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
@@ -789,7 +789,7 @@ groupInfoQueryFields =
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,

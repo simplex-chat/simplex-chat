@@ -208,7 +208,7 @@ fun ChatView(
               withBGApi {
                 setGroupMembers(chatRh, cInfo.groupInfo, chatModel)
                 if (cInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
-                  val relays = chatModel.controller.apiGetGroupRelays(cInfo.groupInfo.groupId)
+                  val relays = chatModel.controller.apiGetGroupRelays(chatRh, cInfo.groupInfo.groupId)
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
@@ -407,7 +407,7 @@ fun ChatView(
                 val selectedItems: MutableState<Set<Long>?> = mutableStateOf(null)
                 ModalManager.end.showCustomModal { close ->
                   val appBar = remember { mutableStateOf(null as @Composable (BoxScope.() -> Unit)?) }
-                  ModalView(close, appBar = appBar.value) {
+                  ModalView(close, cardScreen = true, appBar = appBar.value) {
                     val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
                       var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
@@ -510,7 +510,7 @@ fun ChatView(
                 if (chatsCtx.secondaryContextFilter == null) {
                   ModalManager.end.closeModals()
                 }
-                ModalManager.end.showModalCloseable(true) { close ->
+                ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
                     GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
                   }
@@ -802,7 +802,7 @@ fun ChatView(
       }
       is ChatInfo.ContactConnection -> {
         val close = { chatModel.chatId.value = null }
-          ModalView(close, showClose = appPlatform.isAndroid, content = {
+          ModalView(close, showClose = appPlatform.isAndroid, cardScreen = true, content = {
             ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, false, close)
           })
           LaunchedEffect(chatInfo.id) {
@@ -1547,6 +1547,11 @@ fun subscriberCountStr(count: Long): String =
   if (count == 1L) String.format(generalGetString(MR.strings.channel_subscriber_count_singular), count)
   else String.format(generalGetString(MR.strings.channel_subscriber_count_plural), count)
 
+fun ownersContributorsCountStr(count: Int, withContributors: Boolean): String =
+  if (withContributors) String.format(generalGetString(MR.strings.channel_owners_contributors_count), count)
+  else if (count == 1) String.format(generalGetString(MR.strings.channel_owner_count_singular), count)
+  else String.format(generalGetString(MR.strings.channel_owner_count_plural), count)
+
 @Composable
 fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
@@ -2000,7 +2005,7 @@ fun BoxScope.ChatItemsList(
                 Column(
                   Modifier
                     .padding(top = 8.dp)
-                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                    .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
                   verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -2035,7 +2040,7 @@ fun BoxScope.ChatItemsList(
                         val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
 
                         Text(
-                          member.memberRole.text,
+                          member.memberRole.text(isChannel = chatInfo.isChannel),
                           Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
                           fontSize = 13.5.sp,
                           fontWeight = FontWeight.Medium,
@@ -2079,7 +2084,7 @@ fun BoxScope.ChatItemsList(
                   }
                   Row(
                     Modifier
-                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
@@ -2092,7 +2097,7 @@ fun BoxScope.ChatItemsList(
                 Column(
                   Modifier
                     .padding(top = 8.dp)
-                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                    .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
                   verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -2162,7 +2167,7 @@ fun BoxScope.ChatItemsList(
                   }
                   Row(
                     Modifier
-                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .padding(start = if (chatInfo.isChannel) 12.dp else 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
@@ -3206,7 +3211,7 @@ fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close:
   withBGApi {
     setGroupMembers(rhId, groupInfo, chatModel)
     close?.invoke()
-    ModalManager.end.showModalCloseable(true) { close ->
+    ModalManager.end.showModalCloseable(showClose = true) { close ->
       AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
     }
   }
@@ -3217,7 +3222,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
   withBGApi {
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
-    ModalManager.end.showModalCloseable(true) {
+    ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) {
       GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo)
     }
   }

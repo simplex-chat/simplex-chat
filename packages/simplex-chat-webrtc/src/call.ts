@@ -583,6 +583,8 @@ const processCommand = (function () {
         case "capabilities":
           console.log("starting outgoing call - capabilities")
           if (activeCall) endCall()
+          // Stop a preview stream from an earlier pre-connect outgoing call being replaced (activeCall may be null here)
+          stopNotConnectedCall()
 
           let localStream: MediaStream | null = null
           try {
@@ -623,7 +625,8 @@ const processCommand = (function () {
           if (activeCall) endCall()
 
           // It can be already defined on Android when switching calls (if the previous call was outgoing)
-          notConnectedCall = undefined
+          // Stop its preview tracks before clearing, otherwise camera/mic stay live
+          stopNotConnectedCall()
           inactiveCallMediaSources.mic = true
           inactiveCallMediaSources.camera = command.media == CallMediaType.Video
           inactiveCallMediaSourcesChanged(inactiveCallMediaSources)
@@ -1441,6 +1444,14 @@ const processCommand = (function () {
     if (activeCall) {
       activeCall.localStream.getTracks().forEach((track) => track.stop())
       activeCall.localScreenStream.getTracks().forEach((track) => track.stop())
+    }
+  }
+
+  // Call on any path that abandons notConnectedCall, otherwise its preview camera/mic tracks stay live.
+  function stopNotConnectedCall() {
+    if (notConnectedCall) {
+      notConnectedCall.localStream.getTracks().forEach((track) => track.stop())
+      notConnectedCall = undefined
     }
   }
 

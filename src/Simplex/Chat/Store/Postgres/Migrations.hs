@@ -33,6 +33,11 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260507_relay_inactive_at
 import Simplex.Chat.Store.Postgres.Migrations.M20260514_relay_request_group_link_index
 import Simplex.Chat.Store.Postgres.Migrations.M20260515_public_group_access
 import Simplex.Chat.Store.Postgres.Migrations.M20260516_supporter_badges
+import Simplex.Chat.Store.Postgres.Migrations.M20260529_delivery_job_senders
+import Simplex.Chat.Store.Postgres.Migrations.M20260530_client_services
+import Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
+import Simplex.Chat.Store.Postgres.Migrations.M20260601_relay_sent_web_domain
+import Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -65,7 +70,12 @@ schemaMigrations =
     ("20260507_relay_inactive_at", m20260507_relay_inactive_at, Just down_m20260507_relay_inactive_at),
     ("20260514_relay_request_group_link_index", m20260514_relay_request_group_link_index, Just down_m20260514_relay_request_group_link_index),
     ("20260515_public_group_access", m20260515_public_group_access, Just down_m20260515_public_group_access),
-    ("20260516_supporter_badges", m20260516_supporter_badges, Just down_m20260516_supporter_badges)
+    ("20260516_supporter_badges", m20260516_supporter_badges, Just down_m20260516_supporter_badges),
+    ("20260529_delivery_job_senders", m20260529_delivery_job_senders, Just down_m20260529_delivery_job_senders),
+    ("20260530_client_services", m20260530_client_services, Just down_m20260530_client_services),
+    ("20260531_member_removed_at", m20260531_member_removed_at, Just down_m20260531_member_removed_at),
+    ("20260601_relay_sent_web_domain", m20260601_relay_sent_web_domain, Just down_m20260601_relay_sent_web_domain),
+    ("20260602_group_roster", m20260602_group_roster, Just down_m20260602_group_roster)
   ]
 
 -- | The list of migrations in ascending order by date

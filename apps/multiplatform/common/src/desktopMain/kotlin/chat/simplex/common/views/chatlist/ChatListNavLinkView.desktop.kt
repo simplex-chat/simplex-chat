@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import SectionDivider
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.*
@@ -62,6 +61,6 @@ actual fun ChatListNavLinkLayout(
   if (selectedChat.value || nextChatSelected.value) {
     Divider()
   } else {
-    SectionDivider()
+    Divider(Modifier.padding(horizontal = 8.dp))
   }
 }

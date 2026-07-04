@@ -727,9 +727,6 @@ class ChatErrorType_noRcvFileUser(TypedDict):
 class ChatErrorType_userUnknown(TypedDict):
     type: Literal["userUnknown"]
 
-class ChatErrorType_activeUserExists(TypedDict):
-    type: Literal["activeUserExists"]
-
 class ChatErrorType_userExists(TypedDict):
     type: Literal["userExists"]
     contactName: str
@@ -1002,7 +999,6 @@ ChatErrorType = (
     | ChatErrorType_noSndFileUser
     | ChatErrorType_noRcvFileUser
     | ChatErrorType_userUnknown
-    | ChatErrorType_activeUserExists
     | ChatErrorType_userExists
     | ChatErrorType_chatRelayExists
     | ChatErrorType_differentActiveUser
@@ -1074,7 +1070,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "activeUserExists", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -1666,6 +1662,8 @@ class FileTransferMeta(TypedDict):
     chunkSize: int  # int64
     cancelled: bool
 
+FileType = Literal["normal", "roster"]
+
 class Format_bold(TypedDict):
     type: Literal["bold"]
 
@@ -1826,6 +1824,7 @@ class GroupInfo(TypedDict):
     uiThemes: NotRequired["UIThemeEntityOverrides"]
     customData: NotRequired[dict[str, object]]
     groupSummary: "GroupSummary"
+    rosterVersion: NotRequired[int]  # int64
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
     groupKeys: NotRequired["GroupKeys"]
@@ -2258,6 +2257,7 @@ class NewUser(TypedDict):
     profile: NotRequired["Profile"]
     pastTimestamp: bool
     userChatRelay: bool
+    clientService: bool
 
 class NoteFolder(TypedDict):
     noteFolderId: int  # int64
@@ -2553,6 +2553,7 @@ class RcvFileTransfer(TypedDict):
     xftpRcvFile: NotRequired["XFTPRcvFile"]
     fileInvitation: "FileInvitation"
     fileStatus: "RcvFileStatus"
+    fileType: "FileType"
     rcvFileInline: NotRequired["InlineFileMode"]
     senderDisplayName: str
     chunkSize: int  # int64
@@ -2670,7 +2671,7 @@ class RelayProfile(TypedDict):
     shortDescr: NotRequired[str]
     image: NotRequired[str]
 
-RelayStatus = Literal["new", "invited", "accepted", "active", "inactive", "rejected"]
+RelayStatus = Literal["new", "invited", "accepted", "acknowledgedRoster", "active", "inactive", "rejected"]
 
 ReportReason = Literal["spam", "content", "community", "profile", "other"]
 
@@ -3419,8 +3420,9 @@ class User(TypedDict):
     sendRcptsSmallGroups: bool
     autoAcceptMemberContacts: bool
     userMemberProfileUpdatedAt: NotRequired[str]  # ISO-8601 timestamp
-    uiThemes: NotRequired["UIThemeEntityOverrides"]
     userChatRelay: bool
+    clientService: bool
+    uiThemes: NotRequired["UIThemeEntityOverrides"]
 
 class UserChatRelay(TypedDict):
     chatRelayId: int  # int64

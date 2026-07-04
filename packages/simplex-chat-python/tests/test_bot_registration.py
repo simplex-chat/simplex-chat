@@ -86,8 +86,63 @@ def test_bot_profile_to_wire_with_commands():
     )
     cmds = bot._profile_to_wire().get("preferences", {}).get("commands") or []
     assert len(cmds) == 2
+    # `params` defaults to None and must be ABSENT from the wire dict
+    # (not present as `null`/`""`) so the Haskell parser sees
+    # `Nothing` and the SimpleX client sends the bare `/keyword` on
+    # tap rather than pasting a trailing-space placeholder.
     assert cmds[0] == {"type": "command", "keyword": "ping", "label": "Ping bot"}
     assert cmds[1] == {"type": "command", "keyword": "help", "label": "Show help"}
+    assert "params" not in cmds[0]
+    assert "params" not in cmds[1]
+
+
+def test_bot_command_params_emits_on_wire():
+    """When `BotCommand.params` is set, the wire dict carries it as
+    `params: <str>`. The SimpleX client (verified against
+    `CommandsMenuView.kt:153-161` and `CommandsMenuView.swift:117-128`
+    in simplex-chat 6.5) then pastes `/<keyword> <params>` into the
+    input box on tap, positions the cursor at the end, and lets the
+    user edit before sending. Use this for commands that take a
+    required argument (`/review <pr-url>`)."""
+    bot = Bot(
+        profile=BotProfile(display_name="x"),
+        db=SqliteDb(file_prefix="/tmp/test"),
+        commands=[
+            BotCommand(keyword="review", label="Review PR", params="<pr-url>"),
+            BotCommand(keyword="order", label="Place order", params="<order number>"),
+        ],
+    )
+    cmds = bot._profile_to_wire().get("preferences", {}).get("commands") or []
+    assert cmds[0] == {
+        "type": "command",
+        "keyword": "review",
+        "label": "Review PR",
+        "params": "<pr-url>",
+    }
+    assert cmds[1] == {
+        "type": "command",
+        "keyword": "order",
+        "label": "Place order",
+        "params": "<order number>",
+    }
+
+
+def test_bot_command_distinguishes_none_from_empty_params():
+    """`params=None` (immediate send) and `params=""` (paste with
+    trailing space) are semantically different on the client side.
+    Verify the wire form preserves the distinction: None → key
+    absent; empty string → key present with empty value."""
+    bot = Bot(
+        profile=BotProfile(display_name="x"),
+        db=SqliteDb(file_prefix="/tmp/test"),
+        commands=[
+            BotCommand(keyword="send", label="Send", params=None),
+            BotCommand(keyword="paste", label="Paste", params=""),
+        ],
+    )
+    cmds = bot._profile_to_wire().get("preferences", {}).get("commands") or []
+    assert "params" not in cmds[0]
+    assert cmds[1].get("params") == ""
 
 
 def test_client_profile_to_wire_has_no_bot_extras():

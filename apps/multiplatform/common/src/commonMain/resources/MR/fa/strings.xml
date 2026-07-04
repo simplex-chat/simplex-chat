@@ -781,7 +781,7 @@
     <string name="la_mode_off">خاموش</string>
     <string name="receipts_groups_override_enabled">ارسال رسید برای %d گروه فعال است</string>
     <string name="receipts_groups_override_disabled">ارسال رسید برای %d گروه غیرفعال است</string>
-    <string name="settings_section_title_support">حمایت از SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">حمایت از SimpleX Chat</string>
     <string name="settings_section_title_socks">پروکسی SOCKS</string>
     <string name="settings_section_title_use_from_desktop">استفاده از کامپیوتر</string>
     <string name="new_database_archive">آرشیو پایگاه داده جدید</string>

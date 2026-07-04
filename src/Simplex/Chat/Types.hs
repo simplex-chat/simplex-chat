@@ -137,17 +137,19 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    autoAcceptMemberContacts :: BoolDef,
+    autoAcceptMemberContacts :: Bool,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
-    uiThemes :: Maybe UIThemeEntityOverrides,
-    userChatRelay :: BoolDef
+    userChatRelay :: BoolDef,
+    clientService :: BoolDef,
+    uiThemes :: Maybe UIThemeEntityOverrides
   }
   deriving (Show)
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
     pastTimestamp :: Bool,
-    userChatRelay :: Bool
+    userChatRelay :: BoolDef,
+    clientService :: BoolDef
   }
   deriving (Show)
 
@@ -488,6 +490,7 @@ data GroupInfo = GroupInfo
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
+    rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupKeys :: Maybe GroupKeys
@@ -885,8 +888,13 @@ instance FromJSON ImageData where
   parseJSON = fmap ImageData . J.parseJSON
 
 instance ToJSON ImageData where
-  toJSON (ImageData t) = J.toJSON t
-  toEncoding (ImageData t) = J.toEncoding t
+  toJSON (ImageData t) = J.toJSON $ safeImageData t
+  toEncoding (ImageData t) = J.toEncoding $ safeImageData t
+
+safeImageData :: Text -> Text
+safeImageData t
+  | "data:" `T.isPrefixOf` t = t
+  | otherwise = ""
 
 instance ToField ImageData where toField (ImageData t) = toField t
 
@@ -1013,6 +1021,11 @@ data IntroInvitation = IntroInvitation
 newtype MemberKey = MemberKey C.PublicKeyEd25519
   deriving (Eq, Show)
   deriving newtype (StrEncoding)
+
+-- Binary encoding for the roster blob; delegates to the Ed25519 key.
+instance Encoding MemberKey where
+  smpEncode (MemberKey k) = smpEncode k
+  smpP = MemberKey <$> smpP
 
 instance FromJSON MemberKey where
   parseJSON = strParseJSON "MemberKey"
@@ -1535,11 +1548,38 @@ instance ToJSON InlineFileMode where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+-- Discriminates ordinary chat files from the roster blob file, so the receive
+-- completion / cancel paths branch on the type rather than on chat_item_id (note
+-- folders and redirects also lack a chat item).
+data FileType = FTNormal | FTRoster
+  deriving (Eq, Show)
+
+instance TextEncoding FileType where
+  textEncode = \case
+    FTNormal -> "normal"
+    FTRoster -> "roster"
+  textDecode = \case
+    "normal" -> Just FTNormal
+    "roster" -> Just FTRoster
+    _ -> Nothing
+
+instance FromField FileType where fromField = fromTextField_ textDecode
+
+instance ToField FileType where toField = toField . textEncode
+
+instance FromJSON FileType where
+  parseJSON = textParseJSON "FileType"
+
+instance ToJSON FileType where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
+    fileType :: FileType,
     rcvFileInline :: Maybe InlineFileMode,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
@@ -2083,6 +2123,12 @@ data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublic
 
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
+
+-- A monotonic per-change counter, not a negotiated protocol version: Int64 rather than the Word16 of
+-- Version, so a long-lived high-churn channel cannot wrap and be permanently rejected by relays (v >= cur).
+newtype VersionRoster = VersionRoster Int64
+  deriving (Eq, Ord, Show)
+  deriving newtype (FromJSON, ToJSON, FromField, ToField)
 
 -- this newtype exists to have a concise JSON encoding of version ranges in chat protocol messages in the form of "1-2" or just "1"
 newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRangeChat} deriving (Eq, Show)

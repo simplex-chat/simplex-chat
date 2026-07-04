@@ -1021,7 +1021,6 @@ export type ChatErrorType =
   | ChatErrorType.NoSndFileUser
   | ChatErrorType.NoRcvFileUser
   | ChatErrorType.UserUnknown
-  | ChatErrorType.ActiveUserExists
   | ChatErrorType.UserExists
   | ChatErrorType.ChatRelayExists
   | ChatErrorType.DifferentActiveUser
@@ -1099,7 +1098,6 @@ export namespace ChatErrorType {
     | "noSndFileUser"
     | "noRcvFileUser"
     | "userUnknown"
-    | "activeUserExists"
     | "userExists"
     | "chatRelayExists"
     | "differentActiveUser"
@@ -1195,10 +1193,6 @@ export namespace ChatErrorType {
 
   export interface UserUnknown extends Interface {
     type: "userUnknown"
-  }
-
-  export interface ActiveUserExists extends Interface {
-    type: "activeUserExists"
   }
 
   export interface UserExists extends Interface {
@@ -2375,6 +2369,11 @@ export interface FileTransferMeta {
   cancelled: boolean
 }
 
+export enum FileType {
+  Normal = "normal",
+  Roster = "roster",
+}
+
 export type Format = 
   | Format.Bold
   | Format.Italic
@@ -2605,6 +2604,7 @@ export interface GroupInfo {
   uiThemes?: UIThemeEntityOverrides
   customData?: object
   groupSummary: GroupSummary
+  rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
   groupKeys?: GroupKeys
@@ -3230,6 +3230,7 @@ export interface NewUser {
   profile?: Profile
   pastTimestamp: boolean
   userChatRelay: boolean
+  clientService: boolean
 }
 
 export interface NoteFolder {
@@ -3640,6 +3641,7 @@ export interface RcvFileTransfer {
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
   fileStatus: RcvFileStatus
+  fileType: FileType
   rcvFileInline?: InlineFileMode
   senderDisplayName: string
   chunkSize: number // int64
@@ -3811,6 +3813,7 @@ export enum RelayStatus {
   New = "new",
   Invited = "invited",
   Accepted = "accepted",
+  AcknowledgedRoster = "acknowledgedRoster",
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",
@@ -4879,8 +4882,9 @@ export interface User {
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
-  uiThemes?: UIThemeEntityOverrides
   userChatRelay: boolean
+  clientService: boolean
+  uiThemes?: UIThemeEntityOverrides
 }
 
 export interface UserChatRelay {
