@@ -1517,7 +1517,7 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnectPlan(rh: Long?, connLink: String, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): Pair<CreatedConnLink, ConnectionPlan>? {
+  suspend fun apiConnectPlan(rh: Long?, connLink: String, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): Pair<CreatedConnLink?, ConnectionPlan>? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, linkOwnerSig), inProgress = inProgress)
     if (r is API.Result && r.res is CR.CRConnectionPlan) return r.res.connLink to r.res.connectionPlan
@@ -6513,7 +6513,7 @@ sealed class CR {
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connLinkInvitation: CreatedConnLink, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
-  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val connectionPlan: ConnectionPlan): CR()
+  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink?, val connectionPlan: ConnectionPlan): CR()
   @Serializable @SerialName("newPreparedChat") class NewPreparedChat(val user: UserRef, val chat: Chat): CR()
   @Serializable @SerialName("contactUserChanged") class ContactUserChanged(val user: UserRef, val fromContact: Contact, val newUser: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupUserChanged") class GroupUserChanged(val user: UserRef, val fromGroup: GroupInfo, val newUser: UserRef, val toGroup: GroupInfo): CR()

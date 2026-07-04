@@ -81,6 +81,17 @@ private suspend fun planAndConnectTask(
     val (connectionLink, connectionPlan) = result
     val target = strConnectTarget(shortOrFullLink.trim())
     val linkText = if (target is ConnectTarget.Link) "<br><br><u>${target.linkText}</u>" else ""
+    if (connectionLink == null) {
+      if (connectionPlan is ConnectionPlan.Error) {
+        AlertManager.privacySensitive.showAlertMsg(
+          generalGetString(MR.strings.connection_error),
+          ChatController.connErrorText(connectionPlan.chatError),
+          hostDevice = hostDevice(rhId),
+        )
+      }
+      cleanup()
+      return completable
+    }
     when (connectionPlan) {
       is ConnectionPlan.InvitationLink -> when (connectionPlan.invitationLinkPlan) {
         is InvitationLinkPlan.Ok ->

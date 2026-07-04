@@ -814,7 +814,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connLink: CreatedConnLink, connectionPlan: ConnectionPlan)
+    case connectionPlan(user: UserRef, connLink: CreatedConnLink?, connectionPlan: ConnectionPlan)
     case newPreparedChat(user: UserRef, chat: ChatData)
     case contactUserChanged(user: UserRef, fromContact: Contact, newUser: UserRef, toContact: Contact)
     case groupUserChanged(user: UserRef, fromGroup: GroupInfo, newUser: UserRef, toGroup: GroupInfo)
