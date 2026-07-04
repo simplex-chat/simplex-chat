@@ -76,8 +76,7 @@ name before you.
 
 ## Step 3. Check what the app sees
 
-Copy your `@name`. In the app, open **New chat**, choose **Connect via link**,
-and tap **Tap to paste link**.
+Copy your `#name.testing` (or `@name.testing`). Paste the name into the search bar, or simply type it.
 
 The app reports that the name is registered but not yet added to your profile:
 
@@ -96,13 +95,14 @@ Set the name on the same profile the record points at.
 - For your **channel**, open the channel information, tap **SimpleX name** (below
   **Channel link**), enter the name, and save.
 
-This publishes proof inside your link that it is `@name`.
+This proves to people who connect to you that `#name.testing` (or `@name.testing`) is your name.
 
 ## Step 5. Connect by name
 
-On another device, copy the `@name`, open **New chat**, choose **Connect via
-link**, and tap **Tap to paste link**. This time the app connects, and the name
+On another device, copy `#name.testing` (or `@name.testing`). Paste the name into the search bar, or simply type it. This time the app connects, and the name
 shows a check mark next to it.
+
+You can paste the name in your own device too - the app will warn you that it is your own name.
 
 Anyone can now reach you by name, and their app confirms it is really you.
 
