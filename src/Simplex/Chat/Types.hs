@@ -1795,12 +1795,6 @@ data ConnectTarget (m :: ConnectionMode) where
 data ContactNameOrLink = CTName SimplexNameInfo | CTLink (ConnShortLink 'CMContact)
   deriving (Eq, Show)
 
-connectTargetDomain :: AConnectTarget -> Maybe SimplexDomain
-connectTargetDomain (ACTarget _ t) = case t of
-  CTShortContact (CTName ni) -> Just $ nameDomain ni
-  CTDomain d -> Just d
-  _ -> Nothing
-
 deriving instance Eq (ConnectTarget m)
 
 deriving instance Show (ConnectTarget m)

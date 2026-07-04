@@ -204,7 +204,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
-  CRConnectionPlan u connLink planDomain connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink planDomain connectionPlan
+  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -2144,8 +2144,14 @@ viewGroupUserChanged
   where
     userChangedStr = "group " <> ttyGroup' g <> " changed from user " <> plain un <> " to user " <> plain un'
 
-viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> Maybe SimplexDomain -> ConnectionPlan -> [StyledString]
-viewConnectionPlan ChatConfig {logLevel, testView} _connLink planDomain = \case
+otherSimplexNameNote :: Maybe SimplexNameInfo -> [StyledString]
+otherSimplexNameNote = \case
+  Just ni@(SimplexNameInfo NTPublicGroup _) -> [plain $ "You can also join channel " <> shortNameInfoStr ni]
+  Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
+  Nothing -> []
+
+viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
@@ -2164,59 +2170,53 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planDomain = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
-  CPContactAddress cap domainHasGroup ->
-    contactAddress
-      <> [plain $ "You can also join channel " <> shortNameInfoStr (SimplexNameInfo NTPublicGroup d) | Just d <- [planDomain], isTrue domainHasGroup]
+  CPContactAddress cap -> case cap of
+    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
+    CAPOwnLink -> [ctAddr "own address"]
+    CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
+    CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+    CAPKnown ct
+      | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> contactDomainLine ct
+      | otherwise ->
+          [ctAddr ("known contact " <> ttyContact' ct)]
+            <> contactDomainLine ct
+            <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
+    CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactDomainLine ct
     where
-      contactAddress = case cap of
-        CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
-        CAPOwnLink -> [ctAddr "own address"]
-        CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
-        CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
-        CAPKnown ct
-          | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> contactDomainLine ct
-          | otherwise ->
-              [ctAddr ("known contact " <> ttyContact' ct)]
-                <> contactDomainLine ct
-                <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
-        CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactDomainLine ct
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
-  CPGroupLink glp domainHasContact ->
-    groupLink
-      <> [plain $ "You can also connect to " <> shortNameInfoStr (SimplexNameInfo NTContact d) <> " in direct chat" | Just d <- [planDomain], isTrue domainHasContact]
+  CPGroupLink glp -> case glp of
+    GLPOk groupSLinkInfo_ groupSLinkData ov ->
+      let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
+       in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
+            <> viewSigVerification ov
+            <> [viewJSON groupSLinkData | testView]
+    GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
+    GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
+    GLPConnectingProhibit Nothing -> [grpLink "connecting"]
+    GLPConnectingProhibit (Just g) -> connecting g
+    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
+      Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
+        GSMemUnknown
+          | connLinkStartedConnection -> connecting g
+          | otherwise -> [knownGroup "prepared "] <> groupDomainLine g
+        GSMemAccepted -> connecting g
+        _
+          | memberRemoved m -> [knownGroup "deleted "] <> groupDomainLine g -- it should not get here, as this plan is returned as GLPOk
+          | otherwise -> knownActive
+      _ -> knownActive
+      where
+        knownActive =
+          [knownGroup ""]
+            <> groupDomainLine g
+            <> ["use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"]
+        knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
+    GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
+    GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
     where
-      groupLink = case glp of
-        GLPOk groupSLinkInfo_ groupSLinkData ov ->
-          let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
-           in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
-                <> viewSigVerification ov
-                <> [viewJSON groupSLinkData | testView]
-        GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
-        GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
-        GLPConnectingProhibit Nothing -> [grpLink "connecting"]
-        GLPConnectingProhibit (Just g) -> connecting g
-        GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
-          Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
-            GSMemUnknown
-              | connLinkStartedConnection -> connecting g
-              | otherwise -> [knownGroup "prepared "] <> groupDomainLine g
-            GSMemAccepted -> connecting g
-            _
-              | memberRemoved m -> [knownGroup "deleted "] <> groupDomainLine g -- it should not get here, as this plan is returned as GLPOk
-              | otherwise -> knownActive
-          _ -> knownActive
-          where
-            knownActive =
-              [knownGroup ""]
-                <> groupDomainLine g
-                <> ["use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"]
-            knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
-        GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
-        GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
       grpOrBizLink GroupInfo {businessChat} = case businessChat of

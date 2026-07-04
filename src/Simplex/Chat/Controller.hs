@@ -820,7 +820,7 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, planDomain :: Maybe SimplexDomain, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
   | CRNewPreparedChat {user :: User, chat :: AChat}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
@@ -1083,8 +1083,8 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, domainHasGroup :: BoolDef}
-  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, domainHasContact :: BoolDef}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
   | CPError {chatError :: ChatError}
   deriving (Show)
 
@@ -1146,13 +1146,13 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap _ -> case cap of
+  CPContactAddress cap -> case cap of
     CAPOk {} -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp _ -> case glp of
+  CPGroupLink glp -> case glp of
     GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True

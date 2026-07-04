@@ -23,6 +23,7 @@ chatNamesTests = do
   it "connect by channel name" testConnectByChannelName
   it "connect by name resolving to channel (primary) and direct contact" testConnectByNameChannelAndContact
   it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
+  it "connect by name resolving to business (primary) and channel" testConnectByNameBusinessAndChannel
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
 testConnectByName ps = withSmpServerAndNames $ \reg ->
@@ -145,8 +146,8 @@ testConnectByChannelName ps = withSmpServerAndNames $ \reg ->
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
 -- The bare name "team.simplex" resolves to both a channel and a direct contact. The channel is tried
--- first and succeeds (bob has joined #team), so it is the primary; the plan also reports that the
--- name has a direct contact (domainHasContact -> "also has direct chat").
+-- first and succeeds (bob has joined #team), so it is the primary (planSimplexName); otherSimplexName
+-- is the direct contact @team.simplex, shown as "You can also connect to @team.simplex in direct chat".
 testConnectByNameChannelAndContact :: HasCallStack => TestParams -> IO ()
 testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -182,9 +183,9 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
 
 -- The bare name "acme.simplex" resolves to both a channel and a direct contact. The channel is tried
 -- first but its group profile does not claim the domain, so the channel side of the plan fails; the
--- plan falls back to the direct contact (primary) while still reporting that the name has a channel
--- (domainHasGroup -> "also has channel"). The channel link is a real, fetchable #acme channel, so the
--- failure is the faithful "channel does not claim this domain" case, not a broken link.
+-- plan falls back to the direct contact as primary (planSimplexName) while otherSimplexName is the
+-- channel #acme, shown as "You can also join channel #acme". The channel link is a real, fetchable
+-- #acme channel, so the failure is the faithful "channel does not claim this domain" case, not a broken link.
 testConnectByNameContactAndChannel :: HasCallStack => TestParams -> IO ()
 testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -202,3 +203,31 @@ testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
         bob <## "You can also join channel #acme"
   where
     acmeName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
+
+-- The bare name "biz.simplex" resolves to both a channel and a business contact address (a contact
+-- short link with the business flag, which becomes a group when connected). The channel is tried first
+-- but its group profile does not claim the domain, so the channel side fails; the plan falls back to the
+-- business contact address as primary (planSimplexName is NTContact / @, viewed as "business address"),
+-- while otherSimplexName is the channel #biz, shown as "You can also join channel #biz". This proves
+-- addOther keys the "other" name off the resolved name's TYPE (@), so a business (an @ contact that
+-- becomes a group) still offers the # channel. A fresh business connect plan is CPContactAddress (CAPOk)
+-- with business=True (hence "business address"); it only turns into an actual group at connect time.
+testConnectByNameBusinessAndChannel :: HasCallStack => TestParams -> IO ()
+testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        (channelLink, _) <- prepareChannel1Relay "biz" alice cath
+        alice ##> "/ad"
+        (contactLink, _) <- getContactLinks alice True
+        registerName reg bizName (contactAndChannelNameRecord "biz" (T.pack contactLink) (T.pack channelLink))
+        alice ##> "/auto_accept on business"
+        alice <## "auto_accept on, business"
+        alice ##> "/_set domain 1 biz.simplex"
+        alice <## "new contact address set"
+        bob ##> "/_connect plan 1 biz.simplex"
+        bob <## "business address: ok to connect"
+        _ <- getTermLine bob -- contact short link data (JSON, printed in test view)
+        bob <## "You can also join channel #biz"
+  where
+    bizName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "biz" [])
