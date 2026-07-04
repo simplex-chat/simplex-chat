@@ -1986,13 +1986,13 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
-    groupDomain?: SimplexDomain
+    domainHasGroup: boolean
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
-    contactDomain?: SimplexDomain
+    domainHasContact: boolean
   }
 
   export interface Error extends Interface {
@@ -2051,7 +2051,6 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
-    verifiedDomain?: SimplexDomain
   }
 
   export interface OwnLink extends Interface {
@@ -2683,7 +2682,6 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
-    verifiedDomain?: SimplexDomain
   }
 
   export interface OwnLink extends Interface {

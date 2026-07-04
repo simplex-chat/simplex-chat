@@ -1393,6 +1393,7 @@ ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
 - connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- planDomain: [SimplexDomain](./TYPES.md#simplexdomain)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
 
 ChatCmdError: Command error (only used in WebSockets API).

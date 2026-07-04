@@ -1382,12 +1382,12 @@ class ConnectionPlan_invitationLink(TypedDict):
 class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
-    groupDomain: NotRequired["SimplexDomain"]
+    domainHasGroup: bool
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
-    contactDomain: NotRequired["SimplexDomain"]
+    domainHasContact: bool
 
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]
@@ -1430,7 +1430,6 @@ class ContactAddressPlan_ok(TypedDict):
     type: Literal["ok"]
     contactSLinkData_: NotRequired["ContactShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
-    verifiedDomain: NotRequired["SimplexDomain"]
 
 class ContactAddressPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -1870,7 +1869,6 @@ class GroupLinkPlan_ok(TypedDict):
     groupSLinkInfo_: NotRequired["GroupShortLinkInfo"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
-    verifiedDomain: NotRequired["SimplexDomain"]
 
 class GroupLinkPlan_ownLink(TypedDict):
     type: Literal["ownLink"]

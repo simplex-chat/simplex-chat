@@ -561,7 +561,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
                 sendToApprove g' gr' n'
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) True Nothing) >>= \case
-            Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}) _)) ->
+            Right (CRConnectionPlan _ _ _ (CPGroupLink (GLPKnown {groupInfo = g'}) _)) ->
               case dbOwnerMemberId gr of
                 Just ownerGMId ->
                   withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (storeCxt cc) user groupId ownerGMId) >>= \case
@@ -819,10 +819,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $ do
             let link = ACL SCMContact $ CLShort groupLink
             sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) True Nothing) >>= \case
-              Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated = BoolDef updated, linkOwners = ListDef owners}) _)) ->
+              Right (CRConnectionPlan _ _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated, linkOwners = ListDef owners}) _)) ->
                 checkValidOwner dbOwnerMemberId owners $ do
-                  when updated $ reapprove pg gr groupRegStatus g'
-                  when (updated || summary /= groupSummary g') $ listingsUpdated env
+                  when groupUpdated $ reapprove pg gr groupRegStatus g'
+                  when (groupUpdated || summary /= groupSummary g') $ listingsUpdated env
               Left (ChatErrorAgent {agentError = SMP _ err}) | linkDeleted err ->
                 setGroupStatus logError st env cc groupId GRSRemoved $ \gr' ->
                   notifyOwner gr' "The channel link is no longer valid.\nThe channel is removed from the directory."
@@ -955,7 +955,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               mId = MemberId oIdBytes
               gt' = groupTypeStr gt
           sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) True (Just ownerSig)) >>= \case
-            Right (CRConnectionPlan _ (ACCL SCMContact ccLink) plan) ->
+            Right (CRConnectionPlan _ (ACCL SCMContact ccLink) _ plan) ->
               handleGroupLinkPlan ct ccLink mId ownerSig gt' plan
             _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
     deChatLinkReceived ct (MCLGroup {groupProfile = GroupProfile {publicGroup = Just pg}}) _ =
@@ -984,8 +984,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           (_, Just (OVFailed reason)) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
           (Nothing, _) -> sendMessage cc ct $ "Error: no " <> gt <> " information available via the link."
           _ -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership. Please report it to directory admins."
-        GLPKnown {groupInfo = g, groupUpdated = BoolDef updated, ownerVerification} -> case ownerVerification of
-          Just OVVerified -> deReregistration ct g updated ownerSig
+        GLPKnown {groupInfo = g, groupUpdated, ownerVerification} -> case ownerVerification of
+          Just OVVerified -> deReregistration ct g groupUpdated ownerSig
           Just (OVFailed reason) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
           Nothing -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership."
         GLPConnectingProhibit _ -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."

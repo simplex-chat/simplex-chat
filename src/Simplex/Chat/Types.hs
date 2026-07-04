@@ -60,7 +60,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo, UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AConnectionLink (..), AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink (..), ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -1794,6 +1794,12 @@ data ConnectTarget (m :: ConnectionMode) where
 
 data ContactNameOrLink = CTName SimplexNameInfo | CTLink (ConnShortLink 'CMContact)
   deriving (Eq, Show)
+
+connectTargetDomain :: AConnectTarget -> Maybe SimplexDomain
+connectTargetDomain (ACTarget _ t) = case t of
+  CTShortContact (CTName ni) -> Just $ nameDomain ni
+  CTDomain d -> Just d
+  _ -> Nothing
 
 deriving instance Eq (ConnectTarget m)
 

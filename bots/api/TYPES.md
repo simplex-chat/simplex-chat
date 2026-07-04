@@ -1747,12 +1747,12 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
-- groupDomain: [SimplexDomain](#simplexdomain)?
+- domainHasGroup: bool
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
-- contactDomain: [SimplexDomain](#simplexdomain)?
+- domainHasContact: bool
 
 Error:
 - type: "error"
@@ -1798,7 +1798,6 @@ Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
-- verifiedDomain: [SimplexDomain](#simplexdomain)?
 
 OwnLink:
 - type: "ownLink"
@@ -2395,7 +2394,6 @@ Ok:
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
-- verifiedDomain: [SimplexDomain](#simplexdomain)?
 
 OwnLink:
 - type: "ownLink"
