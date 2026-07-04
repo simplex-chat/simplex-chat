@@ -94,6 +94,7 @@ import Simplex.Chat.Util (liftIOEither, zipWith3')
 import qualified Simplex.Chat.Util as U
 import Simplex.Chat.Web (webPreviewWorker)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSizeHard)
+import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
@@ -1599,7 +1600,7 @@ processChatCommand cxt nm = \case
         Just Refl -> pure $ AUS SDBNew $ newUserServer srv
         Nothing -> throwCmdError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
   APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
-    lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a nm (aUserId user) server)
+    lift $ (\case Left err -> CRServerTestResult user srv (Just err) Nothing; Right info -> CRServerTestResult user srv Nothing (Just info)) <$> withAgent' (\a -> testProtocolServer a nm (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APITestProtoServer userId srv
   APITestChatRelay userId address -> withUserId userId $ \user -> do
