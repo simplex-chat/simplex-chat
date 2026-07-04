@@ -164,12 +164,16 @@ fun MainScreen() {
             }
           }
           SetupClipboardListener()
-          if (appPlatform.isAndroid) {
-            AndroidWrapInCallLayout {
+          BoxWithConstraints {
+            if (appPlatform.isAndroid) {
+              AndroidWrapInCallLayout {
+                AndroidScreen(userPickerState)
+              }
+            } else if (maxWidth < 600.dp) {
               AndroidScreen(userPickerState)
+            } else {
+              DesktopScreen(userPickerState)
             }
-          } else {
-            DesktopScreen(userPickerState)
           }
         }
       }
