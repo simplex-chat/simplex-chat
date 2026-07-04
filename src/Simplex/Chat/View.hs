@@ -204,7 +204,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
-  CRConnectionPlan u connLink _domain connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan
+  CRConnectionPlan u connLink planDomain connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink planDomain connectionPlan
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -2144,8 +2144,8 @@ viewGroupUserChanged
   where
     userChangedStr = "group " <> ttyGroup' g <> " changed from user " <> plain un <> " to user " <> plain un'
 
-viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
-viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
+viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> Maybe SimplexDomain -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} _connLink planDomain = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
@@ -2164,52 +2164,58 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
-  CPContactAddress cap _ -> case cap of
-    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
-    CAPOwnLink -> [ctAddr "own address"]
-    CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
-    CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
-    CAPKnown ct
-      | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> contactDomainLine ct
-      | otherwise ->
-          [ctAddr ("known contact " <> ttyContact' ct)]
-            <> contactDomainLine ct
-            <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
-    CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactDomainLine ct
+  CPContactAddress cap domainHasGroup ->
+    ( case cap of
+        CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
+        CAPOwnLink -> [ctAddr "own address"]
+        CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
+        CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+        CAPKnown ct
+          | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)] <> contactDomainLine ct
+          | otherwise ->
+              [ctAddr ("known contact " <> ttyContact' ct)]
+                <> contactDomainLine ct
+                <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
+        CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactDomainLine ct
+    )
+      <> planDomainNote NTContact "channel" domainHasGroup
     where
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
-  CPGroupLink glp _ -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData ov ->
-      let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
-       in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
-            <> viewSigVerification ov
-            <> [viewJSON groupSLinkData | testView]
-    GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
-    GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
-    GLPConnectingProhibit Nothing -> [grpLink "connecting"]
-    GLPConnectingProhibit (Just g) -> connecting g
-    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
-      Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
-        GSMemUnknown
-          | connLinkStartedConnection -> connecting g
-          | otherwise -> [knownGroup "prepared "] <> groupDomainLine g
-        GSMemAccepted -> connecting g
-        _
-          | memberRemoved m -> [knownGroup "deleted "] <> groupDomainLine g -- it should not get here, as this plan is returned as GLPOk
-          | otherwise -> knownActive
-      _ -> knownActive
-      where
-        knownActive =
-          [knownGroup ""]
-            <> groupDomainLine g
-            <> ["use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"]
-        knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
-    GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
-    GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
+  CPGroupLink glp domainHasContact ->
+    ( case glp of
+        GLPOk groupSLinkInfo_ groupSLinkData ov ->
+          let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
+           in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
+                <> viewSigVerification ov
+                <> [viewJSON groupSLinkData | testView]
+        GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
+        GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
+        GLPConnectingProhibit Nothing -> [grpLink "connecting"]
+        GLPConnectingProhibit (Just g) -> connecting g
+        GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ _ -> case preparedGroup of
+          Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
+            GSMemUnknown
+              | connLinkStartedConnection -> connecting g
+              | otherwise -> [knownGroup "prepared "] <> groupDomainLine g
+            GSMemAccepted -> connecting g
+            _
+              | memberRemoved m -> [knownGroup "deleted "] <> groupDomainLine g -- it should not get here, as this plan is returned as GLPOk
+              | otherwise -> knownActive
+          _ -> knownActive
+          where
+            knownActive =
+              [knownGroup ""]
+                <> groupDomainLine g
+                <> ["use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"]
+            knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
+        GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
+        GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
+    )
+      <> planDomainNote NTPublicGroup "direct chat" domainHasContact
     where
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
@@ -2235,6 +2241,13 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
       Nothing -> []
+    -- when a bare name (domain) resolves to both a channel and a direct contact, note the other side
+    planDomainNote :: SimplexNameType -> Text -> BoolDef -> [StyledString]
+    planDomainNote nameType other alsoHas
+      | isTrue alsoHas = [plain $ nameStr <> " also has " <> other]
+      | otherwise = []
+      where
+        nameStr = maybe "this SimpleX name" (\d -> "SimpleX name " <> shortNameInfoStr (SimplexNameInfo nameType d)) planDomain
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated

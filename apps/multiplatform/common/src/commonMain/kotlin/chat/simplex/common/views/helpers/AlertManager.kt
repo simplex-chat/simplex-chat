@@ -291,10 +291,13 @@ class AlertManager {
     profileFullName: String,
     profileImage: @Composable () -> Unit,
     profileBadge: LocalBadge? = null,
+    nameCaption: String? = null,
     subtitle: String? = null,
     information: String? = null,
     confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm: (() -> Unit)? = null,
+    secondText: String? = null,
+    onSecond: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
     onDismiss: (() -> Unit)? = null,
   ) {
@@ -337,6 +340,17 @@ class AlertManager {
                   modifier = Modifier.fillMaxWidth()
                 )
 
+                if (nameCaption != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    nameCaption,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.secondary,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
                 if (profileFullName.isNotEmpty() && profileFullName != profileName) {
                   Spacer(Modifier.height(DEFAULT_PADDING_HALF))
                   Text(
@@ -386,6 +400,14 @@ class AlertManager {
                     hideAlert()
                   }, Modifier.focusRequester(focusRequester)) {
                     Text(confirmText)
+                  }
+                }
+                if (secondText != null && onSecond != null) {
+                  TextButton(onClick = {
+                    onSecond.invoke()
+                    hideAlert()
+                  }) {
+                    Text(secondText)
                   }
                 }
                 TextButton(onClick = {

@@ -1116,6 +1116,7 @@ private func showPrepareContactAlert(
     contactShortLinkData: ContactShortLinkData,
     ownerVerification: OwnerVerification? = nil,
     verifiedDomain: SimplexDomain? = nil,
+    groupDomain: SimplexDomain? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1138,6 +1139,7 @@ private func showPrepareContactAlert(
         information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
+        secondTitle: groupDomain != nil ? NSLocalizedString("Open channel", comment: "new chat action") : nil,
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
@@ -1155,6 +1157,9 @@ private func showPrepareContactAlert(
                     }
                 }
             }
+        },
+        onSecond: groupDomain.map { gd in
+            { planAndConnect("#" + gd.fullDomainName, theme: theme, dismiss: dismiss, cleanup: cleanup) }
         }
     )
 }
@@ -1165,6 +1170,7 @@ private func showPrepareGroupAlert(
     groupShortLinkData: GroupShortLinkData,
     ownerVerification: OwnerVerification? = nil,
     verifiedDomain: SimplexDomain? = nil,
+    contactDomain: SimplexDomain? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1189,6 +1195,7 @@ private func showPrepareGroupAlert(
         confirmTitle: isChannel
             ? NSLocalizedString("Open new channel", comment: "new chat action")
             : NSLocalizedString("Open new group", comment: "new chat action"),
+        secondTitle: contactDomain != nil ? NSLocalizedString("Open direct chat", comment: "new chat action") : nil,
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
@@ -1210,6 +1217,9 @@ private func showPrepareGroupAlert(
                     }
                 }
             }
+        },
+        onSecond: contactDomain.map { cd in
+            { planAndConnect("@" + cd.fullDomainName, theme: theme, dismiss: dismiss, cleanup: cleanup) }
         }
     )
 }
@@ -1217,7 +1227,8 @@ private func showPrepareGroupAlert(
 private func showOpenKnownContactAlert(
     _ contact: Contact,
     theme: AppTheme,
-    dismiss: Bool
+    dismiss: Bool,
+    groupDomain: SimplexDomain? = nil
 ) {
     showOpenChatAlert(
         profileName: contact.profile.displayName,
@@ -1235,8 +1246,12 @@ private func showOpenKnownContactAlert(
             contact.nextConnectPrepared
             ? NSLocalizedString("Open new chat", comment: "new chat action")
             : NSLocalizedString("Open chat", comment: "new chat action"),
+        secondTitle: groupDomain != nil ? NSLocalizedString("Open channel", comment: "new chat action") : nil,
         onConfirm: {
             openKnownContact(contact, dismiss: dismiss, cleanup: nil)
+        },
+        onSecond: groupDomain.map { gd in
+            { planAndConnect("#" + gd.fullDomainName, theme: theme, dismiss: dismiss) }
         }
     )
 }
@@ -1244,7 +1259,8 @@ private func showOpenKnownContactAlert(
 private func showOpenKnownGroupAlert(
     _ groupInfo: GroupInfo,
     theme: AppTheme,
-    dismiss: Bool
+    dismiss: Bool,
+    contactDomain: SimplexDomain? = nil
 ) {
     let subscriberCount = groupInfo.groupSummary.publicMemberCount.map { "\($0) subscribers" }
     showOpenChatAlert(
@@ -1274,8 +1290,12 @@ private func showOpenKnownGroupAlert(
                 ? NSLocalizedString("Open new chat", comment: "new chat action")
                 : NSLocalizedString("Open chat", comment: "new chat action")
               ),
+        secondTitle: contactDomain != nil ? NSLocalizedString("Open direct chat", comment: "new chat action") : nil,
         onConfirm: {
             openKnownGroup(groupInfo, dismiss: dismiss, cleanup: nil)
+        },
+        onSecond: contactDomain.map { cd in
+            { planAndConnect("@" + cd.fullDomainName, theme: theme, dismiss: dismiss) }
         }
     )
 }
@@ -1384,7 +1404,7 @@ func planAndConnect(
                             }
                         }
                     }
-                case let .contactAddress(cap, _):
+                case let .contactAddress(cap, groupDomain):
                     switch cap {
                     case let .ok(contactSLinkData_, ownerVerification, verifiedDomain):
                         if let contactSLinkData = contactSLinkData_ {
@@ -1395,6 +1415,7 @@ func planAndConnect(
                                     contactShortLinkData: contactSLinkData,
                                     ownerVerification: ownerVerification,
                                     verifiedDomain: verifiedDomain,
+                                    groupDomain: groupDomain,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1443,7 +1464,7 @@ func planAndConnect(
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, groupDomain: groupDomain)
                             }
                         }
                     case let .known(contact):
@@ -1455,7 +1476,7 @@ func planAndConnect(
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, groupDomain: groupDomain)
                             }
                         }
                     case let .contactViaAddress(contact):
@@ -1468,7 +1489,7 @@ func planAndConnect(
                             )
                         }
                     }
-                case let .groupLink(glp, _):
+                case let .groupLink(glp, contactDomain):
                     switch glp {
                     case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, verifiedDomain):
                         if let groupSLinkData = groupSLinkData_ {
@@ -1480,6 +1501,7 @@ func planAndConnect(
                                     groupShortLinkData: groupSLinkData,
                                     ownerVerification: ownerVerification,
                                     verifiedDomain: verifiedDomain,
+                                    contactDomain: contactDomain,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1538,7 +1560,7 @@ func planAndConnect(
                             if let f = filterKnownGroup {
                                 f(groupInfo)
                             } else {
-                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss)
+                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss, contactDomain: contactDomain)
                             }
                         }
                     case let .noRelays(groupSLinkData_):

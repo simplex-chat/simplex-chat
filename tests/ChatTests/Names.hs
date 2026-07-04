@@ -21,6 +21,8 @@ chatNamesTests = do
   it "connect by unregistered name fails to resolve" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
   it "connect by channel name" testConnectByChannelName
+  it "connect by name resolving to channel (primary) and direct contact" testConnectByNameChannelAndContact
+  it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
 testConnectByName ps = withSmpServerAndNames $ \reg ->
@@ -141,3 +143,62 @@ testConnectByChannelName ps = withSmpServerAndNames $ \reg ->
         bob <## "use #team <message> to send messages"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
+
+-- The bare name "team.simplex" resolves to both a channel and a direct contact. The channel is tried
+-- first and succeeds (bob has joined #team), so it is the primary; the plan also reports that the
+-- name has a direct contact (domainHasContact -> "also has direct chat").
+testConnectByNameChannelAndContact :: HasCallStack => TestParams -> IO ()
+testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        (channelLink, _) <- prepareChannel1Relay "team" alice cath
+        alice ##> "/ad"
+        (contactLink, _) <- getContactLinks alice True
+        registerName reg teamName (contactAndChannelNameRecord "team" (T.pack contactLink) (T.pack channelLink))
+        alice ##> "/public group access #team domain=team.simplex"
+        alice <## "updated public group access: domain=team.simplex"
+        cath <## "alice updated group #team: (signed)"
+        cath <## "updated public group access: domain=team.simplex"
+        bob ##> "/c #team.simplex"
+        bob <## "#team: connection started"
+        concurrentlyN_
+          [ bob
+              <### [ "#team: joining the group (connecting to relay cath)...",
+                     "#team: you joined the group (connected to relay cath)"
+                   ]
+          , do
+              cath <## "bob (Bob): accepting request to join group #team..."
+              cath <## "#team: bob joined the group"
+          , alice <### [EndsWith "introduced bob (Bob) in the channel"]
+          ]
+        bob ##> "/_connect plan 1 team.simplex"
+        bob <## "group link: known group #team"
+        bob <## "SimpleX name: #team (verified)"
+        bob <## "use #team <message> to send messages"
+        bob <## "SimpleX name #team also has direct chat"
+  where
+    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
+
+-- The bare name "acme.simplex" resolves to both a channel and a direct contact. The channel is tried
+-- first but its group profile does not claim the domain, so the channel side of the plan fails; the
+-- plan falls back to the direct contact (primary) while still reporting that the name has a channel
+-- (domainHasGroup -> "also has channel"). The channel link is a real, fetchable #acme channel, so the
+-- failure is the faithful "channel does not claim this domain" case, not a broken link.
+testConnectByNameContactAndChannel :: HasCallStack => TestParams -> IO ()
+testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
+        (channelLink, _) <- prepareChannel1Relay "acme" alice cath
+        alice ##> "/ad"
+        (contactLink, _) <- getContactLinks alice True
+        registerName reg acmeName (contactAndChannelNameRecord "acme" (T.pack contactLink) (T.pack channelLink))
+        alice ##> "/_set domain 1 acme.simplex"
+        alice <## "new contact address set"
+        bob ##> "/_connect plan 1 acme.simplex"
+        bob <## "contact address: ok to connect"
+        _ <- getTermLine bob -- contact short link data (JSON, printed in test view)
+        bob <## "SimpleX name @acme.simplex also has channel"
+  where
+    acmeName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
