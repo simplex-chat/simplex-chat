@@ -566,7 +566,12 @@ struct SubsStatusIndicator: View {
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
+    init() {
+        logger.debug("SUBS_TRACE view init: SubsStatusIndicator struct created (toolbar rebuild recreates the struct here)")
+    }
+
     var body: some View {
+        let _ = logger.debug("SUBS_TRACE view body: rendering with ssActive=\(subs.ssActive) ssPending=\(subs.ssPending) total=\(subs.total) hasSess=\(hasSess) (empty/share-unknown if total==0 && !hasSess) task=\(task == nil ? "nil" : "running")")
         Button {
             showServersSummary = true
         } label: {
@@ -580,9 +585,11 @@ struct SubsStatusIndicator: View {
         }
         .disabled(ChatModel.shared.chatRunning != true)
         .onAppear {
+            logger.debug("SUBS_TRACE view onAppear: starting poll task (existing task=\(self.task == nil ? "nil" : "running"))")
             startTask()
         }
         .onDisappear {
+            logger.debug("SUBS_TRACE view onDisappear: cancelling poll task")
             stopTask()
         }
         .appSheet(isPresented: $showServersSummary) {
@@ -592,21 +599,33 @@ struct SubsStatusIndicator: View {
     }
 
     private func startTask() {
+        if task != nil {
+            logger.debug("SUBS_TRACE poll startTask: a task already exists, replacing it (the old one keeps running until it sees isCancelled)")
+        }
         task = Task {
+            logger.debug("SUBS_TRACE poll loop: started")
             while !Task.isCancelled {
-                if AppChatState.shared.value == .active, ChatModel.shared.chatRunning == true {
+                let appState = AppChatState.shared.value
+                let appActive = appState == .active
+                let running = ChatModel.shared.chatRunning == true
+                if appActive, running {
                     do {
                         let (subs, hasSess) = try await getAgentSubsTotal()
+                        logger.debug("SUBS_TRACE poll fetched: ssActive=\(subs.ssActive) ssPending=\(subs.ssPending) total=\(subs.total) hasSess=\(hasSess) — writing to @State")
                         await MainActor.run {
                             self.subs = subs
                             self.hasSess = hasSess
+                            logger.debug("SUBS_TRACE poll wrote @State: self.subs.total=\(self.subs.total) self.hasSess=\(self.hasSess)")
                         }
                     } catch let error {
                         logger.error("getSubsTotal error: \(responseError(error))")
                     }
+                } else {
+                    logger.debug("SUBS_TRACE poll skipped tick: appState=\(appState.rawValue) appActive=\(appActive) chatRunning=\(running) (gated out, not fetching)")
                 }
                 try? await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
             }
+            logger.debug("SUBS_TRACE poll loop: exited (Task.isCancelled=\(Task.isCancelled))")
         }
     }
 
