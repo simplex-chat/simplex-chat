@@ -18,10 +18,12 @@ import org.nanohttpd.protocols.http.response.Status
 import org.nanohttpd.protocols.websockets.*
 import java.io.IOException
 import java.net.BindException
-import java.net.URI
+import java.security.SecureRandom
+import java.util.Base64
 
 private const val SERVER_HOST = "localhost"
 private const val SERVER_PORT = 50395
+private const val CALL_SERVER_TOKEN_BYTES = 32
 val connections = ArrayList<WebSocket>()
 
 // Spec: spec/services/calls.md#ActiveCallView
@@ -153,14 +155,15 @@ private fun SendStateUpdates() {
 @Composable
 fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
   val uriHandler = LocalUriHandler.current
+  val token = remember { newCallServerToken() }
   val endCall = {
     val call = chatModel.activeCall.value
     if (call != null) withBGApi { chatModel.callManager.endCall(call) }
   }
   val server = remember {
-    startServer(onResponse).apply {
+    startServer(onResponse, token = token).apply {
       try {
-        uriHandler.openUri("http://${SERVER_HOST}:${listeningPort}/simplex/call/")
+        uriHandler.openUri("http://${SERVER_HOST}:${listeningPort}/simplex/call/?token=$token")
       } catch (e: Exception) {
         Log.e(TAG, "Unable to open browser: ${e.stackTraceToString()}")
         AlertManager.shared.showAlertMsg(
@@ -208,7 +211,11 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
   }
 }
 
-fun startServer(onResponse: (WVAPIMessage) -> Unit, port: Int = SERVER_PORT): NanoWSD {
+fun startServer(
+  onResponse: (WVAPIMessage) -> Unit,
+  port: Int = SERVER_PORT,
+  token: String = newCallServerToken(),
+): NanoWSD {
   val server = object: NanoWSD(SERVER_HOST, port) {
     override fun openWebSocket(session: IHTTPSession): WebSocket = MyWebSocket(onResponse, session)
 
@@ -227,8 +234,18 @@ fun startServer(onResponse: (WVAPIMessage) -> Unit, port: Int = SERVER_PORT): Na
 
     override fun handle(session: IHTTPSession): Response {
       return when {
-        session.headers["upgrade"] == "websocket" -> super.handle(session)
-        session.uri.contains("/simplex/call/") -> resourcesToResponse("/desktop/call.html")
+        session.headers["upgrade"] == "websocket" ->
+          if (hasValidCallServerToken(session.parameters, token)) {
+            super.handle(session)
+          } else {
+            unauthorizedResponse()
+          }
+        session.uri.contains("/simplex/call/") ->
+          if (hasValidCallServerToken(session.parameters, token)) {
+            resourcesToResponse("/desktop/call.html")
+          } else {
+            unauthorizedResponse()
+          }
         else -> resourcesToResponse(uriCreateOrNull(session.uri)?.path ?: return newFixedLengthResponse("Error parsing URL"))
       }
     }
@@ -239,10 +256,22 @@ fun startServer(onResponse: (WVAPIMessage) -> Unit, port: Int = SERVER_PORT): Na
     if (port == 0) throw e
     Log.w(TAG, "Call server port $port is busy, using a random port: ${e.message}")
     server.stop()
-    return startServer(onResponse, port = 0)
+    return startServer(onResponse, port = 0, token = token)
   }
   return server
 }
+
+internal fun newCallServerToken(): String {
+  val bytes = ByteArray(CALL_SERVER_TOKEN_BYTES)
+  SecureRandom().nextBytes(bytes)
+  return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+}
+
+internal fun hasValidCallServerToken(parameters: Map<String, List<String>>, token: String): Boolean =
+  token.isNotEmpty() && parameters["token"]?.any { it == token } == true
+
+private fun unauthorizedResponse(): Response =
+  newFixedLengthResponse(Status.UNAUTHORIZED, "text/plain", "Unauthorized")
 
 class MyWebSocket(val onResponse: (WVAPIMessage) -> Unit, handshakeRequest: IHTTPSession) : WebSocket(handshakeRequest) {
   override fun onOpen() {

@@ -1356,8 +1356,8 @@ Available in v5.1</source>
         <target state="translated">לְפַתֵחַ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer tools" xml:space="preserve" approved="no">
-        <source>Developer tools</source>
+      <trans-unit id="Developer" xml:space="preserve" approved="no">
+        <source>Developer</source>
         <target state="translated">כלי מפתחים</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

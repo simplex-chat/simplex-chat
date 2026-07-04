@@ -27,8 +27,10 @@ import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
+import Simplex.Chat.Protocol (memberSupportVoiceVersion)
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Version
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 
@@ -126,6 +128,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       directoryLog = Just $ ps </> "directory_service.log",
       migrateDirectoryLog = Nothing,
       serviceName = "SimpleX Directory",
+      clientService = True,
       runCLI = False,
       searchResults = 3,
       webFolder,
@@ -1491,7 +1494,7 @@ testVoiceCaptchaOldClient ps@TestParams {tmpPath} = do
   setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
   withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgVPrev "cath" cathProfile $ \cath -> do
+      withNewTestChatCfg ps testCfg {chatVRange = (chatVRange testCfg) {maxVersion = prevVersion memberSupportVoiceVersion}} "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         bob #> "@'SimpleX Directory' /role 1"
@@ -1996,7 +1999,7 @@ testRegisterChannelViaCard ps =
           [ do
               relay <## "'SimpleX Directory': accepting request to join group #news..."
               relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
           ]
         -- owner sends a message to trigger member introduction
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
@@ -2095,7 +2098,7 @@ testDeleteChannelRegistration ps =
           [ do
               relay <## "'SimpleX Directory': accepting request to join group #news..."
               relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
           ]
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
@@ -2139,7 +2142,7 @@ testReregistrationAlreadyListed ps =
           [ do
               relay <## "'SimpleX Directory': accepting request to join group #news..."
               relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+            bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
           ]
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
@@ -2198,7 +2201,7 @@ testLinkCheckUpdatesCount ps = do
               [ do
                   relay <## "'SimpleX Directory': accepting request to join group #news..."
                   relay <## "#news: 'SimpleX Directory' joined the group",
-                bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+                bob <## "#news: relay introduced 'SimpleX Directory_1' in the channel"
               ]
             bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
             superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"

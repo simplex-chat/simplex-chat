@@ -822,7 +822,7 @@
     <string name="settings_section_title_settings">설정</string>
     <string name="send_link_previews">링크 미리보기 보내기</string>
     <string name="settings_section_title_socks">SOCKS 프록시</string>
-    <string name="settings_section_title_support">SIMPLEX CHAT 도와주기</string>
+    <string name="settings_section_title_support">SimpleX Chat 도와주기</string>
     <string name="settings_section_title_you">나</string>
     <string name="settings_experimental_features">실험적 기능</string>
     <string name="show_dev_options">표시 :</string>

@@ -754,7 +754,7 @@
     <string name="next_generation_of_private_messaging">下一代私密通讯软件</string>
     <string name="paste_the_link_you_received">粘贴你收到的链接</string>
     <string name="alert_title_skipped_messages">已跳过消息</string>
-    <string name="settings_section_title_support">支持 SIMPLEX CHAT</string>
+    <string name="settings_section_title_support">支持 SimpleX Chat</string>
     <string name="send_link_previews">发送链接预览</string>
     <string name="settings_section_title_socks">SOCKS 代理</string>
     <string name="stop_chat_question">停止聊天程序？</string>

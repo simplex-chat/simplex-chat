@@ -1,7 +1,7 @@
 package chat.simplex.common.views.migration
 
 import SectionBottomSpacer
-import SectionSpacer
+import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -134,6 +135,7 @@ fun MigrateFromDeviceView(close: () -> Unit) {
       }
       close()
     },
+    cardScreen = true,
   ) {
     MigrateFromDeviceLayout(
       migrationState = migrationState,
@@ -182,7 +184,7 @@ private fun SectionByState(
 @Composable
 private fun MutableState<MigrationFromState>.ChatStopInProgressView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_stopping_chat).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_stopping_chat)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -192,9 +194,9 @@ private fun MutableState<MigrationFromState>.ChatStopInProgressView() {
 
 @Composable
 private fun MutableState<MigrationFromState>.ChatStopFailedView(reason: String) {
-  SectionView(stringResource(MR.strings.error_stopping_chat).uppercase()) {
+  SectionView(stringResource(MR.strings.error_stopping_chat)) {
     Text(reason)
-    SectionSpacer()
+    SectionDividerSpaced()
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_report_filled),
       text = stringResource(MR.strings.auth_stop_chat),
@@ -224,9 +226,9 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
     val view = LocalMultiplatformView()
     Column {
       ChatStoppedView()
-      SectionSpacer()
+      SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.migrate_from_device_verify_database_passphrase).uppercase()) {
+      SectionView(stringResource(MR.strings.migrate_from_device_verify_database_passphrase)) {
         PassphraseField(currentKey, placeholder = stringResource(MR.strings.current_passphrase), Modifier.padding(horizontal = DEFAULT_PADDING), isValid = ::validKey, requestFocus = true)
 
         SettingsActionItemWithContent(
@@ -243,8 +245,8 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
             }
           }
         ) {}
-        SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
       }
+      SectionTextFooter(stringResource(MR.strings.migrate_from_device_confirm_you_remember_passphrase))
     }
     if (verifyingPassphrase.value) {
       ProgressView()
@@ -254,7 +256,7 @@ private fun MutableState<MigrationFromState>.PassphraseConfirmationView() {
 
 @Composable
 private fun MutableState<MigrationFromState>.UploadConfirmationView() {
-  SectionView(stringResource(MR.strings.migrate_from_device_confirm_upload).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_from_device_confirm_upload)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_ios_share),
       text = stringResource(MR.strings.migrate_from_device_archive_and_upload),
@@ -268,7 +270,7 @@ private fun MutableState<MigrationFromState>.UploadConfirmationView() {
 @Composable
 private fun MutableState<MigrationFromState>.ArchivingView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_archiving_database).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_archiving_database)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -279,7 +281,7 @@ private fun MutableState<MigrationFromState>.ArchivingView() {
 @Composable
 private fun MutableState<MigrationFromState>.DatabaseInitView(tempDatabaseFile: File, totalBytes: Long, archivePath: String) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_database_init).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_database_init)) {}
     ProgressView()
   }
   LaunchedEffect(Unit) {
@@ -298,7 +300,7 @@ private fun MutableState<MigrationFromState>.UploadProgressView(
   archivePath: String,
 ) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_uploading_archive).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_from_device_uploading_archive)) {
       val ratio = uploadedBytes.toFloat() / max(totalBytes, 1)
       LargeProgressView(ratio, "${(ratio * 100).toInt()}%", stringResource(MR.strings.migrate_from_device_bytes_uploaded).format(formatBytes(uploadedBytes)))
     }
@@ -310,7 +312,7 @@ private fun MutableState<MigrationFromState>.UploadProgressView(
 
 @Composable
 private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, archivePath: String, chatReceiver: MigrationFromChatReceiver?) {
-  SectionView(stringResource(MR.strings.migrate_from_device_upload_failed).uppercase()) {
+  SectionView(stringResource(MR.strings.migrate_from_device_upload_failed)) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_ios_share),
       text = stringResource(MR.strings.migrate_from_device_repeat_upload),
@@ -329,7 +331,7 @@ private fun MutableState<MigrationFromState>.UploadFailedView(totalBytes: Long, 
 @Composable
 private fun LinkCreationView() {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_creating_archive_link).uppercase()) {}
+    SectionView(stringResource(MR.strings.migrate_from_device_creating_archive_link)) {}
     ProgressView()
   }
 }
@@ -361,15 +363,15 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
         )
       }
     ) {}
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
-    SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
   }
-  SectionSpacer()
-  SectionView(stringResource(MR.strings.show_QR_code).uppercase()) {
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_choose_migrate_from_another_device))
+  SectionDividerSpaced()
+  SectionView(stringResource(MR.strings.show_QR_code)) {
     SimpleXLinkQRCode(link, onShare = {})
   }
-  SectionSpacer()
-  SectionView(stringResource(MR.strings.migrate_from_device_or_share_this_file_link).uppercase()) {
+  SectionDividerSpaced()
+  SectionView(stringResource(MR.strings.migrate_from_device_or_share_this_file_link)) {
     LinkTextView(link, true)
   }
 }
@@ -377,7 +379,7 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
 @Composable
 private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean) {
   Box {
-    SectionView(stringResource(MR.strings.migrate_from_device_migration_complete).uppercase()) {
+    SectionView(stringResource(MR.strings.migrate_from_device_migration_complete)) {
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_play_arrow_filled),
         text = stringResource(MR.strings.migrate_from_device_start_chat),
@@ -410,13 +412,13 @@ private fun MutableState<MigrationFromState>.FinishedView(chatDeletion: Boolean)
           )
         }
       ) {}
-      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
-      SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
     }
     if (chatDeletion) {
       ProgressView()
     }
   }
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_you_must_not_start_database_on_two_device))
+  SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_using_on_two_device_breaks_encryption))
 }
 
 @Composable
