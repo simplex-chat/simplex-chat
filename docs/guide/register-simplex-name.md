@@ -5,13 +5,13 @@ title: Registering a SimpleX name
 # Registering a SimpleX name
 
 A SimpleX name lets people reach you by typing a short `@name` instead of pasting
-a long link. You register the name on a website (it becomes an NFT in your
-wallet) and add your SimpleX link to it, then claim the name in the app so it
-shows as verified.
+a long link. You register the name on a website and add your SimpleX link to it,
+then claim the name in the app, to connect it with your SimpleX address or
+channel name.
 
-> Names currently run on a testing network. The registration website is
-> [snrc-testing.pages.dev](https://snrc-testing.pages.dev/) and names end in
-> `.testing`. The steps stay the same when the main network launches.
+> Names currently run on a testing network. The registration page is
+> [testing-names.simplex.chat](https://testing-names.simplex.chat) and names end
+> in `.testing`. The steps stay the same when the main names launch.
 
 ## What you need
 
@@ -24,7 +24,7 @@ shows as verified.
 
 Setting up a name takes two parts. On the website you register the name and add
 your link, so people can find your link by name. In the app you set the same name
-on your profile, so it shows as verified.
+on your profile - to prevent any other names from opening your profile or channel.
 
 ![Steps to register a SimpleX name](./diagrams/simplex-name-steps.svg)
 
@@ -38,34 +38,25 @@ On the testing network you need a small amount of test ETH to pay network fees.
 
 ## Step 2. Register the name and add your link
 
-Open the registration website and tap **Connect** to link your wallet. Type the
+Open the registration page and tap **Connect** to link your wallet. Type the
 name you want in **Search for a name** and open it. Choose how many years to
 register for, then tap **Next**. Names are currently 6 characters or more, and
 some names are reserved.
 
 ![Register your name and choose the registration period](./images/register-name.png)
 
-On **Create your profile**, tap **+ Add more to profile**.
+On **Create your profile**, paste your SimpleX link into the matching field:
 
 ![Create your profile](./images/create-your-profile.png)
 
-In **Add profile fields**, open the **SimpleX** category (these fields appear as
-**SimpleX Contact** and **SimpleX Channel** in the current app):
-
-![Add profile fields](./images/add-profile-fields.png)
-
-Add your link:
-
-- **SimpleX Address** for one-to-one chats. Copy your address from the app
+- **SimpleX contact** for one-to-one chats. Copy your address from the app
   (**Create SimpleX address**) and paste it here. People reach it with `@name`.
-- **SimpleX Channel link** for a channel. Copy your **Channel link** and paste it
-  here. People join it with `#name`.
-- **Advanced usage:** add both to use one name for your chat (`@name`) and your
+- **SimpleX channel** for a channel. Copy your **Channel link** and paste it here.
+  People join it with `#name`.
+- **Advanced usage:** fill both to use one name for your chat (`@name`) and your
   channel (`#name`).
 
 Then tap **Next**.
-
-![Your SimpleX link added to the profile](./images/profile-with-link.png)
 
 Finally, tap **Begin** and complete the three steps the site shows:
 

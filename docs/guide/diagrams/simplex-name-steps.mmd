@@ -1,11 +1,11 @@
 flowchart TD
   S([Start]) --> A["Step 1: Create a wallet<br/>save your recovery phrase"]
   A --> B["Step 2: Register the name<br/>connect wallet, search, choose years"]
-  B --> C["Add your link:<br/>+ Add more to profile &rarr; SimpleX"]
+  B --> C["On Create your profile,<br/>paste your SimpleX link"]
   C --> D{"Which link?"}
-  D -->|"@ contact"| E["SimpleX Address"]
-  D -->|"# channel"| F["SimpleX Channel link"]
-  D -->|"both"| G["SimpleX Address<br/>+ SimpleX Channel link"]
+  D -->|"@ contact"| E["SimpleX contact"]
+  D -->|"# channel"| F["SimpleX channel"]
+  D -->|"both"| G["SimpleX contact<br/>+ SimpleX channel"]
   E --> H["Confirm: two transactions,<br/>60 seconds apart"]
   F --> H
   G --> H
