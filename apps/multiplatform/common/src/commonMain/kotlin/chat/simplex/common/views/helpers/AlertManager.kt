@@ -296,8 +296,8 @@ class AlertManager {
     information: String? = null,
     confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm: (() -> Unit)? = null,
-    secondText: String? = null,
-    onSecond: (() -> Unit)? = null,
+    connectOtherButton: String? = null,
+    onConnectOther: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
     onDismiss: (() -> Unit)? = null,
   ) {
@@ -402,12 +402,12 @@ class AlertManager {
                     Text(confirmText)
                   }
                 }
-                if (secondText != null && onSecond != null) {
+                if (connectOtherButton != null && onConnectOther != null) {
                   TextButton(onClick = {
-                    onSecond.invoke()
+                    onConnectOther.invoke()
                     hideAlert()
                   }) {
-                    Text(secondText)
+                    Text(connectOtherButton)
                   }
                 }
                 TextButton(onClick = {
