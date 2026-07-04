@@ -1986,13 +1986,11 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
-    domainHasGroup: boolean
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
-    domainHasContact: boolean
   }
 
   export interface Error extends Interface {

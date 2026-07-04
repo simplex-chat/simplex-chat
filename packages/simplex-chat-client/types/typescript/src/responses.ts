@@ -186,7 +186,8 @@ export namespace CR {
     type: "connectionPlan"
     user: T.User
     connLink: T.CreatedConnLink
-    planDomain?: T.SimplexDomain
+    planSimplexName?: T.SimplexNameInfo
+    otherSimplexName?: T.SimplexNameInfo
     connectionPlan: T.ConnectionPlan
   }
 

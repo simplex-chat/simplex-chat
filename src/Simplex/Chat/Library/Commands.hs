@@ -4179,17 +4179,13 @@ processChatCommand cxt nm = \case
             pure (gId, chatSettings)
         _ -> throwCmdError "not supported"
       processChatCommand cxt nm $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
-    noSimplexNames :: CM (ACreatedConnLink, ConnectionPlan) -> CM (ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan)
-    noSimplexNames = fmap $ \(l, p) -> (l, Nothing, Nothing, p)
-    planSimplexNameOnly :: Maybe SimplexNameInfo -> CM (ACreatedConnLink, ConnectionPlan) -> CM (ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan)
-    planSimplexNameOnly name = fmap $ \(l, p) -> (l, name, Nothing, p)
     connectPlan :: User -> AConnectTarget -> Bool -> Maybe LinkOwnerSig -> Maybe (Either ChatError NameRecord) -> CM (ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan)
-    connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ _ = noSimplexNames $ case cLink of
+    connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ _ = case cLink of
       CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing Nothing
       CLShort l -> do
         let l' = serverShortLink l
         knownLinkPlans l' >>= \case
-          Just r -> pure r
+          Just (l, p) -> pure (l, Nothing, Nothing, p)
           Nothing -> do
             (FixedLinkData {linkConnReq = cReq, rootKey}, cData) <- getShortLinkConnReq nm user l'
             contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
@@ -4204,7 +4200,7 @@ processChatCommand cxt nm = \case
             Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db cxt user l'
         invitationReqAndPlan cReq sLnk_ cld ov = do
           plan <- invitationRequestPlan user cReq cld ov `catchAllErrors` (pure . CPError)
-          pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
+          pure (ACCL SCMInvitation (CCLink cReq sLnk_), Nothing, Nothing,  plan)
     connectPlan user (ACTarget SCMContact ct) resolveKnown sig_ nameRec = case ct of
       CTDomain d ->
         tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
@@ -4231,11 +4227,11 @@ processChatCommand cxt nm = \case
                 Just (SimplexNameInfo NTContact _) | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) -> Just $ SimplexNameInfo NTPublicGroup d
                 Just (SimplexNameInfo NTPublicGroup _) | isJust (firstNameLink CCTContact (nrSimplexContact nr)) -> Just $ SimplexNameInfo NTContact d
                 _ -> Nothing
-      CTFullContact cReq -> noSimplexNames $ do
+      CTFullContact cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
-        pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
+        pure (ACCL SCMContact $ CCLink cReq Nothing, Nothing, Nothing, plan)
       CTShortContact nl ->
-        planSimplexNameOnly (case nl of CTName ni -> Just ni; _ -> Nothing) $ case ctType of
+        (\(l, p) -> (l, simplexName_, Nothing, p)) <$> case ctType of
           CCTContact ->
             knownLinkPlans >>= \case
               Just r -> pure r
@@ -4280,9 +4276,9 @@ processChatCommand cxt nm = \case
           CCTChannel -> groupShortLinkPlan
           CCTRelay -> throwCmdError "chat relay links are not supported in this version"
         where
-          nl' = case nl of
-            CTLink sl -> CTLink (serverShortLink sl)
-            CTName _ -> nl
+          (nl', simplexName_) = case nl of
+            CTLink sl -> (CTLink (serverShortLink sl), Nothing)
+            CTName ni -> (nl, Just ni)
           ctType = case nl of
             CTLink (CSLContact _ t _ _) -> t
             CTName SimplexNameInfo {nameType = NTContact} -> CCTContact

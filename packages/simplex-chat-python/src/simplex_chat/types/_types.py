@@ -1382,12 +1382,10 @@ class ConnectionPlan_invitationLink(TypedDict):
 class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
-    domainHasGroup: bool
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
-    domainHasContact: bool
 
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]

@@ -1747,12 +1747,10 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
-- domainHasGroup: bool
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
-- domainHasContact: bool
 
 Error:
 - type: "error"
