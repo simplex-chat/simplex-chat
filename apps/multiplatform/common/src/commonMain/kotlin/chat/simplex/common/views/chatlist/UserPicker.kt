@@ -220,7 +220,10 @@ fun UserPicker(
       UserPickerOptionRow(
         painterResource(MR.images.ic_qr_code),
         if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
-        showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
+        showCustomModal { m, close ->
+          val user = m.currentUser.value ?: return@showCustomModal
+          UserAddressView(m, shareViaProfile = user.addressShared, close = close)
+        }, disabled = stopped
       )
       UserPickerOptionRow(
         painterResource(MR.images.ic_toggle_on),
