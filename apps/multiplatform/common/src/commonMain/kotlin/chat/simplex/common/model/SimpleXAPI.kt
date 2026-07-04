@@ -1517,10 +1517,10 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnectPlan(rh: Long?, connLink: String, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): Triple<CreatedConnLink, SimplexDomain?, ConnectionPlan>? {
+  suspend fun apiConnectPlan(rh: Long?, connLink: String, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): ConnectionPlanResult? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, linkOwnerSig), inProgress = inProgress)
-    if (r is API.Result && r.res is CR.CRConnectionPlan) return Triple(r.res.connLink, r.res.planDomain, r.res.connectionPlan)
+    if (r is API.Result && r.res is CR.CRConnectionPlan) return ConnectionPlanResult(r.res.connLink, r.res.planSimplexName, r.res.otherSimplexName, r.res.connectionPlan)
     if (inProgress.value && r != null) apiConnectResponseAlert(r)
     return null
   }
@@ -6513,7 +6513,7 @@ sealed class CR {
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connLinkInvitation: CreatedConnLink, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
-  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val planDomain: SimplexDomain? = null, val connectionPlan: ConnectionPlan): CR()
+  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val planSimplexName: SimplexNameInfo? = null, val otherSimplexName: SimplexNameInfo? = null, val connectionPlan: ConnectionPlan): CR()
   @Serializable @SerialName("newPreparedChat") class NewPreparedChat(val user: UserRef, val chat: Chat): CR()
   @Serializable @SerialName("contactUserChanged") class ContactUserChanged(val user: UserRef, val fromContact: Contact, val newUser: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupUserChanged") class GroupUserChanged(val user: UserRef, val fromGroup: GroupInfo, val newUser: UserRef, val toGroup: GroupInfo): CR()
@@ -7103,11 +7103,18 @@ sealed class SimplexDomainError {
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
 }
 
+data class ConnectionPlanResult(
+  val connLink: CreatedConnLink,
+  val planSimplexName: SimplexNameInfo?,
+  val otherSimplexName: SimplexNameInfo?,
+  val connectionPlan: ConnectionPlan,
+)
+
 @Serializable
 sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, val domainHasGroup: Boolean = false): ConnectionPlan()
-  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val domainHasContact: Boolean = false): ConnectionPlan()
+  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
 }
 
