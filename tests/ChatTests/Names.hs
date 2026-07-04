@@ -204,14 +204,6 @@ testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
   where
     acmeName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
 
--- The bare name "biz.simplex" resolves to both a channel and a business contact address (a contact
--- short link with the business flag, which becomes a group when connected). The channel is tried first
--- but its group profile does not claim the domain, so the channel side fails; the plan falls back to the
--- business contact address as primary (planSimplexName is NTContact / @, viewed as "business address"),
--- while otherSimplexName is the channel #biz, shown as "You can also join channel #biz". This proves
--- addOther keys the "other" name off the resolved name's TYPE (@), so a business (an @ contact that
--- becomes a group) still offers the # channel. A fresh business connect plan is CPContactAddress (CAPOk)
--- with business=True (hence "business address"); it only turns into an actual group at connect time.
 testConnectByNameBusinessAndChannel :: HasCallStack => TestParams -> IO ()
 testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->
