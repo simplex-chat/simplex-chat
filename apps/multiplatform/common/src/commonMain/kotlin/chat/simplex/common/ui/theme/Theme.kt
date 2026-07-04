@@ -645,6 +645,12 @@ fun themedBackgroundBrush(): Brush = Brush.linearGradient(
   Offset(Float.POSITIVE_INFINITY, 0f)
 )
 
+// Hairline dividers: SIMPLEX wants them fainter over its dark panels; every other
+// theme keeps Material's default (onSurface at 0.12 alpha), unchanged.
+@Composable
+fun dividerColor(): Color =
+  MaterialTheme.colors.onSurface.copy(alpha = if (CurrentColors.value.base == DefaultTheme.SIMPLEX) 0.05f else 0.12f)
+
 val DEFAULT_PADDING = 20.dp
 val DEFAULT_ONBOARDING_HORIZONTAL_PADDING = 25.dp
 val DEFAULT_SPACE_AFTER_ICON = 4.dp

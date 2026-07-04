@@ -170,10 +170,11 @@ private fun BoxScope.AppBarDivider(onTop: Boolean, fixedAlpha: Boolean, connecti
         .align(if (onTop) Alignment.BottomStart else Alignment.TopStart)
         .graphicsLayer {
           alpha = if (!onTop || fixedAlpha) 1f else topTitleAlpha(false, connection, 1f)
-        }
+        },
+      color = dividerColor()
     )
   } else {
-    Divider(Modifier.align(if (onTop) Alignment.BottomStart else Alignment.TopStart))
+    Divider(Modifier.align(if (onTop) Alignment.BottomStart else Alignment.TopStart), color = dividerColor())
   }
 }
 
