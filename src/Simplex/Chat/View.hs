@@ -2165,7 +2165,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planDomain = \case
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
   CPContactAddress cap domainHasGroup ->
-    ( case cap of
+    contactAddress
+      <> [plain $ "You can also join channel " <> shortNameInfoStr (SimplexNameInfo NTPublicGroup d) | Just d <- [planDomain], isTrue domainHasGroup]
+    where
+      contactAddress = case cap of
         CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
         CAPOwnLink -> [ctAddr "own address"]
         CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
@@ -2177,16 +2180,16 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planDomain = \case
                 <> contactDomainLine ct
                 <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
         CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactDomainLine ct
-    )
-      <> planDomainNote NTContact "channel" domainHasGroup
-    where
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
   CPGroupLink glp domainHasContact ->
-    ( case glp of
+    groupLink
+      <> [plain $ "You can also connect to " <> shortNameInfoStr (SimplexNameInfo NTContact d) <> " in direct chat" | Just d <- [planDomain], isTrue domainHasContact]
+    where
+      groupLink = case glp of
         GLPOk groupSLinkInfo_ groupSLinkData ov ->
           let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
            in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
@@ -2214,9 +2217,6 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planDomain = \case
             knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
         GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
         GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
-    )
-      <> planDomainNote NTPublicGroup "direct chat" domainHasContact
-    where
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
       grpOrBizLink GroupInfo {businessChat} = case businessChat of
@@ -2241,13 +2241,6 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink planDomain = \case
       Just OVVerified -> ["owner signature: verified"]
       Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
       Nothing -> []
-    -- when a bare name (domain) resolves to both a channel and a direct contact, note the other side
-    planDomainNote :: SimplexNameType -> Text -> BoolDef -> [StyledString]
-    planDomainNote nameType other alsoHas
-      | isTrue alsoHas = [plain $ nameStr <> " also has " <> other]
-      | otherwise = []
-      where
-        nameStr = maybe "this SimpleX name" (\d -> "SimpleX name " <> shortNameInfoStr (SimplexNameInfo nameType d)) planDomain
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated

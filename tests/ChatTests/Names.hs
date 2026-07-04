@@ -176,7 +176,7 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
         bob <## "group link: known group #team"
         bob <## "SimpleX name: #team (verified)"
         bob <## "use #team <message> to send messages"
-        bob <## "SimpleX name #team also has direct chat"
+        bob <## "You can also connect to @team.simplex in direct chat"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -199,6 +199,6 @@ testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
         bob ##> "/_connect plan 1 acme.simplex"
         bob <## "contact address: ok to connect"
         _ <- getTermLine bob -- contact short link data (JSON, printed in test view)
-        bob <## "SimpleX name @acme.simplex also has channel"
+        bob <## "You can also join channel #acme"
   where
     acmeName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
