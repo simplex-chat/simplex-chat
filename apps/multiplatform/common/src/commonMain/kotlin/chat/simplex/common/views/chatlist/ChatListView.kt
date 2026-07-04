@@ -745,7 +745,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
 }
 
 @Composable
-private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
+private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>, connectNameCandidate: MutableState<String?>) {
   Box {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
       val focusRequester = remember { FocusRequester() }
@@ -763,6 +763,8 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         searchText = searchText,
         enabled = !remember { searchShowingSimplexLink }.value,
         trailingContent = null,
+        // the clear button must line up with the filter icon it replaces, so no reduction here
+        reducedCloseButtonPadding = 0.dp,
       ) {
         searchText.value = searchText.value.copy(it)
       }
@@ -792,29 +794,20 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         snapshotFlow { searchText.value.text }
           .distinctUntilChanged()
           .collect {
-            when (val target = strConnectTarget(it.trim())) {
-              is ConnectTarget.Link -> {
-                hideKeyboard(view)
-                searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
-                searchShowingSimplexLink.value = true
-                searchChatFilteredBySimplexLink.value = null
-                connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
-              }
-              is ConnectTarget.Name -> {
-                // A name lookup means "take me to this contact": open the chat if
-                // it's already known (visible prompt), unlike a pasted link which
-                // filters the list. So no filterKnownContact here.
-                hideKeyboard(view)
-                withBGApi {
-                  planAndConnect(
-                    chatModel.remoteHostId(),
-                    target.text,
-                    close = null,
-                    cleanup = { searchText.value = TextFieldValue() },
-                  )
-                }
-              }
-              null -> if (!searchShowingSimplexLink.value || it.isEmpty()) {
+            val target = strConnectTarget(it.trim())
+            if (target is ConnectTarget.Link) {
+              hideKeyboard(view)
+              searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
+              searchShowingSimplexLink.value = true
+              searchChatFilteredBySimplexLink.value = null
+              connectNameCandidate.value = null
+              connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
+            } else {
+              // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke,
+              // so typing never clears the field mid-word or discloses the text to the resolver.
+              val candidate = nameSearchCandidate(it.trim())
+              connectNameCandidate.value = candidate
+              if (candidate == null && (!searchShowingSimplexLink.value || it.isEmpty())) {
                 if (it.isNotEmpty()) {
                   focusRequester.requestFocus()
                 } else {
@@ -931,6 +924,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+  val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
@@ -963,13 +957,23 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         if (oneHandUI.value) {
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
             Divider()
-            TagsView(searchText)
-            ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+            // bottom toolbar: search bar below, so on desktop the connect row goes below the tags
+            TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
+              TagsView(searchText)
+              Divider()
+              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+            }
+            ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
         } else {
-          ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-          TagsView(searchText)
+          ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
+          // top toolbar: search bar above, so on desktop the connect row goes above the tags
+          TagsOrConnectByName(searchText, connectNameCandidate) { candidate ->
+            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+            Divider()
+            TagsView(searchText)
+          }
           Divider()
         }
       }
@@ -1014,6 +1018,79 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
 
   LaunchedEffect(activeFilter.value) {
     searchText.value = TextFieldValue("")
+  }
+}
+
+// Default top-level part used to complete a bare name typed in the search field (search field only;
+// the message parser and the wire format are unchanged).
+private const val DEFAULT_NAME_TLD = "testing"
+// Shortest name that offers the button, so it is discoverable but does not flash on a single letter.
+private const val MIN_NAME_LENGTH = 2
+
+private val nameLabelRegex = Regex("[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*")
+private fun isNameLabel(s: String): Boolean = s.length in 1..63 && nameLabelRegex.matches(s)
+
+// On-device candidate for connecting by SimpleX name, resolved only when its button is tapped.
+// Mirrors the domain grammar (nameLabelP/mkDomain in SimplexName.hs): an optional @/# prefix, then
+// dot-separated ASCII labels; a dotless word is completed with the default top-level part. Returns
+// the string to send (keeping @/# so the type is preserved), or null when the text is not a name.
+internal fun nameSearchCandidate(str: String): String? {
+  val text = str.trim()
+  val prefix = text.firstOrNull()?.takeIf { it == '@' || it == '#' }
+  val core = if (prefix != null) text.substring(1) else text
+  val labels = core.split(".")
+  if (core.isEmpty() || labels.any { !isNameLabel(it) }) return null
+  return when {
+    labels.size > 1 -> text                                            // already has a top-level part
+    core.length >= MIN_NAME_LENGTH -> "${prefix ?: ""}$core.$DEFAULT_NAME_TLD"
+    else -> null
+  }
+}
+
+// The list tags and the connect-by-name row share one slot. When there is no name, the tags show; on
+// mobile the row replaces the tags while shown. On desktop both show, arranged by the caller (which
+// knows whether the search bar is above or below), passed as desktopView.
+@Composable
+private fun TagsOrConnectByName(
+  searchText: MutableState<TextFieldValue>,
+  connectNameCandidate: MutableState<String?>,
+  desktopView: @Composable (candidate: String) -> Unit,
+) {
+  val candidate = connectNameCandidate.value
+  when {
+    candidate == null -> TagsView(searchText)
+    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
+    else -> desktopView(candidate)
+  }
+}
+
+@Composable
+internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldValue>, connectNameCandidate: MutableState<String?>, close: (() -> Unit)?) {
+  val view = LocalMultiplatformView()
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .clickable {
+        hideKeyboard(view)
+        withBGApi {
+          planAndConnect(
+            chatModel.remoteHostId(),
+            name,
+            close = close,
+            cleanup = {
+              searchText.value = TextFieldValue()
+              connectNameCandidate.value = null
+            },
+          )
+        }
+      }
+      .padding(vertical = DEFAULT_PADDING_HALF),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    // icon and text aligned with the search bar's icon and text (same paddings and icon size)
+    val icon = if (name.startsWith("@")) MR.images.ic_at else MR.images.ic_tag
+    Icon(painterResource(icon), null, Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.primary)
+    Text(String.format(generalGetString(MR.strings.connect_plan_connect_to_name), name), color = MaterialTheme.colors.primary)
   }
 }
 

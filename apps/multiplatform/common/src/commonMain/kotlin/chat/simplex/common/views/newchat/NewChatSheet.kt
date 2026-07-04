@@ -137,6 +137,7 @@ private fun ModalData.NewChatSheetLayout(
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+  val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
   val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.CONTACT_WITH_REQUEST, ContactType.REQUEST, ContactType.RECENT) }
   val contactTypes by remember(searchText.value.text.isEmpty()) {
@@ -313,8 +314,13 @@ private fun ModalData.NewChatSheetLayout(
               searchText = searchText,
               searchShowingSimplexLink = searchShowingSimplexLink,
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              connectNameCandidate = connectNameCandidate,
               close = close,
             )
+            connectNameCandidate.value?.let { candidate ->
+              Divider()
+              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+            }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
         }
@@ -399,8 +405,13 @@ private fun ModalData.NewChatSheetLayout(
             searchText = searchText,
             searchShowingSimplexLink = searchShowingSimplexLink,
             searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+            connectNameCandidate = connectNameCandidate,
             close = close,
           )
+          connectNameCandidate.value?.let { candidate ->
+            Divider()
+            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+          }
           Divider()
         }
       }
@@ -467,6 +478,7 @@ private fun ContactsSearchBar(
   searchText: MutableState<TextFieldValue>,
   searchShowingSimplexLink: MutableState<Boolean>,
   searchChatFilteredBySimplexLink: MutableState<String?>,
+  connectNameCandidate: MutableState<String?>,
   close: () -> Unit,
 ) {
   var focused by remember { mutableStateOf(false) }
@@ -485,6 +497,8 @@ private fun ContactsSearchBar(
       alwaysVisible = true,
       searchText = searchText,
       trailingContent = null,
+      // the clear button must line up with the filter icon it replaces, so no reduction here
+      reducedCloseButtonPadding = 0.dp,
     ) {
       searchText.value = searchText.value.copy(it)
     }
@@ -523,34 +537,25 @@ private fun ContactsSearchBar(
       snapshotFlow { searchText.value.text }
         .distinctUntilChanged()
         .collect {
-          when (val target = strConnectTarget(it.trim())) {
-            is ConnectTarget.Link -> {
-              hideKeyboard(view)
-              searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
-              searchShowingSimplexLink.value = true
-              searchChatFilteredBySimplexLink.value = null
-              connect(
-                link = target.text,
-                searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-                close = close,
-                cleanup = { searchText.value = TextFieldValue() }
-              )
-            }
-            is ConnectTarget.Name -> {
-              // A name lookup means "take me to this contact": open the chat if
-              // it's already known (visible prompt), unlike a pasted link which
-              // filters the list. So no filterKnownContact here.
-              hideKeyboard(view)
-              withBGApi {
-                planAndConnect(
-                  chatModel.remoteHostId(),
-                  target.text,
-                  close = close,
-                  cleanup = { searchText.value = TextFieldValue() },
-                )
-              }
-            }
-            null -> if (!searchShowingSimplexLink.value || it.isEmpty()) {
+          val target = strConnectTarget(it.trim())
+          if (target is ConnectTarget.Link) {
+            hideKeyboard(view)
+            searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
+            searchShowingSimplexLink.value = true
+            searchChatFilteredBySimplexLink.value = null
+            connectNameCandidate.value = null
+            connect(
+              link = target.text,
+              searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              close = close,
+              cleanup = { searchText.value = TextFieldValue() }
+            )
+          } else {
+            // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke,
+            // so typing never clears the field mid-word or discloses the text to the resolver.
+            val candidate = nameSearchCandidate(it.trim())
+            connectNameCandidate.value = candidate
+            if (candidate == null && (!searchShowingSimplexLink.value || it.isEmpty())) {
               if (it.isNotEmpty()) {
                 focusRequester.requestFocus()
               } else {
@@ -667,6 +672,8 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val searchShowingSimplexLink = remember { mutableStateOf(false) }
     val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+    // deleted contacts are not connected to by name, so this candidate only stops per-keystroke resolution
+    val connectNameCandidate = remember { mutableStateOf<String?>(null) }
     val showUnreadAndFavorites = remember { appPrefs.showUnreadAndFavorites.state }.value
     val allChats by remember(chatModel.chats.value) {
       derivedStateOf { filterContactTypes(chatModel.chats.value, listOf(ContactType.CHAT_DELETED)) }
@@ -709,6 +716,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
               searchText = searchText,
               searchShowingSimplexLink = searchShowingSimplexLink,
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              connectNameCandidate = connectNameCandidate,
               close = close,
             )
           } else {
@@ -718,6 +726,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
                 searchText = searchText,
                 searchShowingSimplexLink = searchShowingSimplexLink,
                 searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+                connectNameCandidate = connectNameCandidate,
                 close = close,
               )
               Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
