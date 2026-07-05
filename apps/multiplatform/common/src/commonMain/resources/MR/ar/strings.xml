@@ -2853,4 +2853,27 @@
     <string name="relays_no_web_support">لا تدعم خوادم ترحيل الدردشة المستعملة صفحات الويب.</string>
     <string name="webpage_code">رمز صفحة الويب</string>
     <string name="badge_support_from_v7">يمكنك دعم SimpleX بدءًا من الإصدار 7 من التطبيق.</string>
+    <string name="error_saving_simplex_name">خطأ في حفظ الاسم</string>
+    <string name="set_user_simplex_name_footer">اسمح للناس بالتواصل معك عبر الاسم المسجَّل في عنوان SimpleX الخاص بك.</string>
+    <string name="set_channel_simplex_name_footer">اسمح للأشخاص بالانضمام باستخدام الاسم المسجَّل عبر رابط هذه القناة.</string>
+    <string name="simplex_name_not_found">لم يُعثر على الاسم</string>
+    <string name="simplex_name_no_servers_desc">لم تكوِّن أي من خوادمك لحل أسماء SimpleX. اضبط الخوادم أو استخدم رابط الاتصال.</string>
+    <string name="no_names_servers_enabled">لا توجد خوادم لحلّ الأسماء.</string>
+    <string name="simplex_name_no_valid_link">لا رابط صالح</string>
+    <string name="simplex_name_resolver_error_desc">خطأ المحلّل: %1$s</string>
+    <string name="simplex_name_server_no_resolver_desc">الخادم %1$s لا يدعم تحليل الأسماء. اضبط الخوادم أو استخدم رابط الاتصال.</string>
+    <string name="set_simplex_name">عيِّن اسم SimpleX</string>
+    <string name="simplex_name">اسم SimpleX</string>
+    <string name="simplex_name_error">خطأ في اسم SimpleX</string>
+    <string name="simplex_name_not_verified">لم يتحقق مِن اسم SimpleX</string>
+    <string name="simplex_name_no_valid_link_desc">اسم SimpleX %1$s مسجَّل، لكنه لا يحتوي على رابط صالح.</string>
+    <string name="simplex_name_unconfirmed_desc">اسم SimpleX %1$s مسجَّل، لكنه لم يُضف إلى ملف التعريف. يُرجى إضافته إلى عنوانك أو ملفك التعريفي للقناة، إذا كنت المالك.</string>
+    <string name="simplex_name_owner_no_channel_link">سُجَّل الاسم %1$s في SimpleX دون رابط القناة. أضف رابط القناة إلى الاسم عبر صفحة التسجيل.</string>
+    <string name="simplex_name_owner_no_address">سُجَّل الاسم %1$s في SimpleX دون عنوان SimpleX. أضف عنوان SimpleX الخاص بك إلى الاسم عبر صفحة التسجيل.</string>
+    <string name="simplex_name_not_found_desc">اسم SimpleX هذا غير مُسجَّل. يُرجى التحقق من الاسم.</string>
+    <string name="operator_use_for_names">لتحليل الاسم</string>
+    <string name="simplex_name_unconfirmed">اسم غير مؤكد</string>
+    <string name="verify_simplex_name_action">تحقق من الاسم</string>
+    <string name="verify_simplex_names">تحقق من أسماء SimpleX</string>
+    <string name="your_simplex_name">اسم SimpleX الخاص بك</string>
 </resources>
