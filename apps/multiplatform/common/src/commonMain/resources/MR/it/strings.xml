@@ -2879,4 +2879,27 @@
     <string name="relays_no_web_support">I relay di chat usati non supportano le pagine web.</string>
     <string name="webpage_code">Codice pagina web</string>
     <string name="badge_support_from_v7">Puoi sostenere SimpleX dalla versione 7 dell\'app.</string>
+    <string name="error_saving_simplex_name">Errore di salvataggio del nome</string>
+    <string name="set_user_simplex_name_footer">Consenti alle persone di collegarsi tramite il nome registrato con il tuo indirizzo SimpleX.</string>
+    <string name="set_channel_simplex_name_footer">Consenti alle persone di entrare attraverso il nome registrato con questo link del canale.</string>
+    <string name="simplex_name_not_found">Nome non trovato</string>
+    <string name="simplex_name_no_servers_desc">Nessuno dei tuoi server è impostato per risolvere i nomi SimpleX. Configura i server o usa un link di connessione.</string>
+    <string name="no_names_servers_enabled">Nessun server per risolvere i nomi.</string>
+    <string name="simplex_name_no_valid_link">Nessun link valido</string>
+    <string name="simplex_name_resolver_error_desc">Errore del risolutore: %1$s</string>
+    <string name="simplex_name_server_no_resolver_desc">Il server %1$s non supporta la risoluzione dei nomi. Configura i server o usa un link di connessione.</string>
+    <string name="set_simplex_name">Imposta nome SimpleX</string>
+    <string name="simplex_name">Nome SimpleX</string>
+    <string name="simplex_name_error">Errore del nome SimpleX</string>
+    <string name="simplex_name_not_verified">Nome SimpleX non verificato</string>
+    <string name="simplex_name_no_valid_link_desc">Il nome SimpleX %1$s è registrato, ma non ha alcun collegamento valido.</string>
+    <string name="simplex_name_unconfirmed_desc">Il nome SimpleX %1$s è registrato, ma non aggiunto al profilo. Aggiungilo al profilo del tuo indirizzo o canale, se sei il proprietario.</string>
+    <string name="simplex_name_owner_no_channel_link">Il nome SimpleX %1$s è registrato senza link del canale. Aggiungi il link del canale al nome tramite la pagina di registrazione.</string>
+    <string name="simplex_name_owner_no_address">Il nome SimpleX %1$s è registrato senza indirizzo SimpleX. Aggiungi il tuo indirizzo SimpleX al nome tramite la pagina di registrazione.</string>
+    <string name="simplex_name_not_found_desc">Questo nome SimpleX non è registrato. Controlla il nome.</string>
+    <string name="operator_use_for_names">Per risolvere nomi</string>
+    <string name="simplex_name_unconfirmed">Nome non confermato</string>
+    <string name="verify_simplex_name_action">Verifica nome</string>
+    <string name="verify_simplex_names">Verifica nomi SimpleX</string>
+    <string name="your_simplex_name">Il tuo nome SimpleX</string>
 </resources>
