@@ -8,6 +8,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.ui.theme.oklch
 import chat.simplex.common.views.helpers.*
 
 @Composable
@@ -38,5 +41,11 @@ actual fun ChatListNavLinkLayout(
       DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)
     }
   }
-  Divider(Modifier.padding(horizontal = 8.dp))
+  // SIMPLEX uses a flat slightly-lighter-than-bg divider; other themes get Material default Divider color.
+  val activeThemeBase = CurrentColors.collectAsState().value.base
+  if (activeThemeBase == DefaultTheme.SIMPLEX) {
+    Divider(Modifier.padding(horizontal = 8.dp), color = oklch(0.2104f, 0.0407f, 276.40f)) // sRGB #131729
+  } else {
+    Divider(Modifier.padding(horizontal = 8.dp))
+  }
 }
