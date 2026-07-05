@@ -198,7 +198,8 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-  Box(Modifier.fillMaxSize().let { if (CurrentColors.value.base == DefaultTheme.SIMPLEX) it.background(oklch(0.1648f, 0.0358f, 276.77f)) else it }) {
+  val activeThemeBase = CurrentColors.collectAsState().value.base
+  Box(Modifier.fillMaxSize().let { if (activeThemeBase == DefaultTheme.SIMPLEX) it.background(oklch(0.1648f, 0.0358f, 276.77f)) else it }) {
     if (oneHandUI.value) {
       ChatListWithLoadingScreen(searchText, listState)
       Column(Modifier.align(Alignment.BottomCenter)) {
