@@ -238,7 +238,7 @@ import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRel
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConfirmationId, ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), SimplexNameInfo (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ConfirmationId, ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), SimplexNameInfo (..), SimplexNameType (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.Messaging.Encoding (smpDecode, smpEncode)
@@ -1083,9 +1083,14 @@ getGroupToConnect :: DB.Connection -> StoreCxt -> User -> ContactNameOrLink -> E
 getGroupToConnect db cxt user@User {userId} = \case
   CTLink sl -> first (`CCLink` Just sl) <$$> getGroupViaShortLinkToConnect db cxt user sl
   CTName ni ->
-    liftIO (maybeFirstRow id $ DB.query db byNameQuery (userId, nameDomain ni)) >>= \case
-      Just (gId :: Int64, Just cReq, Just (sLnk :: ShortLinkContact)) -> Just . (CCLink cReq (Just sLnk),) <$> getGroupInfo db cxt user gId
-      _ -> pure Nothing
+    -- @name is a business (presents as a contact); #name is a channel. The same domain can have both,
+    -- so the group type must match the requested name type.
+    let businessCond = case nameType ni of
+          NTContact -> " AND g.business_chat IS NOT NULL"
+          NTPublicGroup -> " AND g.business_chat IS NULL"
+     in liftIO (maybeFirstRow id $ DB.query db (byNameQuery <> businessCond) (userId, nameDomain ni)) >>= \case
+          Just (gId :: Int64, Just cReq, Just (sLnk :: ShortLinkContact)) -> Just . (CCLink cReq (Just sLnk),) <$> getGroupInfo db cxt user gId
+          _ -> pure Nothing
   where
     byNameQuery =
       [sql|

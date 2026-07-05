@@ -815,7 +815,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                 val inProgress = mutableStateOf(true)
                 val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate", "#$candidate")
                 val ids = targets.mapNotNull { name ->
-                  knownChatId(name, chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
+                  knownChatId(chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
                 }
                 searchChatFilteredBySimplexLink.value = ids.toSet()
                 if (ids.size == targets.size) connectNameCandidate.value = null
@@ -1061,20 +1061,17 @@ internal fun nameSearchCandidate(str: String): String? {
   }
 }
 
-// The chat id the search resolved to for the type the target asks for (@ = contact, # = channel), or null.
-// A @name search can fall back to a group in the store, so the requested type is enforced here — otherwise
-// the @ and # searches of a bare name could both return the same channel and wrongly hide the row.
-internal fun knownChatId(target: String, result: ConnectionPlanResult?): String? {
-  val plan = result?.connectionPlan ?: return null
-  return if (target.startsWith("#")) {
-    when (val g = (plan as? ConnectionPlan.GroupLink)?.groupLinkPlan) {
-      is GroupLinkPlan.Known -> g.groupInfo.id
-      is GroupLinkPlan.OwnLink -> g.groupInfo.id
-      else -> null
-    }
-  } else {
-    ((plan as? ConnectionPlan.ContactAddress)?.contactAddressPlan as? ContactAddressPlan.Known)?.contact?.id
+// The chat id a local (PRMNever) search resolved to — a contact, a business, or a channel — or null on a miss.
+// The core returns the correct type for @ vs # (getContactToConnect / type-filtered getGroupToConnect), so no
+// client-side type check is needed.
+internal fun knownChatId(result: ConnectionPlanResult?): String? = when (val plan = result?.connectionPlan) {
+  is ConnectionPlan.ContactAddress -> (plan.contactAddressPlan as? ContactAddressPlan.Known)?.contact?.id
+  is ConnectionPlan.GroupLink -> when (val g = plan.groupLinkPlan) {
+    is GroupLinkPlan.Known -> g.groupInfo.id
+    is GroupLinkPlan.OwnLink -> g.groupInfo.id
+    else -> null
   }
+  else -> null
 }
 
 // The list tags and the connect-by-name row share one slot. When there is no name, the tags show; on

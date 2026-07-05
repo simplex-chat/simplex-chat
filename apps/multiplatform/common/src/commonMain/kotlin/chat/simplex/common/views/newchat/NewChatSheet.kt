@@ -564,7 +564,7 @@ private fun ContactsSearchBar(
               val inProgress = mutableStateOf(true)
               val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate")
               val ids = targets.mapNotNull { name ->
-                knownChatId(name, chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
+                knownChatId(chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
               }
               searchChatFilteredBySimplexLink.value = ids.toSet()
               if (ids.size == targets.size) connectNameCandidate.value = null
