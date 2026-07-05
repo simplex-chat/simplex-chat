@@ -806,16 +806,19 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
             } else {
               val candidate = nameSearchCandidate(it.trim())
               connectNameCandidate.value = candidate
+              // clear the previous match immediately so the list falls back to text search during the debounce,
+              // instead of showing a stale filtered chat while the new search runs
+              searchChatFilteredBySimplexLink.value = emptySet()
               if (candidate != null) {
                 // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
                 // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
                 // both and filter every known chat found; drop the row only when both types are already known.
                 delay(NAME_SEARCH_DEBOUNCE_MS)
                 val rhId = chatModel.remoteHostId()
-                val inProgress = mutableStateOf(true)
+                val inProgress = mutableStateOf(false) // background search: no spinner, no error alerts
                 val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate", "#$candidate")
                 val ids = targets.mapNotNull { name ->
-                  knownChatId(chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
+                  knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
                 }
                 searchChatFilteredBySimplexLink.value = ids.toSet()
                 if (ids.size == targets.size) connectNameCandidate.value = null
@@ -1064,12 +1067,23 @@ internal fun nameSearchCandidate(str: String): String? {
 // The chat id a local (PRMNever) search resolved to — a contact, a business, or a channel — or null on a miss.
 // The core returns the correct type for @ vs # (getContactToConnect / type-filtered getGroupToConnect), so no
 // client-side type check is needed.
-internal fun knownChatId(result: ConnectionPlanResult?): String? = when (val plan = result?.connectionPlan) {
-  is ConnectionPlan.ContactAddress -> (plan.contactAddressPlan as? ContactAddressPlan.Known)?.contact?.id
-  is ConnectionPlan.GroupLink -> when (val g = plan.groupLinkPlan) {
-    is GroupLinkPlan.Known -> g.groupInfo.id
-    is GroupLinkPlan.OwnLink -> g.groupInfo.id
+internal suspend fun knownChatId(rhId: Long?, result: ConnectionPlanResult?): String? = when (val plan = result?.connectionPlan) {
+  is ConnectionPlan.ContactAddress -> (plan.contactAddressPlan as? ContactAddressPlan.Known)?.contact?.let { contact ->
+    // a name-resolved chat may be prepared in the store but not yet listed, so add it (as the tap path does)
+    if (chatModel.getContactChat(contact.contactId) == null) {
+      chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
+    }
+    contact.id
+  }
+  is ConnectionPlan.GroupLink -> (when (val g = plan.groupLinkPlan) {
+    is GroupLinkPlan.Known -> g.groupInfo
+    is GroupLinkPlan.OwnLink -> g.groupInfo
     else -> null
+  })?.let { gInfo ->
+    if (chatModel.getGroupChat(gInfo.groupId) == null) {
+      chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(gInfo, groupChatScope = null), chatItems = emptyList()))
+    }
+    gInfo.id
   }
   else -> null
 }

@@ -36,8 +36,6 @@ import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
@@ -538,7 +536,7 @@ private fun ContactsSearchBar(
     LaunchedEffect(Unit) {
       snapshotFlow { searchText.value.text }
         .distinctUntilChanged()
-        .collectLatest {
+        .collect {
           val target = strConnectTarget(it.trim())
           if (target is ConnectTarget.Link) {
             hideKeyboard(view)
@@ -553,22 +551,12 @@ private fun ContactsSearchBar(
               cleanup = { searchText.value = TextFieldValue() }
             )
           } else {
+            // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke. The
+            // simplex-name filter is chat-list only: this contacts/deleted view is a scoped subset, so a
+            // resolved chat id (channel, business, unlisted or active-only contact) may not be present in it.
             val candidate = nameSearchCandidate(it.trim())
             connectNameCandidate.value = candidate
-            if (candidate != null) {
-              // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
-              // search when the next keystroke arrives. This is the contacts view, so a bare name searches the
-              // contact type; filter the known chat found and drop the row once it is known.
-              delay(NAME_SEARCH_DEBOUNCE_MS)
-              val rhId = chatModel.remoteHostId()
-              val inProgress = mutableStateOf(true)
-              val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate")
-              val ids = targets.mapNotNull { name ->
-                knownChatId(chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
-              }
-              searchChatFilteredBySimplexLink.value = ids.toSet()
-              if (ids.size == targets.size) connectNameCandidate.value = null
-            } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
+            if (candidate == null && (!searchShowingSimplexLink.value || it.isEmpty())) {
               if (it.isNotEmpty()) {
                 focusRequester.requestFocus()
               } else {
