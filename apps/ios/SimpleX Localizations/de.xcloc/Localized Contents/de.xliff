@@ -6123,10 +6123,10 @@ wer mit wem kommuniziert</target>
         <target>Nein</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve">
+      <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve" approved="no">
         <source>No account. No phone. No email. No ID.
 The most secure encryption.</source>
-        <target>Kein Account. Keine Telefonnummer. Keine E‑Mail. Keine ID.
+        <target state="translated">Kein Konto. Keine Telefonnummer. Keine E‑Mail. Keine ID.
 Die sicherste Verschlüsselung.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
