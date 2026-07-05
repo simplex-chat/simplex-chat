@@ -1637,7 +1637,7 @@ fun ComposeView(
     }
 
     Surface(color = MaterialTheme.colors.background, contentColor = MaterialTheme.colors.onBackground) {
-      Divider()
+      Divider(color = dividerColor())
       if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
         if (chat.chatInfo.groupInfo.businessChat == null) {
           val isChannel = chat.chatInfo.groupInfo.useRelays
@@ -1656,7 +1656,7 @@ fun ComposeView(
       } else if (nextSendGrpInv.value) {
         Column {
           ContextSendMessageToConnect(generalGetString(MR.strings.compose_send_direct_message_to_connect))
-          Divider()
+          Divider(color = dividerColor())
           Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
             AttachmentAndCommandsButtons()
             SendMsgView_(

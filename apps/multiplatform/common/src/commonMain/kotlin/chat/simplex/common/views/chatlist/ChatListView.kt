@@ -198,7 +198,8 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-  Box(Modifier.fillMaxSize()) {
+  val activeThemeBase = CurrentColors.collectAsState().value.base
+  Box(Modifier.fillMaxSize().let { if (activeThemeBase == DefaultTheme.SIMPLEX) it.background(oklch(0.1648f, 0.0358f, 276.77f)) else it }) {
     if (oneHandUI.value) {
       ChatListWithLoadingScreen(searchText, listState)
       Column(Modifier.align(Alignment.BottomCenter)) {
@@ -833,7 +834,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       }
     }
     val oneHandUI = remember { appPrefs.oneHandUI.state }
-    Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart))
+    Divider(Modifier.align(if (oneHandUI.value) Alignment.TopStart else Alignment.BottomStart), color = dividerColor())
   }
 }
 
@@ -962,7 +963,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ) {
         if (oneHandUI.value) {
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
-            Divider()
+            Divider(color = dividerColor())
             TagsView(searchText)
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
@@ -970,7 +971,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
           TagsView(searchText)
-          Divider()
+          Divider(color = dividerColor())
         }
       }
     }

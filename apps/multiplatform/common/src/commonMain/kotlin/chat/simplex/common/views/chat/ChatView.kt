@@ -60,7 +60,7 @@ data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val dat
 @Composable
 fun ConnectInProgressView(s: String) {
   Surface(color = MaterialTheme.colors.background) {
-    Divider()
+    Divider(color = dividerColor())
     Row(
       Modifier
         .height(60.dp)
@@ -1713,7 +1713,7 @@ private fun SupportChatsCountToolbar(
         }
       }
     }
-    Divider(Modifier.align(Alignment.BottomStart))
+    Divider(Modifier.align(Alignment.BottomStart), color = dividerColor())
   }
 }
 
