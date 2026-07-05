@@ -1370,7 +1370,7 @@ Determine SimpleX link type and if the bot is already connected via this link or
 **Parameters**:
 - userId: int64
 - connectTarget: string?
-- resolveKnown: bool
+- resolveMode: [PlanResolveMode](./TYPES.md#planresolvemode)
 - linkOwnerSig: [LinkOwnerSig](./TYPES.md#linkownersig)?
 
 **Syntax**:

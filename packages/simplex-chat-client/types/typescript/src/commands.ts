@@ -500,7 +500,7 @@ export namespace APIAddContact {
 export interface APIConnectPlan {
   userId: number // int64
   connectTarget?: string
-  resolveKnown: boolean
+  resolveMode: T.PlanResolveMode
   linkOwnerSig?: T.LinkOwnerSig
 }
 

@@ -146,6 +146,7 @@ This file is generated automatically.
 - [OwnerVerification](#ownerverification)
 - [PaginationByTime](#paginationbytime)
 - [PendingContactConnection](#pendingcontactconnection)
+- [PlanResolveMode](#planresolvemode)
 - [PrefEnabled](#prefenabled)
 - [Preferences](#preferences)
 - [PreparedContact](#preparedcontact)
@@ -1115,6 +1116,9 @@ SimplexDomainNotReady:
 - type: "simplexDomainNotReady"
 - simplexDomain: [SimplexDomain](#simplexdomain)
 - simplexDomainError: [SimplexDomainError](#simplexdomainerror)
+
+NotResolvedLocally:
+- type: "notResolvedLocally"
 
 UnsupportedConnReq:
 - type: "unsupportedConnReq"
@@ -3072,6 +3076,16 @@ count=<count>
 - localAlias: string
 - createdAt: UTCTime
 - updatedAt: UTCTime
+
+
+---
+
+## PlanResolveMode
+
+**Enum type**:
+- "allGroups"
+- "unknown"
+- "never"
 
 
 ---
