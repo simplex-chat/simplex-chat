@@ -706,7 +706,7 @@ val LightColorPaletteApp = AppColors(
 
 val SimplexColorPalette = darkColors(
   primary = oklch(0.7993f, 0.1442f, 220.36f),  // #00D3F9. If this value changes also need to update #0088ff in string resource files
-  primaryVariant = oklch(0.7993f, 0.1442f, 220.36f),  // #00D3F9
+  primaryVariant = oklch(0.7068f, 0.1260f, 216.66f),  // #00b3d3
   secondary = oklch(0.6953f, 0.1031f, 276.93f),  // #8B99D6
   secondaryVariant = oklch(0.3238f, 0.0863f, 274.69f),  // #26305B
   background = oklch(0.2298f, 0.0530f, 274.76f),  // #151B33
