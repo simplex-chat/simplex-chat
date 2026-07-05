@@ -30,7 +30,7 @@ enum class PresetWallpaper(
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
 ) {
-  CATS(MR.images.wallpaper_cats, "cats", 0.63f,
+  CATS(MR.images.wallpaper_cats, "cats", 0.5f,
     wallpaperBackgrounds(light = "#ffF8F6EA"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffefdca6".colorFromReadableHex(),
@@ -65,7 +65,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f,
+  FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.5f,
     wallpaperBackgrounds(light = "#ffE2FFE4"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(),
@@ -100,7 +100,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f,
+  HEARTS(MR.images.wallpaper_hearts, "hearts", 0.5f,
     wallpaperBackgrounds(light = "#ffFDECEC"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#fffde0e0".colorFromReadableHex(),
@@ -135,7 +135,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  KIDS(MR.images.wallpaper_kids, "kids", 0.53f,
+  KIDS(MR.images.wallpaper_kids, "kids", 0.5f,
     wallpaperBackgrounds(light = "#ffdbfdfb"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffadeffc".colorFromReadableHex(),
@@ -170,7 +170,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  SCHOOL(MR.images.wallpaper_school, "school", 0.53f,
+  SCHOOL(MR.images.wallpaper_school, "school", 0.5f,
     wallpaperBackgrounds(light = "#ffE7F5FF"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(),
@@ -205,7 +205,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f,
+  TRAVEL(MR.images.wallpaper_travel, "travel", 0.5f,
     wallpaperBackgrounds(light = "#fff9eeff"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffeedbfe".colorFromReadableHex(),
