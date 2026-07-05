@@ -232,8 +232,17 @@ private suspend fun planAndConnectTask(
         is ContactAddressPlan.ContactViaAddress -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .ContactViaAddress")
           val contact = connectionPlan.contactAddressPlan.contact
-          askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close, openChat = false)
-          cleanup()
+          // the contact is already prepared in the store, so open the existing chat instead of sending a new
+          // connection request; surface it in the chat list first if it is not there yet (as for Known above)
+          if (chatModel.getContactChat(contact.contactId) == null) {
+            chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = emptyList()))
+          }
+          if (filterKnownContact != null) {
+            filterKnownContact(contact)
+          } else {
+            showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
+            cleanup()
+          }
         }
       }
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {

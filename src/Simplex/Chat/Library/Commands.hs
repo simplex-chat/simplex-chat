@@ -4202,16 +4202,19 @@ processChatCommand cxt nm = \case
           plan <- invitationRequestPlan user cReq cld ov `catchAllErrors` (pure . CPError)
           pure (ACCL SCMInvitation (CCLink cReq sLnk_), Nothing, Nothing,  plan)
     connectPlan user (ACTarget SCMContact ct) resolveMode sig_ nameRec = case ct of
-      CTDomain d ->
-        tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
-          Right nr
-            | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
-                (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
-                  (addOther nr <$> connectPlanName NTContact (Right nr) `catchAllErrors` \_ -> throwError e)
-            | isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
-                addOther nr <$> connectPlanName NTContact (Right nr)
-            | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink
-          Left e -> connectPlanNoName e
+      CTDomain d
+        -- local search only: look up #d then @d in the store, without online name resolution
+        | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
+        | otherwise ->
+            tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
+              Right nr
+                | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
+                    (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
+                      (addOther nr <$> connectPlanName NTContact (Right nr) `catchAllErrors` \_ -> throwError e)
+                | isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
+                    addOther nr <$> connectPlanName NTContact (Right nr)
+                | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink
+              Left e -> connectPlanNoName e
         where
           connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_)
             where
@@ -4236,6 +4239,7 @@ processChatCommand cxt nm = \case
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
+                when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 (FixedLinkData {linkConnReq = cReq, rootKey}, cData) <- getShortLinkConnReq nm user l'
                 contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
@@ -4295,6 +4299,7 @@ processChatCommand cxt nm = \case
                 | resolveMode == PRMAllGroups -> resolveKnownGroup g
               Just r -> pure r
               Nothing -> do
+                when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
@@ -4312,7 +4317,14 @@ processChatCommand cxt nm = \case
                         _ -> throwChatError CEInvalidConnReq
                       let ov = verifyLinkOwner rootKey owners l' sig_
                           planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
-                      plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
+                      plan0 <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
+                      -- a joined channel is found by link but not by name (its domain is not verified locally,
+                      -- e.g. an un-upgraded relay dropped the claim); refresh its profile from the fresh link
+                      -- data and mark it verified, so the check below passes and future by-name lookups match
+                      plan <- case (planDomain, plan0, groupSLinkData_) of
+                        (Just _, CPGroupLink (GLPKnown g u o os), Just sLinkData) ->
+                          (\(g', _) -> CPGroupLink (GLPKnown g' u o os)) <$> updateGroupFromLinkData user g sLinkData
+                        _ -> pure plan0
                       forM_ planDomain $ \nameDomain ->
                         let domain_ = (\GroupProfile {publicGroup} -> claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) =<< case plan of
                               CPGroupLink (GLPOk _ (Just GroupShortLinkData {groupProfile}) _) -> Just groupProfile
