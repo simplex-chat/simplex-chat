@@ -36,6 +36,8 @@ import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
@@ -136,7 +138,7 @@ private fun ModalData.NewChatSheetLayout(
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
-  val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+  val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
   val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.CONTACT_WITH_REQUEST, ContactType.REQUEST, ContactType.RECENT) }
@@ -477,7 +479,7 @@ private fun ContactsSearchBar(
   listState: LazyListState,
   searchText: MutableState<TextFieldValue>,
   searchShowingSimplexLink: MutableState<Boolean>,
-  searchChatFilteredBySimplexLink: MutableState<String?>,
+  searchChatFilteredBySimplexLink: MutableState<Set<String>>,
   connectNameCandidate: MutableState<String?>,
   close: () -> Unit,
 ) {
@@ -536,13 +538,13 @@ private fun ContactsSearchBar(
     LaunchedEffect(Unit) {
       snapshotFlow { searchText.value.text }
         .distinctUntilChanged()
-        .collect {
+        .collectLatest {
           val target = strConnectTarget(it.trim())
           if (target is ConnectTarget.Link) {
             hideKeyboard(view)
             searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
             searchShowingSimplexLink.value = true
-            searchChatFilteredBySimplexLink.value = null
+            searchChatFilteredBySimplexLink.value = emptySet()
             connectNameCandidate.value = null
             connect(
               link = target.text,
@@ -551,11 +553,22 @@ private fun ContactsSearchBar(
               cleanup = { searchText.value = TextFieldValue() }
             )
           } else {
-            // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke,
-            // so typing never clears the field mid-word or discloses the text to the resolver.
             val candidate = nameSearchCandidate(it.trim())
             connectNameCandidate.value = candidate
-            if (candidate == null && (!searchShowingSimplexLink.value || it.isEmpty())) {
+            if (candidate != null) {
+              // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
+              // search when the next keystroke arrives. This is the contacts view, so a bare name searches the
+              // contact type; filter the known chat found and drop the row once it is known.
+              delay(NAME_SEARCH_DEBOUNCE_MS)
+              val rhId = chatModel.remoteHostId()
+              val inProgress = mutableStateOf(true)
+              val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate")
+              val ids = targets.mapNotNull { name ->
+                knownChatId(chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
+              }
+              searchChatFilteredBySimplexLink.value = ids.toSet()
+              if (ids.size == targets.size) connectNameCandidate.value = null
+            } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
               if (it.isNotEmpty()) {
                 focusRequester.requestFocus()
               } else {
@@ -565,7 +578,7 @@ private fun ContactsSearchBar(
                 }
               }
               searchShowingSimplexLink.value = false
-              searchChatFilteredBySimplexLink.value = null
+              searchChatFilteredBySimplexLink.value = emptySet()
             }
           }
         }
@@ -592,12 +605,12 @@ private fun ToggleFilterButton() {
   }
 }
 
-private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, close: () -> Unit, cleanup: (() -> Unit)?) {
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<Set<String>>, close: () -> Unit, cleanup: (() -> Unit)?) {
   withBGApi {
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
+      filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
       close = close,
       cleanup = cleanup,
     )
@@ -607,15 +620,15 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
 private fun filteredContactChats(
   showUnreadAndFavorites: Boolean,
   searchShowingSimplexLink: State<Boolean>,
-  searchChatFilteredBySimplexLink: State<String?>,
+  searchChatFilteredBySimplexLink: State<Set<String>>,
   searchText: String,
   contactChats: List<Chat>
 ): List<Chat> {
-  val linkChatId = searchChatFilteredBySimplexLink.value
+  val linkChatIds = searchChatFilteredBySimplexLink.value
   val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
 
-  return if (linkChatId != null) {
-    contactChats.filter { it.id == linkChatId }
+  return if (linkChatIds.isNotEmpty()) {
+    contactChats.filter { it.id in linkChatIds }
   } else {
     contactChats.filter { chat ->
       filterChat(
@@ -671,7 +684,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
     val listState = remember { appBarHandler.listState }
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val searchShowingSimplexLink = remember { mutableStateOf(false) }
-    val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+    val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
     // deleted contacts are not connected to by name, so this candidate only stops per-keystroke resolution
     val connectNameCandidate = remember { mutableStateOf<String?>(null) }
     val showUnreadAndFavorites = remember { appPrefs.showUnreadAndFavorites.state }.value

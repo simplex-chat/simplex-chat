@@ -49,6 +49,7 @@ import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
@@ -745,7 +746,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
 }
 
 @Composable
-private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>, connectNameCandidate: MutableState<String?>) {
+private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>) {
   Box {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
       val focusRequester = remember { FocusRequester() }
@@ -793,21 +794,32 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       LaunchedEffect(Unit) {
         snapshotFlow { searchText.value.text }
           .distinctUntilChanged()
-          .collect {
+          .collectLatest {
             val target = strConnectTarget(it.trim())
             if (target is ConnectTarget.Link) {
               hideKeyboard(view)
               searchText.value = searchText.value.copy(target.linkText, selection = TextRange.Zero)
               searchShowingSimplexLink.value = true
-              searchChatFilteredBySimplexLink.value = null
+              searchChatFilteredBySimplexLink.value = emptySet()
               connectNameCandidate.value = null
               connect(target.text, searchChatFilteredBySimplexLink) { searchText.value = TextFieldValue() }
             } else {
-              // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke,
-              // so typing never clears the field mid-word or discloses the text to the resolver.
               val candidate = nameSearchCandidate(it.trim())
               connectNameCandidate.value = candidate
-              if (candidate == null && (!searchShowingSimplexLink.value || it.isEmpty())) {
+              if (candidate != null) {
+                // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
+                // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
+                // both and filter every known chat found; drop the row only when both types are already known.
+                delay(NAME_SEARCH_DEBOUNCE_MS)
+                val rhId = chatModel.remoteHostId()
+                val inProgress = mutableStateOf(true)
+                val targets = if (candidate.startsWith("@") || candidate.startsWith("#")) listOf(candidate) else listOf("@$candidate", "#$candidate")
+                val ids = targets.mapNotNull { name ->
+                  knownChatId(chatModel.controller.apiConnectPlan(rhId, name, PlanResolveMode.PRMNever, inProgress = inProgress))
+                }
+                searchChatFilteredBySimplexLink.value = ids.toSet()
+                if (ids.size == targets.size) connectNameCandidate.value = null
+              } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                 if (it.isNotEmpty()) {
                   focusRequester.requestFocus()
                 } else {
@@ -819,7 +831,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                   }
                 }
                 searchShowingSimplexLink.value = false
-                searchChatFilteredBySimplexLink.value = null
+                searchChatFilteredBySimplexLink.value = emptySet()
               }
             }
           }
@@ -830,13 +842,13 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
   }
 }
 
-private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<Set<String>>, cleanup: (() -> Unit)?) {
   withBGApi {
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
-      filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },
+      filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
+      filterKnownGroup = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
       close = null,
       cleanup = cleanup,
     )
@@ -923,7 +935,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   // which is related to [derivedStateOf]. Using safe alternative instead
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
-  val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+  val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val topPaddingToContent = topPaddingToContent(false)
@@ -1026,11 +1038,13 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
 private const val DEFAULT_NAME_TLD = "testing"
 // Shortest name that offers the button, so it is discoverable but does not flash on a single letter.
 private const val MIN_NAME_LENGTH = 2
+// Wait this long after the last keystroke before the local name search runs.
+internal const val NAME_SEARCH_DEBOUNCE_MS = 300L
 
 private val nameLabelRegex = Regex("[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*")
 private fun isNameLabel(s: String): Boolean = s.length in 1..63 && nameLabelRegex.matches(s)
 
-// On-device candidate for connecting by SimpleX name, resolved only when its button is tapped.
+// On-device candidate for connecting by SimpleX name: the string sent to the core to resolve it.
 // Mirrors the domain grammar (nameLabelP/mkDomain in SimplexName.hs): an optional @/# prefix, then
 // dot-separated ASCII labels; a dotless word is completed with the default top-level part. Returns
 // the string to send (keeping @/# so the type is preserved), or null when the text is not a name.
@@ -1045,6 +1059,17 @@ internal fun nameSearchCandidate(str: String): String? {
     core.length >= MIN_NAME_LENGTH -> "${prefix ?: ""}$core.$DEFAULT_NAME_TLD"
     else -> null
   }
+}
+
+// The chat id a local (PRMNever) search resolved to for one name type, or null on a miss or an own link.
+internal fun knownChatId(result: ConnectionPlanResult?): String? = when (val plan = result?.connectionPlan) {
+  is ConnectionPlan.ContactAddress -> (plan.contactAddressPlan as? ContactAddressPlan.Known)?.contact?.id
+  is ConnectionPlan.GroupLink -> when (val g = plan.groupLinkPlan) {
+    is GroupLinkPlan.Known -> g.groupInfo.id
+    is GroupLinkPlan.OwnLink -> g.groupInfo.id
+    else -> null
+  }
+  else -> null
 }
 
 // The list tags and the connect-by-name row share one slot. When there is no name, the tags show; on
@@ -1401,14 +1426,14 @@ fun ItemPresetFilterAction(
 
 fun filteredChats(
   searchShowingSimplexLink: State<Boolean>,
-  searchChatFilteredBySimplexLink: State<String?>,
+  searchChatFilteredBySimplexLink: State<Set<String>>,
   searchText: String,
   chats: List<Chat>,
   activeFilter: ActiveFilter? = null,
 ): List<Chat> {
-  val linkChatId = searchChatFilteredBySimplexLink.value
-  return if (linkChatId != null) {
-    chats.filter { it.id == linkChatId }
+  val linkChatIds = searchChatFilteredBySimplexLink.value
+  return if (linkChatIds.isNotEmpty()) {
+    chats.filter { it.id in linkChatIds }
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
     if (s.isEmpty())

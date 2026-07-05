@@ -74,7 +74,7 @@ private suspend fun planAndConnectTask(
     cleanup?.invoke()
     completable.complete(!completable.isActive)
   }
-  val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, linkOwnerSig, inProgress = inProgress)
+  val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, linkOwnerSig = linkOwnerSig, inProgress = inProgress)
   connectProgressManager.stopConnectProgress()
   if (!inProgress.value) { return completable }
   if (result != null) {
