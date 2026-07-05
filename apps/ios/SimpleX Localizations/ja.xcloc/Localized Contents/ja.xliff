@@ -197,8 +197,9 @@
         <target>%d 月</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d relays failed" xml:space="preserve">
+      <trans-unit id="%d relays failed" xml:space="preserve" approved="no">
         <source>%d relays failed</source>
+        <target state="translated">%d リレーが失敗</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
@@ -240,42 +241,51 @@ channel subscriber relay bar</note>
         <target>%d 週</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active" xml:space="preserve">
+      <trans-unit id="%d/%d relays active" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active</source>
+        <target state="translated">%2$d 個中 %1$d 個のリレーがアクティブ</target>
         <note>channel creation progress
 channel relay bar progress</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active, %d errors" xml:space="preserve">
+      <trans-unit id="%d/%d relays active, %d errors" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active, %3$d errors</source>
+        <target state="translated">%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個がエラー</target>
         <note>channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve">
+      <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active, %3$d failed</source>
+        <target state="translated">%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個が失敗</target>
         <note>channel creation progress with errors
 channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve">
+      <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays active, %3$d removed</source>
+        <target state="translated">%2$d 個中 %1$d 個のリレーがアクティブ、%3$d 個が削除済み</target>
         <note>channel relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays connected" xml:space="preserve">
+      <trans-unit id="%d/%d relays connected" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays connected</source>
+        <target state="translated">%2$d 個中 %1$d 個のリレーが接続済み</target>
         <note>channel subscriber relay bar progress</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve">
+      <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays connected, %3$d errors</source>
+        <target state="translated">%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個がエラー</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays connected, %d failed" xml:space="preserve">
+      <trans-unit id="%d/%d relays connected, %d failed" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays connected, %3$d failed</source>
+        <target state="translated">%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個が失敗</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d/%d relays connected, %d removed" xml:space="preserve">
+      <trans-unit id="%d/%d relays connected, %d removed" xml:space="preserve" approved="no">
         <source>%1$d/%2$d relays connected, %3$d removed</source>
+        <target state="translated">%2$d 個中 %1$d 個のリレーが接続済み、%3$d 個が削除済み</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%lld" xml:space="preserve">
+      <trans-unit id="%lld" xml:space="preserve" approved="no">
         <source>%lld</source>
+        <target state="translated">%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve">
@@ -7506,9 +7516,9 @@ chat item action</note>
         <source>Server requires authorization to connect to relay, check password.</source>
         <note>relay test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>キューを作成するにはサーバーの認証が必要です。パスワードを確認してください</target>
+        <target state="translated">キューを作成するにはサーバーの認証が必要です。パスワードを確認してください。</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
