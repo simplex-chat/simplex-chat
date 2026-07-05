@@ -59,7 +59,7 @@ fun CIFileView(
         painterResource(MR.images.ic_draft_filled),
         stringResource(MR.strings.icon_descr_file),
         Modifier.fillMaxSize(),
-        tint = if (isSimplex && isDefaultTint) simplexSecondaryTint() else color
+        tint = if (isSimplex && isDefaultTint) { if (smallView) MaterialTheme.colors.secondary else simplexSecondaryTint() } else color
       )
       if (innerIcon != null) {
         Icon(
