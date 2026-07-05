@@ -529,7 +529,7 @@ data ChatCommand
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan {userId :: UserId, connectTarget :: Maybe AConnectTarget, resolveKnown :: Bool, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectTarget is used to report parsing failure as special error
+  | APIConnectPlan {userId :: UserId, connectTarget :: Maybe AConnectTarget, resolveMode :: PlanResolveMode, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectTarget is used to report parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink (Maybe SimplexDomain) ContactShortLinkData
   | APIPrepareGroup UserId CreatedLinkContact DirectLink (Maybe SimplexDomain) GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
@@ -669,6 +669,12 @@ data ChatCommand
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
   deriving (Show)
+
+data PlanResolveMode
+  = PRMAllGroups -- resolve all known groups and all unknown chats
+  | PRMUnknown -- only resolve if chat is unknown
+  | PRMNever -- do not resolve links and names, only do local search
+  deriving (Eq, Show)
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
 allowRemoteCommand = \case
