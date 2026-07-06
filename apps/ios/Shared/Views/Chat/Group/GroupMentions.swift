@@ -47,7 +47,7 @@ struct GroupMentionsView: View {
                             LazyVStack(spacing: 0) {
                                 ForEach(Array(filtered.enumerated()), id: \.element.wrapped.groupMemberId) { index, member in
                                     let mentioned = mentionMemberId == member.wrapped.memberId
-                                    let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
+                                    let disabled = composeState.memberMentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
                                     ZStack(alignment: .bottom) {
                                         memberRowView(member.wrapped, mentioned)
                                             .contentShape(Rectangle())
@@ -124,14 +124,13 @@ struct GroupMentionsView: View {
     }
 
     private func messageChanged(_ msg: String, _ parsedMsg: [FormattedText], _ range: NSRange) {
-        removeUnusedMentions(parsedMsg)
         if let (ft, r) = selectedMarkdown(parsedMsg, range) {
             switch ft.format {
             case let .mention(name):
                 isVisible = true
                 mentionName = name
                 mentionRange = r
-                mentionMemberId = composeState.mentions[name]?.memberId
+                mentionMemberId = composeState.memberMentions[name] != nil ? composeState.mentions[name]?.memberId : nil
                 if !m.membersLoaded {
                     Task {
                         await m.loadGroupMembers(groupInfo)
@@ -167,15 +166,6 @@ struct GroupMentionsView: View {
             return status != .memLeft && status != .memRemoved && status != .memInvited
         })
         .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
-    }
-
-    private func removeUnusedMentions(_ parsedMsg: [FormattedText]) {
-        let usedMentions: Set<String> = Set(parsedMsg.compactMap { ft in
-            if case let .mention(name) = ft.format { name } else { nil }
-        })
-        if usedMentions.count < composeState.mentions.count  {
-            composeState = composeState.copy(mentions: composeState.mentions.filter({ usedMentions.contains($0.key) }))
-        }
     }
 
     private func getCharacter(_ s: String, _ pos: Int) -> (char: String.SubSequence, range: NSRange)? {
