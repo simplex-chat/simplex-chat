@@ -3166,9 +3166,9 @@ alert button</note>
         <target>Appareils de bureau</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
+      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve" approved="no">
         <source>Destination server address of %1$@ is incompatible with forwarding server %2$@ settings.</source>
-        <target>L'adresse du serveur de destination %@ est incompatible avec les paramètres du serveur de redirection %@.</target>
+        <target state="needs-translation">L'adresse du serveur de destination %@ est incompatible avec les paramètres du serveur de redirection %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
@@ -3176,9 +3176,9 @@ alert button</note>
         <target>Erreur du serveur de destination : %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
+      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve" approved="no">
         <source>Destination server version of %1$@ is incompatible with forwarding server %2$@.</source>
-        <target>La version du serveur de destination %@ est incompatible avec le serveur de redirection %@.</target>
+        <target state="needs-translation">La version du serveur de destination %@ est incompatible avec le serveur de redirection %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
